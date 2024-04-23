@@ -28,10 +28,12 @@ import android.os.Build;
 import android.util.Log;
 
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.appops.AppOpsMode;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.UndoableContext;
@@ -389,12 +391,16 @@ public final class Permissions {
         return permissionContext;
     }
 
-    void undoPermission(PermissionContext permissionContext) {
+    void undoPermission(PermissionContextImpl permissionContext) {
         boolean unused = mPermissionContexts.remove(permissionContext);
-        applyPermissions();
+        applyPermissions(/* removedPermissionContext = */ permissionContext);
     }
 
     void applyPermissions() {
+        applyPermissions(null);
+    }
+
+    private void applyPermissions(PermissionContextImpl removedPermissionContext) {
         if (sIgnorePermissions.get()) {
             return;
         }
@@ -433,12 +439,23 @@ public final class Permissions {
                 TestApis.users().instrumented(),
                 grantedPermissions,
                 deniedPermissions);
+        Package appOpPackage = hasAdoptedShellPermissionIdentity ? sShellPackage : sInstrumentedPackage;
         setAppOpState(
-                hasAdoptedShellPermissionIdentity ? sShellPackage : sInstrumentedPackage,
+                appOpPackage,
                 TestApis.users().instrumented(),
                 grantedAppOps,
                 deniedAppOps
         );
+
+        if (removedPermissionContext != null) {
+            removedPermissionContext.grantedAppOps().stream().filter(
+                    (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
+                    .forEach(i -> appOpPackage.appOps().set(i, AppOpsMode.DEFAULT));
+            removedPermissionContext.deniedAppOps().stream().filter(
+                    (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
+                    .forEach(i -> appOpPackage.appOps().set(i, AppOpsMode.DEFAULT));
+        }
+
     }
 
     /**
@@ -709,6 +726,18 @@ public final class Permissions {
         }
     }
 
+    /** Ensure that permissions are not being overridden for any packages. */
+    @Experimental
+    public void clearAllOverridePermissionStates() {
+        if (Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+            try {
+                TestApisReflectionKt.clearAllOverridePermissionStates(ShellCommandUtils.uiAutomation());
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Error clearing all override permission states", e);
+            }
+        }
+    }
+
     private void resetRootPermissionState(Package pkg, UserReference user) {
         TestApisReflectionKt.clearOverridePermissionStates(ShellCommandUtils.uiAutomation(),
                 pkg.uid(user));
@@ -751,5 +780,16 @@ public final class Permissions {
         Log.d(LOG_TAG, "Dropping shell permissions");
         hasAdoptedShellPermissionIdentity = false;
         ShellCommandUtils.uiAutomation().dropShellPermissionIdentity();
+    }
+
+    /** Get string dump of permissions state. */
+    public String dump() {
+        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+            Log.i(LOG_TAG, "Cannot dump permission before V so dumping packages");
+            return TestApis.packages().dump();
+        }
+
+        return ShellCommand.builder("dumpsys permissionmgr").validate((s) -> !s.isEmpty())
+                .executeOrThrowNeneException("Error dumping permission state");
     }
 }

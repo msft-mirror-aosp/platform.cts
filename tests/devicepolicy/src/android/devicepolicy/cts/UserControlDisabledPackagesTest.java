@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static android.app.AppOpsManager.OPSTR_RUN_ANY_IN_BACKGROUND;
 import static android.app.admin.DevicePolicyIdentifiers.USER_CONTROL_DISABLED_PACKAGES_POLICY;
 import static android.app.admin.TargetUser.GLOBAL_USER_ID;
 import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_EXEMPTED;
@@ -24,9 +25,6 @@ import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_NEVER;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.appops.AppOpsMode.IGNORED;
-import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_RUN_ANY_IN_BACKGROUND;
-import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
-import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -68,6 +66,7 @@ import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Assume;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -337,16 +336,17 @@ public final class UserControlDisabledPackagesTest {
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setUserControlDisabledPackages",
             "android.app.admin.DevicePolicyManager#getUserControlDisabledPackages"})
+    @Ignore // need to restore with some root-only capability to force migration
     public void setUserControlDisabledPackages_policyMigration_works() {
-        TestApis.flags().set(
-                NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "false");
+//        TestApis.flags().set(
+//                NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "false");
         try {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
                     sDeviceState.dpc().componentName(), List.of(PACKAGE_NAME));
 
             sLocalDevicePolicyManager.triggerDevicePolicyEngineMigration(true);
-            TestApis.flags().set(
-                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "true");
+//            TestApis.flags().set(
+//                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "true");
 
             PolicyState<Set<String>> policyState = PolicyEngineUtils.getStringSetPolicyState(
                     new NoArgsPolicyKey(USER_CONTROL_DISABLED_PACKAGES_POLICY),
@@ -359,8 +359,8 @@ public final class UserControlDisabledPackagesTest {
         } finally {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
                     sDeviceState.dpc().componentName(), List.of());
-            TestApis.flags().set(
-                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, null);
+//            TestApis.flags().set(
+//                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, null);
         }
     }
 

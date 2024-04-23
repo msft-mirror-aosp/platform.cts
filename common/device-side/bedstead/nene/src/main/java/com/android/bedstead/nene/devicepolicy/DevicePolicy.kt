@@ -828,6 +828,10 @@ object DevicePolicy {
                 devicePolicyManager.getPolicySizeForAdmin(admin)
             }
 
+    /** Get string dump of device policy state. */
+    fun dump(): String =
+        ShellCommand.builder("dumpsys device_policy").validate(String::isNotEmpty).execute()
+
     enum class NearbyNotificationStreamingPolicy(val intDef: Int) {
         NotManaged(0),
         Disabled(1),

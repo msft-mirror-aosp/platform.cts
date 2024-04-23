@@ -20,6 +20,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.FailureMode;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
@@ -33,6 +34,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(EnsureDoesNotHaveAppOpGroup.class)
+@UsesAnnotationExecutor("com.android.bedstead.permissions.PermissionsAnnotationExecutor")
 public @interface EnsureDoesNotHaveAppOp {
     String value();
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.media.router.cts.bluetoothpermissionsapp;
+package android.media.cts.app.common;
 
 import android.app.Service;
 import android.content.Intent;
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
- * Placeholder service to support {@link MediaRouter2DeviceTest}.
+ * Placeholder service to support host-side {@link MediaRouter2} tests.
  *
  * <p>Provides support for testing checks in {@link MediaRouter2#setRouteListingPreference} when it
  * comes to {@link RouteListingPreference#getLinkedItemComponentName()}, and {@link
@@ -43,9 +43,21 @@ public class PlaceholderSelfScanMediaRoute2ProviderService extends Service {
     private static final AtomicReference<Consumer<String>> sOnBindCallback =
             new AtomicReference<>(action -> {});
 
+    /**
+     * Invoked whenever there's an unbind request to this service, passing the intent action as
+     * parameter.
+     */
+    private static final AtomicReference<Consumer<String>> sOnUnbindCallback =
+            new AtomicReference<>(action -> {});
+
     /** Sets a callback for whenever {@link #onBind} is invoked. */
     public static void setOnBindCallback(Consumer<String> callback) {
         sOnBindCallback.set(callback);
+    }
+
+    /** Sets a callback for whenever {@link #onUnbind} is invoked. */
+    public static void setOnUnbindCallback(Consumer<String> callback) {
+        sOnUnbindCallback.set(callback);
     }
 
     @Nullable
@@ -53,5 +65,11 @@ public class PlaceholderSelfScanMediaRoute2ProviderService extends Service {
     public IBinder onBind(Intent intent) {
         sOnBindCallback.get().accept(intent.getAction());
         return null;
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        sOnUnbindCallback.get().accept(intent.getAction());
+        return false;
     }
 }

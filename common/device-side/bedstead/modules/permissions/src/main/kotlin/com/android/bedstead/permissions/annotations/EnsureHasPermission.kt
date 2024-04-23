@@ -18,6 +18,7 @@ package com.android.bedstead.permissions.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.google.auto.value.AutoAnnotation
 
 /**
@@ -31,6 +32,7 @@ import com.google.auto.value.AutoAnnotation
     AnnotationTarget.CLASS,
 )
 @Retention(AnnotationRetention.RUNTIME)
+@UsesAnnotationExecutor("com.android.bedstead.permissions.PermissionsAnnotationExecutor")
 annotation class EnsureHasPermission(
 
     vararg val value: String,

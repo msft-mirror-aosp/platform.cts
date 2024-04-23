@@ -46,6 +46,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.PersistableBundle;
+import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -117,6 +118,7 @@ public class OnDeviceIntelligenceManagerTest {
     public static final int REQUEST_TYPE_GET_FILE_FROM_STREAM = 1002;
     public static final int REQUEST_TYPE_GET_FILE_FROM_PFD = 1003;
     public static final int REQUEST_TYPE_GET_AUGMENTED_DATA = 1004;
+    public static final int REQUEST_TYPE_GET_CALLER_UID = 1005;
 
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
 
@@ -811,7 +813,7 @@ public class OnDeviceIntelligenceManagerTest {
                     @Override
                     public void onResult(@NonNull Bundle result) {
                         Log.i(TAG, "Final Result : " + result);
-                        packageNameFuture.complete(result.getPairValue());
+                        packageNameFuture.complete(result.getString(TEST_KEY));
                         statusLatch.countDown();
                     }
 
@@ -823,6 +825,34 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
         assertThat(packageNameFuture.get()).isEqualTo(CTS_PACKAGE_NAME);
     }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void callerUidReceivedIsOriginalCallerUid() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        Feature feature = new Feature.Builder(1).build();
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                Bundle.EMPTY, REQUEST_TYPE_GET_CALLER_UID, null,
+                null, EXECUTOR, new ProcessingCallback() {
+                    @Override
+                    public void onResult(@NonNull Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        assertThat(result.getInt(TEST_KEY)).isEqualTo(Process.myUid());
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Error Occurred", error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+
 
     //===================== Tests for accessing file from isolated process via non-isolated =======
     @Test

@@ -20,6 +20,7 @@ package {
 
 android_test {
     name: "CtsDeviceConfigTestCases",
+    team: "trendy_team_android_core_experiments",
     defaults: ["cts_defaults"],
     // Tag this module as a cts test artifact
     test_suites: [

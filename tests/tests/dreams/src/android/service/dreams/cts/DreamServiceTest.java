@@ -39,6 +39,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.os.RemoteException;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DreamCoordinator;
 import android.server.wm.LockScreenSession;
@@ -50,6 +52,7 @@ import android.view.KeyEvent;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -62,6 +65,9 @@ public class DreamServiceTest extends ActivityManagerTestBase {
 
     private static final String CONTROLLED_DREAM_SERVICE_COMPONENT =
             "android.app.dream.cts.app/.ControlledTestDreamService";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private final DreamCoordinator mDreamCoordinator = new DreamCoordinator(mContext);
 

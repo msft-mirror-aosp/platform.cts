@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,30 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier
+package com.android.bedstead.harrier;
+
+import java.lang.annotation.Annotation;
 
 /**
  * Interface used to register a new class which can execute Harrier annotations.
  *
  * This can be used to add additional harrier-compatible annotations without modifying harrier
  */
-interface AnnotationExecutor {
+// This is written in Java because Kotlin interfaces can't expose default methods to Java
+public interface AnnotationExecutor {
     /**
      * Called when an annotation should be applied.
      *
-     *
-     * This should take care of recording any state necessary to correctly restore state after
+     * <p>This should take care of recording any state necessary to correctly restore state after
      * the test.
      */
-    fun applyAnnotation(annotation: Annotation)
+    void applyAnnotation(Annotation annotation);
 
     /**
      * Requests the executor to restore the previous state of any non-shareable changes.
      */
-    fun teardownShareableState() {}
+    default void teardownShareableState() {}
 
     /**
      * Requests the executor to restore the previous state of any shareable changes.
      */
-    fun teardownNonShareableState() {}
+    default void teardownNonShareableState() {}
+
+    /**
+     * Called when a test has failed which used this annotation executor.
+     */
+    default void onTestFailed(Throwable exception) {}
 }

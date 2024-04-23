@@ -191,17 +191,18 @@ public class AccessibilityMagnificationTest {
 
         // Since window magnification may need times to remove the magnification window, we would
         // like to wait and ensure the overlays for magnification are removed here.
-        if (isMagnificationOverlayExisting() || isAccessibilityOverlayExisting()) {
+        if (isMagnificationOverlayExisting() || doesAccessibilityMagnificationOverlayExist()) {
             // Do nothing, we just want to wait for the event and check the
             // overlays for magnification are removed
             try {
                 sUiAutomation.executeAndWaitForEvent(() -> {},
                         event -> !(isMagnificationOverlayExisting()
-                                || isAccessibilityOverlayExisting()),
+                                || doesAccessibilityMagnificationOverlayExist()),
                         5000);
             } catch (TimeoutException timeoutException) {
                 // Double check the overlay is not exists in case there is no event sent
-                assertTrue(!(isMagnificationOverlayExisting() || isAccessibilityOverlayExisting()));
+                assertTrue(!(isMagnificationOverlayExisting()
+                               || doesAccessibilityMagnificationOverlayExist()));
             }
         }
     }
@@ -598,7 +599,7 @@ public class AccessibilityMagnificationTest {
         try {
             sUiAutomation.executeAndWaitForEvent(
                     () -> controller.setMagnificationConfig(config, false),
-                    event -> isAccessibilityOverlayExisting(), 5000);
+                    event -> doesAccessibilityMagnificationOverlayExist(), 5000);
         } finally {
             mService.runOnServiceSync(() -> controller.resetCurrentMagnification(false));
         }
@@ -644,11 +645,11 @@ public class AccessibilityMagnificationTest {
         try {
             sUiAutomation.executeAndWaitForEvent(
                     () -> controller.setMagnificationConfig(config, false),
-                    event -> isAccessibilityOverlayExisting(), 5000);
+                    event -> doesAccessibilityMagnificationOverlayExist(), 5000);
 
             sUiAutomation.executeAndWaitForEvent(
                     () -> mService.runOnServiceSync(() -> mService.disableSelfAndRemove()),
-                    event -> !isAccessibilityOverlayExisting(), 5000);
+                    event -> !doesAccessibilityMagnificationOverlayExist(), 5000);
         } finally {
             mService.runOnServiceSync(() -> controller.resetCurrentMagnification(false));
         }
@@ -1478,10 +1479,12 @@ public class AccessibilityMagnificationTest {
                         == AccessibilityWindowInfo.TYPE_MAGNIFICATION_OVERLAY);
     }
 
-    private boolean isAccessibilityOverlayExisting() {
+    private boolean doesAccessibilityMagnificationOverlayExist() {
         return sUiAutomation.getWindows().stream().anyMatch(
+                // TODO: b/335440685 - Move to TYPE_ACCESSIBILITY_OVERLAY after the issues with
+                // that type preventing swipe to navigate are resolved.
                 accessibilityWindowInfo -> accessibilityWindowInfo.getType()
-                        == AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY);
+                        == AccessibilityWindowInfo.TYPE_MAGNIFICATION_OVERLAY);
     }
 
     private Rect getMagnifiedArea(MagnificationController magnificationController) {

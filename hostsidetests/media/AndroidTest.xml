@@ -24,5 +24,10 @@
         <option name="jar" value="CtsMediaHostTestCases.jar" />
         <option name="runtime-hint" value="30m" />
     </test>
+    <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
+        <option name="set-global-setting" key="verifier_verify_adb_installs" value="0" />
+        <option name="restore-settings" value="true" />
+        <option name="force-skip-system-props" value="true" />
+    </target_preparer>
 </configuration>
 

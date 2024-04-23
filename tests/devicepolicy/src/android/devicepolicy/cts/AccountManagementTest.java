@@ -22,8 +22,6 @@ import static android.devicepolicy.cts.utils.PolicyEngineUtils.TRUE_MORE_RESTRIC
 import static android.os.UserManager.DISALLOW_MODIFY_ACCOUNTS;
 
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
-import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
-import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -452,16 +450,16 @@ public final class AccountManagementTest {
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     public void setAccountManagementDisabled_policyMigration_works() {
         try {
-            TestApis.flags().set(
-                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "false");
+//            TestApis.flags().set(
+//                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "false");
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),
                     sDeviceState.accounts().accountType(),
                     /* disabled= */ true);
 
             sLocalDevicePolicyManager.triggerDevicePolicyEngineMigration(true);
-            TestApis.flags().set(
-                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "true");
+//            TestApis.flags().set(
+//                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "true");
 
             PolicyState<Boolean> policyState = PolicyEngineUtils.getBooleanPolicyState(
                     new AccountTypePolicyKey(
@@ -479,8 +477,8 @@ public final class AccountManagementTest {
                     sDeviceState.dpc().componentName(),
                     sDeviceState.accounts().accountType(),
                     /* disabled= */ false);
-            TestApis.flags().set(
-                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, null);
+//            TestApis.flags().set(
+//                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, null);
         }
     }
 

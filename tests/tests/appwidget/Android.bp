@@ -26,6 +26,7 @@ filegroup {
 
 android_test {
     name: "CtsAppWidgetTestCases",
+    team: "trendy_team_launcher",
     defaults: ["cts_defaults"],
     srcs: [
         "src/**/*.java",

@@ -512,4 +512,9 @@ public class PackagesTest {
             assertThat(sTestApp.pkg().runningProcess(sDeviceState.workProfile())).isNotNull();
         }
     }
+
+    @Test
+    public void dump_dumpsState() {
+        assertThat(TestApis.packages().dump()).isNotEmpty();
+    }
 }

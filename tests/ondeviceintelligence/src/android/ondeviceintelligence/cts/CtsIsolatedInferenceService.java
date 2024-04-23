@@ -163,6 +163,13 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             return;
         }
 
+        if (requestType == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_CALLER_UID) {
+            Bundle bundle = new Bundle();
+            bundle.putInt(TEST_KEY, callerUid);
+            callback.onResult(bundle);
+            return;
+        }
+
         if (requestType
                 == BundleValidationTest.REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES) {
             byte[] bytes = request.getByteArray("request");

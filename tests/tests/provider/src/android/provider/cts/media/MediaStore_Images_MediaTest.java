@@ -57,6 +57,8 @@ import android.util.Size;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.google.common.collect.Range;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -532,6 +534,7 @@ public class MediaStore_Images_MediaTest {
 
     @Test
     public void testMetadata() throws Exception {
+        final long startTime = System.currentTimeMillis() / 1000;
         final Uri uri = ProviderTestUtils.stageMedia(R.raw.lg_g4_iso_800_jpg, mExternalImages,
                 "image/jpeg");
 
@@ -564,11 +567,13 @@ public class MediaStore_Images_MediaTest {
                     c.getLong(c.getColumnIndex(ImageColumns.DATE_TAKEN)));
 
             // We just added and modified the file, so should be recent
+            Range<Long> validRange = Range.closed(startTime, System.currentTimeMillis() / 1000);
             final long added = c.getLong(c.getColumnIndex(ImageColumns.DATE_ADDED));
             final long modified = c.getLong(c.getColumnIndex(ImageColumns.DATE_MODIFIED));
-            final long now = System.currentTimeMillis() / 1000;
-            assertTrue("Invalid added time " + added, Math.abs(added - now) < 5);
-            assertTrue("Invalid modified time " + modified, Math.abs(modified - now) < 5);
+            assertWithMessage("Invalid added time " + added)
+                    .that(added).isIn(validRange);
+            assertWithMessage("Invalid modified time " + modified)
+                    .that(modified).isIn(validRange);
 
             // Confirm that we trusted value from XMP metadata
             assertEquals("image/dng", c.getString(c.getColumnIndex(ImageColumns.MIME_TYPE)));

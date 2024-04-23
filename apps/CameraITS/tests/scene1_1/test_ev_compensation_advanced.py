@@ -110,6 +110,7 @@ class EvCompensationAdvancedTest(its_base_test.ItsBaseTest):
       match_ar = (largest_yuv['width'], largest_yuv['height'])
       fmt = capture_request_utils.get_near_vga_yuv_format(
           props, match_ar=match_ar)
+      imgs = []
       lumas = []
       for ev in ev_steps:
         # Capture a single shot with the same EV comp and locked AE.
@@ -121,6 +122,8 @@ class EvCompensationAdvancedTest(its_base_test.ItsBaseTest):
             if ev_meta != ev:
               raise AssertionError(
                   f'EV comp capture != request! cap: {ev_meta}, req: {ev}')
+            imgs.append(
+                image_processing_utils.convert_capture_to_rgb_image(cap))
             lumas.append(image_processing_utils.extract_luma_from_patch(
                 cap, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H))
             break
@@ -147,15 +150,22 @@ class EvCompensationAdvancedTest(its_base_test.ItsBaseTest):
       name_with_log_path = os.path.join(log_path, _NAME)
       matplotlib.pyplot.savefig(f'{name_with_log_path}_plot_means.png')
 
+      failed_test = False
+      e_msg = []
       for i, luma in enumerate(lumas):
         luma_delta_atol = luma_delta_atols[i]
         logging.debug('EV step: %3d, luma: %.3f, model: %.3f, ATOL: %.2f',
                       ev_steps[i], luma, expected_lumas[i], luma_delta_atol)
-        if not math.isclose(luma, expected_lumas[i],
-                            abs_tol=luma_delta_atol):
-          raise AssertionError('Modeled/measured luma deltas too large! '
-                               f'meas: {lumas[i]}, model: {expected_lumas[i]}, '
-                               f'ATOL: {luma_delta_atol}.')
+        if not math.isclose(luma, expected_lumas[i], abs_tol=luma_delta_atol):
+          failed_test = True
+          e_msg.append(f'measured: {lumas[i]}, model: {expected_lumas[i]}, '
+                       f'ATOL: {luma_delta_atol}. ')
+      if failed_test:
+        for i, img in enumerate(imgs):
+          image_processing_utils.write_image(
+              img, f'{name_with_log_path}_{ev_steps[i]}.jpg')
+        raise AssertionError(
+            f'Measured/modeled luma deltas too large! {e_msg}')
 
 
 if __name__ == '__main__':

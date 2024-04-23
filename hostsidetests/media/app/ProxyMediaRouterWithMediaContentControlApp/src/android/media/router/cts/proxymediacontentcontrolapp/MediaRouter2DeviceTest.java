@@ -31,11 +31,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRoute2Info;
+import android.media.MediaRoute2ProviderService;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.ScanRequest;
 import android.media.RouteDiscoveryPreference;
+import android.media.cts.app.common.PlaceholderSelfScanMediaRoute2ProviderService;
 import android.media.cts.app.common.ScreenOnActivity;
 import android.os.Bundle;
+import android.os.ConditionVariable;
 import android.os.UserHandle;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -158,6 +161,46 @@ public class MediaRouter2DeviceTest {
         MediaRouter2.ScanToken token = instance.requestScan(new ScanRequest.Builder().build());
         instance.cancelScanRequest(token);
         assertThrows(IllegalArgumentException.class, () -> instance.cancelScanRequest(token));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
+    @Test
+    public void cancelScanRequest_screenOnScanning_unbindsSelfScanProvider() {
+        loadScreenOnActivity();
+
+        MediaRouter2 localInstance = MediaRouter2.getInstance(mContext);
+        MediaRouter2.RouteCallback placeholderCallback = new MediaRouter2.RouteCallback() {};
+        localInstance.registerRouteCallback(
+                mExecutor,
+                placeholderCallback,
+                new RouteDiscoveryPreference.Builder(List.of(FEATURE_SAMPLE), false).build());
+
+        MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
+        assertThat(instance).isNotNull();
+
+        ConditionVariable onBindConditionVariable = new ConditionVariable();
+        ConditionVariable onUnbindConditionVariable = new ConditionVariable();
+
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        onBindConditionVariable.open();
+                    }
+                });
+
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnUnbindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        onUnbindConditionVariable.open();
+                    }
+                });
+
+        MediaRouter2.ScanToken token =
+                instance.requestScan(new MediaRouter2.ScanRequest.Builder().build());
+        assertThat(onBindConditionVariable.block(TIMEOUT_MS)).isTrue();
+
+        instance.cancelScanRequest(token);
+        assertThat(onUnbindConditionVariable.block(TIMEOUT_MS)).isTrue();
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)

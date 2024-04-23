@@ -19,6 +19,7 @@ package {
 
 android_test {
     name: "CtsMediaBetterTogetherTestCases",
+    team: "trendy_team_android_media_solutions",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.truth",

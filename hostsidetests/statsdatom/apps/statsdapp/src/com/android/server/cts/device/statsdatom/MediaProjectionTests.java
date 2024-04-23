@@ -31,6 +31,7 @@ import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.Until;
 
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -92,7 +93,8 @@ public class MediaProjectionTests {
         mActivityRule.launchActivity(null);
         mDevice.waitForIdle();
 
-        UiObject2 cancelButton = mDevice.findObject(By.res(CANCEL_RESOURCE_ID));
+        UiObject2 cancelButton =
+                mDevice.wait(Until.findObject(By.res(CANCEL_RESOURCE_ID)), 5000L);
         cancelButton.click();
     }
 
@@ -111,7 +113,8 @@ public class MediaProjectionTests {
             return;
         }
 
-        UiObject2 modeSpinner = mDevice.findObject(By.res(SPINNER_RESOURCE_ID));
+        UiObject2 modeSpinner =
+                mDevice.wait(Until.findObject(By.res(SPINNER_RESOURCE_ID)), 5000L);
         modeSpinner.click();
 
         boolean hasSingleAppOption = mDevice.hasObject(By.text(sSingleAppString));
@@ -120,11 +123,13 @@ public class MediaProjectionTests {
             return;
         }
 
-        UiObject2 singleAppOption = mDevice.findObject(By.text(sSingleAppString));
+        UiObject2 singleAppOption =
+                mDevice.wait(Until.findObject(By.text(sSingleAppString)), 5000L);
         singleAppOption.click();
 
         // Go to app selector page
-        UiObject2 startRecordingButton = mDevice.findObject(By.res(ACCEPT_RESOURCE_ID));
+        UiObject2 startRecordingButton =
+                mDevice.wait(Until.findObject(By.res(ACCEPT_RESOURCE_ID)), 5000L);
         startRecordingButton.click();
     }
 }

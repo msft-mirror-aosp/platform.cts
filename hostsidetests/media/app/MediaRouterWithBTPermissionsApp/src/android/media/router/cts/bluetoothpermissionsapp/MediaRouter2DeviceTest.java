@@ -59,6 +59,7 @@ import android.media.MediaRouter2.ScanToken;
 import android.media.MediaRouter2Manager;
 import android.media.RouteDiscoveryPreference;
 import android.media.RouteListingPreference;
+import android.media.cts.app.common.PlaceholderSelfScanMediaRoute2ProviderService;
 import android.media.cts.app.common.ScreenOnActivity;
 import android.os.ConditionVariable;
 import android.os.PowerManager;
@@ -598,19 +599,32 @@ public class MediaRouter2DeviceTest {
                                 List.of("placeholder_feature"), /* activeScan= */ true)
                         .build();
         MediaRouter2.RouteCallback routeCallback = new MediaRouter2.RouteCallback() {};
-        ConditionVariable conditionVariable = new ConditionVariable();
+
+        ConditionVariable onBindConditionVariable = new ConditionVariable();
+        ConditionVariable onUnbindConditionVariable = new ConditionVariable();
+
         PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(
                 action -> {
                     if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
-                        conditionVariable.open();
+                        onBindConditionVariable.open();
+                    }
+                });
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnUnbindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        onUnbindConditionVariable.open();
                     }
                 });
         try {
             router.registerRouteCallback(
                     Runnable::run, routeCallback, activeScanRouteDiscoveryPreference);
-            assertThat(conditionVariable.block(TIMEOUT_MS)).isTrue();
+            assertThat(onBindConditionVariable.block(TIMEOUT_MS)).isTrue();
+
+            router.unregisterRouteCallback(routeCallback);
+            assertThat(onUnbindConditionVariable.block(TIMEOUT_MS)).isTrue();
         } finally {
             PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(action -> {});
+            PlaceholderSelfScanMediaRoute2ProviderService.setOnUnbindCallback(action -> {});
             router.unregisterRouteCallback(routeCallback);
         }
     }

@@ -23,6 +23,7 @@ import android.app.contextualsearch.flags.Flags
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.OutcomeReceiver
+import android.os.SystemClock
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.util.Log
 import androidx.test.core.app.ApplicationProvider
@@ -30,6 +31,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.RequiredServiceRule
 import com.android.compatibility.common.util.SystemUtil
+import com.google.common.collect.Range
 import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CountDownLatch
@@ -81,6 +83,7 @@ class ContextualSearchManagerTest {
 
     @Test
     fun testContextualSearchExtras() {
+        val beforeMs = SystemClock.uptimeMillis()
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
             mWatcher?.created,
@@ -106,6 +109,8 @@ class ContextualSearchManagerTest {
             ContextualSearchManager.EXTRA_VISIBLE_PACKAGE_NAMES,
             String::class.java
         )).isNotEmpty()
+        assertThat(extras.getLong(EXTRA_INVOCATION_TIME_MS))
+            .isIn(Range.closed(beforeMs, SystemClock.uptimeMillis()))
         assertThat(extras.containsKey(ContextualSearchManager.EXTRA_TOKEN)).isTrue()
     }
 
@@ -168,6 +173,10 @@ class ContextualSearchManagerTest {
         private const val TEST_LIFECYCLE_TIMEOUT_MS: Long = 5000
         private val TAG = ContextualSearchManagerTest::class.java.simpleName
         private const val TEMPORARY_PACKAGE = "android.contextualsearch.cts"
+
+        // TODO: remove in W
+        private const val EXTRA_INVOCATION_TIME_MS =
+            "android.app.contextualsearch.extra.INVOCATION_TIME_MS"
 
         private fun setTemporaryPackage(packageName: String? = null) {
             if (packageName != null) {

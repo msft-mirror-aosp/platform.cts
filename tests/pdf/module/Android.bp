@@ -14,6 +14,7 @@
 
 android_test {
     name: "CtsPdfModuleTestCases",
+    team: "trendy_team_android_pdf",
     manifest: "AndroidManifest.xml",
     test_config: "AndroidTest.xml",
     srcs: [

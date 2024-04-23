@@ -22,6 +22,20 @@
 
     <application android:testOnly="true">
         <uses-library android:name="android.test.runner"/>
+
+        <activity
+            android:name="android.media.cts.app.common.ScreenOnActivity"
+            android:exported="false"
+            android:turnScreenOn="true" />
+
+        <service android:name="android.media.cts.app.common.PlaceholderSelfScanMediaRoute2ProviderService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.media.MediaRoute2ProviderService" />
+                <action android:name="android.media.action.TRANSFER_MEDIA"/>
+                <category android:name="android.media.MediaRoute2ProviderService.SELF_SCAN_ONLY" />
+            </intent-filter>
+        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

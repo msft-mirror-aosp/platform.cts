@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsMediaTranscodingTestCases",
+    team: "trendy_team_android_media_solutions",
     defaults: ["CtsMediaTranscodingTestCasesDefaults", "cts_defaults"],
     // part of MTS, so we need compatibility back to Q/29
     min_sdk_version: "29",

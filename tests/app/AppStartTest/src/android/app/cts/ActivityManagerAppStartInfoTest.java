@@ -17,6 +17,7 @@
 package android.app.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -71,6 +72,7 @@ public final class ActivityManagerAppStartInfoTest {
     private static final int REQUEST_VALUE_LISTENER_ADD_ONE = 3;
     private static final int REQUEST_VALUE_LISTENER_ADD_MULTIPLE = 4;
     private static final int REQUEST_VALUE_LISTENER_ADD_REMOVE = 5;
+    private static final int REQUEST_VALUE_CRASH = 6;
 
     private static final String REPLY_ACTION_COMPLETE =
             "com.android.cts.startinfoapp.ACTION_COMPLETE";
@@ -172,20 +174,65 @@ public final class ActivityManagerAppStartInfoTest {
         verifyIds(info, 0, mStubPackageUid, mStubPackageUid, mStubPackageUid);
     }
 
-    /** Test that the wasForceStopped state is accurate. */
+    /** Test that the wasForceStopped state is accurate in force stopped case. */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
     public void testWasForceStopped() throws Exception {
         clearHistoricalStartInfo();
 
+        // Start the test app and wait for it to complete
+        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
+                + SIMPLE_ACTIVITY);
+        waitForAppStart();
+
+        // Now force stop the app
+        executeShellCmd("am force-stop " + STUB_PACKAGE_NAME);
+
+        // Clear records again, we don't want to check the previous one.
+        clearHistoricalStartInfo();
+
+        // Start the app again
         executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
                 + SIMPLE_ACTIVITY);
 
-        waitForAppStart();
-        executeShellCmd("am force-stop " + STUB_PACKAGE_NAME);
-
+        // Obtain the start record and confirm it shows having been force stopped
         ApplicationStartInfo info = waitForAppStart();
         assertTrue(info.wasForceStopped());
+    }
+
+    /** Test that the wasForceStopped state is accurate in not force stopped case. */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_APP_START_INFO)
+    public void testWasNotForceStopped() throws Exception {
+        clearHistoricalStartInfo();
+
+        // Start the test app and wait for it to complete
+        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
+                + SIMPLE_ACTIVITY);
+        waitForAppStart();
+
+        // Now force stop the app
+        executeShellCmd("am force-stop " + STUB_PACKAGE_NAME);
+
+        // Clear records again, we don't want to check the previous one here.
+        clearHistoricalStartInfo();
+
+        // Start the app with flag to immediately exit
+        executeShellCmd("am start -n %s/%s%s --ei %s %d",
+                STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
+                REQUEST_KEY_ACTION, REQUEST_VALUE_CRASH); // action to perform
+        sleep(1000);
+
+        // Clear records again, we don't want to check the previous one.
+        clearHistoricalStartInfo();
+
+        // Start the app again
+        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
+                + SIMPLE_ACTIVITY);
+
+        // Obtain the start record and confirm it shows having not been force stopped
+        ApplicationStartInfo info = waitForAppStart();
+        assertFalse(info.wasForceStopped());
     }
 
     /**

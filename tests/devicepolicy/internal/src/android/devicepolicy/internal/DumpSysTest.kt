@@ -22,6 +22,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.utils.ShellCommand
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule
 import org.junit.Rule
@@ -47,7 +48,7 @@ class DumpSysTest {
                     .setScreenCaptureDisabled(deviceState.dpc().componentName(), true)
 
             assertThat(
-                TestApis.dumpsys().devicePolicy()
+                ShellCommand.builder("dumpsys device_policy").validate(String::isNotEmpty).execute()
             ).contains("BooleanPolicyValue { mValue= true } }")
         } finally {
             deviceState.dpc().devicePolicyManager().setScreenCaptureDisabled(

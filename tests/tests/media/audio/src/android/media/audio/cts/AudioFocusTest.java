@@ -165,6 +165,7 @@ public class AudioFocusTest {
                 mAM.exitAudioFocusFreezeForTest();
             }
         }
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         // restore ringer mode and notification volume
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), mInstrumentation, true);
@@ -172,7 +173,6 @@ public class AudioFocusTest {
                 mInitialNotificationVolume, 0);
         mAM.setRingerMode(mInitialRingerMode);
         Utils.toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, false);
-        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
     @Test

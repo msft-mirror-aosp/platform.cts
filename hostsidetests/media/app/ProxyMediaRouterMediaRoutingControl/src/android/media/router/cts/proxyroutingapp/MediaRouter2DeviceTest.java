@@ -27,14 +27,20 @@ import static org.junit.Assert.assertThrows;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AppOpsManager;
 import android.app.Instrumentation;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRoute2Info;
+import android.media.MediaRoute2ProviderService;
 import android.media.MediaRouter2;
 import android.media.RouteDiscoveryPreference;
 import android.media.RoutingSessionInfo;
+import android.media.cts.app.common.PlaceholderSelfScanMediaRoute2ProviderService;
+import android.media.cts.app.common.ScreenOnActivity;
+import android.os.ConditionVariable;
 import android.os.UserHandle;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -71,6 +77,7 @@ public class MediaRouter2DeviceTest {
     private Instrumentation mInstrumentation;
     private Context mContext;
     private Executor mExecutor;
+    private Activity mScreenOnActivity;
 
     @Before
     public void setUp() {
@@ -82,6 +89,18 @@ public class MediaRouter2DeviceTest {
     @After
     public void tearDown() {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+
+        if (mScreenOnActivity != null) {
+            mScreenOnActivity.finish();
+        }
+    }
+
+    private void loadScreenOnActivity() {
+        // Launch ScreenOnActivity while tests are running for scanning to work. MediaRouter2 blocks
+        // app scan requests while the screen is off for resource saving.
+        Intent intent = new Intent(/* context= */ mContext, ScreenOnActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mScreenOnActivity = InstrumentationRegistry.getInstrumentation().startActivitySync(intent);
     }
 
     @SuppressLint("MissingPermission")
@@ -210,6 +229,105 @@ public class MediaRouter2DeviceTest {
             localInstance.unregisterRouteCallback(placeholderCallback);
             instance.unregisterRouteCallback(onRoutesUpdated);
         }
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
+        Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
+    })
+    @Test
+    public void cancelScanRequest_screenOffScanning_unbindsSelfScanProvider() {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
+
+        MediaRouter2 localInstance = MediaRouter2.getInstance(mContext);
+        MediaRouter2.RouteCallback placeholderCallback = new MediaRouter2.RouteCallback() {};
+        localInstance.registerRouteCallback(
+                mExecutor,
+                placeholderCallback,
+                new RouteDiscoveryPreference.Builder(List.of(FEATURE_SAMPLE), false).build());
+
+        MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
+        assertThat(instance).isNotNull();
+
+        ConditionVariable onBindConditionVariable = new ConditionVariable();
+        ConditionVariable onUnbindConditionVariable = new ConditionVariable();
+
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        onBindConditionVariable.open();
+                    }
+                });
+
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnUnbindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        onUnbindConditionVariable.open();
+                    }
+                });
+
+        MediaRouter2.ScanToken token =
+                instance.requestScan(
+                        new MediaRouter2.ScanRequest.Builder().setScreenOffScan(true).build());
+        assertThat(onBindConditionVariable.block(TIMEOUT_MS)).isTrue();
+
+        instance.cancelScanRequest(token);
+        assertThat(onUnbindConditionVariable.block(TIMEOUT_MS)).isTrue();
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
+        Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
+    })
+    @Test
+    public void cancelScanRequest_multipleTypes_unbindsSelfScanProvider() {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
+
+        loadScreenOnActivity();
+
+        MediaRouter2 localInstance = MediaRouter2.getInstance(mContext);
+        MediaRouter2.RouteCallback placeholderCallback = new MediaRouter2.RouteCallback() {};
+        localInstance.registerRouteCallback(
+                mExecutor,
+                placeholderCallback,
+                new RouteDiscoveryPreference.Builder(List.of(FEATURE_SAMPLE), false).build());
+
+        MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
+        assertThat(instance).isNotNull();
+
+        ConditionVariable onBindConditionVariable = new ConditionVariable();
+        ConditionVariable onUnbindConditionVariable = new ConditionVariable();
+
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        onBindConditionVariable.open();
+                    }
+                });
+
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnUnbindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        onUnbindConditionVariable.open();
+                    }
+                });
+
+        MediaRouter2.ScanToken screenOffToken =
+                instance.requestScan(
+                        new MediaRouter2.ScanRequest.Builder().setScreenOffScan(true).build());
+        MediaRouter2.ScanToken screenOnToken =
+                instance.requestScan(new MediaRouter2.ScanRequest.Builder().build());
+        assertThat(onBindConditionVariable.block(TIMEOUT_MS)).isTrue();
+
+        instance.cancelScanRequest(screenOffToken);
+        assertThat(onUnbindConditionVariable.block(TIMEOUT_MS)).isFalse();
+
+        instance.cancelScanRequest(screenOnToken);
+        assertThat(onUnbindConditionVariable.block(TIMEOUT_MS)).isTrue();
     }
 
     @Test

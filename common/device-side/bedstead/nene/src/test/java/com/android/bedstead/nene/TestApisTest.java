@@ -204,14 +204,4 @@ public class TestApisTest {
     public void ui_multipleCalls_returnsSameInstance() {
         Truth.assertThat(TestApis.ui()).isEqualTo(TestApis.ui());
     }
-
-    @Test
-    public void flags_returnsInstance() {
-        Truth.assertThat(TestApis.flags()).isNotNull();
-    }
-
-    @Test
-    public void flags_multipleCalls_returnsSameInstance() {
-        Truth.assertThat(TestApis.flags()).isEqualTo(TestApis.flags());
-    }
 }
