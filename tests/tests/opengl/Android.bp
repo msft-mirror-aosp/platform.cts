@@ -35,6 +35,7 @@ filegroup {
 
 android_test {
     name: "CtsOpenGLTestCases",
+    team: "trendy_team_android_gpu",
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     jni_libs: ["libopengltest_jni"],
