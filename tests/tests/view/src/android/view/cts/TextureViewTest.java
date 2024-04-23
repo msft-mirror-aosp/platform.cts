@@ -23,8 +23,7 @@ import static android.opengl.GLES20.glClearColor;
 import static android.opengl.GLES20.glEnable;
 import static android.opengl.GLES20.glScissor;
 import static android.view.WindowInsets.Type.captionBar;
-import static android.view.WindowInsets.Type.navigationBars;
-import static android.view.WindowInsets.Type.statusBars;
+import static android.view.WindowInsets.Type.systemBars;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -386,11 +385,11 @@ public class TextureViewTest {
                 mSDRActivityRule, textureView, () -> textureView.getBitmap(textureViewScreenshot));
 
         WindowInsets rootWindowInsets = activity.getWindow().getDecorView().getRootWindowInsets();
-        int extraSurfaceTopOffset = rootWindowInsets.getInsets(captionBar()).top;
-        // If the caption bar is present, the surface top edge in the screenshot is shifted.
-        extraSurfaceTopOffset += rootWindowInsets.getInsets(statusBars()).top;
 
-        int extraSurfaceBottomOffset = rootWindowInsets.getInsets(navigationBars()).bottom;
+        int extraSurfaceTopOffset = rootWindowInsets.getInsets(systemBars()).top;
+        int extraSurfaceRightOffset = rootWindowInsets.getInsets(systemBars()).right;
+        int extraSurfaceBottomOffset = rootWindowInsets.getInsets(systemBars()).bottom;
+        int extraSurfaceLeftOffset = rootWindowInsets.getInsets(systemBars()).left;
 
         // sample 5 pixels on the edge for bitmap comparison.
         // TextureView and SurfaceView use different shaders, so compare these two with tolerance.
@@ -400,7 +399,7 @@ public class TextureViewTest {
         try {
             assertPixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, extraSurfaceTopOffset),
                     textureViewScreenshot.getPixel(width / 2, 0), threshold);
-            assertPixelsAreSame(surfaceViewScreenshot.getPixel(0, height / 2),
+            assertPixelsAreSame(surfaceViewScreenshot.getPixel(extraSurfaceLeftOffset, height / 2),
                     textureViewScreenshot.getPixel(0, height / 2), threshold);
             assertPixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, height / 2),
                     textureViewScreenshot.getPixel(width / 2, height / 2), threshold);
@@ -410,7 +409,8 @@ public class TextureViewTest {
                     textureViewScreenshot.getPixel(width / 2,
                             height - 1),
                     threshold);
-            assertPixelsAreSame(surfaceViewScreenshot.getPixel(width - 1, height / 2),
+            assertPixelsAreSame(
+                    surfaceViewScreenshot.getPixel(width - 1 - extraSurfaceRightOffset, height / 2),
                     textureViewScreenshot.getPixel(width - 1, height / 2), threshold);
         } catch (AssertionError err) {
             BitmapDumper.dumpBitmap(textureViewScreenshot,
