@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static android.app.AppOpsManager.OPSTR_RUN_ANY_IN_BACKGROUND;
 import static android.app.admin.DevicePolicyIdentifiers.USER_CONTROL_DISABLED_PACKAGES_POLICY;
 import static android.app.admin.TargetUser.GLOBAL_USER_ID;
 import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_EXEMPTED;
@@ -24,7 +25,6 @@ import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_NEVER;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.appops.AppOpsMode.IGNORED;
-import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_RUN_ANY_IN_BACKGROUND;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
 import static com.google.common.truth.Truth.assertThat;
