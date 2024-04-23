@@ -17,6 +17,7 @@
 package android.companion.multidevice
 
 import android.app.Instrumentation
+import android.bluetooth.BluetoothManager
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest
 import android.companion.BluetoothDeviceFilter
@@ -43,6 +44,9 @@ class CompanionDeviceManagerSnippet : Snippet {
     private val context: Context = instrumentation.targetContext
     private val companionDeviceManager = context.getSystemService(Context.COMPANION_DEVICE_SERVICE)
             as CompanionDeviceManager
+
+    private val btManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+    private val btConnector = BluetoothConnector(btManager.adapter, companionDeviceManager)
 
     private val uiDevice by lazy { UiDevice.getInstance(instrumentation) }
     private val confirmationUi by lazy { CompanionDeviceManagerUi(uiDevice) }
@@ -152,6 +156,21 @@ class CompanionDeviceManagerSnippet : Snippet {
         val callback = SystemDataTransferCallback()
         companionDeviceManager.startSystemDataTransfer(associationId, executor, callback)
         callback.waitForCompletion()
+    }
+
+    @Rpc(description = "Attach client socket.")
+    fun attachClientSocket(associationId: Int) {
+        btConnector.attachClientSocket(associationId)
+    }
+
+    @Rpc(description = "Attach server socket.")
+    fun attachServerSocket(associationId: Int) {
+        btConnector.attachServerSocket(associationId)
+    }
+
+    @Rpc(description = "Remove all sockets.")
+    fun detachAllSockets() {
+        btConnector.closeAllSockets()
     }
 
     companion object {
