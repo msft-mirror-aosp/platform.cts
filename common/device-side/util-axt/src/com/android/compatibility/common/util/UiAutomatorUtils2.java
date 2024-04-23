@@ -95,6 +95,11 @@ public class UiAutomatorUtils2 {
                 + "ms");
     }
 
+    // Will wrap any asserting exceptions thrown by the parameter with a UI dump
+    public static void assertWithUiDump(ThrowingRunnable assertion) {
+        ExceptionUtils.wrappingExceptions(UiDumpUtils::wrapWithUiDump, assertion);
+    }
+
     public static UiObject2 waitFindObject(BySelector selector) throws UiObjectNotFoundException {
         return waitFindObject(selector, 20_000);
     }
