@@ -42,7 +42,7 @@
                 android:exported="true"
                 android:turnScreenOn="true"/>
 
-        <service android:name=".PlaceholderSelfScanMediaRoute2ProviderService"
+        <service android:name="android.media.cts.app.common.PlaceholderSelfScanMediaRoute2ProviderService"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.media.MediaRoute2ProviderService" />

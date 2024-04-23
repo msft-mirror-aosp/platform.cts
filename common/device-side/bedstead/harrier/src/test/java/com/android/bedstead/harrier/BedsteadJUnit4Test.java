@@ -20,8 +20,6 @@ import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.harrier.test.TestPolicy.POLICY_ARGUMENT_ONE;
 import static com.android.bedstead.harrier.test.TestPolicy.POLICY_ARGUMENT_TWO;
-import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
-import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
@@ -39,7 +37,6 @@ import com.android.bedstead.harrier.annotations.PermissionTest;
 import com.android.bedstead.harrier.annotations.PolicyArgument;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.RunWithFeatureFlagEnabledAndDisabled;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.UserPair;
 import com.android.bedstead.harrier.annotations.UserTest;
@@ -101,10 +98,6 @@ public class BedsteadJUnit4Test {
     private static int sIntParameterizedCalls = 0;
     private static int sEnumParameterizedCalls = 0;
     private static int sFeatureFlagTestCalls = 0;
-
-    private static final String NAMESPACE = NAMESPACE_DEVICE_POLICY_MANAGER;
-    private static final String KEY = ENABLE_DEVICE_POLICY_ENGINE_FLAG;
-
     private static int sBeforeClassCalls = 0;
     private static int sBeforeCalls = 0;
 
@@ -288,13 +281,6 @@ public class BedsteadJUnit4Test {
     public void requireRunOnInitialUser_runsOnInitialUser() {
         assertThat(TestApis.users().instrumented()).isEqualTo(TestApis.users().initial());
     }
-
-    @RunWithFeatureFlagEnabledAndDisabled(namespace = NAMESPACE, key = KEY)
-    @Test
-    public void runWithFeatureFlagEnabledAndDisabledAnnotation_runs() {
-        sFeatureFlagTestCalls += 1;
-    }
-
     @PolicyAppliesTest(policy = LockTask.class)
     @AdditionalQueryParameters(
             forTestApp = "dpc",

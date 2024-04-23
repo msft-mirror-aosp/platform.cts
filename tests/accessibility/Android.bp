@@ -28,6 +28,7 @@ java_library_static {
 
 android_test {
     name: "CtsAccessibilityTestCases",
+    team: "trendy_team_framework_accessibility",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     static_libs: [

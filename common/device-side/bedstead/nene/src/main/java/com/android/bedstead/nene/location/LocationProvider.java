@@ -16,8 +16,9 @@
 
 package com.android.bedstead.nene.location;
 
+import static android.app.AppOpsManager.OPSTR_MOCK_LOCATION;
+
 import static com.android.bedstead.nene.appops.AppOpsMode.DEFAULT;
-import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_MOCK_LOCATION;
 
 import android.app.AppOpsManager;
 import android.content.Context;

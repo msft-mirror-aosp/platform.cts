@@ -18,13 +18,20 @@ package com.android.bedstead.permissions
 import android.Manifest.permission
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.UserManager
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.RequireSdkVersion
 import com.android.bedstead.nene.TestApis
-import com.android.bedstead.nene.appops.CommonAppOps
+import com.android.bedstead.nene.TestApis.devicePolicy
+import com.android.bedstead.nene.TestApis.permissions
+import android.app.AppOpsManager
 import com.android.bedstead.nene.exceptions.NeneException
+import com.android.bedstead.nene.utils.Assert.assertDoesNotThrow
+import com.android.bedstead.nene.utils.Assert.assertThrows
 import com.android.bedstead.nene.utils.ShellCommandUtils
+import com.android.bedstead.permissions.CommonPermissions.CREATE_USERS
+import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS
 import com.android.bedstead.permissions.CommonPermissions.MANAGE_USERS
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
@@ -32,11 +39,11 @@ import com.android.bedstead.permissions.annotations.EnsureHasAppOp
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)
 class PermissionsTest {
@@ -355,13 +362,60 @@ class PermissionsTest {
         assertThat(TestApis.permissions().hasPermission(INSTALL_PERMISSION)).isFalse()
     }
 
+    @Test
+    fun withPermission_flakeTest() {
+        for (i in 0..100000) {
+            TestApis.permissions().withPermission(CREATE_USERS, INTERACT_ACROSS_USERS).use {
+                assertWithMessage("Attempt $i").that(TestApis.permissions()
+                        .hasPermission(CREATE_USERS)).isTrue()
+                assertWithMessage("Attempt $i").that(TestApis.permissions()
+                        .hasPermission(INTERACT_ACROSS_USERS)).isTrue()
+            }
+            assertWithMessage("Attempt $i").that(TestApis.permissions().hasPermission(CREATE_USERS))
+                    .isFalse()
+            assertWithMessage("Attempt $i").that(TestApis.permissions()
+                    .hasPermission(INTERACT_ACROSS_USERS)).isFalse()
+        }
+    }
+
+    @Test
+    fun withPermission_serverCall_flakeTest() {
+        for (i in 0..100000) {
+            TestApis.permissions().withPermission(CREATE_USERS).use {
+                // Here we check with actual server calls to capture flakes in the system server that don't show uop in the hasPermission check
+                assertDoesNotThrow("Attempt $i") { userManager.userName }
+
+            }
+
+            assertThrows("Expected to throw attempt $i") { userManager.userName }
+        }
+    }
+
+    @Test
+    fun withAppOp_flakeTest() {
+        for (i in 0..100000) {
+            TestApis.permissions().withAppOp(APP_OP).use {
+                assertWithMessage("Attempt $i").that(TestApis.permissions().hasAppOpAllowed(APP_OP))
+                        .isTrue()
+            }
+            assertWithMessage("Attempt $i").that(TestApis.permissions().hasAppOpAllowed(APP_OP))
+                    .isFalse()
+
+        }
+    }
+
+    @Test
+    fun dump_dumpsState() {
+        assertThat(permissions().dump()).isNotEmpty()
+    }
+
     companion object {
         @ClassRule
         @Rule
         @JvmField
         val deviceState = DeviceState()
 
-        private const val APP_OP = CommonAppOps.OPSTR_FINE_LOCATION
+        private const val APP_OP = AppOpsManager.OPSTR_FINE_LOCATION
         private const val PERMISSION_HELD_BY_SHELL = "android.permission.INTERACT_ACROSS_PROFILES"
         private const val DIFFERENT_PERMISSION_HELD_BY_SHELL =
             "android.permission.INTERACT_ACROSS_USERS_FULL"
@@ -372,5 +426,8 @@ class PermissionsTest {
         private const val INSTALL_PERMISSION = "android.permission.CHANGE_WIFI_STATE"
         private const val DECLARED_PERMISSION_NOT_HELD_BY_SHELL_PRE_S =
             "android.permission.INTERNET"
+
+        private val userManager = TestApis.context().instrumentedContext().getSystemService(
+            UserManager::class.java)!!
     }
 }

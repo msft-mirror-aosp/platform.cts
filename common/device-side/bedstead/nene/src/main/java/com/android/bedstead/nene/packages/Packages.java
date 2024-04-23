@@ -819,4 +819,10 @@ public final class Packages {
                 .collect(Collectors.toList());
     }
 
+    /** Dump the packages state. */
+    public String dump() {
+        return ShellCommand.builder("dumpsys packages").validate((s) -> !s.isEmpty())
+                .executeOrThrowNeneException("Error dumping packages state");
+    }
+
  }

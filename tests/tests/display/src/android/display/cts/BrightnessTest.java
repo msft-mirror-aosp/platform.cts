@@ -114,11 +114,11 @@ public class BrightnessTest extends TestBase {
             // Setup and remember some initial state.
             recordSliderEvents();
             waitForFirstSliderEvent();
-            runShellCommand("cmd display set-brightness 0.3");
+            runShellCommand("cmd display set-brightness 0.2");
             getNewEvents(1);
 
             // Update brightness
-            runShellCommand("cmd display set-brightness 0.4");
+            runShellCommand("cmd display set-brightness 0.3");
 
             // Check we got a slider event for the change.
             List<BrightnessChangeEvent> newEvents = getNewEvents(1);
@@ -127,7 +127,7 @@ public class BrightnessTest extends TestBase {
             assertValidLuxData(firstEvent);
 
             // Update brightness again
-            runShellCommand("cmd display set-brightness 0.5");
+            runShellCommand("cmd display set-brightness 0.4");
 
             // Check we get a second slider event.
             newEvents = getNewEvents(1);

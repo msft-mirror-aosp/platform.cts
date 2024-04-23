@@ -585,6 +585,37 @@ public class PdfRendererPreVTest {
     }
 
     @Test
+    public void selectPageText_rightPointMovingTowardsLeft_returnsMultipleSelectedObjects()
+            throws Exception {
+        PdfRendererPreV renderer = createPreVRenderer(SAMPLE_PDF, mContext, LOAD_PARAMS);
+        PdfRendererPreV.Page firstPage = renderer.openPage(1);
+
+        Point leftPoint = new Point(244, 70);
+        int rightPointXCoordinate = 284;
+        int rightAndLeftPointXCoordinateDifference = 40;
+        int emptyAreaXCoordinateDifferenceFromRightCoordinate = 35;
+
+        // We are moving the right point towards the left point by a margin of 5.
+        // Note: Tha margin can be any whole number except 0.
+        for (int i = 0; i <= rightAndLeftPointXCoordinateDifference; i += 5) {
+            Point nextRightPoint = new Point(rightPointXCoordinate - i, 70);
+
+            PageSelection pageSelection = firstPage.selectContent(new SelectionBoundary(leftPoint),
+                    new SelectionBoundary(nextRightPoint));
+
+            if (i == emptyAreaXCoordinateDifferenceFromRightCoordinate) {
+                // This is the point where the selected area between the boundaries is empty.
+                assertThat(pageSelection).isNull();
+            } else {
+                assertThat(pageSelection).isNotNull();
+            }
+        }
+
+        firstPage.close();
+        renderer.close();
+    }
+
+    @Test
     public void renderPage_withNullParams_throwsException() throws Exception {
         try (PdfRendererPreV renderer = createPreVRenderer(A4_PORTRAIT, mContext, null);
              PdfRendererPreV.Page page = renderer.openPage(0)) {
