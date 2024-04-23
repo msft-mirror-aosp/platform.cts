@@ -5827,8 +5827,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <!-- USB Device Warning Dialog -->
     <string name="usbwarning_message_caption">USB Headset Adapter Warning</string>
     <string name="usbwarning_message_heading">Unvalidated USB Audio Adapter</string>
-    <string name="usbwarning_paragraph_0">The connected USB audio device has not be verified to for
-        use in this test this test.</string>
+    <string name="usbwarning_paragraph_0">The connected USB audio device has not been verified for
+        use in this test.</string>
     <string name="usbwarning_paragraph_1_1">The test may succeed with this device, but if it does not,
         please obtain a</string>
     <string name="usbwarning_googadapter">Google USB-C to 3.5mm Adapter</string>
