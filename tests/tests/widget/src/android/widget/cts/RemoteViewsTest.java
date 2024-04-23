@@ -782,7 +782,7 @@ public class RemoteViewsTest {
         verifyBitmap(expectedBitmap.getWidth(), expectedBitmap.getHeight(), (actualBitmap) -> {
             final float rmse = compareImages(expectedBitmap, actualBitmap, resourceName);
             // reject if root-square-mean-error is above threshold and saves screenshots for debug
-            if (rmse > 20.0f) {
+            if (rmse > 8.0f) {
                 try {
                     final String actualPath = saveBitmapToFile(
                             actualBitmap, resourceName + "_actual");
@@ -821,7 +821,7 @@ public class RemoteViewsTest {
         if (!dir.exists()) {
             dir.mkdirs();
         }
-        final File dest = new File(dir, resourceName + ".png");
+        final File dest = new File(dir, resourceName + "_" + System.currentTimeMillis() + ".png");
         dest.createNewFile();
         try (FileOutputStream fos = new FileOutputStream(dest)) {
             image.compress(Bitmap.CompressFormat.PNG, quality, fos);
@@ -857,16 +857,24 @@ public class RemoteViewsTest {
         }
         float sqr_sum = 0;
         int count = 0;
-        for (int y = 0; y < bitmap1.getHeight(); y++) {
-            for (int x = 0; x < bitmap1.getWidth(); x++) {
+        for (int y = 1; y < bitmap1.getHeight() - 1; y++) {
+            for (int x = 1; x < bitmap1.getWidth() - 1; x++) {
                 int pix1 = bitmap1.getPixel(x, y);
-                float r1 = (pix1 & 0xFF0000) >> 16;
-                float g1 = (pix1 & 0xFF00) >> 8;
-                float b1 = (pix1 & 0xFF);
+                if (pix1 != bitmap1.getPixel(x, y - 1)
+                        || pix1 != bitmap1.getPixel(x, y + 1)
+                        || pix1 != bitmap1.getPixel(x - 1, y - 1)
+                        || pix1 != bitmap1.getPixel(x - 1, y - 1)) {
+                    // Skips if a pixel's color doesn't match its neighboring pixel
+                    continue;
+                }
+                // Ignores least significant bit
+                float r1 = (pix1 & 0xFF0000) >> 17;
+                float g1 = (pix1 & 0xFF00) >> 9;
+                float b1 = (pix1 & 0xFF) >> 1;
                 int pix2 = bitmap2.getPixel(x, y);
-                float r2 = (pix2 & 0xFF0000) >> 16;
-                float g2 = (pix2 & 0xFF00) >> 8;
-                float b2 = (pix2 & 0xFF);
+                float r2 = (pix2 & 0xFF0000) >> 17;
+                float g2 = (pix2 & 0xFF00) >> 9;
+                float b2 = (pix2 & 0xFF) >> 1;
                 sqr_sum += (r1 - r2) * (r1 - r2);
                 sqr_sum += (g1 - g2) * (g1 - g2);
                 sqr_sum += (b1 - b2) * (b1 - b2);
