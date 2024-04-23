@@ -128,8 +128,9 @@ public class TouchTest {
             textWidth = Math.round(paint.measureText(text));
         }
 
-        // Drag the difference between the text width and the screen width.
-        int dragAmount = Math.min(rootViewWidth, textWidth - rootViewWidth);
+        // Drag the difference between the text width and the screen width, and subtract 1
+        // in case it can't be scrolled to the rightmost.
+        int dragAmount = Math.min(rootViewWidth, textWidth - rootViewWidth) - 1;
         assertTrue(dragAmount > touchSlop);
         final String finalText = text;
         final SpannableString spannable = new SpannableString(finalText);
