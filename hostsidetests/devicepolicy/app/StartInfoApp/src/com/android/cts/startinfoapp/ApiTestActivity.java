@@ -60,6 +60,9 @@ public class ApiTestActivity extends Activity {
     // is triggered and failure if incorrect one is triggered.
     private static final int REQUEST_VALUE_LISTENER_ADD_REMOVE = 5;
 
+    // Request value for app to immediately crash. No reply will be sent.
+    private static final int REQUEST_VALUE_CRASH = 6;
+
     // Broadcast action to return result for request.
     private static final String REPLY_ACTION_COMPLETE =
             "com.android.cts.startinfoapp.ACTION_COMPLETE";
@@ -105,6 +108,8 @@ public class ApiTestActivity extends Activity {
             case REQUEST_VALUE_LISTENER_ADD_REMOVE:
                 addAndRemoveListener();
                 break;
+            case REQUEST_VALUE_CRASH:
+                throw new RuntimeException("This is a test");
         }
     }
 
