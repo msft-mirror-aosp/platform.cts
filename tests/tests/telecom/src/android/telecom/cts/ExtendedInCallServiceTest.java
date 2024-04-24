@@ -874,7 +874,7 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
 
     public void testOnCannedTextResponsesLoaded() {
         // Wearable device can skip contact lookup
-        if (!mShouldTestTelecom || mWatchDevice) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext) || mWatchDevice) {
             return;
         }
 
