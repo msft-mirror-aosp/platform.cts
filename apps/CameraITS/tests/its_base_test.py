@@ -40,7 +40,7 @@ FRONT_CAMERA_ID_PREFIX = '1'
 NOT_YET_MANDATED = {
     'scene0': [['test_test_patterns', 30],
                ['test_tonemap_curve', 30]],
-    'scene1_1': [['test_ae_precapture_trigger', 28]],
+    'scene1_1': [['test_ae_precapture', 28]],
     'scene1_2': [],
     'scene2_a': [['test_jpeg_quality', 30]],
     'scene2_b': [['test_auto_per_frame_control', NOT_YET_MANDATED_ALL]],
