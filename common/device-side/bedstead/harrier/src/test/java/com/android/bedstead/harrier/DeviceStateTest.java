@@ -16,13 +16,9 @@
 
 package com.android.bedstead.harrier;
 
-import static android.Manifest.permission.INTERACT_ACROSS_PROFILES;
-import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
-import static android.app.AppOpsManager.OPSTR_FINE_LOCATION;
 import static android.app.AppOpsManager.OPSTR_START_FOREGROUND;
 import static android.app.admin.DevicePolicyManager.DELEGATION_APP_RESTRICTIONS;
 import static android.app.admin.DevicePolicyManager.DELEGATION_CERT_INSTALL;
-import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
@@ -33,8 +29,6 @@ import static com.android.bedstead.harrier.annotations.RequireCnGmsBuild.CHINA_G
 import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate.AdminType.DEVICE_OWNER;
 import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate.AdminType.PRIMARY;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
-import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
-import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
@@ -64,9 +58,6 @@ import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsS
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled;
 import com.android.bedstead.harrier.annotations.EnsureDemoMode;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagNotEnabled;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagValue;
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
 import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
@@ -107,9 +98,6 @@ import com.android.bedstead.harrier.annotations.RequireAospBuild;
 import com.android.bedstead.harrier.annotations.RequireCnGmsBuild;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.RequireFeatureFlagEnabled;
-import com.android.bedstead.harrier.annotations.RequireFeatureFlagNotEnabled;
-import com.android.bedstead.harrier.annotations.RequireFeatureFlagValue;
 import com.android.bedstead.harrier.annotations.RequireGmsBuild;
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
@@ -140,7 +128,6 @@ import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
 import com.android.bedstead.harrier.annotations.RequireUserSupported;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
-import com.android.bedstead.harrier.annotations.RunWithFeatureFlagEnabledAndDisabled;
 import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate;
@@ -180,7 +167,6 @@ import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.display.Display;
 import com.android.bedstead.nene.display.DisplayProperties;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.flags.Flags;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserReference;
@@ -213,20 +199,11 @@ public class DeviceStateTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
-
-    private static final String APP_OP = OPSTR_FINE_LOCATION;
-
     private static final String TV_PROFILE_TYPE_NAME = "com.android.tv.profile";
 
-    private static final String TEST_PERMISSION_1 = INTERACT_ACROSS_PROFILES;
-    private static final String TEST_PERMISSION_2 = INTERACT_ACROSS_USERS_FULL;
 
     private static final DevicePolicyManager sLocalDevicePolicyManager =
             TestApis.context().instrumentedContext().getSystemService(DevicePolicyManager.class);
-
-    private static final String NAMESPACE = NAMESPACE_DEVICE_POLICY_MANAGER;
-    private static final String KEY = ENABLE_DEVICE_POLICY_ENGINE_FLAG;
-    private static final String VALUE = Flags.ENABLED_VALUE;
 
     // Expects that this package name matches an actual test app
     private static final String TEST_APP_PACKAGE_NAME = "com.android.bedstead.testapp.LockTaskApp";
@@ -519,9 +496,9 @@ public class DeviceStateTest {
     @EnsureHasSecondaryUser
     public void ensureHasSecondaryUserAnnotation_secondaryUserExists() {
         assertThat(
-                        TestApis.users()
-                                .findUsersOfType(
-                                        TestApis.users().supportedType(SECONDARY_USER_TYPE_NAME)))
+                TestApis.users()
+                        .findUsersOfType(
+                                TestApis.users().supportedType(SECONDARY_USER_TYPE_NAME)))
                 .isNotEmpty();
     }
 
@@ -535,52 +512,6 @@ public class DeviceStateTest {
         assertThat(TestApis.users().findUserOfType(
                 TestApis.users().supportedType(SECONDARY_USER_TYPE_NAME))
         ).isNull();
-    }
-
-    @Test
-    @EnsureHasPermission(TEST_PERMISSION_1)
-    @RequireSdkVersion(min = Build.VERSION_CODES.R,
-            reason = "Used permissions not available prior to R")
-    public void ensureHasPermission_permissionIsGranted() {
-        assertThat(TestApis.context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_1)).isEqualTo(PERMISSION_GRANTED);
-    }
-
-    @Test
-    @EnsureHasPermission({TEST_PERMISSION_1, TEST_PERMISSION_2})
-    public void ensureHasPermission_multiplePermissions_permissionsAreGranted() {
-        assertThat(TestApis.context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_1)).isEqualTo(PERMISSION_GRANTED);
-        assertThat(TestApis.context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_2)).isEqualTo(PERMISSION_GRANTED);
-    }
-
-    @Test
-    @EnsureDoesNotHavePermission(TEST_PERMISSION_1)
-    public void ensureDoesNotHavePermission_permissionIsDenied() {
-        assertThat(TestApis.context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_1)).isEqualTo(PERMISSION_DENIED);
-    }
-
-    @Test
-    @EnsureDoesNotHavePermission({TEST_PERMISSION_1, TEST_PERMISSION_2})
-    public void ensureDoesNotHavePermission_multiplePermissions_permissionsAreDenied() {
-        assertThat(TestApis.context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_1)).isEqualTo(PERMISSION_DENIED);
-        assertThat(TestApis.context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_2)).isEqualTo(PERMISSION_DENIED);
-    }
-
-    @Test
-    @EnsureHasPermission(TEST_PERMISSION_1)
-    @EnsureDoesNotHavePermission(TEST_PERMISSION_2)
-    @RequireSdkVersion(min = Build.VERSION_CODES.R,
-            reason = "Used permissions not available prior to R")
-    public void ensureHasPermissionAndDoesNotHavePermission_permissionsAreCorrect() {
-        assertThat(TestApis.context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_1)).isEqualTo(PERMISSION_GRANTED);
-        assertThat(TestApis.context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_2)).isEqualTo(PERMISSION_DENIED);
     }
 
     @EnsureHasDeviceOwner
@@ -619,7 +550,8 @@ public class DeviceStateTest {
     }
 
     @Test
-    @EnsureHasDeviceOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isGreaterThanOrEqualTo = 30)))
+    @EnsureHasDeviceOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isGreaterThanOrEqualTo =
+            30)))
     public void ensureHasDeviceOwnerAnnoion_targetingGreaterThanOrEqualToV30_remoteDpcTargetsV30() {
         RemoteDpc remoteDpc =
                 RemoteDpc.forDevicePolicyController(TestApis.devicePolicy().getDeviceOwner());
@@ -645,7 +577,8 @@ public class DeviceStateTest {
     }
 
     @Test
-    @EnsureHasProfileOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isGreaterThanOrEqualTo = 30)))
+    @EnsureHasProfileOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isGreaterThanOrEqualTo =
+            30)))
     public void ensureHasProfileOwnerAnnotation_targetingGreaterThanOrEqualToV30_remoteDpcTargetsV30() {
         RemoteDpc remoteDpc =
                 RemoteDpc.forDevicePolicyController(TestApis.devicePolicy().getProfileOwner());
@@ -746,13 +679,18 @@ public class DeviceStateTest {
 
     // NOTE: this test must be manually run, as Test Bedstead doesn't support the
     // secondary_user_on_secondary_display metadata (for example, running
-    //   atest --user-type secondary_user_on_secondary_display HarrierTest:com.android.bedstead.harrier.DeviceStateTest#requireRunOnVisibleBackgroundNonProfileUserAnnotation_instrumentedUserIsVisibleBackgroundNonProfileUser
+    //   atest --user-type secondary_user_on_secondary_display HarrierTest:com.android.bedstead
+    //   .harrier
+    //   .DeviceStateTest
+    //   #requireRunOnVisibleBackgroundNonProfileUserAnnotation_instrumentedUserIsVisibleBackgroundNonProfileUser
     // would assumption-fail, even though the module is not annotated to support it). So, you need
     // to manually execute steps like:
     //   adb shell pm create-user TestUser // id 42
     //   adb shell am start-user -w --display 2 42
     //   adb shell pm install-existing --user 42  com.android.bedstead.harrier.test
-    //   adb shell am instrument --user 42 -e class com.android.bedstead.harrier.DeviceStateTest#requireRunOnVisibleBackgroundNonProfileUserAnnotation_instrumentedUserIsVisibleBackgroundNonProfileUser -w com.android.bedstead.harrier.test/androidx.test.runner.AndroidJUnitRunner
+    //   adb shell am instrument --user 42 -e class com.android.bedstead.harrier
+    //   .DeviceStateTest
+    //   #requireRunOnVisibleBackgroundNonProfileUserAnnotation_instrumentedUserIsVisibleBackgroundNonProfileUser -w com.android.bedstead.harrier.test/androidx.test.runner.AndroidJUnitRunner
     @Test
     @RequireRunOnVisibleBackgroundNonProfileUser
     public void requireRunOnVisibleBackgroundNonProfileUserAnnotation_instrumentedUserIsVisibleBackgroundNonProfileUser() {
@@ -1272,17 +1210,6 @@ public class DeviceStateTest {
         assertThat(TestApis.bluetooth().isEnabled()).isFalse();
     }
 
-    @EnsureHasAppOp(APP_OP)
-    public void ensureHasAppOpAnnotation_appOpIsAllowed() {
-        assertThat(TestApis.permissions().hasAppOpAllowed(APP_OP)).isTrue();
-    }
-
-    @Test
-    @EnsureDoesNotHaveAppOp(APP_OP)
-    public void ensureDoesNotHaveAppOpAnnotation_appOpIsNotAllowed() {
-        assertThat(TestApis.permissions().hasAppOpAllowed(APP_OP)).isFalse();
-    }
-
     // We run this test twice to ensure that teardown doesn't change behaviour
     @Test
     public void testApps_testAppsAreAvailableToMultipleTests_1() {
@@ -1480,48 +1407,6 @@ public class DeviceStateTest {
         assertThat(TestApis.users().instrumented()).isNotEqualTo(TestApis.users().current());
     }
 
-    @RequireFeatureFlagEnabled(namespace = NAMESPACE, key = KEY)
-    @Test
-    public void requireFeatureFlagEnabledAnnotation_featureFlagIsEnabled() {
-        assertThat(TestApis.flags().isEnabled(NAMESPACE, KEY)).isTrue();
-    }
-
-    @EnsureFeatureFlagEnabled(namespace = NAMESPACE, key = KEY)
-    @Test
-    public void ensureFeatureFlagEnabledAnnotation_featureFlagIsEnabled() {
-        assertThat(TestApis.flags().isEnabled(NAMESPACE, KEY)).isTrue();
-    }
-
-    @RequireFeatureFlagNotEnabled(namespace = NAMESPACE, key = KEY)
-    @Test
-    public void requireFeatureFlagNotEnabledAnnotation_featureFlagIsNotEnabled() {
-        assertThat(TestApis.flags().isEnabled(NAMESPACE, KEY)).isFalse();
-    }
-
-    @EnsureFeatureFlagNotEnabled(namespace = NAMESPACE, key = KEY)
-    @Test
-    public void ensureFeatureFlagNotEnabledAnnotation_featureFlagIsNotEnabled() {
-        assertThat(TestApis.flags().isEnabled(NAMESPACE, KEY)).isFalse();
-    }
-
-    @RequireFeatureFlagValue(namespace = NAMESPACE, key = KEY, value = VALUE)
-    @Test
-    public void requireFeatureFlagValueAnnotation_featureFlagIsSetToValue() {
-        assertThat(TestApis.flags().get(NAMESPACE, KEY)).isEqualTo(VALUE);
-    }
-
-    @EnsureFeatureFlagValue(namespace = NAMESPACE, key = KEY, value = VALUE)
-    @Test
-    public void ensureFeatureFlagValueAnnotation_featureFlagIsSetToValue() {
-        assertThat(TestApis.flags().get(NAMESPACE, KEY)).isEqualTo(VALUE);
-    }
-
-    @RunWithFeatureFlagEnabledAndDisabled(namespace = NAMESPACE, key = KEY)
-    @Test
-    public void runWithFeatureFlagEnabledAndDisabledAnnotation_runs() {
-        assertThat(TestApis.flags().get(NAMESPACE, KEY)).isNotNull();
-    }
-
     @EnsureHasAccountAuthenticator
     @Test
     public void ensureHasAccountAuthenticatorAnnotation_accountAuthenticatorIsInstalled() {
@@ -1644,7 +1529,7 @@ public class DeviceStateTest {
     }
 
     @EnsureHasDeviceOwner(isPrimary = true, key = "dpc", dpc = @Query(isHeadlessDOSingleUser =
-            @BooleanQuery(isEqualTo = TRUE)))
+    @BooleanQuery(isEqualTo = TRUE)))
     @Test
     public void additionalQueryParameters_isHeadlessDOSingleUser_isRespected() {
         assertThat(sDeviceState.dpc().testApp().metadata().getString(
@@ -1652,7 +1537,7 @@ public class DeviceStateTest {
     }
 
     @EnsureHasDeviceOwner(isPrimary = true, key = "dpc", dpc = @Query(isHeadlessDOSingleUser =
-            @BooleanQuery(isEqualTo = FALSE)))
+    @BooleanQuery(isEqualTo = FALSE)))
     @Test
     public void additionalQueryParameters_isNotHeadlessDOSingleUser_isRespected() {
         assertThat(sDeviceState.dpc().testApp().metadata().getString(
@@ -1734,14 +1619,16 @@ public class DeviceStateTest {
     @EnsureDefaultContentSuggestionsServiceDisabled(onUser = ADDITIONAL_USER)
     @Test
     public void ensureDefaultContentSuggestionsServiceDisabledAnnotation_onDifferentUser_defaultContentSuggestionsServiceIsDisabled() {
-        assertThat(TestApis.content().suggestions().defaultServiceEnabled(sDeviceState.additionalUser())).isFalse();
+        assertThat(TestApis.content().suggestions().defaultServiceEnabled(
+                sDeviceState.additionalUser())).isFalse();
     }
 
     @EnsureHasAdditionalUser
     @EnsureDefaultContentSuggestionsServiceEnabled(onUser = ADDITIONAL_USER)
     @Test
     public void ensureDefaultContentSuggestionsServiceEnabledAnnotation_onDifferentUser_defaultContentSuggestionsServiceIsEnabled() {
-        assertThat(TestApis.content().suggestions().defaultServiceEnabled(sDeviceState.additionalUser())).isTrue();
+        assertThat(TestApis.content().suggestions().defaultServiceEnabled(
+                sDeviceState.additionalUser())).isTrue();
     }
 
     @Test
@@ -1751,9 +1638,9 @@ public class DeviceStateTest {
     }
 
     @Test
-    @EnsurePropertySet(key = "key", value = "value")
+    @EnsurePropertySet(key = "dumpstate.key", value = "value")
     public void ensurePropertySetAnnotation_propertyIsSet() {
-        assertThat(TestApis.properties().get("key")).isEqualTo("value");
+        assertThat(TestApis.properties().get("dumpstate.key")).isEqualTo("value");
     }
 
     @Test

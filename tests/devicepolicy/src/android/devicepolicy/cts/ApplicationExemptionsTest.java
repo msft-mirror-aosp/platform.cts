@@ -16,6 +16,9 @@
 
 package android.devicepolicy.cts;
 
+import static android.app.AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS;
+import static android.app.AppOpsManager.OPSTR_SYSTEM_EXEMPT_FROM_SUSPENSION;
+import static android.app.AppOpsManager.OPSTR_RUN_ANY_IN_BACKGROUND;
 import static android.app.admin.DevicePolicyManager.EXEMPT_FROM_ACTIVITY_BG_START_RESTRICTION;
 import static android.app.admin.DevicePolicyManager.EXEMPT_FROM_POWER_RESTRICTIONS;
 import static android.app.admin.DevicePolicyManager.EXEMPT_FROM_SUSPENSION;
@@ -26,9 +29,6 @@ import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubje
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.appops.AppOpsMode.DEFAULT;
 import static com.android.bedstead.nene.appops.AppOpsMode.IGNORED;
-import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_RUN_ANY_IN_BACKGROUND;
-import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS;
-import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_SYSTEM_EXEMPT_FROM_SUSPENSION;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_APP_EXEMPTIONS;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
@@ -67,7 +67,6 @@ import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.xts.root.annotations.RequireRootInstrumentation;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -122,7 +121,6 @@ public class ApplicationExemptionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
-    @RequireRootInstrumentation(reason = "Use of MANAGE_DEVICE_POLICY_APP_EXEMPTIONS")
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_validExemptionSet_exemptionAppOpsGranted(
@@ -140,7 +138,6 @@ public class ApplicationExemptionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
-    @RequireRootInstrumentation(reason = "Use of MANAGE_DEVICE_POLICY_APP_EXEMPTIONS")
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_emptyExemptionSet_unsetsAllExemptions(
@@ -163,7 +160,6 @@ public class ApplicationExemptionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
-    @RequireRootInstrumentation(reason = "Use of MANAGE_DEVICE_POLICY_APP_EXEMPTIONS")
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_invalidExemptionInSet_throwsIllegalArgumentException() {
@@ -177,7 +173,6 @@ public class ApplicationExemptionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
-    @RequireRootInstrumentation(reason = "Use of MANAGE_DEVICE_POLICY_APP_EXEMPTIONS")
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_invalidPackage_throwsNameNotFoundException() {
@@ -200,7 +195,6 @@ public class ApplicationExemptionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
-    @RequireRootInstrumentation(reason = "Use of MANAGE_DEVICE_POLICY_APP_EXEMPTIONS")
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void getApplicationExemptions_validPackage_returnsExemptionsSet(
@@ -219,7 +213,6 @@ public class ApplicationExemptionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
-    @RequireRootInstrumentation(reason = "Use of MANAGE_DEVICE_POLICY_APP_EXEMPTIONS")
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void getApplicationExemptions_invalidPackage_throwsNameNotFoundException() {
@@ -229,7 +222,6 @@ public class ApplicationExemptionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
-    @RequireRootInstrumentation(reason = "Use of MANAGE_DEVICE_POLICY_APP_EXEMPTIONS")
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_reinstallApplication_exemptionAppOpsReset()
@@ -328,7 +320,6 @@ public class ApplicationExemptionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
-    @RequireRootInstrumentation(reason = "Use of MANAGE_DEVICE_POLICY_APP_EXEMPTIONS")
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_validExemptionSet_logsEvent(
@@ -354,7 +345,6 @@ public class ApplicationExemptionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
-    @RequireRootInstrumentation(reason = "Use of MANAGE_DEVICE_POLICY_APP_EXEMPTIONS")
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void setApplicationExemptions_noExemption_cannotStartActivityFromBg()
@@ -375,7 +365,6 @@ public class ApplicationExemptionsTest {
 
     @Test
     @EnsureHasPermission(MANAGE_DEVICE_POLICY_APP_EXEMPTIONS)
-    @RequireRootInstrumentation(reason = "Use of MANAGE_DEVICE_POLICY_APP_EXEMPTIONS")
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
     public void

@@ -331,6 +331,39 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @Test
     @AppModeFull
     @RequiresDevice
+    public void cancelScanRequest_screenOnScanning_unbindsSelfScanProvider()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_TEST_CLASS,
+                "cancelScanRequest_screenOnScanning_unbindsSelfScanProvider");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    public void cancelScanRequest_screenOffScanning_unbindsSelfScanProvider()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "cancelScanRequest_screenOffScanning_unbindsSelfScanProvider");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    public void cancelScanRequest_multipleTypes_unbindsSelfScanProvider()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "cancelScanRequest_multipleTypes_unbindsSelfScanProvider");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
     @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
     public void getTransferReason_afterAppRestart_returnsPreviouslySelectedTransferReason()
             throws DeviceNotAvailableException {

@@ -243,8 +243,13 @@ public class PdfRendererTest {
         renderer.close();
     }
 
+    //TODO(mayankkk): Add @SdkSuppress annotation once the sdk version is finalized.
     @Test
-    public void closeWithOpenPage() throws Exception {
+    public void closeWithOpenPage_throwsException() throws Exception {
+        if (SdkLevel.isAtLeastV()) {
+            return;
+        }
+
         PdfRenderer renderer = createRenderer(A4_PORTRAIT, mContext);
         Page page = renderer.openPage(0);
 
@@ -254,23 +259,27 @@ public class PdfRendererTest {
         renderer.close();
     }
 
-
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
             "VanillaIceCream")
     @Test
-    public void closeNewRendererWithOpenPage() throws Exception {
+    public void closeNewRendererWithOpenPage_pageOpenSuccessful() throws Exception {
         PdfRenderer renderer = createRendererUsingNewConstructor(A4_PORTRAIT, mContext,
                 SAMPLE_LOAD_PARAMS_FOR_TESTING_NEW_CONSTRUCTOR);
         Page page = renderer.openPage(0);
 
-        assertThrows(IllegalStateException.class, renderer::close);
-
-        page.close();
+        // Renderer will close successfully
         renderer.close();
+        // Closing page will throw exception as renderer is already closed.
+        assertThrows(IllegalStateException.class, page::close);
     }
 
+    //TODO(mayankkk): Add @SdkSuppress annotation once the sdk version is finalized.
     @Test
-    public void openTwoPages() throws Exception {
+    public void openTwoPages_throwsError() throws Exception {
+        if (SdkLevel.isAtLeastV()) {
+            return;
+        }
+
         try (PdfRenderer renderer = createRenderer(TWO_PAGES, mContext)) {
             // Cannot open two pages at once
             Page page = renderer.openPage(0);
@@ -280,8 +289,23 @@ public class PdfRendererTest {
         }
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
+            "VanillaIceCream")
     @Test
-    public void testPageCount() throws Exception {
+    public void openTwoPages_pagesOpensSuccessfully() throws Exception {
+        try (PdfRenderer renderer = createRenderer(TWO_PAGES, mContext)) {
+            // Cannot open two pages at once
+            Page firstPage = renderer.openPage(0);
+            // Successfully opening multiple pages.
+            Page secondPage = renderer.openPage(1);
+
+            secondPage.close();
+            firstPage.close();
+        }
+    }
+
+    @Test
+    public void testPageCount_returnsNumberOfPages() throws Exception {
         try (PdfRenderer renderer = createRenderer(TWO_PAGES, mContext)) {
             assertEquals(2, renderer.getPageCount());
         }
@@ -296,7 +320,7 @@ public class PdfRendererTest {
     }
 
     @Test
-    public void testOpenPage() throws Exception {
+    public void testOpenPage_pageOpensSuccessfully() throws Exception {
         assertOpenPage(createRenderer(TWO_PAGES, mContext));
 
         if (SdkLevel.isAtLeastV()) {
@@ -507,6 +531,14 @@ public class PdfRendererTest {
         int firstPageWidth = firstPage.getWidth();
         int firstPageHeight = firstPage.getHeight();
 
+        // Second page
+        PdfRenderer.Page secondPage = renderer.openPage(1);
+        int secondPageWidth = secondPage.getWidth();
+        int secondPageHeight = secondPage.getHeight();
+
+        // Third page,
+        PdfRenderer.Page thirdPage = renderer.openPage(2);
+
         // First query, First page only contains single "simple"
         List<PageMatchBounds> firstPageRects = firstPage.searchText("simple");
 
@@ -515,12 +547,6 @@ public class PdfRendererTest {
         assertThat(firstPageRects.get(0).getTextStartIndex()).isEqualTo(2);
         // the rects area should be less than the page area
         assertThat(calculateArea(firstPageRects)).isLessThan(firstPageHeight * firstPageWidth);
-        firstPage.close();
-
-        // Second page
-        PdfRenderer.Page secondPage = renderer.openPage(1);
-        int secondPageWidth = secondPage.getWidth();
-        int secondPageHeight = secondPage.getHeight();
 
         // second query
         List<PageMatchBounds> secondPageRects = secondPage.searchText("more");
@@ -532,10 +558,6 @@ public class PdfRendererTest {
         }
         // the rects area should be less than the page area
         assertThat(calculateArea(secondPageRects)).isLessThan(secondPageHeight * secondPageWidth);
-        secondPage.close();
-
-        // Third page,
-        PdfRenderer.Page thirdPage = renderer.openPage(2);
 
         //third query assert Heading, the area should be less than the page area
         List<PageMatchBounds> thirdPageRects = thirdPage.searchText("Simple PDF File 2");
@@ -546,6 +568,9 @@ public class PdfRendererTest {
         int thirdPageHeight = thirdPage.getHeight();
         assertThat(calculateArea(thirdPageRects)).isLessThan(thirdPageHeight * thirdPageWidth);
 
+        // Close all the pages.
+        firstPage.close();
+        secondPage.close();
         thirdPage.close();
         renderer.close();
     }
@@ -905,6 +930,47 @@ public class PdfRendererTest {
         Point rightPoint = new Point(157, 330);
         assertThrows(NullPointerException.class,
                 () -> firstPage.selectContent(null, new SelectionBoundary(rightPoint)));
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
+            "VanillaIceCream")
+    @Test
+    public void selectPageText_rightPointMovingTowardsLeft_returnsMultipleSelectedObjects()
+            throws Exception {
+        assertSelectPageText_rightPointMovingTowardsLeft_returnsMultipleSelectedObjects(
+                createRendererUsingNewConstructor(PROTECTED_PDF, mContext, LOAD_PARAMS));
+
+        assertSelectPageText_rightPointMovingTowardsLeft_returnsMultipleSelectedObjects(
+                createRenderer(SAMPLE_PDF, mContext));
+    }
+
+    private void assertSelectPageText_rightPointMovingTowardsLeft_returnsMultipleSelectedObjects(
+            PdfRenderer renderer) {
+        PdfRenderer.Page firstPage = renderer.openPage(1);
+
+        Point leftPoint = new Point(244, 70);
+        int rightPointXCoordinate = 284;
+        int rightAndLeftPointXCoordinateDifference = 40;
+        int emptyAreaXCoordinateDifferenceFromRightCoordinate = 35;
+
+        // We are moving the right point towards the left point by a margin of 5.
+        // Note: Tha margin can be any whole number except 0.
+        for (int i = 0; i <= rightAndLeftPointXCoordinateDifference; i += 5) {
+            Point nextRightPoint = new Point(rightPointXCoordinate - i, 70);
+
+            PageSelection pageSelection = firstPage.selectContent(new SelectionBoundary(leftPoint),
+                    new SelectionBoundary(nextRightPoint));
+
+            if (i == emptyAreaXCoordinateDifferenceFromRightCoordinate) {
+                // This is the point where the selected area between the boundaries is empty.
+                assertThat(pageSelection).isNull();
+            } else {
+                assertThat(pageSelection).isNotNull();
+            }
+        }
+
+        firstPage.close();
+        renderer.close();
     }
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =

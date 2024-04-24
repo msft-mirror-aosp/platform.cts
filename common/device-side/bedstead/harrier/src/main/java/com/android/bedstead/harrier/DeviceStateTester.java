@@ -31,7 +31,7 @@ import java.util.List;
 /**
  * A helper class to finely test behavior of {@code DeviceState} components.
  */
-public final class DeviceStateTester {
+public final class DeviceStateTester implements AutoCloseable {
 
     private final DeviceState mDeviceState = new DeviceState();
 
@@ -45,8 +45,14 @@ public final class DeviceStateTester {
      * getting/setting a state.
      */
     public void apply(List<Annotation> annotations, Runnable runnable) {
-        apply(annotations);
-        runnable.run();
+        setup(annotations);
+        try {
+            apply(annotations);
+            runnable.run();
+        } catch (Throwable exception) {
+            mDeviceState.onTestFailed(exception);
+            throw exception;
+        }
     }
 
     /**
@@ -70,7 +76,6 @@ public final class DeviceStateTester {
     public void tearDown() {
         mDeviceState.teardown();
     }
-
     private void setup(List<Annotation> annotations) {
         try {
             Description description =
@@ -105,5 +110,10 @@ public final class DeviceStateTester {
     /** See {@link DeviceState#testApps()}. */
     public TestAppProvider testApps() {
         return mDeviceState.testApps();
+    }
+
+    @Override
+    public void close() throws Exception {
+        tearDown();
     }
 }

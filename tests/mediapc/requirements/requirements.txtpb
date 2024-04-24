@@ -251,12 +251,28 @@ requirements {
 }
 requirements {
   id: "5.1/H-1-7"
-  description: "- Encoder initialization latency"
+  name: "Video encoder init latency"
+  description: "Maximum codec initialization latency for a 1080p or smaller video encoding session for all hardware video encoders when under load."
+
+  measurements: {
+    key: "codec_initialization_latency_ms"
+    value: {
+      description: "Codec initialization latency in milliseconds"
+      measurement_type: MEASUREMENT_TYPE_LONG
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST have a codec initialization latency of 65 ms or less for a 1080p or smaller video encoding session for all hardware video encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization."
+      required_values: {
+        key: "codec_initialization_latency_ms"
+        value {
+          long_value: 65
+        }
+      }
     }
   }
   specs {
@@ -264,6 +280,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST have a codec initialization latency of 50 ms or less for a 1080p or smaller video encoding session for all hardware video encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization."
+      required_values: {
+        key: "codec_initialization_latency_ms"
+        value {
+          long_value: 50
+        }
+      }
     }
   }
   specs {
@@ -271,6 +293,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST have a codec initialization latency of 40 ms or less for a 1080p or smaller video encoding session for all hardware video encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization."
+      required_values: {
+        key: "codec_initialization_latency_ms"
+        value {
+          long_value: 40
+        }
+      }
     }
   }
   specs {
@@ -278,52 +306,103 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST have a codec initialization latency of 40 ms or less for a 1080p or smaller video encoding session for all hardware video encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization. For Dolby vision codec, the codec initialization latency MUST be 50 ms or less."
+      required_values: {
+        key: "codec_initialization_latency_ms"
+        value {
+          long_value: 40
+        }
+      }
     }
   }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
-      specification: "same"
+      specification: "MUST have a codec initialization latency of 40 ms or less for a 1080p or smaller video encoding session for all hardware video encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization. For Dolby vision codec, the codec initialization latency MUST be 50 ms or less."
+      required_values: {
+        key: "codec_initialization_latency_ms"
+        value {
+          long_value: 40
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-8"
-  description: "- Encoder initialization latency"
-  specs {
+  name: "Audio encoder init latency"
+  description: "Maximum codec initialization latency for a 128 kbps or lower bitrate audio encoding session for all audio encoders when under load."
+  measurements: {
+    key: "codec_initialization_latency_ms"
+    value: {
+      description: "Codec initialization latency in milliseconds"
+      measurement_type: MEASUREMENT_TYPE_LONG
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  specs: {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
-      specification: "MUST have a codec initialization latency of 50 ms or less for a 128 kbps or lower bitrate audio encoding session for all audio encoders when under load.Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization."
+      specification: "MUST have a codec initialization latency of 50 ms or less for a 128 kbps or lower bitrate audio encoding session for all audio encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization."
+      required_values: {
+        key: "codec_initialization_latency_ms"
+        value {
+          long_value: 50
+        }
+      }
     }
   }
-  specs {
+  specs: {
     key: 31
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST have a codec initialization latency of 40 ms or less for a 128 kbps or lower bitrate audio encoding session for all audio encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization."
+      required_values: {
+        key: "codec_initialization_latency_ms"
+        value {
+          long_value: 40
+        }
+      }
     }
   }
-  specs {
+  specs: {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST have a codec initialization latency of 30 ms or less for a 128 kbps or lower bitrate audio encoding session for all audio encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization."
+      required_values: {
+        key: "codec_initialization_latency_ms"
+        value {
+          long_value: 30
+        }
+      }
     }
   }
-  specs {
+  specs: {
     key: 34
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values: {
+        key: "codec_initialization_latency_ms"
+        value {
+          long_value: 30
+        }
+      }
     }
   }
-  specs {
+  specs: {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "codec_initialization_latency_ms"
+        value {
+          long_value: 30
+        }
+      }
     }
   }
 }
@@ -1591,23 +1670,53 @@ requirements {
 }
 requirements {
   id: "7.6.1/H-1-1"
-  description: "- Memory"
+  name: "Android 11 Memory"
+  description: "Minimum memory available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+  measurements: {
+    key: "physical_memory_mb"
+    value: {
+      description: "Physical memory in MiB as reported by android.app.ActivityManager.MemeryInfo.totalMemory."
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      measurement_type: MEASUREMENT_TYPE_LONG
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST have at least 6 GB of physical memory."
+      required_values: {
+        key: "physical_memory_mb"
+        value: {
+          long_value: 5120
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.6.1/H-2-1"
-  description: "- Memory"
+  name: "Memory"
+  description: "Minimum memory available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+  measurements: {
+    key: "physical_memory_mb"
+    value: {
+      description: "Physical memory in MiB as reported by android.app.ActivityManager.MemeryInfo.totalMemory."
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      measurement_type: MEASUREMENT_TYPE_LONG
+    }
+  }
   specs {
     key: 31
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST have at least 6 GB of physical memory."
+      required_values: {
+        key: "physical_memory_mb"
+        value: {
+          long_value: 5120
+        }
+      }
     }
   }
   specs {
@@ -1615,20 +1724,38 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST have at least 8 GB of physical memory."
+      required_values: {
+        key: "physical_memory_mb"
+        value: {
+          long_value: 6800
+        }
+      }
     }
   }
   specs {
     key: 34
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
-      specification: "same"
+      specification: "MUST have at least 8 GB of physical memory."
+      required_values: {
+        key: "physical_memory_mb"
+        value: {
+          long_value: 6800
+        }
+      }
     }
   }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
-      specification: "same"
+      specification: "MUST have at least 8 GB of physical memory, with at least 6.64 GB available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+      required_values: {
+        key: "physical_memory_mb"
+        value: {
+          long_value: 6800
+        }
+      }
     }
   }
 }
@@ -1862,4 +1989,3 @@ requirements {
     }
   }
 }
-
