@@ -18,6 +18,9 @@ package android.media.audio.cts;
 
 import static android.Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED;
 import static android.Manifest.permission.QUERY_AUDIO_STATE;
+import static android.media.AudioManager.RINGER_MODE_NORMAL;
+import static android.media.AudioManager.RINGER_MODE_SILENT;
+import static android.media.AudioManager.RINGER_MODE_VIBRATE;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -33,6 +36,7 @@ import android.Manifest;
 import android.annotation.Nullable;
 import android.annotation.RawRes;
 import android.app.Instrumentation;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -71,6 +75,7 @@ import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -119,6 +124,7 @@ public class AudioFocusTest {
 
     private Context mContext;
     private AudioManager mAM;
+    private NotificationManager mNM;
     private Instrumentation mInstrumentation;
     /** notification volume to restore */
     private int mInitialNotificationVolume;
@@ -138,18 +144,30 @@ public class AudioFocusTest {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getTargetContext();
         mAM = new AudioManager(mContext);
+        mNM = mContext.getSystemService(NotificationManager.class);
 
         Vibrator vibrator = mContext.getSystemService(Vibrator.class);
         mHasVibration = (vibrator != null) && vibrator.hasVibrator();
 
         mInitialRingerMode = mAM.getRingerMode();
-        // need to set ringer mode to normal before starting the test so the volume (to be restored)
-        // can be queried
-        Utils.toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, true);
-        mAM.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
-        mInitialNotificationVolume = mAM.getStreamVolume(
-                AudioAttributes.toLegacyStreamType(NOTIFICATION_ATTRIBUTES));
-        Utils.toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, false);
+        // set Zen to off (interruption filter set to ALL) and ringer mode to NORMAL
+        try {
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), mInstrumentation , true);
+
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        mNM.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL);
+                        mAM.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+                        mInitialNotificationVolume = mAM.getStreamVolume(
+                                AudioAttributes.toLegacyStreamType(NOTIFICATION_ATTRIBUTES));
+                    },
+                    Manifest.permission.STATUS_BAR_SERVICE);
+        } finally {
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), mInstrumentation, false);
+        }
+
         // for query of fade out duration, focus request/abandon test methods, and focus requests
         // independently of test runner procstate
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
@@ -658,7 +676,9 @@ public class AudioFocusTest {
             Utils.toggleNotificationPolicyAccess(
                     mContext.getPackageName(), mInstrumentation, true);
 
-            mAM.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+            mAM.setRingerMode(RINGER_MODE_NORMAL);
+            // TODO(b/294941884): remove this check
+            assumeTrue("Ringer mode not NORMAL", mAM.getRingerMode() == RINGER_MODE_NORMAL);
             final int streamType = AudioAttributes.toLegacyStreamType(NOTIFICATION_ATTRIBUTES);
             mAM.setStreamVolume(streamType, mAM.getStreamMaxVolume(streamType), 0);
             assertEquals("GAIN_TRANSIENT_EXCLUSIVE request failed",
@@ -669,21 +689,27 @@ public class AudioFocusTest {
                     mAM.shouldNotificationSoundPlay(NOTIFICATION_ATTRIBUTES));
 
             if (mHasVibration) {
-                mAM.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
+                mAM.setRingerMode(RINGER_MODE_VIBRATE);
+                // TODO(b/294941884): remove this check
+                assumeTrue("Ringer mode not VIBRATE", mAM.getRingerMode() == RINGER_MODE_VIBRATE);
                 // RINGER_MODE_VIBRATE + GAIN_TRANSIENT_EXCLUSIVE expect shouldNotifSoundPlay false
                 assertFalse(
                         "Wrong shouldNotificationSoundPlay for ringer VIBRATE + focus exclusive",
                         mAM.shouldNotificationSoundPlay(NOTIFICATION_ATTRIBUTES));
             }
 
-            mAM.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+            mAM.setRingerMode(RINGER_MODE_SILENT);
+            // TODO(b/294941884): remove this check
+            assumeTrue("Ringer mode not SILENT", mAM.getRingerMode() == RINGER_MODE_SILENT);
             // RINGER_MODE_SILENT + GAIN_TRANSIENT_EXCLUSIVE expect shouldNotifSoundPlay false
             assertFalse("Wrong shouldNotificationSoundPlay for ringer SILENT + focus exclusive",
                     mAM.shouldNotificationSoundPlay(NOTIFICATION_ATTRIBUTES));
 
-            mAM.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+            mAM.setRingerMode(RINGER_MODE_NORMAL);
+            // TODO(b/294941884): remove this check
+            assumeTrue("Ringer mode not NORMAL", mAM.getRingerMode() == RINGER_MODE_NORMAL);
             // RINGER_MODE_NORMAL + GAIN_TRANSIENT_EXCLUSIVE expect shouldNotifSoundPlay true
-            assertTrue("Wrong shouldNotificationSoundPlay for ringer SILENT + focus exclusive",
+            assertTrue("Wrong shouldNotificationSoundPlay for ringer NORMAL + focus exclusive",
                     mAM.shouldNotificationSoundPlay(NOTIFICATION_ATTRIBUTES));
         } finally {
             mAM.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
@@ -719,7 +745,9 @@ public class AudioFocusTest {
             Utils.toggleNotificationPolicyAccess(
                     mContext.getPackageName(), mInstrumentation, true);
 
-            mAM.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+            mAM.setRingerMode(RINGER_MODE_NORMAL);
+            // TODO(b/294941884): remove this check
+            assumeTrue("Ringer mode not NORMAL", mAM.getRingerMode() == RINGER_MODE_NORMAL);
             final int streamType = AudioAttributes.toLegacyStreamType(NOTIFICATION_ATTRIBUTES);
             mAM.setStreamVolume(streamType, mAM.getStreamMaxVolume(streamType), 0);
             assertEquals("GAIN_TRANSIENT_EXCLUSIVE request failed",
@@ -732,7 +760,9 @@ public class AudioFocusTest {
             assertFalse("Wrong shouldNotificationSoundPlay for ringer focus exclusive + recording",
                     mAM.shouldNotificationSoundPlay(NOTIFICATION_ATTRIBUTES));
 
-            mAM.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+            mAM.setRingerMode(RINGER_MODE_SILENT);
+            // TODO(b/294941884): remove this check
+            assumeTrue("Ringer mode not SILENT", mAM.getRingerMode() == RINGER_MODE_SILENT);
             // RINGER_MODE_SILENT + GAIN_TRANSIENT_EXCLUSIVE + recording
             //      expect shouldNotifSoundPlay false
             assertFalse("Wrong shouldNotificationSoundPlay for ringer SILENT + "
@@ -740,7 +770,9 @@ public class AudioFocusTest {
                     mAM.shouldNotificationSoundPlay(NOTIFICATION_ATTRIBUTES));
 
             stopRecording();
-            mAM.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+            mAM.setRingerMode(RINGER_MODE_NORMAL);
+            // TODO(b/294941884): remove this check
+            assumeTrue("Ringer mode not NORMAL", mAM.getRingerMode() == RINGER_MODE_NORMAL);
             // RINGER_MODE_NORMAL + GAIN_TRANSIENT_EXCLUSIVE + no more recording
             //     expect shouldNotifSoundPlay true
             assertTrue("Wrong shouldNotificationSoundPlay for focus exclusive + recording",

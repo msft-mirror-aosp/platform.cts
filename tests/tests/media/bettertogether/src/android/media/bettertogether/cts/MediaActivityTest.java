@@ -19,11 +19,14 @@ package android.media.bettertogether.cts;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.hdmi.HdmiControlManager;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
@@ -179,6 +182,8 @@ public class MediaActivityTest {
      */
     @Test
     public void testVolumeKey_whileSessionAlive() throws Exception {
+        assumeTrue(/* message= */ "Test skipped on automotive target",
+                !isAutomotive());
         if (mUseFixedVolume) {
             Log.i(TAG, "testVolumeKey_whileSessionAlive skipped due to full volume device");
             return;
@@ -209,6 +214,8 @@ public class MediaActivityTest {
      */
     @Test
     public void testVolumeKey_afterSessionReleased() throws Exception {
+        assumeTrue(/* message= */ "Test skipped on automotive target",
+                !isAutomotive());
         if (mUseFixedVolume) {
             Log.i(TAG, "testVolumeKey_afterSessionReleased skipped due to full volume device");
             return;
@@ -313,5 +320,9 @@ public class MediaActivityTest {
             }
         }
         return pollingCount >= 0;
+    }
+
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }

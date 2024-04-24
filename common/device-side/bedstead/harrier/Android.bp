@@ -28,6 +28,10 @@ java_library_host {
         ":bedstead-permissions-common-srcs",
     ],
 
+    libs: [
+        "androidx.annotation_annotation"
+    ],
+
     static_libs: [
         "junit",
         "auto_value_annotations",
@@ -51,6 +55,10 @@ android_library {
 
         // TODO(329826539): Move this into a separate target
         ":bedstead-permissions-common-srcs",
+    ],
+
+    libs: [
+        "androidx.annotation_annotation"
     ],
 
     static_libs: [

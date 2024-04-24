@@ -16,6 +16,8 @@
 
 package android.cts.statsdatom.powermanager;
 
+import static com.android.server.power.hint.Flags.FLAG_POWERHINT_THREAD_CLEANUP;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertNotNull;
@@ -201,6 +203,7 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_POWERHINT_THREAD_CLEANUP)
     public void testAdpfHintSessionTidCleanupIsPushed() throws Exception {
         final String testMethod = "testAdpfTidCleanup";
         final TestDescription desc = TestDescription.fromString(

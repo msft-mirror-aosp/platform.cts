@@ -5827,8 +5827,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <!-- USB Device Warning Dialog -->
     <string name="usbwarning_message_caption">USB Headset Adapter Warning</string>
     <string name="usbwarning_message_heading">Unvalidated USB Audio Adapter</string>
-    <string name="usbwarning_paragraph_0">The connected USB audio device has not be verified to for
-        use in this test this test.</string>
+    <string name="usbwarning_paragraph_0">The connected USB audio device has not been verified for
+        use in this test.</string>
     <string name="usbwarning_paragraph_1_1">The test may succeed with this device, but if it does not,
         please obtain a</string>
     <string name="usbwarning_googadapter">Google USB-C to 3.5mm Adapter</string>
@@ -5843,7 +5843,11 @@ You should be prompted to select credentials; choose the ones you just installed
         required to run this test and so can simply press the PASS button.
     </string>
     <string name="immersive_audio_onscreen_instructions">Invoke this test from the Immersive Audio test fixture.
-    If you are not testing an Immersive Audio device, simply press the PASS button.</string>
+        If you are not testing an Immersive Audio device, and the DUT DOES NOT support low-latency head tracking,
+        simply press the PASS button. If you are not testing an Immersive Audio device, and the DUT DOES support
+        low-latency head tracking, you must exit by pressing the BACK button.
+    </string>
+    <string name="immersive_audio_noheadtracking">"This Android device does not support low-latency headtracking."</string>
 
     <!-- Audio Loopback Latency Test -->
     <string name="audio_loopback_latency_test">Audio Loopback Latency Test</string>

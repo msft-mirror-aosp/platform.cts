@@ -461,7 +461,7 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             IntentReceiver.resetReceiverState();
 
             // The amount of time the remote service should hold lock.
-            long remoteLockHoldTimeMillis = 7000;
+            long remoteLockHoldTimeMillis = 10000;
 
             // The amount of time test should get to try to acquire the lock.
             long sufficientOverlappingTimeInMillis = 2000;
@@ -506,11 +506,10 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             // but we can't be sure and the test may not be valid. This is why we hold the lock
             // remotely for a long time compared to the delays we expect for intents to propagate
             // between processes.
-            assertTrue(String.format("Remote lock release start (%d), " +
-                        "too soon after local lock notification time (%d). " +
+            assertTrue(String.format("Remote lock release start " +
+                        "too soon (%d ms) after lock notification time. " +
                         "Need at least %d ms",
-                        remoteLockReleasedTime,
-                        localLockNotObtainedTime,
+                        remoteLockNotReleasedTime - localLockNotObtainedTime,
                         sufficientOverlappingTimeInMillis
                     ),
                     remoteLockNotReleasedTime - localLockNotObtainedTime >
@@ -522,10 +521,10 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
                 // service. The localLockObtainedTime is captured after the lock was obtained by this
                 // thread. Therefore, there is a degree of slop inherent in the two times. We assert
                 // that they are "close" to each other, but we cannot assert any ordering.
-                assertTrue(String.format("Local lock obtained (%d) too long " +
-                            "from remote lock release time (%d). " +
+                assertTrue(String.format("Local lock obtained too long (%d ms) " +
+                            "from remote lock release time. " +
                             "Expected at most %d ms.",
-                            localLockObtainedTime, remoteLockReleasedTime,
+                            localLockObtainedTime - remoteLockReleasedTime,
                             lockReleasedAndReacquiredTimeDeltaInMillis),
                     Math.abs(localLockObtainedTime - remoteLockReleasedTime) <
                         lockReleasedAndReacquiredTimeDeltaInMillis);

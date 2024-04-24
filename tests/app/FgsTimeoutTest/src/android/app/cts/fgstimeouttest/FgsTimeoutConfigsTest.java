@@ -62,7 +62,7 @@ public class FgsTimeoutConfigsTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
-    public void testDefaultTimeouts() throws Exception {
+    public void testDefaultTimeouts() {
         // When the main test class resets the device config values, it's propagated asynchronously
         // to ActivityManagerConstants, so we'll just retry up to this many seconds.
         final int timeoutSecond = 30;
@@ -87,7 +87,7 @@ public class FgsTimeoutConfigsTest {
                 }
             }
 
-            Thread.sleep(sleep);
+            SystemClock.sleep(sleep);
             sleep *= 5;
             sleep = Math.min(2000, sleep);
         }

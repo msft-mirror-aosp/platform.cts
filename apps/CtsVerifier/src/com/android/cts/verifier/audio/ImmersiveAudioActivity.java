@@ -35,6 +35,7 @@ import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.libs.ui.HtmlFormatter;
 
 // Here is the current specification for the Intent from the Immersive Audio test harness
@@ -59,9 +60,11 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
     // UI
     private WebView mResultsView;
     private HtmlFormatter mHtmlFormatter = new HtmlFormatter();
+    private boolean mSupportsHeadTracking;
 
     // Intent Handling
     Intent mIntent;
+    IntentFilter mIntentFilter;
 
     // Intent Extras
     String mTestCode;
@@ -86,8 +89,9 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        mSupportsHeadTracking = AudioSystemFlags.claimsHeadTrackingLowLatency(this);
+
         mIntent = getIntent();
-        Log.i(TAG, "mIntent:" + mIntent);
 
         setContentView(R.layout.immersive_audio_activity);
         setInfoResources(R.string.immersive_audio_test, R.string.immersive_audio_test_info, -1);
@@ -95,20 +99,91 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
         mResultsView = (WebView) findViewById(R.id.immersive_test_result);
 
         setPassFailButtonClickListeners();
-        getPassButton().setEnabled(true);
 
         mRequireReportLogToPass = true;
 
-        // Context context = getApplicationContext();
         mBroadcastReceiver = new IABroadcastReceiver();
-
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(IMMERSIVE_AUDIO_RESULTS);
-
-        registerReceiver(mBroadcastReceiver, filter, RECEIVER_EXPORTED);
+        mIntentFilter = new IntentFilter();
+        mIntentFilter.addAction(IMMERSIVE_AUDIO_RESULTS);
 
         displayIntent(mIntent);
+
+        getPassButton().setEnabled(calculatePass());
     }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        unregisterReceiver(mBroadcastReceiver);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        registerReceiver(mBroadcastReceiver, mIntentFilter, RECEIVER_EXPORTED);
+    }
+
+    private boolean calculatePass() {
+        if (!mSupportsHeadTracking) {
+            return true;
+        }
+
+        if (mIntent != null) {
+            // this probably needs to be more complex
+            if (mResultString == null) {
+                return false;
+            }
+
+            if (convertResult(mResultString) <= 0) {
+                return false;
+            }
+
+            return mLatency <= mPassThreshold && mReliability >= mPassReliability;
+        } else {
+            return false;
+        }
+    }
+
+    private static final int RESULT_PASS = 1;
+    private static final int RESULT_RETEST = 0;
+    private static final int RESULT_UNDEFINED = -1;
+    private static final int RESULT_FAIL = -2;
+
+    private static final String RESULTSTR_PASS = "Pass";
+    private static final String RESULTSTR_FAIL = "Fail";
+    private static final String RESULTSTR_RETEST = "Retest";
+
+    private int convertResult(String resultString) {
+        if (resultString == null) {
+            return RESULT_UNDEFINED;
+        } else if (resultString.equals(RESULTSTR_PASS)) {
+            return RESULT_PASS;
+        } else if (resultString.equals(RESULTSTR_FAIL)) {
+            return RESULT_FAIL;
+        } else if (resultString.equals(RESULTSTR_RETEST)) {
+            return RESULT_RETEST;
+        } else {
+            return RESULT_UNDEFINED;
+        }
+    }
+
+    private int convertVersion(String versionString) {
+        if (versionString == null) {
+            return 0;
+        } else {
+            // sent in this format "0.0.1"
+            // Decompose
+            String[] parts = versionString.split("\\.");
+            for (String part : parts) {
+                Log.i(TAG, "  part:" + part);
+            }
+            return Integer.parseInt(parts[0]) * 1000
+                    + Integer.parseInt(parts[1]) * 100
+                    + Integer.parseInt(parts[2]);
+        }
+    }
+
+    // Intent Extra Keys
     private static final String INTENT_EXTRA_TESTCODE = "test";
     private static final String INTENT_EXTRA_RESULT = "result";
     private static final String INTENT_EXTRA_ERRORCODE = "err_code";
@@ -119,10 +194,23 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
     private static final String INTENT_EXTRA_PASSRANGE = "passing_range";
     private static final String INTENT_EXTRA_VERSIONCODE = "version_code";
 
+    // (different) JSON Keys
+    // Corresponds to INTENT_EXTRA_PASSTHRESHOLD
+    private static final String KEY_PASSINGLATENCY = "passing_latency";
+    // Corresponds to INTENT_EXTRA_ERRORCODE
+    private static final String KEY_ERRORCODE = "error_code";
+    private static final String KEY_LOWLATENCY = "feature_low_latency";
+
     private void displayIntent(Intent intent) {
         mHtmlFormatter.clear();
         mHtmlFormatter.openDocument();
 
+        if (!mSupportsHeadTracking) {
+            mHtmlFormatter.openBold()
+                    .appendText(getString(R.string.immersive_audio_noheadtracking))
+                    .closeBold()
+                    .appendBreak().appendBreak();
+        }
         if (intent != null) {
             mTestCode = intent.getStringExtra(INTENT_EXTRA_TESTCODE);
             mResultString = intent.getStringExtra(INTENT_EXTRA_RESULT);
@@ -177,24 +265,16 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
 
     @Override
     public final String getReportSectionName() {
-        return setTestNameSuffix(sCurrentDisplayMode, "immersive_audio_latency_test");
+        return setTestNameSuffix(sCurrentDisplayMode, "immersive_audio_latency");
     }
 
-    void recordTestResults(CtsVerifierReportLog reportLog) {
-        Log.i(TAG, "recordTestResults()");
-        reportLog.addValue(
-                INTENT_EXTRA_TESTCODE,
-                mTestCode,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
+    @Override
+    public void recordTestResults() {
+        CtsVerifierReportLog reportLog = getReportLog();
+
         reportLog.addValue(
                 INTENT_EXTRA_RESULT,
-                mResultString,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-        reportLog.addValue(
-                INTENT_EXTRA_ERRORCODE,
-                mErrorCode,
+                convertResult(mResultString),
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
         reportLog.addValue(
@@ -208,7 +288,7 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
         reportLog.addValue(
-                INTENT_EXTRA_PASSTHRESHOLD,
+                KEY_PASSINGLATENCY,
                 mPassThreshold,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
@@ -224,16 +304,20 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
                 ResultUnit.NONE);
         reportLog.addValue(
                 INTENT_EXTRA_VERSIONCODE,
-                mVersionCode,
+                convertVersion(mVersionCode),
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_LOWLATENCY,
+                mSupportsHeadTracking,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.submit();
     }
 
     private class IABroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "onReceive() - " + intent);
-
             mIntent = intent;
             displayIntent(mIntent);
 

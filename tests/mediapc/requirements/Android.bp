@@ -48,6 +48,13 @@ bootstrap_go_package {
     ],
 }
 
+// Regenerate the go proto srcs with these commands
+// m aprotoc protoc-go-gen && \
+// aprotoc  \
+//   --go_out=paths=source_relative:. \
+//   cts/tests/mediapc/requirements/mpc.proto \
+//   cts/tests/mediapc/requirements/requirements.proto
+
 bootstrap_go_package {
     name: "requirements_go_proto",
     pkgPath: "cts/test/mediapc/requirements/requirements_go_proto",

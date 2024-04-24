@@ -425,6 +425,10 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             return false;
         }
 
+        if(annotation.annotationType().equals(IncludeNone.class)) {
+            return true;
+        }
+
         String annotationPackage = annotation.annotationType().getPackage().getName();
 
         for (String ignoredPackage : sIgnoredAnnotationPackages) {
@@ -443,14 +447,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     public BedsteadJUnit4(Class<?> testClass) throws InitializationError {
         super(testClass);
-    }
-
-    private boolean annotationShouldBeSkipped(Annotation annotation) {
-        if (annotation instanceof DynamicParameterizedAnnotation) {
-            return false;
-        }
-
-        return annotation.annotationType().equals(IncludeNone.class);
     }
 
     private static List<FrameworkMethod> getBasicTests(TestClass testClass) {
@@ -506,7 +502,9 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private static List<List<Annotation>> calculateCartesianProductOfAnnotationSets(
             List<List<Annotation>> annotations) {
         List<List<Annotation>> result = new ArrayList<>();
-        generateCartesianProductOfAnnotationSets(annotations, 0, result, new ArrayList<>());
+        if (!annotations.isEmpty()) {
+            generateCartesianProductOfAnnotationSets(annotations, 0, result, new ArrayList<>());
+        }
         return result;
     }
 
@@ -521,7 +519,9 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             List<List<Annotation>> result,
             List<Annotation> subResult) {
         if (position == annotations.size()) {
-            result.add(new ArrayList<>(subResult));
+            if (!subResult.isEmpty()) {
+                result.add(new ArrayList<>(subResult));
+            }
             return;
         }
         for (int i = 0; i < annotations.get(position).size(); i++) {
@@ -550,7 +550,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             // Create [BedsteadFrameworkMethod] for parameterized annotation of instance {@Code
             // DynamicParameterizedAnnotation}.
             for (Annotation annotation : parameterizedAnnotations) {
-                if (annotationShouldBeSkipped(annotation)
+                if (shouldSkipAnnotation(annotation)
                         || isAnnotationClassParameterizedAnnotation(annotation)) {
                     // Special case - does not generate a run
                     continue;

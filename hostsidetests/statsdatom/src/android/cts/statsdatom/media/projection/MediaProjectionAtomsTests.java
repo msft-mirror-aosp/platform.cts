@@ -17,6 +17,8 @@
 package android.cts.statsdatom.media.projection;
 
 
+import static android.cts.statsdatom.lib.DeviceUtils.FEATURE_WATCH;
+
 import static com.android.os.framework.FrameworkExtensionAtoms.MEDIA_PROJECTION_STATE_CHANGED_FIELD_NUMBER;
 import static com.android.os.framework.FrameworkExtensionAtoms.MEDIA_PROJECTION_TARGET_CHANGED_FIELD_NUMBER;
 import static com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionStateChanged.MediaProjectionState.MEDIA_PROJECTION_STATE_APP_SELECTOR_DISPLAYED;
@@ -31,6 +33,8 @@ import static com.android.os.framework.FrameworkExtensionAtoms.mediaProjectionSt
 import static com.android.os.framework.FrameworkExtensionAtoms.mediaProjectionTargetChanged;
 
 import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assume.assumeFalse;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
@@ -73,6 +77,7 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
 
     @Before
     public void setUp() throws Exception {
+        assumeFalse(DeviceUtils.hasFeature(getDevice(), FEATURE_WATCH));
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());

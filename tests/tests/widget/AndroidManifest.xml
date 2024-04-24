@@ -539,7 +539,8 @@
         </activity>
 
         <activity android:name="android.widget.cts.CheckedTextViewCtsActivity"
-             android:label="CheckedTextViewCtsActivity"/>
+             android:label="CheckedTextViewCtsActivity"
+             android:exported="true"/>
 
         <activity android:name="android.widget.cts.TableCtsActivity"
              android:label="TableCtsActivity"

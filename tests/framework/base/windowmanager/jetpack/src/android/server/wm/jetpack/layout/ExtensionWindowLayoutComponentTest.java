@@ -21,6 +21,7 @@ import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assertEqualWindowLayoutInfo;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeHasDisplayFeatures;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getExtensionWindowLayoutInfo;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.assumeSidecarSupportedDevice;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.getSidecarInterface;
 import static android.view.Display.DEFAULT_DISPLAY;
@@ -436,16 +437,45 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         mWindowLayoutInfo = getExtensionWindowLayoutInfo(configHandlingActivity);
         assumeHasDisplayFeatures(mWindowLayoutInfo);
 
-        final WindowLayoutInfo initialInfo = getExtensionWindowLayoutInfo(
-                configHandlingActivity);
+        TestValueCountConsumer<WindowLayoutInfo> consumer = new TestValueCountConsumer<>();
+        // We expect 3 values, 1 before entering PiP, one while in PiP, one after exiting PiP.
+        consumer.setCount(3);
+        getWindowExtensions().getWindowLayoutComponent().addWindowLayoutInfoListener(
+                configHandlingActivity, consumer);
 
         enterPipActivityHandlesConfigChanges(configHandlingActivity);
         exitPipActivityHandlesConfigChanges(configHandlingActivity);
 
-        final WindowLayoutInfo updatedInfo = getExtensionWindowLayoutInfo(
-                configHandlingActivity);
+        List<WindowLayoutInfo> values = consumer.waitAndGetAllValues();
 
-        assertEquals(initialInfo, updatedInfo);
+        assertEquals(3, values.size());
+        assertEquals(mWindowLayoutInfo, values.get(0));
+        assertTrue(values.get(1).getDisplayFeatures().isEmpty());
+        assertEquals(mWindowLayoutInfo, values.get(2));
+    }
+
+    @ApiTest(apis = {"androidx.window.extensions.layout.WindowLayoutInfo#getDisplayFeatures"})
+    @Test
+    public void testGetWindowLayoutInfo_enterPip_emptyWindowLayoutInfo()
+            throws InterruptedException {
+        TestConfigChangeHandlingActivity configHandlingActivity = startActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null);
+        mWindowLayoutInfo = getExtensionWindowLayoutInfo(configHandlingActivity);
+        assumeHasDisplayFeatures(mWindowLayoutInfo);
+
+        TestValueCountConsumer<WindowLayoutInfo> consumer = new TestValueCountConsumer<>();
+        // We expect 2 values, 1 before entering PiP, one while in PiP.
+        consumer.setCount(2);
+        getWindowExtensions().getWindowLayoutComponent().addWindowLayoutInfoListener(
+                configHandlingActivity, consumer);
+
+        enterPipActivityHandlesConfigChanges(configHandlingActivity);
+
+        List<WindowLayoutInfo> values = consumer.waitAndGetAllValues();
+
+        assertEquals(2, values.size());
+        assertEquals(mWindowLayoutInfo, values.get(0));
+        assertTrue(values.get(1).getDisplayFeatures().isEmpty());
     }
 
     /**

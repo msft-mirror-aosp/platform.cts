@@ -13,17 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.android.bedstead.nene.utils
 
-package android.content.pm.cts;
+import java.util.concurrent.ConcurrentHashMap
 
-import android.content.Context;
-import android.content.Intent;
+interface FailureDumper {
 
-public class Utils {
-    static void sendIntentBroadcast(Context context, Intent intent) {
-        var broadcast = new Intent("android.content.cts.RECEIVING_INTENT")
-                .setPackage("android.content.cts")
-                .putExtra(Intent.EXTRA_INTENT, intent);
-        context.sendBroadcast(broadcast);
+    /**
+     * Called when a test has failed.
+     */
+    fun onTestFailed(exception: Throwable) {}
+
+    companion object {
+        /**
+         * A set of classes which each implement the [FailureDumper] interface - which will be
+         * instantiated (via a no-args constructor) and called when a Bedstead test fails.
+         */
+        val failureDumpers: MutableSet<String> =
+            ConcurrentHashMap<String, Boolean>().keySet(true)
     }
 }

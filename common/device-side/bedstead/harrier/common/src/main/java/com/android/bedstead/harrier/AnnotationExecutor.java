@@ -15,6 +15,10 @@
  */
 package com.android.bedstead.harrier;
 
+import androidx.annotation.NonNull;
+
+import com.android.bedstead.nene.utils.FailureDumper;
+
 import java.lang.annotation.Annotation;
 
 /**
@@ -23,14 +27,14 @@ import java.lang.annotation.Annotation;
  * This can be used to add additional harrier-compatible annotations without modifying harrier
  */
 // This is written in Java because Kotlin interfaces can't expose default methods to Java
-public interface AnnotationExecutor {
+public interface AnnotationExecutor extends FailureDumper {
     /**
      * Called when an annotation should be applied.
      *
      * <p>This should take care of recording any state necessary to correctly restore state after
      * the test.
      */
-    void applyAnnotation(Annotation annotation);
+    void applyAnnotation(@NonNull Annotation annotation);
 
     /**
      * Requests the executor to restore the previous state of any non-shareable changes.
@@ -45,5 +49,5 @@ public interface AnnotationExecutor {
     /**
      * Called when a test has failed which used this annotation executor.
      */
-    default void onTestFailed(Throwable exception) {}
+    default void onTestFailed(@NonNull Throwable exception) {}
 }

@@ -49,6 +49,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Validate that there is no discontinuity in the AudioRecord data from Remote Submix.
@@ -157,7 +159,22 @@ public class RemoteSubmixTest {
         AudioRecord audioRecord = createPlaybackCaptureRecord();
         ByteBuffer rawBuffer = null;
 
+        int[] streams = {AudioManager.STREAM_RING, AudioManager.STREAM_NOTIFICATION,
+                AudioManager.STREAM_SYSTEM};
+
+        // Get current device stream volume level
+        Map<Integer, Integer> streamVolume = new HashMap<Integer, Integer>();
+        for (int stream : streams) {
+            streamVolume.put(stream, mAudioManager.getStreamVolume(stream));
+        }
         try {
+            for (int stream : streams) {
+                // Mute device streams
+                mAudioManager.adjustStreamVolume(
+                        stream, AudioManager.ADJUST_MUTE, 0 /*no flag used*/);
+                assertEquals(mAudioManager.getStreamVolume(stream), 0);
+            }
+
             audioRecord.startRecording();
             mediaPlayer.start();
 
@@ -185,6 +202,12 @@ public class RemoteSubmixTest {
                         .pressKeyCode(KeyEvent.KEYCODE_WAKEUP);
                 UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
                         .executeShellCommand("wm dismiss-keyguard");
+            }
+
+            for (Map.Entry<Integer, Integer> map : streamVolume.entrySet()) {
+                // Restore device stream volume
+                mAudioManager.setStreamVolume(map.getKey(), map.getValue(), 0 /*no flag used*/);
+                assertEquals(mAudioManager.getStreamVolume(map.getKey()), (int) map.getValue());
             }
 
             audioRecord.release();
