@@ -26,6 +26,7 @@ import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.os.Flags;
+import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
@@ -200,6 +201,7 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         assertThat(a0.getHeadroomCount()).isGreaterThan(0);
     }
 
+    @FlakyTest(bugId = 332611146)
     @Test
     public void testAdpfHintSessionTidCleanupIsPushed() throws Exception {
         final String testMethod = "testAdpfTidCleanup";
