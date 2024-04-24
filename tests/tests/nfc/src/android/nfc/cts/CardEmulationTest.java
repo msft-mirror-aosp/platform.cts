@@ -950,6 +950,44 @@ public class CardEmulationTest {
         }
     }
 
+
+    @Test
+    @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
+            Flags.FLAG_NFC_OBSERVE_MODE})
+    public void testOffHostAutoTransactDynamic() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
+        adapter.notifyHceDeactivated();
+        final Activity activity = createAndResumeActivity();
+        String testName = new Object() {
+        }.getClass().getEnclosingMethod().getName();
+        String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        ComponentName offhostServiceName = new ComponentName(mContext,
+                CtsMyOffHostApduService.class);
+        Assert.assertFalse(cardEmulation.registerPollingLoopFilterForService(offhostServiceName,
+                "1234567890", false));
+        Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(offhostServiceName,
+                annotationStringHex, true));
+        PollingFrame frame = createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                HexFormat.of().parseHex(annotationStringHex));
+        ComponentName ctsComponentName = new ComponentName(mContext, CtsMyHostApduService.class);
+        try {
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, ctsComponentName));
+            ensurePreferredService(CtsMyHostApduService.class);
+            Assert.assertTrue(adapter.setObserveModeEnabled(true));
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            adapter.notifyPollingLoop(frame);
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+            adapter.notifyHceDeactivated();
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+        } finally {
+            adapter.setObserveModeEnabled(false);
+            cardEmulation.unsetPreferredService(activity);
+            activity.finish();
+        }
+    }
+
     @Test
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE,
