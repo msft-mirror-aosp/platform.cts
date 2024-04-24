@@ -24,7 +24,7 @@ import android.os.FileUtils;
 import android.os.UserHandle;
 import android.photopicker.cts.R;
 import android.provider.MediaStore;
-import android.provider.cts.ProviderTestUtils;
+import android.provider.cts.media.MediaProviderTestUtils;
 import android.provider.cts.media.MediaStoreUtils;
 import android.util.Pair;
 
@@ -129,7 +129,7 @@ public class PhotoPickerFilesUtils {
 
     public static void deleteMedia(Uri uri, Context context) throws Exception {
         try {
-            ProviderTestUtils.setOwner(uri, context.getPackageName());
+            MediaProviderTestUtils.setOwner(uri, context.getPackageName());
             context.getContentResolver().delete(uri, Bundle.EMPTY);
         } catch (Exception ignored) {
         }
