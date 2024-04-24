@@ -16,6 +16,8 @@
 
 package android.mediapc.cts.common;
 
+import android.os.Build.VERSION_CODES;
+
 /**
  * Requirements Classes.
  */
@@ -79,7 +81,14 @@ public final class Requirements {
                         {{- end }})
                     {{- range $mpc, $s := $r.GetSpecs }}
                     {{- with index $s.GetRequiredValues $m_id}}
-                    .addRequiredValue({{$mpc}}
+                    .addRequiredValue(VERSION_CODES.
+                       {{- if  eq $mpc 30}}R
+                       {{- else if eq $mpc 31}}S
+                       {{- else if eq $mpc 33}}TIRAMISU
+                       {{- else if eq $mpc 34}}UPSIDE_DOWN_CAKE
+                       {{- else if eq $mpc 35}}VANILLA_ICE_CREAM
+                       {{- else }}{{$mpc}}
+                       {{- end }}
                        {{- if eq $mt.String "MEASUREMENT_TYPE_BOOL" -}}, {{.GetBoolValue}}
                        {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}, {{printf "%f" .GetDoubleValue}}
                        {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}, {{.GetIntValue}}
