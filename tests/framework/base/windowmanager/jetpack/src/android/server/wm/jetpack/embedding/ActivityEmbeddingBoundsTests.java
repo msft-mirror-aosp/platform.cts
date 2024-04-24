@@ -34,6 +34,7 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
+import android.support.test.uiautomator.UiDevice;
 import android.util.Pair;
 import android.util.Size;
 
@@ -106,12 +107,13 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
             // Shrink the display by 10% to make the activities stacked
             mReportedDisplayMetrics.setSize(new Size((int) (originalDisplaySize.getWidth() * 0.9),
                     (int) (originalDisplaySize.getHeight() * 0.9)));
+            UiDevice.getInstance(mInstrumentation).waitForIdle();
             waitAndAssertResumedAndFillsTask(secondaryActivity);
             waitAndAssertNotVisible(primaryActivity);
 
             // Return the display to its original size and verify that the activities are split
             mReportedDisplayMetrics.setSize(originalDisplaySize);
-            mInstrumentation.waitForIdleSync();
+            UiDevice.getInstance(mInstrumentation).waitForIdle();
             assertValidSplit(primaryActivity, secondaryActivity, splitPairRule);
         }
     }
