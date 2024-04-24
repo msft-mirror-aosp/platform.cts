@@ -33,6 +33,7 @@ import com.android.bedstead.nene.appops.AppOpsMode;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.FailureDumper;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Tags;
@@ -590,6 +591,8 @@ public final class Permissions {
             UserReference user,
             Collection<String> permissionsToGrant,
             Collection<String> permissionsToDeny) {
+        FailureDumper.Companion.getFailureDumpers().add(
+                "com.android.bedstead.permissions.PermissionsAnnotationExecutor");
         // TODO: replace with dependency on bedstead-root when properly modularised
         if (Tags.hasTag("root-instrumentation")
                 && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
@@ -619,6 +622,8 @@ public final class Permissions {
      * for the package - and the shell package should have its app op state set instead.
      */
     public void setAppOpState(Package pkg, UserReference user, Collection<String> grantedAppOps, Collection<String> deniedAppOps) {
+        FailureDumper.Companion.getFailureDumpers().add(
+                "com.android.bedstead.permissions.PermissionsAnnotationExecutor");
         // Filter so we get just the appOps which require a state that they are not currently in
         Set<String> filteredGrantedAppOps = grantedAppOps.stream()
                 .filter(o -> pkg.appOps().get(o) != AppOpsMode.ALLOWED)
