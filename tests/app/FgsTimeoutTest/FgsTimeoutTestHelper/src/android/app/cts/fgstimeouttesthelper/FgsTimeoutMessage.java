@@ -41,7 +41,7 @@ import java.io.StringWriter;
         genAidl = false)
 public class FgsTimeoutMessage implements Parcelable {
     public FgsTimeoutMessage() {
-        mTimestamp = SystemClock.uptimeMillis();
+        mTimestamp = SystemClock.elapsedRealtime();
     }
 
     final private long mTimestamp;

@@ -169,6 +169,7 @@ import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserBuilder;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.FailureDumper;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ResolveInfoWrapper;
 import com.android.bedstead.nene.utils.ShellCommand;
@@ -3874,6 +3875,8 @@ public final class DeviceState extends HarrierRule {
     private final Map<String, AnnotationExecutor>
             mAnnotationExecutors = new HashMap<>();
 
+    private final Map<String, FailureDumper> mFailureDumpers = new HashMap<>();
+
     @SuppressWarnings("unchecked")
     private AnnotationExecutor usesAnnotationExecutor(String executorClassName) {
         Class<? extends AnnotationExecutor> executorClass;
@@ -4284,7 +4287,31 @@ public final class DeviceState extends HarrierRule {
     }
 
     void onTestFailed(Throwable exception) {
+        FailureDumper.Companion.getFailureDumpers().stream()
+                .filter((i) -> !mAnnotationExecutors.containsKey(i))
+                .filter((i) -> !mFailureDumpers.containsKey(i))
+                .forEach((i) -> {
+                    try {
+                        Class<? extends FailureDumper> cls =
+                                (Class<? extends FailureDumper>) Class.forName(i);
+
+                        mFailureDumpers.put(i, cls.newInstance());
+                    } catch (InstantiationException | IllegalAccessException |
+                             ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
         mAnnotationExecutors.values().forEach((i) -> {
+            try {
+                i.onTestFailed(exception);
+            } catch (Throwable t) {
+                // Ignore exceptions otherwise they'd hide the actual failure
+                Log.e(LOG_TAG, "Error in onTestFailed for " + i, t);
+            }
+        });
+
+        mFailureDumpers.values().forEach((i) -> {
             try {
                 i.onTestFailed(exception);
             } catch (Throwable t) {

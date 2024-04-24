@@ -56,6 +56,23 @@ public class AudioSystemFlags {
     }
 
     /**
+     * Determines if the device has declared the FEATURE_AUDIO_SPATIAL_HEADTRACKING_LOW_LATENCY
+     * flag
+     * @param context The application context
+     * @return true if the PackageManager declares the system feature
+     *   FEATURE_AUDIO_SPATIAL_HEADTRACKING_LOW_LATENCY
+     */
+    public static boolean claimsHeadTrackingLowLatency(Context context) {
+        // Do we need to test FLAG_FEATURE_SPATIAL_AUDIO_HEADTRACKING_LOW_LATENCY?
+        // what namespace is this flag defined in?
+//        if (!Flags.featureSpatialAudioHeadtrackingLowLatency()) {
+//            return false;
+//        }
+        return context.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUDIO_SPATIAL_HEADTRACKING_LOW_LATENCY);
+    }
+
+    /**
      * @param context The Context of the application.
      * @return true if the device is a watch
      */

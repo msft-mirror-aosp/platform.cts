@@ -52,6 +52,7 @@ import com.android.compatibility.common.util.SystemUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -851,27 +852,35 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE})
-    @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testAutoTransact() {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
-        createAndResumeActivity();
+        final Activity activity = createAndResumeActivity();
         String testName = new Object() {
         }.getClass().getEnclosingMethod().getName();
         String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
         ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
         frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
                 HexFormat.of().parseHex(annotationStringHex)));
-        Assert.assertTrue(adapter.setObserveModeEnabled(true));
-        Assert.assertTrue(adapter.isObserveModeEnabled());
-        List<PollingFrame> receivedFrames =
-                notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
-        Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
-        Assert.assertFalse(adapter.isObserveModeEnabled());
-        adapter.notifyHceDeactivated();
-        Assert.assertTrue(adapter.isObserveModeEnabled());
-        adapter.setObserveModeEnabled(false);
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        try {
+            Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                    new ComponentName(mContext, CtsMyHostApduService.class)));
+            ensurePreferredService(CtsMyHostApduService.class);
+            Assert.assertTrue(adapter.setObserveModeEnabled(true));
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            List<PollingFrame> receivedFrames =
+                    notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+            Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+            adapter.notifyHceDeactivated();
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+        } finally {
+            adapter.setObserveModeEnabled(false);
+            cardEmulation.unsetPreferredService(activity);
+            activity.finish();
+        }
     }
 
     @Test
@@ -904,16 +913,14 @@ public class CardEmulationTest {
         setMockService();
     }
 
-
     @Test
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE})
-    @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testAutoTransactDynamic() {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
-        createAndResumeActivity();
+        final Activity activity = createAndResumeActivity();
         String testName = new Object() {
         }.getClass().getEnclosingMethod().getName();
         String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
@@ -924,15 +931,77 @@ public class CardEmulationTest {
         ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
         frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
                 HexFormat.of().parseHex(annotationStringHex)));
-        Assert.assertTrue(adapter.setObserveModeEnabled(true));
-        Assert.assertTrue(adapter.isObserveModeEnabled());
-        List<PollingFrame> receivedFrames =
-                notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
-        Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
-        Assert.assertFalse(adapter.isObserveModeEnabled());
+        ComponentName ctsComponentName = new ComponentName(mContext, CtsMyHostApduService.class);
+        try {
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, ctsComponentName));
+            ensurePreferredService(CtsMyHostApduService.class);
+            Assert.assertTrue(adapter.setObserveModeEnabled(true));
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            List<PollingFrame> receivedFrames =
+                    notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+            Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+            adapter.notifyHceDeactivated();
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+        } finally {
+            adapter.setObserveModeEnabled(false);
+            cardEmulation.unsetPreferredService(activity);
+            activity.finish();
+        }
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
+            Flags.FLAG_NFC_OBSERVE_MODE})
+    public void testOffHostAutoTransactDynamic() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
-        Assert.assertTrue(adapter.isObserveModeEnabled());
-        adapter.setObserveModeEnabled(false);
+        final Activity activity = createAndResumeActivity();
+        String testName = new Object() {
+        }.getClass().getEnclosingMethod().getName();
+        String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        ComponentName offhostServiceName = new ComponentName(mContext,
+                CtsMyOffHostApduService.class);
+        Assert.assertFalse(cardEmulation.registerPollingLoopFilterForService(offhostServiceName,
+                "1234567890", false));
+        Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(offhostServiceName,
+                annotationStringHex, true));
+        PollingFrame frame = createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                HexFormat.of().parseHex(annotationStringHex));
+        ComponentName ctsComponentName = new ComponentName(mContext, CtsMyHostApduService.class);
+        try {
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, ctsComponentName));
+            ensurePreferredService(CtsMyHostApduService.class);
+            Assert.assertTrue(adapter.setObserveModeEnabled(true));
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            adapter.notifyPollingLoop(frame);
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+            adapter.notifyHceDeactivated();
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+        } finally {
+            adapter.setObserveModeEnabled(false);
+            cardEmulation.unsetPreferredService(activity);
+            activity.finish();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
+            Flags.FLAG_NFC_OBSERVE_MODE,
+            android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
+    public void testDisallowNonDefaultSetObserveMode() throws NoSuchFieldException {
+        restoreOriginalService();
+        runWithRole(mContext,  WalletRoleTestUtils.WALLET_HOLDER_PACKAGE_NAME, () -> {
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            assumeTrue(adapter.isObserveModeSupported());
+            adapter.notifyHceDeactivated();
+            Assert.assertFalse(adapter.setObserveModeEnabled(true));
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+        });
+        setMockService();
     }
 
     @Test
@@ -951,7 +1020,7 @@ public class CardEmulationTest {
             String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
             CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
             ComponentName customServiceName = new ComponentName(mContext,
-                    CustomHostApduService.class);
+                    CtsMyHostApduService.class);
             Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(customServiceName,
                     annotationStringHex, true));
             ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
@@ -960,7 +1029,7 @@ public class CardEmulationTest {
             Assert.assertTrue(adapter.setObserveModeEnabled(true));
             Assert.assertTrue(adapter.isObserveModeEnabled());
             List<PollingFrame> receivedFrames =
-                    notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+                    notifyPollingLoopAndWait(frames, CtsMyHostApduService.class.getName());
             Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
             Assert.assertFalse(adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
@@ -1268,6 +1337,7 @@ public class CardEmulationTest {
         });
     }
 
+    @Ignore("NON_PAYMENT package isn't wallet role eligible")
     @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     @Test
     public void testAidResolutionWithRoleHolder_holderDoesNotSupportAid_overLappingAids()

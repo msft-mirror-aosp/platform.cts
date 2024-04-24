@@ -20,8 +20,6 @@ import static android.Manifest.permission.MANAGE_DEFAULT_APPLICATIONS;
 import static android.Manifest.permission.MANAGE_ROLE_HOLDERS;
 import static android.Manifest.permission.OBSERVE_ROLE_HOLDERS;
 
-import static org.junit.Assume.assumeTrue;
-
 import android.app.role.OnRoleHoldersChangedListener;
 import android.app.role.RoleManager;
 import android.content.ComponentName;
@@ -31,11 +29,14 @@ import android.text.TextUtils;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
+import org.junit.Assert;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 
 public final class WalletRoleTestUtils {
 
@@ -157,7 +158,7 @@ public final class WalletRoleTestUtils {
                     onRoleHoldersChangedListener, context.getUser());
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
-            assumeTrue(setDefaultWalletRoleHolder(context, roleHolder));
+            Assert.assertTrue(setDefaultWalletRoleHolder(context, roleHolder));
             countDownLatch.await(4000, TimeUnit.MILLISECONDS);
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(OBSERVE_ROLE_HOLDERS);
@@ -213,7 +214,8 @@ public final class WalletRoleTestUtils {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(MANAGE_ROLE_HOLDERS);
             if (currentHolder != null) {
-                assumeTrue(removeRoleHolder(context, currentHolder));
+                //TODO(b/336649490): we should assert that this succeeds.
+                removeRoleHolder(context, currentHolder);
                 countDownLatch.await(4000, TimeUnit.MILLISECONDS);
             }
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
