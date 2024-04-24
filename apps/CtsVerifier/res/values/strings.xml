@@ -5843,7 +5843,11 @@ You should be prompted to select credentials; choose the ones you just installed
         required to run this test and so can simply press the PASS button.
     </string>
     <string name="immersive_audio_onscreen_instructions">Invoke this test from the Immersive Audio test fixture.
-    If you are not testing an Immersive Audio device, simply press the PASS button.</string>
+        If you are not testing an Immersive Audio device, and the DUT DOES NOT support low-latency head tracking,
+        simply press the PASS button. If you are not testing an Immersive Audio device, and the DUT DOES support
+        low-latency head tracking, you must exit by pressing the BACK button.
+    </string>
+    <string name="immersive_audio_noheadtracking">"This Android device does not support low-latency headtracking."</string>
 
     <!-- Audio Loopback Latency Test -->
     <string name="audio_loopback_latency_test">Audio Loopback Latency Test</string>
