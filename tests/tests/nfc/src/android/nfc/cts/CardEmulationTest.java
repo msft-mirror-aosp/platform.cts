@@ -992,6 +992,22 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
+    public void testDisallowNonDefaultSetObserveMode() throws NoSuchFieldException {
+        restoreOriginalService();
+        runWithRole(mContext,  WalletRoleTestUtils.WALLET_HOLDER_PACKAGE_NAME, () -> {
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            assumeTrue(adapter.isObserveModeSupported());
+            adapter.notifyHceDeactivated();
+            Assert.assertFalse(adapter.setObserveModeEnabled(true));
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+        });
+        setMockService();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
+            Flags.FLAG_NFC_OBSERVE_MODE,
+            android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testAutoTransactDynamic_walletRoleEnabled() throws NoSuchFieldException {
         restoreOriginalService();
         runWithRole(mContext, CTS_PACKAGE_NAME, () -> {
@@ -1004,7 +1020,7 @@ public class CardEmulationTest {
             String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
             CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
             ComponentName customServiceName = new ComponentName(mContext,
-                    CustomHostApduService.class);
+                    CtsMyHostApduService.class);
             Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(customServiceName,
                     annotationStringHex, true));
             ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
@@ -1013,7 +1029,7 @@ public class CardEmulationTest {
             Assert.assertTrue(adapter.setObserveModeEnabled(true));
             Assert.assertTrue(adapter.isObserveModeEnabled());
             List<PollingFrame> receivedFrames =
-                    notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
+                    notifyPollingLoopAndWait(frames, CtsMyHostApduService.class.getName());
             Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
             Assert.assertFalse(adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
