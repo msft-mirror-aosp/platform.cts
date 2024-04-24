@@ -51,7 +51,8 @@
         <uses-library android:name="org.apache.http.legacy"
              android:required="false"/>
         <activity android:name="android.media.misc.cts.FaceDetectorStub"
-             android:label="FaceDetectorStub"/>
+             android:label="FaceDetectorStub"
+             android:exported="true"/>
         <activity android:name="android.media.misc.cts.ResourceManagerStubActivity"
              android:label="ResourceManagerStubActivity"
              android:exported="true">

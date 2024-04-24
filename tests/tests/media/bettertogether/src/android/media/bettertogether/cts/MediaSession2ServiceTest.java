@@ -32,6 +32,7 @@ import android.media.cts.TestUtils;
 import android.os.Bundle;
 import android.os.HandlerThread;
 import android.os.Process;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -54,6 +55,7 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@AppModeNonSdkSandbox(reason = "MediaSession2Service use is restricted to the sandbox.")
 public class MediaSession2ServiceTest {
     private static final long TIMEOUT_MS = 3000L;
     private static final long WAIT_TIME_FOR_NO_RESPONSE_MS = 500L;

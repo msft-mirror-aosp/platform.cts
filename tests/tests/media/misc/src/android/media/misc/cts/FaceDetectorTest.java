@@ -16,10 +16,12 @@
 
 package android.media.misc.cts;
 
+import android.Manifest;
 import android.content.Intent;
 import android.test.InstrumentationTestCase;
 
 import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.SystemUtil;
 
 @NonMainlineTest
 public class FaceDetectorTest extends InstrumentationTestCase {
@@ -33,7 +35,9 @@ public class FaceDetectorTest extends InstrumentationTestCase {
         intent.setClass(getInstrumentation().getTargetContext(), FaceDetectorStub.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(FaceDetectorStub.IMAGE_ID, R.drawable.faces);
-        mActivity = (FaceDetectorStub) getInstrumentation().startActivitySync(intent);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> mActivity = (FaceDetectorStub) getInstrumentation().startActivitySync(intent),
+                Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
     }
 
     @Override

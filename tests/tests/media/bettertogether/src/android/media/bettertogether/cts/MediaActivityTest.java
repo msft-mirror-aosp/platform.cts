@@ -41,6 +41,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -124,7 +125,10 @@ public class MediaActivityTest {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(MediaSessionTestActivity.KEY_SESSION_TOKEN, mSession.getSessionToken());
 
-        mActivityScenario = ActivityScenario.launch(intent);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> mActivityScenario = ActivityScenario.launch(intent),
+                Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX
+        );
         ConditionVariable activityReferenceObtained = new ConditionVariable();
         mActivityScenario.onActivity(activity -> {
             mActivity = activity;
