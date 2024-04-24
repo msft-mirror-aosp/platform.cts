@@ -352,6 +352,47 @@ def get_max_preview_test_size(cam, camera_id):
 
   return preview_test_size
 
+def get_max_extension_preview_test_size(cam, camera_id, extension):
+  """Finds the max preview size for an extension to be tested.
+
+  If the device supports the _HIGH_RES_SIZE preview size then
+  it uses that for testing, otherwise uses the max supported
+  preview size capped at _PREVIEW_MAX_TESTED_AREA.
+
+  Args:
+    cam: camera object
+    camera_id: str; camera device id under test
+    extension: int; camera extension mode under test
+
+  Returns:
+    preview_test_size: str; wxh resolution of the size to be tested
+  """
+  resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+  supported_preview_sizes = (
+      cam.get_supported_extension_preview_sizes(camera_id, extension))
+  supported_preview_sizes = [size for size in supported_preview_sizes
+                             if resolution_to_area(size)
+                             >= video_processing_utils.LOWEST_RES_TESTED_AREA]
+  logging.debug('Supported preview resolutions for extension %d: %s',
+                extension, supported_preview_sizes)
+
+  if _HIGH_RES_SIZE in supported_preview_sizes:
+    preview_test_size = _HIGH_RES_SIZE
+  else:
+    capped_supported_preview_sizes = [
+        size
+        for size in supported_preview_sizes
+        if (
+            resolution_to_area(size) <= _PREVIEW_MAX_TESTED_AREA
+            and resolution_to_area(size) >= _PREVIEW_MIN_TESTED_AREA
+        )
+    ]
+    preview_test_size = capped_supported_preview_sizes[-1]
+
+  logging.debug('Selected preview resolution: %s', preview_test_size)
+
+  return preview_test_size
+
 
 def mirror_preview_image_by_sensor_orientation(
     sensor_orientation, input_preview_img):
