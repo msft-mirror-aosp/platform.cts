@@ -52,7 +52,7 @@ import java.util.Set;
 public class BuildVersionTest {
 
     private static final String LOG_TAG = "BuildVersionTest";
-    private static final List<Integer> EXPECTED_SDKS = List.of(34);
+    private static final List<Integer> EXPECTED_SDKS = List.of(34, 35);
     private static final String EXPECTED_BUILD_VARIANT = "user";
     private static final String EXPECTED_KEYS = "release-keys";
     private static final String PLATFORM_RELEASES_FILE = "platform_releases.txt";

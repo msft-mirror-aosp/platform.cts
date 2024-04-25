@@ -117,7 +117,7 @@ public class FgsTimeoutTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testTimeout() {
-        final long serviceStartTime = SystemClock.elapsedRealtime();
+        final long serviceStartTime = SystemClock.uptimeMillis();
         // Start the service
         startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
         final int startId = waitForMethodCall(FGS0, "onStartCommand").getServiceStartId();
@@ -147,7 +147,7 @@ public class FgsTimeoutTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testTimeout_startService() {
-        final long serviceStartTime = SystemClock.elapsedRealtime();
+        final long serviceStartTime = SystemClock.uptimeMillis();
         // Start the service (using startService)
         FgsTimeoutMessageReceiver.sendMessage(newMessage()
                 .setComponentName(FGS0)
@@ -187,7 +187,7 @@ public class FgsTimeoutTest {
 
         try (AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
                 HELPER_PACKAGE)) {
-            final long startTime = SystemClock.elapsedRealtime();
+            final long startTime = SystemClock.uptimeMillis();
             // Start the service
             startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
             waitForMethodCall(FGS0, "onStartCommand");
@@ -211,7 +211,7 @@ public class FgsTimeoutTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testTimeout_withAnotherFgs() {
-        final long serviceStartTime = SystemClock.elapsedRealtime();
+        final long serviceStartTime = SystemClock.uptimeMillis();
         // Start a time-restricted fgs
         startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
         final int startId = waitForMethodCall(FGS0, "onStartCommand").getServiceStartId();
@@ -408,7 +408,7 @@ public class FgsTimeoutTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testStartServiceThrowsExceptionAfterTimeout() {
-        final long serviceStartTime = SystemClock.elapsedRealtime();
+        final long serviceStartTime = SystemClock.uptimeMillis();
         // Start the service
         startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
         final int startId = waitForMethodCall(FGS0, "onStartCommand").getServiceStartId();

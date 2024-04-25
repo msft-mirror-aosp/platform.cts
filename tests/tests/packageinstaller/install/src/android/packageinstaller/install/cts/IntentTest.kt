@@ -200,8 +200,7 @@ class IntentTest : PackageInstallerTestBase() {
     }
 
     @Test
-    @RequireAdbRoot(reason = "b/322830652 fill in reason")
-    @Ignore("b/322830652: Test suite runs on non-rooted devices only.")
+    @RequireAdbRoot(reason = "b/322830652 Required for TestApis() to set user restriction")
     fun disallowInstallApps_installFails() {
         try {
             TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, true)
