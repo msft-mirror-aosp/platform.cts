@@ -22,6 +22,7 @@ import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assertEqualWindowLayoutInfo;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeHasDisplayFeatures;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getExtensionWindowLayoutInfo;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionAtLeast;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.assumeSidecarSupportedDevice;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.getSidecarInterface;
@@ -437,16 +438,21 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         mWindowLayoutInfo = getExtensionWindowLayoutInfo(configHandlingActivity);
         assumeHasDisplayFeatures(mWindowLayoutInfo);
 
-        final WindowLayoutInfo initialInfo = getExtensionWindowLayoutInfo(
-                configHandlingActivity);
+        TestValueCountConsumer<WindowLayoutInfo> consumer = new TestValueCountConsumer<>();
+        // We expect 3 values, 1 before entering PiP, one while in PiP, one after exiting PiP.
+        consumer.setCount(3);
+        getWindowExtensions().getWindowLayoutComponent().addWindowLayoutInfoListener(
+                configHandlingActivity, consumer);
 
         enterPipActivityHandlesConfigChanges(configHandlingActivity);
         exitPipActivityHandlesConfigChanges(configHandlingActivity);
 
-        final WindowLayoutInfo updatedInfo = getExtensionWindowLayoutInfo(
-                configHandlingActivity);
+        List<WindowLayoutInfo> values = consumer.waitAndGetAllValues();
 
-        assertEquals(initialInfo, updatedInfo);
+        assertEquals(3, values.size());
+        assertEquals(mWindowLayoutInfo, values.get(0));
+        assertTrue(values.get(1).getDisplayFeatures().isEmpty());
+        assertEquals(mWindowLayoutInfo, values.get(2));
     }
 
     /**
