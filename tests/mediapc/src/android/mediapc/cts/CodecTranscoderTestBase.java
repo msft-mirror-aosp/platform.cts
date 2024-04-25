@@ -42,7 +42,7 @@ public class CodecTranscoderTestBase {
     private static final String LOG_TAG = CodecTranscoderTestBase.class.getSimpleName();
     private static final boolean ENABLE_LOGS = false;
     static final String mInpPrefix = WorkDir.getMediaDirString();
-    String mMime;
+    String mMediaType;
     String mTestFile;
     int mBitrate;
     int mFrameRate;
@@ -71,9 +71,9 @@ public class CodecTranscoderTestBase {
     int mDecOutputCount;
     int mEncOutputCount;
 
-    CodecTranscoderTestBase(String mime, String testfile, int bitrate, int frameRate,
+    CodecTranscoderTestBase(String mediaType, String testfile, int bitrate, int frameRate,
             boolean useHighBitDepth) {
-        mMime = mime;
+        mMediaType = mediaType;
         mTestFile = testfile;
         mBitrate = bitrate;
         mFrameRate = frameRate;
@@ -94,8 +94,8 @@ public class CodecTranscoderTestBase {
         mExtractor.setDataSource(mInpPrefix + srcFile);
         for (int trackID = 0; trackID < mExtractor.getTrackCount(); trackID++) {
             MediaFormat format = mExtractor.getTrackFormat(trackID);
-            String mime = format.getString(MediaFormat.KEY_MIME);
-            if (mime.startsWith("video/")) {
+            String mediaType = format.getString(MediaFormat.KEY_MIME);
+            if (mediaType.startsWith("video/")) {
                 mExtractor.selectTrack(trackID);
                 format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                         MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
@@ -368,7 +368,7 @@ public class CodecTranscoderTestBase {
 
     MediaFormat setUpEncoderFormat(MediaFormat decoderFormat) {
         MediaFormat encoderFormat = new MediaFormat();
-        encoderFormat.setString(MediaFormat.KEY_MIME, mMime);
+        encoderFormat.setString(MediaFormat.KEY_MIME, mMediaType);
         encoderFormat.setInteger(MediaFormat.KEY_WIDTH,
                 decoderFormat.getInteger(MediaFormat.KEY_WIDTH));
         encoderFormat.setInteger(MediaFormat.KEY_HEIGHT,
@@ -383,7 +383,7 @@ public class CodecTranscoderTestBase {
                 decoderFormat.getInteger(MediaFormat.KEY_PRIORITY));
         if (mUseHighBitDepth) {
             encoderFormat.setInteger(MediaFormat.KEY_PROFILE,
-                    Objects.requireNonNull(PROFILE_HLG_MAP.get(mMime))[0]);
+                    Objects.requireNonNull(PROFILE_HLG_MAP.get(mMediaType))[0]);
             encoderFormat.setInteger(MediaFormat.KEY_LEVEL, 1);
         }
         return encoderFormat;
@@ -400,9 +400,9 @@ class Transcode extends CodecTranscoderTestBase implements Callable<CodecMetrics
     final String mEncoderName;
     final boolean mIsAsync;
 
-    Transcode(String mime, String testFile, String decoderName, String encoderName,
+    Transcode(String mediaType, String testFile, String decoderName, String encoderName,
             boolean isAsync, boolean useHighBitDepth) {
-        super(mime, testFile, 3000000, 30, useHighBitDepth);
+        super(mediaType, testFile, 3000000, 30, useHighBitDepth);
         mDecoderName = decoderName;
         mEncoderName = encoderName;
         mIsAsync = isAsync;
@@ -436,8 +436,8 @@ class Transcode extends CodecTranscoderTestBase implements Callable<CodecMetrics
         mEncoder.release();
         mExtractor.release();
         double fps = mEncOutputCount / ((end - start) / 1000.0);
-        Log.d(LOG_TAG, "Mime: " + mMime + " Decoder: " + mDecoderName + " Encoder: " +
-                mEncoderName + " Achieved fps: " + fps);
+        Log.d(LOG_TAG, "MediaType: " + mMediaType + " Decoder: " + mDecoderName + " Encoder: "
+                + mEncoderName + " Achieved fps: " + fps);
         return getMetrics(fps, mFrameDrops / 30);
     }
 
@@ -446,7 +446,7 @@ class Transcode extends CodecTranscoderTestBase implements Callable<CodecMetrics
         try {
             return doTranscode();
         } catch (Exception e) {
-            Log.d(LOG_TAG, "Mime: " + mMime + " Decoder: " + mDecoderName + " Encoder: "
+            Log.d(LOG_TAG, "MediaType: " + mMediaType + " Decoder: " + mDecoderName + " Encoder: "
                     + mEncoderName + " Failed due to: " + e);
             return getMetrics(-1.0, 0.0);
         }
@@ -467,9 +467,9 @@ class TranscodeLoad extends Transcode {
     private long mMaxPts;
     private long mBasePts;
 
-    TranscodeLoad(String mime, String testFile, String decoderName, String encoderName,
+    TranscodeLoad(String mediaType, String testFile, String decoderName, String encoderName,
             LoadStatus loadStatus) {
-        super(mime, testFile, decoderName, encoderName, false, false);
+        super(mediaType, testFile, decoderName, encoderName, false, false);
         mLoadStatus = loadStatus;
         mMaxPts = 0;
         mBasePts = 0;
@@ -478,7 +478,7 @@ class TranscodeLoad extends Transcode {
     @Override
     MediaFormat setUpEncoderFormat(MediaFormat decoderFormat) {
         MediaFormat encoderFormat = new MediaFormat();
-        encoderFormat.setString(MediaFormat.KEY_MIME, mMime);
+        encoderFormat.setString(MediaFormat.KEY_MIME, mMediaType);
         encoderFormat.setInteger(MediaFormat.KEY_FRAME_RATE, mFrameRate);
         encoderFormat.setInteger(MediaFormat.KEY_BIT_RATE, mBitrate);
         encoderFormat.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, 1.0f);
@@ -545,8 +545,8 @@ class TranscodeLoad extends Transcode {
         mExtractor.release();
         double fps = mEncOutputCount / ((end - start) / 1000.0);
         Log.d(LOG_TAG,
-                "Mime: " + mMime + " Decoder: " + mDecoderName + " Encoder: " + mEncoderName
-                        + " Achieved fps: " + fps);
+                "MediaType: " + mMediaType + " Decoder: " + mDecoderName + " Encoder: "
+                        + mEncoderName + " Achieved fps: " + fps);
         return getMetrics(fps, mFrameDrops / 30);
     }
 
