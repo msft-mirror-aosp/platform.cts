@@ -217,7 +217,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
             // The second dialog will be shown to confirm update ownership
             clickInstallerUIButton(INSTALL_BUTTON_ID)
 
-            assertThat(result.get(TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)
+            assertThat(result.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)
             assertInstalled()
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()

@@ -29,10 +29,10 @@ import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.runner.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
-import com.android.xts.root.annotations.RequireAdbRoot
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
 import com.android.compatibility.common.util.SystemUtil
+import com.android.xts.root.annotations.RequireAdbRoot
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -58,7 +58,6 @@ class IntentTest : PackageInstallerTestBase() {
                 "TCWSFu2YqAVxVdiRKAay19k5VFlSaM7QW9uhvlrLQqsTW01ofFzxNDbp2QfIFHZR6rebKzK" +
                 "Bz6byQFM0DYQnYMwFWXjWkMPNdqkRLykoFLyBup53G68k2n8wl27jEBRNRG3ozwBsGr"
         const val NO_INSTALL_APPS_RESTRICTION_TEXT = "This user is not allowed to install apps"
-        const val TIMEOUT = 60000L
         const val DISABLED_LAUNCHER_ACTIVITY_PKG_NAME =
                 "android.packageinstaller.disabledlauncheractivity.cts"
         const val INSTALL_SUCCESS_TEXT = "App installed."
@@ -78,7 +77,7 @@ class IntentTest : PackageInstallerTestBase() {
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         // Install should have succeeded
-        assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertInstalled()
         var originatingPackageName: String? = null
         SystemUtil.runWithShellPermissionIdentity(
@@ -99,7 +98,7 @@ class IntentTest : PackageInstallerTestBase() {
         clickInstallerUIButton(CANCEL_BUTTON_ID)
 
         // Install should have been aborted
-        assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertNotInstalled()
     }
 
@@ -115,7 +114,7 @@ class IntentTest : PackageInstallerTestBase() {
 
         // Install should have succeeded, and system will use the given installer package name
         // in EXTRA_INSTALLER_PACKAGE_NAME as the installer.
-        assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(context.opPackageName, getInstallSourceInfo().installingPackageName)
     }
 
@@ -133,7 +132,7 @@ class IntentTest : PackageInstallerTestBase() {
 
         // Install should have succeeded, but system won't use the given installer package name
         // in EXTRA_INSTALLER_PACKAGE_NAME as the installer.
-        assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(
             getInstallSourceInfo().initiatingPackageName,
                 getInstallSourceInfo().installingPackageName
@@ -153,7 +152,7 @@ class IntentTest : PackageInstallerTestBase() {
 
         // Install should have succeeded, but system won't use the given installer package name
         // in EXTRA_INSTALLER_PACKAGE_NAME as the installer.
-        assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(
             getInstallSourceInfo().initiatingPackageName,
                 getInstallSourceInfo().installingPackageName
@@ -179,7 +178,7 @@ class IntentTest : PackageInstallerTestBase() {
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         // Install should have succeeded
-        assertEquals(RESULT_OK, reinstall.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_OK, reinstall.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertInstalled()
     }
 
@@ -213,12 +212,12 @@ class IntentTest : PackageInstallerTestBase() {
                 "Error dialog not shown",
                 uiDevice.wait(
                     Until.findObject(By.text(NO_INSTALL_APPS_RESTRICTION_TEXT)),
-                    TIMEOUT
+                    GLOBAL_TIMEOUT
                 )
             )
             clickInstallerUIButton(INSTALL_BUTTON_ID)
 
-            assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+            assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         } finally {
             TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, false)
         }
@@ -237,7 +236,7 @@ class IntentTest : PackageInstallerTestBase() {
         // Wait for success dialog
         assertNotNull(
             "Success dialog not shown",
-            uiDevice.wait(Until.findObject(By.text(INSTALL_SUCCESS_TEXT)), TIMEOUT)
+            uiDevice.wait(Until.findObject(By.text(INSTALL_SUCCESS_TEXT)), GLOBAL_TIMEOUT)
         )
 
         // Since the dialog is already visible, no need to wait for long for the "Open" button.

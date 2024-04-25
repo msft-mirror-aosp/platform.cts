@@ -99,7 +99,7 @@ class SessionTest : PackageInstallerTestBase() {
         assertInstalled()
 
         // Even when the install succeeds the install confirm dialog returns 'canceled'
-        assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
 
         assertTrue(AppOpsUtils.allowedOperationLogged(context.packageName, APP_OP_STR))
     }
@@ -123,7 +123,7 @@ class SessionTest : PackageInstallerTestBase() {
         assertInstalled()
 
         // Even when the install succeeds the install confirm dialog returns 'canceled'
-        assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
 
         assertTrue(AppOpsUtils.allowedOperationLogged(context.packageName, APP_OP_STR))
     }
@@ -198,7 +198,7 @@ class SessionTest : PackageInstallerTestBase() {
         val result = getInstallSessionResult()
         assertEquals(STATUS_FAILURE_ABORTED, result.status)
         assertEquals(false, result.preapproval)
-        assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertNotInstalled()
     }
 

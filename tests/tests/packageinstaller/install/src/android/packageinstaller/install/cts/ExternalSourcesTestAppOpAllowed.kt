@@ -42,7 +42,7 @@ class ExternalSourcesTestAppOpAllowed : PackageInstallerTestBase() {
     private val packageName = context.packageName
 
     private fun assertUiObject(errorMessage: String, selector: BySelector) {
-        assertNotNull(errorMessage, uiDevice.wait(Until.findObject(selector), TIMEOUT))
+        assertNotNull(errorMessage, uiDevice.wait(Until.findObject(selector), GLOBAL_TIMEOUT))
     }
 
     private fun assertInstallAllowed(errorMessage: String) {

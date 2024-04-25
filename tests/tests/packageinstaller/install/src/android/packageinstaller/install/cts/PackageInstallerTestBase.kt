@@ -48,6 +48,8 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.DisableAnimationRule
 import com.android.compatibility.common.util.FutureResultActivity
@@ -87,7 +89,8 @@ open class PackageInstallerTestBase {
         const val PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE =
                 "is_update_ownership_enforcement_available"
 
-        const val TIMEOUT = 60000L
+        const val GLOBAL_TIMEOUT = 60000L
+        const val FIND_OBJECT_TIMEOUT = 1000L
         const val INSTALL_INSTANT_APP = 0x00000800
         const val INSTALL_REQUEST_UPDATE_OWNERSHIP = 0x02000000
 
@@ -106,7 +109,8 @@ open class PackageInstallerTestBase {
 
     protected val pm: PackageManager = context.packageManager
     protected val pi = pm.packageInstaller
-    protected val uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    protected val instrumentation = InstrumentationRegistry.getInstrumentation()
+    protected val uiDevice = UiDevice.getInstance(instrumentation)
     private val apkFile = File(context.filesDir, TEST_APK_NAME)
 
     data class SessionResult(val status: Int?, val preapproval: Boolean?, val message: String?)
@@ -173,13 +177,13 @@ open class PackageInstallerTestBase {
     /**
      * Wait for session's install result and return it
      */
-    protected fun getInstallSessionResult(timeout: Long = TIMEOUT): SessionResult {
+    protected fun getInstallSessionResult(timeout: Long = GLOBAL_TIMEOUT): SessionResult {
         return getInstallSessionResult(installSessionResult, timeout)
     }
 
     protected fun getInstallSessionResult(
         installResult: LinkedBlockingQueue<SessionResult>,
-        timeout: Long = TIMEOUT
+        timeout: Long = GLOBAL_TIMEOUT,
     ): SessionResult {
         return installResult.poll(timeout, TimeUnit.MILLISECONDS)
             ?: SessionResult(null /* status */, null /* preapproval */, "Fail to poll result")
@@ -239,9 +243,9 @@ open class PackageInstallerTestBase {
     }
 
     protected fun commitSession(
-            session: Session,
-            expectedPrompt: Boolean = true,
-            needFuture: Boolean = false
+        session: Session,
+        expectedPrompt: Boolean = true,
+        needFuture: Boolean = false,
     ): CompletableFuture<Int>? {
         var intent = Intent(INSTALL_ACTION_CB)
                 .setPackage(context.getPackageName())
@@ -276,7 +280,7 @@ open class PackageInstallerTestBase {
     protected fun startRequestUserPreapproval(
         session: Session,
         details: PreapprovalDetails,
-        expectedPrompt: Boolean = true
+        expectedPrompt: Boolean = true,
     ) {
         // In some abnormal cases, passing expectedPrompt as false to return immediately without
         // waiting for timeout (60 secs).
@@ -305,7 +309,7 @@ open class PackageInstallerTestBase {
         packageSource: Int? = null,
         expectedPrompt: Boolean = true,
         needFuture: Boolean = false,
-        paramsBlock: (PackageInstaller.SessionParams) -> Unit = {}
+        paramsBlock: (PackageInstaller.SessionParams) -> Unit = {},
     ): CompletableFuture<Int>? {
         val (_, session) = createSession(installFlags, false, packageSource, paramsBlock)
         writeSession(session, apkName)
@@ -313,9 +317,9 @@ open class PackageInstallerTestBase {
     }
 
     protected fun writeAndCommitSession(
-            apkName: String,
-            session: Session,
-            expectedPrompt: Boolean = true
+        apkName: String,
+        session: Session,
+        expectedPrompt: Boolean = true,
     ) {
         writeSession(session, apkName)
         commitSession(session, expectedPrompt)
@@ -324,7 +328,7 @@ open class PackageInstallerTestBase {
     protected fun startInstallationViaMultiPackageSession(
         installFlags: Int,
         vararg apkNames: String,
-        needFuture: Boolean = false
+        needFuture: Boolean = false,
     ): CompletableFuture<Int>? {
         val (sessionId, session) = createSession(installFlags, true, null)
         for (apkName in apkNames) {
@@ -339,7 +343,7 @@ open class PackageInstallerTestBase {
      * Start an installation via an Intent
      */
     protected fun startInstallationViaIntent(
-            intent: Intent = getInstallationIntent()
+        intent: Intent = getInstallationIntent(),
     ): CompletableFuture<Int> {
         return installDialogStarter.activity.startActivityForResult(intent)
     }
@@ -361,13 +365,14 @@ open class PackageInstallerTestBase {
     }
 
     fun assertInstalled(
-        flags: PackageManager.PackageInfoFlags = PackageManager.PackageInfoFlags.of(0)
+        flags: PackageManager.PackageInfoFlags = PackageManager.PackageInfoFlags.of(0),
     ): PackageInfo {
         // Throws exception if package is not installed.
         return pm.getPackageInfo(TEST_APK_PACKAGE_NAME, flags)
     }
 
-    fun assertInstalled(packageName: String,
+    fun assertInstalled(
+        packageName: String,
         flags: PackageManager.PackageInfoFlags = PackageManager.PackageInfoFlags.of(0),
     ): PackageInfo {
         // Throws exception if package is not installed.
@@ -406,11 +411,16 @@ open class PackageInstallerTestBase {
      * @param bySelector The bySelector of the button to click
      */
     fun clickInstallerUIButton(bySelector: BySelector) {
+        // Wait for a minimum 2000ms and maximum 10000ms for the UI to become idle.
+        instrumentation.uiAutomation.waitForIdle(
+            (2 * FIND_OBJECT_TIMEOUT), (10 * FIND_OBJECT_TIMEOUT)
+        )
+
         var button: UiObject2? = null
         val startTime = System.currentTimeMillis()
-        while (startTime + TIMEOUT > System.currentTimeMillis()) {
+        while (startTime + GLOBAL_TIMEOUT > System.currentTimeMillis()) {
             try {
-                button = uiDevice.wait(Until.findObject(bySelector), 1000)
+                button = uiDevice.wait(Until.findObject(bySelector), FIND_OBJECT_TIMEOUT)
                 if (button != null) {
                     Log.d(TAG, "Found bounds: ${button.getVisibleBounds()} of button $bySelector," +
                             " text: ${button.getText()}," +
@@ -418,8 +428,8 @@ open class PackageInstallerTestBase {
                     button.click()
                     return
                 } else {
-                    // Maybe the screen is small. Swipe down and attempt to click
-                    swipeDown()
+                    // Maybe the screen is small. Scroll forward and attempt to click
+                    scroll()
                 }
             } catch (ignore: Throwable) {
             }
@@ -427,12 +437,8 @@ open class PackageInstallerTestBase {
         Assert.fail("Failed to click the button: $bySelector")
     }
 
-    private fun swipeDown() {
-        // Perform a swipe from the center of the screen to the top of the screen.
-        // Higher the "steps" value, slower is the swipe
-        val centerX = uiDevice.displayWidth / 2
-        val centerY = uiDevice.displayHeight / 2
-        uiDevice.swipe(centerX, centerY, centerX, 0, 10)
+    private fun scroll() {
+        UiScrollable(UiSelector().scrollable(true)).scrollForward()
     }
 
     /**
