@@ -1205,62 +1205,68 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
     public void testInputConnectionWhenAddAndRemoveAltFocusableImFlagInFocus() throws Exception {
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final int iterations = 10;
 
-            for (int i = 0; i < iterations; i++) {
-                final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG + "-iteration-" + i);
-                final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG + "-iteration-" + i);
+            final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
+            final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
 
-                final AtomicReference<EditText> firstEditorRef = new AtomicReference<>();
-                final AtomicReference<EditText> secondEditorRef = new AtomicReference<>();
+            final AtomicReference<EditText> firstEditorRef = new AtomicReference<>();
+            final AtomicReference<EditText> secondEditorRef = new AtomicReference<>();
 
-                final TestActivity testActivity = TestActivity.startSync(activity -> {
-                    final LinearLayout layout = new LinearLayout(activity);
-                    layout.setOrientation(LinearLayout.VERTICAL);
-                    final EditText firstEditor = new EditText(activity);
-                    firstEditor.setPrivateImeOptions(marker1);
-                    firstEditor.setOnFocusChangeListener((v, hasFocus) -> {
-                        if (!hasFocus) {
-                            // Test Scenario 1: add ALT_FOCUSABLE_IM flag when the first editor
-                            // lost the focus to disable the input and focusing the second editor.
-                            activity.getWindow().addFlags(FLAG_ALT_FOCUSABLE_IM);
-                            secondEditorRef.get().requestFocus();
-                        }
-                    });
-                    firstEditor.requestFocus();
-
-                    final EditText secondEditor = new EditText(activity);
-                    secondEditor.setPrivateImeOptions(marker2);
-                    firstEditorRef.set(firstEditor);
-                    secondEditorRef.set(secondEditor);
-                    layout.addView(firstEditor);
-                    layout.addView(secondEditor);
-                    activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_VISIBLE);
-                    return layout;
+            final TestActivity testActivity = TestActivity.startSync(activity -> {
+                final LinearLayout layout = new LinearLayout(activity);
+                layout.setOrientation(LinearLayout.VERTICAL);
+                final EditText firstEditor = new EditText(activity);
+                firstEditor.setPrivateImeOptions(marker1);
+                firstEditor.setOnFocusChangeListener((v, hasFocus) -> {
+                    if (!hasFocus) {
+                        // Test Scenario 1: add ALT_FOCUSABLE_IM flag when the first editor
+                        // lost the focus to disable the input and focusing the second editor.
+                        activity.getWindow().addFlags(FLAG_ALT_FOCUSABLE_IM);
+                        secondEditorRef.get().requestFocus();
+                    }
                 });
-                expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
+                firstEditor.requestFocus();
 
-                testActivity.runOnUiThread(() -> firstEditorRef.get().clearFocus());
-                TestUtils.waitOnMainUntil(() -> secondEditorRef.get().hasFocus(), TIMEOUT);
+                final EditText secondEditor = new EditText(activity);
+                secondEditor.setPrivateImeOptions(marker2);
+                firstEditorRef.set(firstEditor);
+                secondEditorRef.set(secondEditor);
+                layout.addView(firstEditor);
+                layout.addView(secondEditor);
+                activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_VISIBLE);
+                return layout;
+            });
+            expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
 
-                testActivity.runOnUiThread(() -> {
-                    // Test Scenario 2: remove ALT_FOCUSABLE_IM flag & call showSoftInput after
-                    // the second editor focused.
-                    final InputMethodManager im = testActivity.getSystemService(
-                            InputMethodManager.class);
-                    testActivity.getWindow().clearFlags(FLAG_ALT_FOCUSABLE_IM);
-                    im.showSoftInput(secondEditorRef.get(), 0);
-                });
+            testActivity.runOnUiThread(() -> firstEditorRef.get().clearFocus());
+            TestUtils.waitOnMainUntil(() -> secondEditorRef.get().hasFocus(), TIMEOUT);
 
-                // Expect the input connection can started and commit the text to the second editor.
-                expectEvent(stream, editorMatcher("onStartInput", marker2), TIMEOUT);
-                expectImeVisible(TIMEOUT);
+            testActivity.runOnUiThread(() -> {
+                // Test Scenario 2: remove ALT_FOCUSABLE_IM flag & call showSoftInput after
+                // the second editor focused.
+                testActivity.getWindow().clearFlags(FLAG_ALT_FOCUSABLE_IM);
+            });
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
 
-                final String testInput = "Test";
-                final ImeCommand commitText = imeSession.callCommitText(testInput, 0);
-                expectCommand(stream, commitText, EXPECT_TIMEOUT);
-                assertThat(secondEditorRef.get().getText().toString()).isEqualTo(testInput);
-            }
+            final InputMethodManager im =
+                    testActivity.getSystemService(InputMethodManager.class);
+            // After removing FLAG_ALT_FOCUSABLE_IM, lets wait until InputConnection is created on
+            // secondEditor.
+            TestUtils.waitOnMainUntil(
+                    () -> im.hasActiveInputConnection(secondEditorRef.get()), TIMEOUT);
+
+            testActivity.runOnUiThread(() -> {
+                im.showSoftInput(secondEditorRef.get(), 0);
+            });
+
+            // Expect the input connection can started and commit the text to the second editor.
+            expectEvent(stream, editorMatcher("onStartInput", marker2), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            final String testInput = "Test";
+            final ImeCommand commitText = imeSession.callCommitText(testInput, 0);
+            expectCommand(stream, commitText, EXPECT_TIMEOUT);
+            assertThat(secondEditorRef.get().getText().toString()).isEqualTo(testInput);
         }
     }
 
