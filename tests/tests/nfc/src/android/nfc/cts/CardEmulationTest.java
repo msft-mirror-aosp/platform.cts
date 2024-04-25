@@ -41,6 +41,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
+import android.testing.PollingCheck;
 import android.view.KeyEvent;
 
 import androidx.test.InstrumentationRegistry;
@@ -852,7 +853,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE})
-    public void testAutoTransact() {
+    public void testAutoTransact() throws Exception {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
@@ -873,9 +874,10 @@ public class CardEmulationTest {
             List<PollingFrame> receivedFrames =
                     notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
             Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
-            Assert.assertFalse(adapter.isObserveModeEnabled());
+            PollingCheck.check("Observe mode not disabled", 200,
+                    () -> !adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
-            Assert.assertTrue(adapter.isObserveModeEnabled());
+            PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
         } finally {
             adapter.setObserveModeEnabled(false);
             cardEmulation.unsetPreferredService(activity);
@@ -887,7 +889,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
-    public void testAutoTransact_walletRoleEnabled() throws NoSuchFieldException {
+    public void testAutoTransact_walletRoleEnabled() throws Exception {
         restoreOriginalService();
         runWithRole(mContext, CTS_PACKAGE_NAME, () -> {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
@@ -905,10 +907,16 @@ public class CardEmulationTest {
             List<PollingFrame> receivedFrames =
                     notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
             Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
-            Assert.assertFalse(adapter.isObserveModeEnabled());
-            adapter.notifyHceDeactivated();
-            Assert.assertTrue(adapter.isObserveModeEnabled());
-            adapter.setObserveModeEnabled(false);
+            try {
+                PollingCheck.check("Observe mode not disabled", 200,
+                        () -> !adapter.isObserveModeEnabled());
+                adapter.notifyHceDeactivated();
+                PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                adapter.setObserveModeEnabled(false);
+            }
         });
         setMockService();
     }
@@ -916,7 +924,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE})
-    public void testAutoTransactDynamic() {
+    public void testAutoTransactDynamic() throws Exception {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
@@ -940,9 +948,10 @@ public class CardEmulationTest {
             List<PollingFrame> receivedFrames =
                     notifyPollingLoopAndWait(frames, CustomHostApduService.class.getName());
             Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
-            Assert.assertFalse(adapter.isObserveModeEnabled());
+            PollingCheck.check("Observe mode not disabled", 200,
+                    () -> !adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
-            Assert.assertTrue(adapter.isObserveModeEnabled());
+            PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
         } finally {
             adapter.setObserveModeEnabled(false);
             cardEmulation.unsetPreferredService(activity);
@@ -954,7 +963,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE})
-    public void testOffHostAutoTransactDynamic() {
+    public void testOffHostAutoTransactDynamic() throws Exception {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
@@ -978,9 +987,10 @@ public class CardEmulationTest {
             Assert.assertTrue(adapter.setObserveModeEnabled(true));
             Assert.assertTrue(adapter.isObserveModeEnabled());
             adapter.notifyPollingLoop(frame);
-            Assert.assertFalse(adapter.isObserveModeEnabled());
+            PollingCheck.check("Observe mode not disabled", 200,
+                    () -> !adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
-            Assert.assertTrue(adapter.isObserveModeEnabled());
+            PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
         } finally {
             adapter.setObserveModeEnabled(false);
             cardEmulation.unsetPreferredService(activity);
@@ -1008,7 +1018,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
-    public void testAutoTransactDynamic_walletRoleEnabled() throws NoSuchFieldException {
+    public void testAutoTransactDynamic_walletRoleEnabled() throws Exception {
         restoreOriginalService();
         runWithRole(mContext, CTS_PACKAGE_NAME, () -> {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
@@ -1031,10 +1041,16 @@ public class CardEmulationTest {
             List<PollingFrame> receivedFrames =
                     notifyPollingLoopAndWait(frames, CtsMyHostApduService.class.getName());
             Assert.assertTrue(receivedFrames.get(0).getTriggeredAutoTransact());
-            Assert.assertFalse(adapter.isObserveModeEnabled());
-            adapter.notifyHceDeactivated();
-            Assert.assertTrue(adapter.isObserveModeEnabled());
-            adapter.setObserveModeEnabled(false);
+            try {
+                PollingCheck.check("Observe mode not disabled", 200,
+                        () -> !adapter.isObserveModeEnabled());
+                adapter.notifyHceDeactivated();
+                PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                adapter.setObserveModeEnabled(false);
+            }
         });
         setMockService();
     }
