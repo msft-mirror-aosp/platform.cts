@@ -477,6 +477,7 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
         final int userId = createUserAndWaitStart();
         installAppAsUser(INTENT_RECEIVER_APK, userId);
         installAppAsUser(DEVICE_ADMIN_APK, userId);
+        setProfileOwnerOrFail(DEVICE_ADMIN_COMPONENT_FLATTENED, userId);
         return userId;
     }
 
