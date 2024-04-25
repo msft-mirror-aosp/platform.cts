@@ -403,28 +403,6 @@ public class PerformanceClassEvaluator {
         }
 
         /**
-         * [2.2.7.1/5.1/H-1-8] MUST have a codec initialization latency of 50(R) / 40(S) / 30(T)
-         * ms or less for a 128 kbps or lower bitrate audio encoding session for all audio
-         * encoders when under load. Load here is defined as a concurrent 1080p to 720p
-         * video-only transcoding session using hardware video codecs together with the 1080p
-         * audio-video recording initialization.
-         */
-        public static CodecInitLatencyRequirement createR5_1__H_1_8() {
-            RequiredMeasurement<Long> codec_init_latency =
-                RequiredMeasurement.<Long>builder().setId(RequirementConstants.CODEC_INIT_LATENCY)
-                        .setPredicate(RequirementConstants.LONG_LTE)
-                        .addRequiredValue(Build.VERSION_CODES.R, 50L)
-                        .addRequiredValue(Build.VERSION_CODES.S, 40L)
-                        .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 30L)
-                        .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 30L)
-                        .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 30L)
-                        .build();
-
-            return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_8,
-                codec_init_latency);
-        }
-
-        /**
          * [2.2.7.1/5.1/H-1-12] Codec initialization latency of 40ms or less for a 1080p or
          * smaller video decoding session for all hardware video encoders when under load. Load
          * here is defined as a concurrent 1080p to 720p video-only transcoding session using
@@ -2390,10 +2368,6 @@ public class PerformanceClassEvaluator {
 
     public CodecInitLatencyRequirement addR5_1__H_1_7(String mediaType) {
         return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_7(mediaType));
-    }
-
-    public CodecInitLatencyRequirement addR5_1__H_1_8() {
-        return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_8());
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_9_1080p() {

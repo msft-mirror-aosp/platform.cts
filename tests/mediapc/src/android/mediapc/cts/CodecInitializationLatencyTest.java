@@ -40,6 +40,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Utils;
 import android.os.SystemClock;
 import android.util.Log;
@@ -358,12 +359,21 @@ public class CodecInitializationLatencyTest {
         long initializationLatency = codecInitializationLatencyMs[percentile * count / 100];
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.CodecInitLatencyRequirement r5_1__H_1_Latency =
-                isEncoder ? isAudio ? pce.addR5_1__H_1_8() : pce.addR5_1__H_1_7(mMime)
-                    : isAudio ? pce.addR5_1__H_1_13() : pce.addR5_1__H_1_12();
-
-        r5_1__H_1_Latency.setCodecInitLatencyMs(initializationLatency);
-
+        if (isEncoder) {
+            if (isAudio) {
+                pce.addRequirement(
+                        Requirements.createR5_1__H_1_8()).setCodecInitializationLatencyMs(
+                        initializationLatency);
+            } else {
+                pce.addR5_1__H_1_7(mMime).setCodecInitLatencyMs(initializationLatency);
+            }
+        } else {
+            if (isAudio) {
+                pce.addR5_1__H_1_13().setCodecInitLatencyMs(initializationLatency);
+            } else {
+                pce.addR5_1__H_1_12().setCodecInitLatencyMs(initializationLatency);
+            }
+        }
         pce.submitAndCheck();
     }
 
