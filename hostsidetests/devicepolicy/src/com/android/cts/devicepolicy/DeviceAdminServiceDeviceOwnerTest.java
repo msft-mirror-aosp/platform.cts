@@ -20,8 +20,8 @@ import com.android.tradefed.log.LogUtil.CLog;
 public final class DeviceAdminServiceDeviceOwnerTest extends BaseDeviceAdminServiceTest {
 
     @Override
-    protected int getUserId() {
-        return USER_OWNER;
+    protected int getUserId() throws Exception {
+        return getMainUser();
     }
 
     @Override

@@ -1,4 +1,9 @@
 {
+  "postsubmit": [
+    {
+      "name": "CtsUserRestrictionTestCases"
+    }
+  ],
   "presubmit": [
     {
       "name": "CtsAdminPackageInstallerTestCases"

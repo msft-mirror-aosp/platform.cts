@@ -26,7 +26,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.util.Log;
 import android.webkit.WebView;
 import android.widget.Toast;
 
@@ -172,12 +171,10 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
             return 0;
         } else {
             // sent in this format "0.0.1"
+            // "12.34.56" -> (int32)123456
             // Decompose
             String[] parts = versionString.split("\\.");
-            for (String part : parts) {
-                Log.i(TAG, "  part:" + part);
-            }
-            return Integer.parseInt(parts[0]) * 1000
+            return Integer.parseInt(parts[0]) * 10000
                     + Integer.parseInt(parts[1]) * 100
                     + Integer.parseInt(parts[2]);
         }

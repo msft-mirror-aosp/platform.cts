@@ -20,6 +20,7 @@ import android.cts.host.utils.DeviceJUnit4ClassRunnerWithParameters;
 import android.cts.host.utils.DeviceJUnit4Parameterized;
 import android.platform.test.annotations.AppModeFull;
 
+import com.android.ddmlib.IDevice;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.config.Option;
@@ -83,8 +84,6 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
 
     // Variables related to device-side of the test. These need to kept in sync with definitions of
     // VideoEncodingMinApp.apk
-    private static final String DEVICE_IN_DIR = "/sdcard/vqf/input/";
-    private static final String DEVICE_OUT_DIR = "/sdcard/vqf/output/";
     private static final String DEVICE_SIDE_TEST_PACKAGE = "android.videoencodingmin.app";
     private static final String DEVICE_SIDE_TEST_CLASS =
             "android.videoencodingmin.app.VideoTranscoderTest";
@@ -175,14 +174,19 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
         Assert.assertEquals("Failed to untar " + fileName, 0, result);
 
         // Push input files to device
-        Assert.assertNotNull("Failed to create directory " + DEVICE_IN_DIR + " on device ",
-                getDevice().executeAdbCommand("shell", "mkdir", "-p", DEVICE_IN_DIR));
-        Assert.assertTrue("Failed to push json files to " + DEVICE_IN_DIR + " on device ",
-                getDevice().syncFiles(new File(sHostWorkDir.getPath() + "/json/"), DEVICE_IN_DIR));
-        Assert.assertTrue("Failed to push mp4 files to " + DEVICE_IN_DIR + " on device ",
-                getDevice().syncFiles(new File(sHostWorkDir.getPath() + "/samples/"),
-                        DEVICE_IN_DIR));
-
+        String deviceInDir = getDevice().getMountPoint(IDevice.MNT_EXTERNAL_STORAGE)
+                + "/vqf/input/";
+        String deviceJsonDir = deviceInDir + "json/";
+        String deviceSamplesDir = deviceInDir + "samples/";
+        Assert.assertNotNull("Failed to create directory " + deviceJsonDir + " on device ",
+                getDevice().executeAdbCommand("shell", "mkdir", "-p", deviceJsonDir));
+        Assert.assertNotNull("Failed to create directory " + deviceSamplesDir + " on device ",
+                getDevice().executeAdbCommand("shell", "mkdir", "-p", deviceSamplesDir));
+        Assert.assertTrue("Failed to push json files to " + deviceJsonDir + " on device ",
+                getDevice().pushDir(new File(sHostWorkDir.getPath() + "/json/"), deviceJsonDir));
+        Assert.assertTrue("Failed to push mp4 files to " + deviceSamplesDir + " on device ",
+                getDevice().pushDir(new File(sHostWorkDir.getPath() + "/samples/"),
+                        deviceSamplesDir));
         sIsTestSetUpDone = true;
     }
 
@@ -214,7 +218,8 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
         } catch (SecurityException e) {
             LogUtil.CLog.e("Unable to establish output host directory : " + outHostPath.getPath());
         }
-        String outDevPath = DEVICE_OUT_DIR + outDir;
+        String outDevPath = getDevice().getMountPoint(IDevice.MNT_EXTERNAL_STORAGE) + "/vqf/output/"
+                + outDir;
         Assert.assertTrue("Failed to pull mp4 files from " + outDevPath
                 + " to " + outHostPath.getPath(), getDevice().pullDir(outDevPath, outHostPath));
         getDevice().deleteFile(outDevPath);

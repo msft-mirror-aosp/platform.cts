@@ -33,7 +33,6 @@
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#testRequest_prefetchWithRootInActiveWindow" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#testRequest_withMultiplePrefetchingStrategies_throwsException" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#testUiAutomation_clearCache_cacheInvalidated" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityDragAndDropTest#testDrop_eventSentAndActionsUpdated" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityDragAndDropTest#testStartDrag_eventSentAndActionsUpdated" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityActionRetained" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_changingValueUpdatesChildren_noFirst" />
@@ -392,7 +391,6 @@
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityGetSetNewIntentCaller[GET_CURRENT_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityGetSetNewIntentCaller[OVERLOAD_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityInitialCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_hasRead" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityInitialCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_hasReadButNoWrite[READ_AND_WRITE]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityInitialCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_hasReadButNoWrite[WRITE]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityInitialCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_noPermission[READ]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityInitialCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_noPermission[READ_AND_WRITE]" />
@@ -420,8 +418,6 @@
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityInitialCaller_checkContentUriPermission_unknownExtraContentUri_throwsIllegalArgumentException[READ_AND_WRITE]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityInitialCaller_checkContentUriPermission_unknownExtraContentUri_throwsIllegalArgumentException[WRITE]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityNewIntentCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_hasRead[GET_CURRENT_CALLER]" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityNewIntentCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_hasRead[OVERLOAD_CALLER]" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityNewIntentCaller_checkContentUriPermission_clipDataContentUri_noPermission[WRITE,GET_CURRENT_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityNewIntentCaller_checkContentUriPermission_extraStreamContentUri_hasReadButNoWrite[READ_AND_WRITE,GET_CURRENT_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityNewIntentCaller_checkContentUriPermission_extraStreamContentUri_hasReadButNoWrite[READ_AND_WRITE,OVERLOAD_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityNewIntentCaller_checkContentUriPermission_extraStreamContentUri_hasReadButNoWrite[WRITE,GET_CURRENT_CALLER]" />
@@ -460,7 +456,6 @@
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_hasReadButNoWrite[WRITE,OVERLOAD_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_hasRead[GET_CURRENT_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_hasRead[OVERLOAD_CALLER]" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_noPermission[READ,GET_CURRENT_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_noPermission[READ,OVERLOAD_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_noPermission[READ_AND_WRITE,GET_CURRENT_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_arrayListExtraStreamsContentUri_noPermission[READ_AND_WRITE,OVERLOAD_CALLER]" />
@@ -478,16 +473,10 @@
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_contentUriViaGrant[READ_AND_WRITE,OVERLOAD_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_contentUriViaGrant[WRITE,GET_CURRENT_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_contentUriViaGrant[WRITE,OVERLOAD_CALLER]" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_extraStreamContentUri_hasReadButNoWrite[READ_AND_WRITE,GET_CURRENT_CALLER]" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_extraStreamContentUri_hasReadButNoWrite[READ_AND_WRITE,OVERLOAD_CALLER]" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_extraStreamContentUri_hasReadButNoWrite[WRITE,GET_CURRENT_CALLER]" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_extraStreamContentUri_hasReadButNoWrite[WRITE,OVERLOAD_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_extraStreamContentUri_noPermission[WRITE,OVERLOAD_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_getDataContentUriViaPermission_hasReadButNoWrite[READ_AND_WRITE,GET_CURRENT_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_getDataContentUriViaPermission_hasReadButNoWrite[WRITE,OVERLOAD_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_getDataContentUriViaPermission_noPermission[READ,GET_CURRENT_CALLER]" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_getDataContentUriViaPermission_noPermission[READ_AND_WRITE,OVERLOAD_CALLER]" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_getDataContentUriViaPermission_noPermission[WRITE,GET_CURRENT_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_passingNonUriExtraStreamDoesNotAffectRetrievalOfExtras[GET_CURRENT_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_passingNonUriExtraStreamDoesNotAffectRetrievalOfExtras[OVERLOAD_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_throwsIfCallerOfApiDoesNotHaveTheSameAccessToContentUri[READ,GET_CURRENT_CALLER]" />
@@ -497,8 +486,6 @@
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_throwsIfContentUriWasNotPassedAtLaunch[READ_AND_WRITE,OVERLOAD_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_throwsIfContentUriWasNotPassedAtLaunch[WRITE,GET_CURRENT_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_throwsIfContentUriWasNotPassedAtLaunch[WRITE,OVERLOAD_CALLER]" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_unknownExtraContentUri_throwsIllegalArgumentException[READ_AND_WRITE,OVERLOAD_CALLER]" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ComponentCallerTest#testActivityResultCaller_checkContentUriPermission_unknownExtraContentUri_throwsIllegalArgumentException[WRITE,OVERLOAD_CALLER]" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.KeyguardWeakEscrowTokenTest#testAddWeakEscrowToken_hasCredentialSetUp_tokenActivatedAfterVerification" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.KeyguardWeakEscrowTokenTest#testAddWeakEscrowToken_noCredentialSetUp_tokenActivatedImmediately" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.KeyguardWeakEscrowTokenTest#testAutoEscrowTokenRemovedWhenCredentialRemoved" />
@@ -612,7 +599,6 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsDelegateTest#testAppInBgWithActiveStoppedMediaSessionWithMediaControllerAndNotificationIsStillInBg" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsDelegateTest#testAppInBgWithNonActivePlayingMediaSessionAndNotificationIsStillInBg" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsDelegateTest#testAppInBgWithNonActivePlayingMediaSessionWithMediaControllerAndNotificationIsStillInBg" />
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsDelegateTest#testAppInFgWithActivePlayingMediaSessionAndNoNotificationGoesToBgIsStillInBg" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsDelegateTest#testAppInFgWithActivePlayingMediaSessionAndNotificationGoesToBgIsStillInBg" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsDelegateTest#testAppInFgWithActivePlayingMediaSessionWithMediaControllerAndNoNotificationGoesToBgIsStillInBg" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsDelegateTest#testAppInFgWithActivePlayingMediaSessionWithMediaControllerAndNotificationGoesToBgGoesToFgs" />
@@ -656,7 +642,6 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testGetDeviceConfigurationInfo" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testGetMemoryInfo" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testGetMyMemoryState" />
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testGetProcessInErrorState" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testGetRecentTasks" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testGetRecentTasksLimitedToCurrentAPK" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerTest#testGetRunningAppProcesses" />
@@ -710,7 +695,6 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialog_BuilderTest#testSetPositiveButtonWithParamInt" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialog_BuilderTest#testSetSingleChoiceItems" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialog_BuilderTest#testSetSingleChoiceItemsWithParamCharSequence" />
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialog_BuilderTest#testSetSingleChoiceItemsWithParamInt" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AlertDialog_BuilderTest#testShow" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AliasActivityTest#testAliasActivity" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.AppTaskTests#testBaseIntentHasExtras" />
@@ -1123,7 +1107,6 @@
     <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.UpdateProviderInfoTest#testInfoOverrides" />
     <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.UpdateProviderInfoTest#testOverrideClearedWhenMissingInfo" />
     <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.UpdateProviderInfoTest#testOverridesPersistedOnUpdate" />
-    <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.WidgetTransitionTest#testWidget_sendBroadcast" />
 
     <!-- CtsAssistTestCases -->
     <option name="compatibility:include-filter" value="CtsAssistTestCases android.assist.cts.ActivityIdTest#testParcel" />
@@ -1459,9 +1442,7 @@
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsCredentialViewTest#testClearCredentialManagerRequest" />
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsCredentialViewTest#testSetCredentialManagerRequest" />
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_allowListPolicy_doesNotApply_allowsAllProviders[IncludeRunOnAffiliatedDeviceOwnerSecondaryUser]" />
-    <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_allowListPolicy_doesNotApply_allowsAllProviders[IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile]" />
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_allowListPolicy_doesNotApply_allowsAllProviders[IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfile]" />
-    <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_allowlistAndSystemPolicy_allowsAllowlistedAndSystemProviders[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_allowlistAndSystemPolicy_allowsAllowlistedAndSystemProviders[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_allowlistAndSystemPolicy_allowsAllowlistedAndSystemProviders_SDK[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_allowlistAndSystemPolicy_allowsAllowlistedAndSystemProviders_SDK[IncludeRunOnSingleDeviceOwnerUser]" />
@@ -1479,7 +1460,6 @@
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_policyNotAllowedToBeSet_throwsSecurityException[DelegateWithoutValidScope]" />
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_policyNotAllowedToBeSet_throwsSecurityException[IncludeRunOnFinancedDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_policyNotAllowedToBeSet_throwsSecurityException[IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance]" />
-    <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_policyNotAllowedToBeSet_throwsSecurityException[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.unittests.ClearCredentialStateExceptionTest#testConstructor_nullType" />
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.unittests.ClearCredentialStateExceptionTest#testConstructor_type" />
     <option name="compatibility:include-filter" value="CtsCredentialManagerTestCases android.credentials.cts.unittests.ClearCredentialStateExceptionTest#testConstructor_type_cause" />
@@ -1648,7 +1628,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccessibilityServicesTest#setPermittedAccessibilityServices_includeNonSystemApp_permitsNonSystemApp[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccessibilityServicesTest#setPermittedAccessibilityServices_includeNonSystemApp_permitsNonSystemApp[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccessibilityServicesTest#setPermittedAccessibilityServices_includeNonSystemApp_permitsNonSystemApp[IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccessibilityServicesTest#setPermittedAccessibilityServices_includeNonSystemApp_stillPermitsSystemApps[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccessibilityServicesTest#setPermittedAccessibilityServices_includeNonSystemApp_stillPermitsSystemApps[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccessibilityServicesTest#setPermittedAccessibilityServices_includeNonSystemApp_stillPermitsSystemApps[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccessibilityServicesTest#setPermittedAccessibilityServices_includeNonSystemApp_stillPermitsSystemApps[IncludeRunOnSystemDeviceOwnerUser]" />
@@ -1670,10 +1649,8 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccessibilityServicesTest#setPermittedAccessibilityServices_nullPackageNames_isLogged[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccessibilityServicesTest#setPermittedAccessibilityServices_nullPackageNames_isLogged[IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#addAccount_fromDpcWithAccountManagementDisabled_accountAdded[IncludeRunOnAffiliatedProfileOwnerAdditionalUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#addAccount_fromDpcWithAccountManagementDisabled_accountAdded[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#addAccount_fromDpcWithAccountManagementDisabled_accountAdded[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#addAccount_fromDpcWithAccountManagementDisabled_accountAdded[IncludeRunOnSingleDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#addAccount_fromDpcWithAccountManagementDisabled_accountAdded[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#addAccount_fromDpcWithAccountManagementDisabled_accountAdded[Permission_MANAGE_DEVICE_POLICY_ACCOUNT_MANAGEMENT]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#addAccount_fromDpcWithDisallowModifyAccountsRestriction_accountAdded[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#addAccount_fromDpcWithDisallowModifyAccountsRestriction_accountAdded[IncludeRunOnSingleDeviceOwnerUser]" />
@@ -1729,7 +1706,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#setAccountManagementDisabled_disableAccountType_works[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#setAccountManagementDisabled_disableAccountType_works[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#setAccountManagementDisabled_disableThenEnable_notDisabled[IncludeRunOnAffiliatedProfileOwnerAdditionalUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#setAccountManagementDisabled_disableThenEnable_notDisabled[IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#setAccountManagementDisabled_disableThenEnable_notDisabled[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#setAccountManagementDisabled_disableThenEnable_notDisabled[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AccountManagementTest#setAccountManagementDisabled_disableThenEnable_notDisabled[IncludeRunOnSingleDeviceOwnerUser]" />
@@ -1750,7 +1726,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ActivityTest#startActivityAsUser_differentUser_startedSuccessfully[android.permission.INTERACT_ACROSS_USERS]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ActivityTest#startActivityAsUser_differentUser_startedSuccessfully[android.permission.INTERACT_ACROSS_USERS_FULL]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ActivityTest#startActivityAsUser_noPermissions_throwsSecurityException" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ActivityTest#startActivityForResultAsUser_differentUser_startedSuccessfully[android.permission.INTERACT_ACROSS_USERS]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ActivityTest#startActivityForResultAsUser_differentUser_startedSuccessfully[android.permission.INTERACT_ACROSS_USERS_FULL]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ActivityTest#startActivityForResultAsUser_noPermissions_throwsSecurityException" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.AdbProvisioningTest#setProfileOwnerUsingAdb_isLogged" />
@@ -2033,7 +2008,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.BackupTest#isBackupServiceEnabled_canSetPolicy_doesNotThrow[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.BackupTest#isBackupServiceEnabled_canSetPolicy_doesNotThrow[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.BackupTest#isBackupServiceEnabled_canSetPolicy_doesNotThrow[IncludeRunOnSingleDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.BackupTest#isBackupServiceEnabled_canSetPolicy_doesNotThrow[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.BackupTest#isBackupServiceEnabled_default_returnsFalse[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.BackupTest#isBackupServiceEnabled_default_returnsFalse[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.BackupTest#isBackupServiceEnabled_default_returnsFalse[IncludeRunOnSingleDeviceOwnerUser]" />
@@ -2589,7 +2563,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DefaultSmsApplicationTest#setDefaultSmsApplication_invalidAdmin_throwsException[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DefaultSmsApplicationTest#setDefaultSmsApplication_notSmsCapable_unchanged[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DefaultSmsApplicationTest#setDefaultSmsApplication_notSmsCapable_unchanged[IncludeRunOnSystemDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DefaultSmsApplicationTest#setDefaultSmsApplication_nullAdmin_throwsException[IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DefaultSmsApplicationTest#setDefaultSmsApplication_nullAdmin_throwsException[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DefaultSmsApplicationTest#setDefaultSmsApplication_nullAdmin_throwsException[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DefaultSmsApplicationTest#setDefaultSmsApplication_smsPackageDoesNotExist_unchanged[IncludeRunOnSingleDeviceOwnerUser]" />
@@ -2762,12 +2735,10 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DeviceOwnerTest#setDeviceOwnerViaAdb_accountExistsWithAllowFeature_testOnly_sets" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DeviceOwnerTest#setDeviceOwnerViaAdb_accountExistsWithDisallowAndAllowFeatures_doesNotSet" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DeviceOwnerTest#setDeviceOwnerViaAdb_accountExistsWithNoFeatures_doesNotSet" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DeviceOwnerTest#setDeviceOwnerViaAdb_noAccounts_notTestOnly_sets" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DeviceOwnerTest#setDeviceOwnerViaAdb_noAccounts_testOnly_sets" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DeviceOwnerTest#setDeviceOwner_hasSecondaryUser_throwsException" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DeviceOwnerTest#setDeviceOwner_setsDeviceOwner" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DevicePolicyManagementRoleHolderTest#createAndProvisionManagedProfile_roleHolderIsInWorkProfile" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DevicePolicyManagementRoleHolderTest#profileStarted_roleHolderReceivesBroadcast" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DevicePolicyManagementRoleHolderTest#shouldAllowBypassingDevicePolicyManagementRoleQualification_withAllowedAccounts_returnsTrue" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DevicePolicyManagementRoleHolderTest#shouldAllowBypassingDevicePolicyManagementRoleQualification_withNonAllowedAccounts_returnsFalse" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.DevicePolicyManagementRoleHolderTest#shouldAllowBypassingDevicePolicyManagementRoleQualification_withoutRequiredPermission_throwsSecurityException" />
@@ -2951,7 +2922,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.FactoryResetTest#clearUserRestriction_disallowFactoryReset_isNotSet[Permission_MANAGE_DEVICE_POLICY_FACTORY_RESET]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.FileTransferTest#setUserRestriction_disallowUsbFileTransfer_cannotSet_throwsException[IncludeRunOnFinancedDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.FileTransferTest#setUserRestriction_disallowUsbFileTransfer_cannotSet_throwsException[IncludeRunOnOrganizationOwnedProfileOwner]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.FileTransferTest#setUserRestriction_disallowUsbFileTransfer_cannotSet_throwsException[IncludeRunOnParentOfProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.FileTransferTest#setUserRestriction_disallowUsbFileTransfer_isNotSet[IncludeRunOnSecondaryUserInDifferentProfileGroupToOrganizationOwnedProfileOwnerProfileUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.FileTransferTest#setUserRestriction_disallowUsbFileTransfer_isSet[IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.FileTransferTest#setUserRestriction_disallowUsbFileTransfer_isSet[IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance]" />
@@ -3237,7 +3207,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableFingerprint_featureIsSet[IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableFingerprint_featureIsSet[IncludeRunOnCloneProfileAlongsideManagedProfile]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableFingerprint_featureIsSet[IncludeRunOnFinancedDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableFingerprint_featureIsSet[IncludeRunOnParentOfProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableFingerprint_featureIsSet[IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableFingerprint_featureIsSet[IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableFingerprint_featureIsSet[IncludeRunOnPrivateProfileAlongsideManagedProfile]" />
@@ -3304,7 +3273,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableUnredactedNotifications_doesNotApply_featureIsNotSet[IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfile]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableUnredactedNotifications_doesNotApply_featureIsNotSet[IncludeRunOnSecondaryUserInDifferentProfileGroupToOrganizationOwnedProfileOwnerProfileUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableUnredactedNotifications_featureIsSet[IncludeRunOnFinancedDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableUnredactedNotifications_featureIsSet[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableUnredactedNotifications_featureIsSet[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableUnredactedNotifications_featureIsSet[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setKeyguardDisabledFeatures_disableUnredactedNotifications_featureIsSet[IncludeRunOnSystemDeviceOwnerUser]" />
@@ -3349,7 +3317,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setTrustAgentConfiguration_veryLongConfigValueInNestedBundle_throws[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setTrustAgentConfiguration_veryLongConfigValue_throws[IncludeRunOnAffiliatedProfileOwnerAdditionalUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setTrustAgentConfiguration_veryLongConfigValue_throws[IncludeRunOnFinancedDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setTrustAgentConfiguration_veryLongConfigValue_throws[IncludeRunOnParentOfProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setTrustAgentConfiguration_veryLongConfigValue_throws[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setTrustAgentConfiguration_veryLongConfigValue_throws[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.KeyguardTest#setTrustAgentConfiguration_veryLongConfigValue_throws[IncludeRunOnSingleDeviceOwnerUser]" />
@@ -3649,7 +3616,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ManagedProfileContactsAccessTest#setManagedProfileContactsAccess_validPackageListPolicy_works[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner][1]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ManagedProfileContactsAccessTest#setManagedProfileContactsAccess_validPackageListPolicy_works[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner][2]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ManagedProfileContactsAccessTest#setManagedProfileContactsAccess_validPackageListPolicy_works[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner][3]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ManagedProfileTest#createProfile_noProfileExists_creates" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ManagedProfileTest#isManagedProfile_runOnUser_returnsFalse[CLONE_PROFILE]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ManagedProfileTest#isManagedProfile_runOnUser_returnsFalse[SECONDARY_USER]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ManagedProfileTest#isManagedProfile_runOnUser_returnsFalse[SYSTEM_USER]" />
@@ -3731,7 +3697,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.NearbyAppStreamingPolicyTest#getNearbyAppStreamingPolicy_defaultToSameManagedAccountOnly[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.NearbyAppStreamingPolicyTest#getNearbyAppStreamingPolicy_defaultToSameManagedAccountOnly[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.NearbyAppStreamingPolicyTest#getNearbyAppStreamingPolicy_defaultToSameManagedAccountOnly[IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.NearbyAppStreamingPolicyTest#getNearbyAppStreamingPolicy_defaultToSameManagedAccountOnly[Permission_READ_NEARBY_STREAMING_POLICY]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.NearbyAppStreamingPolicyTest#getNearbyAppStreamingPolicy_policyIsNotAllowedToBeSet_throwsException[DelegateWithoutValidScope]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.NearbyAppStreamingPolicyTest#getNearbyAppStreamingPolicy_policyIsNotAllowedToBeSet_throwsException[IncludeRunOnFinancedDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.NearbyAppStreamingPolicyTest#getNearbyAppStreamingPolicy_policyIsNotAllowedToBeSet_throwsException[IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance]" />
@@ -4796,7 +4761,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.PermissionGrantTest#setPermissionPolicy_grant_automaticallyGrantsPermissions[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.PermissionGrantTest#setPermissionPolicy_grant_automaticallyGrantsPermissions[IncludeRunOnSingleDeviceOwnerUserDelegate_delegation-permission-grant]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.PermissionGrantTest#setPermissionPolicy_grant_automaticallyGrantsPermissions[IncludeRunOnSingleDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.PermissionGrantTest#setPermissionPolicy_grant_automaticallyGrantsPermissions[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.PermissionGrantTest#setPermissionPolicy_grant_automaticallyGrantsPermissions[IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.PermissionGrantTest#setPermissionPolicy_notAllowed_throwsException[DelegateWithoutValidScope]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.PermissionGrantTest#setPermissionPolicy_notAllowed_throwsException[IncludeRunOnFinancedDeviceOwnerUser]" />
@@ -5142,7 +5106,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ProvisioningTest#provisionFullyManagedDevice_withoutRequiredPermissionsForDemoDevice_throwsSecurityException" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ProvisioningTest#provisioningException_constructor_noErrorMessage_nullByDefault" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ProvisioningTest#provisioningException_constructor_works" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ProvisioningTest#setAdminExtras_fullyManagedParams_emptyBundle_works" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ProvisioningTest#setAdminExtras_fullyManagedParams_modifyBundle_internalBundleNotModified" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ProvisioningTest#setAdminExtras_fullyManagedParams_works" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ProvisioningTest#setAdminExtras_managedProfileParams_emptyBundle_works" />
@@ -5385,7 +5348,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SafeBootTest#setUserRestriction_disallowSafeBoot_isSet[IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SafeBootTest#setUserRestriction_disallowSafeBoot_isSet[Permission_MANAGE_DEVICE_POLICY_SAFE_BOOT]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#createAdminSupportIntent_allowScreenCapture_doesNotCreate[IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#createAdminSupportIntent_allowScreenCapture_doesNotCreate[IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#createAdminSupportIntent_allowScreenCapture_doesNotCreate[IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#createAdminSupportIntent_allowScreenCapture_doesNotCreate[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#createAdminSupportIntent_allowScreenCapture_doesNotCreate[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
@@ -5480,7 +5442,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#setScreenCaptureDisabled_true_screenCaptureRedactedOrNull[IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#setScreenCaptureDisabled_true_screenCaptureRedactedOrNull[IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#setScreenCaptureDisabled_true_screenCaptureRedactedOrNull[IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#setScreenCaptureDisabled_true_screenCaptureRedactedOrNull[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#setScreenCaptureDisabled_true_screenCaptureRedactedOrNull[IncludeRunOnSecondaryUserInDifferentProfileGroupToOrganizationOwnedProfileOwnerProfileUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#setScreenCaptureDisabled_true_screenCaptureRedactedOrNull[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#setScreenCaptureDisabled_true_screenCaptureRedactedOrNull[IncludeRunOnSystemDeviceOwnerUser]" />
@@ -5732,9 +5693,7 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SupportMessageTest#getLongSupportMessage_nullAdmin_throwsNullPointerException[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SupportMessageTest#getLongSupportMessage_nullAdmin_throwsNullPointerException[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SupportMessageTest#getLongSupportMessage_nullAdmin_throwsNullPointerException[IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SupportMessageTest#getShortSupportMessage_invalidAdmin_fails[IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SupportMessageTest#getShortSupportMessage_nullAdmin_throwsNullPointerException[IncludeRunOnFinancedDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SupportMessageTest#getShortSupportMessage_nullAdmin_throwsNullPointerException[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SupportMessageTest#getShortSupportMessage_nullAdmin_throwsNullPointerException[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SupportMessageTest#getShortSupportMessage_nullAdmin_throwsNullPointerException[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SupportMessageTest#getShortSupportMessage_nullAdmin_throwsNullPointerException[IncludeRunOnSystemDeviceOwnerUser]" />
@@ -5999,7 +5958,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setAutoTimeRequired_false_logsEvent[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setAutoTimeRequired_false_logsEvent[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setAutoTimeRequired_false_setsAutoTimeNotRequired[IncludeRunOnAffiliatedProfileOwnerAdditionalUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setAutoTimeRequired_false_setsAutoTimeNotRequired[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setAutoTimeRequired_false_setsAutoTimeNotRequired[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setAutoTimeRequired_false_setsAutoTimeNotRequired[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setAutoTimeRequired_false_setsAutoTimeNotRequired[IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser]" />
@@ -6045,7 +6003,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTimeZone_logsEvent[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTimeZone_notAllowed_throwsException[IncludeRunOnAffiliatedProfileOwnerAdditionalUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTimeZone_notAllowed_throwsException[IncludeRunOnFinancedDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTimeZone_notAllowed_throwsException[IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTimeZone_notAllowed_throwsException[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTimeZone_notAllowed_throwsException[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTimeZone_timeZoneIsSet[IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile]" />
@@ -6059,7 +6016,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTime_logsEvent[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTime_logsEvent[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTime_notAllowed_throwsException[IncludeRunOnAffiliatedProfileOwnerAdditionalUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTime_notAllowed_throwsException[IncludeRunOnFinancedDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTime_notAllowed_throwsException[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTime_timeIsSet[IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TimeTest#setTime_timeIsSet[IncludeRunOnOrganizationOwnedProfileOwner]" />
@@ -6170,7 +6126,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserControlDisabledPackagesTest#getDevicePolicyState_setUserControlDisabledPackages_returnsPolicy[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserControlDisabledPackagesTest#getDevicePolicyState_setUserControlDisabledPackages_returnsPolicy[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserControlDisabledPackagesTest#getDevicePolicyState_setUserControlDisabledPackages_returnsPolicy[IncludeRunOnSingleDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserControlDisabledPackagesTest#getDevicePolicyState_setUserControlDisabledPackages_returnsPolicy[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserControlDisabledPackagesTest#getDevicePolicyState_setUserControlDisabledPackages_returnsPolicy[IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserControlDisabledPackagesTest#getDevicePolicyState_setUserControlDisabledPackages_returnsPolicy[Permission_MANAGE_DEVICE_POLICY_APPS_CONTROL]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserControlDisabledPackagesTest#getUserControlDisabledPackages_notAllowedToRetrieveProtectedPackages_throwsException[DelegateWithoutValidScope]" />
@@ -6535,7 +6490,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#removeUser_disallowRemoveUserIsSetOnAdminUser_returnsFalse" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#removeUser_ownUser_disallowRemoveUserIsSet_returnsFalse" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#removeUser_userRemovedCallbackIsReceived[IncludeRunOnSingleDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#removeUser_userRemovedCallbackIsReceived[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#setUserRestriction_disallowRemoveUser_cannotSet_throwsException[IncludeRunOnFinancedDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#setUserRestriction_disallowRemoveUser_isNotSet[IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#setUserRestriction_disallowRemoveUser_isNotSet[IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfile]" />
@@ -6547,13 +6501,11 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#setUserRestriction_disallowUserSwitch_cannotSet_throwsException[IncludeRunOnAffiliatedProfileOwnerAdditionalUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#setUserRestriction_disallowUserSwitch_cannotSet_throwsException[IncludeRunOnFinancedDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#setUserRestriction_disallowUserSwitch_cannotSet_throwsException[IncludeRunOnOrganizationOwnedProfileOwner]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#setUserRestriction_disallowUserSwitch_cannotSet_throwsException[IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#setUserRestriction_disallowUserSwitch_cannotSet_throwsException[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#setUserRestriction_disallowUserSwitch_isSet[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#setUserRestriction_disallowUserSwitch_isSet[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#setUserRestriction_disallowUserSwitch_isSet[IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#startUser_userStartedCallbackIsReceived[IncludeRunOnSingleDeviceOwnerUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#startUser_userStartedCallbackIsReceived[IncludeRunOnSystemDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#stopUser_userStoppedCallbackIsReceived[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.UserTest#switchUser_userSwitchedCallbackIsReceived[IncludeRunOnSingleDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.VolumeTest#createAdminSupportIntent_allowAdjustVolumeRestriction_doesNotCreate[IncludeRunOnProfileOwnerPrimaryUser]" />
@@ -6597,7 +6549,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiMinimumSecurityTest#setWifiMinimumSecurity_validLevel_works[IncludeRunOnSystemDeviceOwnerUser][0]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiMinimumSecurityTest#setWifiMinimumSecurity_validLevel_works[IncludeRunOnSystemDeviceOwnerUser][1]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiMinimumSecurityTest#setWifiMinimumSecurity_validLevel_works[IncludeRunOnSystemDeviceOwnerUser][2]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiMinimumSecurityTest#setWifiMinimumSecurity_validLevel_works[IncludeRunOnSystemDeviceOwnerUser][3]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiMinimumSecurityTest#setWifiMinimumSecurity_validLevel_works[IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser][0]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiMinimumSecurityTest#setWifiMinimumSecurity_validLevel_works[IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser][1]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiMinimumSecurityTest#setWifiMinimumSecurity_validLevel_works[IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser][2]" />
@@ -6702,7 +6653,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiTest#setUserRestriction_disallowWifiDirect_isSet[IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiTest#setUserRestriction_disallowWifiTethering_cannotSet_throwsException[IncludeRunOnFinancedDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiTest#setUserRestriction_disallowWifiTethering_cannotSet_throwsException[IncludeRunOnOrganizationOwnedProfileOwner]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiTest#setUserRestriction_disallowWifiTethering_cannotSet_throwsException[IncludeRunOnParentOfProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiTest#setUserRestriction_disallowWifiTethering_isSet[IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiTest#setUserRestriction_disallowWifiTethering_isSet[IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WifiTest#setUserRestriction_disallowWifiTethering_isSet[IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance]" />
@@ -6743,7 +6693,6 @@
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.BrightnessTest#testAtMostOneAppHoldsBrightnessConfigurationPermission" />
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.BrightnessTest#testConfigureBrightnessPermission" />
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.BrightnessTest#testGetDefaultCurve" />
-    <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.BrightnessTest#testNoTrackingForManualBrightness" />
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.BrightnessTest#testSetAndGetBrightnessConfiguration" />
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.BrightnessTest#testSetGetSimpleCurve" />
     <option name="compatibility:include-filter" value="CtsDisplayTestCases android.display.cts.BrightnessTest#testSliderUsagePermission" />
@@ -6848,7 +6797,6 @@
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.A11yBounceKeysTest#testKeyIgnoredIfPressedWithinBounceThreshold" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.A11ySlowKeysTest#testKeyAccepted_ifPressedForMoreThanSlowThreshold" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.A11ySlowKeysTest#testKeyIgnored_ifPressedForLessThanSlowThreshold" />
-    <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.A11yStickyKeysTest#testLockedShiftModifierKey" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.A11yStickyKeysTest#testStickyShiftModifierKey" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.AppKeyCombinationsTest#testCtrlAltZ" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.AppKeyCombinationsTest#testSYSRQ" />
@@ -6989,8 +6937,6 @@
     <option name="compatibility:include-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testCloneProfile" />
     <option name="compatibility:include-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testCommunalProfile" />
     <option name="compatibility:include-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testCreateUser_withNewUserRequest_shouldCreateUserWithCorrectProperties" />
-    <option name="compatibility:include-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testCreateUser_withNewUserRequest_shouldNotAllowDuplicateUserAccounts" />
-    <option name="compatibility:include-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testGetMainUser_returnsMainUser" />
     <option name="compatibility:include-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testGetPreviousForegroundUser_switchingBetweenInitialAndAdditional" />
     <option name="compatibility:include-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testGetPreviousForegroundUser_withWorkProfileButNoAdditionalUser" />
     <option name="compatibility:include-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testGetRemainingCreatableProfileCount" />
@@ -7249,7 +7195,6 @@
     <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerTest#testShowBadging_ranking" />
     <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerTest#testStyle" />
     <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerTest#testStyle_getStandardView" />
-    <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerTest#testSuspendPackage" />
     <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerTest#testSuspendPackage_withoutShellPermission" />
     <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerTest#testSuspendedPackageSendsNotification" />
     <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerZenTest#addAutomaticZenRule_forDeletedAndPreviouslyUserModifiedRule_restoresRule" />
@@ -7852,7 +7797,6 @@
     <option name="compatibility:include-filter" value="CtsPhotoPickerTest android.photopicker.cts.ActionGetContentOnlyTest#testExtraMimeTypeFilter" />
     <option name="compatibility:include-filter" value="CtsPhotoPickerTest android.photopicker.cts.ActionGetContentOnlyTest#testPickerAccentColorWithGetContent" />
     <option name="compatibility:include-filter" value="CtsPhotoPickerTest android.photopicker.cts.ActionPickImagesOnlyTest#testExtraMimeTypeFilter" />
-    <option name="compatibility:include-filter" value="CtsPhotoPickerTest android.photopicker.cts.ActionPickImagesOnlyTest#testExtraPickerAccentColorInvalidColorInput" />
     <option name="compatibility:include-filter" value="CtsPhotoPickerTest android.photopicker.cts.ActionPickImagesOnlyTest#testExtraPickerLaunchTabInvalidOption" />
     <option name="compatibility:include-filter" value="CtsPhotoPickerTest android.photopicker.cts.ActionPickImagesOnlyTest#testExtraPickerLaunchTabOptions" />
     <option name="compatibility:include-filter" value="CtsPhotoPickerTest android.photopicker.cts.ActionPickImagesOnlyTest#testMultiSelect_invalidNegativeParam" />
@@ -7897,7 +7841,6 @@
     <option name="compatibility:include-filter" value="CtsSyncContentHostTestCases android.content.cts.ContextCrossProfileHostTest#testBindServiceAsUser_differentProfileGroup_doesNotReportMetric" />
     <option name="compatibility:include-filter" value="CtsSyncContentHostTestCases android.content.cts.ContextCrossProfileHostTest#testBindServiceAsUser_differentProfileGroup_samePackage_withAcrossUsersPermission_bindsService" />
     <option name="compatibility:include-filter" value="CtsSyncContentHostTestCases android.content.cts.ContextCrossProfileHostTest#testBindServiceAsUser_differentProfileGroup_withInteractAcrossProfilesAppOp_throwsException" />
-    <option name="compatibility:include-filter" value="CtsSyncContentHostTestCases android.content.cts.ContextCrossProfileHostTest#testBindServiceAsUser_differentProfileGroup_withInteractAcrossProfilesPermission_throwsException" />
     <option name="compatibility:include-filter" value="CtsSyncContentHostTestCases android.content.cts.ContextCrossProfileHostTest#testBindServiceAsUser_sameProfileGroup_reportsMetric" />
     <option name="compatibility:include-filter" value="CtsSyncContentHostTestCases android.content.cts.ContextCrossProfileHostTest#testBindServiceAsUser_sameUser_doesNotReportMetric" />
 
@@ -8198,9 +8141,7 @@
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionMultiDetectorTest#testAlwaysOnHotwordDetectorCreate_rejectMultipleDetectorsOfTheSameType" />
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionMultiDetectorTest#testAlwaysOnHotwordDetectorDestroy_throwsExceptionAfterDestroy" />
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionRoleTest#testAssistRole_noRecognitionService" />
-    <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#onHandleScreenShotAndAssist_initialUser_success" />
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_failed" />
-    <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_successInInitialUser" />
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#testCreateAlwaysOnHotwordDetectorNoExecutorMainThread_callbackRunsOnMainThread" />
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#testCreateAlwaysOnHotwordDetectorWithExecutor_callbackRunsOnNonMainThread" />
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#testCreateDspHotwordDetectorNoHDSNoExecutorMainThread_callbackRunsOnMainThread" />
@@ -8208,7 +8149,6 @@
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#testCreateDspHotwordDetectorNoHDSWithExecutor_callbackRunsOnNonMainThread" />
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#testCreateHotwordDetectorNoExecutorMainThread_callbackRunsOnMainThread" />
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#testCreateHotwordDetectorNoExecutorOtherThread_callbackRunsOnMainThread" />
-    <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#testCreateHotwordDetectorWithExecutor_callbackRunsOnNonMainThread" />
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#testShowSession_onPrepareToShowSessionCalled" />
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#testVoiceInteractionSession_startAssistantActivityWithActivityOptions" />
     <option name="compatibility:include-filter" value="CtsVoiceInteractionTestCases android.voiceinteraction.cts.VoiceInteractionServiceTest#testVoiceInteractionSession_startAssistantActivityWithoutActivityOptions" />

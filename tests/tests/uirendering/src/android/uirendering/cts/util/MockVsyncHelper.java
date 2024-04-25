@@ -35,7 +35,7 @@ public class MockVsyncHelper {
         // We can't wait on the future here because the lambda cannot be executed until
         // the class has finished loading
         sExecutorThread = sExecutor.submit(() -> {
-            AnimationUtils.lockAnimationClock(16, 16000000);
+            AnimationUtils.lockAnimationClock(16);
             return Thread.currentThread();
         });
     }
@@ -51,8 +51,7 @@ public class MockVsyncHelper {
     public static void nextFrame() {
         assertTrue("nextFrame() must be called inside #unOnVsyncThread block",
                 isOnExecutorThread());
-        AnimationUtils.lockAnimationClock(AnimationUtils.currentAnimationTimeMillis() + 16,
-                AnimationUtils.getExpectedPresentationTimeNanos() + 16000000);
+        AnimationUtils.lockAnimationClock(AnimationUtils.currentAnimationTimeMillis() + 16);
     }
 
     public static void runOnVsyncThread(CallableVoid callable) {

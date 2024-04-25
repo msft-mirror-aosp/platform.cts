@@ -595,7 +595,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         // but the admin must be installed on USER_SYSTEM, otherwise wipeData() on headless system
         // user mode would wipe the current user (instead of factory resetting the device)
         changeUserRestrictionOrFail("no_factory_reset", true, mPrimaryUserId, DEVICE_OWNER_PKG);
-        int adminUserId = USER_SYSTEM;
+        int adminUserId = mPrimaryUserId;
 
         String deviceAdminPkg = DeviceAdminHelper.getDeviceAdminApkPackage(adminVersion);
         String deviceAdminReceiver = DeviceAdminHelper.getAdminReceiverComponent(adminVersion);

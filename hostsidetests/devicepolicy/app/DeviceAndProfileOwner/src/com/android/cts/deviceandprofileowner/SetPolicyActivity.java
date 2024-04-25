@@ -66,9 +66,7 @@ public class SetPolicyActivity extends Activity {
     }
 
     private void handleIntent(Intent intent) {
-        boolean isDeviceOwnerTest = "DeviceOwner".equals(intent.getStringExtra(EXTRA_ADMIN_TYPE));
-        DevicePolicyManager dpm = TestAppSystemServiceFactory.getDevicePolicyManager(this,
-                        BaseDeviceAdminTest.BasicAdminReceiver.class, isDeviceOwnerTest);
+        DevicePolicyManager dpm = getSystemService(DevicePolicyManager.class);
         String command = intent.getStringExtra(EXTRA_COMMAND);
         Log.i(TAG, "Command: " + command + " UID: " + Process.myUid() + " DPM: " + dpm);
 

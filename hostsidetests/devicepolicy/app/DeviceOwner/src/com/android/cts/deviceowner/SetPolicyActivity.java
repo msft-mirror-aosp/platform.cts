@@ -52,8 +52,7 @@ public final class SetPolicyActivity extends Activity {
     }
 
     private void handleIntent(Intent intent) {
-        DevicePolicyManager dpm = TestAppSystemServiceFactory.getDevicePolicyManager(this,
-                BasicAdminReceiver.class, /* forDeviceOwner= */ true);
+        DevicePolicyManager dpm = getSystemService(DevicePolicyManager.class);
         String command = intent.getStringExtra(EXTRA_COMMAND);
         Log.i(TAG, "Command: \"" + command + " DPM: " + dpm);
         ComponentName admin = BasicAdminReceiver.getComponentName(this);

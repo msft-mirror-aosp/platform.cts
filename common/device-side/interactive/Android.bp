@@ -9,7 +9,7 @@ java_library_host {
         "common/src/main/java/**/*.kt",
     ],
     static_libs: [
-        "HarrierCommon",
+        "bedstead-core-annotations",
     ],
 }
 

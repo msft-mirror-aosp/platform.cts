@@ -20,7 +20,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
 
-import android.hardware.camera2.CameraMetadata;
 import android.media.MediaFormat;
 import android.mediapc.cts.common.CameraRequirement.*;
 import android.os.Build;
@@ -1722,10 +1721,6 @@ public class PerformanceClassEvaluator {
 
     public CodecInitLatencyRequirement addR5_1__H_1_7(String mediaType) {
         return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_7(mediaType));
-    }
-
-    public CodecInitLatencyRequirement addR5_1__H_1_8() {
-        return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_8());
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_9_1080p() {
