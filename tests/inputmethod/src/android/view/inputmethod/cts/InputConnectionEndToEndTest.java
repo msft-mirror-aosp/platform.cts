@@ -1976,6 +1976,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                             gesture, false /* useDelayedCancellation */);
 
             expectCommand(stream, command, TIMEOUT);
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             methodCallVerifier.assertCalledOnce(
                     args -> assertEquals(gesture,
                             HandwritingGesture.fromByteArray(args.getByteArray("gesture"))));
@@ -2010,6 +2011,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
                             gesture, true /* useDelayedCancellation */);
 
             expectCommand(stream, command, TIMEOUT);
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             methodCallVerifier.assertCalledOnce(args -> {});
         });
 
