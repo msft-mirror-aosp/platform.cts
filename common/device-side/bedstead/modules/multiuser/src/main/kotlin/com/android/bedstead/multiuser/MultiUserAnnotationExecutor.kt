@@ -16,17 +16,21 @@
 package com.android.bedstead.multiuser
 
 import com.android.bedstead.harrier.AnnotationExecutor
-import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.BedsteadServiceLocator
+import com.android.bedstead.harrier.DeviceStateUsers
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.nene.TestApis.users
 import org.junit.Assume
 
 @Suppress("unused")
-class MultiUserAnnotationExecutor(private val deviceState: DeviceState) : AnnotationExecutor {
+class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecutor {
+
+    private val mDeviceStateUsers: DeviceStateUsers = locator.get()
+
     override fun applyAnnotation(annotation: Annotation) {
         when (annotation) {
-            is EnsureCanAddUser -> deviceState.ensureCanAddUser(
+            is EnsureCanAddUser -> mDeviceStateUsers.ensureCanAddUser(
                 annotation.number,
                 annotation.failureMode
             )
