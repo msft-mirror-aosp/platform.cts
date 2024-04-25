@@ -37,6 +37,7 @@ import android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION
 import android.content.pm.PackageInstaller.Session
 import android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
 import android.content.pm.PackageManager
+import android.platform.test.rule.ScreenRecordRule
 import android.provider.DeviceConfig
 import android.provider.Settings
 import android.util.Log
@@ -99,6 +100,9 @@ open class PackageInstallerTestBase {
 
     @get:Rule
     val installDialogStarter = ActivityTestRule(FutureResultActivity::class.java)
+
+    @get:Rule
+    val screenRecordRule = ScreenRecordRule(keepTestLevelRecordingOnSuccess = false)
 
     protected val pm: PackageManager = context.packageManager
     protected val pi = pm.packageInstaller

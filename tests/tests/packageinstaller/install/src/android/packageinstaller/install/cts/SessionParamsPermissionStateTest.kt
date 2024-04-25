@@ -27,6 +27,7 @@ import android.Manifest
 import android.content.AttributionSource
 import android.permission.PermissionManager
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
@@ -40,6 +41,7 @@ import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
+@ScreenRecord
 class SessionParamsPermissionStateTest : PackageInstallerTestBase() {
 
     companion object {
