@@ -1079,6 +1079,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         }
 
         public String getResultCodeText() {
+            StringBuilder sb = new StringBuilder();
+            Locale locale = Locale.getDefault();
+
             switch (mResultCode) {
                 case RESULTCODE_NONE:
                     return getString(R.string.audio_loopback_resultcode_none);
@@ -1087,15 +1090,30 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                 case RESULTCODE_FAIL_NOINTERNAL:
                     return getString(R.string.audio_loopback_resultcode_nointernal);
                 case RESULTCODE_FAIL_BASIC:
-                    return getString(R.string.audio_loopback_resultcode_failbasic);
+                    sb.append(getString(R.string.audio_loopback_resultcode_failbasic));
+                    sb.append(String.format(locale, " [%.2fms] ", LATENCY_BASIC));
+                    sb.append(getString(R.string.audio_loopback_notmet));
+                    return sb.toString();
                 case RESULTCODE_FAIL_MPC:
-                    return getString(R.string.audio_loopback_resultcode_failmpc);
+                    sb.append(getString(R.string.audio_loopback_resultcode_failmpc));
+                    sb.append(String.format(locale, " [%.2fms] ", LATENCY_MPC_AT_LEAST_ONE));
+                    sb.append(getString(R.string.audio_loopback_notmet));
+                    return sb.toString();
                 case RESULTCODE_FAIL_PROONEPATH:
-                    return getString(R.string.audio_loopback_resultcode_failpro);
+                    sb.append(getString(R.string.audio_loopback_resultcode_failpro));
+                    sb.append(String.format(locale, " [%.2fms] ", LATENCY_PRO_AUDIO_AT_LEAST_ONE));
+                    sb.append(getString(R.string.audio_loopback_notmet));
+                    return sb.toString();
                 case RESULTCODE_FAIL_PROLIMITS_ANALOG:
-                    return getString(R.string.audio_loopback_resultcode_failproanalog);
+                    sb.append(getString(R.string.audio_loopback_resultcode_failproanalog));
+                    sb.append(String.format(locale, " [%.2fms] ", LATENCY_PRO_AUDIO_ANALOG));
+                    sb.append(getString(R.string.audio_loopback_notmet));
+                    return sb.toString();
                 case RESULTCODE_FAIL_PROLIMITS_USB:
-                    return getString(R.string.audio_loopback_resultcode_failprousb);
+                    sb.append(getString(R.string.audio_loopback_resultcode_failprousb));
+                    sb.append(String.format(locale, " [%.2fms] ", LATENCY_PRO_AUDIO_USB));
+                    sb.append(getString(R.string.audio_loopback_notmet));
+                    return sb.toString();
                 case RESULTCODE_FAIL_24BIT:
                     return getString(R.string.audio_loopback_resultcode_fail24bit);
                 case RESULTCODE_FAIL_PRO_NOWIRED:
@@ -1174,13 +1192,11 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                     setResultCode(proAudioLimitsPass, RESULTCODE_FAIL_PROLIMITS_ANALOG);
                 } else if (usbLatency > 0.0) {
                     // USB audio must be supported if 3.5mm jack not supported
-                    proAudioLimitsPass =  usbLatency <= LATENCY_PRO_AUDIO_USB;
+                    proAudioLimitsPass = usbLatency <= LATENCY_PRO_AUDIO_USB;
                     setResultCode(proAudioLimitsPass, RESULTCODE_FAIL_PROLIMITS_USB);
+                } else {
+                    setResultCode(proAudioLimitsPass, RESULTCODE_FAIL_PRO_NOWIRED);
                 }
-            }
-
-            if (!proAudioLimitsPass) {
-                setResultCode(false, RESULTCODE_FAIL_PRO_NOWIRED);
             }
 
             // For Media Performance Class T, usb and analog should support >=24 bit audio.
