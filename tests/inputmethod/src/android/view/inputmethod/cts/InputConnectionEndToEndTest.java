@@ -23,6 +23,7 @@ import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.editorMatc
 import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.expectA11yImeCommand;
 import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.expectA11yImeEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
@@ -101,6 +102,7 @@ import com.android.cts.mocka11yime.MockA11yImeSettings;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
+import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
@@ -125,7 +127,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
-import java.util.function.Predicate;
 
 /**
  * Provides basic tests for APIs defined in {@link InputConnection}.
@@ -808,7 +809,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
             final ImeEvent result = expectCommand(stream, session.callGetTextAfterCursor(
@@ -970,7 +971,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#getTextBeforeCursor() for the memorized IC should fail fast.
             final ImeEvent result = expectCommand(stream, session.callGetTextBeforeCursor(
@@ -1089,7 +1090,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#getSelectedText() for the memorized IC should fail fast.
             final ImeEvent result = expectCommand(stream, session.callGetSelectedText(
@@ -1390,7 +1391,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#getTextBeforeCursor() for the memorized IC should fail fast.
             final ImeEvent result = expectCommand(stream, session.callGetSurroundingText(
@@ -1896,7 +1897,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
     }
 
-    private static Predicate<ImeEvent> onPerformHandwritingGestureResultMatcher(
+    private static DescribedPredicate<ImeEvent> onPerformHandwritingGestureResultMatcher(
             long requestId) {
         return withDescription("onPerformHandwritingGestureResult(" + requestId + ")", event -> {
             if (!TextUtils.equals("onPerformHandwritingGestureResult", event.getEventName())) {
@@ -1906,7 +1907,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
         });
     }
 
-    private static Predicate<ImeEvent> onRequestTextBoundsInfoResultMatcher(
+    private static DescribedPredicate<ImeEvent> onRequestTextBoundsInfoResultMatcher(
             long requestId) {
         return withDescription("onRequestTextBoundsInfoResult(" + requestId + ")", event -> {
             if (!TextUtils.equals("onRequestTextBoundsInfoResult", event.getEventName())) {
@@ -2121,7 +2122,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#getCursorCapsMode() for the memorized IC should fail fast.
             final ImeEvent result = expectCommand(stream,
@@ -2323,7 +2324,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#getExtractedText() for the memorized IC should fail fast.
             final ImeEvent result = expectCommand(stream, session.callGetExtractedText(
@@ -2483,7 +2484,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#requestCursorUpdates() for the memorized IC should fail fast.
             final ImeEvent result = expectCommand(stream, session.callRequestCursorUpdates(
@@ -2655,7 +2656,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
             final ImeEvent result = expectCommand(stream, session.callCommitContent(
@@ -2759,7 +2760,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#deleteSurroundingText() for the memorized IC should fail fast.
             final ImeCommand command = session.callDeleteSurroundingText(3, 4);
@@ -2885,7 +2886,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#deleteSurroundingTextInCodePoints() for the memorized IC should fail fast.
             final ImeCommand command = session.callDeleteSurroundingTextInCodePoints(3, 4);
@@ -2989,7 +2990,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
             final ImeEvent result = expectCommand(stream,
@@ -3090,7 +3091,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
             final ImeEvent result = expectCommand(stream,
@@ -3301,7 +3302,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callSetComposingText("text", 1);
@@ -3403,7 +3404,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callSetComposingText(
@@ -3492,7 +3493,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callSetComposingRegion(1, 23);
@@ -3605,7 +3606,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callSetComposingRegion(1, 23,
@@ -3682,7 +3683,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // The system internally calls "finishComposingText". So wait for a while then reset
             // the verifier before our calling "finishComposingText".
@@ -3779,7 +3780,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callCommitCompletion(new CompletionInfo(
@@ -3873,7 +3874,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callCommitCorrection(new CorrectionInfo(0x11111111,
@@ -3978,7 +3979,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callSetSelection(123, 456);
@@ -4098,7 +4099,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callPerformEditorAction(EditorInfo.IME_ACTION_GO);
@@ -4216,7 +4217,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callPerformEditorAction(EditorInfo.IME_ACTION_GO);
@@ -4326,7 +4327,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callBeginBatchEdit();
@@ -4401,7 +4402,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callEndBatchEdit();
@@ -4486,7 +4487,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callSendKeyEvent(
@@ -4608,7 +4609,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callClearMetaKeyStates(KeyEvent.META_ALT_MASK);
@@ -4727,7 +4728,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callReportFullscreenMode(true);
@@ -4800,7 +4801,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callPerformSpellCheck();
@@ -4907,7 +4908,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callPerformPrivateCommand("myAction", null);
@@ -4987,7 +4988,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // The system internally calls "getHandler". So reset the verifier before our calling
             // "callGetHandler".
@@ -5074,7 +5075,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // The system internally calls "closeConnection". So wait for it to happen then reset
             // the verifier before our calling "closeConnection".
@@ -5173,7 +5174,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
             // Let unbindInput happen.
             triggerUnbindInput();
-            expectEvent(stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
             // Now this API call on the memorized IC should fail fast.
             final ImeCommand command = session.callSetImeConsumesInput(true);
@@ -5352,8 +5353,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
 
                     // Let unbindInput happen.
                     triggerUnbindInput();
-                    expectEvent(
-                            stream, event -> "unbindInput".equals(event.getEventName()), TIMEOUT);
+                    expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
 
                     // Now IC#getTextAfterCursor() for the memorized IC should fail fast.
                     final ImeEvent result =
