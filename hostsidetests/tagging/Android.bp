@@ -14,7 +14,7 @@ java_test_host {
     static_libs: [
         "CompatChangeGatingTestBase",
         "flag-junit-host",
-        "HarrierCommon",
+        "bedstead-core-annotations",
     ],
     // tag this module as a cts test artifact
     test_suites: [
