@@ -421,6 +421,26 @@ public class CtsNfcReaderDeviceSnippet implements Snippet {
                 callbackId, eventName, BaseReaderActivity.ACTION_TEST_PASSED);
     }
 
+    /** Sets the poll tech for the active reader activity */
+    @Rpc(description = "Set the listen tech for the emulator")
+    public void setPollTech(Integer pollTech) {
+        if (mActivity == null) {
+            Log.e(TAG, "Activity is null.");
+            return;
+        }
+        mActivity.setPollTech(pollTech);
+    }
+
+    /** Resets the poll tech for the active reader activity */
+    @Rpc(description = "Reset the listen tech for the emulator")
+    public void resetPollTech() {
+        if (mActivity == null) {
+            Log.e(TAG, "Activity is null.");
+            return;
+        }
+        mActivity.resetPollTech();
+    }
+
     /** Closes reader activity between tests */
     @Rpc(description = "Close activity if one was opened.")
     public void closeActivity() {
@@ -443,24 +463,6 @@ public class CtsNfcReaderDeviceSnippet implements Snippet {
     @Rpc(description = "Press menu button")
     public void pressMenu() {
         mDevice.pressMenu();
-    }
-
-    /** Disables polling for NFC TYpe-A on the reader */
-    @Rpc(description = "Disable polling for NFC Type-A on the reader")
-    public void disableTypeAPolling() {
-        if (mActivity != null && mActivity instanceof SimpleReaderActivity) {
-            ((SimpleReaderActivity) mActivity)
-                    .setReaderMode(BaseReaderActivity.NFC_TECH_A_POLLING_OFF);
-        }
-    }
-
-    /** Enables polling for NFC Type-A on the reader */
-    @Rpc(description = "Enables polling for NFC Type-A on the reader")
-    public void enableTypeAPolling() {
-        if (mActivity != null && mActivity instanceof SimpleReaderActivity) {
-            ((SimpleReaderActivity) mActivity)
-                    .setReaderMode(BaseReaderActivity.NFC_TECH_A_POLLING_ON);
-        }
     }
 
     private Intent buildReaderIntentWithApduSequence(

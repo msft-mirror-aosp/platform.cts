@@ -179,4 +179,14 @@ public abstract class BaseEmulatorActivity extends Activity {
             sendBroadcast(intent);
         }
     }
+
+    /** Set Listen tech */
+    public void setListenTech(int listenTech) {
+        mAdapter.setDiscoveryTechnology(this, NfcAdapter.FLAG_READER_KEEP, listenTech);
+    }
+
+    /** Reset Listen tech */
+    public void resetListenTech() {
+        mAdapter.resetDiscoveryTechnology(this);
+    }
 }

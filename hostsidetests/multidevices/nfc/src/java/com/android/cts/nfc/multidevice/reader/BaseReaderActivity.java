@@ -19,19 +19,14 @@ import android.app.Activity;
 import android.content.Intent;
 import android.nfc.NfcAdapter;
 import android.os.Bundle;
+import android.util.Log;
 
 public class BaseReaderActivity extends Activity {
+    private static final String TAG = "BaseReaderActivity";
 
     // Intent action that's sent after the test condition is met.
     protected static final String ACTION_TEST_PASSED =
             "com.android.cts.nfc.multidevice.reader.ACTION_TEST_PASSED";
-    public static final int NFC_TECH_A_POLLING_ON =
-            NfcAdapter.FLAG_READER_NFC_A
-                    | NfcAdapter.FLAG_READER_NFC_BARCODE
-                    | NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK;
-    public static final int NFC_TECH_A_POLLING_OFF =
-            NfcAdapter.FLAG_READER_NFC_BARCODE | NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK;
-
     /** Call this in child classes when test condition is met */
     protected void setTestPassed() {
         Intent intent = new Intent(ACTION_TEST_PASSED);
@@ -44,5 +39,16 @@ public class BaseReaderActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mAdapter = NfcAdapter.getDefaultAdapter(this);
+    }
+
+    /** Set Poll tech */
+    public void setPollTech(int pollTech) {
+        Log.d(TAG, "setting polltech to " + pollTech);
+        mAdapter.setDiscoveryTechnology(this, pollTech, NfcAdapter.FLAG_LISTEN_KEEP);
+    }
+
+    /** Reset Poll tech */
+    public void resetPollTech() {
+        mAdapter.resetDiscoveryTechnology(this);
     }
 }
