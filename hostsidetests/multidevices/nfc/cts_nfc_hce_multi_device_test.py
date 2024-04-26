@@ -65,11 +65,13 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
 
     def setup_test(self):
         """
-        Turns emulator screen on and unlocks between tests as some tests will
+        Turns emulator/reader screen on and unlocks between tests as some tests will
         turn the screen off.
         """
         self.emulator.nfc_emulator.turnScreenOn()
         self.emulator.nfc_emulator.pressMenu()
+        self.reader.nfc_reader.turnScreenOn()
+        self.reader.nfc_reader.pressMenu()
 
     def test_single_non_payment_service(self):
         """Tests successful APDU exchange between non-payment service and

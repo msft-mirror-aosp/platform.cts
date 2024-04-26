@@ -21,8 +21,11 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.RemoteException;
+import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.cts.nfc.multidevice.utils.CommandApdu;
 import com.android.cts.nfc.multidevice.utils.HceUtils;
@@ -49,8 +52,12 @@ import com.google.android.mobly.snippet.rpc.AsyncRpc;
 import com.google.android.mobly.snippet.rpc.Rpc;
 
 public class CtsNfcReaderDeviceSnippet implements Snippet {
+    protected static final String TAG = "CtsNfcReaderDeviceSnippet";
+
     private BaseReaderActivity mActivity;
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final UiDevice mDevice =
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
     /** Opens NFC reader for single non-payment test */
     @Rpc(description = "Open simple reader activity for single non-payment test")
@@ -420,6 +427,22 @@ public class CtsNfcReaderDeviceSnippet implements Snippet {
         if (mActivity != null) {
             mActivity.finish();
         }
+    }
+
+    /** Turns device screen on */
+    @Rpc(description = "Turns device screen on")
+    public void turnScreenOn() {
+        try {
+            mDevice.wakeUp();
+        } catch (RemoteException e) {
+            Log.e(TAG, "RemoteException", e);
+        }
+    }
+
+    /** Press device menu button to return device to home screen between tests. */
+    @Rpc(description = "Press menu button")
+    public void pressMenu() {
+        mDevice.pressMenu();
     }
 
     /** Disables polling for NFC TYpe-A on the reader */
