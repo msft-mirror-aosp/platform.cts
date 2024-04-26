@@ -99,4 +99,57 @@ public class FontFileTestUtil {
         }
         return null;
     }
+
+    /**
+     * Returns true if the font file has a given table.
+     * @param file font file
+     * @param index an index if the font file is a font collection
+     * @param tag a OpenType axis tag, e.g. "fvar".
+     * @return true if the font file has a given table, otherwise false
+     */
+    public static boolean hasTable(File file, int index, String tag) {
+        int otTag;
+        if (tag.length() != 4) {
+            throw new IllegalArgumentException("invalid tag: " + tag);
+        }
+        otTag = (tag.charAt(0) << 24) | (tag.charAt(1) << 16) | (tag.charAt(2) << 8)
+                | tag.charAt(3);
+        try (FileInputStream fis = new FileInputStream(file)) {
+            final FileChannel fc = fis.getChannel();
+            long size = fc.size();
+            ByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, 0, size)
+                    .order(ByteOrder.BIG_ENDIAN);
+
+
+            int magicNumber = buffer.getInt(0);
+
+            int fontOffset = 0;
+            int numFonts = buffer.getInt(8);
+            if (index >= numFonts) {
+                return false;
+            }
+
+            if (magicNumber == TTC_TAG) {
+                fontOffset = buffer.getInt(12 + 4 * index);
+                magicNumber = buffer.getInt(fontOffset);
+                if (magicNumber != SFNT_VERSION_1 && magicNumber != SFNT_VERSION_OTTO) {
+                    throw new IOException("Unknown magic number at 0th font: #" + magicNumber);
+                }
+            } else if (magicNumber != SFNT_VERSION_1 && magicNumber != SFNT_VERSION_OTTO) {
+                throw new IOException("Unknown magic number: #" + magicNumber);
+            }
+
+            int numTables = buffer.getShort(fontOffset + 4);  // offset to number of table
+            for (int i = 0; i < numTables; ++i) {
+                int tableEntryOffset = fontOffset + 12 + i * 16;
+                int tableTag = buffer.getInt(tableEntryOffset);
+                if (tableTag == otTag) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
+    }
 }
