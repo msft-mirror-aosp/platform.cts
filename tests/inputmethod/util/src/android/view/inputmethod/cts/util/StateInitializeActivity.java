@@ -50,6 +50,7 @@ public class StateInitializeActivity extends Activity {
         // Make sure that navigation bar is rendered with black (if supported).
         getWindow().setNavigationBarColor(Color.BLACK);
 
+        view.setFitsSystemWindows(true);
         setContentView(view);
     }
 }

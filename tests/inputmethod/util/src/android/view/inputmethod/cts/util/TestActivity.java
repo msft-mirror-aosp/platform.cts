@@ -17,6 +17,8 @@
 package android.view.inputmethod.cts.util;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.WindowInsets.Type.displayCutout;
+import static android.view.WindowInsets.Type.systemBars;
 import static android.view.WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED;
@@ -135,6 +137,13 @@ public class TestActivity extends Activity {
         // SOFT_INPUT_STATE_UNSPECIFIED actually behaves.
         setSoftInputState(SOFT_INPUT_STATE_UNCHANGED);
         setContentView(mInitializer.apply(this));
+
+        // Add padding for edge-to-edge but return original insets.
+        getWindow().getDecorView().setOnApplyWindowInsetsListener((v, insets) -> {
+            final var i = insets.getInsets(systemBars() | displayCutout());
+            v.setPadding(i.left, i.top, i.right, i.bottom);
+            return insets;
+        });
     }
 
     @Override

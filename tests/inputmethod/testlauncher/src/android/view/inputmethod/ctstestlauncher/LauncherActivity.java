@@ -61,6 +61,7 @@ public final class LauncherActivity extends Activity {
         delegatorView.setBackgroundColor(Color.GREEN);
         delegatorView.setHandwritingDelegatorCallback(() -> startActivity(ctsTestAppIntent));
         delegatorView.setAllowedHandwritingDelegatePackage("android.view.inputmethod.ctstestapp");
+        delegatorView.setFitsSystemWindows(true);
         setContentView(delegatorView, new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     }
