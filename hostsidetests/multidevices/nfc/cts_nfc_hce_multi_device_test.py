@@ -42,7 +42,13 @@ from mobly.controllers import android_device
 # Timeout to give the NFC service time to perform async actions such as
 # discover tags.
 _NFC_TIMEOUT_SEC = 10
-
+_NFC_TECH_A_POLLING_ON = (0x1 #NfcAdapter.FLAG_READER_NFC_A
+                          | 0x10 #NfcAdapter.FLAG_READER_NFC_BARCODE
+                          | 0x80 #NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
+                          )
+_NFC_TECH_A_POLLING_OFF = (0x10 #NfcAdapter.FLAG_READER_NFC_BARCODE
+                          | 0x80 #NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
+                          )
 
 class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
     def setup_class(self):
@@ -498,11 +504,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.emulator.nfc_emulator.startConflictingNonPaymentEmulatorActivity()
         self.reader.nfc_reader.startConflictingNonPaymentReaderActivity()
         self.emulator.nfc_emulator.selectItem()
-        self.reader.nfc_reader.disableTypeAPolling()
+        self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_OFF)
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess'
         )
-        self.reader.nfc_reader.enableTypeAPolling()
+        self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_ON)
         test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
     def test_conflicting_non_payment_prefix(self):
@@ -528,11 +534,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
          .startConflictingNonPaymentPrefixEmulatorActivity())
         self.reader.nfc_reader.startConflictingNonPaymentPrefixReaderActivity()
         self.emulator.nfc_emulator.selectItem()
-        self.reader.nfc_reader.disableTypeAPolling()
+        self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_OFF)
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess'
         )
-        self.reader.nfc_reader.enableTypeAPolling()
+        self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_ON)
         test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
     def test_protocol_params(self):
