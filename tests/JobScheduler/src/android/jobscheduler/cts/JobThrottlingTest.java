@@ -55,7 +55,6 @@ import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
-import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ThermalUtils;
 import com.android.server.net.Flags;
 
@@ -1523,8 +1522,11 @@ public class JobThrottlingTest {
         assertFalse("Job unexpectedly ready, in state: " + state, state.contains("ready"));
     }
 
-    private boolean waitUntilTrue(long maxWait, BooleanSupplier condition) throws Exception {
-        PollingCheck.waitFor(maxWait, () -> condition.getAsBoolean());
+    private boolean waitUntilTrue(long maxWait, BooleanSupplier condition) {
+        final long deadline = SystemClock.uptimeMillis() + maxWait;
+        do {
+            SystemClock.sleep(POLL_INTERVAL);
+        } while (!condition.getAsBoolean() && SystemClock.uptimeMillis() < deadline);
         return condition.getAsBoolean();
     }
 }
