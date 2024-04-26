@@ -33,6 +33,7 @@ android_test {
         "ctstestrunner-axt",
         "bluetooth-test-util-lib",
         "modules-utils-build_system",
+        "platform-test-annotations",
     ],
     data: [
         ":CtsPermissionPolicyApp25",
@@ -59,11 +60,13 @@ android_test {
         ":CtsCreateNotificationChannelsApp33",
         ":CtsMediaPermissionApp33WithStorage",
         ":CtsDifferentPkgNameApp",
+        ":CtsAppThatMakesTwoPermRequests",
     ],
     test_suites: [
         "cts",
         "general-tests",
         "mts-permission",
         "gts",
+        "mcts-permission",
     ],
 }
