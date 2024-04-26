@@ -49,6 +49,7 @@ import android.content.pm.PackageManager;
 import android.jobscheduler.cts.jobtestapp.TestActivity;
 import android.jobscheduler.cts.jobtestapp.TestFgsService;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
+import android.os.SystemClock;
 import android.os.UserHandle;
 import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
@@ -57,7 +58,6 @@ import android.util.SparseArray;
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.CallbackAsserter;
-import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 
 import java.util.Collections;
@@ -453,7 +453,10 @@ class TestAppInterface implements AutoCloseable {
     }
 
     private boolean waitUntilTrue(long maxWait, BooleanSupplier condition) {
-        PollingCheck.waitFor(maxWait, () -> condition.getAsBoolean());
+        final long deadline = SystemClock.uptimeMillis() + maxWait;
+        do {
+            SystemClock.sleep(500);
+        } while (!condition.getAsBoolean() && SystemClock.uptimeMillis() < deadline);
         return condition.getAsBoolean();
     }
 
