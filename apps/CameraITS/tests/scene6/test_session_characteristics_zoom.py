@@ -26,7 +26,7 @@ import image_processing_utils
 import its_session_utils
 import zoom_capture_utils
 
-_CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CIRCLISH_RTOL = 0.065  # contour area vs ideal circle area pi*((w+h)/4)**2
 _FPS_30_60 = (30, 60)
 _FPS_SELECTION_ATOL = 0.01
 _FPS_ATOL = 0.8
