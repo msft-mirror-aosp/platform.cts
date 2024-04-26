@@ -140,16 +140,16 @@ public class ReportExporter extends AsyncTask<Void, Void, String> {
         verifierReportsDir.mkdirs();
 
         String suiteName = Version.getMetadata(mContext, SUITE_NAME_METADATA_KEY);
+        String reportName = getReportName(suiteName);
         // create a temporary directory for this particular report
-        File tempDir = new File(verifierReportsDir, getReportName(suiteName));
+        File tempDir = new File(verifierReportsDir, reportName);
         tempDir.mkdirs();
 
         // Pull in any ReportLogs
         copyReportFiles(tempDir);
 
         // create a File object for a report ZIP file
-        File reportZipFile = new File(
-                verifierReportsDir, getReportName(suiteName) + ZIP_EXTENSION);
+        File reportZipFile = new File(verifierReportsDir, reportName + ZIP_EXTENSION);
 
         try {
             // Serialize the report
