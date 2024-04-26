@@ -52,7 +52,6 @@ import com.android.compatibility.common.util.SystemUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1337,7 +1336,6 @@ public class CardEmulationTest {
         });
     }
 
-    @Ignore("NON_PAYMENT package isn't wallet role eligible")
     @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     @Test
     public void testAidResolutionWithRoleHolder_holderDoesNotSupportAid_overLappingAids()
