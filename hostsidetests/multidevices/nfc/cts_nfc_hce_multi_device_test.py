@@ -52,7 +52,7 @@ _NFC_TECH_A_POLLING_OFF = (0x10 #NfcAdapter.FLAG_READER_NFC_BARCODE
                           | 0x80 #NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
                           )
 _NFC_TECH_A_LISTEN_ON = 0x1 #NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_A
-_NFC_TECH_B_LISTEN_ON = 0x2 #NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_B
+_NFC_TECH_F_LISTEN_ON = 0x4 #NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_F
 _NFC_LISTEN_OFF = 0x0 #NfcAdapter.FLAG_LISTEN_DISABLE
 
 class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
@@ -650,6 +650,42 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
         # Set listen on
+        self.emulator.nfc_emulator.setListenTech(_NFC_TECH_A_LISTEN_ON)
+        test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+
+    def test_single_non_payment_service_with_listen_tech_poll_tech_mismatch(self):
+        """Tests successful APDU exchange between non-payment service and
+        reader does not proceed when emulator listen tech mismatches reader poll tech.
+
+        Test Steps:
+        1. Start emulator activity and set up non-payment HCE Service.
+        2. Set listen tech to Type-F on the emulator.
+        3. Set callback handler on emulator for when a TestPass event is
+        received.
+        4. Start reader activity and verify transaction does not proceed.
+        5. Set listen tech to Type-A on the emulator.
+        6. This should trigger APDU exchange between reader and emulator.
+
+        Verifies:
+        1. Verifies that no APDU exchange occurs when the listen tech mismatches with poll tech.
+        2. Verifies a successful APDU exchange between the emulator and
+        Transport Service after _NFC_TIMEOUT_SEC.
+        """
+        self.emulator.nfc_emulator.startSingleNonPaymentEmulatorActivity()
+        # Set listen to Type-F
+        self.emulator.nfc_emulator.setListenTech(_NFC_TECH_F_LISTEN_ON)
+
+        test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
+            'ApduSuccess')
+        self.reader.nfc_reader.startSingleNonPaymentReaderActivity()
+        with asserts.assert_raises(
+                errors.CallbackHandlerTimeoutError,
+                "Transaction completed when listen tech is mismatching",
+        ):
+            test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
+
+        # Set listen to Type-A
         self.emulator.nfc_emulator.setListenTech(_NFC_TECH_A_LISTEN_ON)
         test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
