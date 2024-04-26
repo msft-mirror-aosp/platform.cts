@@ -79,6 +79,19 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.reader.nfc_reader.turnScreenOn()
         self.reader.nfc_reader.pressMenu()
 
+
+    def on_fail(self, record):
+        test_name = record.test_name
+        self.emulator.take_bug_report(
+            test_name=self.emulator.debug_tag + "_" + test_name,
+            destination=self.current_test_info.output_path,
+        )
+        self.reader.take_bug_report(
+            test_name=self.reader.debug_tag + "_" + test_name,
+            destination=self.current_test_info.output_path,
+        )
+
+
     def test_single_non_payment_service(self):
         """Tests successful APDU exchange between non-payment service and
         reader.
