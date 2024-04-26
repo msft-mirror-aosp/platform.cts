@@ -84,6 +84,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -283,6 +284,7 @@ public class CrossSimRedialingTestOnMockModem extends ImsCallingBase {
         }
     }
 
+    @Ignore("For internal test only.")
     @Test
     public void testCrossStackSlot0ThenSlot1() throws Exception {
         // Setup pre-condition
@@ -311,6 +313,7 @@ public class CrossSimRedialingTestOnMockModem extends ImsCallingBase {
         assertTrue(waitForVoiceLatchCountdown(sOtherSlot, LATCH_EMERGENCY_DIAL));
     }
 
+    @Ignore("For internal test only.")
     @Test
     public void testCrossStackTimer() throws Exception {
         // Setup pre-condition
