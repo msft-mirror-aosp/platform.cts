@@ -16,9 +16,13 @@
 
 package android.server.wm.jetpack.extensions.util;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.window.extensions.core.util.function.Consumer;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -64,6 +68,22 @@ public class TestValueCountConsumer<T> implements Consumer<T> {
         }
         mLastReportedValue = value;
         return value;
+    }
+
+    /**
+     * Returns a list that contains the number of values set in
+     * {@link TestValueCountConsumer#setCount(int)}.
+     */
+    @NonNull
+    public List<T> waitAndGetAllValues() throws InterruptedException {
+        List<T> values = new ArrayList<>();
+        for (int i = 0; i < mCount; i++) {
+            T value = mLinkedBlockingQueue.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            if (value != null) {
+                values.add(value);
+            }
+        }
+        return Collections.unmodifiableList(values);
     }
 
     /**
