@@ -241,6 +241,17 @@ public final class TestUtils {
         });
     }
 
+    /**
+     * Call a command to force stop the given application package.
+     *
+     * @param pkg The name of the package to be stopped.
+     * @param userId The target user ID.
+     */
+    public static void forceStopPackage(@NonNull String pkg, int userId) {
+        runWithShellPermissionIdentity(() -> {
+            runShellCommandOrThrow("am force-stop " + pkg + " --user " + userId);
+        });
+    }
 
     /**
      * Inject Stylus move on the Display inside view coordinates so that initiation can happen.
