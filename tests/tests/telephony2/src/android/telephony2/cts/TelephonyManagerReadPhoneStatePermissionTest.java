@@ -46,19 +46,18 @@ import org.junit.runner.RunWith;
 @AppModeFull(reason = "Cannot grant the runtime permission in instant app mode")
 public class TelephonyManagerReadPhoneStatePermissionTest {
 
-    private boolean mHasTelephony;
+    private Context mContext;
     TelephonyManager mTelephonyManager = null;
     TelecomManager mTelecomManager = null;
 
     @Before
     public void setUp() throws Exception {
-        mHasTelephony = getContext().getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY);
-        mTelephonyManager =
-                (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
+        mContext = InstrumentationRegistry.getContext();
+
+        mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
         assertNotNull(mTelephonyManager);
-        mTelecomManager =
-                (TelecomManager) getContext().getSystemService(Context.TELECOM_SERVICE);
+
+        mTelecomManager = mContext.getSystemService(TelecomManager.class);
         assertNotNull(mTelecomManager);
     }
 
@@ -101,10 +100,12 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
      */
     @Test
     public void testTelephonyManagersAPIsRequiringReadPhoneStatePermissions() throws Exception {
-        if (!mHasTelephony) {
+        if (!hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+                || !hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION)) {
             return;
         }
 
+        boolean hasCalling = hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
         try {
             // We must ensure that compat fwk enables READ_PHONE_STATE enforcement
             TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
@@ -112,8 +113,10 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
                     TelephonyUtils.ENABLE_GET_CALL_STATE_PERMISSION_PROTECTION_STRING);
             ShellIdentityUtils.invokeMethodWithShellPermissions(
                     mTelephonyManager, (tm) -> tm.getCallState());
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getCallStateForSubscription());
+            if (hasCalling) {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getCallStateForSubscription());
+            }
         } catch (SecurityException e) {
             fail("TelephonyManager#getCallState and TelephonyManager#getCallStateForSubscription "
                     + "must not throw a SecurityException because READ_PHONE_STATE permission is "
@@ -123,12 +126,6 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
 
         int subId = mTelephonyManager.getSubscriptionId();
 
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getNetworkType());
-        } catch (SecurityException e) {
-            fail("getNetworkType() must not throw a SecurityException with READ_PHONE_STATE" + e);
-        }
         try {
             ShellIdentityUtils.invokeMethodWithShellPermissions(
                     mTelephonyManager, (tm) -> tm.getDeviceSoftwareVersion());
@@ -141,20 +138,6 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
                     mTelephonyManager, (tm) -> tm.getCarrierConfig());
         } catch (SecurityException e) {
             fail("getCarrierConfig() must not throw a SecurityException"
-                    + " with READ_PHONE_STATE" + e);
-        }
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getDataNetworkType());
-        } catch (SecurityException e) {
-            fail("getDataNetworkType() must not throw a SecurityException"
-                    + " with READ_PHONE_STATE" + e);
-        }
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getVoiceNetworkType());
-        } catch (SecurityException e) {
-            fail("getVoiceNetworkType() must not throw a SecurityException"
                     + " with READ_PHONE_STATE" + e);
         }
         try {
@@ -173,37 +156,9 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
         }
         try {
             ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getVoiceMailNumber());
-        } catch (SecurityException e) {
-            fail("getVoiceMailNumber() must not throw a SecurityException"
-                    + " with READ_PHONE_STATE" + e);
-        }
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getVisualVoicemailPackageName());
-        } catch (SecurityException e) {
-            fail("getVisualVoicemailPackageName() must not throw a SecurityException"
-                    + " with READ_PHONE_STATE" + e);
-        }
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getVoiceMailAlphaTag());
-        } catch (SecurityException e) {
-            fail("getVoiceMailAlphaTag() must not throw a SecurityException"
-                    + " with READ_PHONE_STATE" + e);
-        }
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
                     mTelephonyManager, (tm) -> tm.getForbiddenPlmns());
         } catch (SecurityException e) {
             fail("getForbiddenPlmns() must not throw a SecurityException"
-                    + " with READ_PHONE_STATE" + e);
-        }
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.isDataRoamingEnabled());
-        } catch (SecurityException e) {
-            fail("isDataRoamingEnabled() must not throw a SecurityException"
                     + " with READ_PHONE_STATE" + e);
         }
         try {
@@ -214,35 +169,6 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
         } catch (SecurityException e) {
             fail("getSubscriptionId(phoneAccountHandle) must not throw a SecurityException"
                     + " with READ_PHONE_STATE" + e);
-        }
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getServiceState());
-        } catch (SecurityException e) {
-            fail("getServiceState() must not throw a SecurityException"
-                    + " with READ_PHONE_STATE" + e);
-        }
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getEmergencyNumberList());
-        } catch (SecurityException e) {
-            fail("getEmergencyNumberList() must not throw a SecurityException"
-                    + " with READ_PHONE_STATE" + e);
-        }
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getEmergencyNumberList(
-                            EmergencyNumber.EMERGENCY_SERVICE_CATEGORY_POLICE));
-        } catch (SecurityException e) {
-            fail("getEmergencyNumberList(EMERGENCY_SERVICE_CATEGORY_POLICE) must"
-                    + " not throw a SecurityException with READ_PHONE_STATE" + e);
-        }
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getPreferredOpportunisticDataSubscription());
-        } catch (SecurityException e) {
-            fail("getPreferredOpportunisticDataSubscription() must not throw"
-                    + " a SecurityException with READ_PHONE_STATE" + e);
         }
         try {
             ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -266,9 +192,96 @@ public class TelephonyManagerReadPhoneStatePermissionTest {
             fail("doesSwitchMultiSimConfigTriggerReboot() must not throw a SecurityException"
                     + " with READ_PHONE_STATE" + e);
         }
+
+        if (hasCalling) {
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getVoiceNetworkType());
+            } catch (SecurityException e) {
+                fail("getVoiceNetworkType() must not throw a SecurityException"
+                        + " with READ_PHONE_STATE" + e);
+            }
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getVoiceMailNumber());
+            } catch (SecurityException e) {
+                fail("getVoiceMailNumber() must not throw a SecurityException"
+                        + " with READ_PHONE_STATE" + e);
+            }
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getVisualVoicemailPackageName());
+            } catch (SecurityException e) {
+                fail("getVisualVoicemailPackageName() must not throw a SecurityException"
+                        + " with READ_PHONE_STATE" + e);
+            }
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getVoiceMailAlphaTag());
+            } catch (SecurityException e) {
+                fail("getVoiceMailAlphaTag() must not throw a SecurityException"
+                        + " with READ_PHONE_STATE" + e);
+            }
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getEmergencyNumberList());
+            } catch (SecurityException e) {
+                fail("getEmergencyNumberList() must not throw a SecurityException"
+                        + " with READ_PHONE_STATE" + e);
+            }
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getEmergencyNumberList(
+                                EmergencyNumber.EMERGENCY_SERVICE_CATEGORY_POLICE));
+            } catch (SecurityException e) {
+                fail("getEmergencyNumberList(EMERGENCY_SERVICE_CATEGORY_POLICE) must"
+                        + " not throw a SecurityException with READ_PHONE_STATE" + e);
+            }
+        }
+
+        if (hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)) {
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getNetworkType());
+            } catch (SecurityException e) {
+                fail("getNetworkType() must not throw a SecurityException with READ_PHONE_STATE"
+                        + e);
+            }
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getDataNetworkType());
+            } catch (SecurityException e) {
+                fail("getDataNetworkType() must not throw a SecurityException"
+                        + " with READ_PHONE_STATE" + e);
+            }
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getServiceState());
+            } catch (SecurityException e) {
+                fail("getServiceState() must not throw a SecurityException"
+                        + " with READ_PHONE_STATE" + e);
+            }
+        }
+
+        if (hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA)) {
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.isDataRoamingEnabled());
+            } catch (SecurityException e) {
+                fail("isDataRoamingEnabled() must not throw a SecurityException"
+                        + " with READ_PHONE_STATE" + e);
+            }
+            try {
+                ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getPreferredOpportunisticDataSubscription());
+            } catch (SecurityException e) {
+                fail("getPreferredOpportunisticDataSubscription() must not throw"
+                        + " a SecurityException with READ_PHONE_STATE" + e);
+            }
+        }
     }
 
-    private static Context getContext() {
-        return InstrumentationRegistry.getContext();
+    private boolean hasSystemFeature(String feature) {
+        return mContext.getPackageManager().hasSystemFeature(feature);
     }
 }
