@@ -16,8 +16,11 @@
 package android.media.cts;
 
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static org.junit.Assert.assertTrue;
 
+import android.annotation.NonNull;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
@@ -40,7 +43,6 @@ import android.util.Log;
 import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -55,11 +57,14 @@ public class MediaProjectionActivity extends Activity {
     private static final int PERMISSION_CODE = 1;
     public static final int PERMISSION_DIALOG_WAIT_MS = 1000;
     public static final String ACCEPT_RESOURCE_ID = "android:id/button1";
+    public static final String CANCEL_RESOURCE_ID = "android:id/button2";
     public static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
     public static final String SPINNER_RESOURCE_ID =
             SYSTEM_UI_PACKAGE + ":id/screen_share_mode_spinner";
     public static final String ENTIRE_SCREEN_STRING_RES_NAME =
             "screen_share_permission_dialog_option_entire_screen";
+    public static final String SINGLE_APP_STRING_RES_NAME =
+            "screen_share_permission_dialog_option_single_app";
 
     private MediaProjectionManager mProjectionManager;
     private MediaProjection mMediaProjection;
@@ -148,7 +153,7 @@ public class MediaProjectionActivity extends Activity {
             assertTrue("Can't get the permission", count <= retryCount);
             dismissPermissionDialog(/* isWatch= */
                     getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH),
-                    getEntireScreenString(this));
+                    getResourceString(this, ENTIRE_SCREEN_STRING_RES_NAME));
             count++;
         } while (!mCountDownLatch.await(timeOutMs, TimeUnit.MILLISECONDS));
         return mMediaProjection;
@@ -158,10 +163,11 @@ public class MediaProjectionActivity extends Activity {
     public static void dismissPermissionDialog(boolean isWatch,
             @Nullable String entireScreenString) {
         // Ensure the device is initialized before interacting with any UI elements.
-        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        UiDevice.getInstance(getInstrumentation());
         if (entireScreenString != null && !isWatch) {
             // if not testing on a watch device, then we need to select the entire screen option
-            // (if available) before pressing "Start recording" button.
+            // before pressing "Start recording" button. This is because single app capture is
+            // not supported on watches.
             if (!selectEntireScreenOption(entireScreenString)) {
                 Log.e(TAG, "Couldn't select entire screen option");
             }
@@ -172,8 +178,14 @@ public class MediaProjectionActivity extends Activity {
     private static boolean selectEntireScreenOption(String entireScreenString) {
         UiObject2 spinner = waitForObject(By.res(SPINNER_RESOURCE_ID));
         if (spinner == null) {
-            Log.e(TAG, "Couldn't find spinner to select projection mode");
-            return false;
+            Log.e(TAG, "Couldn't find spinner to select projection mode, now scrolling");
+            scrollToGivenResource(SPINNER_RESOURCE_ID);
+
+            spinner = waitForObject(By.res(SPINNER_RESOURCE_ID));
+            if (spinner == null) {
+                Log.e(TAG, "Couldn't find spinner to select projection mode, even after scrolling");
+                return false;
+            }
         }
         spinner.click();
 
@@ -190,7 +202,7 @@ public class MediaProjectionActivity extends Activity {
      * Returns the string for the drop down option to capture the entire screen.
      */
     @Nullable
-    public static String getEntireScreenString(Context context) {
+    public static String getResourceString(@NonNull Context context, String resName) {
         Resources sysUiResources;
         try {
             sysUiResources = context.getPackageManager()
@@ -199,8 +211,7 @@ public class MediaProjectionActivity extends Activity {
             return null;
         }
         int resourceId =
-                sysUiResources.getIdentifier(
-                        ENTIRE_SCREEN_STRING_RES_NAME, /* defType= */ "string", SYSTEM_UI_PACKAGE);
+                sysUiResources.getIdentifier(resName, /* defType= */ "string", SYSTEM_UI_PACKAGE);
         if (resourceId == 0) {
             // Resource id not found
             return null;
@@ -209,35 +220,42 @@ public class MediaProjectionActivity extends Activity {
     }
 
     private static void pressStartRecording(boolean isWatch) {
-        if (isWatch) {
-            scrollToStartRecordingButton();
-        }
+        // May need to scroll down to the start button on small screen devices.
         UiObject2 startRecordingButton = waitForObject(By.res(ACCEPT_RESOURCE_ID));
         if (startRecordingButton == null) {
-            Log.e(TAG, "Couldn't find start recording button");
+            Log.e(TAG, "Couldn't find start recording button, now attempting to scroll to it");
+            scrollToGivenResource(ACCEPT_RESOURCE_ID);
+
+            startRecordingButton = waitForObject(By.res(ACCEPT_RESOURCE_ID));
+            if (startRecordingButton == null) {
+                Log.e(TAG, "Couldn't find start recording button, even after scrolling");
+            } else {
+                Log.d(TAG, "found permission dialog after scrolling down, clicked");
+                startRecordingButton.click();
+            }
         } else {
             Log.d(TAG, "found permission dialog after searching all windows, clicked");
             startRecordingButton.click();
         }
     }
 
-    /** When testing on a small screen device, scrolls to a Start Recording button. */
-    private static void scrollToStartRecordingButton() {
+    /** When testing on a small screen device, scrolls to a given UI element. */
+    private static void scrollToGivenResource(String resourceId) {
         // Scroll down the dialog; on a device with a small screen the elements may not be visible.
         final UiScrollable scrollable = new UiScrollable(new UiSelector().scrollable(true));
         try {
-            if (!scrollable.scrollIntoView(new UiSelector().resourceId(ACCEPT_RESOURCE_ID))) {
-                Log.e(TAG, "Didn't find " + ACCEPT_RESOURCE_ID + " when scrolling");
+            if (!scrollable.scrollIntoView(new UiSelector().resourceId(resourceId))) {
+                Log.e(TAG, "Didn't find " + resourceId + " when scrolling");
                 return;
             }
-            Log.d(TAG, "This is a watch; we finished scrolling down to the ui elements");
+            Log.d(TAG, "We finished scrolling down to the ui element " + resourceId);
         } catch (UiObjectNotFoundException e) {
-            Log.d(TAG, "This is a watch, but there was no scrolling (UI may not be scrollable");
+            Log.d(TAG, "There was no scrolling (UI may not be scrollable");
         }
     }
 
     private static UiObject2 waitForObject(BySelector selector) {
-        UiDevice uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        UiDevice uiDevice = UiDevice.getInstance(getInstrumentation());
         return uiDevice.wait(Until.findObject(selector), PERMISSION_DIALOG_WAIT_MS);
     }
 
