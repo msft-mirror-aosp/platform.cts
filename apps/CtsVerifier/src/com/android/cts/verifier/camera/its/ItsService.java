@@ -2278,6 +2278,10 @@ public class ItsService extends Service implements SensorEventListener {
                             Logt.i(TAG, "Triggering AE");
                             req.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
                                     CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
+                            if (mDoAF) {
+                                req.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                                        CaptureRequest.CONTROL_AF_TRIGGER_CANCEL);
+                            }
                             triggeredAE = true;
                             triggering = true;
                         }

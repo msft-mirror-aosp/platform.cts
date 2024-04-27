@@ -28,6 +28,7 @@ import static android.view.inputmethod.cts.util.NavigationBarColorVerifier.expec
 import static android.view.inputmethod.cts.util.NavigationBarColorVerifier.expectNavigationBarColorSupported;
 import static android.view.inputmethod.cts.util.TestUtils.getOnMainSync;
 
+import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.waitForInputViewLayoutStable;
@@ -268,13 +269,7 @@ public class NavigationBarColorTest extends EndToEndImeTestBase {
                 expectBindInput(stream, Process.myPid(), TIMEOUT);
 
                 // Wait until "onStartInput" gets called for the EditText.
-                expectEvent(stream, event -> {
-                    if (!TextUtils.equals("onStartInputView", event.getEventName())) {
-                        return false;
-                    }
-                    final EditorInfo editorInfo = event.getArguments().getParcelable("editorInfo");
-                    return TextUtils.equals(TEST_MARKER, editorInfo.privateImeOptions);
-                }, TIMEOUT);
+                expectEvent(stream, editorMatcher("onStartInputView", TEST_MARKER), TIMEOUT);
 
                 // Wait until MockIme's layout becomes stable.
                 final ImeLayoutInfo lastLayout =

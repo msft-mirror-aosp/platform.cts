@@ -20,9 +20,15 @@ import android.Manifest
 import android.companion.AssociationInfo
 import android.companion.CompanionDeviceManager.MESSAGE_REQUEST_PING
 import android.companion.cts.common.MAC_ADDRESS_A
+import android.companion.cts.common.RecordingOnTransportsChangedListener
 import android.companion.cts.common.SIMPLE_EXECUTOR
+import android.companion.cts.common.assertEmpty
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.FilterInputStream
+import java.io.IOException
 import java.util.function.BiConsumer
 import java.util.function.Consumer
 import kotlin.test.assertFailsWith
@@ -32,14 +38,14 @@ import org.junit.runner.RunWith
 /**
  * Test System APIs for using CDM transports.
  *
- * Run: atest CtsCompanionDeviceManagerCoreTestCases:TransportPermissionTest
+ * Run: atest CtsCompanionDeviceManagerCoreTestCases:TransportsListenerTest
  */
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
-class TransportPermissionTest : CoreTestBase() {
+class TransportsListenerTest : CoreTestBase() {
 
     @Test
-    fun test_addOnTransportChangedListener_requiresPermission() {
+    fun test_addOnTransportsChangedListener_requiresPermission() {
         // Create a regular (not self-managed) association.
         targetApp.associate(MAC_ADDRESS_A)
         val listener = Consumer<List<AssociationInfo>> { _: List<AssociationInfo> -> }
@@ -116,6 +122,70 @@ class TransportPermissionTest : CoreTestBase() {
         // Same call with the USE_COMPANION_TRANSPORTS permissions should succeed.
         withShellPermissionIdentity(Manifest.permission.USE_COMPANION_TRANSPORTS) {
             cdm.sendMessage(MESSAGE_REQUEST_PING, byteArrayOf(), intArrayOf(associationId))
+        }
+    }
+
+    @Test
+    fun test_onTransportsChangedListener() {
+        // Create a regular (not self-managed) association.
+        targetApp.associate(MAC_ADDRESS_A)
+        val associationId = cdm.myAssociations[0].id
+        val listener = RecordingOnTransportsChangedListener()
+
+        withShellPermissionIdentity(Manifest.permission.USE_COMPANION_TRANSPORTS) {
+            cdm.addOnTransportsChangedListener(SIMPLE_EXECUTOR, listener)
+        }
+
+        // Assert listener is invoked by new transport attachment
+        listener.assertInvokedByActions {
+            val input = ByteArrayInputStream(byteArrayOf())
+            val output = ByteArrayOutputStream()
+            cdm.attachSystemDataTransport(associationId, input, output)
+        }
+
+        withShellPermissionIdentity(Manifest.permission.USE_COMPANION_TRANSPORTS) {
+            cdm.removeOnTransportsChangedListener(listener)
+        }
+        listener.clearRecordedInvocations()
+
+        val input = ByteArrayInputStream(byteArrayOf())
+        val output = ByteArrayOutputStream()
+        cdm.attachSystemDataTransport(associationId, input, output)
+
+        // The listener shouldn't get invoked after removing the onAssociationsChangedListener.
+        assertEmpty(listener.invocations)
+    }
+
+    @Test
+    fun test_onTransportsChangedListener_notifiesOnRegister() {
+        // Create a regular (not self-managed) association.
+        targetApp.associate(MAC_ADDRESS_A)
+        val associationId = cdm.myAssociations[0].id
+        val listener = RecordingOnTransportsChangedListener()
+
+        // Hold on reading the input stream to prevent it from detaching
+        val input = BlockedInputStream()
+        val output = ByteArrayOutputStream()
+        cdm.attachSystemDataTransport(associationId, input, output)
+
+        // Assert registering listener also triggers it
+        listener.assertInvokedByActions {
+            withShellPermissionIdentity(Manifest.permission.USE_COMPANION_TRANSPORTS) {
+                cdm.addOnTransportsChangedListener(SIMPLE_EXECUTOR, listener)
+            }
+        }
+
+        withShellPermissionIdentity(Manifest.permission.USE_COMPANION_TRANSPORTS) {
+            cdm.removeOnTransportsChangedListener(listener)
+        }
+        listener.clearRecordedInvocations()
+    }
+
+    private class BlockedInputStream : FilterInputStream(ByteArrayInputStream(byteArrayOf(0))) {
+
+        @Throws(IOException::class)
+        override fun read(b: ByteArray?, off: Int, len: Int): Int {
+            return 0 // do nothing
         }
     }
 }

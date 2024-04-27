@@ -20,6 +20,7 @@ import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.ex
 import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
@@ -84,9 +85,9 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
             stream1.skipAll();
 
             expectCommand(stream2, session2.callSwitchInputMethod(session1.getImeId()), TIMEOUT);
-            expectEvent(stream2, event -> "onDestroy".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream2, eventMatcher("onDestroy"), TIMEOUT);
 
-            expectEvent(stream1, event -> "onCreate".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
             expectEvent(stream1, editorMatcher("onStartInput", marker), TIMEOUT);
         }
     }
@@ -142,7 +143,7 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
             expectCommand(stream2, session2.callSwitchInputMethod(session1.getImeId()), TIMEOUT);
 
             // Make sure that MockIme2 eventually becomes visible
-            expectEvent(stream1, event -> "onCreate".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
             expectEvent(stream1, editorMatcher("onStartInput", marker), TIMEOUT);
             expectEvent(stream1, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeVisible(TIMEOUT);

@@ -65,6 +65,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 
 /**
  * Tests related to job throttling -- device idle, app standby and battery saver.
@@ -92,11 +93,12 @@ public class JobThrottlingTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private Context mContext;
-    private UiDevice mUiDevice;
+    private final Context mContext = InstrumentationRegistry.getTargetContext();
+    private final UiDevice mUiDevice = UiDevice.getInstance(
+            InstrumentationRegistry.getInstrumentation());
     private NetworkingHelper mNetworkingHelper;
     private PowerManager mPowerManager;
-    private int mTestJobId;
+    private final int mTestJobId = (int) (SystemClock.uptimeMillis() / 1000);
     private boolean mDeviceIdleEnabled;
     private boolean mDeviceLightIdleEnabled;
     private boolean mAppStandbyEnabled;
@@ -106,9 +108,11 @@ public class JobThrottlingTest {
     private boolean mAutomotiveDevice;
     private boolean mLeanbackOnly;
 
-    private TestAppInterface mTestAppInterface;
-    private DeviceConfigStateHelper mDeviceConfigStateHelper;
-    private DeviceConfigStateHelper mActivityManagerDeviceConfigStateHelper;
+    private final TestAppInterface mTestAppInterface = new TestAppInterface(mContext, mTestJobId);
+    private final DeviceConfigStateHelper mDeviceConfigStateHelper =
+            new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_JOB_SCHEDULER);
+    private final DeviceConfigStateHelper mActivityManagerDeviceConfigStateHelper =
+            new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER);
 
     private static boolean isDeviceIdleEnabled(UiDevice uiDevice) throws Exception {
         final String output = uiDevice.executeShellCommand("cmd deviceidle enabled deep").trim();
@@ -122,13 +126,9 @@ public class JobThrottlingTest {
 
     @Before
     public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getTargetContext();
-        mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mNetworkingHelper =
                 new NetworkingHelper(InstrumentationRegistry.getInstrumentation(), mContext);
         mPowerManager = mContext.getSystemService(PowerManager.class);
-        mTestJobId = (int) (SystemClock.uptimeMillis() / 1000);
-        mTestAppInterface = new TestAppInterface(mContext, mTestJobId);
 
         makeTestPackageIdle();
         mDeviceIdleEnabled = isDeviceIdleEnabled(mUiDevice);
@@ -149,8 +149,6 @@ public class JobThrottlingTest {
         Settings.Global.putString(mContext.getContentResolver(),
                 Settings.Global.BATTERY_STATS_CONSTANTS, "battery_charged_delay_ms=0");
         // Make sure test jobs can run regardless of bucket.
-        mDeviceConfigStateHelper =
-                new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_JOB_SCHEDULER);
         mDeviceConfigStateHelper.set(
                 new DeviceConfig.Properties.Builder(DeviceConfig.NAMESPACE_JOB_SCHEDULER)
                         .setInt("min_ready_non_active_jobs_count", 0)
@@ -160,8 +158,6 @@ public class JobThrottlingTest {
                         .setString("conn_transport_batch_threshold", "")
                         // Disable flex behavior.
                         .setInt("fc_applied_constraints", 0).build());
-        mActivityManagerDeviceConfigStateHelper =
-                new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER);
         toggleAutoRestrictedBucketOnBgRestricted(false);
         // Make sure the screen doesn't turn off when the test turns it on.
         mInitialDisplayTimeout =
@@ -1338,7 +1334,9 @@ public class JobThrottlingTest {
                 Settings.Global.BATTERY_STATS_CONSTANTS, mInitialBatteryStatsConstants);
         setPowerAllowlistState(false);
 
-        mNetworkingHelper.tearDown();
+        if (mNetworkingHelper != null) {
+            mNetworkingHelper.tearDown();
+        }
         mDeviceConfigStateHelper.restoreOriginalValues();
         mActivityManagerDeviceConfigStateHelper.restoreOriginalValues();
 
@@ -1524,20 +1522,11 @@ public class JobThrottlingTest {
         assertFalse("Job unexpectedly ready, in state: " + state, state.contains("ready"));
     }
 
-    private void assertJobReady() throws Exception {
-        String state = getJobState();
-        assertTrue("Job unexpectedly not ready, in state: " + state, state.contains("ready"));
-    }
-
-    private boolean waitUntilTrue(long maxWait, Condition condition) throws Exception {
-        final long deadLine = SystemClock.uptimeMillis() + maxWait;
+    private boolean waitUntilTrue(long maxWait, BooleanSupplier condition) {
+        final long deadline = SystemClock.uptimeMillis() + maxWait;
         do {
-            Thread.sleep(POLL_INTERVAL);
-        } while (!condition.isTrue() && SystemClock.uptimeMillis() < deadLine);
-        return condition.isTrue();
-    }
-
-    private interface Condition {
-        boolean isTrue() throws Exception;
+            SystemClock.sleep(POLL_INTERVAL);
+        } while (!condition.getAsBoolean() && SystemClock.uptimeMillis() < deadline);
+        return condition.getAsBoolean();
     }
 }

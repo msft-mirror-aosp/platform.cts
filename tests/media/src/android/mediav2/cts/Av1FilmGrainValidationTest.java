@@ -33,6 +33,7 @@ import android.mediav2.common.cts.OutputManager;
 import android.util.Log;
 import android.util.Pair;
 
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -163,6 +164,8 @@ public class Av1FilmGrainValidationTest extends CodecDecoderTestBase {
      */
     @Test
     public void testAv1FilmGrainRequirement() throws Exception {
+        Assume.assumeTrue("Skipping, Only intended for devices with vndk > U",
+                VNDK_IS_AT_LEAST_V);
         MediaFormat format = setUpSource(mTestFile);
         mImageSurface = new ImageSurface();
         setUpSurface(getWidth(format), getHeight(format), ImageFormat.YUV_420_888, 1, 0, null);

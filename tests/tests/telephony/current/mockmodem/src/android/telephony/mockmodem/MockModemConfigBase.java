@@ -33,6 +33,7 @@ import android.hardware.radio.voice.CdmaSignalInfoRecord;
 import android.hardware.radio.voice.LastCallFailCauseInfo;
 import android.hardware.radio.voice.UusInfo;
 import android.os.AsyncResult;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -576,8 +577,9 @@ public class MockModemConfigBase implements MockModemConfigInterface {
         phoneCapability.logicalModemIds =
                 new byte[MockModemConfigInterface.MAX_NUM_OF_LOGICAL_MODEM];
         phoneCapability.maxActiveData = MockModemConfigInterface.DEFAULT_MAX_ACTIVE_DATA;
-        // Todo: implement a way to set maxActiveVoice variably for each test case
-        phoneCapability.maxActiveVoice = MockModemConfigInterface.DEFAULT_MAX_ACTIVE_VOICE;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            phoneCapability.maxActiveVoice = MockModemConfigInterface.DEFAULT_MAX_ACTIVE_VOICE;
+        }
         phoneCapability.maxActiveInternetData =
                 MockModemConfigInterface.DEFAULT_MAX_ACTIVE_INTERNAL_DATA;
         phoneCapability.isInternetLingeringSupported =

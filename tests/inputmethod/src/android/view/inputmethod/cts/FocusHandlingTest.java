@@ -33,11 +33,16 @@ import static android.widget.PopupWindow.INPUT_METHOD_NEEDED;
 import static android.widget.PopupWindow.INPUT_METHOD_NOT_NEEDED;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcherRestarting;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcherRestartingFalse;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.hideSoftInputMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -71,7 +76,6 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowInsets;
 import android.view.WindowManager;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.AutoCloseableWrapper;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
@@ -98,9 +102,11 @@ import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
+import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
@@ -197,8 +203,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             // "onStartInput" with a fallback InputConnection for StateInitializeActivity.
             // "debug.imm.optimize_noneditable_views" doesn't prevent startInput when it has
             // WINDOW_GAINED_FOCUS flag.
-            expectEvent(stream, event -> "onStartInput".equals(event.getEventName())
-                    && event.getEnterState().hasFallbackInputConnection(), EXPECT_TIMEOUT);
+            expectEvent(stream, startInputWithFallbackInputConnectionMatcher(), EXPECT_TIMEOUT);
 
             final AtomicReference<TextView> viewRef1 = new AtomicReference<>();
             final AtomicReference<TextView> viewRef2 = new AtomicReference<>();
@@ -232,32 +237,27 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             // "onStartInput" with a fallback InputConnection for TestActivity.
             // "debug.imm.optimize_noneditable_views" doesn't prevent startInput when it has
             // WINDOW_GAINED_FOCUS flag.
-            expectEvent(stream, event -> "onStartInput".equals(event.getEventName())
-                    && event.getEnterState().hasFallbackInputConnection(), EXPECT_TIMEOUT);
+            expectEvent(stream, startInputWithFallbackInputConnectionMatcher(), EXPECT_TIMEOUT);
 
             // The focus change below still triggers "onStartInput".
             // "debug.imm.optimize_noneditable_views" doesn't prevent startInput when
             // StartInputReason is different.
             testActivity.runOnUiThread(() -> viewRef1.get().requestFocus());
-            expectEvent(stream, event -> "onStartInput".equals(event.getEventName())
-                    && event.getEnterState().hasFallbackInputConnection(), EXPECT_TIMEOUT);
+            expectEvent(stream, startInputWithFallbackInputConnectionMatcher(), EXPECT_TIMEOUT);
 
             // If optimization is enabled, we do not expect another call to "onStartInput" after
             // a view focus change.
             testActivity.runOnUiThread(() -> viewRef2.get().requestFocus());
             if (SystemProperties.getBoolean("debug.imm.optimize_noneditable_views", true)) {
-                notExpectEvent(stream, event -> "onStartInput".equals(event.getEventName())
-                        && event.getEnterState().hasFallbackInputConnection(), NOT_EXPECT_TIMEOUT);
+                notExpectEvent(stream, startInputWithFallbackInputConnectionMatcher(), NOT_EXPECT_TIMEOUT);
             } else {
-                expectEvent(stream, event -> "onStartInput".equals(event.getEventName())
-                        && event.getEnterState().hasFallbackInputConnection(), EXPECT_TIMEOUT);
+                expectEvent(stream, startInputWithFallbackInputConnectionMatcher(), EXPECT_TIMEOUT);
             }
 
             // Force show the IME and expect it to come up
             testActivity.runOnUiThread(() ->
                     viewRef1.get().getWindowInsetsController().show(WindowInsets.Type.ime()));
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
-                    EXPECT_TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), EXPECT_TIMEOUT);
 
             final String testInput = "Test";
             final ImeCommand commitText = imeSession.callCommitText(testInput, 0);
@@ -270,6 +270,13 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             Assert.assertEquals(keyEvent.getKeyCode(), KeyEvent.KEYCODE_UNKNOWN);
             Assert.assertEquals(keyEvent.getCharacters(), testInput);
         }
+    }
+
+    @NotNull
+    private static DescribedPredicate<ImeEvent> startInputWithFallbackInputConnectionMatcher() {
+        return withDescription("onStartInput(hasFallbackInputConnection=true)",
+                event -> "onStartInput".equals(event.getEventName())
+                        && event.getEnterState().hasFallbackInputConnection());
     }
 
     @Test
@@ -301,13 +308,13 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
                 // Input shouldn't start
                 notExpectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
                 // There shouldn't be onStartInput because the focused view is not an editor.
-                notExpectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
+                notExpectEvent(stream, showSoftInputMatcher(0),
                         TIMEOUT);
             } else {
                 // Wait until the MockIme gets bound to the TestActivity.
                 expectBindInput(stream, Process.myPid(), TIMEOUT);
                 // For apps that target pre-P devices, onStartInput() should be called.
-                expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+                expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
             }
         }
     }
@@ -417,7 +424,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             // Wait until the MockIme gets bound to the TestActivity.
             expectBindInput(stream, Process.myPid(), TIMEOUT);
 
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
         }
     }
 
@@ -448,7 +455,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             expectBindInput(stream, Process.myPid(), TIMEOUT);
 
             // Not expect showSoftInput called when the editor not yet focused.
-            notExpectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
+            notExpectEvent(stream, showSoftInputMatcher(0),
                     NOT_EXPECT_TIMEOUT);
 
             // Expect showSoftInput called when the editor is focused.
@@ -456,7 +463,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editTextRef.get());
             assertTrue(TestUtils.getOnMainSync(() -> editTextRef.get().hasFocus()
                     && editTextRef.get().hasWindowFocus()));
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
         }
     }
 
@@ -532,16 +539,8 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
                 });
 
                 // Make sure that onStartInput() is called with restarting == true.
-                expectEvent(stream, event -> {
-                    if (!TextUtils.equals("onStartInput", event.getEventName())) {
-                        return false;
-                    }
-                    if (!event.getArguments().getBoolean("restarting")) {
-                        return false;
-                    }
-                    final EditorInfo editorInfo = event.getArguments().getParcelable("editorInfo");
-                    return TextUtils.equals(marker2, editorInfo.privateImeOptions);
-                }, TIMEOUT);
+                expectEvent(stream, editorMatcherRestarting("onStartInput", marker2, true),
+                        TIMEOUT);
 
                 // Make sure that InputConnection#commitText() works.
                 final ImeCommand commit3 = imeSession.callCommitText("World!", 1);
@@ -696,7 +695,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
                     InstrumentationRegistry.getInstrumentation(), null, editText);
 
             // "showSoftInput" must not happen when setShowSoftInputOnFocus(false) is called.
-            notExpectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
+            notExpectEvent(stream, showSoftInputMatcher(0),
                     NOT_EXPECT_TIMEOUT);
         }
     }
@@ -724,7 +723,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             TestUtils.waitOnMainUntil(editTextHasWindowFocus::get, TIMEOUT);
 
             expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
 
             // Create a popupTextView which from Service with different UI thread.
             final ServiceSession serviceSession = (ServiceSession) session.mAutoCloseable;
@@ -746,7 +745,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             TestUtils.waitOnMainUntil(() -> popupTextHasWindowFocus.get()
                             && !editTextHasWindowFocus.get(), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInput", marker2), TIMEOUT);
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
 
             // Emulate tap event for editText again, verify soft keyboard and window focus will
             // come back.
@@ -754,7 +753,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             TestUtils.waitOnMainUntil(() -> editTextHasWindowFocus.get()
                     && !popupTextHasWindowFocus.get(), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
 
             // Remove the popTextView window and back to test activity, and then verify if
             // commitText is still workable.
@@ -795,7 +794,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             final EditText editText = editTextRef.get();
             mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
             notExpectEvent(stream, editorMatcher("onStartInput", marker), NOT_EXPECT_TIMEOUT);
-            notExpectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
+            notExpectEvent(stream, showSoftInputMatcher(0),
                     NOT_EXPECT_TIMEOUT);
 
             // Set testActivity window to be IME focusable.
@@ -816,7 +815,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
             // "onStartInput", and "showSoftInput" must happen when editText became IME focusable.
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
         }
     }
 
@@ -956,11 +955,10 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
             // "onStartInput" and "showSoftInput" gets called for the EditText.
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
 
             // No "hideSoftInput" happened
-            notExpectEvent(stream, event -> "hideSoftInput".equals(event.getEventName()),
-                    NOT_EXPECT_TIMEOUT);
+            notExpectEvent(stream, hideSoftInputMatcher(), NOT_EXPECT_TIMEOUT);
         }
     }
 
@@ -1024,8 +1022,8 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
     public void testUnfocusedEditor_stateUnspecified_hidesIme() throws Exception {
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_UNSPECIFIED);
-        expectImeHidden(stream);
-        expectOnFinishInput(stream);
+        expectEvent(stream, hideSoftInputMatcher(), EXPECT_TIMEOUT);
+        expectEvent(stream, eventMatcher("onFinishInput"), EXPECT_TIMEOUT);
     }
 
     @Test
@@ -1033,8 +1031,8 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         Assume.assumeFalse(isPreventImeStartup());
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_HIDDEN);
-        expectImeHidden(stream);
-        expectOnFinishInput(stream);
+        expectEvent(stream, hideSoftInputMatcher(), EXPECT_TIMEOUT);
+        expectEvent(stream, eventMatcher("onFinishInput"), EXPECT_TIMEOUT);
     }
 
     @Test
@@ -1042,8 +1040,8 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         Assume.assumeFalse(isPreventImeStartup());
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-        expectImeHidden(stream);
-        expectOnFinishInput(stream);
+        expectEvent(stream, hideSoftInputMatcher(), EXPECT_TIMEOUT);
+        expectEvent(stream, eventMatcher("onFinishInput"), EXPECT_TIMEOUT);
     }
 
     @Test
@@ -1054,20 +1052,19 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_VISIBLE);
         // The previous IME should be finished
-        expectOnFinishInput(stream);
+        expectEvent(stream, eventMatcher("onFinishInput"), EXPECT_TIMEOUT);
 
         // Input should be started
-        expectEvent(stream, event -> "onStartInput".equals(event.getEventName()),
-                EXPECT_TIMEOUT);
+        expectEvent(stream, eventMatcher("onStartInput"), EXPECT_TIMEOUT);
 
         final boolean willHideIme = willHideImeWhenNoEditorFocus();
         if (willHideIme) {
             // The keyboard will not expected to show when focusing the app set STATE_VISIBLE
             // without an editor from the IME shown activity
-            notExpectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
+            notExpectEvent(stream, showSoftInputMatcher(0),
                     NOT_EXPECT_TIMEOUT);
         } else {
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
+            expectEvent(stream, showSoftInputMatcher(0),
                     EXPECT_TIMEOUT);
         }
     }
@@ -1080,21 +1077,18 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         // The previous IME should be finished
-        expectOnFinishInput(stream);
+        expectEvent(stream, eventMatcher("onFinishInput"), EXPECT_TIMEOUT);
 
         // Input should be started
-        expectEvent(stream, event -> "onStartInput".equals(event.getEventName()),
-                EXPECT_TIMEOUT);
+        expectEvent(stream, eventMatcher("onStartInput"), EXPECT_TIMEOUT);
 
         final boolean willHideIme = willHideImeWhenNoEditorFocus();
         if (willHideIme) {
             // The keyboard will not expected to show when focusing the app set STATE_ALWAYS_VISIBLE
             // without an editor from the IME shown activity
-            notExpectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
-                    NOT_EXPECT_TIMEOUT);
+            notExpectEvent(stream, showSoftInputMatcher(0), NOT_EXPECT_TIMEOUT);
         } else {
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
-                    EXPECT_TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), EXPECT_TIMEOUT);
         }
     }
 
@@ -1106,21 +1100,18 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
         ImeEventStream stream = startFocusedEditorActivity_thenAnotherUnfocusedEditorActivity(
                 SOFT_INPUT_STATE_UNCHANGED);
         // The previous IME should be finished
-        expectOnFinishInput(stream);
+        expectEvent(stream, eventMatcher("onFinishInput"), EXPECT_TIMEOUT);
 
         // Input should be started
-        expectEvent(stream, event -> "onStartInput".equals(event.getEventName()),
-                EXPECT_TIMEOUT);
+        expectEvent(stream, eventMatcher("onStartInput"), EXPECT_TIMEOUT);
 
         final boolean willHideIme = willHideImeWhenNoEditorFocus();
         if (willHideIme) {
             // The keyboard will not expected to show when focusing the app set STATE_UNCHANGED
             // without an editor from the IME shown activity
-            notExpectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
-                    NOT_EXPECT_TIMEOUT);
+            notExpectEvent(stream, showSoftInputMatcher(0), NOT_EXPECT_TIMEOUT);
         } else {
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
-                    EXPECT_TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), EXPECT_TIMEOUT);
         }
     }
 
@@ -1268,15 +1259,6 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             expectCommand(stream, commitText, EXPECT_TIMEOUT);
             assertThat(secondEditorRef.get().getText().toString()).isEqualTo(testInput);
         }
-    }
-
-    private static void expectImeHidden(@NonNull ImeEventStream stream) throws TimeoutException {
-        expectEvent(stream, event -> "hideSoftInput".equals(event.getEventName()), EXPECT_TIMEOUT);
-    }
-
-    private static void expectOnFinishInput(@NonNull ImeEventStream stream)
-            throws TimeoutException {
-        expectEvent(stream, event -> "onFinishInput".equals(event.getEventName()), EXPECT_TIMEOUT);
     }
 
     @NonNull

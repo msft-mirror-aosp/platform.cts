@@ -35,6 +35,7 @@ import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
@@ -55,6 +56,7 @@ import org.junit.runner.RunWith
  */
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
+@ScreenRecord
 class SessionTest : PackageInstallerTestBase() {
 
     @get:Rule
@@ -97,7 +99,7 @@ class SessionTest : PackageInstallerTestBase() {
         assertInstalled()
 
         // Even when the install succeeds the install confirm dialog returns 'canceled'
-        assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
 
         assertTrue(AppOpsUtils.allowedOperationLogged(context.packageName, APP_OP_STR))
     }
@@ -121,7 +123,7 @@ class SessionTest : PackageInstallerTestBase() {
         assertInstalled()
 
         // Even when the install succeeds the install confirm dialog returns 'canceled'
-        assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
 
         assertTrue(AppOpsUtils.allowedOperationLogged(context.packageName, APP_OP_STR))
     }
@@ -196,7 +198,7 @@ class SessionTest : PackageInstallerTestBase() {
         val result = getInstallSessionResult()
         assertEquals(STATUS_FAILURE_ABORTED, result.status)
         assertEquals(false, result.preapproval)
-        assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertNotInstalled()
     }
 

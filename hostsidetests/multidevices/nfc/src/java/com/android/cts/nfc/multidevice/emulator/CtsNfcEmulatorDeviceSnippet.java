@@ -344,6 +344,26 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
         registerSnippetBroadcastReceiver(callbackId, eventName, Intent.ACTION_SCREEN_ON);
     }
 
+    /** Sets the listen tech for the active emulator activity */
+    @Rpc(description = "Set the listen tech for the emulator")
+    public void setListenTech(Integer listenTech) {
+        if (mActivity == null) {
+            Log.e(TAG, "Activity is null.");
+            return;
+        }
+        mActivity.setListenTech(listenTech);
+    }
+
+    /** Resets the listen tech for the active emulator activity */
+    @Rpc(description = "Reset the listen tech for the emulator")
+    public void resetListenTech() {
+        if (mActivity == null) {
+            Log.e(TAG, "Activity is null.");
+            return;
+        }
+        mActivity.resetListenTech();
+    }
+
     /** Closes emulator activity */
     @Rpc(description = "Close activity if one was opened.")
     public void closeActivity() {

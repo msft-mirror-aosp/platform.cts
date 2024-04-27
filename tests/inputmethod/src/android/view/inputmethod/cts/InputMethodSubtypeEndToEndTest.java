@@ -17,6 +17,7 @@
 package android.view.inputmethod.cts;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
@@ -43,9 +44,11 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
+import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -150,7 +153,7 @@ public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
             final String marker = getTestMarker();
             launchTestActivity(marker);
 
-            expectEvent(stream, event -> "onCreate".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
             final ImeEventStream eventsAfterOnCreate = stream.copy();
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -184,8 +187,7 @@ public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
 
             expectCommand(stream, imeSession.callSwitchInputMethod(
                     imeSession.getImeId(), IMPLICITLY_ENABLED_TEST_SUBTYPE2), TIMEOUT);
-            final ImeEvent result = expectEvent(stream, event ->
-                    "onCurrentInputMethodSubtypeChanged".equals(event.getEventName()), TIMEOUT);
+            final ImeEvent result = expectEvent(stream, eventMatcher("onCurrentInputMethodSubtypeChanged"), TIMEOUT);
             final InputMethodSubtype actualNewSubtype =
                     result.getArguments().getParcelable("newSubtype", InputMethodSubtype.class);
             assertThat(actualNewSubtype).isEqualTo(IMPLICITLY_ENABLED_TEST_SUBTYPE2);
@@ -212,7 +214,7 @@ public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
             final String marker = getTestMarker();
             launchTestActivity(marker);
 
-            expectEvent(stream, event -> "onCreate".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
 
             final InputMethodInfo mockImeInfo = mImm.getEnabledInputMethodList().stream()
                     .filter(imi -> TextUtils.equals(imi.getId(), imeSession.getImeId()))
@@ -295,20 +297,27 @@ public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
             final String marker = getTestMarker();
             launchTestActivity(marker);
 
-            expectEvent(stream, event -> "onCreate".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
 
             expectCommand(stream, imeSession.callSetAdditionalInputMethodSubtypes(
                     imeSession.getImeId(), new InputMethodSubtype[]{TEST_SUBTYPE2}), TIMEOUT);
             expectCommand(stream, imeSession.callSwitchInputMethod(
                     imeSession.getImeId(), TEST_SUBTYPE2), TIMEOUT);
-            expectEvent(stream, event -> {
-                if (!"onCurrentInputMethodSubtypeChanged".equals(event.getEventName())) {
-                    return false;
-                }
-                var subtype = event.getArguments().getParcelable("newSubtype",
-                        InputMethodSubtype.class);
-                return Objects.equals(subtype, TEST_SUBTYPE2);
-            }, TIMEOUT);
+            expectEvent(stream, onCurrentIMSubtypeChangedMatcher(TEST_SUBTYPE2), TIMEOUT);
         }
+    }
+
+    @NotNull
+    private static DescribedPredicate<ImeEvent> onCurrentIMSubtypeChangedMatcher(
+            InputMethodSubtype subtype) {
+        return withDescription(
+                "onCurrentInputMethodSubtypeChanged(newSubtype=" + subtype + ")", event -> {
+                    if (!"onCurrentInputMethodSubtypeChanged".equals(event.getEventName())) {
+                        return false;
+                    }
+                    var actual = event.getArguments().getParcelable("newSubtype",
+                            InputMethodSubtype.class);
+                    return Objects.equals(actual, subtype);
+                });
     }
 }

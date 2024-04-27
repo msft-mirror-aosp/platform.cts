@@ -43,6 +43,7 @@ android_test {
         "bedstead-root",
         "android.content.pm.flags-aconfig-java",
         "android.security.flags-aconfig-java",
+        "platform-test-rules",
     ],
 
     test_suites: [
