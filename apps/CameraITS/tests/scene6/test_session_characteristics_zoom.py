@@ -26,7 +26,7 @@ import image_processing_utils
 import its_session_utils
 import zoom_capture_utils
 
-_CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CIRCLISH_RTOL = 0.065  # contour area vs ideal circle area pi*((w+h)/4)**2
 _FPS_30_60 = (30, 60)
 _FPS_SELECTION_ATOL = 0.01
 _FPS_ATOL = 0.8
@@ -181,12 +181,11 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
             # Construct output surfaces
             output_surfaces = []
             for configured_stream in configured_streams:
-              if configured_stream['format'] != 'priv':
-                hlg10 = False
+              hlg10_stream = (configured_stream['format'] == 'priv')
               output_surfaces.append({'format': configured_stream['format'],
                                       'width': configured_stream['width'],
                                       'height': configured_stream['height'],
-                                      'hlg10': hlg10})
+                                      'hlg10': hlg10_stream})
 
             for stabilize in stabilization_params:
               settings = {

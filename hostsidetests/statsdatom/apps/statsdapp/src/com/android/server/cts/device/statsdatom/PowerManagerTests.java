@@ -16,16 +16,22 @@
 
 package com.android.server.cts.device.statsdatom;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeTrue;
+
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.device.collectors.util.SendToInstrumentation;
 import android.os.Bundle;
+import android.os.PerformanceHintManager;
 import android.os.PowerManager;
 
 import androidx.test.InstrumentationRegistry;
 
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 public class PowerManagerTests {
     private static final String TAG = PowerManagerTests.class.getSimpleName();
@@ -37,6 +43,7 @@ public class PowerManagerTests {
     public void testGetCurrentThermalStatus() {
         Context context = InstrumentationRegistry.getContext();
         PowerManager powerManager = context.getSystemService(PowerManager.class);
+        assertNotNull(powerManager);
         powerManager.getCurrentThermalStatus();
     }
 
@@ -44,6 +51,7 @@ public class PowerManagerTests {
     public void testGetThermalHeadroom() {
         Context context = InstrumentationRegistry.getContext();
         PowerManager powerManager = context.getSystemService(PowerManager.class);
+        assertNotNull(powerManager);
         powerManager.getThermalHeadroom(10);
     }
 
@@ -51,12 +59,18 @@ public class PowerManagerTests {
     public void testGetThermalHeadroomThresholds() {
         Context context = InstrumentationRegistry.getContext();
         PowerManager powerManager = context.getSystemService(PowerManager.class);
+        assertNotNull(powerManager);
         powerManager.getThermalHeadroomThresholds();
     }
 
     @Test
     public void testAdpfTidCleanup() {
         final Context context = InstrumentationRegistry.getContext();
+        PerformanceHintManager perfHintManager = context.getSystemService(
+                PerformanceHintManager.class);
+        assertNotNull(perfHintManager);
+        assumeTrue("ADPF is not supported on this device",
+                perfHintManager.getPreferredUpdateRateNanos() >= TimeUnit.MILLISECONDS.toNanos(1));
         final Intent intent = new Intent(context, ADPFActivity.class);
         intent.putExtra(ADPFActivity.KEY_ACTION,
                 ADPFActivity.ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND);
