@@ -26,6 +26,7 @@ import static android.view.inputmethod.Flags.initiationWithoutInputConnection;
 import static android.view.inputmethod.InputMethodInfo.ACTION_STYLUS_HANDWRITING_SETTINGS;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
@@ -98,6 +99,7 @@ import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
+import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
@@ -546,8 +548,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 injectedEvents.add(TestUtils.injectStylusUpEvent(editText, endX, endY));
             }
 
-            expectEvent(
-                    stream, event -> "onStylusMotionEvent".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("onStylusMotionEvent"), TIMEOUT);
 
             // get Stylus events from Ink view, splitting any batched events.
             final ArrayList<MotionEvent> capturedBatchedEvents = expectCommand(
@@ -1293,7 +1294,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         }
     }
 
-    private static Predicate<ImeEvent> onStartInputMatcher(int toolType, String marker) {
+    private static DescribedPredicate<ImeEvent> onStartInputMatcher(int toolType, String marker) {
         Predicate<ImeEvent> matcher = event -> {
             if (!TextUtils.equals("onStartInput", event.getEventName())) {
                 return false;
@@ -1307,7 +1308,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     }
 
 
-    private static Predicate<ImeEvent> startInputInitialEditorToolMatcher(
+    private static DescribedPredicate<ImeEvent> startInputInitialEditorToolMatcher(
             int expectedToolType, @NonNull String marker) {
         return withDescription("onStartInput()" + "(marker=" + marker + ")", event -> {
             if (!TextUtils.equals("onStartInput", event.getEventName())) {
@@ -1318,7 +1319,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         });
     }
 
-    private static Predicate<ImeEvent> onStartStylusHandwritingMatcher(
+    private static DescribedPredicate<ImeEvent> onStartStylusHandwritingMatcher(
             int toolType, String marker) {
         Predicate<ImeEvent> matcher = event -> {
             if (!TextUtils.equals("onStartStylusHandwriting", event.getEventName())) {
@@ -1333,7 +1334,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         + ", marker=" + marker + ")", matcher);
     }
 
-    private static Predicate<ImeEvent> onUpdateEditorToolTypeMatcher(int expectedToolType) {
+    private static DescribedPredicate<ImeEvent> onUpdateEditorToolTypeMatcher(int expectedToolType) {
         Predicate<ImeEvent> matcher = event -> {
             if (!TextUtils.equals("onUpdateEditorToolType", event.getEventName())) {
                 return false;
@@ -1458,12 +1459,11 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             try {
                 expectEvent(
                         stream,
-                        event -> "onPrepareStylusHandwriting".equals(event.getEventName()),
+                        eventMatcher("onPrepareStylusHandwriting"),
                         TIMEOUT);
                 expectEvent(
                         stream,
-                        event -> "onStartConnectionlessStylusHandwriting".equals(
-                                event.getEventName()),
+                        eventMatcher("onStartConnectionlessStylusHandwriting"),
                         TIMEOUT);
                 verifyStylusHandwritingWindowIsShown(stream, imeSession);
                 // The transition to show the real edit text shouldn't occur yet.
@@ -1477,7 +1477,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             // Finishing the handwriting session triggers the transition to show the real edit text.
             expectEvent(
                     stream,
-                    event -> "onFinishStylusHandwriting".equals(event.getEventName()),
+                    eventMatcher("onFinishStylusHandwriting"),
                     TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInput", delegateMarker), TIMEOUT);
             // When the real edit text start its input connection, the recognised text from the
@@ -1524,11 +1524,11 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             expectEvent(
                     stream,
-                    event -> "onPrepareStylusHandwriting".equals(event.getEventName()),
+                    eventMatcher("onPrepareStylusHandwriting"),
                     TIMEOUT);
             expectEvent(
                     stream,
-                    event -> "onStartConnectionlessStylusHandwriting".equals(event.getEventName()),
+                    eventMatcher("onStartConnectionlessStylusHandwriting"),
                     TIMEOUT);
             verifyStylusHandwritingWindowIsShown(stream, imeSession);
 
@@ -1537,7 +1537,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             expectEvent(
                     stream,
-                    event -> "onFinishStylusHandwriting".equals(event.getEventName()),
+                    eventMatcher("onFinishStylusHandwriting"),
                     TIMEOUT);
 
             view.post(() -> view.getHandwritingDelegatorCallback().run());
@@ -1788,7 +1788,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         // There will be no active InputConnection when handwriting starts
                         expectEvent(
                                 stream,
-                                event -> "onStartStylusHandwriting".equals(event.getEventName()),
+                                eventMatcher("onStartStylusHandwriting"),
                                 TIMEOUT);
                     } else {
                         expectEvent(
@@ -1801,7 +1801,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         // There will be no active InputConnection if handwriting starts
                         notExpectEvent(
                                 stream,
-                                event -> "onStartStylusHandwriting".equals(event.getEventName()),
+                                eventMatcher("onStartStylusHandwriting"),
                                 NOT_EXPECT_TIMEOUT);
                     } else {
                         notExpectEvent(
@@ -1911,7 +1911,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         // There will be no active InputConnection when handwriting starts.
                         expectEvent(
                                 stream,
-                                event -> "onStartStylusHandwriting".equals(event.getEventName()),
+                                eventMatcher("onStartStylusHandwriting"),
                                 TIMEOUT);
                     } else {
                         expectEvent(
@@ -1924,7 +1924,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         // There will be no active InputConnection if handwriting starts.
                         notExpectEvent(
                                 stream,
-                                event -> "onStartStylusHandwriting".equals(event.getEventName()),
+                                eventMatcher("onStartStylusHandwriting"),
                                 NOT_EXPECT_TIMEOUT);
                     } else {
                         notExpectEvent(
@@ -1967,12 +1967,11 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
                 expectEvent(
                         stream,
-                        event -> "onPrepareStylusHandwriting".equals(event.getEventName()),
+                        eventMatcher("onPrepareStylusHandwriting"),
                         TIMEOUT);
                 expectEvent(
                         stream,
-                        event -> "onStartConnectionlessStylusHandwriting".equals(
-                                event.getEventName()),
+                        eventMatcher("onStartConnectionlessStylusHandwriting"),
                         TIMEOUT);
                 verifyStylusHandwritingWindowIsShown(stream, imeSession);
 
@@ -1980,7 +1979,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
                 expectEvent(
                         stream,
-                        event -> "onFinishStylusHandwriting".equals(event.getEventName()),
+                        eventMatcher("onFinishStylusHandwriting"),
                         TIMEOUT);
                 assertThat(callback.mResultText).isEqualTo("abc");
                 assertThat(callback.mErrorCode).isEqualTo(-1);
@@ -2019,12 +2018,11 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
                 expectEvent(
                         stream,
-                        event -> "onPrepareStylusHandwriting".equals(event.getEventName()),
+                        eventMatcher("onPrepareStylusHandwriting"),
                         TIMEOUT);
                 expectEvent(
                         stream,
-                        event -> "onStartConnectionlessStylusHandwriting".equals(
-                                event.getEventName()),
+                        eventMatcher("onStartConnectionlessStylusHandwriting"),
                         TIMEOUT);
                 verifyStylusHandwritingWindowIsShown(stream, imeSession);
 
@@ -2033,7 +2031,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
                 expectEvent(
                         stream,
-                        event -> "onFinishStylusHandwriting".equals(event.getEventName()),
+                        eventMatcher("onFinishStylusHandwriting"),
                         TIMEOUT);
                 assertThat(callback.mResultText).isNull();
                 assertThat(callback.mErrorCode)
@@ -2076,12 +2074,11 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 // does not start.
                 expectEvent(
                         stream,
-                        event -> "onPrepareStylusHandwriting".equals(event.getEventName()),
+                        eventMatcher("onPrepareStylusHandwriting"),
                         TIMEOUT);
                 expectEvent(
                         stream,
-                        event -> "onStartConnectionlessStylusHandwriting".equals(
-                                event.getEventName()),
+                        eventMatcher("onStartConnectionlessStylusHandwriting"),
                         TIMEOUT);
                 verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
                 assertThat(callback.mResultText).isNull();
@@ -2444,7 +2441,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         editText.setPrivateImeOptions(secondaryMarker);
                         return layout;
                     }, TestActivity2.class);
-            notExpectEvent(stream, event -> "onStartInputView".equals(event.getEventName()),
+            notExpectEvent(stream, eventMatcher("onStartInputView"),
                     NOT_EXPECT_TIMEOUT);
             TestUtils.waitOnMainUntil(() -> splitSecondaryActivity.hasWindowFocus(), TIMEOUT);
             TestUtils.waitOnMainUntil(() -> !splitPrimaryActivity.hasWindowFocus(), TIMEOUT_1_S);
@@ -2521,8 +2518,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         editText.setPrivateImeOptions(secondaryMarker);
                         return layout;
                     }, TestActivity2.class);
-            notExpectEvent(stream, event -> "onStartInputView".equals(event.getEventName()),
-                    NOT_EXPECT_TIMEOUT);
+            notExpectEvent(stream, eventMatcher("onStartInputView"), NOT_EXPECT_TIMEOUT);
 
             addVirtualStylusIdForTestSession();
 

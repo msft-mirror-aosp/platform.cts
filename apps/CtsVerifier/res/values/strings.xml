@@ -5917,13 +5917,14 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_resultcode_none">Result: None.</string>
     <string name="audio_loopback_resultcode_pass">Result: Pass.</string>
     <string name="audio_loopback_resultcode_nointernal">Result: Fail - Speaker/Mic path not tested.</string>
-    <string name="audio_loopback_resultcode_failbasic">Result: Fail - Basic latency not met.</string>
-    <string name="audio_loopback_resultcode_failmpc">Result: Fail - Media Performance Class latency not met.</string>
-    <string name="audio_loopback_resultcode_failpro">Result: Fail - Pro Audio max latency on one path not met.</string>
-    <string name="audio_loopback_resultcode_failproanalog">Result: Fail - Pro Audio analog latency not met.</string>
-    <string name="audio_loopback_resultcode_failprousb">Result: Fail - Pro Audio USB latency not met.</string>
+    <string name="audio_loopback_notmet">not met.</string>
+    <string name="audio_loopback_resultcode_failbasic">Result: Fail - Basic latency</string>
+    <string name="audio_loopback_resultcode_failmpc">Result: Fail - Media Performance Class latency</string>
+    <string name="audio_loopback_resultcode_failpro">Result: Fail - Pro Audio max latency on one path</string>
+    <string name="audio_loopback_resultcode_failproanalog">Result: Fail - Pro Audio analog latency</string>
+    <string name="audio_loopback_resultcode_failprousb">Result: Fail - Pro Audio USB latency</string>
     <string name="audio_loopback_resultcode_fail24bit">Result: Fail - 24-bit playback requirement no met.</string>
-    <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency for wired path not met.</string>
+    <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency. At least one wired path must be tested.</string>
     <string name="audio_loopback_resultcode_warningtimestamp">Result: Warning - Timestamp latency accuracy not met.</string>
     <string name="audio_loopback_resultcode_invalid">Result: Invalid result code.</string>
 

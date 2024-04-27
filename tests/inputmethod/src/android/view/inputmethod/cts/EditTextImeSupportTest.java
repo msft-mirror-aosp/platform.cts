@@ -21,6 +21,8 @@ import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.hideSoftInputMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatcher;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -347,10 +349,10 @@ public class EditTextImeSupportTest extends EndToEndImeTestBase {
             final var editText = editTextRef.get();
             runOnMainSync(() -> editText.getContext().getSystemService(InputMethodManager.class)
                     .showSoftInput(editText, 0));
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
 
             runOnMainSync(() -> editText.setEnabled(false));
-            expectEvent(stream, event -> "hideSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
         }
     }
 
@@ -385,11 +387,11 @@ public class EditTextImeSupportTest extends EndToEndImeTestBase {
             final var editText = editTextRef.get();
             runOnMainSync(() -> editText.getContext().getSystemService(InputMethodManager.class)
                     .showSoftInput(editText, 0));
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
 
             expectCommand(stream, imeSession.callPerformEditorAction(EditorInfo.IME_ACTION_DONE),
                     TIMEOUT);
-            expectEvent(stream, event -> "hideSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
         }
     }
 }

@@ -23,6 +23,7 @@ import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.expectA11y
 import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.expectA11yImeEvent;
 import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.notExpectA11yImeEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
@@ -278,15 +279,13 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
             runOnMainSync(() -> editTextForFallbackInputConnectionRef.get().requestFocus());
 
             // Both IME and A11y IME should receive "onFinishInput".
-            expectEvent(imeEventStream,
-                    event -> "onFinishInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(imeEventStream, eventMatcher("onFinishInput"), TIMEOUT);
             expectA11yImeEvent(a11yImeEventStream,
                     event -> "onFinishInput".equals(event.getEventName()), TIMEOUT);
 
             // Only IME will receive "onStartInput" with a fallback InputConnection.
             {
-                final var startInputEvent = expectEvent(imeEventStream,
-                        event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+                final var startInputEvent = expectEvent(imeEventStream, eventMatcher("onStartInput"), TIMEOUT);
                 verifyOnStartInputEventForFallbackInputConnection(startInputEvent,
                         false /* restarting */);
             }
@@ -339,8 +338,7 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
 
             // Only IME will receive "onStartInput" with a fallback InputConnection.
             {
-                final var startInputEvent = expectEvent(imeEventStream,
-                        event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+                final var startInputEvent = expectEvent(imeEventStream, eventMatcher("onStartInput"), TIMEOUT);
                 verifyOnStartInputEventForFallbackInputConnection(startInputEvent,
                         true /* restarting */);
             }
@@ -527,8 +525,7 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
                         myEditor, newSelStart, newSelEnd, -1, -1);
             });
 
-            notExpectEvent(imeEventStream,
-                    event -> "onUpdateSelection".equals(event.getEventName()), NOT_EXPECT_TIMEOUT);
+            notExpectEvent(imeEventStream, eventMatcher("onUpdateSelection"), NOT_EXPECT_TIMEOUT);
             notExpectA11yImeEvent(a11yImeEventStream,
                     event -> "onUpdateSelection".equals(event.getEventName()), NOT_EXPECT_TIMEOUT);
         });

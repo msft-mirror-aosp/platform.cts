@@ -28,6 +28,7 @@ import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
@@ -40,6 +41,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @AppModeFull(reason = "Instant apps cannot install packages")
+@ScreenRecord
 class InstallAppMetadataTest : PackageInstallerTestBase() {
 
     private val TEST_FIELD = "testField"
