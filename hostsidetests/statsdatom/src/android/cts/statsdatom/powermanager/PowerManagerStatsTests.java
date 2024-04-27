@@ -22,13 +22,13 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.os.Flags;
-import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
@@ -62,7 +62,6 @@ import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Test for Power Manager stats.
@@ -203,7 +202,6 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         assertThat(a0.getHeadroomCount()).isGreaterThan(0);
     }
 
-    @FlakyTest(bugId = 332611146)
     @Test
     @RequiresFlagsEnabled(FLAG_POWERHINT_THREAD_CLEANUP)
     public void testAdpfHintSessionTidCleanupIsPushed() throws Exception {
@@ -214,10 +212,11 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
                 AdpfExtensionAtoms.ADPF_HINT_SESSION_TID_CLEANUP_FIELD_NUMBER);
         TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
                 DEVICE_TEST_CLASS, testMethod);
-        RunUtil.getDefault().sleep(+TimeUnit.SECONDS.toMillis(3));
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
         TestResult result = testRunResult.getTestResults().get(desc);
         assertNotNull(result);
         TestStatus status = result.getStatus();
+        assumeFalse(status == TestStatus.ASSUMPTION_FAILURE);
         assertThat(status).isEqualTo(TestStatus.PASSED);
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
         AdpfExtensionAtoms.registerAllExtensions(registry);

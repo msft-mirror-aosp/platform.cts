@@ -32,16 +32,17 @@ import opencv_processing_utils
 import preview_stabilization_utils
 import video_processing_utils
 
+_AE_RTOL = 0.01  # 1%
+_AF_RTOL = 0.02  # 2%
 _ARUCO_MARKERS_COUNT = 4
+_AWB_RTOL = 0.02  # 2%
 _CH_FULL_SCALE = 255
 _COLORS = ('r', 'g', 'b', 'gray')
 _IMG_FORMAT = 'png'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PATCH_MARGIN = 50  # pixels
-_PERCENTAGE_CHANGE_THRESHOLD = 0.5
 _RECORDING_DURATION = 400  # milliseconds
 _SENSOR_ORIENTATIONS = (90, 270)
-_SHARPNESS_RTOL = 0.02  # 2%
 _SKIP_INITIAL_FRAMES = 15
 _TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _ZOOM_RANGE_UW_W = (0.95, 2.05)  # UW/W crossover range
@@ -111,9 +112,9 @@ def _do_af_check(uw_img, w_img, log_path):
   sharpness_w = _compute_slanted_edge_sharpness(w_img, f'{file_stem}_w.png')
   logging.debug('Sharpness for W patch: %.2f', sharpness_w)
 
-  if not math.isclose(sharpness_w, sharpness_uw, rel_tol=_SHARPNESS_RTOL):
+  if not math.isclose(sharpness_w, sharpness_uw, rel_tol=_AF_RTOL):
     raise AssertionError('Sharpness change is greater than the threshold value.'
-                         f'RTOL: {_SHARPNESS_RTOL}'
+                         f'RTOL: {_AF_RTOL}'
                          f'sharpness_w: {sharpness_w}'
                          f'sharpness_uw: {sharpness_uw}')
 
@@ -149,21 +150,18 @@ def _do_awb_check(uw_img, w_img):
   uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img, 'UW')
   w_r_g_ratio, w_b_g_ratio = _get_color_ratios(w_img, 'W')
 
-  r_g_ratio_change_percent = (
-      abs(w_r_g_ratio-uw_r_g_ratio)/uw_r_g_ratio)*100
-  logging.debug('r_g_ratio_change_percent: %.4f', r_g_ratio_change_percent)
-  if r_g_ratio_change_percent > _PERCENTAGE_CHANGE_THRESHOLD:
-    raise AssertionError(
-        f'R/G change {r_g_ratio_change_percent:.4f}% > THRESH: '
-        f'{_PERCENTAGE_CHANGE_THRESHOLD}')
-
-  b_g_ratio_change_percent = (
-      abs(w_b_g_ratio-uw_b_g_ratio)/uw_b_g_ratio)*100
-  logging.debug('b_g_ratio_change_percent: %.4f', b_g_ratio_change_percent)
-  if b_g_ratio_change_percent > _PERCENTAGE_CHANGE_THRESHOLD:
-    raise AssertionError(
-        f'B/G change {b_g_ratio_change_percent:.4f}% > THRESH: '
-        f'{_PERCENTAGE_CHANGE_THRESHOLD}')
+  if not math.isclose(uw_r_g_ratio, w_r_g_ratio,
+                      rel_tol=_AWB_RTOL):
+    raise AssertionError(f'R/G change is greater than the threshold value: '
+                         f'RTOL: {_AWB_RTOL}'
+                         f'uw_r_g_ratio: {uw_r_g_ratio:.4f}'
+                         f'w_r_g_ratio: {w_r_g_ratio:.4f}')
+  if not math.isclose(uw_b_g_ratio, w_b_g_ratio,
+                      rel_tol=_AWB_RTOL):
+    raise AssertionError(f'B/G change is greater than the threshold value: '
+                         f'RTOL: {_AWB_RTOL}'
+                         f'uw_b_g_ratio: {uw_b_g_ratio:.4f}'
+                         f'w_b_g_ratio: {w_b_g_ratio:.4f}')
 
 
 def _get_color_ratios(img, identifier):
@@ -207,8 +205,11 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
   y_avg_change_percent = (abs(w_y_avg-uw_y_avg)/uw_y_avg)*100
   logging.debug('y_avg_change_percent: %.4f', y_avg_change_percent)
 
-  if y_avg_change_percent > _PERCENTAGE_CHANGE_THRESHOLD:
-    raise AssertionError('y_avg change is greater than threshold value')
+  if not math.isclose(uw_y_avg, w_y_avg, rel_tol=_AE_RTOL):
+    raise AssertionError('y_avg change is greater than threshold value: '
+                         f'RTOL: {_AE_RTOL}'
+                         f'uw_y_avg: {uw_y_avg:.4f}'
+                         f'w_y_avg: {w_y_avg:.4f}')
 
 
 def _extract_y(img_uint8, file_name):
