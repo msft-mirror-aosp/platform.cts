@@ -2796,20 +2796,22 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
 
             String facingString = isPrimaryRear ? "rear" : "front";
             // H-1-3
-            if (assertSPerfClass || (assertRPerfClass && isPrimaryRear)) {
-                mCollector.expectTrue("Primary " + facingString +
-                        " camera should be at least FULL, but is " +
-                        toStringHardwareLevel(staticInfo.getHardwareLevelChecked()),
-                        staticInfo.isHardwareLevelAtLeastFull());
-            } else if (assertRPerfClass) {
-                mCollector.expectTrue("Primary " + facingString +
-                        " camera should be at least LIMITED, but is " +
-                        toStringHardwareLevel(staticInfo.getHardwareLevelChecked()),
-                        staticInfo.isHardwareLevelAtLeastLimited());
+            if (assertPerfClass) {
+                if (isPrimaryRear) {
+                    mCollector.expectTrue("Primary " + facingString +
+                            " camera should be at least FULL, but is " +
+                            toStringHardwareLevel(staticInfo.getHardwareLevelChecked()),
+                            staticInfo.isHardwareLevelAtLeastFull());
+                } else {
+                    mCollector.expectTrue("Primary " + facingString +
+                            " camera should be at least LIMITED, but is " +
+                            toStringHardwareLevel(staticInfo.getHardwareLevelChecked()),
+                            staticInfo.isHardwareLevelAtLeastLimited());
+                }
             }
-
             reportLog.addValue(facingString + " camera hardware level",
                     staticInfo.getHardwareLevelChecked(), ResultType.NEUTRAL, ResultUnit.NONE);
+
             if (isPrimaryRear) {
                 perfClassLevelH13 = updatePerfClassLevel(staticInfo.isHardwareLevelAtLeastFull(),
                         perfClassLevelH13);
