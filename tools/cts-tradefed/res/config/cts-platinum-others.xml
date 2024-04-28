@@ -198,11 +198,9 @@
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionMediationTest#testSelectAds_withAdSelectionFromOutcomes_happyPath" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportImpression_biddingLogicDownloadTimesOut_throwsException" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportImpression_buyerLogicTimesOut_reportingFails" />
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportImpression_failToRegisterBuyerBeacon_sellerBeaconSucceeds" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportImpression_failToRegisterSellerBeacon_buyerBeaconSucceeds" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportImpression_withMismatchedAdTechUri_sellerRequestFails" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportImpression_withMismatchedBuyerAdTech_sellerStillCalled" />
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportImpression_withMismatchedSellerAdTech_buyerStillCalled" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionTest#testAdSelectionOutcomes_withNoAdSelectionId_throwsException" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionTest#testAdSelection_withBiddingAndScoringLogic_happyPath" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionTest#testAdSelection_withBiddingLogicV3_happyPath" />
@@ -696,7 +694,6 @@
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#broadcastAdded_notVisibleDoesNotReceive[0]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#broadcastAdded_notVisibleDoesNotReceive[1]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#broadcastAdded_visibleReceives[0]" />
-    <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#broadcastAdded_visibleReceives[1]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#broadcastRestarted_notVisibleDoesNotReceive[0]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#broadcastRestarted_notVisibleDoesNotReceive[1]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#broadcastRestarted_visibleReceives[0]" />
@@ -907,11 +904,9 @@
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#uninstallTarget_broadcastFullyRemoved_notVisibleDoesNotReceive[0]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#uninstallTarget_broadcastFullyRemoved_notVisibleDoesNotReceive[1]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#uninstallTarget_broadcastFullyRemoved_visibleReceives[0]" />
-    <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#uninstallTarget_broadcastFullyRemoved_visibleReceives[1]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#uninstallTarget_broadcastRemoved_notVisibleDoesNotReceive[0]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#uninstallTarget_broadcastRemoved_notVisibleDoesNotReceive[1]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#uninstallTarget_broadcastRemoved_visibleReceives[0]" />
-    <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#uninstallTarget_broadcastRemoved_visibleReceives[1]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#whenStartedViaIntentSender_canSeeCaller[0]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#whenStartedViaIntentSender_canSeeCaller[1]" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.AppEnumerationTests#whenStarted_canSeeCaller[0]" />
@@ -948,7 +943,6 @@
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.CrossUserPackageVisibilityTests#testSetComponentEnabledSetting_cannotDetectStubPkg" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.CrossUserPackageVisibilityTests#testSetDistractingPackageRestrictions_cannotDetectStubPkg" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.CrossUserPackageVisibilityTests#testSetInstallerPackageName_cannotDetectStubPkg" />
-    <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.CrossUserPackageVisibilityTests#testSetPackagesSuspended_cannotDetectStubPkg" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.InputMethodEnumerationTests#queriesNothing_getEnabledInputMethodList_cannotSeeMockIme" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.InputMethodEnumerationTests#queriesNothing_getEnabledInputMethodSubtypeList_cannotSeeMockIme" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.InputMethodEnumerationTests#queriesNothing_getInputMethodList_cannotSeeMockIme" />
@@ -959,7 +953,6 @@
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.LauncherAppsEnumerationTests#callback_added_visibleReceives" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.LauncherAppsEnumerationTests#callback_changed_notVisibleNotReceives" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.LauncherAppsEnumerationTests#callback_changed_visibleReceives" />
-    <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.LauncherAppsEnumerationTests#callback_removed_notVisibleNotReceives" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.LauncherAppsEnumerationTests#callback_removed_visibleReceives" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.LauncherAppsEnumerationTests#callback_suspended_notVisibleNotReceives" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.LauncherAppsEnumerationTests#callback_suspended_visibleReceives" />
@@ -1111,7 +1104,6 @@
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsTest#testNoteOpAndCheckOp" />
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsTest#testOpCodesUnique" />
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsTest#testPermissionMapping" />
-    <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsTest#testRestrictedSettingsOpsRead" />
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsTest#testStartOpAndFinishOp" />
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsTest#testWatchingMode_receivesDeviceAttributedCallback" />
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.AttributionTest#canUseUndeclaredAttributionTagButTreatedAsNull" />
@@ -1139,7 +1131,6 @@
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.ForegroundModeAndActiveTest#modeIsIgnoredWhenAppHasNonLocationForegroundService" />
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.ForegroundModeAndActiveTest#modeIsIgnoredWhenAppIsBackground" />
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.HistoricalAppopsTest#testGetHistoricalAggregationOverAttributions" />
-    <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.HistoricalAppopsTest#testGetHistoricalPackageOpsForegroundAccessFirstOnDiskBucket" />
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.HistoricalAppopsTest#testGetHistoricalPackageOpsForegroundAccessInMemoryBucket" />
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.HistoricalAppopsTest#testHistoricalAggregationOneLevelsDeep" />
     <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.HistoricalAppopsTest#testHistoricalAggregationOverflow" />
@@ -1571,7 +1562,6 @@
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.exceptions.AppSearchExceptionCtsTest#testNoMessageException" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_deviceOwner_fail" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_emptyPackage" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_failed_noSuchMethod" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_hasManagedProfileRunInPersonalProfile_success" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_otherPackage" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_runInManagedProfile_fail" />
@@ -1627,7 +1617,6 @@
     <!-- CtsAutoFillServiceTestCases -->
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedLoginActivityTest#testAutoFill_augmentedFillRequestCancelled" />
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dialog.MultipleStepsSignInActivityTest#testShowFillDialog_contentChanged_shownFillDialog" />
-    <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dialog.WebViewActivityTest#testViewReady_nullInfo" />
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.CheckoutActivityTest#autofillOneListValueToSpinner" />
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.CheckoutActivityTest#autofillToggleValueWithTrue" />
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.VirtualContainerActivityCompatModeTest#testSave_parentViewGone" />
@@ -1916,15 +1905,11 @@
     <option name="compatibility:include-filter" value="CtsContentProviderTestsWithoutVisibility android.packageinstaller.contentprovider.cts.withoutvisibility.WithoutVisibilityContentProviderTest#whenExportedContentProviderAccessed_withInvalidPermissionPattern_TestCantFindIt" />
     <option name="compatibility:include-filter" value="CtsContentProviderTestsWithoutVisibility android.packageinstaller.contentprovider.cts.withoutvisibility.WithoutVisibilityContentProviderTest#whenExportedContentProviderAccessed_withValidPermissionPattern_TestCantFindIt" />
     <option name="compatibility:include-filter" value="CtsContentProviderTestsWithoutVisibility android.packageinstaller.contentprovider.cts.withoutvisibility.WithoutVisibilityContentProviderTest#whenUnexportedContentProviderIsAccessed_WithInvalidUriPermissionPattern_TestCantFindIt" />
-    <option name="compatibility:include-filter" value="CtsContentProviderTestsWithoutVisibility android.packageinstaller.contentprovider.cts.withoutvisibility.WithoutVisibilityContentProviderTest#whenUnexportedContentProviderIsAccessed_WithValidUriPermissionPattern_TestCantFindIt" />
     <option name="compatibility:include-filter" value="CtsContentProviderTestsWithoutVisibility android.packageinstaller.contentprovider.cts.withoutvisibility.WithoutVisibilityContentProviderTest#whenUnprotectedContentProviderAccessed_TestCantFindIt" />
 
     <!-- CtsContentProviderTestsWithVisibility -->
-    <option name="compatibility:include-filter" value="CtsContentProviderTestsWithVisibility android.packageinstaller.contentprovider.cts.withvisibility.WithVisibilityContentProviderTest#whenExportedContentProviderIsAccessed_WithInvalidUriPermissionPattern_TestCanFindIt" />
     <option name="compatibility:include-filter" value="CtsContentProviderTestsWithVisibility android.packageinstaller.contentprovider.cts.withvisibility.WithVisibilityContentProviderTest#whenExportedContentProviderIsAccessed_WithValidUriPermissionPattern_TestCanFindIt" />
     <option name="compatibility:include-filter" value="CtsContentProviderTestsWithVisibility android.packageinstaller.contentprovider.cts.withvisibility.WithVisibilityContentProviderTest#whenUnexportedContentProviderIsAccessed_WithInvalidUriPermissionPattern_TestCantFindIt" />
-    <option name="compatibility:include-filter" value="CtsContentProviderTestsWithVisibility android.packageinstaller.contentprovider.cts.withvisibility.WithVisibilityContentProviderTest#whenUnexportedContentProviderIsAccessed_WithValidUriPermissionPattern_TestCantFindIt" />
-    <option name="compatibility:include-filter" value="CtsContentProviderTestsWithVisibility android.packageinstaller.contentprovider.cts.withvisibility.WithVisibilityContentProviderTest#whenUnprotectedContentProviderAccessed_TestCanFindIt" />
 
     <!-- CtsContentTestCases -->
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.AccountAccessSameCertTest#testAccountAccess_sameCertAsAuthenticatorCanSeeAccount" />
@@ -2520,13 +2505,11 @@
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testOpenFileOutput_mustNotCreateWorldWriteableFile" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testOpenFileOutput_mustNotUseAbsolutePath" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testOpenFileOutput_mustNotWriteToParentDirectory" />
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testRegisterReceiver1" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testRegisterReceiver2" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testRegisterReceiverForAllUsers" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testRegisterReceiverForSystemBroadcast_notExported_stickyBroadcastReceived" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testRegisterReceiver_bothFlags_exceptionThrown" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testRegisterReceiver_exportedUnaudited_broadcastReceived" />
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testRegisterReceiver_exported_broadcastReceived" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testRegisterReceiver_noFlagsProtectedBroadcast_noExceptionThrown" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testRegisterReceiver_noFlagsStickyBroadcast_noExceptionThrown" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextTest#testRegisterReceiver_noFlags_exceptionThrown" />
@@ -2639,12 +2622,8 @@
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testOpenFileOutput_mustNotUseAbsolutePath" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testOpenFileOutput_mustNotWriteToParentDirectory" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testRegisterReceiver1" />
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testRegisterReceiver2" />
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testRegisterReceiverForAllUsers" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testRegisterReceiverForSystemBroadcast_notExported_stickyBroadcastReceived" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testRegisterReceiver_bothFlags_exceptionThrown" />
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testRegisterReceiver_exportedUnaudited_broadcastReceived" />
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testRegisterReceiver_exported_broadcastReceived" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testRegisterReceiver_noFlagsProtectedBroadcast_noExceptionThrown" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testRegisterReceiver_noFlagsStickyBroadcast_noExceptionThrown" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testRegisterReceiver_noFlags_exceptionThrown" />
@@ -2659,7 +2638,6 @@
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testSendBroadcastWithMultiplePermissions_receiverHasAllPermissions" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testSendBroadcastWithMultiplePermissions_receiverHasNoPermissions" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testSendBroadcastWithMultiplePermissions_receiverHasSomePermissions" />
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testSendBroadcast_WithExportedRuntimeReceiver" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testSendBroadcast_WithNonExportedRuntimeReceiver" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testSendBroadcast_requireAppOpPermission_receiverHasPermissionAndAllowedAppOp" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testSendBroadcast_requireAppOpPermission_receiverHasPermissionAndDefaultAppOp" />
@@ -2674,14 +2652,12 @@
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testStartActivityAsUser" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testStartActivityWithActivityNotFound" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testStartActivityWithExportedActivity" />
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testStartActivityWithNonExportedActivity" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ContextWrapperTest#testStartInstrumentation" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.DeferSyncTest#deferSyncAndReportIsReady" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.DeferSyncTest#deferSyncAndReportIsReadyAlwaysSyncable" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.DeferSyncTest#noSyncsWhenDeferred" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.DeferSyncTest#onNewAccountForEachAccount" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ImageCaptureUriExtraToClipDataTest#testUriExtraOutputMigratedToClipData_imageCaptureIntent" />
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ImageCaptureUriExtraToClipDataTest#testUriExtraOutputMigratedToClipData_imageCaptureSecureIntent" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ImageCaptureUriExtraToClipDataTest#testUriExtraOutputMigratedToClipData_videoCaptureIntent" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.IntentFilterTest#testAccessPriority" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.IntentFilterTest#testActionWildCards" />
@@ -2890,8 +2866,6 @@
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.LocusIdTest#testParcel" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.MutableContextWrapperTest#testConstructor" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.MutableContextWrapperTest#testSetBaseContext" />
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ReadableUriExtraToClipDataTest#testUriExtraStreamMigratedToClipData_sendIntent" />
-    <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ReadableUriExtraToClipDataTest#testUriExtraStreamMigratedToClipData_sendMultipleIntent" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.ReceiverCallNotAllowedExceptionTest#testConstructor" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.SearchRecentSuggestionsProviderTest#testSearchRecentSuggestionsProvider" />
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.SharedPreferencesTest#testCommitCreatesFiles" />
@@ -2928,7 +2902,6 @@
 
     <!-- CtsCredentialManagerHostSideTestCases -->
     <option name="compatibility:include-filter" value="CtsCredentialManagerHostSideTestCases android.cts.credentials.backuprestore.CredentialManagerRestoreSettingsHostSideTest#testSettingsAreNotRestoredIfUserHasChangedThem" />
-    <option name="compatibility:include-filter" value="CtsCredentialManagerHostSideTestCases android.cts.credentials.backuprestore.CredentialManagerRestoreSettingsHostSideTest#testSettingsAreRestoredCorrectly" />
 
     <!-- CtsDeviceConfigTestCases -->
     <option name="compatibility:include-filter" value="CtsDeviceConfigTestCases android.deviceconfig.cts.DeviceConfigApiPermissionTests#testDeviceConfigPublicNamespacesWithoutReadPermission" />
@@ -16793,7 +16766,6 @@
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.net.InetSocketAddressTest#test_isUnresolved" />
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.net.MalformedURLExceptionTest#testConstructor" />
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.net.NetPermissionTest#testConstructor" />
-    <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.net.NetworkInterfaceTest#testDumpAll" />
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.net.NetworkInterfaceTest#testGetByIndex" />
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.net.NetworkInterfaceTest#testGetInterfaceAddressesDoesNotThrowNPE" />
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases libcore.java.net.NetworkInterfaceTest#testGetNetworkInterfaces_OrphanInterfaceDoesNotThrow" />
@@ -38185,7 +38157,6 @@
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaControllerTest#testSetPlaybackSpeed" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaControllerTest#testTransportControlsAndMediaSessionCallback" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaControllerTest#testTransportControlsPlayAndPrepareFromMediaIdWithIllegalArgumentsThrowsIAE" />
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaControllerTest#testTransportControlsPlayAndPrepareFromSearchWithNullDoesNotCrash" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaControllerTest#testTransportControlsPlayAndPrepareFromUriWithIllegalArgumentsThrowsIAE" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaControllerTest#testUnregisterCallbackShouldRemoveCallback" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaControllerTest#testUnregisterCallbackWithNull" />
@@ -38230,7 +38201,6 @@
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRoute2ProviderServiceTest#testGetSessionInfoAndGetAllSessionInfo" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#adjustSelectedRouteVolume_callsOnControlledUpdated" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#getInstance_withoutSystemRoutingPermissions_fetchesOnlyDefaultSystemRoute" />
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#getRouteListingPreference_returnsLastSetPreference" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#getRouteListingPreference_withNoSetPreference_returnsNull" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#getRoutingSessionInfo_returnsNonNullSession" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#markCallbacksAsTested" />
@@ -38250,7 +38220,6 @@
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testRegisterTransferCallbackWithInvalidArguments" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testRoutingControllerRelease" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testRoutingControllerSelectAndDeselectRoute" />
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testSetSessionVolume" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testShowSystemOutputSwitcherReturnsTrue" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testTransferToFailure" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testUnregisterTransferCallbackWithNullCallback" />
@@ -38566,7 +38535,6 @@
     <option name="compatibility:include-filter" value="CtsMediaMiscTestCases android.media.misc.cts.MediaSyncTest#testSetPlaybackParamsFail" />
     <option name="compatibility:include-filter" value="CtsMediaMiscTestCases android.media.misc.cts.MediaSyncTest#testSetPlaybackParamsSucceed" />
     <option name="compatibility:include-filter" value="CtsMediaMiscTestCases android.media.misc.cts.MediaTimestampTest#testMediaTimestamp" />
-    <option name="compatibility:include-filter" value="CtsMediaMiscTestCases android.media.misc.cts.NativeDecoderTest#testAMediaDataSourceClose" />
     <option name="compatibility:include-filter" value="CtsMediaMiscTestCases android.media.misc.cts.NativeDecoderTest#testCryptoInfo" />
     <option name="compatibility:include-filter" value="CtsMediaMiscTestCases android.media.misc.cts.NativeDecoderTest#testFormat" />
     <option name="compatibility:include-filter" value="CtsMediaMiscTestCases android.media.misc.cts.NativeDecoderTest#testPssh" />
@@ -38688,43 +38656,8 @@
     <option name="compatibility:include-filter" value="CtsMediaProjectionTestCases android.media.projection.cts.MediaProjectionTest#testUnregisterCallback" />
 
     <!-- CtsMediaProviderTranscodeTests -->
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testAppCompatNoTranscodeHevc" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testAppCompatTranscodeHevc" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testDeleteTranscodedFile_FilePath" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testExtraAcceptOriginalFormatFalse_ContentResolver" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testExtraAcceptOriginalFormatTrue_ContentResolver" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testExtraAcceptOriginalTrueAndMediaCapabilitiesHevcFalse_ContentResolver" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testExtraMediaCapabilitiesHevcSupportedTrue_ContentResolver" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testExtraMediaCapabilitiesHevcUnspecifiedFalse_ContentResolver" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testExtraMediaCapabilitiesHevcUnsupportedFalse_ContentResolver" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testGetOriginalMediaFormatFileDescriptor_onFailure_throwsIOException" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testLazyTranscodedFile_FilePath" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testMediaCapabilitiesManifestHevc" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testMediaCapabilitiesManifestSlowMotion" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testNoTranscodeOutsideCamera_ConentResolver" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testNoTranscodeOutsideCamera_FilePath" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testNoTranscodeTimeoutForSmallHevcVideos" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testOriginalCallingUid_legacyAppPassModernAppUid" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testRenameTranscodedFile_FilePath" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testSameTranscoded_FilePath" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodeDirectoryNotAccessible" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodeMultipleFilesConcurrently_longDurationLowVolume" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodeMultipleFilesConcurrently_lowDurationHighVolume" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodeMultipleFilesConcurrently_mediumDurationMediumVolume" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodedCacheReuseAfterRename_FilePath" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodedCacheReuse_ContentResolver" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodedCacheReuse_ContentResolverFilePath" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodedCacheReuse_FilePath" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodedCacheReuse_FilePathContentResolver" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodedNotInitiatedForLegacy_UsingBytesRead" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodedNotInitiatedForLegacy_UsingTiming" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscoded_ContentResolver" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscoded_FilePath" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#testTranscodingCacheClear" />
-    <option name="compatibility:include-filter" value="CtsMediaProviderTranscodeTests android.mediaprovidertranscode.cts.TranscodeTest#test_IsAppIoBlocked" />
 
     <!-- CtsMediaRecorderTestCases -->
-    <option name="compatibility:include-filter" value="CtsMediaRecorderTestCases android.media.recorder.cts.MediaRecorderRandomTest#testRecorderRandomAction" />
     <option name="compatibility:include-filter" value="CtsMediaRecorderTestCases android.media.recorder.cts.MediaRecorderTest#testAV1SDRecording" />
     <option name="compatibility:include-filter" value="CtsMediaRecorderTestCases android.media.recorder.cts.MediaRecorderTest#testAudioRecordInfoCallback" />
     <option name="compatibility:include-filter" value="CtsMediaRecorderTestCases android.media.recorder.cts.MediaRecorderTest#testGetActiveMicrophones" />
@@ -38751,54 +38684,6 @@
     <option name="compatibility:include-filter" value="CtsMediaRecorderTestCases android.media.recorder.cts.MediaRecorderTest#testSurfaceRecordingTimeLapse" />
 
     <!-- CtsMediaTranscodingTestCases -->
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testBuilder" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testReadFromCorrectXmlWithInputStreamInAssets" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testReadFromWrongMediaCapabilityXml" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testReadFromWrongMediaCapabilityXml2" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testReadFromXmlWithWrongBoolean" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testReadMediaCapabilitiesXml" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testReadMediaCapabilitiesXmlWithSupportAllHdr" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testReadXmlConflictSupportedValue" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testReadXmlFormatWithoutSupported" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testReadXmlSupportHdrWithoutSupportHevc" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testReadXmlSupportedWithoutFormat" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testReadXmlWithEmptyFormat" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testSetSupportHdr" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testSetSupportHevc" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testSetUnsupportHdr" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testSetUnsupportVideoMime" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testSupportHdrWithoutSupportHevc" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testUnspecifiedCodecMimetype" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testUnsupportedCodecMimetype" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.ApplicationMediaCapabilitiesTest#testUnsupportedHdrtype" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testAddingClientUids" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testCancelTranscoding" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testClearOnProgressUpdateListener" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testCreateTranscodingRequestWithNullDestinationUri" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testCreateTranscodingRequestWithNullSourceUri" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testCreateTranscodingRequestWithoutDestinationUri" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testCreateTranscodingRequestWithoutVideoFormat" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testCreateTranscodingWithInvalidClientPid" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testCreateTranscodingWithInvalidClientUid" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testHevcTranscoding1080PVideo30FramesWithoutAudio" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testHevcTranscoding1080PVideo37FramesWithAudio" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testHevcTranscoding1080PVideo72FramesWithAudio" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testHevcTranscoding4KVideo64FramesWithAudio" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testHevcTranscodingWithFileDescriptor" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testTranscodingInvalidSrcUri" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testTranscodingToCacheDir" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testTranscodingToResFolder" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testVideoFormatResolverAv1Mime" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testVideoFormatResolverMissingFrameRate" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testVideoFormatResolverMissingHeight" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testVideoFormatResolverMissingWidth" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testVideoFormatResolverNegativeFrameRate" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testVideoFormatResolverNegativeHeight" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testVideoFormatResolverNegativeWidth" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testVideoFormatResolverValidArgs" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testVideoFormatResolverZeroFrameRate" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testVideoFormatResolverZeroHeight" />
-    <option name="compatibility:include-filter" value="CtsMediaTranscodingTestCases android.media.mediatranscoding.cts.MediaTranscodingManagerTest#testVideoFormatResolverZeroWidth" />
 
     <!-- CtsMockingDebuggableTestCases -->
     <option name="compatibility:include-filter" value="CtsMockingDebuggableTestCases com.android.dx.mockito.tests.BlacklistedApis#callBlacklistedPublicMethodRealMethod" />
@@ -38952,7 +38837,6 @@
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficTrueTestCases android.security.NetworkSecurityPolicyCleartextPermittedTest#testAndroidHttpClient" />
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficTrueTestCases android.security.NetworkSecurityPolicyCleartextPermittedTest#testApplicationInfoFlag" />
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficTrueTestCases android.security.NetworkSecurityPolicyCleartextPermittedTest#testDefaultHttpURLConnection" />
-    <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficTrueTestCases android.security.NetworkSecurityPolicyCleartextPermittedTest#testDownloadManager" />
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficTrueTestCases android.security.NetworkSecurityPolicyCleartextPermittedTest#testMediaPlayer" />
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficTrueTestCases android.security.NetworkSecurityPolicyCleartextPermittedTest#testNetworkSecurityPolicy" />
 
@@ -39897,72 +39781,6 @@
     <option name="compatibility:include-filter" value="CtsOpenGLTestCases android.opengl.cts.WrapperTest#testThreadCleanup" />
 
     <!-- CtsPackageInstallTestCases -->
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.ExternalSourcesInstantAppsTest#externalSourceDeniedTest" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.ExternalSourcesTestAppOpAllowed#allowedSourceTest" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.ExternalSourcesTestAppOpAllowed#allowedSourceTestViaIntent" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.ExternalSourcesTestAppOpAllowed#testManageUnknownSourcesExists" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallAppMetadataTest#appMetadataInApk" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallAppMetadataTest#getAppMetadataSourceApNotInstall" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallAppMetadataTest#installViaSessionWithBadAppMetadata" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallAppMetadataTest#installViaSessionWithOnlyAppMetadata" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallAppMetadataTest#noInstallGetAppMetadata" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallConstraintsTest#testCheckInstallConstraints_AppIsForeground" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallConstraintsTest#testCheckInstallConstraints_AppIsTopVisible" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallConstraintsTest#testCheckInstallConstraints_AppNotInstalled" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallConstraintsTest#testCheckInstallConstraints_BoundedService" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallConstraintsTest#testCheckInstallConstraints_DeviceIsIdle" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallConstraintsTest#testCheckInstallConstraints_DeviceIsInCall" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallConstraintsTest#testCheckInstallConstraints_UsesLibrary" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallConstraintsTest#testCommitAfterInstallConstraintsMet_NoTimeout" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallConstraintsTest#testCommitAfterInstallConstraintsMet_RetryOnTimeout" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallConstraintsTest#testWaitForInstallConstraints_AppIsForeground" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallConstraintsTest#verifyGetters" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallInfoTest#testExceptionErrorCodeOfNonApk" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallInfoTest#testInstallInfoOfClusterPackage" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallInfoTest#testInstallInfoOfCorruptedApk_throwsException" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallInfoTest#testInstallInfoOfMonolithicPackage" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallInfoTest#testInstallInfoOfMonolithicPackageViaFileDescriptor" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallInfoTest#testInstallInfoOfNonApk_throwsException" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallPreVerifiedDomainsTest#testSetPreVerifiedDomainsNotInstantAppInstaller" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallPreVerifiedDomainsTest#testSetPreVerifiedDomainsWithEmpty" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallPreVerifiedDomainsTest#testSetPreVerifiedDomainsWithoutPermission" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallSourceInfoMultiUserTest#installOnPrimaryUser" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallSourceInfoMultiUserTest#installOnSecondaryUser" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallSourceInfoTest#installViaAdb" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallSourceInfoTest#installViaAdbInvalidInstallerName" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallSourceInfoTest#installViaAdbValidInstallerName" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.IntentTest#cancelInstallation" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.IntentTest#installWithAnotherInstallerPackageName" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[runtimePermissionDenied_Failure]" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[runtimePermissionGranted_Failure]" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[unknownPermissionDenied_Failure]" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[unknownPermissionGranted_Failure]" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#confirmFrpInstallationFails" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#confirmInstantInstallationFails" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#sessionWithImmutablePendingIntent" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTestInstant#instantAppsCannotCreateInstallSessions" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementMultiUserTest#installExistingPackage_noUpdateOwnerIsSet_hasNoUpdateOwner" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementMultiUserTest#installExistingPackage_updateOwnerIsNotTheSame_hasNoUpdateOwner" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementMultiUserTest#installExistingPackage_updateOwnerIsTheSame_ownerRetained" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementMultiUserTest#installWithRequestingUpdateOwnership_noUpdateOwnerIsSet_hasNoUpdateOwner" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementMultiUserTest#installWithRequestingUpdateOwnership_updateOwnerIsNotTheSame_hasNoUpdateOwner" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementMultiUserTest#installWithRequestingUpdateOwnership_updateOwnerIsTheSame_ownerRetained" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementMultiUserTest#installWithoutRequestingUpdateOwnership_hasNoUpdateOwner" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#featureDisabled_updateByNonOwner_hasNoUserAction" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#getPendingUserActionReason_notRequestUpdateOwnership_reasonUnspecified" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#installViaShellCommand_enableUpdateOwnership" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#isRequestUpdateOwnership_notSet_returnFalse" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#isRequestUpdateOwnership_set_returnTrue" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#relinquishUpdateOwnership_notFromUpdateOwner_throwSecurityException" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#uninstallUpdateOwner_hasNoUpdateOwner" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#updateOwnershipEnforcement_updateByOwner_hasNoUserAction" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UserRestrictionInstallTest#disallowDebuggingFeatures_adbInstallOnWorkProfile_fails" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UserRestrictionInstallTest#disallowDebuggingFeatures_sessionInstallOnWorkProfile_getInstallRequest" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UserRestrictionInstallTest#disallowInstallApps_adbInstallOnAllUsers_installedOnUnrestrictedUser" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UserRestrictionInstallTest#disallowInstallApps_adbInstallOnWorkProfile_fails" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UserRestrictionInstallTest#disallowInstallApps_intentInstallOnWorkProfile_installationFails" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UserRestrictionInstallTest#disallowInstallApps_sessionInstallOnWorkProfile_throwsException" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UserRestrictionInstallTest#unrestrictedWorkProfile_adbInstallOnAllUsers_installedOnAllUsers" />
 
     <!-- CtsPackageManagerMultiUserHostTestCases -->
     <option name="compatibility:include-filter" value="CtsPackageManagerMultiUserHostTestCases com.android.tests.packagemanager.multiuser.host.UninstallExistingPackageTest#testUninstallExistingPackage_succeedsIfInstalledInAnotherUser" />
@@ -39982,10 +39800,8 @@
 
     <!-- CtsPackageManagerStatsHostTestCases -->
     <option name="compatibility:include-filter" value="CtsPackageManagerStatsHostTestCases com.android.cts.packagemanager.stats.host.PackageInstallationSessionReportedStatsTests#testPackageInstallationFailedInternalErrorReported" />
-    <option name="compatibility:include-filter" value="CtsPackageManagerStatsHostTestCases com.android.cts.packagemanager.stats.host.PackageInstallationSessionReportedStatsTests#testPackageInstallationFailedVersionDowngradeReported" />
     <option name="compatibility:include-filter" value="CtsPackageManagerStatsHostTestCases com.android.cts.packagemanager.stats.host.PackageInstallationSessionReportedStatsTests#testPackageInstallationSessionReportedForApkSuccessWithReplace" />
     <option name="compatibility:include-filter" value="CtsPackageManagerStatsHostTestCases com.android.cts.packagemanager.stats.host.PackageInstallationSessionReportedStatsTests#testPackageUninstalledReported" />
-    <option name="compatibility:include-filter" value="CtsPackageManagerStatsHostTestCases com.android.cts.packagemanager.stats.host.PackageInstallerV2StatsTests#testPackageInstallerV2MetricsReportedForSplits" />
     <option name="compatibility:include-filter" value="CtsPackageManagerStatsHostTestCases com.android.cts.packagemanager.stats.host.SettingsProviderSettingChangedStatsTests#testSettingsChanged" />
 
     <!-- CtsPackageSchemeTestsWithVisibility -->
@@ -40906,7 +40722,6 @@
     <option name="compatibility:include-filter" value="CtsProviderTestCases android.provider.cts.settings.Settings_SystemTest#testResetToDefaults" />
 
     <!-- CtsSandboxedAppSetIdManagerTests -->
-    <option name="compatibility:include-filter" value="CtsSandboxedAppSetIdManagerTests com.android.tests.sandbox.appsetid.SandboxedAppSetIdManagerTest#loadSdkAndRunAppSetIdApi" />
 
     <!-- CtsScopedStorageHostTest -->
     <option name="compatibility:include-filter" value="CtsScopedStorageHostTest android.scopedstorage.cts.host.LegacyStorageHostTest#testCanTrashOtherAndroidMediaFiles_hasRW" />
@@ -41060,8 +40875,6 @@
     <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.ActiveTileServiceTest#testClick" />
     <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.ActiveTileServiceTest#testNotListening" />
     <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.ActiveTileServiceTest#testRequestListening" />
-    <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.CompatChangesTileServiceTest#testStartActivityWithIntent_doesNotRequirePendingIntent_lauchesSuccessfully" />
-    <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.CompatChangesTileServiceTest#testStartActivityWithIntent_requiresPendingIntent_ThrowsException" />
     <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.StatsdNotificationAtomTest#testNotificationReported" />
     <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.TileServiceTest#testAddTile" />
     <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.TileServiceTest#testCantAddDialog" />
@@ -41072,8 +40885,6 @@
     <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.TileServiceTest#testRemoveTile" />
     <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.TileServiceTest#testSetNullPendingIntentDoesNotStartActivity" />
     <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.TileServiceTest#testSetPendingIntentDoesNotStartActivityWithoutClick" />
-    <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.TileServiceTest#testSetPendingIntentPersistsAfterShadeIsClosed" />
-    <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.TileServiceTest#testSetPendingIntentStartsActivityWithClick" />
     <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases android.host.systemui.TileServiceTest#testStartActivityDoesNotLaunchPendingIntentWithoutClick" />
 
     <!-- CtsTelephonyTestCases -->
@@ -42716,13 +42527,8 @@
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.ShadowTests#testShadowLayout" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.ShadowTests#testShadowResources" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.ShapeTests#testDashedOval" />
-    <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewAppliesTransactionsToFrame" />
-    <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewBlendZAbove" />
-    <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewBlendZBelow" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewDesiredHdrHeadroom" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewDisabledClip" />
-    <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewMediaLayer" />
-    <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewOffscreenDoesNotPeekThrough" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewRespectsClipBounds" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewRespectsParentClipBounds" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewScaledClipZAbove" />
@@ -42730,10 +42536,8 @@
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewSurfaceLifecycleChangesFromFollowsAttachmentToFollowsVisibility" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewSurfaceLifecycleChangesFromFollowsVisibilityToFollowsAttachment" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewSurfaceLifecycleFollowsAttachment" />
-    <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewSurfaceLifecycleFollowsAttachmentWithOverlaps" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewSurfaceLifecycleFollowsVisibility" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewSurfaceLifecycleFollowsVisibilityByDefault" />
-    <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#testMovingWhiteSurfaceView" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#testSurfaceHolderHardwareCanvas" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#testSurfaceViewHolePunchWithLayer" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SweepTests#testBasicDraws" />
@@ -42905,7 +42709,6 @@
     <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#setWallpaperComponent_homeScreen_lockScreenSet_changesHomeOnly" />
     <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#setWallpaperComponent_lockScreen_lockScreenSet_changeLockOnly" />
     <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#setWallpaperComponent_lockScreen_lockScreenUnset_changesLockOnly" />
-    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#suggestDesiredDimensionsTest" />
     <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#testAlwaysUpdateWallpaperPermission_allowOutOfFocusWallpaperCommand" />
     <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#testEngineCallbackCountsParam[LIVE_DIFF_MULTI]" />
     <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#testEngineCallbackCountsParam[LIVE_SAME_MULTI]" />
@@ -43191,7 +42994,6 @@
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSetMapTrackballToArrowKeys" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSetPictureListener" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSetSafeBrowsingAllowlistWithMalformedList" />
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSetSafeBrowsingAllowlistWithValidList" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSetWebChromeClient" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testStartSafeBrowsingInvokesCallback" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testStartSafeBrowsingUseApplicationContext" />
@@ -43232,7 +43034,6 @@
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.AbsListViewTest#testComputeVerticalScrollValues" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.AbsListViewTest#testEdgeEffectColors" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.AbsListViewTest#testEnterKey" />
-    <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.AbsListViewTest#testFastScroll" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.AbsListViewTest#testFastScrollStyle" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.AbsListViewTest#testFling" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.AbsListViewTest#testGenerateLayoutParams" />
@@ -43627,7 +43428,6 @@
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.EditTextTest#testSingleLineMaxLength_singleLine_from_inputType" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.EditTextTest#testSingleLineMaxLength_textView" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ExpandableListViewBasicTest#testCollapseGroup" />
-    <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ExpandableListViewBasicTest#testContextMenus" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ExpandableListViewBasicTest#testConvertionBetweenFlatAndPacked" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ExpandableListViewBasicTest#testExpandGroup" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ExpandableListViewBasicTest#testExpandedGroupMovement" />
@@ -43903,7 +43703,6 @@
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ListPopupWindowTest#testCustomDismissalWithBackButton" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ListPopupWindowTest#testDismiss" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ListPopupWindowTest#testDismissalOutsideNonModal" />
-    <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ListPopupWindowTest#testItemClicks" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ListPopupWindowTest#testListSelectionWithDPad" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ListPopupWindowTest#testListSelectionWithDPadEnter" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ListPopupWindowTest#testNoDefaultDismissalWithBackButton" />
@@ -44071,7 +43870,6 @@
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.PopupWindowTest#testAccessTouchModal" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.PopupWindowTest#testAccessTouchable" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.PopupWindowTest#testAccessWidth" />
-    <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.PopupWindowTest#testAccessWindowLayoutType" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.PopupWindowTest#testAnchorInPopup" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.PopupWindowTest#testClipToScreenClipsToInsets" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.PopupWindowTest#testConstructor" />
@@ -44309,7 +44107,6 @@
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetChronometer" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetChronometerCountDown" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetColor" />
-    <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetColorAttr" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetColorStateList" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetColorStateList_fromResources" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetContentDescription" />
@@ -44636,10 +44433,6 @@
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextSwitcherTest#testSetText" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewFadingEdgeTest#testFadingEdge" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewFontScalingTest#testNonLinearFontScaling_dimenXml_testLineHeightAttrSpAndTextSizeAttrSp" />
-    <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewFontScalingTest#testNonLinearFontScaling_dimenXml_testSetLineHeightSpAndTextSizeAttrSp" />
-    <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewFontScalingTest#testNonLinearFontScaling_overwriteXml_testSetLineHeightSpAndSetTextSizeSp" />
-    <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewFontScalingTest#testNonLinearFontScaling_testSetLineHeightSpAndSetTextSizeSp" />
-    <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewFontScalingTest#testNonLinearFontScaling_testSetLineHeightSpFirstAndSetTextSizeSpAfter" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewFontVariationTest#testFontVariation" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewFontVariationTest#testTextAppearance" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewFontWeightTest#testStyle" />
@@ -45891,7 +45684,6 @@
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewTest#testAccessRawContentType" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewTest#testAccessText" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewTest#testAccessTextColor" />
-    <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewTest#testAccessTextSize" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewTest#testAccessTransformationMethod" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewTest#testAccessibilityActionNextGranularityLineOverText" />
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.TextViewTest#testAllCaps_Localization" />
