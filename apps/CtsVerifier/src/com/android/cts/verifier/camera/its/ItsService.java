@@ -2792,7 +2792,7 @@ public class ItsService extends Service implements SensorEventListener {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_RECORD, mRecordSurface,
                     videoStabilizationMode, /*ois=*/ false, DynamicRangeProfiles.HLG10,
                     mockCallback, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener);
+                    recordingResultListener, /*extraConfigs*/null);
         } catch (CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -2872,7 +2872,7 @@ public class ItsService extends Service implements SensorEventListener {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_RECORD, mRecordSurface,
                     videoStabilizationMode, /*ois=*/ false, DynamicRangeProfiles.STANDARD,
                     /*stateCallback=*/ null, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener);
+                    recordingResultListener, /*extraConfigs*/null);
         } catch (android.hardware.camera2.CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -2917,13 +2917,11 @@ public class ItsService extends Service implements SensorEventListener {
      * use the Preview pipeline and output to the ImageReader. An {@link ImageWriter} pipes the
      * images from ImageReader to the MediaRecorder surface which is encoded into a video.
      */
-    private PreviewRecorder getPreviewRecorder(JSONObject cmdObj, String outputFilePath)
-            throws ItsException, JSONException {
+    private PreviewRecorder getPreviewRecorder(JSONObject cmdObj, String outputFilePath,
+            Size videoSize, boolean hlg10Enabled) throws ItsException, JSONException {
         String cameraId = cmdObj.getString("cameraId");
-        String videoSizeString = cmdObj.getString("videoSize");
         boolean stabilize = cmdObj.getBoolean("stabilize");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
-        boolean hlg10Enabled = cmdObj.getBoolean("hlg10Enabled");
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             throw new ItsException("Cannot record preview before API level 33");
@@ -2947,7 +2945,6 @@ public class ItsService extends Service implements SensorEventListener {
         }
 
         int cameraDeviceId = Integer.parseInt(cameraId);
-        Size videoSize = Size.parseSize(videoSizeString);
         int sensorOrientation = Objects.requireNonNull(
                 mCameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION),
                 "Sensor orientation must not be null"
@@ -3018,7 +3015,6 @@ public class ItsService extends Service implements SensorEventListener {
             IntraPreviewAction action)
             throws JSONException, ItsException {
         String cameraId = cmdObj.getString("cameraId");
-        String videoSizeString = cmdObj.getString("videoSize");
         boolean stabilize = cmdObj.getBoolean("stabilize");
         boolean ois = cmdObj.getBoolean("ois");
         double zoomRatio = cmdObj.optDouble("zoomRatio");
@@ -3026,19 +3022,42 @@ public class ItsService extends Service implements SensorEventListener {
         zoomRatio = (Double.isNaN(zoomRatio)) ? cmdObj.optDouble("zoomStart") : zoomRatio;
         int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
-        boolean hlg10Enabled = cmdObj.getBoolean("hlg10Enabled");
+        // Record surface size and HDRness.
+        JSONArray outputSpecs = ItsUtils.getOutputSpecs(cmdObj);
+        if (outputSpecs == null || outputSpecs.length() == 0) {
+            throw new ItsException("No output surfaces!");
+        }
+        JSONObject recordSurfaceObj = outputSpecs.getJSONObject(0);
+        String format = recordSurfaceObj.optString("format");
+        if (!format.equals("priv")) {
+            throw new ItsException("Record surface must be PRIV format!, but is " + format);
+        }
+        Size videoSize = new Size(
+                recordSurfaceObj.getInt("width"),
+                recordSurfaceObj.getInt("height"));
+        boolean hlg10Enabled = recordSurfaceObj.optBoolean("hlg10");
 
+        // Remove first output spec and use the rest to create ImageReaders
+        List<OutputConfiguration> extraConfigs = null;
+        outputSpecs.remove(0);
+        if (outputSpecs.length() > 0) {
+            boolean is10bitOutputPresent = prepareImageReadersWithOutputSpecs(
+                    outputSpecs, /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
+                    /*backgroundRequest*/false, /*reuseSession*/false);
+            extraConfigs = getCaptureOutputConfigurations(outputSpecs, is10bitOutputPresent);
+        }
         List<RecordingResult> recordingResults = new ArrayList<>();
         RecordingResultListener recordingResultListener = action.getRecordingResultListener();
+
         int fileFormat = MediaRecorder.OutputFormat.DEFAULT;
         int cameraDeviceId = Integer.parseInt(cameraId);
-        Size videoSize = Size.parseSize(videoSizeString);
         String outputFilePath = getOutputMediaFile(cameraDeviceId, videoSize,
                 /* quality= */"preview", fileFormat, hlg10Enabled, stabilize, zoomRatio,
                 aeTargetFpsMin, aeTargetFpsMax);
         assert outputFilePath != null;
 
-        try (PreviewRecorder pr = getPreviewRecorder(cmdObj, outputFilePath)) {
+        try (PreviewRecorder pr = getPreviewRecorder(cmdObj, outputFilePath, videoSize,
+                hlg10Enabled)) {
             int stabilizationMode = stabilize
                     ? CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION
                     : CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF;
@@ -3049,7 +3068,7 @@ public class ItsService extends Service implements SensorEventListener {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
                     pr.getCameraSurface(), stabilizationMode, ois, dynamicRangeProfile,
                     sessionListener, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener);
+                    recordingResultListener, extraConfigs);
 
             action.execute();
             // Stop repeating request and ensure frames in flight are sent to MediaRecorder
@@ -3352,7 +3371,8 @@ public class ItsService extends Service implements SensorEventListener {
             int videoStabilizationMode, boolean ois, long dynamicRangeProfile,
             CameraCaptureSession.StateCallback stateCallback,
             double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax,
-            CameraCaptureSession.CaptureCallback captureCallback) throws CameraAccessException {
+            CameraCaptureSession.CaptureCallback captureCallback,
+            List<OutputConfiguration> extraConfigs) throws CameraAccessException {
         assert (recordSurface != null);
         // Create capture request builder
         mCaptureRequestBuilder = mCamera.createCaptureRequest(requestTemplate);
@@ -3398,11 +3418,16 @@ public class ItsService extends Service implements SensorEventListener {
                     CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_OFF);
         }
         mCaptureRequestBuilder.addTarget(recordSurface);
+        List<OutputConfiguration> configs = new ArrayList<OutputConfiguration>();
         OutputConfiguration outConfig = new OutputConfiguration(recordSurface);
         outConfig.setDynamicRangeProfile(dynamicRangeProfile);
+        configs.add(outConfig);
+        if (extraConfigs != null) {
+            configs.addAll(extraConfigs);
+        }
 
         SessionConfiguration sessionConfiguration = new SessionConfiguration(
-                SessionConfiguration.SESSION_REGULAR, List.of(outConfig),
+                SessionConfiguration.SESSION_REGULAR, configs,
                 new HandlerExecutor(mCameraHandler),
                 new CameraCaptureSession.StateCallback() {
                     @Override
