@@ -31,7 +31,6 @@ java_test_host {
     // tag this module as a cts test artifact
     test_suites: [
         "arcts",
-        "cts",
         "general-tests",
         "mts-permission",
         "mcts-permission",

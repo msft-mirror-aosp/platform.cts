@@ -37,7 +37,6 @@ java_test_host {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
-        "cts",
     ],
     test_config: "AndroidTestAppCloning.xml",
     data: [

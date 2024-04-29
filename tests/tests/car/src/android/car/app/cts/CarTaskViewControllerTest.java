@@ -547,6 +547,10 @@ public class CarTaskViewControllerTest {
 
         @Override
         public void onTaskInfoChanged(@NonNull ActivityManager.RunningTaskInfo taskInfo) {
+            if (mCurrentTask == null && mNumTimesOnTaskVanished > 0) {
+                // The task is already vanished, skip handling it at all
+                return;
+            }
             mCurrentTask = taskInfo;
         }
 

@@ -46,7 +46,6 @@ android_test {
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
         "mts-media",
         "mcts-media",

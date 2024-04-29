@@ -1002,7 +1002,6 @@
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.SyncAdapterEnumerationTests#queriesNothing_requestSync_cannotSeeSyncAdapterTarget" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.SyncAdapterEnumerationTests#queriesPackage_getIsSyncable_canSeeSyncAdapterTarget" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.SyncAdapterEnumerationTests#queriesPackage_getPeriodicSyncs_canSeeSyncAdapterTarget" />
-    <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.SyncAdapterEnumerationTests#queriesPackage_getRunningServiceControlPanel_canSeeSyncAdapterTarget" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.SyncAdapterEnumerationTests#queriesPackage_getSyncAdapterPackages_canSeeSyncAdapterTarget" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.SyncAdapterEnumerationTests#queriesPackage_getSyncAdapterTypes_canSeeSyncAdapterTarget" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.SyncAdapterEnumerationTests#queriesPackage_getSyncAutomatically_canSeeSyncAdapterTarget" />

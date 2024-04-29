@@ -30,7 +30,6 @@ android_test {
         ":CtsAlarmTestHelperCommon",
     ],
     test_suites: [
-        "cts",
         "general-tests",
         "mts-scheduling",
         "mcts-scheduling",

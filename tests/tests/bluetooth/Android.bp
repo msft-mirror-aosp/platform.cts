@@ -37,7 +37,6 @@ android_test {
     platform_apis: true,
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
         "mts-bluetooth",
         "mcts-bluetooth",

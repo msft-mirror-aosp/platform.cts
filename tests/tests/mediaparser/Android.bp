@@ -24,7 +24,6 @@ android_test {
     ],
     min_sdk_version: "29",
     test_suites: [
-        "cts",
         "general-tests",
         "mts-media",
         "mcts-media",

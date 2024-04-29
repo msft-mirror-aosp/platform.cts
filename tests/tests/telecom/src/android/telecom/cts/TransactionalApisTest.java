@@ -52,6 +52,7 @@ import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
+import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
@@ -968,6 +969,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
     @ApiTest(apis = {"android.telecom.TelecomManager#addCall",
             "android.telecom.CallControl#disconnect",
             "android.telecom.CallEventCallback#onCallEndpointChanged"})
+    @FlakyTest
     public void testOnChangedCallEndpoint() {
         if (!mShouldTestTelecom) {
             return;

@@ -22,6 +22,7 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureFailure;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.params.BlackLevelPattern;
@@ -35,6 +36,7 @@ import android.util.Size;
 import android.hardware.camera2.cts.helpers.CameraErrorCollector;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
+import com.android.internal.camera.flags.Flags;
 
 import static android.hardware.camera2.cts.CameraTestUtils.*;
 import static android.hardware.camera2.cts.helpers.CameraSessionUtils.*;
@@ -551,6 +553,14 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
                                     "Monochrome camera 2x2 channels blacklevel value must be the same.",
                                     blackLevel[index], blackLevel[0]);
                             }
+                        }
+                    } else if (Flags.cameraAeModeLowLightBoost()
+                            && key.equals(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE)) {
+                        int aeMode = errorCollector.expectKeyValueNotNull(
+                                result, CaptureResult.CONTROL_AE_MODE);
+                        if (aeMode
+                                == CameraMetadata.CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY) {
+                            errorCollector.expectKeyValueNotNull(failMsg, result, key);
                         }
                     } else {
                         // Only do non-null check for the rest of keys.

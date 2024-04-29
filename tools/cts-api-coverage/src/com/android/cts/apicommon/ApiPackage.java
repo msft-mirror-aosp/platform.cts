@@ -117,4 +117,3 @@ public class ApiPackage implements HasCoverage {
         return null;
     }
 }
-

@@ -1,3 +1,2 @@
 # Bug component: 557916
-ancr@google.com
-harshitmahajan@google.com
+include platform/frameworks/base:/services/core/java/com/android/server/crashrecovery/OWNERS
