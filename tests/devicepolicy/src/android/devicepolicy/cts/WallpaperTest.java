@@ -16,30 +16,30 @@
 
 package android.devicepolicy.cts;
 
-import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.content.pm.PackageManager.FEATURE_LIVE_WALLPAPER;
 
-import static com.android.bedstead.permissions.CommonPermissions.SET_WALLPAPER;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_SET_WALLPAPER;
+import static com.android.bedstead.permissions.CommonPermissions.SET_WALLPAPER;
 
 import android.graphics.Bitmap;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
+import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.Wallpaper;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BitmapUtils;
 
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,8 +49,9 @@ import java.io.InputStream;
 
 // TODO (b/284309054): Add test for WallpaperManager#setResource
 @RunWith(BedsteadJUnit4.class)
-// TODO(b/328312997): revisit this test once we have a strategy for live wallpaper on AAOS.
-@RequireFeature(value = FEATURE_AUTOMOTIVE, reason = "AAOS doesn't support FEATURE_LIVE_WALLPAPER but reports that it does")
+@RequireFeature(value = FEATURE_LIVE_WALLPAPER, reason = "WallpaperManager depends on this feature")
+@RequireNotAutomotive(reason = "AAOS doesn't support wallpaper but gsi_car reports that it does. "
+        + "See b/328312997")
 public final class WallpaperTest {
 
     @ClassRule
