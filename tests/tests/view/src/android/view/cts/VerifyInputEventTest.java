@@ -16,7 +16,6 @@
 
 package android.view.cts;
 
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Display.INVALID_DISPLAY;
 import static android.view.InputDevice.SOURCE_JOYSTICK;
 import static android.view.KeyEvent.FLAG_CANCELED;
@@ -307,12 +306,17 @@ public class VerifyInputEventTest {
         return mActivity.mMotionEvents.poll();
     }
 
-    private static void compareKeys(KeyEvent keyEvent, VerifiedInputEvent verified) {
+    private void compareKeys(KeyEvent keyEvent, VerifiedInputEvent verified) {
         assertEquals(INJECTED_EVENT_DEVICE_ID, verified.getDeviceId());
         assertEquals(keyEvent.getEventTime() * NANOS_PER_MILLISECOND,
                 verified.getEventTimeNanos());
         assertEquals(keyEvent.getSource(), verified.getSource());
-        assertEquals(INVALID_DISPLAY, verified.getDisplayId());
+        // Currently, input is not always setting the target display id for focused events.
+        // However, when it does, ensure that the target display id of the event matches
+        // the display id of the activity.
+        if (keyEvent.getDisplayId() != INVALID_DISPLAY) {
+            assertEquals(mActivity.getDisplayId(), verified.getDisplayId());
+        }
 
         assertTrue(verified instanceof VerifiedKeyEvent);
         VerifiedKeyEvent verifiedKey = (VerifiedKeyEvent) verified;
@@ -327,12 +331,12 @@ public class VerifyInputEventTest {
         assertEquals(keyEvent.getRepeatCount(), verifiedKey.getRepeatCount());
     }
 
-    private static void compareMotions(MotionEvent motionEvent, VerifiedInputEvent verified) {
+    private void compareMotions(MotionEvent motionEvent, VerifiedInputEvent verified) {
         assertEquals(INJECTED_EVENT_DEVICE_ID, verified.getDeviceId());
         assertEquals(motionEvent.getEventTime() * NANOS_PER_MILLISECOND,
                 verified.getEventTimeNanos());
         assertEquals(motionEvent.getSource(), verified.getSource());
-        assertEquals(DEFAULT_DISPLAY, verified.getDisplayId());
+        assertEquals(mActivity.getDisplayId(), verified.getDisplayId());
 
         assertTrue(verified instanceof VerifiedMotionEvent);
         VerifiedMotionEvent verifiedMotion = (VerifiedMotionEvent) verified;
