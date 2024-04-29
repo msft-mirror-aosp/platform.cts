@@ -32,7 +32,6 @@ android_test {
     srcs: ["src/**/*.java"],
     asset_dirs: ["assets"],
     test_suites: [
-        "cts",
         "general-tests",
         "mts",
         "mts-neuralnetworks",
