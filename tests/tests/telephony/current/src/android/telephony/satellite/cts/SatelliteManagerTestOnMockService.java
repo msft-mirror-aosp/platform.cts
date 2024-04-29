@@ -618,9 +618,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.waitForRemoteSatelliteGatewayServiceConnected(1));
         assertTrue(sMockSatelliteServiceManager.restoreSatellitePointingUiClassName());
 
+        callback.clearModemStates();
         requestSatelliteEnabled(false);
-        assertTrue(callback.waitUntilResult(1));
-        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(1));
         assertFalse(isSatelliteEnabled());
 
         assertTrue(sMockSatelliteServiceManager.setSatelliteListeningTimeoutDuration(
@@ -640,8 +644,11 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         callback.clearModemStates();
         requestSatelliteEnabled(false);
-        assertTrue(callback.waitUntilResult(1));
-        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(1));
         assertFalse(isSatelliteEnabled());
 
         assertTrue(sMockSatelliteServiceManager.setSatelliteListeningTimeoutDuration(
@@ -701,8 +708,11 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         // Verify state transitions: CONNECTED -> POWER_OFF
         callback.clearModemStates();
         requestSatelliteEnabled(false);
-        assertTrue(callback.waitUntilModemOff());
-        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(1));
         assertFalse(isSatelliteEnabled());
         assertTrue(
                 sMockSatelliteServiceManager.waitForRemoteSatelliteGatewayServiceDisconnected(1));
@@ -1325,10 +1335,14 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         requestSatelliteEnabled(true, true, SatelliteManager.SATELLITE_RESULT_SUCCESS);
         requestSatelliteEnabled(true, false, SatelliteManager.SATELLITE_RESULT_INVALID_ARGUMENTS);
 
+        callback.clearModemStates();
         turnRadioOff();
         grantSatellitePermission();
-        assertTrue(callback.waitUntilResult(1));
-        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(1));
         assertFalse(isSatelliteEnabled());
 
         requestSatelliteEnabled(true, true, SatelliteManager.SATELLITE_RESULT_INVALID_MODEM_STATE);
@@ -1336,8 +1350,11 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         turnRadioOn();
         grantSatellitePermission();
-        assertFalse(callback.waitUntilResult(1));
-        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+        assertFalse(callback.waitUntilResult(2));
+        assertEquals(2, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                callback.getModemState(0));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(1));
         assertFalse(isSatelliteEnabled());
 
         callback.clearModemStates();
@@ -3097,9 +3114,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(callback.waitUntilResult(1));
 
         if (isSatelliteEnabled()) {
+            callback.clearModemStates();
             requestSatelliteEnabled(false);
-            assertTrue(callback.waitUntilResult(1));
-            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertTrue(callback.waitUntilResult(2));
+            assertEquals(2, callback.getTotalCountOfModemStates());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DISABLING_SATELLITE,
+                    callback.getModemState(0));
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.getModemState(1));
             assertFalse(isSatelliteEnabled());
         }
 
