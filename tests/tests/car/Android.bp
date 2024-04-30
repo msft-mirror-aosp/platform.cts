@@ -38,6 +38,7 @@ android_test {
         "hamcrest-library",
         "platform-test-annotations",
         "flag-junit",
+        "Harrier",
     ],
     libs: [
         "android.test.base",

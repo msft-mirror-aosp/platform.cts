@@ -529,6 +529,25 @@ public final class CarRemoteAccessManagerTest extends AbstractCarTestCase {
         }
     }
 
+    @Test
+    @ApiTest(apis = {"android.car.remoteaccess.CarRemoteAccessManager#isVehicleInUseSupported"})
+    @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testVehicleInUseMustBeSupported() {
+        assertWithMessage("VHAL property: VEHICLE_IN_USE must be supported if remote access feature"
+                + " is enabled").that(mCarRemoteAccessManager.isVehicleInUseSupported()).isTrue();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.car.remoteaccess.CarRemoteAccessManager#isShutdownRequestSupported"})
+    @EnsureHasPermission(PERMISSION_CONTROL_REMOTE_ACCESS)
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testShutdownRequestMustBeSupported() {
+        assertWithMessage("VHAL property: SHUTDOWN_REQUEST must be supported if remote access "
+                + "feature is enabled").that(mCarRemoteAccessManager.isShutdownRequestSupported())
+                .isTrue();
+    }
+
     private static final class RemoteTaskClientCallbackImpl implements RemoteTaskClientCallback {
         private final Object mLock = new Object();
 

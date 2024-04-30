@@ -97,6 +97,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
@@ -1046,6 +1047,183 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     NOT_EXPECT_TIMEOUT);
 
             verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+        }
+    }
+
+    /**
+     * Inject finger taps during ongoing stylus handwriting and make sure those taps are ignored
+     * until stylus ACTION_UP.
+     */
+    @Test
+    public void testHandwriting_fingerTouchIsIgnored() throws Exception {
+        int displayId;
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        try (MockImeSession imeSession = MockImeSession.create(
+                instrumentation.getContext(),
+                instrumentation.getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String focusedMarker = getTestMarker();
+            final String unfocusedMarker = getTestMarker();
+            final Pair<EditText, EditText> editTextPair =
+                    launchTestActivity(focusedMarker, unfocusedMarker);
+            final EditText focusedEditText = editTextPair.first;
+            final EditText unfocusedEditText = editTextPair.second;
+            Context context = focusedEditText.getContext();
+            displayId = context.getDisplayId();
+
+            String initialUserRotation = TestUtils.getRotation(displayId);
+
+            try (UinputTouchDevice touch = new UinputTouchDevice(
+                    instrumentation,
+                    context.getDisplay(),
+                    R.raw.test_touchscreen_register,
+                    InputDevice.SOURCE_TOUCHSCREEN,
+                    true /* useDisplaySize */);
+                        UinputTouchDevice stylus = new UinputTouchDevice(
+                            instrumentation,
+                            context.getDisplay(),
+                            R.raw.test_capacitive_stylus_register,
+                            InputDevice.SOURCE_STYLUS,
+                            true /* useDisplaySize */)) {
+
+                String expectedRotation = "0";
+                if (!expectedRotation.equals(initialUserRotation)) {
+                    // Set device-default rotation for UinputTouchDevice to work as expected.
+                    TestUtils.setLockedRotation(displayId, expectedRotation);
+                    waitUntilActivityReadyForInput((Activity) context);
+                }
+
+                expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
+                notExpectEvent(
+                        stream,
+                        editorMatcher("onStartInputView", focusedMarker),
+                        NOT_EXPECT_TIMEOUT);
+
+                addVirtualStylusIdForTestSession();
+                final int touchSlop = getTouchSlop();
+                int startX = focusedEditText.getWidth() / 2;
+                final int startY = 2 * touchSlop;
+                int endX = startX;
+                int endY = focusedEditText.getHeight() + 2 * touchSlop;
+                final int number = 5;
+
+                // set a longer idle-timeout for handwriting session.
+                assertTrue(expectCommand(
+                        stream, imeSession.callSetStylusHandwritingTimeout(TIMEOUT * 2),
+                        TIMEOUT).getReturnBooleanValue());
+                TestUtils.injectStylusDownEvent(stylus, focusedEditText, startX, startY);
+                TestUtils.injectStylusMoveEvents(stylus, focusedEditText, startX, startY,
+                        endX, endY, number);
+
+                // Handwriting should start on the focused EditText.
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", focusedMarker),
+                        TIMEOUT);
+
+                // Set IME stylus Ink view to listen for ACTION_UP MotionEvent
+                assertTrue(expectCommand(
+                        stream,
+                        imeSession.callSetStylusHandwritingInkView(),
+                        TIMEOUT).getReturnBooleanValue());
+
+                TestUtils.injectStylusUpEvent(stylus);
+                waitForStylusAction(MotionEvent.ACTION_UP, stream, imeSession, endX, endY);
+
+                // Finger tap on unfocused editor.
+                TestUtils.injectFingerEventOnViewCenter(
+                        touch, unfocusedEditText, MotionEvent.ACTION_DOWN);
+                TestUtils.injectFingerEventOnViewCenter(
+                        touch, unfocusedEditText, MotionEvent.ACTION_UP);
+
+                // Finger tap should passthrough and unfocused editor should steal focus.
+                TestUtils.waitOnMainUntil(unfocusedEditText::hasFocus,
+                        TIMEOUT, "unfocusedEditText should gain focus on finger tap");
+
+                // reset focus back to focusedEditText.
+                focusedEditText.post(focusedEditText::requestFocus);
+
+                // Inject a lot of stylus events async.
+                TestUtils.injectStylusDownEvent(stylus, focusedEditText, startX, startY);
+                TestUtils.injectStylusMoveEvents(stylus, focusedEditText, startX, startY,
+                        endX, endY, number);
+                // Set IME stylus Ink view to listen for ACTION_MOVE MotionEvents.
+                // (This can only be set on Handwriting window, which exists for the duration of
+                // session).
+                assertTrue(expectCommand(
+                        stream,
+                        imeSession.callSetStylusHandwritingInkView(),
+                        TIMEOUT).getReturnBooleanValue());
+                // After handwriting has started, inject another ACTION_MOVE so we receive that on
+                // InkView.
+                TestUtils.injectStylusMoveEvents(stylus, focusedEditText, endX, endY,
+                        endX, endY, number);
+                waitForStylusAction(MotionEvent.ACTION_MOVE, stream, imeSession, endX, endY);
+
+                // Finger tap on unfocused editor while stylus is still injecting events.
+                TestUtils.injectFingerEventOnViewCenter(
+                        touch, unfocusedEditText, MotionEvent.ACTION_DOWN);
+                TestUtils.injectFingerEventOnViewCenter(
+                        touch, unfocusedEditText, MotionEvent.ACTION_UP);
+                // Finger tap should be ignored and unfocused editor shouldn't steal focus.
+                TestUtils.waitOnMainUntil(() -> !unfocusedEditText.hasFocus(),
+                        TIMEOUT_1_S, "Finger tap on unfocusedEditText should be ignored");
+                TestUtils.injectStylusUpEvent(stylus);
+
+                notExpectEvent(
+                        stream,
+                        editorMatcher("finishStylusHandwriting", unfocusedMarker),
+                        NOT_EXPECT_TIMEOUT);
+            } finally {
+                imeSession.callFinishStylusHandwriting();
+                TestUtils.setRotation(displayId, initialUserRotation);
+            }
+        }
+    }
+
+    // wait for stylus action to be delivered to IME.
+    private void waitForStylusAction(
+            int action, ImeEventStream stream, MockImeSession imeSession, int x, int y)
+            throws TimeoutException {
+        long elapsedMs = 0;
+        int sleepDurationMs = 50;
+        while (elapsedMs < TIMEOUT_1_S) {
+            final ArrayList<MotionEvent> capturedBatchedEvents =
+                    expectCommand(stream, imeSession.callGetStylusHandwritingEvents(), TIMEOUT)
+                            .getReturnParcelableArrayListValue();
+            assertNotNull(capturedBatchedEvents);
+            assertFalse("captured events shouldn't be empty", capturedBatchedEvents.isEmpty());
+
+            MotionEvent lastEvent = capturedBatchedEvents.get(capturedBatchedEvents.size() - 1);
+            for (MotionEvent event : capturedBatchedEvents) {
+                if (lastEvent.getAction() == action && event.getX() == x && event.getY() == y) {
+                    break;
+                }
+            }
+
+            elapsedMs += sleepDurationMs;
+            try {
+                Thread.sleep(sleepDurationMs);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void waitUntilActivityReadyForInput(Activity activity) {
+        // If we requested an orientation change, just waiting for the window to be visible is not
+        // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
+        // to process them before making sure the window is visible.
+        try {
+            TestUtils.waitUntilActivityReadyForInputInjection(
+                    activity, StylusHandwritingTest.this.getClass().getName(),
+                    "test: " + StylusHandwritingTest.this.mTestName.getMethodName()
+                            + ", virtualDisplayId=" + activity.getDisplayId()
+            );
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 

@@ -189,7 +189,7 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       logging.debug(
           'Supported video profiles and ID: %s', supported_video_qualities)
       target_preview_size, _ = (
-          video_processing_utils.get_lowest_preview_video_size(
+          video_processing_utils.get_lowest_common_preview_video_size(
               supported_preview_sizes, supported_video_qualities, _MIN_SIZE))
       logging.debug('target_preview_size: %s', target_preview_size)
 

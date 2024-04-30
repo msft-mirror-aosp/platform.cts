@@ -29,6 +29,19 @@ import java.util.regex.Pattern;
  */
 public class NativeDeviceInfo extends DeviceInfo {
 
+    private void collectMGLRU(ITestDevice device, HostInfoStore store) throws Exception {
+        CommandResult commandResult = device.executeShellV2Command(
+                "cat /sys/kernel/mm/lru_gen/enabled");
+
+        if (commandResult.getExitCode() == 0) {
+            store.addResult("mglru_enabled", Integer.decode(commandResult.getStdout().trim()));
+        } else if (commandResult.getStderr().contains("No such file")) {
+            store.addResult("mglru_enabled", -1);
+        } else if (commandResult.getStderr().contains("Permission denied")) {
+            store.addResult("mglru_enabled", -2);
+        }
+    }
+
     @Override
     protected void collectDeviceInfo(HostInfoStore store) throws Exception {
         ITestDevice device = getDevice();
@@ -77,5 +90,7 @@ public class NativeDeviceInfo extends DeviceInfo {
             allocatorName += "_lowmemory";
         }
         store.addResult("allocator", allocatorName);
+
+        collectMGLRU(device, store);
     }
 }

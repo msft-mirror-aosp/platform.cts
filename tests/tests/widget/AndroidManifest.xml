@@ -39,7 +39,8 @@
 
         <activity android:name="android.widget.cts.EmptyCtsActivity"
              android:label="EmptyCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -57,7 +58,8 @@
         </activity>
         <activity android:name="android.widget.cts.TextViewMouseInteractionActivity"
              android:label="TextViewMouseInteractionActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -66,7 +68,8 @@
 
         <activity android:name="android.widget.cts.AbsoluteLayoutCtsActivity"
              android:label="AbsoluteLayoutCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -75,7 +78,8 @@
 
         <activity android:name="android.widget.cts.TwoLineListItemCtsActivity"
              android:label="TwoLineListItemCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -84,7 +88,8 @@
 
         <activity android:name="android.widget.cts.ViewFlipperCtsActivity"
              android:label="ViewFlipperCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -93,7 +98,8 @@
 
         <activity android:name="android.widget.cts.HorizontalScrollViewCtsActivity"
              android:label="HorizontalScrollViewCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -102,7 +108,8 @@
 
         <activity android:name="android.widget.cts.SlidingDrawerCtsActivity"
              android:label="SlidingDrawerCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -111,7 +118,8 @@
 
         <activity android:name="android.widget.cts.DigitalClockCtsActivity"
              android:label="DigitalClockCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -120,7 +128,8 @@
 
         <activity android:name="android.widget.cts.ImageViewCtsActivity"
              android:label="ImageViewCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -129,7 +138,8 @@
 
         <activity android:name="android.widget.cts.ImageSwitcherCtsActivity"
              android:label="ImageSwitcherCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -138,7 +148,8 @@
 
         <activity android:name="android.widget.cts.TextSwitcherCtsActivity"
              android:label="TextSwitcherCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -147,7 +158,8 @@
 
         <activity android:name="android.widget.cts.SwitchCtsActivity"
              android:label="SwitchCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -175,9 +187,9 @@
         </activity>
 
         <activity android:name="android.widget.cts.ToolbarWithMarginsCtsActivity"
-             android:theme="@android:style/Theme.Material.Light.NoActionBar"
              android:label="ToolbarWithMarginsCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -186,7 +198,8 @@
 
         <activity android:name="android.widget.cts.ActionMenuViewCtsActivity"
              android:label="ActionMenuViewCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -205,7 +218,8 @@
 
         <activity android:name="android.widget.cts.ScrollViewCtsActivity"
              android:label="ScrollViewCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -214,7 +228,8 @@
 
         <activity android:name="android.widget.cts.FrameLayoutCtsActivity"
              android:label="FrameLayoutCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -223,7 +238,8 @@
 
         <activity android:name="android.widget.cts.LinearLayoutCtsActivity"
              android:label="LinearLayoutCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -232,7 +248,8 @@
 
         <activity android:name="android.widget.cts.GridLayoutCtsActivity"
              android:label="GridLayoutCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -241,7 +258,8 @@
 
         <activity android:name="android.widget.cts.LayoutDirectionCtsActivity"
              android:label="LayoutDirectionCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -250,7 +268,8 @@
 
         <activity android:name="android.widget.cts.AbsSeekBarCtsActivity"
              android:label="AbsSeekBarCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -259,7 +278,8 @@
 
         <activity android:name="android.widget.cts.ProgressBarCtsActivity"
              android:label="ProgressBarCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -268,7 +288,8 @@
 
         <activity android:name="android.widget.cts.ChronometerCtsActivity"
              android:label="ChronometerCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -277,7 +298,8 @@
 
         <activity android:name="android.widget.cts.MediaControllerCtsActivity"
              android:label="MediaControllerCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -286,7 +308,8 @@
 
         <activity android:name="android.widget.cts.RatingBarCtsActivity"
              android:label="RatingBarCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -295,7 +318,8 @@
 
         <activity android:name="android.widget.cts.RemoteViewsCtsActivity"
              android:label="RemoteViewsCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -304,7 +328,8 @@
 
         <activity android:name="android.widget.cts.ExpandableListBasic"
              android:label="ExpandableListBasic"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -313,7 +338,8 @@
 
         <activity android:name="android.widget.cts.ExpandableList"
              android:label="ExpandableList"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -322,7 +348,8 @@
 
         <activity android:name="android.widget.cts.CtsActivity"
              android:label="CtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -331,7 +358,8 @@
 
         <activity android:name="android.widget.cts.ExpandableListWithHeaders"
              android:label="ExpandableListWithHeaders"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -340,7 +368,8 @@
 
         <activity android:name="android.widget.cts.GalleryCtsActivity"
              android:label="GalleryCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -360,7 +389,8 @@
 
         <activity android:name="android.widget.cts.PopupMenuCtsActivity"
              android:label="PopupMenuCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -390,7 +420,8 @@
 
         <activity android:name="android.widget.cts.ListViewFixedCtsActivity"
              android:label="ListViewFixedCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -401,7 +432,8 @@
              android:label="TextClockCtsActivity"
              android:screenOrientation="nosensor"
              android:windowSoftInputMode="stateAlwaysHidden"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -424,7 +456,8 @@
                   android:label="TextViewFontScalingActivity"
                   android:screenOrientation="locked"
                   android:exported="true"
-                  android:windowSoftInputMode="stateAlwaysHidden">
+                  android:windowSoftInputMode="stateAlwaysHidden"
+                  android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -435,7 +468,8 @@
                   android:label="TextViewHandwritingCtsActivity"
                   android:screenOrientation="locked"
                   android:exported="true"
-                  android:windowSoftInputMode="stateAlwaysHidden">
+                  android:windowSoftInputMode="stateAlwaysHidden"
+                  android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -456,7 +490,8 @@
 
         <activity android:name="android.widget.cts.DialerFilterCtsActivity"
              android:label="DialerFilterCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -465,7 +500,8 @@
 
         <activity android:name="android.widget.cts.MultiAutoCompleteTextViewCtsActivity"
              android:label="MultiAutoCompleteTextView Test Activity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -475,7 +511,8 @@
         <activity android:name="android.widget.cts.VideoViewCtsActivity"
              android:configChanges="keyboardHidden|orientation|screenSize"
              android:label="VideoViewCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -486,7 +523,8 @@
              android:label="AutoCompleteCtsActivity"
              android:screenOrientation="nosensor"
              android:windowSoftInputMode="stateAlwaysHidden"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -495,7 +533,8 @@
 
         <activity android:name="android.widget.cts.ViewAnimatorCtsActivity"
              android:label="ViewAnimatorCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -504,7 +543,8 @@
 
         <activity android:name="android.widget.cts.GridViewCtsActivity"
              android:label="GridViewCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -513,7 +553,8 @@
 
         <activity android:name="android.widget.cts.RelativeLayoutCtsActivity"
              android:label="RelativeLayoutCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -522,7 +563,8 @@
 
         <activity android:name="android.widget.cts.FrameLayoutCtsActivity"
              android:label="FrameLayoutCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -531,7 +573,8 @@
 
         <activity android:name="android.widget.cts.AdapterViewCtsActivity"
              android:label="AdapterViewCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -540,11 +583,13 @@
 
         <activity android:name="android.widget.cts.CheckedTextViewCtsActivity"
              android:label="CheckedTextViewCtsActivity"
-             android:exported="true"/>
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"/>
 
         <activity android:name="android.widget.cts.TableCtsActivity"
              android:label="TableCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -553,7 +598,8 @@
 
         <activity android:name="android.widget.cts.TabHostCtsActivity"
              android:label="TabHostCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -572,7 +618,8 @@
 
         <activity android:name="android.widget.cts.DatePickerDialogCtsActivity"
              android:label="DatePickerDialogCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -581,7 +628,8 @@
 
         <activity android:name="android.widget.cts.CalendarViewCtsActivity"
              android:label="CalendarViewCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -590,7 +638,8 @@
 
         <activity android:name="android.widget.cts.DatePickerCtsActivity"
              android:label="DatePickerCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -609,7 +658,8 @@
 
         <activity android:name="android.widget.cts.ImageButtonCtsActivity"
              android:label="ImageButtonCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -618,7 +668,8 @@
 
         <activity android:name="android.widget.cts.NumberPickerCtsActivity"
              android:label="NumberPickerCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -637,7 +688,8 @@
 
         <activity android:name="android.widget.cts.CompoundButtonCtsActivity"
              android:label="CompoundButtonCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -656,7 +708,8 @@
 
         <activity android:name="android.widget.cts.ToggleButtonCtsActivity"
              android:label="ToggleButtonCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -665,7 +718,8 @@
 
         <activity android:name="android.widget.cts.TimePickerCtsActivity"
              android:label="TimePickerCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -674,7 +728,8 @@
 
         <activity android:name="android.widget.cts.BackwardNavigationCtsActivity"
              android:label="BackwardNavigationCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -683,7 +738,8 @@
 
         <activity android:name="android.widget.cts.RadioGroupCtsActivity"
              android:label="RadioGroupCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -708,7 +764,8 @@
              android:launchMode="singleTask"
              android:alwaysRetainTaskState="true"
              android:configChanges="orientation|keyboardHidden"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -719,7 +776,8 @@
         </activity>
 
         <activity android:name="android.widget.cts.PointerIconCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -738,7 +796,8 @@
 
         <activity android:name="android.widget.cts.inline.InlineContentViewCtsActivity"
              android:label="InlineContentViewCtsActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>

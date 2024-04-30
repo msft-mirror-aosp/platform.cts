@@ -992,7 +992,7 @@ def get_patch_from_aruco_markers(
   for corner, marker_id in zip(aruco_marker_corners, aruco_marker_ids):
     corner = corner.reshape(4, 2)  # opencv returns 3D array
     index = marker_id[0]
-    # Roll the array 4 times to align with the coordinates of the corner adjacent
+    # Roll the array 4x to align with the coordinates of the corner adjacent
     # to the corner of the rectangle
     # Marker id: 0 => index 2 coordinates
     # Marker id: 1 => index 3 coordinates
