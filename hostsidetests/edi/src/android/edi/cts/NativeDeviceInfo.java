@@ -29,6 +29,38 @@ import java.util.regex.Pattern;
  */
 public class NativeDeviceInfo extends DeviceInfo {
 
+    private void collectMemCG(ITestDevice device, HostInfoStore store) throws Exception {
+        CommandResult commandResult = device.executeShellV2Command("grep memory /proc/cgroups");
+
+        store.startGroup("memcg");
+        if (commandResult.getExitCode() == 0) {
+            String[] tokens = commandResult.getStdout().split("\\s+");
+            boolean memcg_enabled = tokens[3].equals("1");
+            store.addResult("enabled", memcg_enabled);
+            if (memcg_enabled) store.addResult("version", tokens[1].equals("0") ? "2" : "1");
+        } else if (commandResult.getExitCode() == 1) { // "memory" not found by grep
+            store.addResult("version", -3);
+        } else if (commandResult.getStderr().contains("No such file")) {
+            store.addResult("version", -1);
+        } else if (commandResult.getStderr().contains("Permission denied")) {
+            store.addResult("version", -2);
+        }
+        store.endGroup();
+    }
+
+    private void collectMGLRU(ITestDevice device, HostInfoStore store) throws Exception {
+        CommandResult commandResult = device.executeShellV2Command(
+                "cat /sys/kernel/mm/lru_gen/enabled");
+
+        if (commandResult.getExitCode() == 0) {
+            store.addResult("mglru_enabled", Integer.decode(commandResult.getStdout().trim()));
+        } else if (commandResult.getStderr().contains("No such file")) {
+            store.addResult("mglru_enabled", -1);
+        } else if (commandResult.getStderr().contains("Permission denied")) {
+            store.addResult("mglru_enabled", -2);
+        }
+    }
+
     @Override
     protected void collectDeviceInfo(HostInfoStore store) throws Exception {
         ITestDevice device = getDevice();
@@ -77,5 +109,8 @@ public class NativeDeviceInfo extends DeviceInfo {
             allocatorName += "_lowmemory";
         }
         store.addResult("allocator", allocatorName);
+
+        collectMemCG(device, store);
+        collectMGLRU(device, store);
     }
 }
