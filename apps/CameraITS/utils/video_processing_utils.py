@@ -26,7 +26,6 @@ import error_util
 import image_processing_utils
 
 
-AREA_720P_VIDEO = 1280*720
 COLORSPACE_HDR = 'bt2020'
 HR_TO_SEC = 3600
 INDEX_FIRST_SUBGROUP = 1
@@ -64,43 +63,6 @@ VIDEO_QUALITY_SIZE = {
     'QVGA': '320x240',
     'QCIF': '176x144',
 }
-
-
-def get_720p_or_above_size(supported_preview_sizes):
-  """Returns the smallest size above or equal to 720p in preview and video.
-
-  If the largest preview size is under 720P, returns the largest value.
-
-  Args:
-    supported_preview_sizes: list; preview sizes.
-      e.g. ['1920x960', '1600x1200', '1920x1080']
-  Returns:
-    smallest size >= 720p video format
-  """
-
-  size_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
-  smallest_area = float('inf')
-  smallest_720p_or_above_size = ''
-  largest_supported_preview_size = ''
-  largest_area = 0
-  for size in supported_preview_sizes:
-    area = size_to_area(size)
-    if smallest_area > area >= AREA_720P_VIDEO:
-      smallest_area = area
-      smallest_720p_or_above_size = size
-    else:
-      if area > largest_area:
-        largest_area = area
-        largest_supported_preview_size = size
-
-  if largest_area > AREA_720P_VIDEO:
-    logging.debug('Smallest 720p or above size: %s',
-                  smallest_720p_or_above_size)
-    return smallest_720p_or_above_size
-  else:
-    logging.debug('Largest supported preview size: %s',
-                  largest_supported_preview_size)
-    return largest_supported_preview_size
 
 
 def get_lowest_common_preview_video_size(
