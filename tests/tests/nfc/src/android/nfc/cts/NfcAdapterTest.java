@@ -97,12 +97,8 @@ public class NfcAdapterTest {
 
     @Test
     public void testAddNfcUnlockHandler() {
-        try {
             NfcAdapter adapter = getDefaultAdapter();
             adapter.addNfcUnlockHandler(new CtsNfcUnlockHandler(), new String[]{"IsoDep"});
-        } catch (Exception e) {
-            throw new IllegalStateException("Unexpected Exception: " + e);
-        }
     }
 
     @Test
@@ -123,24 +119,16 @@ public class NfcAdapterTest {
 
     @Test
     public void testDisableForegroundDispatch() {
-        try {
             NfcAdapter adapter = getDefaultAdapter();
             Activity activity = createAndResumeActivity();
             adapter.disableForegroundDispatch(activity);
-        } catch (Exception e) {
-            throw new IllegalStateException("Unexpected Exception: " + e);
-        }
     }
 
     @Test
     public void testDisableReaderMode() {
-        try {
             NfcAdapter adapter = getDefaultAdapter();
             Activity activity = createAndResumeActivity();
             adapter.disableReaderMode(activity);
-        } catch (Exception e) {
-            throw new IllegalStateException("Unexpected Exception: " + e);
-        }
     }
 
     @Test
@@ -151,8 +139,7 @@ public class NfcAdapterTest {
     }
 
     @Test
-    public void testEnableForegroundDispatch() {
-        try {
+    public void testEnableForegroundDispatch() throws RemoteException {
             NfcAdapter adapter = getDefaultAdapter();
             Activity activity = createAndResumeActivity();
             Intent intent = new Intent(ApplicationProvider.getApplicationContext(),
@@ -164,21 +151,14 @@ public class NfcAdapterTest {
             doNothing().when(mService).setForegroundDispatch(any(PendingIntent.class),
                 any(IntentFilter[].class), any(TechListParcel.class));
             adapter.enableForegroundDispatch(activity, pendingIntent, null, techLists);
-        } catch (Exception e) {
-            throw new IllegalStateException("Unexpected Exception: " + e);
-        }
     }
 
     @Test
     public void testEnableReaderMode() {
-        try {
             NfcAdapter adapter = getDefaultAdapter();
             Activity activity = createAndResumeActivity();
             adapter.enableReaderMode(activity, new CtsReaderCallback(),
                 NfcAdapter.FLAG_READER_NFC_A, new Bundle());
-        } catch (Exception e) {
-            throw new IllegalStateException("Unexpected Exception: " + e);
-        }
     }
 
     @Test
@@ -299,19 +279,14 @@ public class NfcAdapterTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_SET_DISCOVERY_TECH)
     public void testResetDiscoveryTechnology() {
-        try {
             NfcAdapter adapter = getDefaultAdapter();
             Activity activity = createAndResumeActivity();
             adapter.resetDiscoveryTechnology(activity);
-        } catch (Exception e) {
-            throw new IllegalStateException("Unexpected Exception: " + e);
-        }
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_SET_DISCOVERY_TECH)
     public void testSetDiscoveryTechnology() {
-        try {
             NfcAdapter adapter = getDefaultAdapter();
             Activity activity = createAndResumeActivity();
             adapter.setDiscoveryTechnology(activity,
@@ -323,9 +298,6 @@ public class NfcAdapterTest {
             adapter.setDiscoveryTechnology(activity, NfcAdapter.FLAG_READER_DISABLE,
                     NfcAdapter.FLAG_LISTEN_KEEP);
             adapter.resetDiscoveryTechnology(activity);
-        } catch (Exception e) {
-            throw new IllegalStateException("Unexpected Exception: " + e);
-        }
     }
 
     @Test

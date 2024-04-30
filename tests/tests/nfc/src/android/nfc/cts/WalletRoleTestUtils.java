@@ -20,11 +20,14 @@ import static android.Manifest.permission.MANAGE_DEFAULT_APPLICATIONS;
 import static android.Manifest.permission.MANAGE_ROLE_HOLDERS;
 import static android.Manifest.permission.OBSERVE_ROLE_HOLDERS;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.app.role.OnRoleHoldersChangedListener;
 import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.res.Resources;
+import android.os.UserManager;
 import android.text.TextUtils;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -136,6 +139,8 @@ public final class WalletRoleTestUtils {
     }
 
     static void runWithRole(Context context, String roleHolder, Runnable runnable) {
+        final UserManager userManager = context.getSystemService(UserManager.class);
+        assumeFalse(userManager.isHeadlessSystemUserMode());
         try {
             runWithRoleNone(context, () -> {}); //Remove the role holder first to trigger callbacks
             RoleManager roleManager = context.getSystemService(RoleManager.class);
