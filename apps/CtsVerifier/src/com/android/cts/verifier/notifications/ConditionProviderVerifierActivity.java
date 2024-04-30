@@ -54,6 +54,8 @@ public class ConditionProviderVerifierActivity extends InteractiveVerifierActivi
     protected static final String PREFS = "zen_prefs";
     private static final String BROADCAST_RULE_NAME = "123";
 
+    private ZenPolicy mDefaultPolicy;
+
     @Override
     protected int getTitleResource() {
         return R.string.cp_test;
@@ -141,6 +143,19 @@ public class ConditionProviderVerifierActivity extends InteractiveVerifierActivi
         protected void test() {
             if (MockConditionProvider.getInstance().isConnected()
                     && MockConditionProvider.getInstance().isBound()) {
+                // Get a hold of the default policy by creating a temporary rule. This will be used
+                // in upcoming comparisons.
+                if (android.app.Flags.modesApi()) {
+                    AutomaticZenRule dummyRule =
+                            createRule("Rule", "value", INTERRUPTION_FILTER_PRIORITY);
+                    String ruleId = mNm.addAutomaticZenRule(dummyRule);
+                    try {
+                        dummyRule = mNm.getAutomaticZenRule(ruleId);
+                        mDefaultPolicy = dummyRule.getZenPolicy();
+                    } finally {
+                        mNm.removeAutomaticZenRule(ruleId);
+                    }
+                }
                 status = PASS;
                 next();
             } else {
@@ -280,7 +295,7 @@ public class ConditionProviderVerifierActivity extends InteractiveVerifierActivi
                         && ruleToCreate.getInterruptionFilter() == rule.getInterruptionFilter()
                         && Objects.equals(ruleToCreate.getConfigurationActivity(),
                         rule.getConfigurationActivity())
-                        && Objects.equals(ruleToCreate.getZenPolicy(), rule.getZenPolicy())) {
+                        && compareZenPolicies(ruleToCreate.getZenPolicy(), rule.getZenPolicy())) {
                     status = PASS;
                 } else {
                     logFail("created rule doesn't equal actual rule");
@@ -372,29 +387,30 @@ public class ConditionProviderVerifierActivity extends InteractiveVerifierActivi
 
         @Override
         protected void test() {
-            ZenPolicy.Builder builder = new ZenPolicy.Builder().allowAlarms(true);
+            ZenPolicy policy = new ZenPolicy.Builder().allowReminders(false).allowAlarms(true)
+                    .build();
 
             // update rule with zen policy
             AutomaticZenRule updated1 = mNm.getAutomaticZenRule(id1);
             updated1.setName("AfterUpdate1");
             updated1.setConditionId(MockConditionProvider.toConditionId("afterValue1"));
             updated1.setInterruptionFilter(INTERRUPTION_FILTER_PRIORITY);
-            updated1.setZenPolicy(builder.build());
+            updated1.setZenPolicy(policy);
 
             AutomaticZenRule updated2 = mNm.getAutomaticZenRule(id2);
             updated2.setName("AfterUpdate2");
             updated2.setConditionId(MockConditionProvider.toConditionId("afterValue2"));
             updated2.setInterruptionFilter(INTERRUPTION_FILTER_PRIORITY);
-            updated2.setZenPolicy(builder.build());
+            updated2.setZenPolicy(policy);
 
             try {
                 boolean success1 = mNm.updateAutomaticZenRule(id1, updated1);
                 boolean success2 = mNm.updateAutomaticZenRule(id2, updated2);
                 if (success1 && success2) {
                     boolean rule1UpdateSuccess =
-                            updated1.equals(mNm.getAutomaticZenRule(id1));
+                            compareRules(updated1, mNm.getAutomaticZenRule(id1));
                     boolean rule2UpdateSuccess =
-                            updated2.equals(mNm.getAutomaticZenRule(id2));
+                            compareRules(updated2, mNm.getAutomaticZenRule(id2));
                     if (rule1UpdateSuccess && rule2UpdateSuccess) {
                         status = PASS;
                     } else {
@@ -514,13 +530,14 @@ public class ConditionProviderVerifierActivity extends InteractiveVerifierActivi
                     && ruleToCreate1.getOwner().equals(queriedRule1.getOwner())
                     && ruleToCreate1.getConditionId().equals(queriedRule1.getConditionId())
                     && ruleToCreate1.isEnabled() == queriedRule1.isEnabled()
-                    && Objects.equals(ruleToCreate1.getZenPolicy(), queriedRule1.getZenPolicy())
+                    && compareZenPolicies(ruleToCreate1.getZenPolicy(), queriedRule1.getZenPolicy())
                     && queriedRule2 != null
                     && ruleToCreate2.getName().equals(queriedRule2.getName())
                     && ruleToCreate2.getOwner().equals(queriedRule2.getOwner())
                     && ruleToCreate2.getConditionId().equals(queriedRule2.getConditionId())
                     && ruleToCreate2.isEnabled() == queriedRule2.isEnabled()
-                    && Objects.equals(ruleToCreate2.getZenPolicy(), queriedRule2.getZenPolicy())) {
+                    && compareZenPolicies(ruleToCreate2.getZenPolicy(),
+                            queriedRule2.getZenPolicy())) {
                 status = PASS;
             } else {
                 logFail();
@@ -579,7 +596,8 @@ public class ConditionProviderVerifierActivity extends InteractiveVerifierActivi
                 if (!compareRules(createdRule, rule1) && !compareRules(createdRule, rule2)) {
                     logFail();
                     status = FAIL;
-                    break;
+                    next();
+                    return;
                 }
             }
             status = PASS;
@@ -1078,7 +1096,22 @@ public class ConditionProviderVerifierActivity extends InteractiveVerifierActivi
                 && rule1.getInterruptionFilter() == rule2.getInterruptionFilter()
                 && Objects.equals(rule1.getConditionId(), rule2.getConditionId())
                 && Objects.equals(rule1.getOwner(), rule2.getOwner())
-                && Objects.equals(rule1.getZenPolicy(), rule2.getZenPolicy());
+                && compareZenPolicies(rule1.getZenPolicy(), rule2.getZenPolicy());
+    }
+
+    private boolean compareZenPolicies(ZenPolicy a, ZenPolicy b) {
+        if (android.app.Flags.modesApi()) {
+            if (mDefaultPolicy == null) {
+                throw new IllegalStateException(
+                        "mDefaultPolicy should've been loaded by IsEnabledTest, but it's null");
+            }
+            // With MODES_API, partially specified policies are "completed" with the default policy,
+            // so compare after setting any unset fields to their defaults.
+            return Objects.equals(mDefaultPolicy.overwrittenWith(a),
+                    mDefaultPolicy.overwrittenWith(b));
+        } else {
+            return Objects.equals(a, b);
+        }
     }
 
     protected View createSettingsItem(ViewGroup parent, int messageId) {
