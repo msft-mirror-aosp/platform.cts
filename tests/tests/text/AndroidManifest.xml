@@ -43,8 +43,8 @@
         <activity android:name="android.text.method.cts.KeyListenerCtsActivity"
              android:label="KeyListenerCtsActivity"
              android:screenOrientation="nosensor"
-             android:theme="@style/OptOutEdgeToEdgeEnforcement"/>
-
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
+             android:exported="true"/>
         <activity android:name="android.text.method.cts.CtsActivity"
              android:label="CtsActivity"
              android:screenOrientation="nosensor"
