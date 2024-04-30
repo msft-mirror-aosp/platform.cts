@@ -29,7 +29,7 @@ import camera_properties_utils
 import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
-import preview_stabilization_utils
+import preview_processing_utils
 import video_processing_utils
 
 _AE_RTOL = 0.01  # 1%
@@ -338,13 +338,12 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         self.tablet.adb.shell(
             f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
-      preview_test_size = preview_stabilization_utils.get_max_preview_test_size(
+      preview_test_size = preview_processing_utils.get_max_preview_test_size(
           cam, self.camera_id)
       cam.do_3a()
 
       # dynamic preview recording
-      # pylint: disable=line-too-long
-      recording_obj = preview_stabilization_utils.collect_preview_data_with_zoom(
+      recording_obj = preview_processing_utils.collect_preview_data_with_zoom(
           cam, preview_test_size, _ZOOM_RANGE_UW_W[0],
           _ZOOM_RANGE_UW_W[1], _ZOOM_STEP, _RECORDING_DURATION)
 
