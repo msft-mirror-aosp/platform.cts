@@ -103,7 +103,7 @@ def get_720p_or_above_size(supported_preview_sizes):
     return largest_supported_preview_size
 
 
-def get_lowest_preview_video_size(
+def get_lowest_common_preview_video_size(
     supported_preview_sizes, supported_video_qualities, min_area):
   """Returns the common, smallest size above minimum in preview and video.
 

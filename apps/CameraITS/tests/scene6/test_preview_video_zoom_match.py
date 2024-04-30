@@ -173,7 +173,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
       logging.debug(
           'Supported video profiles and ID: %s', supported_video_qualities)
       common_size, common_video_quality = (
-          video_processing_utils.get_lowest_preview_video_size(
+          video_processing_utils.get_lowest_common_preview_video_size(
               supported_preview_sizes, supported_video_qualities,
               _MIN_RESOLUTION_AREA
           )
