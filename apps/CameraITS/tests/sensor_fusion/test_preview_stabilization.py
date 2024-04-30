@@ -21,7 +21,7 @@ from mobly import test_runner
 import its_base_test
 import camera_properties_utils
 import its_session_utils
-import preview_stabilization_utils
+import preview_processing_utils
 import video_processing_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -128,7 +128,7 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
       stabilization_result = {}
       for preview_size in preview_sizes_to_test:
         for zoom_ratio in test_zoom_ratios:
-          recording_obj = preview_stabilization_utils.collect_data(
+          recording_obj = preview_processing_utils.collect_data(
               cam, self.tablet_device, preview_size,
               stabilize=True, rot_rig=rot_rig, zoom_ratio=zoom_ratio)
 
@@ -142,7 +142,7 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
 
           # Verify stabilization was applied to preview stream
           stabilization_result[preview_size] = (
-              preview_stabilization_utils.verify_preview_stabilization(
+              preview_processing_utils.verify_preview_stabilization(
                   recording_obj, gyro_events, _NAME, log_path, facing,
                   zoom_ratio)
           )
