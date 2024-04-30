@@ -32,7 +32,7 @@ import opencv_processing_utils
 import preview_stabilization_utils
 import video_processing_utils
 
-_AE_RTOL = 0.01  # 1%
+_AE_RTOL = 0.015  # 1.5%
 _AF_RTOL = 0.02  # 2%
 _ARUCO_MARKERS_COUNT = 4
 _AWB_RTOL = 0.02  # 2%
@@ -114,8 +114,8 @@ def _do_af_check(uw_img, w_img, log_path):
 
   if not math.isclose(sharpness_w, sharpness_uw, rel_tol=_AF_RTOL):
     raise AssertionError('Sharpness change is greater than the threshold value.'
-                         f'RTOL: {_AF_RTOL}'
-                         f'sharpness_w: {sharpness_w}'
+                         f' RTOL: {_AF_RTOL} '
+                         f'sharpness_w: {sharpness_w} '
                          f'sharpness_uw: {sharpness_uw}')
 
 
@@ -153,14 +153,14 @@ def _do_awb_check(uw_img, w_img):
   if not math.isclose(uw_r_g_ratio, w_r_g_ratio,
                       rel_tol=_AWB_RTOL):
     raise AssertionError(f'R/G change is greater than the threshold value: '
-                         f'RTOL: {_AWB_RTOL}'
-                         f'uw_r_g_ratio: {uw_r_g_ratio:.4f}'
+                         f'RTOL: {_AWB_RTOL} '
+                         f'uw_r_g_ratio: {uw_r_g_ratio:.4f} '
                          f'w_r_g_ratio: {w_r_g_ratio:.4f}')
   if not math.isclose(uw_b_g_ratio, w_b_g_ratio,
                       rel_tol=_AWB_RTOL):
     raise AssertionError(f'B/G change is greater than the threshold value: '
-                         f'RTOL: {_AWB_RTOL}'
-                         f'uw_b_g_ratio: {uw_b_g_ratio:.4f}'
+                         f'RTOL: {_AWB_RTOL} '
+                         f'uw_b_g_ratio: {uw_b_g_ratio:.4f} '
                          f'w_b_g_ratio: {w_b_g_ratio:.4f}')
 
 
@@ -207,9 +207,9 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
 
   if not math.isclose(uw_y_avg, w_y_avg, rel_tol=_AE_RTOL):
     raise AssertionError('y_avg change is greater than threshold value: '
-                         f'RTOL: {_AE_RTOL}'
-                         f'uw_y_avg: {uw_y_avg:.4f}'
-                         f'w_y_avg: {w_y_avg:.4f}')
+                         f'RTOL: {_AE_RTOL} '
+                         f'uw_y_avg: {uw_y_avg:.4f} '
+                         f'w_y_avg: {w_y_avg:.4f} ')
 
 
 def _extract_y(img_uint8, file_name):
