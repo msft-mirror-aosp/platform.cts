@@ -20,7 +20,6 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.Intent;
 import android.os.Looper;
-import android.provider.Settings;
 
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
@@ -52,7 +51,7 @@ public class SplitScreenTestPlayerListener extends PlayerListener {
   public void onEventsMediaItemTransition(@NonNull Player player) {
     mActivity.mPlayer.createMessage((messageType, payload) -> {
           // Switch to split screen mode
-          Intent intent = new Intent(Settings.ACTION_SETTINGS);
+          Intent intent = new Intent(Intent.ACTION_MAIN);
           intent.addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT | Intent.FLAG_ACTIVITY_NEW_TASK);
           mActivity.startActivity(intent);
           mActivity.mConfiguredSplitScreenMode = true;
