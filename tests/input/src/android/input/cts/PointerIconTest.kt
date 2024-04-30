@@ -29,6 +29,7 @@ import android.graphics.Point
 import android.hardware.input.VirtualMouse
 import android.hardware.input.VirtualMouseConfig
 import android.hardware.input.VirtualMouseRelativeEvent
+import android.os.Environment
 import android.view.Display
 import android.view.InputDevice
 import android.view.MotionEvent
@@ -88,7 +89,7 @@ class PointerIconTest {
     val screenshotRule = ScreenshotTestRule(GoldenPathManager(
         InstrumentationRegistry.getInstrumentation().getContext(),
         ASSETS_PATH,
-        InstrumentationRegistry.getInstrumentation().targetContext.filesDir.absolutePath,
+        TEST_OUTPUT_PATH,
         PathConfig()
     ), disableIconPool = false)
 
@@ -223,6 +224,9 @@ class PointerIconTest {
     companion object {
         const val SCREENSHOT_DIFF_PERCENT = 0.01 // 1% total difference threshold
         const val ASSETS_PATH = "tests/input/assets"
+        val TEST_OUTPUT_PATH = Environment.getExternalStorageDirectory().absolutePath +
+                "/CtsInputTestCases/" +
+                PointerIconTest::class.java.simpleName
 
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
