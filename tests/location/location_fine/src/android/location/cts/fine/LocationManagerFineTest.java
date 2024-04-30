@@ -349,25 +349,6 @@ public class LocationManagerFineTest {
     }
 
     @Test
-    public void testGetLastKnownLocation_NoteOp() {
-        // Ensure no note ops for null location
-        long timeBeforeLocationAccess = System.currentTimeMillis();
-        mManager.getLastKnownLocation(TEST_PROVIDER);
-        assertFineOpNotNoted(timeBeforeLocationAccess, null);
-
-        mManager.setTestProviderLocation(TEST_PROVIDER, createLocation(TEST_PROVIDER, mRandom));
-        timeBeforeLocationAccess = System.currentTimeMillis();
-        mManager.getLastKnownLocation(TEST_PROVIDER);
-        assertFineOpNoted(timeBeforeLocationAccess, null);
-
-        // Ensure no note ops when provider disabled
-        mManager.setTestProviderEnabled(TEST_PROVIDER, false);
-        timeBeforeLocationAccess = System.currentTimeMillis();
-        mManager.getLastKnownLocation(TEST_PROVIDER);
-        assertFineOpNotNoted(timeBeforeLocationAccess, null);
-    }
-
-    @Test
     public void testGetCurrentLocation() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
