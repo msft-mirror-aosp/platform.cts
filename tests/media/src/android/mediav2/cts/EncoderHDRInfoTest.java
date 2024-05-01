@@ -97,7 +97,8 @@ public class EncoderHDRInfoTest extends CodecEncoderTestBase {
         // verify if the out fmt contains HDR Dynamic metadata as expected
         if (mTestDynamicMetadata && mOutputCount > 0) {
             validateHDRDynamicMetaData(bufferFormat,
-                    ByteBuffer.wrap(loadByteArrayFromString(HDR_DYNAMIC_INFO[mOutputCount - 1])));
+                    ByteBuffer.wrap(loadByteArrayFromString(HDR_DYNAMIC_INFO[mOutputCount - 1])),
+                    mMime);
         }
     }
 
