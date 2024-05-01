@@ -2023,11 +2023,13 @@ public class GlobalSearchSessionPlatformCtsTest {
             mContext = context;
         }
 
+        @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             Log.i(TAG, "Service got connected: " + componentName);
             mBlockingQueue.offer(service);
         }
 
+        @Override
         public void onServiceDisconnected(ComponentName componentName) {
             Log.e(TAG, "Service got disconnected: " + componentName);
         }

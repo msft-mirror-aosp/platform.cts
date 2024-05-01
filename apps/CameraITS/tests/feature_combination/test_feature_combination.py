@@ -22,7 +22,7 @@ import its_base_test
 import camera_properties_utils
 import capture_request_utils
 import its_session_utils
-import preview_stabilization_utils
+import preview_processing_utils
 import video_processing_utils
 
 _FPS_30_60 = (30, 60)
@@ -198,7 +198,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                   camera_properties_utils.STABILIZATION_MODE_PREVIEW):
                 is_stabilized = True
 
-              recording_obj = preview_stabilization_utils.collect_data(
+              recording_obj = preview_processing_utils.collect_data(
                   cam, self.tablet_device, preview_size, is_stabilized,
                   rot_rig=rot_rig, fps_range=fps_range, hlg10=hlg10)
 
@@ -232,7 +232,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               # Verify video stabilization
               if is_stabilized:
                 stabilization_result = (
-                    preview_stabilization_utils.verify_preview_stabilization(
+                    preview_processing_utils.verify_preview_stabilization(
                         recording_obj, gyro_events, _NAME, log_path, facing))
                 if stabilization_result['failure'] is not None:
                   failure_msg = (combination_name + ': ' +

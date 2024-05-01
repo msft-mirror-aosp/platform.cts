@@ -22,7 +22,7 @@ import its_base_test
 import camera_properties_utils
 import image_processing_utils
 import its_session_utils
-import preview_stabilization_utils
+import preview_processing_utils
 import video_processing_utils
 import zoom_capture_utils
 
@@ -70,7 +70,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                            zoom_capture_utils.OFFSET_RTOL)
 
       # get max preview size
-      preview_size = preview_stabilization_utils.get_max_preview_test_size(
+      preview_size = preview_processing_utils.get_max_preview_test_size(
           cam, self.camera_id)
       size = [int(x) for x in preview_size.split('x')]
       logging.debug('preview_size = %s', preview_size)
@@ -86,7 +86,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       # recording preview
       capture_results, file_list = (
-          preview_stabilization_utils.preview_over_zoom_range(
+          preview_processing_utils.preview_over_zoom_range(
               self.dut, cam, preview_size, z_min, z_max, z_step_size, log_path)
       )
 
@@ -135,6 +135,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                       str(test_data[test_data_index]))
         test_data_index = test_data_index + 1
 
+      its_session_utils.remove_frame_files(log_path)
       if not zoom_capture_utils.verify_zoom_results(
           test_data, size, z_max, z_min):
         raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')
