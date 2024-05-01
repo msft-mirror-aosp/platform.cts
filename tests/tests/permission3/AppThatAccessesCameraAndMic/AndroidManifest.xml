@@ -23,8 +23,10 @@
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <application android:label="CtsCameraMicAccess">
-        <activity android:name=".AccessCameraOrMicActivity"
-        android:exported="true">
+        <activity
+            android:name=".AccessCameraOrMicActivity"
+            android:theme="@style/AccessCameraOrMicActivityTheme"
+            android:exported="true">
             <intent-filter>
                 <action android:name="test.action.USE_CAMERA_OR_MIC" />
                 <category android:name="android.intent.category.DEFAULT" />
