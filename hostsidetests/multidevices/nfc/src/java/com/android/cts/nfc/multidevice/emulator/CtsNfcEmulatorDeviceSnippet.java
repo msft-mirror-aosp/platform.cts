@@ -424,6 +424,11 @@ public class CtsNfcEmulatorDeviceSnippet implements Snippet {
         }
     }
 
+    @Rpc(description = "Log info level message to device logcat")
+    public void logInfo(String message) {
+        Log.i(TAG, message);
+    }
+
     /** Creates a SnippetBroadcastReceiver that listens for when the specified action is received */
     private void registerSnippetBroadcastReceiver(
             String callbackId, String eventName, String action) {
