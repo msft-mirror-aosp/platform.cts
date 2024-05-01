@@ -35,9 +35,9 @@ _COLOR_CHECKER = {'BLACK': [0, 0, 0], 'RED': [1, 0, 0], 'GREEN': [0, 1, 0],
                   'BLUE': [0, 0, 1], 'MAGENTA': [1, 0, 1], 'CYAN': [0, 1, 1],
                   'YELLOW': [1, 1, 0], 'WHITE': [1, 1, 1]}
 _DELTA = 0.005  # crop on each edge of color bars
-_RAW_TOL = 0.001  # 1 DN in [0:1] (1/(1023-64)
-_RGB_VAR_TOL = 0.0039  # 1/255
-_RGB_MEAN_TOL = 0.1
+_RAW_ATOL = 0.001  # 1 DN in [0:1] (1/(1023-64)
+_RGB_VAR_ATOL = 0.0039  # 1/255
+_RGB_MEAN_ATOL = 0.1
 _TONEMAP_MAX = 0.5
 _YUV_H = 480
 _YUV_W = 640
@@ -111,13 +111,13 @@ def check_raw_pattern(img_raw):
     logging.debug('patch: %d, x_norm: %.3f, RAW means: %s',
                   n, x_norm, str(raw_means))
     for color in _COLOR_BARS:
-      if np.allclose(_COLOR_CHECKER[color], raw_means, atol=_RAW_TOL):
+      if np.allclose(_COLOR_CHECKER[color], raw_means, atol=_RAW_ATOL):
         color_match.append(color)
         logging.debug('%s match', color)
         break
       else:
         logging.debug('No match w/ %s: %s, ATOL: %.3f',
-                      color, str(_COLOR_CHECKER[color]), _RAW_TOL)
+                      color, str(_COLOR_CHECKER[color]), _RAW_ATOL)
   if set(color_match) != set(_COLOR_BARS):
     raise AssertionError(
         'RAW _COLOR_BARS test pattern does not have all colors')
@@ -170,20 +170,20 @@ def check_yuv_vs_raw(img_raw, img_yuv, name_with_log_path):
     yuv_means /= _TONEMAP_MAX  # Normalize to tonemap max
     yuv_vars = np.array(
         image_processing_utils.compute_image_variances(yuv_patch))
-    if not np.allclose(raw_means, yuv_means, atol=_RGB_MEAN_TOL):
+    if not np.allclose(raw_means, yuv_means, atol=_RGB_MEAN_ATOL):
       color_match_errs.append(
           f'means RAW: {raw_means}, RGB(norm): {np.round(yuv_means, 3)}, '
-          f'ATOL: {_RGB_MEAN_TOL}')
+          f'ATOL: {_RGB_MEAN_ATOL}')
       image_processing_utils.write_image(
           raw_patch, f'{name_with_log_path}_match_error_raw_{n}.jpg',
           apply_gamma=True)
       image_processing_utils.write_image(
           yuv_patch, f'{name_with_log_path}_match_error_yuv_{n}.jpg',
           apply_gamma=True)
-    if not np.allclose(raw_vars, yuv_vars, atol=_RGB_VAR_TOL):
+    if not np.allclose(raw_vars, yuv_vars, atol=_RGB_VAR_ATOL):
       color_variance_errs.append(
           f'variances RAW: {raw_vars}, RGB: {yuv_vars}, '
-          f'ATOL: {_RGB_VAR_TOL}')
+          f'ATOL: {_RGB_VAR_ATOL}')
       image_processing_utils.write_image(
           raw_patch, f'{name_with_log_path}_variance_error_raw_{n}.jpg',
           apply_gamma=True)
