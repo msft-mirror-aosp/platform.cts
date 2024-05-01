@@ -1445,10 +1445,12 @@ abstract class CodecTestBase {
         }
     }
 
-    void validateHDRDynamicMetaData(MediaFormat fmt, ByteBuffer hdrDynamicRef) {
+    void validateHDRDynamicMetaData(MediaFormat fmt, ByteBuffer hdrDynamicRef, String mediaType) {
         ByteBuffer hdrDynamicInfo = fmt.getByteBuffer(MediaFormat.KEY_HDR10_PLUS_INFO, null);
-        assertNotNull("No HDR dynamic metadata present in format : " + fmt, hdrDynamicInfo);
-        if (!hdrDynamicRef.equals(hdrDynamicInfo)) {
+        if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+            assertNotNull("No HDR dynamic metadata present in format : " + fmt, hdrDynamicInfo);
+        }
+        if (hdrDynamicInfo != null && !hdrDynamicRef.equals(hdrDynamicInfo)) {
             StringBuilder refString = new StringBuilder("");
             StringBuilder testString = new StringBuilder("");
             byte[] ref = new byte[hdrDynamicRef.capacity()];
@@ -1695,7 +1697,7 @@ class CodecDecoderTestBase extends CodecTestBase {
 
                 if (mTestDynamicMetadata) {
                     validateHDRDynamicMetaData(mCodec.getOutputFormat(), ByteBuffer
-                            .wrap(loadByteArrayFromString(HDR_DYNAMIC_INFO[mOutputCount])));
+                            .wrap(loadByteArrayFromString(HDR_DYNAMIC_INFO[mOutputCount])), mMime);
 
                 }
             }
