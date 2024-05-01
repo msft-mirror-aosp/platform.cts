@@ -470,7 +470,8 @@ public class KeyAttestationTest {
     }
 
     private void testAttestationKmVersionMatchesFeatureVersion(boolean isStrongBox)
-            throws  Exception {
+            throws Exception {
+        assumeTrue("Device does not support attestation", TestUtils.isAttestationSupported());
 
         String keystoreAlias = "test_key";
         Date now = new Date();
