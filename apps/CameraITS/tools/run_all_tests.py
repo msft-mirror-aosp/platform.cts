@@ -81,13 +81,13 @@ _TABLET_SCENES = (
 )
 
 # Scenes that use the 'sensor_fusion' test rig
-_MOTION_SCENES = ('sensor_fusion',)
+_MOTION_SCENES = ('sensor_fusion', 'feature_combination',)
 
 # Scenes that uses lighting control
 _FLASH_SCENES = ('scene_flash',)
 
 # Scenes that uses checkerboard as chart
-_CHECKERBOARD_SCENES = ('sensor_fusion', 'scene_flash',)
+_CHECKERBOARD_SCENES = ('sensor_fusion', 'scene_flash', 'feature_combination',)
 
 # Scenes that have to be run manually regardless of configuration
 _MANUAL_SCENES = ('scene5',)
@@ -148,6 +148,8 @@ _SCENE_REQ = types.MappingProxyType({
                      'See tests/sensor_fusion/SensorFusion.pdf for detailed '
                      'instructions.\nNote that this test will be skipped '
                      'on devices not supporting REALTIME camera timestamp.',
+    'feature_combination': 'The same scene as sensor_fusion, '
+                           'separated for easier testing.',
     'scene_flash': 'A checkerboard pattern chart with lights off.',
     'scene_video': 'A tablet displayed scene with a series of circles moving '
                    'at different simulated frame rates. '
@@ -571,7 +573,7 @@ def main():
   for i, s in enumerate(scenes):
     if (not s.startswith('scene') and
         not s.startswith(('checkerboard', 'sensor_fusion',
-                          'flash', '<scene-name>'))):
+                          'flash', 'feature_combination', '<scene-name>'))):
       scenes[i] = f'scene{s}'
     if s.startswith('flash') or s.startswith('extensions'):
       scenes[i] = f'scene_{s}'
@@ -586,8 +588,10 @@ def main():
   config_file_contents = get_config_file_contents()
   if testbed_index is None:
     for i in config_file_contents['TestBeds']:
-      if (scenes == ['sensor_fusion'] or scenes == ['checkerboard'] or
-          scenes == ['scene_flash']):
+      if scenes in (
+          ['sensor_fusion'], ['checkerboard'], ['scene_flash'],
+          ['feature_combination']
+      ):
         if TEST_KEY_SENSOR_FUSION not in i['Name'].lower():
           config_file_contents['TestBeds'].remove(i)
       else:
