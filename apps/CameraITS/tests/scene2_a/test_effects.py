@@ -113,7 +113,7 @@ class EffectsTest(its_base_test.ItsBaseTest):
           v_min, v_max = np.amin(v)*_YUV_MAX, np.amax(v)*_YUV_MAX
           e_msg = (f'U_range: {u_min:.2f},{u_max:.2f}; '
                    f'V_range: {v_min:.2f},{v_max:.2f}; '
-                   f'TOL: {_MONO_UV_SPREAD_MAX}')
+                   f'ATOL: {_MONO_UV_SPREAD_MAX}')
           if ((u_max - u_min) > _MONO_UV_SPREAD_MAX or
               (v_max - v_min) > _MONO_UV_SPREAD_MAX):
             failed.append({'effect': _EFFECTS[effect], 'error': e_msg})
