@@ -14,8 +14,6 @@
 """Verify that the switch from UW to W has similar RGB values."""
 
 
-import cv2
-import glob
 import logging
 import math
 import os.path
@@ -82,19 +80,6 @@ def _check_orientation_and_flip(props, uw_img, w_img, img_name_stem):
     image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, uw_img_name)
     image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, w_img_name)
   return uw_img, w_img
-
-
-def _remove_frame_files(dir_name, save_files_list):
-  """Removes the generated frame files from test dir.
-
-  Args:
-    dir_name: test directory name.
-    save_files_list: list of files not to be removed.
-  """
-  if os.path.exists(dir_name):
-    for image in glob.glob('%s/*.png' % dir_name):
-      if image not in save_files_list:
-        os.remove(image)
 
 
 def _do_af_check(uw_img, w_img, log_path):
@@ -403,7 +388,7 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # Remove unwanted frames and only save the UW and
       # W crossover point frames along with mp4 recording
-      _remove_frame_files(self.log_path, [
+      its_session_utils.remove_frame_files(self.log_path, [
           os.path.join(self.log_path, img_uw_file),
           os.path.join(self.log_path, img_w_file)])
 

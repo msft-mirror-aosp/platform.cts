@@ -135,6 +135,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                       str(test_data[test_data_index]))
         test_data_index = test_data_index + 1
 
+      its_session_utils.remove_frame_files(log_path)
       if not zoom_capture_utils.verify_zoom_results(
           test_data, size, z_max, z_min):
         raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')
