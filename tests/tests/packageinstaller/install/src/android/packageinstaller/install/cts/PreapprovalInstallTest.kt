@@ -25,6 +25,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageInstaller
 import android.icu.util.ULocale
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import android.provider.DeviceConfig
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
@@ -48,6 +49,7 @@ import org.junit.runner.RunWith
 
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
+@ScreenRecord
 class PreapprovalInstallTest : PackageInstallerTestBase() {
 
     companion object {

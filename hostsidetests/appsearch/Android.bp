@@ -32,7 +32,6 @@ java_test_host {
         "truth",
     ],
     test_suites: [
-        "cts",
         "general-tests",
         "mts-appsearch",
         "mcts-appsearch",

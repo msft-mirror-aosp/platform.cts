@@ -99,7 +99,6 @@ java_defaults {
     platform_apis: true,
     // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
         "general-tests",
         "mts-documentsui",
         "mcts-documentsui",
@@ -127,7 +126,6 @@ android_test {
         ":CtsBinderPermissionTestService",
         ":CtsContentMockRestrictedApp",
         ":CtsContentUriTestApp",
-        ":CtsIntentResolutionTestApp",
     ],
     test_config: "CtsContentTest.xml",
 }

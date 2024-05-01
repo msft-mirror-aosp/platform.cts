@@ -45,6 +45,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.jobscheduler.cts.jobtestapp.TestActivity;
 import android.jobscheduler.cts.jobtestapp.TestFgsService;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
@@ -62,6 +63,7 @@ import com.android.compatibility.common.util.SystemUtil;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 /**
  * Common functions to interact with the test app.
@@ -83,11 +85,15 @@ class TestAppInterface implements AutoCloseable {
     /* accesses must be synchronized on itself */
     private final SparseArray<TestJobState> mTestJobStates = new SparseArray();
 
-    TestAppInterface(Context ctx, int jobId) throws Exception {
+    TestAppInterface(Context ctx, int jobId) {
         mContext = ctx;
         mJobId = jobId;
 
-        mTestPackageUid = mContext.getPackageManager().getPackageUid(TEST_APP_PACKAGE, 0);
+        try {
+            mTestPackageUid = mContext.getPackageManager().getPackageUid(TEST_APP_PACKAGE, 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            throw new IllegalStateException("Test app uid not found", e);
+        }
 
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_JOB_STARTED);
@@ -303,7 +309,7 @@ class TestAppInterface implements AutoCloseable {
         return false;
     }
 
-    boolean removeTestAppFromTempWhitelist() throws Exception {
+    boolean removeTestAppFromTempWhitelist() {
         SystemUtil.runShellCommand("cmd deviceidle tempwhitelist"
                 + " -u " + UserHandle.myUserId()
                 + " -r " + TEST_APP_PACKAGE);
@@ -446,12 +452,12 @@ class TestAppInterface implements AutoCloseable {
         });
     }
 
-    private boolean waitUntilTrue(long maxWait, Condition condition) throws Exception {
-        final long deadLine = SystemClock.uptimeMillis() + maxWait;
+    private boolean waitUntilTrue(long maxWait, BooleanSupplier condition) {
+        final long deadline = SystemClock.uptimeMillis() + maxWait;
         do {
-            Thread.sleep(500);
-        } while (!condition.isTrue() && SystemClock.uptimeMillis() < deadLine);
-        return condition.isTrue();
+            SystemClock.sleep(500);
+        } while (!condition.getAsBoolean() && SystemClock.uptimeMillis() < deadline);
+        return condition.getAsBoolean();
     }
 
     JobParameters getLastParams() {
@@ -484,9 +490,5 @@ class TestAppInterface implements AutoCloseable {
             oomScoreAdj = INVALID_ADJ;
             scheduleResult = -1;
         }
-    }
-
-    private interface Condition {
-        boolean isTrue() throws Exception;
     }
 }

@@ -1040,6 +1040,7 @@ public class PerformanceTest {
     private void testZoomSettingsOverrideLatency(String testCase,
             ZoomDirection direction, ZoomRange range, boolean checkSmoothZoom) throws Exception {
         final float ZOOM_ERROR_MARGIN = 0.05f;
+        final float ERROR_THRESH_FACTOR = 0.33f;
         final int ZOOM_IN_MIN_IMPROVEMENT_IN_FRAMES = 1;
         final int MAX_IMPROVEMENT_VARIATION = 2;
         final boolean atLeastV =
@@ -1100,6 +1101,10 @@ public class PerformanceTest {
                 float previousRatio = startZoomRatio;
                 for (int j = 0; j < numZoomSteps - 1; j++) {
                     float zoomFactor = (float) ratiosToTest[j + 1];
+                    // The error margin needs to be adjusted based on the zoom step size.
+                    // We take the min of ZOOM_ERROR_MARGIN and 1/3 of zoom ratio step.
+                    float zoomErrorMargin = Math.min(ZOOM_ERROR_MARGIN,
+                            (float) Math.abs(zoomFactor - previousRatio) * ERROR_THRESH_FACTOR);
                     previewBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, zoomFactor);
                     int newSequenceId = mTestRule.getCameraSession().setRepeatingRequest(
                             previewBuilder.build(), resultListener, mTestRule.getHandler());
@@ -1120,13 +1125,13 @@ public class PerformanceTest {
                         assertTrue(String.format("Zoom ratio should monotonically increase/decrease"
                                 + " or stay the same (previous = %f, current = %f", previousRatio,
                                 resultZoomFactor),
-                                Math.abs(previousRatio - resultZoomFactor) < ZOOM_ERROR_MARGIN
+                                Math.abs(previousRatio - resultZoomFactor) < zoomErrorMargin
                                 || (direction == ZoomDirection.ZOOM_IN
                                         && previousRatio < resultZoomFactor)
                                 || (direction == ZoomDirection.ZOOM_OUT
                                         && previousRatio > resultZoomFactor));
 
-                        if (Math.abs(resultZoomFactor - zoomFactor) < ZOOM_ERROR_MARGIN
+                        if (Math.abs(resultZoomFactor - zoomFactor) < zoomErrorMargin
                                 && improvement == 0) {
                             improvement = (int) (lastFrameNumberForRequest + 1 - frameNumber);
                         }

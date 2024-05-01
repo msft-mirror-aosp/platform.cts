@@ -16,6 +16,8 @@
 
 package android.packageinstaller.install.cts
 
+import android.Manifest
+import android.content.AttributionSource
 import android.content.pm.PackageInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageInstaller.SessionParams.PERMISSION_STATE_DEFAULT
@@ -23,23 +25,23 @@ import android.content.pm.PackageInstaller.SessionParams.PERMISSION_STATE_DENIED
 import android.content.pm.PackageInstaller.SessionParams.PERMISSION_STATE_GRANTED
 import android.content.pm.PackageManager
 import android.content.pm.PermissionInfo
-import android.Manifest
-import android.content.AttributionSource
 import android.permission.PermissionManager
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import java.io.File
 import kotlin.test.assertFailsWith
-import org.junit.BeforeClass
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
+@ScreenRecord
 class SessionParamsPermissionStateTest : PackageInstallerTestBase() {
 
     companion object {

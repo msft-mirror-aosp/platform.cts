@@ -2049,7 +2049,6 @@ class ItsSession(object):
             regions_ae=[[0, 0, 1, 1, 1]],
             regions_awb=[[0, 0, 1, 1, 1]],
             regions_af=[[0, 0, 1, 1, 1]],
-            do_ae=True,
             do_awb=True,
             do_af=True,
             lock_ae=False,
@@ -2074,7 +2073,6 @@ class ItsSession(object):
       regions_ae: List of weighted AE regions.
       regions_awb: List of weighted AWB regions.
       regions_af: List of weighted AF regions.
-      do_ae: Trigger AE and wait for it to converge.
       do_awb: Wait for AWB to converge.
       do_af: Trigger AF and wait for it to converge.
       lock_ae: Request AE lock after convergence, and wait for it.
@@ -2101,8 +2099,8 @@ class ItsSession(object):
 
     Returns:
       Five values are returned if get_results is true:
-      * AE sensitivity; None if do_ae is False
-      * AE exposure time; None if do_ae is False
+      * AE sensitivity;
+      * AE exposure time;
       * AWB gains (list);
       * AWB transform (list);
       * AF focus position; None if do_af is false
@@ -2130,6 +2128,7 @@ class ItsSession(object):
         'awb': sum(regions_awb, []),
         'af': sum(regions_af, [])
     }
+    do_ae = True # Always run AE
     cmd['triggers'] = {'ae': do_ae, 'af': do_af}
     if lock_ae:
       cmd['aeLock'] = True

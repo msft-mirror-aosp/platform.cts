@@ -20,6 +20,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageInstaller
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
@@ -32,6 +33,7 @@ import org.junit.runner.RunWith
 
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
+@ScreenRecord
 class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
 
     companion object {
@@ -215,7 +217,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
             // The second dialog will be shown to confirm update ownership
             clickInstallerUIButton(INSTALL_BUTTON_ID)
 
-            assertThat(result.get(TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)
+            assertThat(result.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)
             assertInstalled()
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()

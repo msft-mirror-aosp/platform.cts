@@ -17,26 +17,21 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-// TODO(276742331): Restore host/device separation
 java_library_host {
-    name: "HarrierCommon",
+    name: "bedstead-core-annotations",
     srcs: [
-        "common/src/main/java/**/*.java",
-        "common/src/main/java/**/*.kt",
+        "common/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.java",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/enterprise/DevicePolicyRelevant.java",
+    ],
 
-        // TODO(329826539): Move this into a separate target
-        ":bedstead-permissions-common-srcs",
+    libs: [
+        "androidx.annotation_annotation",
     ],
 
     static_libs: [
-        "junit",
-        "auto_value_annotations",
-        "guava",
         "NeneCommon",
-        "QueryableCommon",
-        "truth",
-        "flag-junit-host",
-        "device_policy_aconfig_flags_lib_host",
     ],
 
     plugins: ["auto_annotation_plugin"],
@@ -53,9 +48,14 @@ android_library {
         ":bedstead-permissions-common-srcs",
     ],
 
+    libs: [
+        "androidx.annotation_annotation",
+    ],
+
     static_libs: [
         "junit",
         "auto_value_annotations",
+        "Nene",
         "guava",
         "NeneCommonAndroid",
         "QueryableCommonAndroid",

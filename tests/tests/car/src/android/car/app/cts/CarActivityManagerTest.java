@@ -92,7 +92,9 @@ public class CarActivityManagerTest {
         Car car = Car.createCar(mContext);
         mUiAutomation.adoptShellPermissionIdentity(
                 Car.PERMISSION_CONTROL_CAR_APP_LAUNCH,  // for CAM.setPersistentActivity
-                Car.PERMISSION_MANAGE_CAR_SYSTEM_UI,  // for CAM.getCarTaskViewController
+                // for CAM.getCarTaskViewController
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Car.PERMISSION_MANAGE_CAR_SYSTEM_UI,
                 // to launch an Activity in the virtual display
                 Manifest.permission.ACTIVITY_EMBEDDING,
                 Manifest.permission.MANAGE_ACTIVITY_TASKS /* for CAM.getVisibleTasks */);

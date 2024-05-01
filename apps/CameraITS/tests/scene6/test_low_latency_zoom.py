@@ -79,15 +79,17 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
         z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
       else:
         # Here since we're trying to follow a log scale for moving through
-        # zoom steps from min to max we determine smooth_zoom_num_steps by solving
+        # zoom steps from min to max we determine smooth_zoom_num_steps from
         # the following: z_min*(SMOOTH_ZOOM_STEP^x)  = z_max. If we solve for
-        # x, we get the equation below. As an example, if z_min
-        # was 1.0 and z_max was 5.0, we would go through our list of zooms tested
+        # x, we get the equation below. As an example, if z_min was 1.0
+        # and z_max was 5.0, we would go through our list of zooms tested
         # [1.0, 1.1,  1.21,  1.331...]
         smooth_zoom_num_steps = (
             (math.log(z_max) - math.log(z_min)) / math.log(_SMOOTH_ZOOM_STEP))
-        z_list_logarithmic = np.arange(math.log(z_min), math.log(z_max),
-            (math.log(z_max) - math.log(z_min)) / smooth_zoom_num_steps)
+        z_list_logarithmic = np.arange(
+            math.log(z_min), math.log(z_max),
+            (math.log(z_max) - math.log(z_min)) / smooth_zoom_num_steps
+        )
         z_list = [math.exp(z) for z in z_list_logarithmic]
       z_list = np.append(z_list, z_max)
       logging.debug('Testing zoom range: %s', str(z_list))

@@ -20,9 +20,11 @@ import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSki
 
 import androidx.annotation.NonNull;
 
+import com.android.bedstead.adb.Adb;
 import com.android.bedstead.harrier.AnnotationExecutor;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.usb.Usb;
 import com.android.interactive.annotations.Interactive;
 import com.android.interactive.annotations.UntetheredTest;
 import com.android.interactive.steps.ConnectViaAdbToHostStep;
@@ -58,7 +60,12 @@ public final class InteractiveAnnotationExecutor implements AnnotationExecutor {
             mRequiresUntethered = true;
         } else if (annotation instanceof Interactive) {
             if (mRequiresUntethered) {
-                if (!TestApis.instrumentation().arguments().getBoolean("CAN_UNTETHER")) {
+                if (!Usb.INSTANCE.isConnected()) {
+                    return;
+                }
+
+                if (!Adb.INSTANCE.isEnabledOverWifi() &&
+                        !TestApis.instrumentation().arguments().getBoolean("CAN_UNTETHER")) {
                     throw new AssertionError("This test requires a device under test "
                             + "untethered from a host. Use adb-over-wifi to achieve this.");
                 }

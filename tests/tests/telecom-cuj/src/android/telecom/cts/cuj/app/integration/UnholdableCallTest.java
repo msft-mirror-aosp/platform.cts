@@ -210,10 +210,7 @@ public class UnholdableCallTest extends BaseAppVerifier {
 
             CallException e = setCallStateButExpectOnError(transactionalApp, mt, STATE_ACTIVE);
             assertNotNull(e);
-            // assertEquals(
-            //              CallException.CODE_CANNOT_HOLD_CURRENT_ACTIVE_CALL,
-            //               e.getCode());  TODO::b/313461479
-            assertEquals(CallException.CODE_ERROR_UNKNOWN, e.getCode());
+            assertEquals(CallException.CODE_CANNOT_HOLD_CURRENT_ACTIVE_CALL, e.getCode());
             verifyCallIsInState(mo, STATE_ACTIVE);
 
             setCallStateAndVerify(transactionalApp, mt, STATE_DISCONNECTED);
@@ -316,10 +313,7 @@ public class UnholdableCallTest extends BaseAppVerifier {
 
             CallException e = setCallStateButExpectOnError(transactionalApp, mt, STATE_ACTIVE);
             assertNotNull(e);
-            // assertEquals(
-            //              CallException.CODE_CANNOT_HOLD_CURRENT_ACTIVE_CALL,
-            //               e.getCode());  TODO::b/313461479
-            assertEquals(CallException.CODE_ERROR_UNKNOWN, e.getCode());
+            assertEquals(CallException.CODE_CANNOT_HOLD_CURRENT_ACTIVE_CALL, e.getCode());
             verifyCallIsInState(mo, STATE_ACTIVE);
 
             setCallStateAndVerify(transactionalApp, mt, STATE_DISCONNECTED);

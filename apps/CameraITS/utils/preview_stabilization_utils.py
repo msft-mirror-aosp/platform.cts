@@ -25,6 +25,7 @@ import image_processing_utils
 import sensor_fusion_utils
 import video_processing_utils
 
+_AREA_720P_VIDEO = 1280 * 720
 _ASPECT_RATIO_16_9 = 16/9  # determine if preview fmt > 16:9
 _HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
 _IMG_FORMAT = 'png'
@@ -32,12 +33,51 @@ _MAX_ZOOM_TOL = 0.1   # add Zoom tolerance to enable capture at max zoom
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
 _NUM_ROTATIONS = 24
 _NUM_STEPS = 10
+_PREVIEW_MAX_TESTED_AREA = 1920 * 1440
+_PREVIEW_MIN_TESTED_AREA = 320 * 240
 _PREVIEW_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed
 _SKIP_INITIAL_FRAMES = 15
 _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
 _VIDEO_DURATION = 5.5  # seconds
 _PREVIEW_DURATION = 400  # milliseconds
+
+
+def get_720p_or_above_size(supported_preview_sizes):
+  """Returns the smallest size above or equal to 720p in preview and video.
+
+  If the largest preview size is under 720P, returns the largest value.
+
+  Args:
+    supported_preview_sizes: list; preview sizes.
+      e.g. ['1920x960', '1600x1200', '1920x1080']
+  Returns:
+    smallest size >= 720p video format
+  """
+
+  size_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+  smallest_area = float('inf')
+  smallest_720p_or_above_size = ''
+  largest_supported_preview_size = ''
+  largest_area = 0
+  for size in supported_preview_sizes:
+    area = size_to_area(size)
+    if smallest_area > area >= _AREA_720P_VIDEO:
+      smallest_area = area
+      smallest_720p_or_above_size = size
+    else:
+      if area > largest_area:
+        largest_area = area
+        largest_supported_preview_size = size
+
+  if largest_area > _AREA_720P_VIDEO:
+    logging.debug('Smallest 720p or above size: %s',
+                  smallest_720p_or_above_size)
+    return smallest_720p_or_above_size
+  else:
+    logging.debug('Largest supported preview size: %s',
+                  largest_supported_preview_size)
+    return largest_supported_preview_size
 
 
 def collect_data(cam, tablet_device, preview_size, stabilize, rot_rig,
@@ -250,7 +290,7 @@ def get_max_preview_test_size(cam, camera_id):
 
   If the device supports the _HIGH_RES_SIZE preview size then
   it uses that for testing, otherwise uses the max supported
-  preview size.
+  preview size capped at _PREVIEW_MAX_TESTED_AREA.
 
   Args:
     cam: camera object
@@ -269,7 +309,15 @@ def get_max_preview_test_size(cam, camera_id):
   if _HIGH_RES_SIZE in supported_preview_sizes:
     preview_test_size = _HIGH_RES_SIZE
   else:
-    preview_test_size = supported_preview_sizes[-1]
+    capped_supported_preview_sizes = [
+        size
+        for size in supported_preview_sizes
+        if (
+            resolution_to_area(size) <= _PREVIEW_MAX_TESTED_AREA
+            and resolution_to_area(size) >= _PREVIEW_MIN_TESTED_AREA
+        )
+    ]
+    preview_test_size = capped_supported_preview_sizes[-1]
 
   logging.debug('Selected preview resolution: %s', preview_test_size)
 

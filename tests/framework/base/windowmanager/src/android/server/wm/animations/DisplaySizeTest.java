@@ -116,6 +116,10 @@ public class DisplaySizeTest extends ActivityManagerTestBase {
                     initialLength, 160 /* densityDpi */, null /* surface */, 0 /* flags */);
             final Display targetDisplay = virtualDisplay.getDisplay();
             final int targetDisplayId = targetDisplay.getDisplayId();
+
+            mWmState.waitFor("Display " + targetDisplayId + " added",
+                    wm -> wm.getDisplay(targetDisplayId) != null);
+
             final boolean[] displayChanged = { false };
             displayManager.registerDisplayListener(new DisplayManager.DisplayListener() {
                 @Override
