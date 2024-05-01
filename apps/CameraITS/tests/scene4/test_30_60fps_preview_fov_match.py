@@ -26,7 +26,7 @@ import image_processing_utils
 import its_base_test
 import its_session_utils
 import opencv_processing_utils
-import preview_stabilization_utils
+import preview_processing_utils
 import video_processing_utils
 
 _ASPECT_RATIO_ATOL = 0.075
@@ -166,7 +166,7 @@ class ThirtySixtyFpsPreviewFoVMatchTest(its_base_test.ItsBaseTest):
 
       # List preview resolutions and find 720P or above to test
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      preview_size = preview_stabilization_utils.get_720p_or_above_size(
+      preview_size = preview_processing_utils.get_720p_or_above_size(
           supported_preview_sizes)
       logging.debug('Testing preview resolution: %s', preview_size)
 

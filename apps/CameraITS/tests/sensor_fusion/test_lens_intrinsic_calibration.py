@@ -25,7 +25,7 @@ import matplotlib.pyplot
 import its_base_test
 import camera_properties_utils
 import its_session_utils
-import preview_stabilization_utils
+import preview_processing_utils
 import sensor_fusion_utils
 
 _INTRINSICS_SAMPLES = 'android.statistics.lensIntrinsicsSamples'
@@ -279,11 +279,11 @@ class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f'You must use the arduino controller for {_NAME}.')
 
-      preview_size = preview_stabilization_utils.get_max_preview_test_size(
+      preview_size = preview_processing_utils.get_max_preview_test_size(
           cam, self.camera_id)
       logging.debug('preview_test_size: %s', preview_size)
 
-      recording_obj = preview_stabilization_utils.collect_data(
+      recording_obj = preview_processing_utils.collect_data(
           cam, self.tablet_device, preview_size, False,
           rot_rig=rot_rig, ois=True)
 

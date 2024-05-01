@@ -44,10 +44,10 @@ import static com.android.compatibility.common.util.LocationUtils.createLocation
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.app.PendingIntent;
 import android.app.UiAutomation;
@@ -77,6 +77,7 @@ import android.location.provider.ProviderProperties;
 import android.os.Build;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.Process;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
@@ -212,17 +213,13 @@ public class LocationManagerFineTest {
     }
 
     @Test
-    public void testGetLastKnownLocation_AdasLocationSettings_ReturnsLocation() throws Exception {
+    public void testGetLastKnownLocation_AdasLocationSettingsOn() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        // ADAS is not supported on passenger users
-        assumeFalse("not supported when running on visible background user",
-                mUserHelper.isVisibleBackgroundUser());
 
-        try (DeviceConfigStateHelper locationDeviceConfigStateHelper = new DeviceConfigStateHelper(
-                DeviceConfig.NAMESPACE_LOCATION)) {
+        try (DeviceConfigStateHelper locationDeviceConfigStateHelper =
+                     new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_LOCATION)) {
 
-            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST,
-                    mContext.getPackageName());
+            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST, mContext.getPackageName());
 
             mManager.addTestProvider(GPS_PROVIDER, new ProviderProperties.Builder().build());
 
@@ -236,36 +233,41 @@ public class LocationManagerFineTest {
                     .adoptShellPermissionIdentity(LOCATION_BYPASS, WRITE_SECURE_SETTINGS);
 
             try {
-                // Returns loc when ADAS toggle is on.
                 mManager.setLocationEnabledForUser(false, mContext.getUser());
                 mManager.setAdasGnssLocationEnabled(true);
-                assertThat(
-                        mManager.getLastKnownLocation(
-                                GPS_PROVIDER,
-                                new LastLocationRequest.Builder()
-                                        .setAdasGnssBypass(true)
-                                        .build()))
-                        .isEqualTo(loc);
 
+                if (ActivityManager.getCurrentUser() == Process.myUserHandle().myUserId()) {
+                    assertThat(
+                            mManager.getLastKnownLocation(
+                                    GPS_PROVIDER,
+                                    new LastLocationRequest.Builder()
+                                            .setAdasGnssBypass(true)
+                                            .build()))
+                            .isEqualTo(loc);
+                } else if (mUserHelper.isVisibleBackgroundUser()) {
+                    assertThat(
+                            mManager.getLastKnownLocation(
+                                    GPS_PROVIDER,
+                                    new LastLocationRequest.Builder()
+                                            .setAdasGnssBypass(true)
+                                            .build()))
+                            .isNull();
+                }
             } finally {
-                mManager.setLocationEnabledForUser(true, android.os.Process.myUserHandle());
+                mManager.setLocationEnabledForUser(true, Process.myUserHandle());
                 getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
             }
         }
     }
 
     @Test
-    public void testGetLastKnownLocation_AdasLocationSettings_ReturnsNull() throws Exception {
+    public void testGetLastKnownLocation_AdasLocationSettingsOff() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        // ADAS is not supported on passenger users
-        assumeFalse("not supported when running on visible background user",
-                mUserHelper.isVisibleBackgroundUser());
 
-        try (DeviceConfigStateHelper locationDeviceConfigStateHelper = new DeviceConfigStateHelper(
-                DeviceConfig.NAMESPACE_LOCATION)) {
+        try (DeviceConfigStateHelper locationDeviceConfigStateHelper =
+                     new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_LOCATION)) {
 
-            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST,
-                    mContext.getPackageName());
+            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST, mContext.getPackageName());
 
             mManager.addTestProvider(GPS_PROVIDER, new ProviderProperties.Builder().build());
 
@@ -290,9 +292,8 @@ public class LocationManagerFineTest {
                                         .setAdasGnssBypass(true)
                                         .build()))
                         .isNull();
-
             } finally {
-                mManager.setLocationEnabledForUser(true, android.os.Process.myUserHandle());
+                mManager.setLocationEnabledForUser(true, Process.myUserHandle());
                 mManager.setAdasGnssLocationEnabled(true);
                 getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
             }
@@ -810,29 +811,20 @@ public class LocationManagerFineTest {
     @Test
     public void testRequestLocationUpdates_AdasGnssBypass() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        // ADAS is not supported on passenger users
-        assumeFalse("not supported when running on visible background user",
-                mUserHelper.isVisibleBackgroundUser());
 
         try (LocationListenerCapture capture = new LocationListenerCapture(mContext);
              DeviceConfigStateHelper locationDeviceConfigStateHelper =
                      new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_LOCATION)) {
 
-            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST,
-                    mContext.getPackageName());
+            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST, mContext.getPackageName());
 
-            mManager.addTestProvider(
-                    GPS_PROVIDER,
-                    new ProviderProperties.Builder().build());
+            mManager.addTestProvider(GPS_PROVIDER, new ProviderProperties.Builder().build());
 
-            getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(LOCATION_BYPASS);
+            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(LOCATION_BYPASS);
             try {
                 mManager.requestLocationUpdates(
                         GPS_PROVIDER,
-                        new LocationRequest.Builder(0)
-                                .setAdasGnssBypass(true)
-                                .build(),
+                        new LocationRequest.Builder(0).setAdasGnssBypass(true).build(),
                         Executors.newSingleThreadExecutor(),
                         capture);
             } finally {
@@ -842,13 +834,23 @@ public class LocationManagerFineTest {
             // turn off provider
             mManager.setTestProviderEnabled(GPS_PROVIDER, false);
 
-            // test that all restrictions are bypassed
-            Location loc = createLocation(GPS_PROVIDER, mRandom);
-            mManager.setTestProviderLocation(GPS_PROVIDER, loc);
-            assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
-            loc = createLocation(GPS_PROVIDER, mRandom);
-            mManager.setTestProviderLocation(GPS_PROVIDER, loc);
-            assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
+            if (ActivityManager.getCurrentUser() == Process.myUserHandle().myUserId()) {
+                // test that all restrictions are bypassed
+                Location loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
+                loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
+            } else if (mUserHelper.isVisibleBackgroundUser()) {
+                // test restrictions aren't bypassed.
+                Location loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isNull();
+                loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isNull();
+            }
         }
     }
 

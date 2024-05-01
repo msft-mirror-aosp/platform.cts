@@ -329,7 +329,6 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
   """Captures a preview video from the device over zoom range.
 
   Captures camera preview frames at various zoom level in zoom range.
-  Step size 10.
 
   Args:
     dut: device under test
@@ -369,6 +368,7 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
   extra_capture_result_count = len(capture_results) - len(file_list)
   logging.debug('Number of frames %d', len(file_list))
   if extra_capture_result_count != 0:
+    its_session_utils.remove_frame_files(log_path)
     e_msg = (f'Number of CaptureResult ({len(capture_results)}) '
              f'vs number of Frames ({len(file_list)}) count mismatch.'
              ' Retry Test.')

@@ -977,7 +977,7 @@ public class ItsService extends Service implements SensorEventListener {
             // Each command is a serialized JSON object.
             try {
                 JSONObject cmdObj = new JSONObject(cmd);
-                Logt.i(TAG, "Start processing command" + cmdObj.getString("cmdName"));
+                Logt.i(TAG, "Start processing command: " + cmdObj.getString("cmdName"));
                 if ("open".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     openCameraDevice(cameraId, cmdObj);

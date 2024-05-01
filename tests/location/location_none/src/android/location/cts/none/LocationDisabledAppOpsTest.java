@@ -22,7 +22,6 @@ import static android.app.AppOpsManager.OPSTR_FINE_LOCATION;
 import static com.android.compatibility.common.util.SystemUtil.eventually;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
-import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -64,13 +63,7 @@ public class LocationDisabledAppOpsTest {
     public void testLocationAppOpIsIgnoredForAppsWhenLocationIsDisabled() {
         PackageTagsList ignoreList = mLm.getIgnoreSettingsAllowlist();
 
-        UserHandle[] userArr = {UserHandle.SYSTEM};
-        runWithShellPermissionIdentity(() -> {
-            userArr[0] = UserHandle.of(ActivityManager.getCurrentUser());
-        });
-
-        UserHandle user = userArr[0];
-
+        UserHandle user = Process.myUserHandle();
         boolean wasEnabled = mLm.isLocationEnabledForUser(user);
 
         try {

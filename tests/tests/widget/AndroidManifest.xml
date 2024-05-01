@@ -187,9 +187,9 @@
         </activity>
 
         <activity android:name="android.widget.cts.ToolbarWithMarginsCtsActivity"
+             android:theme="@android:style/Theme.Material.Light.NoActionBar"
              android:label="ToolbarWithMarginsCtsActivity"
-             android:exported="true"
-             android:theme="@style/OptOutEdgeToEdgeEnforcement">
+             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>

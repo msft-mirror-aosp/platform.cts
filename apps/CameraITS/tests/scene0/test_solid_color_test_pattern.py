@@ -39,7 +39,6 @@ _CH_VARIANCE_ATOL_RAW = 1
 _OFF = 0x00000000
 _SAT = 0xFFFFFFFF
 _NAME = os.path.basename(__file__).split('.')[0]
-_SHARPNESS_TOL = 0.1
 _NUM_FRAMES = 4  # buffer a few frames to eliminate need for PER_FRAME_CONTROL
 
 _BLACK = {'color': 'BLACK',

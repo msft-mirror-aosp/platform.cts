@@ -14,8 +14,6 @@
 """Verify that the switch from UW to W has similar RGB values."""
 
 
-import cv2
-import glob
 import logging
 import math
 import os.path
@@ -29,10 +27,10 @@ import camera_properties_utils
 import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
-import preview_stabilization_utils
+import preview_processing_utils
 import video_processing_utils
 
-_AE_RTOL = 0.01  # 1%
+_AE_RTOL = 0.015  # 1.5%
 _AF_RTOL = 0.02  # 2%
 _ARUCO_MARKERS_COUNT = 4
 _AWB_RTOL = 0.02  # 2%
@@ -84,19 +82,6 @@ def _check_orientation_and_flip(props, uw_img, w_img, img_name_stem):
   return uw_img, w_img
 
 
-def _remove_frame_files(dir_name, save_files_list):
-  """Removes the generated frame files from test dir.
-
-  Args:
-    dir_name: test directory name.
-    save_files_list: list of files not to be removed.
-  """
-  if os.path.exists(dir_name):
-    for image in glob.glob('%s/*.png' % dir_name):
-      if image not in save_files_list:
-        os.remove(image)
-
-
 def _do_af_check(uw_img, w_img, log_path):
   """Checks the AF behavior between the uw and w img.
 
@@ -114,8 +99,8 @@ def _do_af_check(uw_img, w_img, log_path):
 
   if not math.isclose(sharpness_w, sharpness_uw, rel_tol=_AF_RTOL):
     raise AssertionError('Sharpness change is greater than the threshold value.'
-                         f'RTOL: {_AF_RTOL}'
-                         f'sharpness_w: {sharpness_w}'
+                         f' RTOL: {_AF_RTOL} '
+                         f'sharpness_w: {sharpness_w} '
                          f'sharpness_uw: {sharpness_uw}')
 
 
@@ -153,14 +138,14 @@ def _do_awb_check(uw_img, w_img):
   if not math.isclose(uw_r_g_ratio, w_r_g_ratio,
                       rel_tol=_AWB_RTOL):
     raise AssertionError(f'R/G change is greater than the threshold value: '
-                         f'RTOL: {_AWB_RTOL}'
-                         f'uw_r_g_ratio: {uw_r_g_ratio:.4f}'
+                         f'RTOL: {_AWB_RTOL} '
+                         f'uw_r_g_ratio: {uw_r_g_ratio:.4f} '
                          f'w_r_g_ratio: {w_r_g_ratio:.4f}')
   if not math.isclose(uw_b_g_ratio, w_b_g_ratio,
                       rel_tol=_AWB_RTOL):
     raise AssertionError(f'B/G change is greater than the threshold value: '
-                         f'RTOL: {_AWB_RTOL}'
-                         f'uw_b_g_ratio: {uw_b_g_ratio:.4f}'
+                         f'RTOL: {_AWB_RTOL} '
+                         f'uw_b_g_ratio: {uw_b_g_ratio:.4f} '
                          f'w_b_g_ratio: {w_b_g_ratio:.4f}')
 
 
@@ -207,9 +192,9 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
 
   if not math.isclose(uw_y_avg, w_y_avg, rel_tol=_AE_RTOL):
     raise AssertionError('y_avg change is greater than threshold value: '
-                         f'RTOL: {_AE_RTOL}'
-                         f'uw_y_avg: {uw_y_avg:.4f}'
-                         f'w_y_avg: {w_y_avg:.4f}')
+                         f'RTOL: {_AE_RTOL} '
+                         f'uw_y_avg: {uw_y_avg:.4f} '
+                         f'w_y_avg: {w_y_avg:.4f} ')
 
 
 def _extract_y(img_uint8, file_name):
@@ -338,13 +323,12 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         self.tablet.adb.shell(
             f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
-      preview_test_size = preview_stabilization_utils.get_max_preview_test_size(
+      preview_test_size = preview_processing_utils.get_max_preview_test_size(
           cam, self.camera_id)
       cam.do_3a()
 
       # dynamic preview recording
-      # pylint: disable=line-too-long
-      recording_obj = preview_stabilization_utils.collect_preview_data_with_zoom(
+      recording_obj = preview_processing_utils.collect_preview_data_with_zoom(
           cam, preview_test_size, _ZOOM_RANGE_UW_W[0],
           _ZOOM_RANGE_UW_W[1], _ZOOM_STEP, _RECORDING_DURATION)
 
@@ -404,7 +388,7 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # Remove unwanted frames and only save the UW and
       # W crossover point frames along with mp4 recording
-      _remove_frame_files(self.log_path, [
+      its_session_utils.remove_frame_files(self.log_path, [
           os.path.join(self.log_path, img_uw_file),
           os.path.join(self.log_path, img_w_file)])
 

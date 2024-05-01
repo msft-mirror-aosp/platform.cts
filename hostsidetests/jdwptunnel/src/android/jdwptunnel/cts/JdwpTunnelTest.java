@@ -345,13 +345,39 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
         assertTrue((is.read() & 0x80) == 0x80);
     }
 
-    private void assertThreadSuspensionState(VirtualMachine vm, boolean expected) {
+    private boolean testThreadSuspensionState(VirtualMachine vm, boolean expected) {
         for (ThreadReference tr : vm.allThreads()) {
             boolean isSuspended = tr.isSuspended();
             if (isSuspended != expected) {
-                fail("Thread in unexpected state '" + tr.name() + "' isSuspended=" + isSuspended);
+                return false;
             }
         }
+        return true;
+    }
+
+    private String dumpThreads(VirtualMachine vm) {
+        StringBuilder result = new StringBuilder();
+        for (ThreadReference tr : vm.allThreads()) {
+            result.append("Thread: '");
+            result.append(tr.name());
+            result.append("' isSuspended=");
+            result.append(tr.isSuspended());
+            result.append("\n");
+        }
+        return result.toString();
+    }
+
+    private void assertThreadSuspensionState(VirtualMachine vm, boolean expected)
+            throws InterruptedException {
+        // If the debugger connects too fast, the VM may not have had time to hit the
+        // suspension point. We try several times to remedy to this problem.
+        for (int i = 0; i < 4; i++) {
+            if (testThreadSuspensionState(vm, expected)) {
+                return;
+            }
+            Thread.sleep(1000);
+        }
+        fail("Threads are in unexpected state (expected=" + expected + ")\n" + dumpThreads(vm));
     }
 
     // App can be started "suspended" which means all its threads will be suspended shorty after

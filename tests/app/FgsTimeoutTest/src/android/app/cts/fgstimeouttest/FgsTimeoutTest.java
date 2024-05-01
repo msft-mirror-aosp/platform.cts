@@ -42,6 +42,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -426,6 +427,55 @@ public class FgsTimeoutTest {
         assertServiceNotRunning(FGS0);
 
         CallProvider.ensureNoMoreMessages();
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
+    public void testNoTimeout_whenFlagDisabled() {
+        // Start the service
+        startForegroundService(FGS2, FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        waitForMethodCall(FGS2, "onStartCommand");
+        assertFgsRunning(FGS2);
+
+        // Wait for the timeout + extra duration
+        SystemClock.sleep(SHORTENED_TIMEOUT + 5000);
+        // Make sure onTimeout() didn't happen. (If it did, onTimeout() would send a message,
+        // which would break the below ensureNoMoreMessages().)
+        CallProvider.ensureNoMoreMessages();
+
+        // Stop the service
+        sContext.stopService(new Intent().setComponent(FGS2));
+        waitForMethodCall(FGS2, "onDestroy");
+        assertServiceNotRunning(FGS2);
+
+        CallProvider.ensureNoMoreMessages();
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
+    public void testNoAnr_whenFlagDisabled() throws Exception {
+        final int anrExtraTimeout = 5000;
+        updateDeviceConfig("fgs_anr_extra_wait_duration", anrExtraTimeout);
+
+        try (AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
+                HELPER_PACKAGE)) {
+            // Start the service
+            startForegroundService(FGS2, FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+            waitForMethodCall(FGS2, "onStartCommand");
+            assertFgsRunning(FGS2);
+
+            // Wait for the timeout + anr grace period + extra duration, ANR should not occur
+            monitor.assertNoAnr(SHORTENED_TIMEOUT + anrExtraTimeout + 5000);
+
+            // Stop the service
+            sContext.stopService(new Intent().setComponent(FGS2));
+            waitForMethodCall(FGS2, "onDestroy");
+            assertServiceNotRunning(FGS2);
+
+            CallProvider.ensureNoMoreMessages();
+        } finally {
+            resetDeviceConfig("fgs_anr_extra_wait_duration");
+        }
     }
 
     private static void updateDeviceConfig(String key, long value) throws Exception {

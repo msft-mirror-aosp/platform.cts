@@ -57,10 +57,13 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @RunWith(AndroidJUnit4.class)
 public class PdfRendererPreVTest {
 
+    private static final Pattern LINE_BREAK_PATTERN = Pattern.compile("\\R");
     private Context mContext;
 
     @Before
@@ -229,12 +232,12 @@ public class PdfRendererPreVTest {
         PdfRendererPreV.Page firstPage = renderer.openPage(0);
 
         assertThat(firstPage.getTextContents().size()).isEqualTo(1);
-        assertThat(firstPage.getTextContents().get(0).getText().lines().toList().size()).isEqualTo(
-                2);
-        assertThat(firstPage.getTextContents().get(0).getText().lines().toList().get(0)).isEqualTo(
-                "Social Security Administration Guide:");
-        assertThat(firstPage.getTextContents().get(0).getText().lines().toList().get(1)).isEqualTo(
-                "Alternate text for images");
+        List<String> textContents = LINE_BREAK_PATTERN.splitAsStream(
+                firstPage.getTextContents().get(0).getText()).collect(Collectors.toList());
+
+        assertThat(textContents.size()).isEqualTo(2);
+        assertThat(textContents.get(0)).isEqualTo("Social Security Administration Guide:");
+        assertThat(textContents.get(1)).isEqualTo("Alternate text for images");
 
         firstPage.close();
         renderer.close();
@@ -479,12 +482,14 @@ public class PdfRendererPreVTest {
         assertSelectionBoundary(textSelection.getStart(), -1, new Point(93, 139));
         assertSelectionBoundary(textSelection.getStop(), -1, new Point(135, 163));
         assertPageSelection(textSelection, 2, 1);
-        assertThat(textSelection.getSelectedTextContents().get(
-                0).getText().lines().toList().size()).isEqualTo(2);
-        assertThat(textSelection.getSelectedTextContents().get(0).getText().lines().toList().get(
-                0)).isEqualTo("And more text. And more text. And more text. ");
-        assertThat(textSelection.getSelectedTextContents().get(0).getText().lines().toList().get(
-                1)).isEqualTo(" And more text");
+
+        List<String> selectedText = LINE_BREAK_PATTERN.splitAsStream(
+                textSelection.getSelectedTextContents().get(0).getText()).collect(
+                Collectors.toList());
+
+        assertThat(selectedText.size()).isEqualTo(2);
+        assertThat(selectedText.get(0)).isEqualTo("And more text. And more text. And more text. ");
+        assertThat(selectedText.get(1)).isEqualTo(" And more text");
 
         firstPage.close();
         renderer.close();
@@ -504,15 +509,16 @@ public class PdfRendererPreVTest {
         assertSelectionBoundary(fourthTextSelection.getStart(), -1, new Point(71, 127));
         assertSelectionBoundary(fourthTextSelection.getStop(), -1, new Point(275, 163));
         assertPageSelection(fourthTextSelection, 3, 1);
-        assertThat(fourthTextSelection.getSelectedTextContents().get(
-                0).getText().lines().toList().get(0)).isEqualTo(
+
+        List<String> selectedText = LINE_BREAK_PATTERN.splitAsStream(
+                fourthTextSelection.getSelectedTextContents().get(0).getText()).collect(
+                Collectors.toList());
+
+        assertThat(selectedText.get(0)).isEqualTo(
                 "just for use in the Virtual Mechanics tutorials. More text. And more ");
-        assertThat(fourthTextSelection.getSelectedTextContents().get(
-                0).getText().lines().toList().get(1)).isEqualTo(
+        assertThat(selectedText.get(1)).isEqualTo(
                 " text. And more text. And more text. And more text. ");
-        assertThat(fourthTextSelection.getSelectedTextContents().get(
-                0).getText().lines().toList().get(2)).isEqualTo(
-                " And more text. And more text. And more text. ");
+        assertThat(selectedText.get(2)).isEqualTo(" And more text. And more text. And more text. ");
 
         firstPage.close();
         renderer.close();

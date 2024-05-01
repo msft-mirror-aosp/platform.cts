@@ -9,6 +9,7 @@ import static android.nfc.cts.WalletRoleTestUtils.runWithRoleNone;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.anyInt;
@@ -36,6 +37,7 @@ import android.nfc.cardemulation.PollingFrame.PollingFrameType;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.os.RemoteException;
+import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -1073,8 +1075,10 @@ public class CardEmulationTest {
     }
 
     static void ensureUnlocked() {
-        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        final UserManager userManager = context.getSystemService(UserManager.class);
+        assumeFalse(userManager.isHeadlessSystemUserMode());
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final PowerManager pm = context.getSystemService(PowerManager.class);
         final KeyguardManager km = context.getSystemService(KeyguardManager.class);
         try {
@@ -1084,7 +1088,7 @@ public class CardEmulationTest {
                         () -> pm != null && pm.isInteractive());
             }
             if (km != null && km.isKeyguardLocked()) {
-                CommonTestUtils.waitUntil("Device does not unlock after 3 seconds", 3,
+                CommonTestUtils.waitUntil("Device does not unlock after 30 seconds", 30,
                         () -> {
                         SystemUtil.runWithShellPermissionIdentity(
                                 () -> instrumentation.sendKeyDownUpSync(

@@ -35,7 +35,7 @@ TestBeds:
       foldable_device: "False"  # "True" if testing foldable device
 
   - Name: TEST_BED_SENSOR_FUSION  # Need 'sensor_fusion' in name for
-    # checkerboard scenes (SF and scene_flash) tests
+    # checkerboard scenes (SF, scene_flash, and feature_combination) tests
     # Test configuration for sensor_fusion/test_sensor_fusion.py
     Controllers:
         AndroidDevice:

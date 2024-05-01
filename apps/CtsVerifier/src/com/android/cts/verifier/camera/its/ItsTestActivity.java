@@ -188,6 +188,7 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene_extensions/scene_low_light",
             "scene_video",
             "sensor_fusion",
+            "feature_combination",
             "scene_flash");
 
     // This must match scenes of SUB_CAMERA_TESTS in tools/run_all_tests.py
