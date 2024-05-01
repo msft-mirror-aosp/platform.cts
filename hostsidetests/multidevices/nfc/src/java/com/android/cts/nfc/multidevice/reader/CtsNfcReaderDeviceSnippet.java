@@ -465,6 +465,11 @@ public class CtsNfcReaderDeviceSnippet implements Snippet {
         mDevice.pressMenu();
     }
 
+    @Rpc(description = "Log info level message to device logcat")
+    public void logInfo(String message) {
+        Log.i(TAG, message);
+    }
+
     private Intent buildReaderIntentWithApduSequence(
             Instrumentation instrumentation, CommandApdu[] commandApdus, String[] responseApdus) {
         Intent intent = new Intent(Intent.ACTION_MAIN);

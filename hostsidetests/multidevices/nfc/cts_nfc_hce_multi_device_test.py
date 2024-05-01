@@ -79,11 +79,12 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Turns emulator/reader screen on and unlocks between tests as some tests will
         turn the screen off.
         """
+        self.emulator.nfc_emulator.logInfo("*** TEST START: " + self.current_test_info.name + " ***")
+        self.reader.nfc_reader.logInfo("*** TEST START: " + self.current_test_info.name + " ***")
         self.emulator.nfc_emulator.turnScreenOn()
         self.emulator.nfc_emulator.pressMenu()
         self.reader.nfc_reader.turnScreenOn()
         self.reader.nfc_reader.pressMenu()
-
 
     def on_fail(self, record):
         test_name = record.test_name
@@ -718,6 +719,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.current_test_info),
                               param_list=[[self.emulator], [self.reader]],
                               raise_on_exception=True)
+        self.emulator.nfc_emulator.logInfo("*** TEST END: " + self.current_test_info.name + " ***")
+        self.reader.nfc_reader.logInfo("*** TEST END: " + self.current_test_info.name + " ***")
 
 
 if __name__ == '__main__':
