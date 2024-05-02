@@ -110,7 +110,7 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
       msg = f'RMS diff: {rms_diff:.4f}'
       logging.debug('%s', msg)
       if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_YUV_JPEG:
-        raise AssertionError(msg + f', TOL: {_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG}')
+        raise AssertionError(f'{msg}, ATOL: {_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG}')
 
       # Create requests for all use cases, and make sure they are at least
       # similar enough with the STILL_CAPTURE YUV. For example, the color
@@ -134,7 +134,7 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
                f'YUV: {rms_diff:.4f}')
         logging.debug('%s', msg)
         if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_USE_CASE:
-          logging.error(msg + f', TOL: {_THRESHOLD_MAX_RMS_DIFF_USE_CASE}')
+          logging.error(msg + f', ATOL: {_THRESHOLD_MAX_RMS_DIFF_USE_CASE}')
           num_fail += 1
 
       if num_fail > 0:

@@ -17,6 +17,7 @@
 
 import collections
 import fnmatch
+import glob
 import json
 import logging
 import math
@@ -2128,7 +2129,7 @@ class ItsSession(object):
         'awb': sum(regions_awb, []),
         'af': sum(regions_af, [])
     }
-    do_ae = True # Always run AE
+    do_ae = True  # Always run AE
     cmd['triggers'] = {'ae': do_ae, 'af': do_af}
     if lock_ae:
       cmd['aeLock'] = True
@@ -2818,3 +2819,16 @@ def remove_tmp_files(log_path, match_pattern):
         os.remove(file_to_remove)
       except FileNotFoundError:
         logging.debug('File not found: %s', str(file))
+
+
+def remove_frame_files(dir_name, save_files_list=[]):
+  """Removes the generated frame files from test dir.
+
+  Args:
+    dir_name: test directory name.
+    save_files_list: list of files not to be removed. Default is empty list.
+  """
+  if os.path.exists(dir_name):
+    for image in glob.glob('%s/*.png' % dir_name):
+      if image not in save_files_list:
+        os.remove(image)
