@@ -390,13 +390,13 @@ class ItsSession(object):
     self.__init_socket_port()
 
   def __enter__(self):
-    self.__close_camera()
+    self.close_camera()
     self.__open_camera()
     return self
 
   def __exit__(self, exec_type, exec_value, exec_traceback):
     if hasattr(self, 'sock') and self.sock:
-      self.__close_camera()
+      self.close_camera()
       self.sock.close()
     return False
 
@@ -560,7 +560,7 @@ class ItsSession(object):
     if data[_TAG_STR] != 'cameraOpened':
       raise error_util.CameraItsError('Invalid command response')
 
-  def __close_camera(self):
+  def close_camera(self):
     cmd = {_CMD_NAME_STR: 'close'}
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     data, _ = self.__read_response_from_socket()

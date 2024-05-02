@@ -281,7 +281,9 @@ public final class DeviceUtils {
             throws DeviceNotAvailableException {
         String uidLine = device.executeShellCommand("cmd package list packages -U --user "
                 + userId + " " + pkgName);
-        String[] uidLineArr = uidLine.split(":");
+        // the package name matching is not exact match, so the output might have
+        // multiple lines
+        String[] uidLineArr = uidLine.split("[\\r\\n:]");
 
         // Package uid is located at index 2.
         assertThat(uidLineArr.length).isGreaterThan(2);

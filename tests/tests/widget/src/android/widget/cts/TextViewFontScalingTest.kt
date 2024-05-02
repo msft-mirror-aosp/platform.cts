@@ -224,7 +224,8 @@ class TextViewFontScalingTest {
                 mInstrumentation.context.contentResolver,
                 Settings.System.FONT_SCALE,
                 null,
-                /* overrideableByRestore= */ true
+                /* overrideableByRestore= */
+                true
             )
         }
         PollingCheck.waitFor(/* timeout= */ 5000) {
