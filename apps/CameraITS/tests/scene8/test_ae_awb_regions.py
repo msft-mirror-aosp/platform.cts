@@ -212,6 +212,27 @@ def _extract_and_process_key_frames_from_recording(log_path, file_name):
   return key_frames
 
 
+def _get_largest_common_aspect_ratio_preview_size(cam, camera_id):
+  """Get largest, supported preview size that matches sensor's aspect ratio.
+
+  Args:
+    cam: obj; camera object.
+    camera_id: int; device id.
+  Returns:
+    preview_size: str; largest, supported preview size w/ 4:3, or 16:9
+        aspect ratio.
+  """
+  preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
+  dimensions = lambda s: (int(s.split('x')[0]), int(s.split('x')[1]))
+  for size in reversed(preview_sizes):
+    if capture_request_utils.is_common_aspect_ratio(dimensions(size)):
+      preview_size = size
+      logging.debug('Largest, common aspect ratio and preview size: %s',
+                    preview_size)
+      break
+  return preview_size
+
+
 def _get_red_blue_ratio(img):
   """Computes the ratios of average red over blue in img.
 
@@ -272,8 +293,8 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       logging.debug('maximum AWB regions: %d', max_awb_regions)
 
       # Find largest preview size to define capture size to find aruco markers
-      supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      preview_size = supported_preview_sizes[-1]
+      preview_size = _get_largest_common_aspect_ratio_preview_size(
+          cam, self.camera_id)
       width = int(preview_size.split('x')[0])
       height = int(preview_size.split('x')[1])
       req = capture_request_utils.auto_capture_request()
