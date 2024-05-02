@@ -31,6 +31,7 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
@@ -40,9 +41,11 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
 import android.server.wm.cts.R;
 import android.server.wm.settings.SettingsSession;
+import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 
+import androidx.core.view.WindowCompat;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.UiDevice;
 
@@ -106,6 +109,7 @@ public class BlurTests extends WindowManagerTestBase {
         insetGivenFrame(windowState,
                 insetsSource -> (insetsSource.is(WindowInsets.Type.captionBar())),
                 mBackgroundActivityBounds);
+        mBackgroundActivityBounds.inset(mBackgroundActivity.getActivity().getSystemBarOverlaps());
 
         // Wait for the first frame *after* the splash screen is removed to take screenshots.
         // We don't currently have a definite event / callback for this.
@@ -429,15 +433,25 @@ public class BlurTests extends WindowManagerTestBase {
     }
 
     public static class BackgroundActivity extends FocusableActivity {
+        private Insets mSystemBarOverlaps = Insets.of(0, 0, 0, 0);
+
         @Override
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             getSplashScreen().setOnExitAnimationListener(view -> view.remove());
 
             setContentView(R.layout.background_image);
+            WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
-            getWindow().setDecorFitsSystemWindows(false);
-            getWindow().getInsetsController().hide(systemBars());
+            View rootView = findViewById(android.R.id.content);
+            rootView.setOnApplyWindowInsetsListener((v, insets) -> {
+                mSystemBarOverlaps = insets.getInsets(systemBars());
+                return insets;
+            });
+        }
+
+        Insets getSystemBarOverlaps() {
+            return mSystemBarOverlaps;
         }
     }
 
@@ -599,8 +613,10 @@ public class BlurTests extends WindowManagerTestBase {
 
     private void assertBlurBehind(Bitmap screenshot, Rect windowFrame) {
         mDumpOnFailure.dumpOnFailure("assertBlurBehind", screenshot);
-        assertBlur(screenshot, BLUR_BEHIND_PX, 0, windowFrame.top);
-        assertBlur(screenshot, BLUR_BEHIND_PX, windowFrame.bottom, screenshot.getHeight());
+        assertBlur(screenshot, BLUR_BEHIND_PX, BLUR_BEHIND_PX,
+                windowFrame.top);
+        assertBlur(screenshot, BLUR_BEHIND_PX, windowFrame.bottom,
+                screenshot.getHeight() - BLUR_BEHIND_PX);
     }
 
     private void assertBackgroundBlur(Bitmap screenshot, Rect windowFrame) {
