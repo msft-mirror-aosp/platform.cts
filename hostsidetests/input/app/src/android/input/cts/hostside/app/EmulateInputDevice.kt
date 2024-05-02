@@ -133,6 +133,7 @@ class EmulateInputDevice {
                 touchpad.sendUp(0)
                 touchpad.sync()
             }
+            Thread.sleep(TOUCHPAD_POST_GESTURE_DELAY_MILLIS)
         }
     }
 
@@ -268,8 +269,11 @@ class EmulateInputDevice {
         const val KEY_PRESS: Int = 1
         const val KEY_RELEASE: Int = 0
 
-        // This delay seems to be necessary to let the gesture be properly processed and added to
-        // metrics before the touchpad device is torn down.
+        // When a uinput device is closed, there's a race between InputReader picking up the final
+        // events from the device's buffer (specifically, the buffer in struct evdev_client in the
+        // kernel) and the device being torn down. If the device is torn down first, one or more
+        // frames of data get lost. To prevent flakes due to this race, we delay closing the device
+        // for a while after sending the last event, so InputReader has time to read them all.
         const val TOUCHPAD_POST_GESTURE_DELAY_MILLIS: Long = 500
 
         // This delay is required for key events to be sent and handled correctly.
