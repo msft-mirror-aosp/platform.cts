@@ -18,6 +18,7 @@ package android.content.pm.cts;
 
 import static android.Manifest.permission.GET_INTENT_SENDER_INTENT;
 import static android.Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD;
+import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.Context.RECEIVER_NOT_EXPORTED;
 import static android.content.IntentFilter.BLOCK_NULL_ACTION_INTENTS;
 import static android.security.Flags.FLAG_BLOCK_NULL_ACTION_INTENTS;
@@ -26,6 +27,8 @@ import static android.security.Flags.FLAG_ENFORCE_INTENT_FILTER_MATCH;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -43,6 +46,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.StrictMode;
+import android.os.strictmode.UnsafeIntentLaunchViolation;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -67,6 +72,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @AppModeFull // TODO(Instant) Figure out which APIs should work.
@@ -77,14 +83,21 @@ public class SaferIntentTest {
     private PackageManager mPackageManager;
     private Instrumentation mInstrumentation;
     private ArrayList<BroadcastReceiver> mRegisteredReceiverList;
+    private LinkedBlockingQueue<StrictMode.ViolationInfo> mViolations;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final long ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID = 161252188;
+    private static final long IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID = 229362273;
+
     private static final String ACTIVITY_NAME = "android.content.pm.cts.TestPmActivity";
     private static final String SERVICE_NAME = "android.content.pm.cts.TestPmService";
     private static final String RECEIVER_NAME = "android.content.pm.cts.PmTestReceiver";
+
+    private static final String EXPORTED_ACTION = "android.intent.action.cts.EXPORTED_ACTION";
+    private static final String NON_EXPORTED_ACTION =
+            "android.intent.action.cts.NON_EXPORTED_ACTION";
 
     private static final String NON_EXISTENT_ACTION_NAME = "android.intent.action.cts.NON_EXISTENT";
     private static final String RESOLUTION_TEST_PKG_NAME =
@@ -101,6 +114,8 @@ public class SaferIntentTest {
         mContext = mInstrumentation.getContext();
         mPackageManager = mContext.getPackageManager();
         mRegisteredReceiverList = new ArrayList<>();
+        mViolations = new LinkedBlockingQueue<>();
+        StrictMode.setViolationLogger(mViolations::offer);
     }
 
     @After
@@ -108,21 +123,134 @@ public class SaferIntentTest {
         SystemUtil.runWithShellPermissionIdentity(() ->
                         CompatChanges.removePackageOverrides(mContext.getPackageName(),
                                 Set.of(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID,
+                                        IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID,
                                         BLOCK_NULL_ACTION_INTENTS)),
                 OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
         for (BroadcastReceiver receiver : mRegisteredReceiverList) {
             mContext.unregisterReceiver(receiver);
         }
+        StrictMode.setVmPolicy(StrictMode.VmPolicy.LAX);
+        StrictMode.setViolationLogger(null);
+    }
+
+    private void setCompatOverride(long changeId, boolean enable) {
+        var override = Map.of(changeId, new PackageOverride.Builder().setEnabled(enable).build());
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> CompatChanges.putPackageOverrides(mContext.getPackageName(), override),
+                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+    }
+
+    private void enableStrictMode() {
+        var policy = new StrictMode.VmPolicy.Builder()
+                .detectUnsafeIntentLaunch()
+                .penaltyLog()
+                .build();
+        StrictMode.setVmPolicy(policy);
+    }
+
+    private void assertViolation(boolean b) throws InterruptedException {
+        StrictMode.ViolationInfo v = mViolations.poll(5, TimeUnit.SECONDS);
+        // No other violations queued up
+        assertTrue(mViolations.isEmpty());
+        if (b) {
+            assertNotNull(v);
+            assertTrue(UnsafeIntentLaunchViolation.class.isAssignableFrom(v.getViolationClass()));
+        } else {
+            assertNull(v);
+        }
+    }
+
+    @Test
+    public void testStartInternalExportedActivity() {
+        setCompatOverride(IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID, true);
+        Intent intent = new Intent(EXPORTED_ACTION);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
+    }
+
+    @Test
+    public void testStartInternalNonExportedActivity() throws InterruptedException {
+        setCompatOverride(IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID, false);
+        enableStrictMode();
+
+        Intent intent = new Intent(NON_EXPORTED_ACTION);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
+        // Strict mode should still catch the unsafe usage
+        assertViolation(true);
+
+        // Enable the feature
+        setCompatOverride(IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID, true);
+        assertThrows(ActivityNotFoundException.class, () -> mContext.startActivity(intent));
+        assertViolation(true);
+
+        // Switching to explicit should work properly
+        intent.setPackage(mContext.getPackageName());
+        mContext.startActivity(intent);
+        assertViolation(false);
+    }
+
+    @Test
+    public void testBroadcastInternalExportedRuntimeReceiver()
+            throws InterruptedException {
+        setCompatOverride(IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID, true);
+        var latch = new CountDownLatch(1);
+        var receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                latch.countDown();
+            }
+        };
+        var filter = new IntentFilter(EXPORTED_ACTION);
+        mContext.registerReceiver(receiver, filter, RECEIVER_EXPORTED);
+        mRegisteredReceiverList.add(receiver);
+        mContext.sendBroadcast(new Intent(EXPORTED_ACTION));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testBroadcastInternalNonExportedRuntimeReceiver()
+            throws InterruptedException {
+        setCompatOverride(IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID, false);
+        enableStrictMode();
+
+        var receiver = new BroadcastReceiver() {
+            private CountDownLatch mLatch;
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                mLatch.countDown();
+            }
+        };
+        var filter = new IntentFilter(NON_EXPORTED_ACTION);
+        mContext.registerReceiver(receiver, filter, RECEIVER_NOT_EXPORTED);
+        mRegisteredReceiverList.add(receiver);
+        var intent = new Intent(NON_EXPORTED_ACTION);
+
+        receiver.mLatch = new CountDownLatch(1);
+        mContext.sendBroadcast(intent);
+        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
+        // Strict mode should still catch the unsafe usage
+        assertViolation(true);
+
+        // Enable the feature
+        setCompatOverride(IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID, true);
+        receiver.mLatch = new CountDownLatch(1);
+        mContext.sendBroadcast(intent);
+        assertFalse(receiver.mLatch.await(5, TimeUnit.SECONDS));
+        assertViolation(true);
+
+        // Switching to explicit should work properly
+        intent.setPackage(mContext.getPackageName());
+        receiver.mLatch = new CountDownLatch(1);
+        mContext.sendBroadcast(intent);
+        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
+        assertViolation(false);
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
     public void testEnforceIntentToMatchIntentFilter() {
-        var override = Map.of(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID,
-                new PackageOverride.Builder().setEnabled(true).build());
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                        CompatChanges.putPackageOverrides(mContext.getPackageName(), override),
-                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, true);
 
         final var emptyFlags = PackageManager.ResolveInfoFlags.of(0);
         final var activityFlags = PackageManager.ResolveInfoFlags.of(
@@ -312,11 +440,7 @@ public class SaferIntentTest {
 
     @Test
     public void testLegacyIntentFilterMatching() {
-        var override = Map.of(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID,
-                new PackageOverride.Builder().setEnabled(false).build());
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                        CompatChanges.putPackageOverrides(mContext.getPackageName(), override),
-                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, false);
 
         final var emptyFlags = PackageManager.ResolveInfoFlags.of(0);
 
@@ -372,11 +496,7 @@ public class SaferIntentTest {
         List<ResolveInfo> results;
 
         // Test legacy behavior
-        final var disable = Map.of(BLOCK_NULL_ACTION_INTENTS,
-                new PackageOverride.Builder().setEnabled(false).build());
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                        CompatChanges.putPackageOverrides(mContext.getPackageName(), disable),
-                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+        setCompatOverride(BLOCK_NULL_ACTION_INTENTS, false);
 
         // Null action intent should match
         results = mPackageManager.queryIntentActivities(intent, activityFlags);
@@ -387,11 +507,7 @@ public class SaferIntentTest {
         assertFalse(results.isEmpty());
 
         // Test new behavior
-        final var enable = Map.of(BLOCK_NULL_ACTION_INTENTS,
-                new PackageOverride.Builder().setEnabled(true).build());
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                        CompatChanges.putPackageOverrides(mContext.getPackageName(), enable),
-                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+        setCompatOverride(BLOCK_NULL_ACTION_INTENTS, true);
 
         // Null action intent should not match
         results = mPackageManager.queryIntentActivities(intent, activityFlags);
@@ -425,22 +541,14 @@ public class SaferIntentTest {
                 .addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY);
 
         // Test legacy behavior
-        final var disable = Map.of(BLOCK_NULL_ACTION_INTENTS,
-                new PackageOverride.Builder().setEnabled(false).build());
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                        CompatChanges.putPackageOverrides(mContext.getPackageName(), disable),
-                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+        setCompatOverride(BLOCK_NULL_ACTION_INTENTS, false);
 
         receiver.mLatch = new CountDownLatch(1);
         mContext.sendBroadcast(intent);
         assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
 
         // Test new behavior
-        final var enable = Map.of(BLOCK_NULL_ACTION_INTENTS,
-                new PackageOverride.Builder().setEnabled(true).build());
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                        CompatChanges.putPackageOverrides(mContext.getPackageName(), enable),
-                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+        setCompatOverride(BLOCK_NULL_ACTION_INTENTS, true);
 
         receiver.mLatch = new CountDownLatch(1);
         mContext.sendBroadcast(intent);
@@ -460,11 +568,7 @@ public class SaferIntentTest {
 
     private IntentRetriever setupMismatchFlagTest() {
         // Explicitly disable the enforcement to test non-matching intents
-        final var disable = Map.of(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID,
-                new PackageOverride.Builder().setEnabled(false).build());
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                        CompatChanges.putPackageOverrides(mContext.getPackageName(), disable),
-                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, false);
 
         final var receiver = new IntentRetriever();
         final var filter = new IntentFilter(ACTION_RECEIVING_INTENT);
