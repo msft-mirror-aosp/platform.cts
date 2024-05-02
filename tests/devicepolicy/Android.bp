@@ -123,8 +123,9 @@ android_test {
         "bedstead-multiuser",
     ],
     srcs: [
-        "src/**/*.java",
-        "src/**/*.kt",
+        "src/android/devicepolicy/cts/ApplicationHiddenTest.java",
+        "src/android/devicepolicy/cts/utils/PolicyEngineUtils.java",
+        "src/android/devicepolicy/cts/utils/PolicySetResultUtils.java",
     ],
     test_suites: [
         "gts",

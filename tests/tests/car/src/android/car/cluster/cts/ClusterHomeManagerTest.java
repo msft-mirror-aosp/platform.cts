@@ -20,6 +20,7 @@ import static android.car.feature.Flags.FLAG_CLUSTER_HEALTH_MONITORING;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -55,6 +56,8 @@ import java.util.concurrent.TimeUnit;
 
 public final class ClusterHomeManagerTest {
     private static final long TIMEOUT_MS = 10_000;
+    private static final String FEATURE_CAR_SPLITSCREEN_MULTITASKING =
+            "android.software.car.splitscreen_multitasking";
     private static final String CLUSTER_HOME_SERVICE = "ClusterHomeService";
     private static final String DUMP_TPL_COUNT = "mTrustedPresentationListenerCount";
     private static final String DUMP_CLUSTER_SURFACE = "mClusterActivitySurface";
@@ -112,6 +115,10 @@ public final class ClusterHomeManagerTest {
     @RequiresFlagsEnabled(FLAG_CLUSTER_HEALTH_MONITORING)
     @ApiTest(apis = {"android.car.cluster.ClusterHomeManager#startVisibilityMonitoring(Activity)"})
     public void testStartVisibilityMonitoring() throws Exception {
+        // TODO(b/338221434) Explicitly skip the test until the RRO issue is resolved.
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                FEATURE_CAR_SPLITSCREEN_MULTITASKING));
+
         var oldDump = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE);
         int oldCount = Integer.valueOf(oldDump.get(DUMP_TPL_COUNT));
 

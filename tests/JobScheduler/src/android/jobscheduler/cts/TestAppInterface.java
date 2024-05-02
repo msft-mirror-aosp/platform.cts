@@ -35,6 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.app.compat.CompatChanges;
@@ -49,6 +50,7 @@ import android.content.pm.PackageManager;
 import android.jobscheduler.cts.jobtestapp.TestActivity;
 import android.jobscheduler.cts.jobtestapp.TestFgsService;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
+import android.net.NetworkPolicyManager;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.server.wm.WindowManagerStateHelper;
@@ -79,6 +81,7 @@ class TestAppInterface implements AutoCloseable {
     static final String TEST_APP_RECEIVER = TEST_APP_PACKAGE + ".TestJobSchedulerReceiver";
 
     private final Context mContext;
+    private final NetworkPolicyManager mNetworkPolicyManager;
     private final int mJobId;
     private final int mTestPackageUid;
 
@@ -88,6 +91,7 @@ class TestAppInterface implements AutoCloseable {
     TestAppInterface(Context ctx, int jobId) {
         mContext = ctx;
         mJobId = jobId;
+        mNetworkPolicyManager = mContext.getSystemService(NetworkPolicyManager.class);
 
         try {
             mTestPackageUid = mContext.getPackageManager().getPackageUid(TEST_APP_PACKAGE, 0);
@@ -99,7 +103,7 @@ class TestAppInterface implements AutoCloseable {
         intentFilter.addAction(ACTION_JOB_STARTED);
         intentFilter.addAction(ACTION_JOB_STOPPED);
         intentFilter.addAction(ACTION_JOB_SCHEDULE_RESULT);
-        mContext.registerReceiver(mReceiver, intentFilter, Context.RECEIVER_EXPORTED_UNAUDITED);
+        mContext.registerReceiver(mReceiver, intentFilter, Context.RECEIVER_EXPORTED);
         SystemUtil.runShellCommand(
                 "am compat enable --no-kill ALLOW_TEST_API_ACCESS " + TEST_APP_PACKAGE);
         if (AppStandbyUtils.isAppStandbyEnabled()) {
@@ -230,6 +234,16 @@ class TestAppInterface implements AutoCloseable {
     /** Asks (not forces) JobScheduler to run the job if constraints are met. */
     void runSatisfiedJob() throws Exception {
         runSatisfiedJob(mJobId);
+    }
+
+    void kill() {
+        SystemUtil.runShellCommand("am stop-app " + TEST_APP_PACKAGE);
+    }
+
+    boolean isNetworkBlockedByPolicy() throws Exception {
+        return SystemUtil.callWithShellPermissionIdentity(
+                () -> mNetworkPolicyManager.isUidNetworkingBlocked(mTestPackageUid, false),
+                Manifest.permission.OBSERVE_NETWORK_POLICY);
     }
 
     void runSatisfiedJob(int jobId) throws Exception {

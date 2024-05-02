@@ -16,7 +16,7 @@
 
 package com.android.cts.mockime;
 
-import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
+import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
 import android.Manifest;
 import android.app.ActivityManager;
@@ -38,6 +38,7 @@ import androidx.annotation.Nullable;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
@@ -61,6 +62,16 @@ final class MultiUserUtils {
             placeholder[0] = supplier.get();
         }, permissions);
         return (T) placeholder[0];
+    }
+
+    @NonNull
+    private static String runShellCommandOrThrow(@NonNull UiAutomation uiAutomation,
+            @NonNull String cmd) {
+        try {
+            return runShellCommand(uiAutomation, cmd);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Nullable
@@ -141,7 +152,8 @@ final class MultiUserUtils {
 
         // Use the shell command as a fallback.
         final String command = "ime list -s --user " + user.getIdentifier();
-        final var enabledImes = new ArraySet<>(runShellCommandOrThrow(command).split("\n"));
+        final var enabledImes = new ArraySet<>(
+                runShellCommandOrThrow(uiAutomation, command).split("\n"));
         final List<InputMethodInfo> imes = getInputMethodListAsUser(context, uiAutomation, user);
         imes.removeIf(imi -> !enabledImes.contains(imi.getId()));
         return imes;

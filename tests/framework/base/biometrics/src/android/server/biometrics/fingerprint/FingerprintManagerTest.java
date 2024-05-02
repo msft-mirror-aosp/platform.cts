@@ -378,20 +378,20 @@ public class FingerprintManagerTest extends ActivityManagerTestBase
         }
     }
 
-    private TestSessionList createTestSessionsWithEnrollments(int userId) {
+    private TestSessionList createTestSessionsWithEnrollments(int userId) throws Exception {
         final TestSessionList testSessions = new TestSessionList(this);
         for (SensorProperties prop : mSensorProperties) {
-            BiometricTestSession session =
-                    mFingerprintManager.createTestSession(prop.getSensorId());
-            testSessions.put(prop.getSensorId(), session);
+            final int sensorId = prop.getSensorId();
+            try (BiometricTestSession session = mFingerprintManager.createTestSession(sensorId)) {
+                testSessions.put(prop.getSensorId(), session);
 
-            session.startEnroll(userId);
-            mInstrumentation.waitForIdleSync();
-            waitForIdleSensors();
+                session.startEnroll(userId);
+                Utils.waitForBusySensor(sensorId);
 
-            session.finishEnroll(userId);
-            mInstrumentation.waitForIdleSync();
-            waitForIdleSensors();
+                session.finishEnroll(userId);
+                mInstrumentation.waitForIdleSync();
+                waitForIdleSensors();
+            }
         }
         return testSessions;
     }

@@ -29,8 +29,8 @@ import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
 
-_ALIGN_TOL_MM = 5.0  # mm
-_ALIGN_TOL = 0.01  # multiplied by sensor diagonal to convert to pixels
+_ALIGN_ATOL_MM = 5.0  # mm
+_ALIGN_RTOL = 0.01  # 1% of sensor diagonal in pixels
 _CHART_DISTANCE_RTOL = 0.1
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_MIN_AREA = 0.005  # multiplied by image size
@@ -564,17 +564,17 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       err_mm = np.linalg.norm(np.array([x_w[i_ref], y_w[i_ref]]) -
                               np.array([x_w[i_2nd], y_w[i_2nd]])) * _M_TO_MM
       logging.debug('Center location err (mm): %.2f', err_mm)
-      if err_mm > _ALIGN_TOL_MM:
+      if err_mm > _ALIGN_ATOL_MM:
         raise AssertionError(
             f'Centers {i_ref} <-> {i_2nd} too different! '
-            f'val={err_mm:.2f}, ATOL={_ALIGN_TOL_MM} mm')
+            f'val={err_mm:.2f}, ATOL={_ALIGN_ATOL_MM} mm')
 
       # Check projections back into pixel space
       for i in [i_ref, i_2nd]:
         err = np.linalg.norm(np.array([circle[i]['x'], circle[i]['y']]) -
                              np.array([x_p[i], y_p[i]]).reshape(1, -1))
         logging.debug('Camera %s projection error (pixels): %.1f', i, err)
-        tol = _ALIGN_TOL * sensor_diag[i]
+        tol = _ALIGN_RTOL * sensor_diag[i]
         if err >= tol:
           raise AssertionError(f'Camera {i} project location too different! '
                                f'diff={err:.2f}, ATOL={tol:.2f} pixels')

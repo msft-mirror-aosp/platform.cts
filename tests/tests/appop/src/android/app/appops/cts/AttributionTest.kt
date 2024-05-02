@@ -113,6 +113,7 @@ class AttributionTest {
                     .isEqualTo(before.attributedOpEntries[ATTRIBUTION_3]!!
                             .getLastAccessTime(OP_FLAGS_ALL))
         }
+        runCommand("pm uninstall $PKG")
     }
 
     @Test

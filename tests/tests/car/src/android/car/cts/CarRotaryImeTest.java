@@ -18,6 +18,7 @@ package android.car.cts;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -29,26 +30,17 @@ import android.view.inputmethod.InputMethodManager;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
 
 // Note: this test must not extend AbstractCarTestCase. See b/328536639.
-// Skipping for visible background users as Accessibility Framework which rotary IME relies on
-// does not support visible background users
-@RequireRunNotOnVisibleBackgroundNonProfileUser
 public final class CarRotaryImeTest {
-    @ClassRule
-    @Rule
-    public static final DeviceState sDeviceState = new DeviceState();
 
     private static final long POLLING_CHECK_TIMEOUT_MILLIS = 3000L;
 
@@ -67,6 +59,13 @@ public final class CarRotaryImeTest {
 
     @Before
     public void setUp() {
+        UserHelper userHelper = new UserHelper(mContext);
+
+        // Skipping for visible background users as Accessibility Framework which RotaryService
+        // relies on does not support visible background users.
+        assumeFalse("Not supported on visible background user",
+                userHelper.isVisibleBackgroundUser());
+
         assumeHasRotaryService();
     }
 

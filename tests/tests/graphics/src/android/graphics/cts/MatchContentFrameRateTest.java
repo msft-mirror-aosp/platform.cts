@@ -52,7 +52,8 @@ public class MatchContentFrameRateTest {
             new AdoptShellPermissionsRule(getInstrumentation().getUiAutomation(),
                     Manifest.permission.OVERRIDE_DISPLAY_MODE_REQUESTS,
                     Manifest.permission.MODIFY_REFRESH_RATE_SWITCHING_TYPE,
-                    Manifest.permission.HDMI_CEC);
+                    Manifest.permission.HDMI_CEC,
+                    Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
     private int mInitialRefreshRateSwitchingType;
     private DisplayManager mDisplayManager;
