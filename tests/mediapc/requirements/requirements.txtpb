@@ -746,7 +746,8 @@ requirements {
 }
 requirements {
   id: "5.12/H-1-2"
-  description: "- RGBA_1010102 color format"
+  name: "RGBA 1010102 color format"
+  description: "RGBA_1010102 color format support for hardware encoders."
   measurements: {
     key: "rgba_1010102_color_format"
     value: {
