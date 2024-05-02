@@ -28,7 +28,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.PendingIntent;
@@ -61,7 +60,6 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
 import com.google.common.collect.Lists;
@@ -84,13 +82,7 @@ import java.util.stream.Collectors;
 public class RemoteViewsFixedCollectionAdapterTest {
     private static final String PACKAGE_NAME = "android.widget.cts";
 
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
-
-    @Rule(order = 1)
+    @Rule
     public ActivityTestRule<RemoteViewsCtsActivity> mActivityRule =
             new ActivityTestRule<>(RemoteViewsCtsActivity.class);
 

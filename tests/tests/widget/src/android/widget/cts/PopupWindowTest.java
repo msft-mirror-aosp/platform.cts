@@ -31,7 +31,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import android.Manifest;
 import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.app.ActivityOptions;
@@ -81,7 +80,6 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
@@ -117,15 +115,7 @@ public class PopupWindowTest {
     public static SetRequestedOrientationRule mSetRequestedOrientationRule =
             new SetRequestedOrientationRule();
 
-    // ACCESS_SURFACE_FLINGER permission is required for waitForWindowOnTop.
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX,
-            Manifest.permission.ACCESS_SURFACE_FLINGER);
-
-    @Rule(order = 1)
+    @Rule
     public ActivityTestRule<PopupWindowCtsActivity> mActivityRule =
             new ActivityTestRule<>(PopupWindowCtsActivity.class);
 

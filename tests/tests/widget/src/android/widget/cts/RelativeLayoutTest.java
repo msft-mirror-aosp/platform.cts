@@ -21,7 +21,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
@@ -42,7 +41,6 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
 import org.junit.Before;
@@ -63,13 +61,7 @@ public class RelativeLayoutTest {
     private Instrumentation mInstrumentation;
     private Activity mActivity;
 
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
-
-    @Rule(order = 1)
+    @Rule
     public ActivityTestRule<RelativeLayoutCtsActivity> mActivityRule =
             new ActivityTestRule<>(RelativeLayoutCtsActivity.class);
 

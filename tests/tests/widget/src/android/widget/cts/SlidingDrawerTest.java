@@ -29,7 +29,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.util.AttributeSet;
@@ -45,7 +44,6 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.Before;
@@ -70,13 +68,7 @@ public class SlidingDrawerTest {
     private Activity mActivity;
     private SlidingDrawer mDrawer;
 
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
-
-    @Rule(order = 1)
+    @Rule
     public ActivityTestRule<SlidingDrawerCtsActivity> mActivityRule =
             new ActivityTestRule<>(SlidingDrawerCtsActivity.class);
 

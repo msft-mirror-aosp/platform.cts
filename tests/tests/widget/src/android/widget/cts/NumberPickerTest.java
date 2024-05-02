@@ -34,7 +34,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-import android.Manifest;
 import android.app.Instrumentation;
 import android.app.Service;
 import android.content.Context;
@@ -59,7 +58,6 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsKeyEventUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.UserHelper;
@@ -94,18 +92,7 @@ public class NumberPickerTest {
     @Mock
     private View.AccessibilityDelegate mMockA11yDelegate;
 
-    // Normally, ACCESS_SURFACE_FLINGER permission is automatically set for waitForWindowOnTop() and
-    // there is no need to set it explicitly. However, since we are overriding default permissions
-    // to include other required permissions, ACCESS_SURFACE_FLINGER also needs to be explicitly
-    // added.
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX,
-            Manifest.permission.ACCESS_SURFACE_FLINGER);
-
-    @Rule(order = 1)
+    @Rule
     public ActivityTestRule<NumberPickerCtsActivity> mActivityRule =
             new ActivityTestRule<>(NumberPickerCtsActivity.class);
 
