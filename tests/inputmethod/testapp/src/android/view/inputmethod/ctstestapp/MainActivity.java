@@ -141,6 +141,7 @@ public final class MainActivity extends Activity {
             layout.addView(mEditor);
         }
 
+        layout.setFitsSystemWindows(true);
         setContentView(layout);
     }
 
