@@ -24,12 +24,8 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.SystemClock;
 import android.os.UserHandle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.installtests.common.Ime1Constants;
@@ -72,9 +68,6 @@ public class ForceStopTest {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();  // Required by Bedstead.
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     private boolean mNeedsTearDown = false;
 
     @Before
@@ -101,7 +94,6 @@ public class ForceStopTest {
     /**
      * A regression test for Bug 333798837 (for the current / primary user).
      */
-    @RequiresFlagsEnabled(Flags.FLAG_IMM_USERHANDLE_HOSTSIDETESTS)
     @Test
     public void testImeRemainsEnabledAfterForceStopForCurrentUser() {
         final UserReference currentUser = sDeviceState.initialUser();
@@ -112,7 +104,6 @@ public class ForceStopTest {
     /**
      * A regression test for Bug 333798837 (for the current / primary user).
      */
-    @RequiresFlagsEnabled(Flags.FLAG_IMM_USERHANDLE_HOSTSIDETESTS)
     @Test
     public void testImeRemainsSelectedAndEnabledAfterForceStopForCurrentUser() {
         final UserReference currentUser = sDeviceState.initialUser();
@@ -126,7 +117,6 @@ public class ForceStopTest {
     @RequireMultiUserSupport
     @EnsureHasSecondaryUser
     @EnsureHasAdditionalUser  // Required on Android Automotive
-    @RequiresFlagsEnabled(Flags.FLAG_IMM_USERHANDLE_HOSTSIDETESTS)
     @Test
     public void testImeRemainsEnabledAfterForceStopForBackgroundUser() {
         final UserReference secondaryUser =
@@ -138,7 +128,6 @@ public class ForceStopTest {
     @RequireMultiUserSupport
     @EnsureHasSecondaryUser
     @EnsureHasAdditionalUser  // Required on Android Automotive
-    @RequiresFlagsEnabled(Flags.FLAG_IMM_USERHANDLE_HOSTSIDETESTS)
     @Test
     public void testImeRemainsSelectedAndEnabledAfterForceStopForBackgroundUser() {
         final UserReference secondaryUser =
