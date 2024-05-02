@@ -524,7 +524,7 @@ public final class TestMeasurementUtil {
      * @param measurement GnssMeasurement
      * @param softAssert  custom SoftAssert
      * @param timeInNs    event time in ns
-     * */
+     */
     private static void verifyReceivedSatelliteVehicleTimeInNs(GnssMeasurement measurement,
         SoftAssert softAssert, long timeInNs) {
 
