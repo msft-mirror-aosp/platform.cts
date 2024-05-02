@@ -28,7 +28,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.media.AudioAttributes;
@@ -46,7 +45,6 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Before;
@@ -88,13 +86,7 @@ public class VideoViewTest {
     private VideoView mVideoView;
     private String mVideoPath;
 
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
-
-    @Rule(order = 1)
+    @Rule
     public ActivityTestRule<VideoViewCtsActivity> mActivityRule =
             new ActivityTestRule<>(VideoViewCtsActivity.class);
 
