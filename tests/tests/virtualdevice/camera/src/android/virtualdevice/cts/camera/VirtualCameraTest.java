@@ -676,7 +676,8 @@ public class VirtualCameraTest {
         assertThat(Camera.getNumberOfCameras(vdContext)).isEqualTo(1);
 
         Camera.CameraInfo info = new Camera.CameraInfo();
-        Camera.getCameraInfo(/* cameraId= */ 0, vdContext, /* overrideToPortrait= */ false, info);
+        Camera.getCameraInfo(/* cameraId= */ 0, vdContext, CameraManager.ROTATION_OVERRIDE_NONE,
+                info);
         assertThat(info.facing).isEqualTo(Camera.CameraInfo.CAMERA_FACING_FRONT);
         assertThat(info.orientation).isEqualTo(SENSOR_ORIENTATION_0);
     }
@@ -693,8 +694,8 @@ public class VirtualCameraTest {
         try (ImageReader imageReader = createImageReader(YUV_420_888)) {
             Camera camera = null;
             try {
-                camera = Camera.open(/* cameraId= */ 0, vdContext, /* overrideToPortrait= */
-                        false);
+                camera = Camera.open(/* cameraId= */ 0, vdContext,
+                        CameraManager.ROTATION_OVERRIDE_NONE);
                 camera.setPreviewSurface(imageReader.getSurface());
 
                 camera.startPreview();
