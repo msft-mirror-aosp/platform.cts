@@ -17,15 +17,13 @@
 package android.hardware.camera2.cts;
 
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.AspectRatio;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.MAXIMUM;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PREVIEW;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PRIV;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1080P;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1440P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S720P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.YUV;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.QUERY_COMBINATIONS;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithParamsSupported;
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithParamsSupportedChecked;
@@ -60,6 +58,7 @@ import android.util.Pair;
 import android.util.Range;
 import android.util.Size;
 import android.view.Surface;
+
 import androidx.annotation.Nullable;
 
 import com.android.compatibility.common.util.CddTest;
@@ -105,46 +104,6 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
     public void testIsSessionConfigurationSupported() throws Exception {
-        // Note: This must match the required stream combinations defined in
-        // CameraCharacteristcs#INFO_SESSION_CONFIGURATION_QUERY_VERSION.
-        final int[][] legacyCombinations = {
-            // Simple preview, GPU video processing, or no-preview video recording
-            {PRIV, MAXIMUM},
-            {PRIV, PREVIEW},
-            {PRIV, S1440P},   // 1920 * 1440, 4:3; 2560 * 1440, 16:9
-            {PRIV, S1080P},   // 1440 * 1080, 4:3; 1920 * 1080, 16:9
-            {PRIV, S720P},    // 960 * 720, 4:3; 1280 * 720, 16:9
-            // In-application video/image processing
-            {YUV, MAXIMUM},
-            {YUV, PREVIEW},
-            {YUV, S1440P},
-            {YUV, S1080P},
-            {YUV, S720P},
-            // Standard still imaging.
-            {PRIV, PREVIEW, JPEG, MAXIMUM},
-            {PRIV, S1440P,  JPEG, MAXIMUM},
-            {PRIV, S1080P,  JPEG, MAXIMUM},
-            {PRIV, S720P,   JPEG, MAXIMUM},
-            {PRIV, S1440P,  JPEG, S1440P},
-            {PRIV, S1080P,  JPEG, S1080P},
-            {PRIV, S720P,   JPEG, S1080P},
-            // In-app processing plus still capture.
-            {YUV,  PREVIEW, JPEG, MAXIMUM},
-            {YUV,  S1440P,  JPEG, MAXIMUM},
-            {YUV,  S1080P,  JPEG, MAXIMUM},
-            {YUV,  S720P,   JPEG, MAXIMUM},
-            // Standard recording.
-            {PRIV, PREVIEW, PRIV, PREVIEW},
-            {PRIV, S1440P,  PRIV, S1440P},
-            {PRIV, S1080P,  PRIV, S1080P},
-            {PRIV, S720P,   PRIV, S720P},
-            // Preview plus in-app processing.
-            {PRIV, PREVIEW, YUV,  PREVIEW},
-            {PRIV, S1440P,  YUV,  S1440P},
-            {PRIV, S1080P,  YUV,  S1080P},
-            {PRIV, S720P,   YUV,  S720P},
-        };
-
         for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticInfo = mAllStaticInfo.get(id);
             if (!staticInfo.isColorOutputSupported()) {
@@ -164,26 +123,8 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             CameraDeviceSetup cameraDeviceSetup = mCameraManager.getCameraDeviceSetup(id);
 
             try {
-                for (int[] c : legacyCombinations) {
-                    boolean testAspectRatios = false;
-                    for (int i = 0; i < c.length; i += 2) {
-                        if (c[i + 1] == S1440P || c[i + 1] == S1080P || c[i + 1] == S720P) {
-                            testAspectRatios = true;
-                            break;
-                        }
-                    }
-
-                    if (testAspectRatios) {
-                        // Test 16:9 version of the combination
-                        testIsSessionConfigurationSupported(
-                                cameraDeviceSetup, AspectRatio.AR_16_9, c);
-                        // Test 4:3 version of the combination
-                        testIsSessionConfigurationSupported(
-                                cameraDeviceSetup, AspectRatio.AR_4_3, c);
-                    } else {
-                        testIsSessionConfigurationSupported(
-                                cameraDeviceSetup, AspectRatio.ARBITRARY, c);
-                    }
+                for (int[] c : QUERY_COMBINATIONS) {
+                    testIsSessionConfigurationSupported(cameraDeviceSetup, c);
                 }
             } finally {
                 closeDevice(id);
@@ -192,9 +133,9 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
     }
 
     private void testIsSessionConfigurationSupported(CameraDeviceSetup cameraDeviceSetup,
-            AspectRatio aspectRatio, int[] combination) throws Exception {
+            int[] combination) throws Exception {
         MaxStreamSizes maxStreamSizes = new MaxStreamSizes(mStaticInfo,
-                cameraDeviceSetup.getId(), mContext, aspectRatio);
+                cameraDeviceSetup.getId(), mContext, /*matchSize*/true);
 
         Set<Long> dynamicRangeProfiles = mStaticInfo.getAvailableDynamicRangeProfilesChecked();
         int[] videoStabilizationModes =
@@ -545,7 +486,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             // Runtime test of HLG10 combinations mandated by MPC
             for (int[] c : hlg10Combinations) {
                 MaxStreamSizes maxStreamSizes = new MaxStreamSizes(mStaticInfo, mCamera.getId(),
-                        mContext, AspectRatio.AR_16_9);
+                        mContext, /*matchSize*/true);
                 testVPerfClassCombination(c, cameraDeviceSetup, maxStreamSizes);
             }
         } catch (Exception e) {
