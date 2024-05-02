@@ -31,13 +31,9 @@ import android.content.pm.InstantAppInfo;
 import android.content.pm.PackageManager;
 import android.os.RemoteCallback;
 import android.os.UserHandle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
@@ -94,9 +90,6 @@ public class MultiUserTest {
     private InputMethodManager mImm;
     private boolean mNeedsTearDown = false;
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     @Before
     public void setUp() {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
@@ -127,7 +120,6 @@ public class MultiUserTest {
      * APK installation
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_IMM_USERHANDLE_HOSTSIDETESTS)
     @EnsureHasSecondaryUser
     @EnsureHasAdditionalUser  // Required on Android Automotive
     public void testSecondaryUser() {
@@ -199,7 +191,6 @@ public class MultiUserTest {
      * APK installation
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_IMM_USERHANDLE_HOSTSIDETESTS)
     @RequireFeature(CommonPackages.FEATURE_MANAGED_USERS)
     @EnsureHasWorkProfile
     public void testProfileUser() throws Exception {
