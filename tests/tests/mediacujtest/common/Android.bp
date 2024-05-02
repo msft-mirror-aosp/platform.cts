@@ -30,6 +30,7 @@ android_library {
         "androidx.media3.media3-exoplayer",
         "androidx.media3.media3-ui",
         "permission-test-util-lib",
+        "cts-wm-util",
     ],
     libs: [
         "auto_value_annotations",
