@@ -2274,8 +2274,13 @@ class ItsSession(object):
 
     if isinstance(out_surfaces, list):
       cmd['outputSurfaces'] = out_surfaces
+      for out_surface in out_surfaces:
+        if self._hidden_physical_id:
+          out_surface['physicalCamera'] = self._hidden_physical_id
     else:
       cmd['outputSurfaces'] = [out_surfaces]
+      if self._hidden_physical_id:
+        out_surfaces['physicalCamera'] = self._hidden_physical_id
 
     if settings:
       cmd['settings'] = settings
