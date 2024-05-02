@@ -34,7 +34,7 @@ _ANDROID10_API_LEVEL = 29
 _CH_FULL_SCALE = 255
 _CH_THRESH_BLACK = 6
 _CH_THRESH_WHITE = _CH_FULL_SCALE - 6
-_CH_TOL_WHITE = 2
+_CH_ATOL_WHITE = 2
 _COLOR_PLANES = ['R', 'G', 'B']
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PATCH_H = 0.1
@@ -155,9 +155,9 @@ class BlackWhiteTest(its_base_test.ItsBaseTest):
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       if first_api_level > _ANDROID10_API_LEVEL:
         if not math.isclose(
-            np.amin(white_means), np.amax(white_means), abs_tol=_CH_TOL_WHITE):
+            np.amin(white_means), np.amax(white_means), abs_tol=_CH_ATOL_WHITE):
           raise AssertionError('channel saturation not equal! '
-                               f'RGB: {white_means}, ATOL: {_CH_TOL_WHITE}')
+                               f'RGB: {white_means}, ATOL: {_CH_ATOL_WHITE}')
 
 if __name__ == '__main__':
   test_runner.main()
