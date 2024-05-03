@@ -54,10 +54,14 @@ public final class ActivityReference extends ComponentReference {
         // level and work for any component
         try (PermissionContext p = TestApis.permissions()
                 .withPermission(INTERACT_ACROSS_USERS_FULL)) {
-            return TestApis.context().androidContextAsUser(user)
-                    .getPackageManager()
-                    .getActivityInfo(componentName(), MATCH_DISABLED_COMPONENTS)
-                    .enabled;
+            PackageManager pm = TestApis.context().androidContextAsUser(user).getPackageManager();
+            int runtimeEnabledSetting = pm.getComponentEnabledSetting(componentName());
+            if (runtimeEnabledSetting == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+                return true;
+            } else if ((runtimeEnabledSetting == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)) {
+                return pm.getActivityInfo(componentName(), MATCH_DISABLED_COMPONENTS).enabled;
+            }
+            return false;
         } catch (PackageManager.NameNotFoundException e) {
             throw new NeneException("Activity does not exist or is not activity " + this, e);
         }
