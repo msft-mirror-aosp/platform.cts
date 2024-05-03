@@ -161,8 +161,14 @@ def _get_color_ratios(img, identifier):
     b_g_ratio: Ratio of B and G channel means.
   """
   img_means = image_processing_utils.compute_image_means(img)
-  r_g_ratio = img_means[0]/img_means[1]
-  b_g_ratio = img_means[2]/img_means[1]
+  r = img_means[0]
+  g = img_means[1]
+  b = img_means[2]
+  logging.debug('%s R mean: %.4f', identifier, r)
+  logging.debug('%s G mean: %.4f', identifier, g)
+  logging.debug('%s B mean: %.4f', identifier, b)
+  r_g_ratio = r/g
+  b_g_ratio = b/g
   logging.debug('%s R/G ratio: %.4f', identifier, r_g_ratio)
   logging.debug('%s B/G ratio: %.4f', identifier, b_g_ratio)
   return r_g_ratio, b_g_ratio
@@ -409,7 +415,9 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # Check the sensor orientation and flip image
       img_name_stem = os.path.join(self.log_path, 'flipped_preview')
-      uw_img, w_img = _check_orientation_and_flip(props, uw_img, w_img, img_name_stem)
+      uw_img, w_img = _check_orientation_and_flip(
+          props, uw_img, w_img, img_name_stem
+      )
 
       # Find ArUco markers in the image with UW lens
       # and extract the outer box patch

@@ -274,7 +274,7 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       logging.debug('%s gyro_var: %.3e', 'XYZ'[i], gyro_var)
       if gyro_mean >= _GYRO_MEAN_THRESH:
         raise AssertionError(f'gyro_mean: {gyro_mean:.3e}, '
-                             f'TOL={_GYRO_MEAN_THRESH}')
+                             f'ATOL={_GYRO_MEAN_THRESH}')
       if gyro_var >= gyro_var_atol:
         raise AssertionError(f'gyro_var: {gyro_var:.3e}, '
                              f'ATOL={gyro_var_atol:.3e}')

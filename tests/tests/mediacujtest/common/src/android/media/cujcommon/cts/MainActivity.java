@@ -28,9 +28,13 @@ import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
+import androidx.media3.common.Tracks.Group;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
+
+import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -94,8 +98,15 @@ public class MainActivity extends AppCompatActivity {
    */
   @Override
   protected void onStop() {
-    mPlayer.stop();
-    super.onStop();
+    // When activity is stopped, don't pause the playback if it is an audio only clip
+    ImmutableList<Group> currentTrackGroups = mPlayer.getCurrentTracks().getGroups();
+    if ((currentTrackGroups.size() == 1) && (currentTrackGroups.get(0).getType()
+        == C.TRACK_TYPE_AUDIO)) {
+      super.onStop();
+    } else {
+      mPlayer.stop();
+      super.onStop();
+    }
   }
 
   /**

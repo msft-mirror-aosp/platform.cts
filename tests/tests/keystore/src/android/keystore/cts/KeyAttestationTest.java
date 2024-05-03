@@ -447,6 +447,7 @@ public class KeyAttestationTest {
     public void testAttestationKmVersionMatchesFeatureVersion() throws Exception {
         if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC))
             return;
+        assumeTrue("Device does not support attestation", TestUtils.isAttestationSupported());
 
         testAttestationKmVersionMatchesFeatureVersion(false);
     }
@@ -455,6 +456,7 @@ public class KeyAttestationTest {
     public void testAttestationKmVersionMatchesFeatureVersionStrongBox() throws Exception {
         if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC))
             return;
+        assumeTrue("Device does not support attestation", TestUtils.isAttestationSupported());
 
         int keyStoreFeatureVersionStrongBox =
                 TestUtils.getFeatureVersionKeystoreStrongBox(getContext());

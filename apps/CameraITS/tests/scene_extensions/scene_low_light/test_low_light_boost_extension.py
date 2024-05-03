@@ -159,6 +159,9 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       # Check that tablet is connected and turn it off to validate lighting
       self.turn_off_tablet()
 
+      # Turn off DUT to reduce reflections
+      lighting_control_utils.turn_off_device_screen(self.dut)
+
       # Validate lighting, then setup tablet
       cam.do_3a(do_af=False)
       cap = cam.do_capture(
@@ -177,9 +180,6 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       if self.tablet:
         self.tablet.adb.shell(
             f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
-
-      # Turn off DUT to reduce reflections
-      lighting_control_utils.turn_off_device_screen(self.dut)
 
       # Determine preview width and height to test
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
