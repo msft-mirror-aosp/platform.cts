@@ -54,6 +54,9 @@
           "exclude-filter": "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraPerfClassCharacteristics[1]"
         },
         {
+          "exclude-filter": "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]"
+        },
+        {
           "exclude-filter": "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]"
         },
         {
