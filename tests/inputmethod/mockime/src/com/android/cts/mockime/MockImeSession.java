@@ -62,6 +62,7 @@ import androidx.annotation.GuardedBy;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.android.compatibility.common.util.PollingCheck;
 
@@ -519,7 +520,8 @@ public class MockImeSession implements AutoCloseable {
     }
 
     @Nullable
-    private ApplicationExitInfo findLatestMockImeSessionExitInfo() {
+    @VisibleForTesting
+    ApplicationExitInfo findLatestMockImeSessionExitInfo() {
         final List<ApplicationExitInfo> latestExitReasons =
                 MultiUserUtils.getHistoricalProcessExitReasons(mContext, mUiAutomation,
                         mMockImePackageName, /* pid= */ 0, /* maxNum= */ 1, mTargetUser);
