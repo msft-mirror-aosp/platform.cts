@@ -27,19 +27,19 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class CVE_2023_45782 extends NonRootSecurityTestCase {
+public class CVE_2024_0015 extends NonRootSecurityTestCase {
 
     @AsbSecurityTest(cveBugId = 300090204)
     @Test
-    public void testPocCVE_2023_45782() {
+    public void testPocCVE_2024_0015() {
         try {
-            final String testPkg = "android.security.cts.CVE_2023_45782";
+            final String testPkg = "android.security.cts.CVE_2024_0015";
 
             // Install test app in device
-            installPackage("CVE-2023-45782.apk", "-g");
+            installPackage("CVE-2024-0015.apk", "-g");
 
             // Run DeviceTest
-            runDeviceTests(testPkg, testPkg + ".DeviceTest", "testPocCVE_2023_45782");
+            runDeviceTests(testPkg, testPkg + ".DeviceTest", "testPocCVE_2024_0015");
         } catch (Exception e) {
             assumeNoException(e);
         }
