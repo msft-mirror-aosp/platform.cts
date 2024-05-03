@@ -25,9 +25,6 @@
         <option name="run-command" value="[ `device_config get virtual_devices android.companion.virtual.flags.virtual_camera` = 'true' ]" />
         <option name="run-command" value="[ `device_config get virtual_devices android.companion.virtualdevice.flags.virtual_camera_service_discovery` = 'true' ]" />
     </object>
-    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController">
-        <option name="required-feature" value="android.hardware.camera.external" />
-    </object>
 
     <option name="config-descriptor:metadata" key="component" value="framework" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
