@@ -28,6 +28,7 @@ import static android.graphics.ImageFormat.RGB_565;
 import static android.graphics.ImageFormat.YUV_420_888;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
+import static android.hardware.camera2.params.SessionConfiguration.SESSION_REGULAR;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.assertVirtualCameraConfig;
@@ -58,6 +59,7 @@ import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
+import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -70,6 +72,7 @@ import android.media.ImageReader;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.util.ArrayMap;
 import android.util.Size;
 import android.view.Surface;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -87,8 +90,11 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -735,6 +741,52 @@ public class VirtualCameraTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
+            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
+    public void getConcurrentCameraIds_singleVirtualCamera_returnsEmpty() throws Exception {
+        createFrontVirtualCamera();
+        setupVirtualDeviceCameraManager();
+
+        Set<Set<String>> combinations = mCameraManager.getConcurrentCameraIds();
+        assertThat(combinations).isEmpty();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
+            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
+    public void getConcurrentCameraIds_multipleVirtualCameras_returnsEmpty() throws Exception {
+        createFrontVirtualCamera();
+        createVirtualCamera(LENS_FACING_BACK);
+        setupVirtualDeviceCameraManager();
+
+        Set<Set<String>> combinations = mCameraManager.getConcurrentCameraIds();
+        assertThat(combinations).isEmpty();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
+            Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY, Flags.FLAG_CAMERA_DEVICE_AWARENESS})
+    public void isConcurrentSessionConfigurationSupported_virtualCamera_returnsFalse()
+            throws Exception {
+        createFrontVirtualCamera();
+        createVirtualCamera(LENS_FACING_BACK);
+        setupVirtualDeviceCameraManager();
+
+        Map<String, SessionConfiguration> cameraIdSessionConfigMap = new ArrayMap<>();
+        ArrayList<OutputConfiguration> outConfigs = new ArrayList<>();
+        outConfigs.add(new OutputConfiguration(new Size(1, 1), SurfaceTexture.class));
+        cameraIdSessionConfigMap.put(FRONT_CAMERA_ID,
+                new SessionConfiguration(SESSION_REGULAR, outConfigs, mExecutor,
+                        mSessionStateCallback));
+        cameraIdSessionConfigMap.put(BACK_CAMERA_ID,
+                new SessionConfiguration(SESSION_REGULAR, outConfigs, mExecutor,
+                        mSessionStateCallback));
+        assertThat(
+                mCameraManager.isConcurrentSessionConfigurationSupported(
+                        cameraIdSessionConfigMap)).isFalse();
+    }
+
     private VirtualCamera createFrontVirtualCamera() {
         return createVirtualCamera(LENS_FACING_FRONT);
     }
@@ -854,7 +906,7 @@ public class VirtualCameraTest {
 
     private SessionConfiguration createSessionConfig(ImageReader reader) {
         OutputConfiguration outputConfiguration = new OutputConfiguration(reader.getSurface());
-        return new SessionConfiguration(SessionConfiguration.SESSION_REGULAR,
+        return new SessionConfiguration(SESSION_REGULAR,
                 List.of(outputConfiguration), mExecutor, mSessionStateCallback);
     }
 
