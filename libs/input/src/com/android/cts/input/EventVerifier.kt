@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.input.cts
+package android.cts.input
 
 import android.view.InputEvent
 import android.view.KeyEvent

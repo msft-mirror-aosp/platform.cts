@@ -18,6 +18,7 @@ package android.input.cts
 
 import android.Manifest.permission.OVERRIDE_SYSTEM_KEY_BEHAVIOR_IN_FOCUSED_WINDOW
 import android.content.pm.PackageManager
+import android.cts.input.EventVerifier
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.KeyEvent

@@ -19,6 +19,7 @@ package android.input.cts
 import android.graphics.Point
 import android.graphics.PointF
 import android.hardware.input.InputManager
+import android.cts.input.EventVerifier
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_0
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_180
