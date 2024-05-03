@@ -41,8 +41,8 @@ import android.util.Log;
 
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.compatibility.common.util.TestUtils;
 import com.android.server.net.Flags;
 
 import java.util.Collections;
@@ -525,9 +525,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         mTestAppInterface.kill();
         if (Flags.networkBlockedForTopSleepingAndAbove()) {
-            // In case default network restrictions are on, we should wait for them to be enforced.
-            TestUtils.waitUntil("Test app did not lose network access after being stopped",
-                    mTestAppInterface::isNetworkBlockedByPolicy);
+            PollingCheck.waitFor(DEFAULT_TIMEOUT_MILLIS,
+                    mTestAppInterface::isNetworkBlockedByPolicy,
+                    "Test app did not lose network access after being stopped");
         }
 
         mTestAppInterface.runSatisfiedJob();
