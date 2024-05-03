@@ -71,7 +71,6 @@ import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DeviceReportLog;
-import com.android.compatibility.common.util.DynamicConfigDeviceSide;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
@@ -140,9 +139,6 @@ public class DecoderTest extends MediaTestBase {
     private static final int SLEEP_TIME_MS = 1000;
     private static final long PLAY_TIME_MS = TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES);
 
-    private static final String MODULE_NAME = "CtsMediaDecoderTestCases";
-    private DynamicConfigDeviceSide dynamicConfig;
-
     static final Map<String, String> sDefaultDecoders = new HashMap<>();
 
     protected static AssetFileDescriptor getAssetFileDescriptorFor(final String res)
@@ -176,8 +172,6 @@ public class DecoderTest extends MediaTestBase {
         }
         bis.close();
         masterFd.close();
-
-        dynamicConfig = new DynamicConfigDeviceSide(MODULE_NAME);
     }
 
     @After
