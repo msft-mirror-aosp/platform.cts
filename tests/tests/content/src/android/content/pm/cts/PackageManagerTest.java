@@ -3090,18 +3090,23 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
     @Test
     public void testInstallArchivedBroadcasts() throws Exception {
         int currentUser = ActivityManager.getCurrentUser();
-        PackageBroadcastReceiver addedBroadcastReceiver = new PackageBroadcastReceiver(
+        final PackageBroadcastReceiver addedBroadcastReceiver = new PackageBroadcastReceiver(
                 HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_ADDED
         );
-        PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
+        final PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
                 HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REMOVED
+        );
+        final PackageBroadcastReceiver uidRemovedBroadcastReceiver = new PackageBroadcastReceiver(
+                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_UID_REMOVED
         );
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
         intentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
         intentFilter.addDataScheme("package");
+        final IntentFilter intentFilterForUidRemoved = new IntentFilter(Intent.ACTION_UID_REMOVED);
         mContext.registerReceiver(addedBroadcastReceiver, intentFilter);
         mContext.registerReceiver(removedBroadcastReceiver, intentFilter);
+        mContext.registerReceiver(uidRemovedBroadcastReceiver, intentFilterForUidRemoved);
 
         try {
             installPackage(HELLO_WORLD_APK);
@@ -3113,9 +3118,11 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
             uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
             // Make sure this broadcast is received so it doesn't affect the test later
             removedBroadcastReceiver.assertBroadcastReceived();
+            uidRemovedBroadcastReceiver.assertBroadcastReceived();
 
             addedBroadcastReceiver.reset();
             removedBroadcastReceiver.reset();
+            uidRemovedBroadcastReceiver.reset();
 
             assertEquals("Success\n", executeShellCommand(
                     String.format("pm install-archived -r -i %s -t -S %s",
@@ -3132,9 +3139,12 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
             assertNotNull(removedIntent);
             assertTrue(removedIntent.getExtras().getBoolean(Intent.EXTRA_ARCHIVAL, false));
             assertTrue(removedIntent.getExtras().getBoolean(Intent.EXTRA_REPLACING, false));
+
+            uidRemovedBroadcastReceiver.assertBroadcastNotReceived();
         } finally {
             mContext.unregisterReceiver(addedBroadcastReceiver);
             mContext.unregisterReceiver(removedBroadcastReceiver);
+            mContext.unregisterReceiver(uidRemovedBroadcastReceiver);
         }
     }
 
@@ -3256,18 +3266,23 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         SystemClock.sleep(2_000);
 
         int currentUser = ActivityManager.getCurrentUser();
-        PackageBroadcastReceiver addedBroadcastReceiver = new PackageBroadcastReceiver(
+        final PackageBroadcastReceiver addedBroadcastReceiver = new PackageBroadcastReceiver(
                 HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_ADDED
         );
-        PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
+        final PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
                 HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REMOVED
+        );
+        final PackageBroadcastReceiver uidRemovedBroadcastReceiver = new PackageBroadcastReceiver(
+                HELLO_WORLD_PACKAGE_NAME, currentUser, Intent.ACTION_UID_REMOVED
         );
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
         intentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
         intentFilter.addDataScheme("package");
+        final IntentFilter intentFilterForUidRemoved = new IntentFilter(Intent.ACTION_UID_REMOVED);
         mContext.registerReceiver(addedBroadcastReceiver, intentFilter);
         mContext.registerReceiver(removedBroadcastReceiver, intentFilter);
+        mContext.registerReceiver(uidRemovedBroadcastReceiver, intentFilterForUidRemoved);
 
         try {
             installArchived(archivedPackage);
@@ -3283,9 +3298,12 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
             assertNotNull(removedIntent);
             assertTrue(removedIntent.getExtras().getBoolean(Intent.EXTRA_ARCHIVAL, false));
             assertTrue(removedIntent.getExtras().getBoolean(Intent.EXTRA_REPLACING, false));
+
+            uidRemovedBroadcastReceiver.assertBroadcastNotReceived();
         } finally {
             mContext.unregisterReceiver(addedBroadcastReceiver);
             mContext.unregisterReceiver(removedBroadcastReceiver);
+            mContext.unregisterReceiver(uidRemovedBroadcastReceiver);
         }
     }
 
