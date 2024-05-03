@@ -20,7 +20,6 @@ import static android.server.wm.UiDeviceUtils.pressBackButton;
 import static android.server.wm.app.Components.DISMISS_KEYGUARD_ACTIVITY;
 import static android.view.Display.DEFAULT_DISPLAY;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.Presubmit;
@@ -29,8 +28,6 @@ import android.server.wm.LockScreenSession;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.util.Size;
-
-import com.android.window.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -60,12 +57,6 @@ public class MultiDisplayKeyguardTests extends MultiDisplayTestBase {
      */
     @Test
     public void testDismissKeyguardActivity_secondaryDisplay() {
-        // TODO(b/330152508): Remove check once legacy multi-display behaviour can coexist with
-        //  desktop windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy multi-display
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final DisplayContent newDisplay = createManagedVirtualDisplaySession().createDisplay();
 

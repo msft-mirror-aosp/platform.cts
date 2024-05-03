@@ -274,12 +274,6 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
 
     @Test
     public void testPreQTopProcessResumedActivityInFreeform() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         // Resume app switches, so the activities that we are going to launch won't be deferred
         // since Home activity was started in #setUp().
         resumeAppSwitches();
