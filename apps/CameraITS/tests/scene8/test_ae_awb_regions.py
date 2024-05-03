@@ -33,6 +33,7 @@ _AWB_CHANGE_THRESH = 2  # Incorrect behavior is empirically < 1.5 percent
 _AE_AWB_METER_WEIGHT = 1000  # 1 - 1000 with 1000 as the highest
 _ARUCO_MARKERS_COUNT = 4
 _AE_AWB_REGIONS_AVAILABLE = 1  # Valid range is >= 0, and unavailable if 0
+_MIRRORED_PREVIEW_SENSOR_ORIENTATIONS = (0, 180)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_AE_AWB_REGIONS = 4
 _PERCENTAGE = 100
@@ -327,10 +328,19 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       # Extract 8 key frames per 8 seconds of preview recording
       # Meters each region of 4 (blue, light, dark, yellow) for 2 seconds
       # Unpack frames based on metering region's color
+      # If testing front camera with preview mirrored, reverse order.
       # pylint: disable=unbalanced-tuple-unpacking
-      _, blue, _, light, _, dark, _, yellow = (
-          _extract_and_process_key_frames_from_recording(
-              log_path, file_name))
+      if ((props['android.lens.facing'] ==
+           camera_properties_utils.LENS_FACING['FRONT']) and
+          props['android.sensor.orientation'] in
+          _MIRRORED_PREVIEW_SENSOR_ORIENTATIONS):
+        _, yellow, _, dark, _, light, _, blue = (
+            _extract_and_process_key_frames_from_recording(
+                log_path, file_name))
+      else:
+        _, blue, _, light, _, dark, _, yellow = (
+            _extract_and_process_key_frames_from_recording(
+                log_path, file_name))
 
       # AE Check: Extract the Y component from rectangle patch
       if max_ae_regions >= _AE_AWB_REGIONS_AVAILABLE:
