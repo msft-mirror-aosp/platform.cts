@@ -747,18 +747,38 @@ requirements {
 requirements {
   id: "5.12/H-1-2"
   description: "- RGBA_1010102 color format"
+  measurements: {
+    key: "rgba_1010102_color_format"
+    value: {
+      description: "Is RGBA_1010102 supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 34
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST support RGBA_1010102 color format for all hardware AV1 and HEVC encoders present on the device."
+      required_values: {
+        key: "rgba_1010102_color_format"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
-      specification: "same"
+      specification: "MUST support RGBA_1010102 color format for all hardware AV1 and HEVC encoders present on the device."
+      required_values: {
+        key: "rgba_1010102_color_format"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
