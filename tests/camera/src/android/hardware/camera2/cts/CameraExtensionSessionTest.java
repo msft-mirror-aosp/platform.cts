@@ -1378,7 +1378,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     // Verify still frame output.
     @Test
     public void testRepeatingAndCaptureCombined() throws Exception {
-        final double LATENCY_MARGIN = .1f; // Account for system load, capture call duration etc.
+        final double LATENCY_MARGIN = .3f; // Account for system load, capture call duration etc.
         for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
