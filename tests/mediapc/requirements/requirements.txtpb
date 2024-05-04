@@ -252,7 +252,9 @@ requirements {
 requirements {
   id: "5.1/H-1-7"
   name: "Video encoder init latency"
-  description: "Maximum codec initialization latency for a 1080p or smaller video encoding session for all hardware video encoders when under load."
+  description:
+    "Maximum codec initialization latency for a 1080p or smaller video "
+    "encoding session for all hardware video encoders when under load."
 
   measurements: {
     key: "codec_initialization_latency_ms"
@@ -266,7 +268,12 @@ requirements {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
-      specification: "MUST have a codec initialization latency of 65 ms or less for a 1080p or smaller video encoding session for all hardware video encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization."
+      specification:
+        "MUST have a codec initialization latency of 65 ms or less for a 1080p "
+        "or smaller video encoding session for all hardware video encoders when "
+        "under load. Load here is defined as a concurrent 1080p to 720p "
+        "video-only transcoding session using hardware video codecs together "
+        "with the 1080p audio-video recording initialization."
       required_values: {
         key: "codec_initialization_latency_ms"
         value {
@@ -279,7 +286,12 @@ requirements {
     key: 31
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
-      specification: "MUST have a codec initialization latency of 50 ms or less for a 1080p or smaller video encoding session for all hardware video encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization."
+      specification:
+        "MUST have a codec initialization latency of 50 ms or less for a 1080p "
+        "or smaller video encoding session for all hardware video encoders "
+        "when under load. Load here is defined as a concurrent 1080p to 720p "
+        "video-only transcoding session using hardware video codecs together "
+        "with the 1080p audio-video recording initialization."
       required_values: {
         key: "codec_initialization_latency_ms"
         value {
@@ -292,7 +304,12 @@ requirements {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
-      specification: "MUST have a codec initialization latency of 40 ms or less for a 1080p or smaller video encoding session for all hardware video encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization."
+      specification:
+        "MUST have a codec initialization latency of 40 ms or less for a 1080p "
+        "or smaller video encoding session for all hardware video encoders "
+        "when under load. Load here is defined as a concurrent 1080p to 720p "
+        "video-only transcoding session using hardware video codecs together "
+        "with the 1080p audio-video recording initialization."
       required_values: {
         key: "codec_initialization_latency_ms"
         value {
@@ -305,7 +322,13 @@ requirements {
     key: 34
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
-      specification: "MUST have a codec initialization latency of 40 ms or less for a 1080p or smaller video encoding session for all hardware video encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization. For Dolby vision codec, the codec initialization latency MUST be 50 ms or less."
+      specification:
+        "MUST have a codec initialization latency of 40 ms or less for a 1080p "
+        "or smaller video encoding session for all hardware video encoders "
+        "when under load. Load here is defined as a concurrent 1080p to 720p "
+        "video-only transcoding session using hardware video codecs together "
+        "with the 1080p audio-video recording initialization. For Dolby vision "
+        "codec, the codec initialization latency MUST be 50 ms or less."
       required_values: {
         key: "codec_initialization_latency_ms"
         value {
@@ -318,7 +341,13 @@ requirements {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
-      specification: "MUST have a codec initialization latency of 40 ms or less for a 1080p or smaller video encoding session for all hardware video encoders when under load. Load here is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs together with the 1080p audio-video recording initialization. For Dolby vision codec, the codec initialization latency MUST be 50 ms or less."
+      specification:
+        "MUST have a codec initialization latency of 40 ms or less for a 1080p "
+        "or smaller video encoding session for all hardware video encoders "
+        "when under load. Load here is defined as a concurrent 1080p to 720p "
+        "video-only transcoding session using hardware video codecs together "
+        "with the 1080p audio-video recording initialization. For Dolby vision "
+        "codec, the codec initialization latency MUST be 50 ms or less."
       required_values: {
         key: "codec_initialization_latency_ms"
         value {
@@ -746,7 +775,8 @@ requirements {
 }
 requirements {
   id: "5.12/H-1-2"
-  description: "- RGBA_1010102 color format"
+  name: "RGBA 1010102 color format"
+  description: "RGBA_1010102 color format support for hardware encoders."
   measurements: {
     key: "rgba_1010102_color_format"
     value: {
