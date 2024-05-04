@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for the ttff (time to the first fix) validating whether TTFF is
- * below the expected thresholds in differnt scenario
+ * below the expected thresholds in different scenario
  */
 public class GnssTtffTests extends GnssTestCase {
 

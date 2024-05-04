@@ -21,7 +21,8 @@ import static android.telecom.DisconnectCauseEnum.UNKNOWN;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.compat.cts.CompatChangeGatingTestCase;
+import static org.junit.Assert.assertEquals;
+
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
@@ -33,9 +34,17 @@ import com.android.os.StatsLog.EventMetricData;
 import com.android.os.telecom.EmergencyNumberDialed;
 import com.android.os.telecom.TelecomExtensionAtom;
 import com.android.tradefed.log.LogUtil.CLog;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
+import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.RunUtil;
 
 import com.google.protobuf.ExtensionRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 
@@ -43,31 +52,30 @@ import java.util.List;
 @NonApiTest(
         exemptionReasons = {},
         justification = "METRIC")
-public class TelecomHostStatsTest extends CompatChangeGatingTestCase {
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class TelecomHostStatsTest extends BaseHostJUnit4Test {
 
     private static final String TELECOM_CTS_TEST_PKG = "android.telecom.cts";
     private static final String FEATURE_TELECOM = "android.software.telecom";
     private static final String FEATURE_TELEPHONY = "android.hardware.telephony";
     private static final String FEATURE_TELEPHONY_CALLING = "android.hardware.telephony.calling";
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        assertThat(mCtsBuild).isNotNull();
+    @Before
+    public void setUp() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
-        super.tearDown();
     }
 
     // basic verification of CallStateChanged atom
     // being logged to statsd when a call is made
+    @Test
     public void testCallStateChangedAtom_basicTest() throws Exception {
         if (!DeviceUtils.hasFeature(getDevice(), FEATURE_TELECOM) || !DeviceUtils.hasFeature(
                 getDevice(), FEATURE_TELEPHONY) || !DeviceUtils.hasFeature(getDevice(),
@@ -79,11 +87,11 @@ public class TelecomHostStatsTest extends CompatChangeGatingTestCase {
                 getDevice(), TELECOM_CTS_TEST_PKG, AtomsProto.Atom.CALL_STATE_CHANGED_FIELD_NUMBER);
 
         // run CTS test case for outgoing call
-        DeviceUtils.runDeviceTests(
-                getDevice(),
-                TELECOM_CTS_TEST_PKG,
-                ".OutgoingCallTest",
-                "testStartCallWithSpeakerphoneTrue_SpeakerphoneOnInCall");
+        runDeviceTests(new DeviceTestRunOptions(TELECOM_CTS_TEST_PKG)
+                .setDevice(getDevice())
+                .setDisableHiddenApiCheck(true)
+                .setTestClassName("android.telecom.cts.OutgoingCallTest")
+                .setTestMethodName("testStartCallWithSpeakerphoneTrue_SpeakerphoneOnInCall"));
 
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
         // Verify that we have three atoma for  callstatechange
@@ -130,6 +138,7 @@ public class TelecomHostStatsTest extends CompatChangeGatingTestCase {
 
     // Verification for EmergencyNumberDialed atom
     // being logged to statsd when a sos call is made
+    @Test
     public void testEmergencyNumberDialedAtom() throws Exception {
         if (!DeviceUtils.hasFeature(getDevice(), FEATURE_TELECOM) || !DeviceUtils.hasFeature(
                 getDevice(), FEATURE_TELEPHONY) || !DeviceUtils.hasFeature(getDevice(),
@@ -142,8 +151,11 @@ public class TelecomHostStatsTest extends CompatChangeGatingTestCase {
                 TELECOM_CTS_TEST_PKG,
                 TelecomExtensionAtom.EMERGENCY_NUMBER_DIALED_FIELD_NUMBER);
 
-        DeviceUtils.runDeviceTests(
-                getDevice(), TELECOM_CTS_TEST_PKG, ".EmergencyCallTests", "testStartEmergencyCall");
+        runDeviceTests(new DeviceTestRunOptions(TELECOM_CTS_TEST_PKG)
+                .setDevice(getDevice())
+                .setDisableHiddenApiCheck(true)
+                .setTestClassName("android.telecom.cts.EmergencyCallTests")
+                .setTestMethodName("testStartEmergencyCall"));
 
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
         ExtensionRegistry registry = ExtensionRegistry.newInstance();

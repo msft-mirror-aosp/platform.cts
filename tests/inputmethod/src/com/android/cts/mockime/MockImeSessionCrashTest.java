@@ -19,16 +19,24 @@ package com.android.cts.mockime;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
+import android.app.ApplicationExitInfo;
 import android.app.Instrumentation;
 import android.content.Context;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
+
 public final class MockImeSessionCrashTest {
+
+    private static final long MOCKIME_CRASH_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     private Instrumentation mInstrumentation;
 
@@ -46,13 +54,14 @@ public final class MockImeSessionCrashTest {
             assertThat(mockImeSession.retrieveExitReasonIfMockImeCrashed()).isNull();
 
             runShellCommandOrThrow("am force-stop " + mockImeSession.getMockImePackageName());
-            assertThat(mockImeSession.retrieveExitReasonIfMockImeCrashed()).matches(
-                    "MockIme crashed and exited with code: \\d+;"
-                            + " session create time: \\d+;"
-                            + " process exit time: \\d+;"
-                            + " see android.app.ApplicationExitInfo for more info on the exit code "
-                            + "\\(exit Description: \\[FORCE STOP\\] stop com.android.cts.mockime "
-                            + "due to from pid \\d+\\)");
+
+            PollingCheck.waitFor(MOCKIME_CRASH_TIMEOUT, () ->
+                    mockImeSession.findLatestMockImeSessionExitInfo() != null);
+            final var exitInfo = mockImeSession.findLatestMockImeSessionExitInfo();
+            assertWithMessage(
+                    "Expected MockImeSession to crash due to killed application").that(
+                    exitInfo.getReason()).isEqualTo(ApplicationExitInfo.REASON_USER_REQUESTED);
+            assertThat(mockImeSession.retrieveExitReasonIfMockImeCrashed()).isNotNull();
         }
     }
 }

@@ -205,7 +205,7 @@ public class GnssLocationValuesTest extends GnssTestCase {
     // For the speed, during the cts test device shouldn't move faster than 1m/s, but allowing up
     // to 5m/s for possible early fix noise in moderate signal test environments
     if(location.hasSpeed()) {
-      softAssert.assertTrue("In the test enviorment, speed should be in the range of [0, 5] m/s",
+      softAssert.assertTrue("In the test environment, speed should be in the range of [0, 5] m/s",
           location.getSpeed() >= 0 && location.getSpeed() <= 5);
     }
 

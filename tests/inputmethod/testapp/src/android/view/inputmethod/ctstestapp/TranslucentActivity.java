@@ -40,6 +40,7 @@ public final class TranslucentActivity extends Activity {
         editor.requestFocus();
         layout.addView(editor);
 
+        layout.setFitsSystemWindows(true);
         setContentView(layout);
     }
 }

@@ -116,6 +116,7 @@ class TestAppInterface implements AutoCloseable {
         }
         // Remove the app from the whitelist.
         SystemUtil.runShellCommand("cmd deviceidle whitelist -" + TEST_APP_PACKAGE);
+        SystemUtil.runShellCommand("cmd netpolicy start-watching " + mTestPackageUid);
         if (isTestAppTempWhitelisted()) {
             Log.w(TAG, "Test package already in temp whitelist");
             if (!removeTestAppFromTempWhitelist()) {
@@ -144,6 +145,7 @@ class TestAppInterface implements AutoCloseable {
         SystemUtil.runShellCommand("cmd deviceidle whitelist -" + TEST_APP_PACKAGE);
         removeTestAppFromTempWhitelist();
         mTestJobStates.clear();
+        SystemUtil.runShellCommand("cmd netpolicy stop-watching");
         SystemUtil.runShellCommand(
                 "cmd jobscheduler reset-execution-quota -u current " + TEST_APP_PACKAGE);
         forceStopApp(); // Clean up as much internal/temporary system state as possible
@@ -238,12 +240,18 @@ class TestAppInterface implements AutoCloseable {
 
     void kill() {
         SystemUtil.runShellCommand("am stop-app " + TEST_APP_PACKAGE);
+        mTestJobStates.clear();
     }
 
-    boolean isNetworkBlockedByPolicy() throws Exception {
-        return SystemUtil.callWithShellPermissionIdentity(
-                () -> mNetworkPolicyManager.isUidNetworkingBlocked(mTestPackageUid, false),
-                Manifest.permission.OBSERVE_NETWORK_POLICY);
+    boolean isNetworkBlockedByPolicy() {
+        try {
+            return SystemUtil.callWithShellPermissionIdentity(
+                    () -> mNetworkPolicyManager.isUidNetworkingBlocked(mTestPackageUid, false),
+                    Manifest.permission.OBSERVE_NETWORK_POLICY);
+        } catch (Exception e) {
+            // Unexpected while calling isUidNetworkingBlocked.
+            throw new RuntimeException(e);
+        }
     }
 
     void runSatisfiedJob(int jobId) throws Exception {

@@ -24,6 +24,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
+import android.view.View;
 import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
@@ -51,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
   protected boolean mIsInPipMode;
   protected boolean mConfiguredSplitScreenMode;
   protected boolean mIsInMultiWindowMode;
+  protected View mExoRewindButton;
+  protected View mLockControllerButton;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +69,9 @@ public class MainActivity extends AppCompatActivity {
   protected void buildPlayer() {
     mPlayer = new ExoPlayer.Builder(this).build();
     mExoplayerView = findViewById(R.id.exoplayer);
+    mLockControllerButton = findViewById(R.id.lock_controller);
+    mLockControllerButton.setVisibility(View.INVISIBLE);
+    mExoRewindButton = findViewById(R.id.exo_rew_with_amount);
     mExoplayerView.setPlayer(mPlayer);
   }
 
@@ -132,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
     if (mScaleGestureDetector != null) {
       mScaleGestureDetector.onTouchEvent(event);
     }
-    return true;
+    return super.dispatchTouchEvent(event);
   }
 
   /**

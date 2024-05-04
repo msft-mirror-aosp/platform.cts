@@ -64,7 +64,7 @@ class DynamicPermissionsTest : StsExtraBusinessLogicTestCase() {
     }
 
     @Test
-    @AsbSecurityTest(cveBugId = [321711213])
+    @AsbSecurityTest(cveBugId = [225880325])
     fun testRemovePermission_dynamicPermission_permissionRemoved() {
         val permissionInfo = PermissionInfo().apply {
             name = DYNAMIC_PERMISSION
@@ -87,7 +87,7 @@ class DynamicPermissionsTest : StsExtraBusinessLogicTestCase() {
     }
 
     @Test
-    @AsbSecurityTest(cveBugId = [321711213])
+    @AsbSecurityTest(cveBugId = [225880325])
     fun testPermissionPermission_nonDynamicPermission_permissionUnchanged() {
         assertWithMessage("$NON_DYNAMIC_PERMISSION should exist before running the test")
             .that(packageManager.getPermissionInfo(NON_DYNAMIC_PERMISSION, 0).name)
