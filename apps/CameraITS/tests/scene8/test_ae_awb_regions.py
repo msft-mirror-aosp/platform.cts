@@ -33,6 +33,7 @@ _AWB_CHANGE_THRESH = 2  # Incorrect behavior is empirically < 1.5 percent
 _AE_AWB_METER_WEIGHT = 1000  # 1 - 1000 with 1000 as the highest
 _ARUCO_MARKERS_COUNT = 4
 _AE_AWB_REGIONS_AVAILABLE = 1  # Valid range is >= 0, and unavailable if 0
+_MIRRORED_PREVIEW_SENSOR_ORIENTATIONS = (0, 180)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_AE_AWB_REGIONS = 4
 _PERCENTAGE = 100
@@ -212,6 +213,27 @@ def _extract_and_process_key_frames_from_recording(log_path, file_name):
   return key_frames
 
 
+def _get_largest_common_aspect_ratio_preview_size(cam, camera_id):
+  """Get largest, supported preview size that matches sensor's aspect ratio.
+
+  Args:
+    cam: obj; camera object.
+    camera_id: int; device id.
+  Returns:
+    preview_size: str; largest, supported preview size w/ 4:3, or 16:9
+        aspect ratio.
+  """
+  preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
+  dimensions = lambda s: (int(s.split('x')[0]), int(s.split('x')[1]))
+  for size in reversed(preview_sizes):
+    if capture_request_utils.is_common_aspect_ratio(dimensions(size)):
+      preview_size = size
+      logging.debug('Largest, common aspect ratio and preview size: %s',
+                    preview_size)
+      break
+  return preview_size
+
+
 def _get_red_blue_ratio(img):
   """Computes the ratios of average red over blue in img.
 
@@ -272,8 +294,8 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       logging.debug('maximum AWB regions: %d', max_awb_regions)
 
       # Find largest preview size to define capture size to find aruco markers
-      supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      preview_size = supported_preview_sizes[-1]
+      preview_size = _get_largest_common_aspect_ratio_preview_size(
+          cam, self.camera_id)
       width = int(preview_size.split('x')[0])
       height = int(preview_size.split('x')[1])
       req = capture_request_utils.auto_capture_request()
@@ -306,10 +328,19 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       # Extract 8 key frames per 8 seconds of preview recording
       # Meters each region of 4 (blue, light, dark, yellow) for 2 seconds
       # Unpack frames based on metering region's color
+      # If testing front camera with preview mirrored, reverse order.
       # pylint: disable=unbalanced-tuple-unpacking
-      _, blue, _, light, _, dark, _, yellow = (
-          _extract_and_process_key_frames_from_recording(
-              log_path, file_name))
+      if ((props['android.lens.facing'] ==
+           camera_properties_utils.LENS_FACING['FRONT']) and
+          props['android.sensor.orientation'] in
+          _MIRRORED_PREVIEW_SENSOR_ORIENTATIONS):
+        _, yellow, _, dark, _, light, _, blue = (
+            _extract_and_process_key_frames_from_recording(
+                log_path, file_name))
+      else:
+        _, blue, _, light, _, dark, _, yellow = (
+            _extract_and_process_key_frames_from_recording(
+                log_path, file_name))
 
       # AE Check: Extract the Y component from rectangle patch
       if max_ae_regions >= _AE_AWB_REGIONS_AVAILABLE:

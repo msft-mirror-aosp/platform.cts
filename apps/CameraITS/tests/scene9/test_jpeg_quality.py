@@ -34,7 +34,7 @@ _JPEG_APPN_MARKERS = [[255, 224], [255, 225], [255, 226], [255, 227],
                       [255, 232], [255, 235]]
 _JPEG_DHT_MARKER = [255, 196]  # JPEG Define Huffman Table
 _JPEG_DQT_MARKER = [255, 219]  # JPEG Define Quantization Table
-_JPEG_DQT_TOL = 0.8  # -20% for each +20 in jpeg.quality (empirical number)
+_JPEG_DQT_RTOL = 0.8  # -20% for each +20 in jpeg.quality (empirical number)
 _JPEG_EOI_MARKER = [255, 217]  # JPEG End of Image
 _JPEG_SOI_MARKER = [255, 216]  # JPEG Start of Image
 _JPEG_SOS_MARKER = [255, 218]  # JPEG Start of Scan
@@ -272,11 +272,11 @@ class JpegQualityTest(its_base_test.ItsBaseTest):
     for i in range(lumas.shape[1]):
       l = lumas[:, i]
       c = chromas[:, i]
-      if not all(y < x * _JPEG_DQT_TOL for x, y in zip(l, l[1:])):
-        raise AssertionError(f'luma DQT avgs: {l}, TOL: {_JPEG_DQT_TOL}')
+      if not all(y < x * _JPEG_DQT_RTOL for x, y in zip(l, l[1:])):
+        raise AssertionError(f'luma DQT avgs: {l}, RTOL: {_JPEG_DQT_RTOL}')
 
-      if not all(y < x * _JPEG_DQT_TOL for x, y in zip(c, c[1:])):
-        raise AssertionError(f'chroma DQT avgs: {c}, TOL: {_JPEG_DQT_TOL}')
+      if not all(y < x * _JPEG_DQT_RTOL for x, y in zip(c, c[1:])):
+        raise AssertionError(f'chroma DQT avgs: {c}, RTOL: {_JPEG_DQT_RTOL}')
 
 if __name__ == '__main__':
   test_runner.main()

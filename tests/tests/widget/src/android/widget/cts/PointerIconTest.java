@@ -20,7 +20,6 @@ import static android.view.flags.Flags.FLAG_ENABLE_ARROW_ICON_ON_HOVER_WHEN_CLIC
 
 import static org.junit.Assert.assertEquals;
 
-import android.Manifest;
 import android.app.Activity;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -41,7 +40,6 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
 import org.junit.Before;
@@ -53,13 +51,7 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class PointerIconTest {
 
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
-
-    @Rule(order = 1)
+    @Rule
     public final ActivityTestRule<PointerIconCtsActivity> mActivityRule =
             new ActivityTestRule<>(PointerIconCtsActivity.class);
 

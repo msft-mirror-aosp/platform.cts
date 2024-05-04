@@ -19,6 +19,7 @@ package android.media.cujsmalltest.cts;
 import android.media.cujcommon.cts.CujTestBase;
 import android.media.cujcommon.cts.CujTestParam;
 import android.media.cujcommon.cts.DeviceLockTestPlayerListener;
+import android.media.cujcommon.cts.LockPlaybackControllerTestPlayerListener;
 import android.media.cujcommon.cts.OrientationTestPlayerListener;
 import android.media.cujcommon.cts.PinchToZoomTestPlayerListener;
 import android.media.cujcommon.cts.PipModeTestPlayerListener;
@@ -155,6 +156,10 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             .setTimeoutMilliSeconds(45000)
             .setPlayerListener(new DeviceLockTestPlayerListener(3000, true)).build(),
             "Mp3_15sec_DeviceLockTest"},
+        {CujTestParam.builder().setMediaUrls(prepareMp3_15secAudioListForDeviceLockTest())
+            .setTimeoutMilliSeconds(50000)
+            .setPlayerListener(new LockPlaybackControllerTestPlayerListener(6000)).build(),
+            "Hevc_720p_15sec_LockPlaybackTest"},
     }));
     return exhaustiveArgsList;
   }
@@ -305,6 +310,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
     }
     if (mCujTestParam.playerListener().isSplitScreenTest()) {
       Assume.assumeFalse("Skipping " + mTestType + " on television", isTelevisionDevice(mActivity));
+    }
+    if (mCujTestParam.playerListener().getTestType()
+        .equals(TestType.LOCK_PLAYBACK_CONTROLLER_TEST)) {
       Assume.assumeFalse("Skipping " + mTestType + " on watch", isWatchDevice(mActivity));
     }
     if (mCujTestParam.playerListener().getTestType().equals(TestType.DEVICE_LOCK_TEST)) {

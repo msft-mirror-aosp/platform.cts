@@ -29,7 +29,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.res.Resources;
@@ -54,7 +53,6 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsMouseUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.WidgetTestUtils;
@@ -80,15 +78,10 @@ public class PopupMenuTest {
     private Builder mBuilder;
     private PopupMenu mPopupMenu;
 
-    @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
-
-    @Rule(order = 1)
+    @Rule
     public ActivityTestRule<PopupMenuCtsActivity> mActivityRule =
             new ActivityTestRule<>(PopupMenuCtsActivity.class);
+
 
     @UiThreadTest
     @Before

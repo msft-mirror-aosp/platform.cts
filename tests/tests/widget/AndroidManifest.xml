@@ -757,8 +757,7 @@
         </activity>
 
         <activity android:name="android.app.ActivityGroup"
-             android:label="ActivityGroup"
-             android:exported="true"/>
+             android:label="ActivityGroup"/>
 
         <activity android:name="android.widget.cts.MockURLSpanTestActivity"
              android:label="MockURLSpanTestActivity"

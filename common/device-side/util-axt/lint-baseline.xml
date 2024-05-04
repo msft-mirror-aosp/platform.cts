@@ -1475,4 +1475,59 @@
             column="18"/>
     </issue>
 
+    <issue
+        id="NewApi"
+        message="Call requires API level 26 (current min is 21): `android.content.ContextWrapper#registerReceiver`"
+        errorLine1="        registerReceiver(mBroadcastReceiver, new IntentFilter(BROADCAST_ACTION_TRIGGER),"
+        errorLine2="        ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/util-axt/src/com/android/compatibility/common/util/concurrentuser/ConcurrentUserActivityBase.java"
+            line="83"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 23 (current min is 21): `android.content.Context#getSystemService`"
+        errorLine1="                getInstrumentation().getTargetContext().getSystemService(UserManager.class);"
+        errorLine2="                                                        ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/util-axt/src/com/android/compatibility/common/util/concurrentuser/ConcurrentUserActivityUtils.java"
+            line="68"
+            column="57"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                fail(String.format(&quot;Failed to launch activity %s as user %d&quot;, activityName,"
+        errorLine2="                     ^">
+        <location
+            file="cts/common/device-side/util-axt/src/com/android/compatibility/common/util/concurrentuser/ConcurrentUserActivityUtils.java"
+            line="114"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                fail(String.format(&quot;Failed to send %s to %s (user %d)&quot;, bundleToSend,"
+        errorLine2="                     ^">
+        <location
+            file="cts/common/device-side/util-axt/src/com/android/compatibility/common/util/concurrentuser/ConcurrentUserActivityUtils.java"
+            line="152"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 33 (current min is 21): `android.content.Context#RECEIVER_EXPORTED`"
+        errorLine1="                RECEIVER_EXPORTED);"
+        errorLine2="                ~~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/util-axt/src/com/android/compatibility/common/util/concurrentuser/ConcurrentUserActivityBase.java"
+            line="84"
+            column="17"/>
+    </issue>
+
 </issues>
