@@ -22,6 +22,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assert.fail
 import org.junit.Before
+import org.junit.After;
 import org.junit.Test
 import java.lang.Thread.sleep
 
@@ -47,6 +48,11 @@ class RuntimeMessageCollectionTest {
     fun resetTestApp() {
         runCommand("pm uninstall $APP_PKG")
         installApk("CtsAppToCollect.apk")
+    }
+
+    @After
+    fun uninstallTestApp() {
+        runCommand("pm uninstall $APP_PKG")
     }
 
     @Test
