@@ -29,7 +29,7 @@ import android.security.cts.dynamicpermissiontestattackerapp.IRemovePermissionSe
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase
-import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import org.junit.After
@@ -64,7 +64,7 @@ class DynamicPermissionsTest : StsExtraBusinessLogicTestCase() {
     }
 
     @Test
-    @AsbSecurityTest(cveBugId = [321711213])
+    @AsbSecurityTest(cveBugId = [225880325])
     fun testRemovePermission_dynamicPermission_permissionRemoved() {
         val permissionInfo = PermissionInfo().apply {
             name = DYNAMIC_PERMISSION
@@ -72,27 +72,38 @@ class DynamicPermissionsTest : StsExtraBusinessLogicTestCase() {
             protectionLevel = PermissionInfo.PROTECTION_NORMAL
         }
         packageManager.addPermission(permissionInfo)
-        assertThat(packageManager.getPermissionInfo(DYNAMIC_PERMISSION, 0).name)
+        assertWithMessage("$DYNAMIC_PERMISSION should exist before running the test")
+            .that(packageManager.getPermissionInfo(DYNAMIC_PERMISSION, 0).name)
             .isEqualTo(DYNAMIC_PERMISSION)
 
         packageManager.removePermission(DYNAMIC_PERMISSION)
 
-        assertThrows(NameNotFoundException::class.java) {
+        assertThrows(
+            "The dynamic permission $DYNAMIC_PERMISSION should be correctly removed",
+            NameNotFoundException::class.java
+        ) {
             packageManager.getPermissionInfo(DYNAMIC_PERMISSION, 0)
         }
     }
 
     @Test
-    @AsbSecurityTest(cveBugId = [321711213])
+    @AsbSecurityTest(cveBugId = [225880325])
     fun testPermissionPermission_nonDynamicPermission_permissionUnchanged() {
-        assertThat(packageManager.getPermissionInfo(NON_DYNAMIC_PERMISSION, 0).name)
+        assertWithMessage("$NON_DYNAMIC_PERMISSION should exist before running the test")
+            .that(packageManager.getPermissionInfo(NON_DYNAMIC_PERMISSION, 0).name)
             .isEqualTo(NON_DYNAMIC_PERMISSION)
 
-        assertThrows(SecurityException::class.java) {
+        try {
             removePermissionService.removePermission(NON_DYNAMIC_PERMISSION)
+        } catch (e: SecurityException) {
+            // using a try-catch block instead of @Test(expected = SecurityException::class) or
+            // assertThrows() because the SecurityException is only thrown on V and after.
+            // In pre-V, we just log.wtf() the error. The below assertion of the existence of
+            // NON_DYNAMIC_PERMISSION is sufficient to validate the functionality this method tests.
         }
 
-        assertThat(packageManager.getPermissionInfo(NON_DYNAMIC_PERMISSION, 0).name)
+        assertWithMessage("The non-dynamic perm $NON_DYNAMIC_PERMISSION shouldn't be removed")
+            .that(packageManager.getPermissionInfo(NON_DYNAMIC_PERMISSION, 0).name)
             .isEqualTo(NON_DYNAMIC_PERMISSION)
     }
 
