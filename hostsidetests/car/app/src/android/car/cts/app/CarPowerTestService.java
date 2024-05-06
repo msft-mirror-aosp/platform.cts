@@ -49,8 +49,8 @@ import javax.annotation.concurrent.GuardedBy;
  *         adb shell am start -n android.car.cts.app/.CarPowerTestService /
  *         --es power [action]
  *         action:
- *            set-listener,[listener-name],[with-completion|without-completion],[s2r|s2d]
- *            get-listener-states-results,[listener-name],[with-completion|without-completion],
+ *            set-listener,[with-completion|without-completion],[s2r|s2d]
+ *            get-listener-states-results,[with-completion|without-completion],
  *            [s2r|s2d]
  *            clear-listener
  *     </pre>
@@ -97,9 +97,9 @@ public final class CarPowerTestService extends Service {
 
     private Car mCarApi;
     @GuardedBy("mLock")
-    private CarPowerManager mCarPowerManager;
+    private WaitablePowerStateListener mListener = new WaitablePowerStateListener(0);
     @GuardedBy("mLock")
-    private ArrayMap<String, WaitablePowerStateListener> mListeners = new ArrayMap<>();
+    private CarPowerManager mCarPowerManager;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -186,23 +186,27 @@ public final class CarPowerTestService extends Service {
 
     @Override
     protected void dump(FileDescriptor fd, PrintWriter writer, String[] args) {
-        Log.i(TAG, "Dumping mResultBuf: " + mResultBuf);
-        writer.println(mResultBuf);
+        Log.i(TAG, "Dumping CarPowerTestService");
+        writer.println("*CarPowerTestService*");
+        writer.printf("mResultBuf: %s\n", mResultBuf);
+        synchronized (mLock) {
+            writer.printf("mListener set: %b\n", mListener != null);
+        }
     }
 
     @GuardedBy("mLock")
-    private void setListenerWithoutCompletionLocked(String listenerName, int expectedStatesSize) {
+    private void setListenerWithoutCompletionLocked(int expectedStatesSize) {
         WaitablePowerStateListenerWithoutCompletion listener =
                 new WaitablePowerStateListenerWithoutCompletion(expectedStatesSize);
-        mListeners.put(listenerName, listener);
+        mListener = listener;
     }
 
     @GuardedBy("mLock")
-    private void setListenerWithCompletionLocked(String listenerName, int expectedStatesSize) {
+    private void setListenerWithCompletionLocked(int expectedStatesSize) {
         WaitablePowerStateListenerWithCompletion listener =
                 new WaitablePowerStateListenerWithCompletion(
                         expectedStatesSize, FUTURE_ALLOWING_STATES);
-        mListeners.put(listenerName, listener);
+        mListener = listener;
     }
 
     private boolean listenerStatesMatchExpected(WaitablePowerStateListener listener,
@@ -244,14 +248,14 @@ public final class CarPowerTestService extends Service {
         String[] tokens = commandString.split(",");
         switch(tokens[0]) {
             case CMD_SET_LISTENER:
-                if (tokens.length != 4) {
+                if (tokens.length != 3) {
                     Log.i(TAG, "incorrect set-listener command format: " + commandString
-                            + ", should be set-listener,[listener-name],"
-                            + "[with-completion|without-completion],[s2r|s2d]");
+                            + ", should be set-listener,[with-completion|without-completion],"
+                            + "[s2r|s2d]");
                     break;
                 }
 
-                String completionType = tokens[2];
+                String completionType = tokens[1];
                 Log.i(TAG, "Set listener command completion type: " + completionType);
                 boolean withCompletion;
                 try {
@@ -261,7 +265,7 @@ public final class CarPowerTestService extends Service {
                     break;
                 }
 
-                String suspendType = tokens[3];
+                String suspendType = tokens[2];
                 Log.i(TAG, "Set listener command suspend type: " + suspendType);
                 int expectedStatesSize;
                 try {
@@ -271,43 +275,33 @@ public final class CarPowerTestService extends Service {
                     break;
                 }
 
-                String listenerName = tokens[1];
-                Log.i(TAG, "Set listener command listener name: " + listenerName);
                 synchronized (mLock) {
-                    if (mListeners.containsKey(listenerName)) {
-                        Log.i(TAG, "there is already a with completion listener registered "
-                                + "with name " + listenerName);
-                        break;
-                    }
                     if (withCompletion) {
-                        setListenerWithCompletionLocked(listenerName, expectedStatesSize);
+                        setListenerWithCompletionLocked(expectedStatesSize);
                     } else {
-                        setListenerWithoutCompletionLocked(listenerName, expectedStatesSize);
+                        setListenerWithoutCompletionLocked(expectedStatesSize);
                     }
                 }
-                Log.i(TAG, "Listener set for " + listenerName);
+                Log.i(TAG, "Listener set");
                 break;
             case CMD_GET_LISTENER_STATES_RESULTS:
-                if (tokens.length != 4) {
+                if (tokens.length != 3) {
                     Log.i(TAG, "incorrect get-listener-states-results command format: "
                             + commandString + ", should be get-listener-states-results,"
-                            + "[listener-name],[with-completion|without-completion],[s2r|s2d]");
+                            + "[with-completion|without-completion],[s2r|s2d]");
                     break;
                 }
 
-                listenerName = tokens[1];
-                Log.i(TAG, "Get listener command get listener by name: " + listenerName);
                 WaitablePowerStateListener listener;
                 synchronized (mLock) {
-                    if (mListeners.containsKey(listenerName)) {
-                        listener = mListeners.get(listenerName);
-                    } else {
-                        Log.i(TAG, "there is no listener registered with name " + listenerName);
+                    if (mListener == null) {
+                        Log.i(TAG, "There is no listener registered");
                         break;
                     }
+                    listener = mListener;
                 }
 
-                completionType = tokens[2];
+                completionType = tokens[1];
                 Log.i(TAG, "Get listener command completion type: " + completionType);
                 try {
                     withCompletion = isListenerWithCompletion(completionType);
@@ -316,7 +310,7 @@ public final class CarPowerTestService extends Service {
                     break;
                 }
 
-                suspendType = tokens[3];
+                suspendType = tokens[2];
                 Log.i(TAG, "Get listener command suspend type: " + suspendType);
                 List<Integer> expectedStates;
                 try {
@@ -348,6 +342,7 @@ public final class CarPowerTestService extends Service {
             case CMD_CLEAR_LISTENER:
                 synchronized (mLock) {
                     mCarPowerManager.clearListener();
+                    mListener = null;
                 }
                 Log.i(TAG, "Listener cleared");
                 break;
