@@ -19,10 +19,12 @@ package android.accessibilityservice.cts;
 import static android.accessibilityservice.MagnificationConfig.MAGNIFICATION_MODE_FULLSCREEN;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.homeScreenOrBust;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
@@ -102,6 +104,9 @@ public class FullScreenMagnificationControllerTest {
 
     @Before
     public void setUp() throws Exception {
+        assumeFalse("Magnification is not supported on Automotive.",
+                isAutomotive(sInstrumentation.getTargetContext()));
+
         mService = mMagnificationAccessibilityServiceRule.enableService();
     }
 
