@@ -15,6 +15,7 @@
  */
 package com.android.bedstead.harrier
 
+import com.android.bedstead.nene.utils.FailureDumper
 import kotlin.reflect.KClass
 
 /**
@@ -23,7 +24,7 @@ import kotlin.reflect.KClass
  * Use of this service locator allows for the single [DeviceState] entry point to
  * bedstead while allowing modularisation and loose coupling.
  */
-class BedsteadServiceLocator {
+class BedsteadServiceLocator : DeviceStateComponent {
 
     private val loadedModules = mutableListOf<Module>()
     private val dependenciesMap = mutableMapOf<KClass<*>, Any>()
@@ -100,6 +101,38 @@ class BedsteadServiceLocator {
      */
     fun getAllDependencies(): Collection<Any> {
         return dependenciesMap.values
+    }
+
+    /**
+     * Get all loaded dependencies of type T
+     */
+    inline fun <reified T : Any> getAllDependenciesOfType(): List<T> {
+        return getAllDependencies().filterIsInstance<T>()
+    }
+
+    /**
+     * Get all loaded FailureDumpers
+     */
+    fun getAllFailureDumpers(): List<FailureDumper> {
+        return getAllDependenciesOfType<FailureDumper>()
+    }
+
+    override fun teardownShareableState() {
+        getAllDependenciesOfType<DeviceStateComponent>().forEach {
+            it.teardownShareableState()
+        }
+    }
+
+    override fun teardownNonShareableState() {
+        getAllDependenciesOfType<DeviceStateComponent>().forEach {
+            it.teardownNonShareableState()
+        }
+    }
+
+    override fun prepareTestState() {
+        getAllDependenciesOfType<DeviceStateComponent>().forEach {
+            it.prepareTestState()
+        }
     }
 
     /**

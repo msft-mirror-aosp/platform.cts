@@ -38,7 +38,7 @@ import org.junit.AssumptionViolatedException
  * contains state and logic for managing users in context of DeviceState
  * this class shouldn't be used by tests directly
  */
-class DeviceStateUsers(private val deviceState: DeviceState) {
+class DeviceStateUsers(private val deviceState: DeviceState) : DeviceStateComponent {
 
     private val context = context().instrumentedContext()
     private val createdUsers: MutableList<UserReference> = mutableListOf()
@@ -442,7 +442,7 @@ class DeviceStateUsers(private val deviceState: DeviceState) {
         mUsersSetPasswords.clear()
     }
 
-    fun teardownShareableState() {
+    override fun teardownShareableState() {
         clearPasswords()
         var ephemeralUser: UserReference? = null
         val currentUser = users().current()
@@ -504,13 +504,13 @@ class DeviceStateUsers(private val deviceState: DeviceState) {
         mRemovedUsers.clear()
     }
 
-    fun teardownNonShareableState() {
+    override fun teardownNonShareableState() {
         mUsers.clear()
         mAnnotationHasSwitchedUser = false
         mAdditionalUser = null
     }
 
-    fun prepareTestState() {
+    override fun prepareTestState() {
         if (mOriginalSwitchedUser == null) {
             mOriginalSwitchedUser = users().current()
         }

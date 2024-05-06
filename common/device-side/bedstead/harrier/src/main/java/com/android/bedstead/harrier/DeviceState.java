@@ -25,6 +25,7 @@ import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSki
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip;
 import static com.android.bedstead.harrier.annotations.EnsureHasAccount.DEFAULT_ACCOUNT_KEY;
 import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
+import static com.android.bedstead.harrier.annotations.UsesAnnotationExecutorKt.getAnnotationExecutorClass;
 import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate.DELEGATE_KEY;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_CLONE_PROFILE;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_MANAGED_PROFILE;
@@ -423,7 +424,7 @@ public final class DeviceState extends HarrierRule {
         String testName = description.getMethodName();
 
         Log.d(LOG_TAG, "Preparing state for test " + testName);
-        mDeviceStateUsers.prepareTestState();
+        mLocator.prepareTestState();
         testApps().snapshot();
         Tags.clearTags();
         Tags.addTag(Tags.USES_DEVICESTATE);
@@ -885,7 +886,7 @@ public final class DeviceState extends HarrierRule {
             }
 
             if (annotation instanceof UsesAnnotationExecutor) {
-                usesAnnotationExecutor(((UsesAnnotationExecutor)annotation).value());
+                usesAnnotationExecutor((UsesAnnotationExecutor) annotation);
                 continue;
             }
 
@@ -1028,9 +1029,7 @@ public final class DeviceState extends HarrierRule {
             UsesAnnotationExecutor usesAnnotationExecutorAnnotation =
                     annotationType.getAnnotation(UsesAnnotationExecutor.class);
             if (usesAnnotationExecutorAnnotation != null) {
-                AnnotationExecutor executor = usesAnnotationExecutor(
-                        usesAnnotationExecutorAnnotation.value()
-                );
+                var executor = usesAnnotationExecutor(usesAnnotationExecutorAnnotation);
                 executor.applyAnnotation(annotation);
                 continue;
             }
@@ -2125,7 +2124,6 @@ public final class DeviceState extends HarrierRule {
     void teardownNonShareableState() {
         mAdditionalQueryParameters.clear();
         mProfiles.clear();
-        mDeviceStateUsers.teardownNonShareableState();
 
         // TODO(b/329570492): Support sharing of theme in bedstead across tests
         if (mOriginalDisplayTheme != null) {
@@ -2170,7 +2168,7 @@ public final class DeviceState extends HarrierRule {
 
         mTestAppProvider.restore();
 
-        mAnnotationExecutors.values().forEach(AnnotationExecutor::teardownNonShareableState);
+        mLocator.teardownNonShareableState();
 
         if (mNextSafetyOperationSet) {
             ensurePolicyOperationUnsafe(
@@ -2255,8 +2253,6 @@ public final class DeviceState extends HarrierRule {
             mDevicePolicyManagerRoleHolder = null;
         }
 
-        mDeviceStateUsers.teardownShareableState();
-
         for (TestAppInstance installedTestApp : mInstalledTestApps) {
             installedTestApp.uninstall();
         }
@@ -2306,7 +2302,7 @@ public final class DeviceState extends HarrierRule {
         mOriginalSecureSettings.clear();
 
         TestApis.activities().clearAllActivities();
-        mAnnotationExecutors.values().forEach(AnnotationExecutor::teardownShareableState);
+        mLocator.teardownShareableState();
     }
 
     private UserReference createProfile(
@@ -3401,51 +3397,8 @@ public final class DeviceState extends HarrierRule {
         return TestApis.users().isHeadlessSystemUserMode();
     }
 
-    private final Map<String, AnnotationExecutor>
-            mAnnotationExecutors = new HashMap<>();
-
-    private final Map<String, FailureDumper> mFailureDumpers = new HashMap<>();
-
-    @SuppressWarnings("unchecked")
-    private AnnotationExecutor usesAnnotationExecutor(String executorClassName) {
-        Class<? extends AnnotationExecutor> executorClass;
-
-        if (executorClassName.isEmpty()) {
-            throw new IllegalStateException("@UsesAnnotationExecutor value is empty");
-        } else {
-            try {
-                executorClass =
-                        (Class<? extends AnnotationExecutor>) Class.forName(executorClassName);
-            } catch (ClassNotFoundException e) {
-                throw new IllegalStateException(
-                            "Could not find annotation executor "
-                                    + executorClassName
-                                    + ". Probably a dependency issue. If you are depending on a "
-                                    + "-annotations target (e.g. bedstead-root-annotations) instead "
-                                    + "depend on the non-annotations target (e.g. bedstead-root)");
-            }
-        }
-
-        if (!mAnnotationExecutors.containsKey(executorClassName)) {
-            mAnnotationExecutors.put(executorClassName, createAnnotationExecutor(executorClass));
-        }
-        return mAnnotationExecutors.get(executorClassName);
-    }
-
-    private AnnotationExecutor createAnnotationExecutor(
-            Class<? extends AnnotationExecutor> executorClass
-    ) {
-        try {
-            return executorClass.getDeclaredConstructor().newInstance();
-        } catch (Exception ignored) {
-            try {
-                return executorClass
-                        .getDeclaredConstructor(BedsteadServiceLocator.class)
-                        .newInstance(mLocator);
-            } catch (Exception exception) {
-                throw new RuntimeException("Error creating annotation executor", exception);
-            }
-        }
+    private AnnotationExecutor usesAnnotationExecutor(UsesAnnotationExecutor executorClassName) {
+        return mLocator.get(getAnnotationExecutorClass(executorClassName));
     }
 
     private void ensureHasUserRestriction(String restriction, UserType onUser) {
@@ -3816,37 +3769,24 @@ public final class DeviceState extends HarrierRule {
     }
 
     void onTestFailed(Throwable exception) {
-        FailureDumper.Companion.getFailureDumpers().stream()
-                .filter((i) -> !mAnnotationExecutors.containsKey(i))
-                .filter((i) -> !mFailureDumpers.containsKey(i))
-                .forEach((i) -> {
-                    try {
-                        Class<? extends FailureDumper> cls =
-                                (Class<? extends FailureDumper>) Class.forName(i);
-
-                        mFailureDumpers.put(i, cls.newInstance());
-                    } catch (InstantiationException | IllegalAccessException |
-                             ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-
-        mAnnotationExecutors.values().forEach((i) -> {
+        createMissingFailureDumpers();
+        for (FailureDumper failureDumper : mLocator.getAllFailureDumpers()) {
             try {
-                i.onTestFailed(exception);
+                failureDumper.onTestFailed(exception);
             } catch (Throwable t) {
                 // Ignore exceptions otherwise they'd hide the actual failure
-                Log.e(LOG_TAG, "Error in onTestFailed for " + i, t);
+                Log.e(LOG_TAG, "Error in onTestFailed for " + failureDumper, t);
             }
-        });
+        }
+    }
 
-        mFailureDumpers.values().forEach((i) -> {
+    private void createMissingFailureDumpers() {
+        for (String className : FailureDumper.Companion.getFailureDumpers()) {
             try {
-                i.onTestFailed(exception);
-            } catch (Throwable t) {
-                // Ignore exceptions otherwise they'd hide the actual failure
-                Log.e(LOG_TAG, "Error in onTestFailed for " + i, t);
+                mLocator.get(Class.forName(className));
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
             }
-        });
+        }
     }
 }
