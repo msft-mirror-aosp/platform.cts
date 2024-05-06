@@ -1226,56 +1226,6 @@ public class PerformanceClassEvaluator {
         }
     }
 
-    // used for requirements [7.6.1/H-1-1], [7.6.1/H-2-1]
-    public static class MemoryRequirement extends Requirement {
-        private static final String TAG = MemoryRequirement.class.getSimpleName();
-
-        // Media performance requires 6 GB minimum RAM, but keeping the following to
-        // 5 GB as activityManager.getMemoryInfo() typically returns around 5.4 GB on a 6 GB device,
-        // so these values are a bit lower than the required value stated on the Android CDD.
-        private static final long RS_REQUIRED_MEMORY_MB = Utils.MIN_MEMORY_PERF_CLASS_CANDIDATE_MB;
-        private static final long TUV_REQUIRED_MEMORY_MB = Utils.MIN_MEMORY_PERF_CLASS_T_MB;
-
-        private MemoryRequirement(String id, RequiredMeasurement<?> ... reqs) {
-            super(id, reqs);
-        }
-
-        public void setPhysicalMemory(long physicalMemory) {
-            this.<Long>setMeasuredValue(RequirementConstants.PHYSICAL_MEMORY, physicalMemory);
-        }
-
-        /**
-         * [7.6.1/H-1-1] MUST have at least 6 GB of physical memory.
-         */
-        public static MemoryRequirement createR7_6_1__H_1_1() {
-            RequiredMeasurement<Long> physical_memory = RequiredMeasurement
-                    .<Long>builder()
-                    .setId(RequirementConstants.PHYSICAL_MEMORY)
-                    .setPredicate(RequirementConstants.LONG_GTE)
-                    .addRequiredValue(Build.VERSION_CODES.R, RS_REQUIRED_MEMORY_MB)
-                    .build();
-
-            return new MemoryRequirement(RequirementConstants.R7_6_1__H_1_1, physical_memory);
-        }
-
-        /**
-         * [7.6.1/H-2-1] MUST have at least 6/8 GB of physical memory.
-         */
-        public static MemoryRequirement createR7_6_1__H_2_1() {
-            RequiredMeasurement<Long> physical_memory = RequiredMeasurement
-                    .<Long>builder()
-                    .setId(RequirementConstants.PHYSICAL_MEMORY)
-                    .setPredicate(RequirementConstants.LONG_GTE)
-                    .addRequiredValue(Build.VERSION_CODES.S, RS_REQUIRED_MEMORY_MB)
-                    .addRequiredValue(Build.VERSION_CODES.TIRAMISU, TUV_REQUIRED_MEMORY_MB)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, TUV_REQUIRED_MEMORY_MB)
-                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, TUV_REQUIRED_MEMORY_MB)
-                    .build();
-
-            return new MemoryRequirement(RequirementConstants.R7_6_1__H_2_1, physical_memory);
-        }
-    }
-
     // used for requirements [7.1.1.1/H-1-1], [7.1.1.1/H-2-1]
     public static class ResolutionRequirement extends Requirement {
         private static final String TAG = ResolutionRequirement.class.getSimpleName();
@@ -1883,10 +1833,6 @@ public class PerformanceClassEvaluator {
         return this.<DensityRequirement>addRequirement(DensityRequirement.createR7_1_1_3__H_1_1());
     }
 
-    public MemoryRequirement addR7_6_1__H_1_1() {
-        return this.<MemoryRequirement>addRequirement(MemoryRequirement.createR7_6_1__H_1_1());
-    }
-
     public ResolutionRequirement addR7_1_1_1__H_2_1() {
         return this.<ResolutionRequirement>addRequirement(
                 ResolutionRequirement.createR7_1_1_1__H_2_1());
@@ -1895,11 +1841,6 @@ public class PerformanceClassEvaluator {
     public DensityRequirement addR7_1_1_3__H_2_1() {
         return this.<DensityRequirement>addRequirement(DensityRequirement.createR7_1_1_3__H_2_1());
     }
-
-    public MemoryRequirement addR7_6_1__H_2_1() {
-        return this.<MemoryRequirement>addRequirement(MemoryRequirement.createR7_6_1__H_2_1());
-    }
-
 
     public FileSystemRequirement addR8_2__H_1_1() {
         return this.addRequirement(FileSystemRequirement.createR8_2__H_1_1());
