@@ -1103,7 +1103,9 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     if not data[_STR_VALUE_STR]:
       raise error_util.CameraItsError('No supported preview sizes')
-    return data[_STR_VALUE_STR].split(';')
+    supported_preview_sizes = data[_STR_VALUE_STR].split(';')
+    logging.debug('Supported preview sizes: %s', supported_preview_sizes)
+    return supported_preview_sizes
 
   def get_supported_preview_sizes(self, camera_id):
     """Get supported preview resolutions for this camera device.
