@@ -219,9 +219,10 @@ public final class WalletRoleTestUtils {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(MANAGE_ROLE_HOLDERS);
             if (currentHolder != null) {
-                //TODO(b/336649490): we should assert that this succeeds.
-                removeRoleHolder(context, currentHolder);
+                roleManager.setRoleFallbackEnabled(RoleManager.ROLE_WALLET, false);
+                Assert.assertTrue(removeRoleHolder(context, currentHolder));
                 countDownLatch.await(4000, TimeUnit.MILLISECONDS);
+                roleManager.setRoleFallbackEnabled(RoleManager.ROLE_WALLET, true);
             }
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(OBSERVE_ROLE_HOLDERS);
