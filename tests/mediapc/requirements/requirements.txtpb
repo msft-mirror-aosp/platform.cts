@@ -2058,7 +2058,7 @@ requirements {
 }
 requirements {
   id: "7.1.4.1/H-1-3"
-  name: "Vulcan"
+  name: "Vulkan"
   description: "Must support vulkan physical device protected memory and global priority."
   measurements: [
     {
