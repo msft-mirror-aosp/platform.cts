@@ -636,13 +636,18 @@ class AutoRevokeTest {
             rowItem.findObject(uninstallSelector).click()
         } else {
             rowItem.click()
-            waitFindObject(By.text("Uninstall")).click()
+            try {
+                waitFindObject(By.text("Uninstall")).click()
+            } catch (e: Exception) {
+                // Some watch implementations do not have the "Uninstall" text and directly go
+                // to the uninstall confirmation screen, so it's ok to let this exception go.
+            }
         }
     }
 
     private fun clickUninstallOk() {
         val uninstallSelector = if (hasFeatureWatch()) {
-                By.desc("OK")
+                By.res(Pattern.compile(".*(button1|positive_button)"))
             } else {
                 By.text("OK")
             }
