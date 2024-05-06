@@ -16,6 +16,11 @@
 
 package android.car.cts.app;
 
+import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
+
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.car.Car;
 import android.car.hardware.power.CarPowerManager;
@@ -81,6 +86,11 @@ public final class CarPowerTestService extends Service {
             CarPowerManager.STATE_POST_HIBERNATION_ENTER
     );
 
+    // Foreground service requirements
+    private static final String NOTIFICATION_CHANNEL_ID = TAG;
+    private static final String NOTIFICATION_CHANNEL_NAME = TAG;
+    private final int mCarPowerTestServiceNotificationId = this.hashCode();
+
     private final Object mLock = new Object();
 
     private final StringWriter mResultBuf = new StringWriter(RESULT_LOG_SIZE);
@@ -127,6 +137,23 @@ public final class CarPowerTestService extends Service {
         initCarApi();
     }
 
+    // Make CarPowerTestService run in the foreground so that it won't be killed during the test
+    void startForeground() {
+        NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
+                NOTIFICATION_CHANNEL_NAME, IMPORTANCE_DEFAULT);
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        manager.createNotificationChannel(notificationChannel);
+
+        Notification notification =
+                new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(android.R.drawable.checkbox_on_background)
+                        .setContentTitle(TAG)
+                        .setContentText(TAG)
+                        .setOngoing(true)
+                        .build();
+        startForeground(mCarPowerTestServiceNotificationId, notification);
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "onStartCommand");
@@ -142,6 +169,9 @@ public final class CarPowerTestService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "onStartCommand(): failed to handle cmd", e);
         }
+
+        startForeground();
+
         return START_NOT_STICKY;
     }
 
@@ -311,6 +341,7 @@ public final class CarPowerTestService extends Service {
                     mResultBuf.write(String.valueOf(statesMatchExpected));
                 } catch (InterruptedException e) {
                     Log.i(TAG, "Getting listener states timed out");
+                    mResultBuf.write("false");
                     break;
                 }
                 break;
