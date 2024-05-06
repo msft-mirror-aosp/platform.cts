@@ -212,8 +212,7 @@ public class PerformanceClassTest {
     @CddTest(requirements = {"2.2.7.3/7.1.1.3/H-3-1"})
     public void testDisplayHdr() {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        HDRDisplayRequirement req = pce.addRequirement(
-                Requirements.createR7_1_1_3__H_3_1());
+        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1(pce);
 
         req.setIsHdr(Utils.IS_HDR);
         req.setDisplayLuminanceNits(Utils.HDR_DISPLAY_AVERAGE_LUMINANCE);

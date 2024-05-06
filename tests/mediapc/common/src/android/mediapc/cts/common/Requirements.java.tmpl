@@ -26,13 +26,15 @@ public final class Requirements {
 {{- range $r := .ReqList.GetRequirements }}
 {{- if $r.GetName }}
     /**
-      * Create  {{UpperCamelCase $r.GetName}}Requirement for requirement {{ $r.GetId }}.
+      * Add a new {{UpperCamelCase $r.GetName}}Requirement for requirement {{ $r.GetId }} to a
+      * {@code PerformanceClassEvaluator} instance.
       {{- with $r.GetDescription}}
       *
       * {{.}}{{end}}
       */
-    public static {{UpperCamelCase $r.GetName}}Requirement create{{ SafeReqID $r.GetId | UpperCase}}() {
-        return {{UpperCamelCase $r.GetName}}Requirement.create();
+    public static {{UpperCamelCase $r.GetName}}Requirement add{{ SafeReqID $r.GetId | UpperCase}}(
+           PerformanceClassEvaluator pce) {
+        return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create());
      }
 
     /**
@@ -49,7 +51,7 @@ public final class Requirements {
           *
           * {{.}}{{end}}
           */
-        public static {{UpperCamelCase $r.GetName}}Requirement create() {
+        private static {{UpperCamelCase $r.GetName}}Requirement create() {
             {{- range $m_id, $m := $r.GetMeasurements }}
             {{- $mt := $m.GetMeasurementType}}
             {{- $c := $m.GetComparison}}
