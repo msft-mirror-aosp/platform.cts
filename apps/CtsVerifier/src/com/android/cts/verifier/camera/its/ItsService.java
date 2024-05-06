@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.camera.its;
 
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.QUERY_COMBINATIONS;
+
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -58,6 +61,7 @@ import android.hardware.camera2.DngCreator;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.cts.CameraTestUtils;
 import android.hardware.camera2.cts.PerformanceTest;
+import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.params.ColorSpaceProfiles;
 import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.ExtensionSessionConfiguration;
@@ -144,7 +148,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -156,7 +159,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class ItsService extends Service implements SensorEventListener {
     public static final String TAG = ItsService.class.getSimpleName();
@@ -238,27 +240,11 @@ public class ItsService extends Service implements SensorEventListener {
         CAMCORDER_PROFILE_QUALITIES_MAP.put(CamcorderProfile.QUALITY_VGA, "VGA");
     }
 
-    // Queryable stream combinations constants
-    private static final int PRIV = 0;
-    private static final int JPEG = 1;
-    private static final int YUV = 2;
-
-    private static final int PREVIEW = 6;
-    private static final int S720P_4_3 = 7;
-    private static final int S720P_16_9 = 8;
-    private static final int S1080P_4_3 = 9;
-    private static final int S1080P_16_9 = 10;
-    private static final int S1440P_4_3 = 11;
-    private static final int S1440P_16_9 = 12;
-    private static final int MAXIMUM = 13;
-    private static final int MAXIMUM_4_3 = 14;
-    private static final int MAXIMUM_16_9 = 15;
-
     private static HashMap<Integer, String> sFormatMap = new HashMap<>();
     static {
-        sFormatMap.put(PRIV, "priv");
-        sFormatMap.put(JPEG, "jpeg");
-        sFormatMap.put(YUV, "yuv");
+        sFormatMap.put(ImageFormat.PRIVATE, "priv");
+        sFormatMap.put(ImageFormat.JPEG, "jpeg");
+        sFormatMap.put(ImageFormat.YUV_420_888, "yuv");
     }
 
     private CameraManager mCameraManager = null;
@@ -2669,82 +2655,18 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("supportedPreviewSizes", response);
     }
 
-    private Map<Integer, Size> getStreamSizeMap() throws ItsException {
-        HashMap<Integer, Size> sizeMap = new HashMap<Integer, Size>();
-
-        // PREVIEW
-        Size displaySize = getDisplaySize();
-        sizeMap.put(PREVIEW, displaySize);
-
-        // MAXIMUM
-        StreamConfigurationMap configMap = mCameraCharacteristics.get(
-                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-        Size[] jpegSizes = configMap.getOutputSizes(ImageFormat.JPEG);
-        if (jpegSizes == null) {
-            mSocketRunnableObj.sendResponse("queryableStreamCombinations", "");
-            return null;
-        }
-        Optional<Size> maxJpegSize =
-                Stream.of(jpegSizes).max(Comparator.comparing(s -> s.getWidth() * s.getHeight()));
-        sizeMap.put(MAXIMUM, maxJpegSize.get());
-
-        // MAXIMUM_4_3
-        Stream<Size> jpeg4x3SizeStream = Stream.of(jpegSizes)
-                .filter(s -> Math.abs(1.0f * s.getWidth() / s.getHeight() - 1.333f) <= EPISILON);
-        Optional<Size> maxJpegSize_4_3 = jpeg4x3SizeStream.max(
-                Comparator.comparing(s -> s.getWidth() * s.getHeight()));
-        sizeMap.put(MAXIMUM_4_3, maxJpegSize_4_3.get());
-
-        // MAXIMUM_16_9
-        Stream<Size> jpeg16x9SizeStream = Stream.of(jpegSizes)
-                .filter(s -> Math.abs(1.0f * s.getWidth() / s.getHeight() - 1.778f) <= EPISILON);
-        Optional<Size> maxJpegSize_16_9 = jpeg16x9SizeStream.max(
-                Comparator.comparing(s -> s.getWidth() * s.getHeight()));
-        sizeMap.put(MAXIMUM_16_9, maxJpegSize_16_9.get());
-
-        // The rest
-        sizeMap.put(S1440P_4_3, new Size(1920, 1440));
-        sizeMap.put(S1440P_16_9, new Size(2560, 1440));
-        sizeMap.put(S1080P_4_3, new Size(1440, 1080));
-        sizeMap.put(S1080P_16_9, new Size(1920, 1080));
-        sizeMap.put(S720P_4_3, new Size(960, 720));
-        sizeMap.put(S720P_16_9, new Size(1280, 720));
-
-        return sizeMap;
-    }
-
     private void doGetQueryableStreamCombinations() throws ItsException {
-        final int[][] kQueryableCombinations = {
-            {PRIV, PREVIEW,      JPEG, MAXIMUM},
-            {PRIV, S1440P_4_3,   JPEG, MAXIMUM_4_3},
-            {PRIV, S1440P_16_9,  JPEG, MAXIMUM_16_9},
-            {PRIV, S1080P_4_3,   JPEG, MAXIMUM_4_3},
-            {PRIV, S1080P_16_9,  JPEG, MAXIMUM_16_9},
-            {PRIV, S720P_4_3,    JPEG, MAXIMUM_4_3},
-            {PRIV, S720P_16_9,   JPEG, MAXIMUM_16_9},
-            {PRIV, S1440P_4_3,   JPEG, S1440P_4_3},
-            {PRIV, S1440P_16_9,  JPEG, S1440P_16_9},
-            {PRIV, S1080P_4_3,   JPEG, S1080P_4_3},
-            {PRIV, S1080P_16_9,  JPEG, S1080P_16_9},
-            {PRIV, S720P_4_3,    JPEG, S1080P_4_3},
-            {PRIV, S720P_16_9,   JPEG, S1080P_16_9},
-            {PRIV, PREVIEW,      PRIV, PREVIEW},
-            {PRIV, S1440P_4_3,   PRIV, S1440P_4_3},
-            {PRIV, S1440P_16_9,  PRIV, S1440P_16_9},
-            {PRIV, S1080P_4_3,   PRIV, S1080P_4_3},
-            {PRIV, S1080P_16_9,  PRIV, S1080P_16_9},
-            {PRIV, S720P_4_3,    PRIV, S720P_4_3},
-            {PRIV, S720P_16_9,   PRIV, S720P_16_9},
-        };
-
-        Map<Integer, Size> streamSizeMap = getStreamSizeMap();
-
+        StaticMetadata staticMetadata = new StaticMetadata(mCameraCharacteristics);
+        MaxStreamSizes maxStreamSizes = new MaxStreamSizes(staticMetadata,
+                mCamera.getId(), (Context) this, /*matchSize*/true);
         StringBuilder responseBuilder = new StringBuilder();
-        for (int i = 0; i < kQueryableCombinations.length; i++) {
+        for (int i = 0; i < QUERY_COMBINATIONS.length; i++) {
             String oneCombination = "";
-            for (int j = 0; j < kQueryableCombinations[i].length; j += 2) {
-                String format = sFormatMap.get(kQueryableCombinations[i][j]);
-                Size size = streamSizeMap.get(kQueryableCombinations[i][j + 1]);
+            for (int j = 0; j < QUERY_COMBINATIONS[i].length; j += 2) {
+                String format = sFormatMap.get(QUERY_COMBINATIONS[i][j]);
+                int sizeIndex = QUERY_COMBINATIONS[i][j + 1];
+                Size size = maxStreamSizes.getOutputSizeForFormat(
+                        QUERY_COMBINATIONS[i][j], sizeIndex);
                 String oneStream = format + ":" + size.toString();
                 if (j > 0) {
                     oneCombination += "+";

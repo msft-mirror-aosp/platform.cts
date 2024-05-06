@@ -63,7 +63,9 @@ TABLET_ALLOWLIST = (
     'hwcmr09',  # Huawei MediaPad M5
     'x306f',  # Lenovo Tab M10 HD (Gen 2)
     'x606f',  # Lenovo Tab M10 Plus
+    'j606f',  # Lenovo Tab P11
     'tb350fu',  # Lenovo Tab P11 (Gen 2)
+    'agta',  # Nokia T21
     'gta4lwifi',  # Samsung Galaxy Tab A7
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta9pwifi',  # Samsung Galaxy Tab A9+
@@ -2274,8 +2276,13 @@ class ItsSession(object):
 
     if isinstance(out_surfaces, list):
       cmd['outputSurfaces'] = out_surfaces
+      for out_surface in out_surfaces:
+        if self._hidden_physical_id:
+          out_surface['physicalCamera'] = self._hidden_physical_id
     else:
       cmd['outputSurfaces'] = [out_surfaces]
+      if self._hidden_physical_id:
+        out_surfaces['physicalCamera'] = self._hidden_physical_id
 
     if settings:
       cmd['settings'] = settings
@@ -2821,14 +2828,15 @@ def remove_tmp_files(log_path, match_pattern):
         logging.debug('File not found: %s', str(file))
 
 
-def remove_frame_files(dir_name, save_files_list=[]):
+def remove_frame_files(dir_name, save_files_list=None):
   """Removes the generated frame files from test dir.
 
   Args:
     dir_name: test directory name.
     save_files_list: list of files not to be removed. Default is empty list.
   """
-  if os.path.exists(dir_name):
-    for image in glob.glob('%s/*.png' % dir_name):
-      if image not in save_files_list:
-        os.remove(image)
+  if save_files_list is not None:
+    if os.path.exists(dir_name):
+      for image in glob.glob('%s/*.png' % dir_name):
+        if image not in save_files_list:
+          os.remove(image)

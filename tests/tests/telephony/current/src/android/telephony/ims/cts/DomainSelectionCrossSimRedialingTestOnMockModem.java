@@ -83,7 +83,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -91,7 +90,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * CTS tests for Cross SIM redialing.
+ * CTS tests for cross SIM redialing of AOSP DomainSelectionService.
  */
 @RunWith(AndroidJUnit4.class)
 public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingBase {
@@ -143,7 +142,7 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
 
         sSupportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(telephonyManager,
-                        (tm) -> tm.isDomainSelectionSupported());
+                        (tm) -> tm.isAospDomainSelectionService());
 
         if (!sSupportDomainSelection) {
             return;
@@ -297,7 +296,6 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
         TelephonyUtils.endBlockSuppression(InstrumentationRegistry.getInstrumentation());
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testCrossStackSlot0ThenSlot1() throws Exception {
         // Setup pre-condition

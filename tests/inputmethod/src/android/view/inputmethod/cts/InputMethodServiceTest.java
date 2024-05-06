@@ -973,9 +973,6 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
                 } finally {
                     // Restore Display to original size.
                     displaySession.restoreDisplayMetrics();
-                    // Advance stream to ignore unrelated side effect from WM configuration changes.
-                    // TODO(b/257990185): Add filtering in WM Extensions to remove this.
-                    stream.skipAll();
 
                     WindowLayoutInfoParcelable windowLayoutRestored = verifyReceivedWindowLayout(
                             stream);

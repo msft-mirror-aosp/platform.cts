@@ -39,7 +39,7 @@ _PATCH_H = 0.1  # center 10%
 _PATCH_W = 0.1
 _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
-_SNR_TOLERANCE = 3  # unit in dB
+_SNR_ATOL = 3  # unit in dB
 
 
 class ParamNoiseReductionTest(its_base_test.ItsBaseTest):
@@ -153,17 +153,17 @@ class ParamNoiseReductionTest(its_base_test.ItsBaseTest):
       # Higher SNR is better
       # Verify OFF is not better than FAST
       if (snrs[j][_NR_MODES['OFF']] >= snrs[j][_NR_MODES['FAST']] +
-          _SNR_TOLERANCE):
+          _SNR_ATOL):
         raise AssertionError(
             f"{_COLORS[j]} OFF: {snrs[j][_NR_MODES['OFF']]:.3f}, "
-            f"FAST: {snrs[j][_NR_MODES['FAST']]:.3f}, TOL: {_SNR_TOLERANCE}")
+            f"FAST: {snrs[j][_NR_MODES['FAST']]:.3f}, ATOL: {_SNR_ATOL}")
 
       # Verify FAST is not better than HQ
       if (snrs[j][_NR_MODES['FAST']] >= snrs[j][_NR_MODES['HQ']] +
-          _SNR_TOLERANCE):
+          _SNR_ATOL):
         raise AssertionError(
             f"{_COLORS[j]} FAST: {snrs[j][_NR_MODES['FAST']]:.3f}, "
-            f"HQ: {snrs[j][_NR_MODES['HQ']]:.3f}, TOL: {_SNR_TOLERANCE}")
+            f"HQ: {snrs[j][_NR_MODES['HQ']]:.3f}, ATOL: {_SNR_ATOL}")
 
       # Verify HQ is better than OFF
       if snrs[j][_NR_MODES['HQ']] <= snrs[j][_NR_MODES['OFF']]:
@@ -174,37 +174,37 @@ class ParamNoiseReductionTest(its_base_test.ItsBaseTest):
       if camera_properties_utils.noise_reduction_mode(props, _NR_MODES['MIN']):
         # Verify OFF is not better than MINIMAL
         if not(snrs[j][_NR_MODES['OFF']] < snrs[j][_NR_MODES['MIN']] +
-               _SNR_TOLERANCE):
+               _SNR_ATOL):
           raise AssertionError(
               f"{_COLORS[j]} OFF: {snrs[j][_NR_MODES['OFF']]:.3f}, "
-              f"MIN: {snrs[j][_NR_MODES['MIN']]:.3f}, TOL: {_SNR_TOLERANCE}")
+              f"MIN: {snrs[j][_NR_MODES['MIN']]:.3f}, ATOL: {_SNR_ATOL}")
 
         # Verify MINIMAL is not better than HQ
         if not (snrs[j][_NR_MODES['MIN']] < snrs[j][_NR_MODES['HQ']] +
-                _SNR_TOLERANCE):
+                _SNR_ATOL):
           raise AssertionError(
               f"{_COLORS[j]} MIN: {snrs[j][_NR_MODES['MIN']]:.3f}, "
-              f"HQ: {snrs[j][_NR_MODES['HQ']]:.3f}, TOL: {_SNR_TOLERANCE}")
+              f"HQ: {snrs[j][_NR_MODES['HQ']]:.3f}, ATOL: {_SNR_ATOL}")
 
         # Verify ZSL is close to MINIMAL
         if camera_properties_utils.noise_reduction_mode(
             props, _NR_MODES['ZSL']):
           if not math.isclose(snrs[j][_NR_MODES['ZSL']],
                               snrs[j][_NR_MODES['MIN']],
-                              abs_tol=_SNR_TOLERANCE):
+                              abs_tol=_SNR_ATOL):
             raise AssertionError(
                 f"{_COLORS[j]} ZSL: {snrs[j][_NR_MODES['ZSL']]:.3f}, "
-                f"MIN: {snrs[j][_NR_MODES['MIN']]:.3f}, TOL: {_SNR_TOLERANCE}")
+                f"MIN: {snrs[j][_NR_MODES['MIN']]:.3f}, ATOL: {_SNR_ATOL}")
 
       elif camera_properties_utils.noise_reduction_mode(
           props, _NR_MODES['ZSL']):
         # Verify ZSL is close to OFF
         if not math.isclose(
             snrs[j][_NR_MODES['ZSL']], snrs[j][_NR_MODES['OFF']],
-            abs_tol=_SNR_TOLERANCE):
+            abs_tol=_SNR_ATOL):
           raise AssertionError(
               f"{_COLORS[j]} OFF: {snrs[j][_NR_MODES['OFF']]:.3f}, "
-              f"ZSL: {snrs[j][_NR_MODES['ZSL']]:.3f}, TOL: {_SNR_TOLERANCE}")
+              f"ZSL: {snrs[j][_NR_MODES['ZSL']]:.3f}, ATOL: {_SNR_ATOL}")
 
 
 if __name__ == '__main__':

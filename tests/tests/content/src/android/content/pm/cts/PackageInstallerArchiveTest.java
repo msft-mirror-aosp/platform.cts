@@ -707,19 +707,30 @@ public class PackageInstallerArchiveTest {
         installPackage(PACKAGE_NAME, APK_PATH);
 
         int currentUser = ActivityManager.getCurrentUser();
-        PackageBroadcastReceiver
+        final PackageBroadcastReceiver
                 addedBroadcastReceiver = new PackageBroadcastReceiver(
                 PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_ADDED
         );
-        PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
+        final PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
                 PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REMOVED
+        );
+        final PackageBroadcastReceiver fullyRemovedBroadcastReceiver = new PackageBroadcastReceiver(
+                PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_FULLY_REMOVED
+        );
+        final PackageBroadcastReceiver uidRemovedBroadcastReceiver = new PackageBroadcastReceiver(
+                PACKAGE_NAME, currentUser, Intent.ACTION_UID_REMOVED
         );
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
         intentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
+        intentFilter.addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED);
         intentFilter.addDataScheme("package");
+
+        final IntentFilter intentFilterForUidRemoved = new IntentFilter(Intent.ACTION_UID_REMOVED);
         try {
             mContext.registerReceiver(removedBroadcastReceiver, intentFilter);
+            mContext.registerReceiver(fullyRemovedBroadcastReceiver, intentFilter);
+            mContext.registerReceiver(uidRemovedBroadcastReceiver, intentFilterForUidRemoved);
 
             runWithShellPermissionIdentity(
                     () -> {
@@ -730,6 +741,8 @@ public class PackageInstallerArchiveTest {
                     },
                     Manifest.permission.DELETE_PACKAGES);
 
+            fullyRemovedBroadcastReceiver.assertBroadcastNotReceived();
+            uidRemovedBroadcastReceiver.assertBroadcastNotReceived();
             removedBroadcastReceiver.assertBroadcastReceived();
             Intent removedIntent = removedBroadcastReceiver.getBroadcastResult();
             assertNotNull(removedIntent);
@@ -746,6 +759,8 @@ public class PackageInstallerArchiveTest {
         } finally {
             try {
                 mContext.unregisterReceiver(removedBroadcastReceiver);
+                mContext.unregisterReceiver(uidRemovedBroadcastReceiver);
+                mContext.unregisterReceiver(fullyRemovedBroadcastReceiver);
                 mContext.unregisterReceiver(addedBroadcastReceiver);
             } catch (Exception e) {
                 // Already unregistered.

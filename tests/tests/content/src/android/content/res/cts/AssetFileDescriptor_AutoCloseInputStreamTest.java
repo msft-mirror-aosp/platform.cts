@@ -26,11 +26,13 @@ import android.system.StructStat;
 import android.test.AndroidTestCase;
 import android.test.MoreAsserts;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -180,6 +182,30 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
             assertEquals(FILE_DATA[i], mInput.read());
         }
         assertEquals(FILE_END, mInput.read());
+    }
+
+    public void testReadZeroByte() throws IOException {
+        openInput(0, FILE_LENGTH);
+        byte[] buf = new byte[1];
+        assertEquals(FILE_LENGTH, mInput.available());
+        assertEquals(0, mInput.read(buf, 0, 0));
+        assertEquals(FILE_LENGTH, mInput.available());
+    }
+
+    public void testReadLargeBytes() throws IOException {
+        final int writeSize = 1_000_000;
+        mFile = new File(getContext().getFilesDir(), FILE_NAME);
+        try (OutputStream out =
+                     new BufferedOutputStream(new FileOutputStream(mFile))) {
+            for (int i = 0; i < writeSize; i++) {
+                out.write(i % 256);
+            }
+        }
+
+        openInput(0, writeSize);
+
+        assertEquals(writeSize, mFd.getLength());
+        assertEquals(writeSize, mInput.readAllBytes().length);
     }
 
     private void openInput(long startOffset, long length)

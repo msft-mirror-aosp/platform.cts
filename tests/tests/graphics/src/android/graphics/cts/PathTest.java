@@ -31,18 +31,23 @@ import android.graphics.Path;
 import android.graphics.Path.Direction;
 import android.graphics.PathIterator;
 import android.graphics.RectF;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class PathTest {
+    @Rule
+    public final RavenwoodRule mRavenwood = new RavenwoodRule();
 
     // Test constants
     private static final float LEFT = 10.0f;
@@ -92,6 +97,7 @@ public class PathTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = {Paint.class})
     public void testSet() {
         Path path = new Path();
         assertTrue(path.isEmpty());
@@ -102,6 +108,7 @@ public class PathTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = {Paint.class})
     public void testSetCleanOld() {
         Path path = new Path();
         addRectToPath(path);
@@ -113,6 +120,7 @@ public class PathTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = {Paint.class})
     public void testSetEmptyPath() {
         Path path = new Path();
         addRectToPath(path);
@@ -436,6 +444,7 @@ public class PathTest {
             "android.graphics.PathIterator.Segment#getPoints",
             "android.graphics.PathIterator.Segment#getConicWeight",
             "android.graphics.Path#isEmpty", "android.graphics.Path#conicTo"})
+    @DisabledOnRavenwood(blockedBy = {PathIterator.class})
     public void testConicTo() {
         Path path = new Path();
         assertTrue(path.isEmpty());
@@ -521,6 +530,7 @@ public class PathTest {
             "android.graphics.PathIterator.Segment#getPoints",
             "android.graphics.PathIterator.Segment#getConicWeight",
             "android.graphics.Path#isEmpty", "android.graphics.Path#rConicTo"})
+    @DisabledOnRavenwood(blockedBy = {PathIterator.class})
     public void testRConicTo() {
         Path path = new Path();
         assertTrue(path.isEmpty());
@@ -554,6 +564,7 @@ public class PathTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = {Paint.class})
     public void testOffsetTextPath() {
         Paint paint = new Paint();
         Path path = new Path();
@@ -620,6 +631,7 @@ public class PathTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = {Paint.class})
     public void testPathOffset() {
         Path actualPath = new Path();
         actualPath.addRect(START_X, START_Y, START_X + SQUARE, START_Y + SQUARE, Direction.CW);
@@ -633,6 +645,7 @@ public class PathTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = {Paint.class})
     public void testPathOffset2() {
         Path actualPath = new Path();
         actualPath.moveTo(0, 0);
@@ -651,6 +664,7 @@ public class PathTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = {Paint.class})
     public void testPathOffsetWithDestination() {
         Path initialPath = new Path();
         initialPath.addRect(START_X, START_Y, START_X + SQUARE, START_Y + SQUARE, Direction.CW);
@@ -729,6 +743,7 @@ public class PathTest {
             "android.graphics.Path#isInterpolatable",
             "android.graphics.Path#interpolate",
     })
+    @DisabledOnRavenwood(blockedBy = {Paint.class})
     public void testPathInterpolation() {
         Path startPath = new Path();
         Path endPath = new Path();

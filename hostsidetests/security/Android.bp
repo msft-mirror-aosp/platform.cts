@@ -61,11 +61,6 @@ java_test_host {
     target_required: ["CtsDeviceInfo"],
 }
 
-filegroup {
-    name: "prebuilt_sepolicy_cts_data",
-    srcs: [":202404_sepolicy_cts_data"],
-}
-
 java_genrule_host {
     name: "CtsSecurityHostTestCases_StaticLibs",
     tools: [
