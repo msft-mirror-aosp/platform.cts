@@ -420,25 +420,6 @@ public class PerformanceClassEvaluator {
             return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_12,
                     codec_init_latency);
         }
-
-        /**
-         * [2.2.7.1/5.1/H-1-13] Codec initialization latency of 30ms or less for a 128kbps or
-         * lower bitrate audio decoding session for all audio encoders when under load. Load here
-         * is defined as a concurrent 1080p to 720p video-only transcoding session using hardware
-         * video codecs together with the 1080p audio-video recording initialization.
-         */
-        public static CodecInitLatencyRequirement createR5_1__H_1_13() {
-            RequiredMeasurement<Long> codec_init_latency =
-                RequiredMeasurement.<Long>builder().setId(RequirementConstants.CODEC_INIT_LATENCY)
-                        .setPredicate(RequirementConstants.LONG_LTE)
-                        .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 30L)
-                        .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 30L)
-                        .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 30L)
-                        .build();
-
-            return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_13,
-                    codec_init_latency);
-        }
     }
 
     // used for requirements [2.2.7.1/5.1/H-1-1], [2.2.7.1/5.1/H-1-2], [2.2.7.1/5.1/H-1-3],
@@ -2392,10 +2373,6 @@ public class PerformanceClassEvaluator {
 
     public CodecInitLatencyRequirement addR5_1__H_1_12() {
         return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_12());
-    }
-
-    public CodecInitLatencyRequirement addR5_1__H_1_13() {
-        return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_13());
     }
 
     /* Adds requirement 5.1/H-1-14 */
