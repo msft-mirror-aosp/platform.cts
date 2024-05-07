@@ -264,6 +264,12 @@ requirements {
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
     }
   }
+  variants: {
+    key: "dolby"
+    value: {
+      description: "When the codec is Dolby Vision"
+    }
+  }
   specs {
     key: 30
     value {
@@ -278,6 +284,17 @@ requirements {
         key: "codec_initialization_latency_ms"
         value {
           long_value: 65
+        }
+      }
+      variant_specs: {
+        key: "dolby"
+        value: {
+          required_values: {
+            key: "codec_initialization_latency_ms"
+            value {
+              long_value: 65
+            }
+          }
         }
       }
     }
@@ -298,6 +315,17 @@ requirements {
           long_value: 50
         }
       }
+      variant_specs: {
+        key: "dolby"
+        value: {
+          required_values: {
+            key: "codec_initialization_latency_ms"
+            value {
+              long_value: 50
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -314,6 +342,17 @@ requirements {
         key: "codec_initialization_latency_ms"
         value {
           long_value: 40
+        }
+      }
+      variant_specs: {
+        key: "dolby"
+        value: {
+          required_values: {
+            key: "codec_initialization_latency_ms"
+            value {
+              long_value: 50
+            }
+          }
         }
       }
     }
@@ -335,6 +374,17 @@ requirements {
           long_value: 40
         }
       }
+      variant_specs: {
+        key: "dolby"
+        value: {
+          required_values: {
+            key: "codec_initialization_latency_ms"
+            value {
+              long_value: 50
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -352,6 +402,17 @@ requirements {
         key: "codec_initialization_latency_ms"
         value {
           long_value: 40
+        }
+      }
+      variant_specs: {
+        key: "dolby"
+        value: {
+          required_values: {
+            key: "codec_initialization_latency_ms"
+            value {
+              long_value: 50
+            }
+          }
         }
       }
     }
