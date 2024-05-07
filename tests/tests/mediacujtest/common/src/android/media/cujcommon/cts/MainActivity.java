@@ -24,13 +24,18 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
+import android.view.View;
 import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
+import androidx.media3.common.Tracks.Group;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
+
+import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
   protected boolean mIsInPipMode;
   protected boolean mConfiguredSplitScreenMode;
   protected boolean mIsInMultiWindowMode;
+  protected View mExoRewindButton;
+  protected View mLockControllerButton;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +69,9 @@ public class MainActivity extends AppCompatActivity {
   protected void buildPlayer() {
     mPlayer = new ExoPlayer.Builder(this).build();
     mExoplayerView = findViewById(R.id.exoplayer);
+    mLockControllerButton = findViewById(R.id.lock_controller);
+    mLockControllerButton.setVisibility(View.INVISIBLE);
+    mExoRewindButton = findViewById(R.id.exo_rew_with_amount);
     mExoplayerView.setPlayer(mPlayer);
   }
 
@@ -94,8 +104,15 @@ public class MainActivity extends AppCompatActivity {
    */
   @Override
   protected void onStop() {
-    mPlayer.stop();
-    super.onStop();
+    // When activity is stopped, don't pause the playback if it is an audio only clip
+    ImmutableList<Group> currentTrackGroups = mPlayer.getCurrentTracks().getGroups();
+    if ((currentTrackGroups.size() == 1) && (currentTrackGroups.get(0).getType()
+        == C.TRACK_TYPE_AUDIO)) {
+      super.onStop();
+    } else {
+      mPlayer.stop();
+      super.onStop();
+    }
   }
 
   /**
@@ -121,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
     if (mScaleGestureDetector != null) {
       mScaleGestureDetector.onTouchEvent(event);
     }
-    return true;
+    return super.dispatchTouchEvent(event);
   }
 
   /**

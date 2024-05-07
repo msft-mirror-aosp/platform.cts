@@ -45,7 +45,7 @@ public abstract class PlayerListener implements Player.Listener {
   public static int CURRENT_MEDIA_INDEX = 0;
 
   // Enum Declared for Test Type
-  protected enum TestType {
+  public enum TestType {
     PLAYBACK_TEST,
     SEEK_TEST,
     ORIENTATION_TEST,
@@ -58,7 +58,9 @@ public abstract class PlayerListener implements Player.Listener {
     PINCH_TO_ZOOM_TEST,
     SPEED_CHANGE_TEST,
     PIP_MODE_TEST,
-    SPLIT_SCREEN_TEST
+    SPLIT_SCREEN_TEST,
+    DEVICE_LOCK_TEST,
+    LOCK_PLAYBACK_CONTROLLER_TEST
   }
 
   public static boolean mPlaybackEnded;

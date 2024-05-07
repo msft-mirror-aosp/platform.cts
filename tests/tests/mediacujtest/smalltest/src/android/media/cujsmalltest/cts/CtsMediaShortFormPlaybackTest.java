@@ -18,10 +18,13 @@ package android.media.cujsmalltest.cts;
 
 import android.media.cujcommon.cts.CujTestBase;
 import android.media.cujcommon.cts.CujTestParam;
+import android.media.cujcommon.cts.DeviceLockTestPlayerListener;
+import android.media.cujcommon.cts.LockPlaybackControllerTestPlayerListener;
 import android.media.cujcommon.cts.OrientationTestPlayerListener;
 import android.media.cujcommon.cts.PinchToZoomTestPlayerListener;
 import android.media.cujcommon.cts.PipModeTestPlayerListener;
 import android.media.cujcommon.cts.PlaybackTestPlayerListener;
+import android.media.cujcommon.cts.PlayerListener.TestType;
 import android.media.cujcommon.cts.ScrollTestPlayerListener;
 import android.media.cujcommon.cts.SeekTestPlayerListener;
 import android.media.cujcommon.cts.SplitScreenTestPlayerListener;
@@ -79,6 +82,8 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
       "android.resource://android.media.cujsmalltest.cts/raw/tearsofsteel_srt_subtitles_eng_fre_5sec";
   private static final String MKV_TEARS_OF_STEEL_ASSET_SSA_SUBTITLES_ENG_FRENCH_URI_STRING =
       "android.resource://android.media.cujsmalltest.cts/raw/tearsofsteel_ssa_subtitles_eng_fre_5sec";
+  private static final String MP3_ELEPHANTSDREAM_2CH_48KHZ_URI_STRING =
+      "android.resource://android.media.cujsmalltest.cts/raw/ElephantsDream_2ch_48Khz_15s";
 
   CujTestParam mCujTestParam;
   private final String mTestType;
@@ -143,6 +148,18 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             .setTimeoutMilliSeconds(45000)
             .setPlayerListener(new SplitScreenTestPlayerListener(5000)).build(),
             "Hevc_720p_15sec_SplitScreenTest"},
+        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoList())
+            .setTimeoutMilliSeconds(50000)
+            .setPlayerListener(new DeviceLockTestPlayerListener(3000, false)).build(),
+            "Hevc_720p_15sec_DeviceLockTest"},
+        {CujTestParam.builder().setMediaUrls(prepareMp3_15secAudioListForDeviceLockTest())
+            .setTimeoutMilliSeconds(45000)
+            .setPlayerListener(new DeviceLockTestPlayerListener(3000, true)).build(),
+            "Mp3_15sec_DeviceLockTest"},
+        {CujTestParam.builder().setMediaUrls(prepareMp3_15secAudioListForDeviceLockTest())
+            .setTimeoutMilliSeconds(50000)
+            .setPlayerListener(new LockPlaybackControllerTestPlayerListener(6000)).build(),
+            "Hevc_720p_15sec_LockPlaybackTest"},
     }));
     return exhaustiveArgsList;
   }
@@ -256,6 +273,14 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
     return videoInput;
   }
 
+  /**
+   * Prepare Mp3 15sec audio list for Device Lock Test.
+   */
+  public static List<String> prepareMp3_15secAudioListForDeviceLockTest() {
+    List<String> audioInput = Arrays.asList(
+        MP3_ELEPHANTSDREAM_2CH_48KHZ_URI_STRING);
+    return audioInput;
+  }
 
   // Test to Verify video playback with and without seek
   @ApiTest(apis = {"android.media.MediaCodec#configure",
@@ -285,7 +310,14 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
     }
     if (mCujTestParam.playerListener().isSplitScreenTest()) {
       Assume.assumeFalse("Skipping " + mTestType + " on television", isTelevisionDevice(mActivity));
+    }
+    if (mCujTestParam.playerListener().getTestType()
+        .equals(TestType.LOCK_PLAYBACK_CONTROLLER_TEST)) {
       Assume.assumeFalse("Skipping " + mTestType + " on watch", isWatchDevice(mActivity));
+    }
+    if (mCujTestParam.playerListener().getTestType().equals(TestType.DEVICE_LOCK_TEST)) {
+      Assume.assumeFalse("Skipping " + mTestType + " on watch", isWatchDevice(mActivity));
+      Assume.assumeFalse("Skipping " + mTestType + " on television", isTelevisionDevice(mActivity));
     }
     play(mCujTestParam.mediaUrls(), mCujTestParam.timeoutMilliSeconds());
   }
