@@ -957,86 +957,57 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
                 NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING,
                 getRegState(Domain.CS, subId));
 
-        // Register call state change callback
-        mCallState = TelephonyManager.CALL_STATE_IDLE;
-        sCallStateChangeCallbackHandler.post(
-                () -> {
-                    sCallStateCallback = new CallStateListener();
-                    ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                            sTelephonyManager,
-                            (tm) ->
-                                    tm.registerTelephonyCallback(
-                                            mCallStateChangeExecutor, sCallStateCallback));
-                });
-
         // place first call
         placeOutgoingCall(TEST_DIAL_NUMBER);
         TimeUnit.SECONDS.sleep(1);
-        // Verify call state
-        synchronized (mCallStateChangeLock) {
-            if (mCallState == TelephonyManager.CALL_STATE_IDLE) {
-                Log.d(TAG, "Wait for call state change to offhook");
-                mCallStateChangeLock.wait(WAIT_UPDATE_TIMEOUT_MS);
-            }
-            assertEquals(TelephonyManager.CALL_STATE_OFFHOOK, mCallState);
-        }
 
         Call call1 = getCall(mCurrentCallId);
 
+        // IMS call1
         assertTrue(isPsDialing());
+
+        TestImsCallSessionImpl callSession1 =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
 
         // place second call
         placeOutgoingCall(TEST_DIAL_NUMBER + 1);
         TimeUnit.SECONDS.sleep(1);
-        // call1 on hold
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
-        assertEquals("Call is not on Hold", Call.STATE_HOLDING, call1.getDetails().getState());
 
         Call call2 = getCall(mCurrentCallId);
+
+        // IMS call2
         assertTrue(isPsDialing());
+
+        TestImsCallSessionImpl callSession2 =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        // call2 should be IMS and active
+        isCallActive(call2, callSession2);
+        // IMS call1 on hold
+        isCallHolding(call1, callSession1);
 
         // Swap the call
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
         call1.unhold();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
-        assertEquals("Call2 is not on Hold", Call.STATE_HOLDING, call2.getDetails().getState());
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_ACTIVE, WAIT_FOR_CALL_STATE));
-        assertEquals("Call1 is not Active", Call.STATE_ACTIVE, call1.getDetails().getState());
+        // call1 should be IMS and active
+        isCallActive(call1, callSession1);
+        // IMS call2 on hold
+        isCallHolding(call2, callSession2);
 
-        // After successful call swap disconnect the call
+        // disconnect call1
         call1.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        // IMS call1 disconnected
+        isCallDisconnected(call1, callSession1);
 
-        // Wait till second call is in active state
-        waitUntilConditionIsTrueOrTimeout(
-                new Condition() {
-                    @Override
-                    public Object expected() {
-                        return true;
-                    }
+        // call2 should be IMS and active
+        isCallActive(call2, callSession2);
 
-                    @Override
-                    public Object actual() {
-                        return call2.getDetails().getState() == Call.STATE_ACTIVE;
-                    }
-                },
-                WAIT_FOR_CALL_STATE_ACTIVE,
-                "Call in Active State");
-
-        // Call 2 is active
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_ACTIVE, WAIT_FOR_CALL_STATE));
-
-        // disconnect call 2
+        // disconnect call2
         call2.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
+        // IMS call2 disconnected
+        isCallDisconnected(call2, callSession2);
 
-        // Unregister call state change callback
-        sTelephonyManager.unregisterTelephonyCallback(sCallStateCallback);
-        sCallStateCallback = null;
         waitForUnboundService();
     }
 
@@ -1061,18 +1032,6 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
                 NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING,
                 getRegState(Domain.CS, subId));
 
-        // Register call state change callback
-        mCallState = TelephonyManager.CALL_STATE_IDLE;
-        sCallStateChangeCallbackHandler.post(
-                () -> {
-                    sCallStateCallback = new CallStateListener();
-                    ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                            sTelephonyManager,
-                            (tm) ->
-                                    tm.registerTelephonyCallback(
-                                            mCallStateChangeExecutor, sCallStateCallback));
-                });
-
         Bundle extras = new Bundle();
         extras.putBoolean("android.telephony.ims.feature.extra.IS_USSD", false);
         extras.putBoolean("android.telephony.ims.feature.extra.IS_UNKNOWN_CALL", false);
@@ -1091,37 +1050,33 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
             }
         }
 
+        TestImsCallSessionImpl mtCallSession =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        // IMS MT call active
+        isCallActive(mtCall, mtCallSession);
+
         // Place outgoing call
         placeOutgoingCall(TEST_DIAL_NUMBER);
+
+        // IMS MO Call active
         assertTrue(isPsDialing());
         Call moCall = getCall(mCurrentCallId);
-        // Register call state change callback
 
-        // Verify call state change
-        synchronized (mCallStateChangeLock) {
-            Log.d(TAG, "Wait for call state change");
-            mCallStateChangeLock.wait(WAIT_UPDATE_TIMEOUT_MS);
-            moCall.answer(0);
-        }
+        // IMS MT call on hold
+        isCallHolding(mtCall, mtCallSession);
 
-        assertEquals("MO call is not Active ", Call.STATE_ACTIVE, moCall.getDetails().getState());
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
-        assertEquals("MT call is not on Hold ", Call.STATE_HOLDING, mtCall.getDetails().getState());
-
+        // disconnect MO call
         moCall.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
 
-        // mtCall should activate
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_ACTIVE, WAIT_FOR_CALL_STATE));
-        assertEquals("MT call is not Active ", Call.STATE_ACTIVE, mtCall.getDetails().getState());
+        // IMS MT call active
+        isCallActive(mtCall, mtCallSession);
 
+        // disconenct MT call
         mtCall.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
+        //IMS MT call disconnected
+        isCallDisconnected(mtCall, mtCallSession);
 
-        // Unregister call state change callback
-        sTelephonyManager.unregisterTelephonyCallback(sCallStateCallback);
-        sCallStateCallback = null;
         waitForUnboundService();
     }
 
@@ -1144,86 +1099,55 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
                 NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_SEARCHING,
                 getRegState(Domain.CS, subId));
 
-        // Register call state change callback
-        mCallState = TelephonyManager.CALL_STATE_IDLE;
-        sCallStateChangeCallbackHandler.post(
-                () -> {
-                    sCallStateCallback = new CallStateListener();
-                    ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                            sTelephonyManager,
-                            (tm) ->
-                                    tm.registerTelephonyCallback(
-                                            mCallStateChangeExecutor, sCallStateCallback));
-                });
-
         // place first call
         placeOutgoingCall(TEST_DIAL_NUMBER);
         TimeUnit.SECONDS.sleep(1);
-        // Verify call state
-        synchronized (mCallStateChangeLock) {
-            if (mCallState == TelephonyManager.CALL_STATE_IDLE) {
-                Log.d(TAG, "Wait for call state change to offhook");
-                mCallStateChangeLock.wait(WAIT_UPDATE_TIMEOUT_MS);
-            }
-            assertEquals(TelephonyManager.CALL_STATE_OFFHOOK, mCallState);
-        }
 
         Call call1 = getCall(mCurrentCallId);
 
+        // IMS call1 active
         assertTrue(isPsDialing());
+
+        TestImsCallSessionImpl callSession1 =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
 
         // place second call
         placeOutgoingCall(TEST_DIAL_NUMBER + 1);
         TimeUnit.SECONDS.sleep(1);
-        // call1 on hold
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
-        assertEquals("Call is not on Hold", Call.STATE_HOLDING, call1.getDetails().getState());
 
         Call call2 = getCall(mCurrentCallId);
+
+        // IMS call2 active
         assertTrue(isPsDialing());
+
+        TestImsCallSessionImpl callSession2 =
+                sServiceConnector.getCarrierService().getMmTelFeature().getImsCallsession();
+
+        // IMS call1 is on hold
+        isCallHolding(call1, callSession1);
 
         // Swap the call
         ImsUtils.waitInCurrentState(WAIT_IN_CURRENT_STATE);
         call1.unhold();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_HOLDING, WAIT_FOR_CALL_STATE));
-        assertEquals("Call2 is not on Hold", Call.STATE_HOLDING, call2.getDetails().getState());
 
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_ACTIVE, WAIT_FOR_CALL_STATE));
-        assertEquals("Call1 is not Active", Call.STATE_ACTIVE, call1.getDetails().getState());
+        // IMS call1 is active
+        isCallActive(call1, callSession1);
+        // IMS call2 is on hold
+        isCallHolding(call2, callSession2);
 
-        // After successful call swap disconnect the call
+        // After successful call swap disconnect call1
         call1.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_ON_CALL_REMOVED, WAIT_FOR_CALL_STATE));
+        // IMS call1 disconnected
+        isCallDisconnected(call1, callSession1);
 
-        // Wait till second call is in active state
-        waitUntilConditionIsTrueOrTimeout(
-                new Condition() {
-                    @Override
-                    public Object expected() {
-                        return true;
-                    }
+        // IMS call2 is active
+        isCallActive(call2, callSession2);
 
-                    @Override
-                    public Object actual() {
-                        return call2.getDetails().getState() == Call.STATE_ACTIVE;
-                    }
-                },
-                WAIT_FOR_CALL_STATE_ACTIVE,
-                "Call in Active State");
-
-        // Call 2 is active
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_ACTIVE, WAIT_FOR_CALL_STATE));
-
-        // disconnect call 2
+        // disconnect call2
         call2.disconnect();
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTING, WAIT_FOR_CALL_STATE));
-        assertTrue(callingTestLatchCountdown(LATCH_IS_CALL_DISCONNECTED, WAIT_FOR_CALL_STATE));
+        // IMS call2 disconnected
+        isCallDisconnected(call2, callSession2);
 
-        // Unregister call state change callback
-        sTelephonyManager.unregisterTelephonyCallback(sCallStateCallback);
-        sCallStateCallback = null;
         waitForUnboundService();
     }
 
