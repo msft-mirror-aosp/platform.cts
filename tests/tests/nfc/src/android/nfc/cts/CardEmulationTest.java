@@ -856,6 +856,7 @@ public class CardEmulationTest {
             Flags.FLAG_NFC_OBSERVE_MODE})
     public void testAutoTransact() throws Exception {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
         assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
         final Activity activity = createAndResumeActivity();
@@ -894,6 +895,7 @@ public class CardEmulationTest {
         restoreOriginalService();
         runWithRole(mContext, CTS_PACKAGE_NAME, () -> {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
             assumeTrue(adapter.isObserveModeSupported());
             adapter.notifyHceDeactivated();
             createAndResumeActivity();
@@ -927,6 +929,7 @@ public class CardEmulationTest {
             Flags.FLAG_NFC_OBSERVE_MODE})
     public void testAutoTransactDynamic() throws Exception {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
         assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
         final Activity activity = createAndResumeActivity();
@@ -966,6 +969,7 @@ public class CardEmulationTest {
             Flags.FLAG_NFC_OBSERVE_MODE})
     public void testOffHostAutoTransactDynamic() throws Exception {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
         assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
         final Activity activity = createAndResumeActivity();
@@ -1007,6 +1011,7 @@ public class CardEmulationTest {
         restoreOriginalService();
         runWithRole(mContext,  WalletRoleTestUtils.WALLET_HOLDER_PACKAGE_NAME, () -> {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
             assumeTrue(adapter.isObserveModeSupported());
             adapter.notifyHceDeactivated();
             Assert.assertFalse(adapter.setObserveModeEnabled(true));
@@ -1024,6 +1029,7 @@ public class CardEmulationTest {
         runWithRole(mContext, CTS_PACKAGE_NAME, () -> {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
             assumeTrue(adapter.isObserveModeSupported());
+            Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
             adapter.notifyHceDeactivated();
             createAndResumeActivity();
             String testName = new Object() {
