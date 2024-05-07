@@ -25,8 +25,11 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeFalse;
 import static org.testng.Assert.assertThrows;
+import static org.testng.Assert.fail;
 
+import android.app.admin.RemoteDevicePolicyManager;
 import android.app.admin.SecurityLog;
+import android.app.admin.SecurityLog.SecurityEvent;
 import android.app.admin.flags.Flags;
 import android.app.backup.BackupManager;
 import android.content.ComponentName;
@@ -35,8 +38,7 @@ import android.content.Context;
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.nene.users.UserReference;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
@@ -47,7 +49,9 @@ import com.android.bedstead.harrier.policies.Backup;
 import com.android.bedstead.harrier.policies.BackupAndSecurityLogging;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
+import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
@@ -55,7 +59,9 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
-import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 @RunWith(BedsteadJUnit4.class)
 @RequireFeature(FEATURE_BACKUP)
@@ -171,40 +177,17 @@ public final class BackupTest {
                 sDeviceState.dpc().componentName());
     }
 
-    /** Positive test for SecurityLog#TAG_BACKUP_SERVICE_TOGGLED */
-    @CanSetPolicyTest(policy = {BackupAndSecurityLogging.class})
-    @RequireFlagsEnabled(Flags.FLAG_BACKUP_SERVICE_SECURITY_LOG_EVENT_ENABLED)
-    @ApiTest(apis = {"android.app.admin.SecurityLog#TAG_BACKUP_SERVICE_TOGGLED"})
-    @Postsubmit(reason = "new test")
-    public void setBackupServiceEnabled_enableBackup_SecurityLogEventsEmitted()
-            throws Exception {
-        ensureNoAdditionalUsers();
-        ComponentName admin = sDeviceState.dpc().componentName();
-        boolean backupState = sDeviceState.dpc().devicePolicyManager()
-                .isBackupServiceEnabled(admin);
+    public enum BackupServiceState {
+        ENABLED(true, 1),
+        DISABLED(false, 0);
 
-        try {
-            // Start with backup disabled
-            sDeviceState.dpc().devicePolicyManager().setBackupServiceEnabled(admin, false);
-            // Flush any existing security logs
-            sDeviceState.dpc().devicePolicyManager().setSecurityLoggingEnabled(admin, false);
-            sDeviceState.dpc().devicePolicyManager().setSecurityLoggingEnabled(admin, true);
-
-            // Enabling backup service and check security log
-            sDeviceState.dpc().devicePolicyManager().setBackupServiceEnabled(admin, true);
-            TestApis.devicePolicy().forceSecurityLogs();
-            List<SecurityLog.SecurityEvent> logs = sDeviceState.dpc().devicePolicyManager()
-                    .retrieveSecurityLogs(admin).stream()
-                    .filter(e -> e.getTag() == SecurityLog.TAG_BACKUP_SERVICE_TOGGLED).toList();
-            assertWithMessage("Incorrect number of log events returned after enabling backup")
-                    .that(logs).hasSize(1);
-            assertThat(logs.get(0).getStringData(0)).isEqualTo(admin.getPackageName());
-            assertThat(logs.get(0).getIntegerData(1)).isEqualTo(sDeviceState.dpc().user().id());
-            assertThat(logs.get(0).getIntegerData(2)).isEqualTo(/* enabled */ 1);
-        } finally {
-            sDeviceState.dpc().devicePolicyManager().setSecurityLoggingEnabled(admin, false);
-            sDeviceState.dpc().devicePolicyManager().setBackupServiceEnabled(admin, backupState);
+        BackupServiceState(boolean enabled, int loggedValue) {
+            this.enabled = enabled;
+            this.loggedValue = loggedValue;
         }
+
+        public final boolean enabled;
+        public final int loggedValue;
     }
 
     /** Positive test for SecurityLog#TAG_BACKUP_SERVICE_TOGGLED */
@@ -212,36 +195,62 @@ public final class BackupTest {
     @RequireFlagsEnabled(Flags.FLAG_BACKUP_SERVICE_SECURITY_LOG_EVENT_ENABLED)
     @ApiTest(apis = {"android.app.admin.SecurityLog#TAG_BACKUP_SERVICE_TOGGLED"})
     @Postsubmit(reason = "new test")
-    public void setBackupServiceEnabled_disableBackup_SecurityLogEventsEmitted()
+    public void setBackupServiceEnabled_SecurityLogEventsEmitted(
+            @EnumTestParameter(BackupServiceState.class) BackupServiceState param)
             throws Exception {
-        ensureNoAdditionalUsers();
-        ComponentName admin = sDeviceState.dpc().componentName();
-        boolean backupState = sDeviceState.dpc().devicePolicyManager()
-                .isBackupServiceEnabled(admin);
+        // Timestamp to filter out events from previous tests if any.
+        long testStartTimeNanos = TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis());
 
+        ensureNoAdditionalUsers();
+        var dpm = sDeviceState.dpc().devicePolicyManager();
+        var who = sDeviceState.dpc().componentName();
+
+        boolean savedState = dpm.isBackupServiceEnabled(who);
         try {
             // Start with backup enabled
-            sDeviceState.dpc().devicePolicyManager().setBackupServiceEnabled(admin, true);
+            dpm.setBackupServiceEnabled(who, true);
             // Flush any existing security logs
-            sDeviceState.dpc().devicePolicyManager().setSecurityLoggingEnabled(admin, false);
-            sDeviceState.dpc().devicePolicyManager().setSecurityLoggingEnabled(admin, true);
+            dpm.setSecurityLoggingEnabled(who, false);
+            dpm.setSecurityLoggingEnabled(who, true);
 
-            // Disabling backup service and check security log
-            sDeviceState.dpc().devicePolicyManager().setBackupServiceEnabled(admin, false);
-            TestApis.devicePolicy().forceSecurityLogs();
-            List<SecurityLog.SecurityEvent> logs = sDeviceState.dpc().devicePolicyManager()
-                    .retrieveSecurityLogs(admin).stream()
-                    .filter(e -> e.getTag() == SecurityLog.TAG_BACKUP_SERVICE_TOGGLED).toList();
-            assertWithMessage("Incorrect number of log events returned after disabling backup")
-                    .that(logs).hasSize(1);
-            assertThat(logs.get(0).getStringData(0)).isEqualTo(admin.getPackageName());
-            assertThat(logs.get(0).getIntegerData(1)).isEqualTo(sDeviceState.dpc().user().id());
-            assertThat(logs.get(0).getIntegerData(2)).isEqualTo(/* enabled */ 0);
+            // Setting backup service state and check security log
+            dpm.setBackupServiceEnabled(who, param.enabled);
+
+            verifySecurityEventLogged(dpm, who,
+                    /* filter */
+                    e -> e.getTag() == SecurityLog.TAG_BACKUP_SERVICE_TOGGLED
+                            && e.getTimeNanos() >= testStartTimeNanos,
+                    /* assertion */
+                    e -> {
+                        assertThat(e.getStringData(0)).isEqualTo(who.getPackageName());
+                        assertThat(e.getIntegerData(1)).isEqualTo(sDeviceState.dpc().user().id());
+                        assertThat(e.getIntegerData(2)).isEqualTo(param.loggedValue);
+                    });
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setSecurityLoggingEnabled(admin, false);
-            sDeviceState.dpc().devicePolicyManager().setBackupServiceEnabled(admin, backupState);
+            dpm.setSecurityLoggingEnabled(who, false);
+            dpm.setBackupServiceEnabled(who, savedState);
         }
     }
+
+    private static void verifySecurityEventLogged(RemoteDevicePolicyManager dpm, ComponentName who,
+            Predicate<SecurityEvent> filter, Consumer<SecurityEvent> assertion) {
+        // Retry once in case the first time the event didn't reach logd buffer.
+        for (int i = 0; i < 2; i++) {
+            TestApis.devicePolicy().forceSecurityLogs();
+
+            var events = dpm.retrieveSecurityLogs(who);
+            if (events == null) continue;
+
+            var filteredEvents = events.stream().filter(filter).toList();
+            if (filteredEvents.isEmpty()) continue;
+
+            assertWithMessage("More than one event found").that(filteredEvents).hasSize(1);
+            assertion.accept(filteredEvents.get(0));
+            return;
+        }
+        fail("Wasn't able to find matching event");
+    }
+
     private void ensureNoAdditionalUsers() {
         // TODO(273474964): Move into infra
         try {
