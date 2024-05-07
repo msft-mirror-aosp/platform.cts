@@ -16,6 +16,10 @@
 
 package android.keystore.cts.util;
 
+import static android.security.keystore.KeyProperties.DIGEST_NONE;
+import static android.security.keystore.KeyProperties.DIGEST_SHA256;
+import static android.security.keystore.KeyProperties.DIGEST_SHA512;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -119,6 +123,20 @@ public class TestUtils {
             return getFeatureVersionKeystoreStrongBox(appContext);
         }
         return getFeatureVersionKeystore(appContext);
+    }
+
+    /**
+     * This function returns the valid digest algorithms supported for a Strongbox or default
+     * KeyMint implementation. The isStrongbox parameter specifies the underlying KeyMint
+     * implementation. If true, it indicates Strongbox KeyMint, otherwise TEE/Software KeyMint
+     * is assumed.
+     */
+    public static @KeyProperties.DigestEnum String[] getDigestsForKeyMintImplementation(
+            boolean isStrongbox) {
+        if (isStrongbox) {
+            return new String[]{DIGEST_NONE, DIGEST_SHA256};
+        }
+        return new String[]{DIGEST_NONE, DIGEST_SHA256, DIGEST_SHA512};
     }
 
     // Returns 0 if not implemented. Otherwise returns the feature version.
