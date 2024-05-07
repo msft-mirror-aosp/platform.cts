@@ -27,14 +27,15 @@ import com.google.auto.value.AutoAnnotation
  * Note that use of this annotation implies [RequireNotInstantApp] as instant apps are not
  * able to drop permissions.
  */
-@Target(AnnotationTarget.FUNCTION,
+@Target(
+    AnnotationTarget.FUNCTION,
     AnnotationTarget.PROPERTY_GETTER,
     AnnotationTarget.PROPERTY_SETTER,
     AnnotationTarget.ANNOTATION_CLASS,
-    AnnotationTarget.CLASS)
-@Retention(
-    AnnotationRetention.RUNTIME)
-@UsesAnnotationExecutor("com.android.bedstead.permissions.PermissionsAnnotationExecutor")
+    AnnotationTarget.CLASS
+)
+@Retention(AnnotationRetention.RUNTIME)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.PERMISSIONS)
 annotation class EnsureDoesNotHavePermission(
     vararg val value: String,
 
@@ -53,7 +54,8 @@ annotation class EnsureDoesNotHavePermission(
      *
      * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [int].
      */
-    val priority: Int = AnnotationPriorityRunPrecedence.MIDDLE)
+    val priority: Int = AnnotationPriorityRunPrecedence.MIDDLE
+)
 
 @AutoAnnotation
 fun ensureDoesNotHavePermission(value: Array<String>): EnsureDoesNotHavePermission {

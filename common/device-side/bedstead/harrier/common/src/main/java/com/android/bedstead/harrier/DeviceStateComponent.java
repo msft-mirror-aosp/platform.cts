@@ -15,29 +15,24 @@
  */
 package com.android.bedstead.harrier;
 
-import androidx.annotation.NonNull;
-
-import com.android.bedstead.nene.utils.FailureDumper;
-
-import java.lang.annotation.Annotation;
-
 /**
- * Interface used to register a new class which can execute Harrier annotations.
- *
- * This can be used to add additional harrier-compatible annotations without modifying harrier
+ * Interface used by classes which respond to key events in DeviceState
+ * These classes must be loaded in {@link BedsteadServiceLocator} to receive the callbacks
  */
 // This is written in Java because Kotlin interfaces can't expose default methods to Java
-public interface AnnotationExecutor extends FailureDumper, DeviceStateComponent {
+public interface DeviceStateComponent {
     /**
-     * Called when an annotation should be applied.
-     *
-     * <p>This should take care of recording any state necessary to correctly restore state after
-     * the test.
+     * Restore the previous state of any shareable changes.
      */
-    void applyAnnotation(@NonNull Annotation annotation);
+    default void teardownShareableState() {}
 
     /**
-     * Called when a test has failed which used this annotation executor.
+     * Restore the previous state of any non-shareable changes.
      */
-    default void onTestFailed(@NonNull Throwable exception) {}
+    default void teardownNonShareableState() {}
+
+    /**
+     * Prepare component for test
+     */
+    default void prepareTestState() {}
 }
