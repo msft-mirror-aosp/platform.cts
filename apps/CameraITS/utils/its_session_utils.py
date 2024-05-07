@@ -2840,3 +2840,14 @@ def remove_frame_files(dir_name, save_files_list=None):
       for image in glob.glob('%s/*.png' % dir_name):
         if image not in save_files_list:
           os.remove(image)
+
+def remove_mp4_file(file_name_with_path):
+  """Removes the mp4 file at given path.
+
+  Args:
+    file_name_with_path: string, path to mp4 recording.
+  """
+  try:
+    os.remove(file_name_with_path)
+  except FileNotFoundError:
+    logging.debug('File not found: %s', file_name_with_path)
