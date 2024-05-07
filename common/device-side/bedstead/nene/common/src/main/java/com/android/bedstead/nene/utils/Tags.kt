@@ -30,9 +30,6 @@ object Tags {
     /** Set when a test involves watching for notifications.  */
     const val USES_NOTIFICATIONS = "uses_notifications"
 
-    /** Set when running as an instant app.  */
-    const val INSTANT_APP = "instant_app"
-
     private val sTags = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
 
     /**

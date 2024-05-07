@@ -1313,14 +1313,12 @@ public final class DeviceState extends HarrierRule {
 
                 Tags.clearTags();
                 Tags.addTag(Tags.USES_DEVICESTATE);
-                if (TestApis.packages().instrumented().isInstantApp()) {
-                    Tags.addTag(Tags.INSTANT_APP);
-                }
+                boolean isInstantApp = TestApis.packages().instrumented().isInstantApp();
 
                 try {
                     TestApis.device().keepScreenOn(true);
 
-                    if (!Tags.hasTag(Tags.INSTANT_APP)) {
+                    if (!isInstantApp) {
                         TestApis.device().setKeyguardEnabled(false);
                     }
                     TestApis.users().setStopBgUsersOnSwitch(OptionalBoolean.FALSE);
@@ -1355,7 +1353,7 @@ public final class DeviceState extends HarrierRule {
                         teardownShareableState();
                     }
 
-                    if (!Tags.hasTag(Tags.INSTANT_APP)) {
+                    if (!isInstantApp) {
                         TestApis.device().setKeyguardEnabled(true);
                     }
                     // TODO(b/249710985): Reset to the default for the device or the previous value
