@@ -2190,7 +2190,9 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                 mAFStateMachine.onCaptureCompleted(result);
             }
 
-            verifyExtensionSpecificCaptureResults(result, request);
+            if (EFV_API_SUPPORTED) {
+                verifyEFVExtensionSpecificCaptureResults(result, request);
+            }
 
             if (mProxy != null) {
                 mProxy.onCaptureResultAvailable(session, request, result);
@@ -2216,10 +2218,9 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
             return mLastTimestamp;
         }
 
-        private void verifyExtensionSpecificCaptureResults(TotalCaptureResult result,
+        private void verifyEFVExtensionSpecificCaptureResults(TotalCaptureResult result,
                 CaptureRequest request) {
-            if (EFV_API_SUPPORTED &&
-                    mExtensionType != CameraExtensionCharacteristics.EXTENSION_EYES_FREE_VIDEOGRAPHY) {
+            if (mExtensionType != CameraExtensionCharacteristics.EXTENSION_EYES_FREE_VIDEOGRAPHY) {
                 return;
             }
 
