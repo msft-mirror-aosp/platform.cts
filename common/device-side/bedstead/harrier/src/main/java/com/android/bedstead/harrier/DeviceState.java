@@ -23,7 +23,6 @@ import static android.os.Build.VERSION.SDK_INT;
 
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip;
-import static com.android.bedstead.harrier.Defaults.DEFAULT_PASSWORD;
 import static com.android.bedstead.harrier.annotations.EnsureHasAccount.DEFAULT_ACCOUNT_KEY;
 import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate.DELEGATE_KEY;
@@ -52,7 +51,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.os.UserManager;
 import android.util.Log;
 
 import com.android.bedstead.harrier.annotations.AfterClass;
@@ -166,13 +164,10 @@ import com.android.bedstead.nene.logcat.SystemServerException;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.types.OptionalBoolean;
-import com.android.bedstead.nene.users.UserBuilder;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.FailureDumper;
-import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ResolveInfoWrapper;
-import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.bedstead.permissions.PermissionContext;
@@ -288,6 +283,8 @@ public final class DeviceState extends HarrierRule {
 
     private final PackageManager mPackageManager = sContext.getPackageManager();
 
+    private final BedsteadServiceLocator mLocator = new BedsteadServiceLocator();
+
     public static final class Builder {
 
         private Duration mMaxTestDuration = MAX_TEST_DURATION;
@@ -311,6 +308,8 @@ public final class DeviceState extends HarrierRule {
     }
 
     public DeviceState(Duration maxTestDuration) {
+        mLocator.loadModules(new MainLocatorModule(this));
+        mDeviceStateUsers = mLocator.get(DeviceStateUsers.class);
         mMaxTestDuration = maxTestDuration;
         mSkipTestTeardown = TestApis.instrumentation().arguments().getBoolean(
                 SKIP_TEST_TEARDOWN_KEY, false);
@@ -328,6 +327,14 @@ public final class DeviceState extends HarrierRule {
 
     public DeviceState() {
         this(MAX_TEST_DURATION);
+    }
+
+    /**
+     * Obtains the instance of the given [clazz] from locator
+     * This method shouldn't be used in test directly
+     */
+    public <T> T getDependency(Class<T> clazz) {
+        return mLocator.get(clazz);
     }
 
     @Override
@@ -416,10 +423,7 @@ public final class DeviceState extends HarrierRule {
         String testName = description.getMethodName();
 
         Log.d(LOG_TAG, "Preparing state for test " + testName);
-
-        if (mOriginalSwitchedUser == null) {
-            mOriginalSwitchedUser = TestApis.users().current();
-        }
+        mDeviceStateUsers.prepareTestState();
         testApps().snapshot();
         Tags.clearTags();
         Tags.addTag(Tags.USES_DEVICESTATE);
@@ -528,7 +532,7 @@ public final class DeviceState extends HarrierRule {
             EnsureHasNoUserAnnotation ensureHasNoUserAnnotation =
                     annotationType.getAnnotation(EnsureHasNoUserAnnotation.class);
             if (ensureHasNoUserAnnotation != null) {
-                ensureHasNoUser(ensureHasNoUserAnnotation.value());
+                mDeviceStateUsers.ensureHasNoUser(ensureHasNoUserAnnotation.value());
                 continue;
             }
 
@@ -541,7 +545,7 @@ public final class DeviceState extends HarrierRule {
                 OptionalBoolean switchedToUser = (OptionalBoolean)
                         annotation.annotationType()
                                 .getMethod(SWITCHED_TO_USER).invoke(annotation);
-                ensureHasUser(
+                mDeviceStateUsers.ensureHasUser(
                         ensureHasUserAnnotation.value(), installInstrumentedApp,
                         switchedToUser);
                 continue;
@@ -572,25 +576,25 @@ public final class DeviceState extends HarrierRule {
             }
 
             if (annotation instanceof EnsureHasAdditionalUser ensureHasAdditionalUserAnnotation) {
-                ensureHasAdditionalUser(
+                mDeviceStateUsers.ensureHasAdditionalUser(
                         ensureHasAdditionalUserAnnotation.installInstrumentedApp(),
                         ensureHasAdditionalUserAnnotation.switchedToUser());
                 continue;
             }
 
             if (annotation instanceof EnsureHasNoAdditionalUser) {
-                ensureHasNoAdditionalUser();
+                mDeviceStateUsers.ensureHasNoAdditionalUser();
                 continue;
             }
 
             if (annotation instanceof RequireRunOnAdditionalUser requireRunOnAdditionalUserAnnotation) {
-                requireRunOnAdditionalUser(
+                mDeviceStateUsers.requireRunOnAdditionalUser(
                         requireRunOnAdditionalUserAnnotation.switchedToUser());
                 continue;
             }
 
             if (annotation instanceof RequireRunOnSingleUser) {
-                requireRunOnSingleUser();
+                mDeviceStateUsers.requireRunOnSingleUser();
                 continue;
             }
 
@@ -600,7 +604,10 @@ public final class DeviceState extends HarrierRule {
                 OptionalBoolean switchedToUser = (OptionalBoolean)
                         annotation.annotationType()
                                 .getMethod(SWITCHED_TO_USER).invoke(annotation);
-                requireRunOnUser(requireRunOnUserAnnotation.value(), switchedToUser);
+                mDeviceStateUsers.requireRunOnUser(
+                        requireRunOnUserAnnotation.value(),
+                        switchedToUser
+                );
                 continue;
             }
 
@@ -772,7 +779,7 @@ public final class DeviceState extends HarrierRule {
             }
 
             if (annotation instanceof RequireUserSupported requireUserSupportedAnnotation) {
-                requireUserSupported(
+                mDeviceStateUsers.requireUserSupported(
                         requireUserSupportedAnnotation.value(),
                         requireUserSupportedAnnotation.failureMode());
                 continue;
@@ -929,14 +936,14 @@ public final class DeviceState extends HarrierRule {
             }
 
             if (annotation instanceof EnsurePasswordSet ensurePasswordSetAnnotation) {
-                ensurePasswordSet(
+                mDeviceStateUsers.ensurePasswordSet(
                         ensurePasswordSetAnnotation.forUser(),
                         ensurePasswordSetAnnotation.password());
                 continue;
             }
 
             if (annotation instanceof EnsurePasswordNotSet ensurePasswordNotSetAnnotation) {
-                ensurePasswordNotSet(ensurePasswordNotSetAnnotation.forUser());
+                mDeviceStateUsers.ensurePasswordNotSet(ensurePasswordNotSetAnnotation.forUser());
                 continue;
             }
 
@@ -1425,55 +1432,6 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void requireRunOnAdditionalUser(OptionalBoolean switchedToUser) {
-        requireRunOnUser(new String[]{SECONDARY_USER_TYPE_NAME}, switchedToUser);
-        if (TestApis.users().isHeadlessSystemUserMode()) {
-            if (TestApis.users().instrumented().equals(TestApis.users().initial())) {
-                throw new AssumptionViolatedException(
-                        "This test requires running on an additional secondary user");
-            }
-        }
-
-        mAdditionalUser = additionalUserOrNull();
-    }
-
-    private void requireRunOnSingleUser() {
-        checkFailOrSkip("This test requires running on a single user on a headless device",
-                TestApis.users().instrumented().equals(TestApis.users().main()), FailureMode.SKIP);
-    }
-
-    private void requireRunOnUser(String[] userTypes, OptionalBoolean switchedToUser) {
-        UserReference instrumentedUser = TestApis.users().instrumented();
-
-        assumeTrue("This test only runs on users of type " + Arrays.toString(userTypes),
-                Arrays.stream(userTypes).anyMatch(
-                        i -> i.equals(instrumentedUser.type().name())));
-
-        mUsers.put(instrumentedUser.type(), instrumentedUser);
-
-        if (switchedToUser == OptionalBoolean.ANY) {
-            if (!mAnnotationHasSwitchedUser && instrumentedUser.canBeSwitchedTo()) {
-                switchedToUser = OptionalBoolean.TRUE;
-            }
-        }
-
-        if (switchedToUser == OptionalBoolean.TRUE && !instrumentedUser.canBeSwitchedTo()) {
-            if (TestApis.users().isHeadlessSystemUserMode()
-                    && instrumentedUser.equals(TestApis.users().system())) {
-                throw new IllegalStateException(
-                        "Cannot switch to system user on headless devices. "
-                                + "Either add @RequireNotHeadlessSystemUserMode, or specify "
-                                + "switchedToUser=ANY");
-            } else {
-                throw new IllegalStateException(
-                        "Not permitted to switch to user " + instrumentedUser + "("
-                                + instrumentedUser.getSwitchToUserError() + ")");
-            }
-        }
-
-        ensureSwitchedToUser(switchedToUser, instrumentedUser);
-    }
-
     private void requireRunOnProfile(String userType,
                                      OptionalBoolean installInstrumentedAppInParent,
                                      boolean hasProfileOwner, boolean dpcIsPrimary, boolean useParentInstance,
@@ -1507,17 +1465,7 @@ public final class DeviceState extends HarrierRule {
             ensureHasNoProfileOwner(instrumentedUser);
         }
 
-        ensureSwitchedToUser(switchedToParentUser, instrumentedUser.parent());
-    }
-
-    private void ensureSwitchedToUser(OptionalBoolean switchedtoUser, UserReference user) {
-        if (switchedtoUser.equals(OptionalBoolean.TRUE)) {
-            mAnnotationHasSwitchedUser = true;
-            switchToUser(user);
-        } else if (switchedtoUser.equals(OptionalBoolean.FALSE)) {
-            mAnnotationHasSwitchedUser = true;
-            switchFromUser(user);
-        }
+        mDeviceStateUsers.ensureSwitchedToUser(switchedToParentUser, instrumentedUser.parent());
     }
 
     private void requireFeature(String feature, FailureMode failureMode) {
@@ -1557,19 +1505,6 @@ public final class DeviceState extends HarrierRule {
         );
     }
 
-    private com.android.bedstead.nene.users.UserType requireUserSupported(
-            String userType, FailureMode failureMode) {
-        com.android.bedstead.nene.users.UserType resolvedUserType =
-                TestApis.users().supportedType(userType);
-
-        checkFailOrSkip(
-                "Device must support user type " + userType
-                        + " only supports: " + TestApis.users().supportedTypes(),
-                resolvedUserType != null, failureMode);
-
-        return resolvedUserType;
-    }
-
     private void requirePrivateSpaceSupported(FailureMode failureMode) {
         checkFailOrSkip("Device must support Private Space.",
                 TestApis.users().canAddPrivateProfile(), failureMode);
@@ -1578,15 +1513,9 @@ public final class DeviceState extends HarrierRule {
     private static final String LOG_TAG = "DeviceState";
 
     private static final Context sContext = TestApis.context().instrumentedContext();
-
-    private final Map<com.android.bedstead.nene.users.UserType, UserReference> mUsers =
-            new HashMap<>();
     private final Map<com.android.bedstead.nene.users.UserType, Map<UserReference, UserReference>>
             mProfiles = new HashMap<>();
     private DevicePolicyController mDeviceOwner;
-
-    private UserReference mAdditionalUser = null;
-
     private final Map<UserReference, DevicePolicyController> mProfileOwners = new HashMap<>();
     private RemotePolicyManager mDelegateDpc;
     private RemotePolicyManager mPrimaryPolicyManager;
@@ -1595,9 +1524,7 @@ public final class DeviceState extends HarrierRule {
 
     private final Map<UserReference, Set<String>> mAddedUserRestrictions = new ConcurrentHashMap<>();
     private final Map<UserReference, Set<String>> mRemovedUserRestrictions = new ConcurrentHashMap<>();
-    private final List<UserReference> mCreatedUsers = new ArrayList<>();
-    private final List<RemovedUser> mRemovedUsers = new ArrayList<>();
-    private final List<UserReference> mUsersSetPasswords = new ArrayList<>();
+    private final DeviceStateUsers mDeviceStateUsers;
     private final List<BlockingBroadcastReceiver> mRegisteredBroadcastReceivers = new ArrayList<>();
     private boolean mHasChangedDeviceOwner = false;
     private DevicePolicyController mOriginalDeviceOwner;
@@ -1605,7 +1532,6 @@ public final class DeviceState extends HarrierRule {
     private boolean mHasChangedDeviceOwnerType;
     private final Map<UserReference, DevicePolicyController> mChangedProfileOwners =
             new HashMap<>();
-    private UserReference mOriginalSwitchedUser;
     private Boolean mOriginalBluetoothEnabled;
     private DisplayProperties.Theme mOriginalDisplayTheme;
     private DisplayProperties.ScreenOrientation mOriginalScreenOrientation;
@@ -1622,25 +1548,10 @@ public final class DeviceState extends HarrierRule {
     private final Set<UserReference> mTemporaryContentSuggestionsServiceSet =
             new HashSet<>();
     private final Map<UserReference, Map<String, String>> mOriginalSecureSettings = new HashMap<>();
-    private boolean mAnnotationHasSwitchedUser = false;
     private final Set<AccountReference> mCreatedAccounts = new HashSet<>();
     private final Map<String, AccountReference> mAccounts = new HashMap<>();
     private final Map<UserReference, RemoteAccountAuthenticator> mAccountAuthenticators =
             new HashMap<>();
-
-    private static final class RemovedUser {
-        // Store the user builder so we can recreate the user later
-        public final UserBuilder userBuilder;
-        public final boolean isRunning;
-        public final boolean isOriginalSwitchedToUser;
-
-        RemovedUser(UserBuilder userBuilder,
-                    boolean isRunning, boolean isOriginalSwitchedToUser) {
-            this.userBuilder = userBuilder;
-            this.isRunning = isRunning;
-            this.isOriginalSwitchedToUser = isOriginalSwitchedToUser;
-        }
-    }
 
     /**
      * Get the {@link UserReference} of the work profile for the initial user.
@@ -1898,7 +1809,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed secondary user
      */
     public UserReference secondaryUser() {
-        return user(SECONDARY_USER_TYPE_NAME);
+        return mDeviceStateUsers.user(SECONDARY_USER_TYPE_NAME);
     }
 
     /**
@@ -1914,49 +1825,6 @@ public final class DeviceState extends HarrierRule {
         return resolveUserTypeToUser(mOtherUserType);
     }
 
-    /**
-     * Get a user of the given type.
-     *
-     * <p>This should only be used to get users managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed user of the correct type
-     */
-    public UserReference user(String userType) {
-        com.android.bedstead.nene.users.UserType resolvedUserType =
-                TestApis.users().supportedType(userType);
-
-        if (resolvedUserType == null) {
-            throw new IllegalStateException("Can not have a user of type " + userType
-                    + " as they are not supported on this device");
-        }
-
-        return user(resolvedUserType);
-    }
-
-    /**
-     * Get a user of the given type.
-     *
-     * <p>This should only be used to get users managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed user of the correct type
-     */
-    public UserReference user(com.android.bedstead.nene.users.UserType userType) {
-        if (userType == null) {
-            throw new NullPointerException();
-        }
-
-        if (!mUsers.containsKey(userType)) {
-            throw new IllegalStateException(
-                    "No harrier-managed user of type " + userType
-                            + ". This method should only be"
-                            + " used when Harrier has been used to create the user.");
-        }
-
-        return mUsers.get(userType);
-    }
-
     private UserReference ensureHasProfile(
             String profileType,
             OptionalBoolean installInstrumentedApp,
@@ -1969,7 +1837,7 @@ public final class DeviceState extends HarrierRule {
             String dpcKey,
             TestAppQueryBuilder dpcQuery) {
         com.android.bedstead.nene.users.UserType resolvedUserType =
-                requireUserSupported(profileType, FailureMode.SKIP);
+                mDeviceStateUsers.requireUserSupported(profileType, FailureMode.SKIP);
 
         UserReference forUserReference = resolveUserTypeToUser(forUser);
 
@@ -2020,7 +1888,7 @@ public final class DeviceState extends HarrierRule {
                     dpcQuery);
         }
 
-        ensureSwitchedToUser(switchedToParentUser, forUserReference);
+        mDeviceStateUsers.ensureSwitchedToUser(switchedToParentUser, forUserReference);
 
         return profile;
     }
@@ -2045,146 +1913,8 @@ public final class DeviceState extends HarrierRule {
             if (profileOwner != null && profileOwner.isOrganizationOwned()) {
                 profileOwner.setIsOrganizationOwned(false);
             }
-
-            removeAndRecordUser(profile);
+            mDeviceStateUsers.removeAndRecordUser(profile);
         }
-    }
-
-    private void ensureHasUser(
-            String userType, OptionalBoolean installInstrumentedApp,
-            OptionalBoolean switchedToUser) {
-        com.android.bedstead.nene.users.UserType resolvedUserType =
-                requireUserSupported(userType, FailureMode.SKIP);
-
-        Collection<UserReference> users = TestApis.users().findUsersOfType(resolvedUserType);
-
-        UserReference user = users.isEmpty() ? createUser(resolvedUserType)
-                : users.iterator().next();
-
-        user.start();
-
-        if (installInstrumentedApp.equals(OptionalBoolean.TRUE)) {
-            TestApis.packages().find(sContext.getPackageName()).installExisting(user);
-        } else if (installInstrumentedApp.equals(OptionalBoolean.FALSE)) {
-            TestApis.packages().find(sContext.getPackageName()).uninstall(user);
-        }
-
-        ensureSwitchedToUser(switchedToUser, user);
-
-        mUsers.put(resolvedUserType, user);
-    }
-
-    private void ensureHasNoAdditionalUser() {
-        mAdditionalUser = additionalUserOrNull();
-        while (mAdditionalUser != null) {
-            if (TestApis.users().instrumented().equals(mAdditionalUser)) {
-                throw new AssumptionViolatedException("Tests with @EnsureHasNoAdditionalUser cannot"
-                        + "run on an additional user");
-            }
-            ensureSwitchedToUser(OptionalBoolean.FALSE, mAdditionalUser);
-
-            mAdditionalUser.remove();
-
-            mAdditionalUser = additionalUserOrNull();
-        }
-    }
-
-    private void ensureHasAdditionalUser(
-            OptionalBoolean installInstrumentedApp, OptionalBoolean switchedToUser) {
-        if (TestApis.users().isHeadlessSystemUserMode()) {
-            com.android.bedstead.nene.users.UserType resolvedUserType =
-                    requireUserSupported(SECONDARY_USER_TYPE_NAME, FailureMode.SKIP);
-
-            Collection<UserReference> users = TestApis.users().findUsersOfType(resolvedUserType);
-            if (users.size() < 2) {
-                createUser(resolvedUserType);
-            }
-
-            mAdditionalUser = additionalUserOrNull();
-
-            if (installInstrumentedApp.equals(OptionalBoolean.TRUE)) {
-                TestApis.packages().find(sContext.getPackageName()).installExisting(mAdditionalUser);
-            } else if (installInstrumentedApp.equals(OptionalBoolean.FALSE)) {
-                TestApis.packages().find(sContext.getPackageName()).uninstall(mAdditionalUser);
-            }
-
-            ensureSwitchedToUser(switchedToUser, mAdditionalUser);
-        } else {
-            ensureHasUser(SECONDARY_USER_TYPE_NAME, installInstrumentedApp, switchedToUser);
-            mAdditionalUser = additionalUserOrNull();
-        }
-    }
-
-    /**
-     * Ensure that there is no user of the given type.
-     */
-    private void ensureHasNoUser(String userType) {
-        com.android.bedstead.nene.users.UserType resolvedUserType =
-                TestApis.users().supportedType(userType);
-
-        if (resolvedUserType == null) {
-            // These user types don't exist so there can't be any
-            return;
-        }
-
-        for (UserReference secondaryUser : TestApis.users().findUsersOfType(resolvedUserType)) {
-            if (secondaryUser.equals(TestApis.users().instrumented())) {
-                throw new AssumptionViolatedException(
-                        "This test only runs on devices without a "
-                                + userType + " user. But the instrumented user is " + userType);
-            }
-            removeAndRecordUser(secondaryUser);
-        }
-    }
-
-    private void removeAndRecordUser(UserReference userReference) {
-        if (userReference == null) {
-            return; // Nothing to remove
-        }
-
-        switchFromUser(userReference);
-
-        if (!mCreatedUsers.remove(userReference)) {
-            mRemovedUsers.add(
-                    new RemovedUser(
-                            TestApis.users().createUser()
-                                    .name(userReference.name())
-                                    .type(userReference.type())
-                                    .parent(userReference.parent()),
-                            userReference.isRunning(),
-                            Objects.equal(mOriginalSwitchedUser, userReference)));
-        }
-
-        userReference.remove();
-    }
-
-
-    private void ensureCanAddUser() {
-        ensureCanAddUser(1, FailureMode.SKIP);
-    }
-
-    /**
-     * Ensure that there is a room for additional users
-     * @param number of users to add
-     */
-    public void ensureCanAddUser(int number, FailureMode failureMode) {
-        int maxUsers = getMaxNumberOfUsersSupported();
-        int currentUsers = TestApis.users().all().size();
-
-        // TODO(scottjonathan): Try to remove users until we have space - this will have to take
-        // into account other users which have been added during the setup of this test.
-
-        checkFailOrSkip(
-                "The device does not have space for "
-                        + number
-                        + " additional "
-                        + "user(s) ("
-                        + currentUsers
-                        + " current users, "
-                        + maxUsers
-                        + " max users)",
-                currentUsers + number <= maxUsers,
-                failureMode);
     }
 
     private void ensureCanAddProfile(
@@ -2345,7 +2075,10 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private UserReference resolveUserTypeToUser(UserType userType) {
+    /**
+     * Creates appropriate {@link UserReference} for the {@link UserType}
+     */
+    public UserReference resolveUserTypeToUser(UserType userType) {
         switch (userType) {
             case SYSTEM_USER:
                 return TestApis.users().system();
@@ -2366,7 +2099,7 @@ public final class DeviceState extends HarrierRule {
             case INITIAL_USER:
                 return TestApis.users().initial();
             case ADDITIONAL_USER:
-                return additionalUser();
+                return mDeviceStateUsers.additionalUser();
             case CLONE_PROFILE:
                 return cloneProfile();
             case PRIVATE_PROFILE:
@@ -2384,32 +2117,17 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
+    /**
+     * Returns the additional user specified by annotation
+     */
     public UserReference additionalUser() {
-        if (mAdditionalUser == null) {
-            throw new IllegalStateException(
-                    "No additional user found. Ensure the correct annotations "
-                            + "have been used to declare use of additional user.");
-        }
-
-        return mAdditionalUser;
-    }
-
-    private UserReference additionalUserOrNull() {
-        return TestApis.users()
-                .findUsersOfType(TestApis.users().supportedType(SECONDARY_USER_TYPE_NAME))
-                .stream()
-                .sorted(Comparator.comparing(UserReference::id))
-                .skip(TestApis.users().isHeadlessSystemUserMode() ? 1 : 0)
-                .findFirst()
-                .orElse(null);
+        return mDeviceStateUsers.additionalUser();
     }
 
     void teardownNonShareableState() {
         mAdditionalQueryParameters.clear();
         mProfiles.clear();
-        mUsers.clear();
-        mAnnotationHasSwitchedUser = false;
-        mAdditionalUser = null;
+        mDeviceStateUsers.teardownNonShareableState();
 
         // TODO(b/329570492): Support sharing of theme in bedstead across tests
         if (mOriginalDisplayTheme != null) {
@@ -2479,15 +2197,6 @@ public final class DeviceState extends HarrierRule {
             TestApis.devicePolicy().calculateHasIncompatibleAccounts();
         }
 
-        for (UserReference user : mUsersSetPasswords) {
-            if (mCreatedUsers.contains(user)) {
-                continue; // Will be removed anyway
-            }
-            user.clearPassword();
-        }
-
-        mUsersSetPasswords.clear();
-
         if (mHasChangedDeviceOwner) {
             if (mOriginalDeviceOwner == null) {
                 if (mDeviceOwner != null) {
@@ -2548,60 +2257,7 @@ public final class DeviceState extends HarrierRule {
             mDevicePolicyManagerRoleHolder = null;
         }
 
-        UserReference ephemeralUser = null;
-        UserReference currentUser = TestApis.users().current();
-        for (UserReference user : mCreatedUsers) {
-            try {
-                if (user.equals(currentUser)) {
-                    // user will be removed after switching to mOriginalSwitchedUser below.
-                    user.removeWhenPossible();
-                    ephemeralUser = user;
-                } else {
-                    user.remove();
-                }
-            } catch (NeneException e) {
-                if (user.exists()) {
-                    // Otherwise it's probably just already removed
-                    throw new NeneException("Could not remove user", e);
-                }
-            }
-
-        }
-
-        mCreatedUsers.clear();
-
-        for (RemovedUser removedUser : mRemovedUsers) {
-            UserReference user = removedUser.userBuilder.create();
-            if (removedUser.isRunning) {
-                user.start();
-            }
-
-            if (removedUser.isOriginalSwitchedToUser) {
-                mOriginalSwitchedUser = user;
-            }
-        }
-
-        mRemovedUsers.clear();
-        if (mOriginalSwitchedUser != null) {
-            if (!mOriginalSwitchedUser.exists()) {
-                Log.d(LOG_TAG, "Could not switch back to original user "
-                        + mOriginalSwitchedUser
-                        + " as it does not exist. Switching to initial instead.");
-                TestApis.users().initial().switchTo();
-            } else {
-                mOriginalSwitchedUser.switchTo();
-            }
-            mOriginalSwitchedUser = null;
-
-            // wait for ephemeral user to be removed after being switched away
-            if (ephemeralUser != null) {
-                Poll.forValue("Ephemeral user exists", ephemeralUser::exists)
-                        .toBeEqualTo(false)
-                        .timeout(Duration.ofMinutes(1))
-                        .errorOnFail()
-                        .await();
-            }
-        }
+        mDeviceStateUsers.teardownShareableState();
 
         for (TestAppInstance installedTestApp : mInstalledTestApps) {
             installedTestApp.uninstall();
@@ -2656,8 +2312,10 @@ public final class DeviceState extends HarrierRule {
     }
 
     private UserReference createProfile(
-            com.android.bedstead.nene.users.UserType profileType, UserReference parent) {
-        ensureCanAddUser();
+            com.android.bedstead.nene.users.UserType profileType,
+            UserReference parent
+    ) {
+        mDeviceStateUsers.ensureCanAddUser();
         ensureCanAddProfile(parent, profileType, FailureMode.SKIP);
 
         if (profileType.name().equals("android.os.usertype.profile.CLONE")) {
@@ -2669,40 +2327,9 @@ public final class DeviceState extends HarrierRule {
         }
 
         try {
-            UserReference user = TestApis.users().createUser()
-                    .parent(parent)
-                    .type(profileType)
-                    .createAndStart();
-            mCreatedUsers.add(user);
-            return user;
+            return mDeviceStateUsers.createUser(profileType, parent);
         } catch (NeneException e) {
             throw new IllegalStateException("Error creating profile of type " + profileType, e);
-        }
-    }
-
-    private UserReference createUser(com.android.bedstead.nene.users.UserType userType) {
-        ensureDoesNotHaveUserRestriction(UserManager.DISALLOW_ADD_USER, UserType.ANY);
-        ensureCanAddUser();
-        try {
-            UserReference user = TestApis.users().createUser()
-                    .type(userType)
-                    .createAndStart();
-            mCreatedUsers.add(user);
-            return user;
-        } catch (NeneException e) {
-            throw new IllegalStateException("Error creating user of type " + userType, e);
-        }
-    }
-
-    private int getMaxNumberOfUsersSupported() {
-        try {
-            return ShellCommand.builder("pm get-max-users")
-                    .validate((output) -> output.startsWith("Maximum supported users:"))
-                    .executeAndParseOutput(
-                            (output) -> Integer.parseInt(output.split(": ", 2)[1]
-                                    .trim()));
-        } catch (AdbException e) {
-            throw new IllegalStateException("Invalid command output", e);
         }
     }
 
@@ -2963,7 +2590,7 @@ public final class DeviceState extends HarrierRule {
                         continue;
                     }
                     try {
-                        removeAndRecordUser(u);
+                        mDeviceStateUsers.removeAndRecordUser(u);
                     } catch (NeneException e) {
                         failOrSkip(
                                 "Error removing user to prepare for DeviceOwner: "
@@ -3006,7 +2633,7 @@ public final class DeviceState extends HarrierRule {
                 }
 
                 try {
-                    removeAndRecordUser(u);
+                    mDeviceStateUsers.removeAndRecordUser(u);
                 } catch (NeneException e) {
                     failOrSkip(
                             "Error removing user to prepare for DeviceOwner: "
@@ -3428,55 +3055,6 @@ public final class DeviceState extends HarrierRule {
         return mTestApps.get(key);
     }
 
-    private void switchToUser(UserReference user) {
-        UserReference currentUser = TestApis.users().current();
-        if (!currentUser.equals(user)) {
-            if (mOriginalSwitchedUser == null) {
-                mOriginalSwitchedUser = currentUser;
-            }
-
-            user.switchTo();
-        }
-    }
-
-    private void switchFromUser(UserReference user) {
-        UserReference currentUser = TestApis.users().current();
-        if (!currentUser.equals(user)) {
-            return;
-        }
-
-        // We need to find a different user to switch to
-        // full users only, starting with lowest ID
-        List<UserReference> users = new ArrayList<>(TestApis.users().all());
-        users.sort(Comparator.comparingInt(UserReference::id));
-
-        for (UserReference otherUser : users) {
-            if (otherUser.equals(user)) {
-                continue;
-            }
-
-            if (otherUser.parent() != null) {
-                continue;
-            }
-
-            if (!otherUser.isRunning()) {
-                continue;
-            }
-
-            if (!otherUser.canBeSwitchedTo()) {
-                continue;
-            }
-
-            switchToUser(otherUser);
-            return;
-        }
-
-        // There are no users to switch to so we'll create one.
-        // In HSUM, an additional user needs to be created to switch from the existing user.
-        ensureHasAdditionalUser(/* installInstrumentedApp= */ OptionalBoolean.ANY,
-                /* switchedToUser= */ OptionalBoolean.TRUE);
-    }
-
     private void requireNotHeadlessSystemUserMode(String reason) {
         assumeFalse(reason, TestApis.users().isHeadlessSystemUserMode());
     }
@@ -3548,53 +3126,6 @@ public final class DeviceState extends HarrierRule {
 
     private void ensureUnlocked() {
         TestApis.device().unlock();
-    }
-
-    private void ensurePasswordSet(UserType forUser, String password) {
-        UserReference user = resolveUserTypeToUser(forUser);
-
-        if (user.hasLockCredential() && user.lockCredentialEquals(password)) {
-            return;
-        }
-
-        try {
-            user.setPassword(password);
-        } catch (NeneException e) {
-            throw new AssertionError("Require password set but error when setting "
-                    + "password on user " + user, e);
-        }
-        mUsersSetPasswords.add(user);
-    }
-
-    private void ensurePasswordNotSet(UserType forUser) {
-        UserReference user = resolveUserTypeToUser(forUser);
-
-        if (!user.hasLockCredential()) {
-            return;
-        }
-
-        if (mUsersSetPasswords.contains(user)) {
-            try {
-                user.clearPassword();
-            } catch (NeneException e) {
-                Log.e(LOG_TAG, "Error clearing password", e);
-            }
-        }
-
-        if (!user.hasLockCredential()) {
-            return;
-        }
-
-        try {
-            user.clearPassword(DEFAULT_PASSWORD);
-        } catch (NeneException e) {
-            throw new AssertionError(
-                    "Test requires user " + user + " does not have a password. "
-                            + "Password is set and is not DEFAULT_PASSWORD.", e);
-        }
-
-
-        mUsersSetPasswords.remove(user);
     }
 
     private void ensureBluetoothEnabled() {
@@ -3911,8 +3442,8 @@ public final class DeviceState extends HarrierRule {
         } catch (Exception ignored) {
             try {
                 return executorClass
-                        .getDeclaredConstructor(DeviceState.class)
-                        .newInstance(this);
+                        .getDeclaredConstructor(BedsteadServiceLocator.class)
+                        .newInstance(mLocator);
             } catch (Exception exception) {
                 throw new RuntimeException("Error creating annotation executor", exception);
             }
@@ -4059,7 +3590,7 @@ public final class DeviceState extends HarrierRule {
         return true;
     }
 
-    private void ensureDoesNotHaveUserRestriction(String restriction, UserType onUser) {
+    void ensureDoesNotHaveUserRestriction(String restriction, UserType onUser) {
         if (onUser == UserType.ANY) {
             for (UserReference userReference : TestApis.users().all()) {
                 ensureDoesNotHaveUserRestriction(restriction, userReference);
