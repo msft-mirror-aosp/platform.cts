@@ -49,6 +49,7 @@ android_test {
     defaults: ["libcore_okhttp_test_cases_defaults"],
     // Tag this module as a cts test artifact
     test_suites: [
+        "cts",
         "general-tests",
         "mts-conscrypt",
         "mcts-conscrypt",
