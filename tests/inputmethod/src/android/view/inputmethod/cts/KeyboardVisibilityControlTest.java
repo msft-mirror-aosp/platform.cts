@@ -160,6 +160,8 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     private static final String ENABLE_AUTO_ROTATE_CMD =
             "settings put system accelerometer_rotation 1";
 
+    private static final String FIXED_TO_USER_ROTATION_CMD = "cmd window fixed-to-user-rotation";
+
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
@@ -1368,6 +1370,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         final PackageManager pm = mInstrumentation.getTargetContext().getPackageManager();
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_PORTRAIT));
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE));
+        final boolean isFixedToUserRotation =
+                "enabled".equals(SystemUtil.runShellCommand(FIXED_TO_USER_ROTATION_CMD).trim());
+        assumeFalse("Device shouldn't have fixed rotation.", isFixedToUserRotation);
 
         final InputMethodManager imm = mInstrumentation
                 .getTargetContext().getSystemService(InputMethodManager.class);
