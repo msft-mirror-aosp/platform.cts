@@ -27,7 +27,7 @@ import java.lang.annotation.Annotation;
  * This can be used to add additional harrier-compatible annotations without modifying harrier
  */
 // This is written in Java because Kotlin interfaces can't expose default methods to Java
-public interface AnnotationExecutor extends FailureDumper {
+public interface AnnotationExecutor extends FailureDumper, DeviceStateComponent {
     /**
      * Called when an annotation should be applied.
      *
@@ -35,16 +35,6 @@ public interface AnnotationExecutor extends FailureDumper {
      * the test.
      */
     void applyAnnotation(@NonNull Annotation annotation);
-
-    /**
-     * Requests the executor to restore the previous state of any non-shareable changes.
-     */
-    default void teardownShareableState() {}
-
-    /**
-     * Requests the executor to restore the previous state of any shareable changes.
-     */
-    default void teardownNonShareableState() {}
 
     /**
      * Called when a test has failed which used this annotation executor.

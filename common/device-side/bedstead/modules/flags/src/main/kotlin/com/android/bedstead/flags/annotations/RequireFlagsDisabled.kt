@@ -22,7 +22,7 @@ import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE, AnnotationTarget.CLASS)
-@UsesAnnotationExecutor("com.android.bedstead.flags.FlagsAnnotationExecutor")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.FLAGS)
 annotation class RequireFlagsDisabled(
     /**
      * The list of the feature flags that require to be disabled. Each item is the full flag name

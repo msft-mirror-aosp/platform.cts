@@ -144,7 +144,7 @@ def extract_key_frames_from_video(log_path, video_file_name):
     key_frame_files: a sorted list of files which contains a name per key
       frame. Ex: VID_20220325_050918_0_preview_1920x1440_key_frame_0001.png
   """
-  ffmpeg_image_name = f"{video_file_name.split('.')[0]}_key_frame"
+  ffmpeg_image_name = f'{os.path.splitext(video_file_name)[0]}_key_frame'
   ffmpeg_image_file_path = os.path.join(
       log_path, ffmpeg_image_name + '_%04d.png')
   cmd = ['ffmpeg',

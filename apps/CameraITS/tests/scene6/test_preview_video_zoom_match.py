@@ -34,7 +34,6 @@ _CIRCLE_R = 2
 _CIRCLE_X = 0
 _CIRCLE_Y = 1
 _CIRCLISH_RTOL = 0.15  # contour area vs ideal circle area pi*((w+h)/4)**2
-_LINE_COLOR = (255, 0, 0)  # red
 _MAX_STR = 'max'
 _MIN_STR = 'min'
 _MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels

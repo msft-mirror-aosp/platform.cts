@@ -22,7 +22,7 @@ import com.google.auto.value.AutoAnnotation
 
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-@UsesAnnotationExecutor("com.android.xts.root.RootAnnotationExecutor")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ROOT)
 @RequireAdbRoot(reason = "adb root is a prerequisite of root instrumentation")
 annotation class RequireRootInstrumentation(
     val reason: String,

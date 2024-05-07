@@ -15,7 +15,7 @@
   -->
 
 <device-admin>
-    <headless-system-user device-owner-mode="single_user" />
+    <headless-system-user headless-device-owner-mode="single_user" device-owner-mode="single_user" />
     <uses-policies>
         <limit-password />
         <watch-login />

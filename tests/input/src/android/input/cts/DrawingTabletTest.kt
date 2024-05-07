@@ -16,6 +16,7 @@
 
 package android.input.cts
 
+import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.graphics.PointF
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.HEIGHT

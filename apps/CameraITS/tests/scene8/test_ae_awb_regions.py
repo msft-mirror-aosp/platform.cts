@@ -223,12 +223,12 @@ def _get_largest_common_aspect_ratio_preview_size(cam, camera_id):
     preview_size: str; largest, supported preview size w/ 4:3, or 16:9
         aspect ratio.
   """
-  preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
+  preview_sizes = cam.get_supported_preview_sizes(camera_id)
   dimensions = lambda s: (int(s.split('x')[0]), int(s.split('x')[1]))
   for size in reversed(preview_sizes):
     if capture_request_utils.is_common_aspect_ratio(dimensions(size)):
       preview_size = size
-      logging.debug('Largest, common aspect ratio and preview size: %s',
+      logging.debug('Largest common aspect ratio preview size: %s',
                     preview_size)
       break
   return preview_size

@@ -440,10 +440,29 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
      * search new paths, hence this may not work on devices launching Android 11 and later.
      */
     private static int getVendorSepolicyVersionFromManifests(ITestDevice device) throws Exception {
-        String deviceManifestPath =
-                (device.doesFileExist("/vendor/etc/vintf/manifest.xml")) ?
-                "/vendor/etc/vintf/manifest.xml" :
-                "/vendor/manifest.xml";
+        String deviceManifestPath = null;
+
+        //check default path /vendor/etc/vintf/manifest.xml, prefer to use by default
+        if (device.doesFileExist("/vendor/etc/vintf/manifest.xml")) {
+            deviceManifestPath = "/vendor/etc/vintf/manifest.xml";
+        }
+
+        //only if /vendor/etc/vintf/manifest.xml not exist, then check /vendor/etc/vintf/manifest_{vendorSku}.xml
+        String vendorSku = device.getProperty("ro.boot.product.vendor.sku");
+        if (deviceManifestPath == null && vendorSku != null && vendorSku.length() > 0) {
+            String vendorSkuDeviceManifestPath = "/vendor/etc/vintf/manifest_"+ vendorSku + ".xml";
+            if (device.doesFileExist(vendorSkuDeviceManifestPath)) {
+                deviceManifestPath = vendorSkuDeviceManifestPath;
+            }
+        }
+
+        //use /vendor/manifest.xml if above paths not exist
+        if (deviceManifestPath == null) {
+            deviceManifestPath = "/vendor/manifest.xml";
+        }
+
+        CLog.i("getVendorSepolicyVersionFromManifests " + deviceManifestPath);
+
         File vendorManifestFile = getDeviceFile(device, sCachedDeviceVendorManifest,
                 deviceManifestPath, "manifest.xml");
 

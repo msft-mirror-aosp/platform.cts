@@ -393,6 +393,10 @@
              android:label="DecorInsetTestsBase.TestActivity"
              android:exported="true"/>
 
+        <activity android:name="android.server.wm.window.WindowPolicyTests$TestActivity"
+                  android:theme="@android:style/Theme.Material.NoActionBar"
+                  android:exported="true"/>
+
         <activity android:name="android.server.wm.window.WindowCtsActivity"
              android:theme="@style/OptOutEdgeToEdge.NoActionBar"
              android:screenOrientation="locked"

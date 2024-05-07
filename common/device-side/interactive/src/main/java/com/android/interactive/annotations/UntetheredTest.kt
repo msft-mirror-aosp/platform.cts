@@ -29,7 +29,7 @@ import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-@UsesAnnotationExecutor("com.android.interactive.InteractiveAnnotationExecutor")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.INTERACTIVE)
 annotation class UntetheredTest(
     /**
      * Priority sets the order that annotations will be resolved.

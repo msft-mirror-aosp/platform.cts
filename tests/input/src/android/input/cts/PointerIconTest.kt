@@ -22,6 +22,7 @@ import android.companion.virtual.VirtualDeviceManager
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice
 import android.companion.virtual.VirtualDeviceParams
 import android.content.Context
+import android.cts.input.EventVerifier
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
