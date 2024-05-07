@@ -16,8 +16,7 @@
 package android.mediapc.cts;
 
 import android.mediapc.cts.common.PerformanceClassEvaluator;
-import android.mediapc.cts.common.Requirements;
-import android.mediapc.cts.common.Requirements.VulkanRequirement;
+import android.mediapc.cts.common.VulkanRequirement;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -75,12 +74,12 @@ public class VulkanTest {
      * {@code VkPhysicalDeviceProtectedMemoryFeatures.protectedMemory} and
      * {@code VK_EXT_global_priority}.
      */
-    @CddTest(requirements = {"7.1.4.1/H-1-3"})
+    @CddTest(requirements = {"7.1.4.1/H-1-2"})
     @Test
     public void checkVulkanProtectedMemoryAndGlobalPrioritySupport() throws Exception {
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        VulkanRequirement req = pce.addRequirement(Requirements.createR7_1_4_1__H_1_3());
+        VulkanRequirement req = pce.addR7_1_4_1__H_1_3();
 
         var filteredDevices = mVulkanDevices.stream().filter(this::notCpuDevice).toList();
         final boolean extGlobalPriority = filteredDevices.stream().allMatch(
@@ -89,9 +88,9 @@ public class VulkanTest {
         final boolean hasProtectedMemory = filteredDevices.stream().allMatch(
                 this::hasProtectedMemory);
 
-        req.setVkNonCpuDeviceCount(filteredDevices.size());
-        req.setVkPhysicalDeviceProtectedMemory(hasProtectedMemory);
-        req.setVkExtGlobalPriority(extGlobalPriority);
+        req.setNonCpuVulcanDeviceCount(filteredDevices.size());
+        req.setDeviceProtectedMemorySupported(hasProtectedMemory);
+        req.setGlobalPrioritySupported(extGlobalPriority);
 
         pce.submitAndCheck();
     }
