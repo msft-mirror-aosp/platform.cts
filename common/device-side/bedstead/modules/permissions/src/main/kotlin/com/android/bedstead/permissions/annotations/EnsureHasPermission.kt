@@ -32,7 +32,7 @@ import com.google.auto.value.AutoAnnotation
     AnnotationTarget.CLASS,
 )
 @Retention(AnnotationRetention.RUNTIME)
-@UsesAnnotationExecutor("com.android.bedstead.permissions.PermissionsAnnotationExecutor")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.PERMISSIONS)
 annotation class EnsureHasPermission(
 
     vararg val value: String,

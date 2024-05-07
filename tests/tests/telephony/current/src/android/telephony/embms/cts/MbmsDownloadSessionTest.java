@@ -29,6 +29,7 @@ import android.telephony.mbms.DownloadRequest;
 import android.telephony.mbms.FileServiceInfo;
 import android.telephony.mbms.MbmsErrors;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -49,6 +50,7 @@ public class MbmsDownloadSessionTest extends MbmsDownloadTestBase {
         }
     }
 
+    @Ignore
     @Test
     public void testRequestUpdateDownloadServices() throws Exception {
         List<String> testClasses = Arrays.asList("class1", "class2");

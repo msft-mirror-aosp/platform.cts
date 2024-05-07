@@ -42,56 +42,51 @@ import org.junit.runner.RunWith
 class PermissionsAnnotationExecutorTest {
     @Test
     @EnsureHasPermission(TEST_PERMISSION_1)
-    @RequireSdkVersion(min = Build.VERSION_CODES.R,
-        reason = "Used permissions not available prior to R")
+    @RequireSdkVersion(
+        min = Build.VERSION_CODES.R,
+        reason = "Used permissions not available prior to R"
+    )
     fun ensureHasPermission_permissionIsGranted() {
-        assertThat(context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_1))
+        assertThat(context().instrumentedContext().checkSelfPermission(TEST_PERMISSION_1))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED)
     }
 
     @Test
     @EnsureHasPermission(TEST_PERMISSION_1, TEST_PERMISSION_2)
     fun ensureHasPermission_multiplePermissions_permissionsAreGranted() {
-        assertThat(context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_1))
+        assertThat(context().instrumentedContext().checkSelfPermission(TEST_PERMISSION_1))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED)
-        assertThat(context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_2))
+        assertThat(context().instrumentedContext().checkSelfPermission(TEST_PERMISSION_2))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED)
     }
 
     @Test
     @EnsureDoesNotHavePermission(TEST_PERMISSION_1)
     fun ensureDoesNotHavePermission_permissionIsDenied() {
-        assertThat(context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_1))
+        assertThat(context().instrumentedContext().checkSelfPermission(TEST_PERMISSION_1))
                 .isEqualTo(PackageManager.PERMISSION_DENIED)
     }
 
     @Test
     @EnsureDoesNotHavePermission(TEST_PERMISSION_1, TEST_PERMISSION_2)
     fun ensureDoesNotHavePermission_multiplePermissions_permissionsAreDenied() {
-        assertThat(context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_1))
+        assertThat(context().instrumentedContext().checkSelfPermission(TEST_PERMISSION_1))
                 .isEqualTo(PackageManager.PERMISSION_DENIED)
-        assertThat(context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_2))
+        assertThat(context().instrumentedContext().checkSelfPermission(TEST_PERMISSION_2))
                 .isEqualTo(PackageManager.PERMISSION_DENIED)
     }
 
     @Test
     @EnsureHasPermission(TEST_PERMISSION_1)
-    @EnsureDoesNotHavePermission(
-        TEST_PERMISSION_2)
-    @RequireSdkVersion(min = Build.VERSION_CODES.R,
-        reason = "Used permissions not available prior to R")
+    @EnsureDoesNotHavePermission(TEST_PERMISSION_2)
+    @RequireSdkVersion(
+        min = Build.VERSION_CODES.R,
+        reason = "Used permissions not available prior to R"
+    )
     fun ensureHasPermissionAndDoesNotHavePermission_permissionsAreCorrect() {
-        assertThat(context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_1))
+        assertThat(context().instrumentedContext().checkSelfPermission(TEST_PERMISSION_1))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED)
-        assertThat(context().instrumentedContext()
-                .checkSelfPermission(TEST_PERMISSION_2))
+        assertThat(context().instrumentedContext().checkSelfPermission(TEST_PERMISSION_2))
                 .isEqualTo(PackageManager.PERMISSION_DENIED)
     }
 
@@ -110,12 +105,16 @@ class PermissionsAnnotationExecutorTest {
     fun testThrowsSecurityException_usePermissionsAnnotationExecutor_dumpsToLogcat() {
         DeviceStateTester().use { deviceState ->
             TestApis.logcat()
-                    .listen { it.contains("SecurityException when using PermissionsAnnotationExecutor") }
+                    .listen {
+                        it.contains("SecurityException when using PermissionsAnnotationExecutor")
+                    }
                     .use { logcat ->
 
                         try {
                             deviceState.stepName("testWhichThrowsSecurityException")
-                                    .apply(listOf(UsesAnnotationExecutor("com.android.bedstead.permissions.PermissionsAnnotationExecutor"))) {
+                                    .apply(listOf(
+                                        UsesAnnotationExecutor(UsesAnnotationExecutor.PERMISSIONS)
+                                    )) {
                                         throw SecurityException("Testing")
                                     }
                             Assert.fail("Expected SecurityException")

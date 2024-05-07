@@ -35,7 +35,7 @@ import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 @Retention(AnnotationRetention.RUNTIME)
 @JvmRepeatable(EnsureCanAddUserGroup::class)
 @RequireMultiUserSupport
-@UsesAnnotationExecutor("com.android.bedstead.multiuser.MultiUserAnnotationExecutor")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 annotation class EnsureCanAddUser(
     /** The number of users we need space for. Defaults to 1.  */
     val number: Int = 1,

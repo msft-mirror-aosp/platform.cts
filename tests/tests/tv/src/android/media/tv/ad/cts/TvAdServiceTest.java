@@ -113,6 +113,21 @@ public class TvAdServiceTest {
         private void resetValues() {
         }
 
+        @Override
+        public void onAdServiceAdded(String serviceId) {
+            super.onAdServiceAdded(serviceId);
+        }
+
+        @Override
+        public void onAdServiceRemoved(String serviceId) {
+            super.onAdServiceRemoved(serviceId);
+        }
+
+        @Override
+        public void onAdServiceUpdated(String serviceId) {
+            super.onAdServiceUpdated(serviceId);
+        }
+
     }
 
     public static class MockTvInputCallback extends TvView.TvInputCallback {

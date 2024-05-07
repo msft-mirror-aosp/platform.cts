@@ -82,6 +82,7 @@ java_library {
 
 android_test {
     name: "CtsWindowManagerJetpackTestCases",
+    team: "trendy_team_windowing_sdk",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     static_libs: [

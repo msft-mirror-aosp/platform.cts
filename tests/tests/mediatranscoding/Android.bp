@@ -19,9 +19,34 @@ package {
 android_test {
     name: "CtsMediaTranscodingTestCases",
     team: "trendy_team_android_media_solutions",
-    defaults: ["CtsMediaTranscodingTestCasesDefaults", "cts_defaults"],
+    defaults: [
+        "CtsMediaTranscodingTestCasesDefaults",
+        "cts_defaults",
+    ],
     // part of MTS, so we need compatibility back to Q/29
     min_sdk_version: "29",
+    test_suites: [
+        "general-tests",
+        "mts-media",
+        "mcts-media",
+        "mts",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+    ],
+    resource_dirs: ["res"],
+}
+
+android_test {
+    name: "MctsMediaTranscodingTestCases",
+    team: "trendy_team_android_media_solutions",
+    defaults: [
+        "CtsMediaTranscodingTestCasesDefaults",
+        "cts_defaults",
+    ],
+    // part of MTS, so we need compatibility back to Q/29
+    min_sdk_version: "29",
+    test_config: "AndroidTest-mcts.xml",
     test_suites: [
         "general-tests",
         "mts-media",

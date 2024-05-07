@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.android.bedstead.harrier
 
-package com.android.bedstead.nene.services;
+import kotlin.reflect.KClass
 
-/** Services helper methods common to host and device. */
-public final class CommonServices {
-
-    private CommonServices() {}
-
-    /** see {@code android.content.Context#DREAM_SERVICE} */
-    public static final String DREAM_SERVICE = "dream";
-
-    /** see {@code android.content.Context#CONTENT_CAPTURE_MANAGER_SERVICE} */
-    public static final String CONTENT_CAPTURE_MANAGER_SERVICE = "content_capture";
-
+class MainLocatorModule(private val deviceState: DeviceState) : BedsteadServiceLocator.Module {
+    override fun <T : Any> getDependency(clazz: KClass<T>): T? {
+        val dependency: Any? = when (clazz) {
+            DeviceStateUsers::class -> DeviceStateUsers(deviceState)
+            DeviceState::class -> deviceState
+            else -> null
+        }
+        @Suppress("UNCHECKED_CAST") // the compiler can't check generic types
+        return dependency as T?
+    }
 }

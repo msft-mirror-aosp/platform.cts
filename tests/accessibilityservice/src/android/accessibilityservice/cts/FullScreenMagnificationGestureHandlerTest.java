@@ -18,6 +18,7 @@ package android.accessibilityservice.cts;
 
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
 import static android.accessibilityservice.cts.utils.AsyncUtils.waitOn;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.GestureUtils.add;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.dispatchGesture;
@@ -39,6 +40,7 @@ import static android.view.MotionEvent.ACTION_UP;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
@@ -158,6 +160,8 @@ public class FullScreenMagnificationGestureHandlerTest {
         boolean hasTouchscreen = pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)
                 || pm.hasSystemFeature(PackageManager.FEATURE_FAKETOUCH);
         assumeTrue(hasTouchscreen);
+        assumeFalse("Magnification is not supported on Automotive.",
+                isAutomotive(mInstrumentation.getTargetContext()));
 
         // Backup and reset magnification settings.
         mOriginalIsMagnificationCapabilities = getSecureSettingInt(

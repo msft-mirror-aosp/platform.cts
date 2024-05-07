@@ -32,4 +32,34 @@ annotation class UsesAnnotationExecutor(
      * to the executor, for example where the annotation cannot be defined in an Android target.
      */
     val value: String
-)
+) {
+    companion object {
+        const val PERMISSIONS = "com.android.bedstead.permissions.PermissionsAnnotationExecutor"
+        const val ROOT = "com.android.xts.root.RootAnnotationExecutor"
+        const val INTERACTIVE = "com.android.interactive.InteractiveAnnotationExecutor"
+        const val FLAGS = "com.android.bedstead.flags.FlagsAnnotationExecutor"
+        const val MULTI_USER = "com.android.bedstead.multiuser.MultiUserAnnotationExecutor"
+    }
+}
+
+/**
+ * Create class from the fully qualified name in [UsesAnnotationExecutor.value] parameter
+ */
+fun UsesAnnotationExecutor.getAnnotationExecutorClass(): Class<out AnnotationExecutor?> {
+    if (value.isEmpty()) {
+        throw IllegalStateException("@UsesAnnotationExecutor value is empty")
+    } else {
+        try {
+            @Suppress("UNCHECKED_CAST")
+            return Class.forName(value) as Class<out AnnotationExecutor?>
+        } catch (ignored: ClassNotFoundException) {
+            throw IllegalStateException(
+                "Could not find annotation executor " +
+                        value +
+                        ". Probably a dependency issue. If you are depending on a " +
+                        "-annotations target (e.g. bedstead-root-annotations) instead " +
+                        "depend on the non-annotations target (e.g. bedstead-root)"
+            )
+        }
+    }
+}

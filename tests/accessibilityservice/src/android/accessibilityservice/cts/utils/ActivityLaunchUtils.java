@@ -16,6 +16,7 @@ package android.accessibilityservice.cts.utils;
 
 import static android.accessibility.cts.common.ShellCommandBuilder.execShellCommand;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
 
 import static org.junit.Assert.assertNotNull;
@@ -205,7 +206,7 @@ public class ActivityLaunchUtils {
         final List<ResolveInfo> resolveInfos = packageManager.queryIntentActivities(
                 new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
                 PackageManager.MATCH_DEFAULT_ONLY);
-        final boolean isAuto = packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        final boolean isAuto = isAutomotive(context);
 
         // Look for an active focused window with a package name that matches
         // the default home screen.

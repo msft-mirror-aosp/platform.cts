@@ -40,9 +40,15 @@ message Requirement {
   optional Group group = 4;
 
   map<int64, RequirementSpec> specs = 5;
+
   // measurement_id to RequiredMeasurements
   // The measurement_id is a field name safe string.
   map<string, RequiredMeasurement> measurements = 6;
+
+  // variant_id to Variant
+  //
+  // The variant_id is a field name safe string.
+  map<string, Variant> variants = 57;
 }
 
 message RequirementSpec {
@@ -58,6 +64,10 @@ message RequirementSpec {
   // The measurement_id must match the id of a RequiredMeasurement in the parent
   // Requirement.
   map<string, RequiredValue> required_values = 4;
+
+  // variant_id to VariantSpec
+  // The variant_id is a field name safe string.
+  map<string, VariantSpec> variant_specs = 5;
 }
 
 enum Group {
@@ -89,6 +99,22 @@ message RequiredValue {
     bool bool_value = 6;
     int64 long_value = 7;
   }
+}
+
+// Variants are used when an alternative set of required values should apply
+message Variant {
+  // When the variant should be used.
+  optional string description = 1;
+}
+
+// The set values required for a variant
+message VariantSpec {
+  // measurement_id to RequiredMeasurements
+  //
+  // The measurement_id is a field name safe string.
+  // The measurement_id must match the id of a RequiredMeasurement in the parent
+  // Requirement.
+  map<string, RequiredValue> required_values = 4;
 }
 
 enum Comparison {

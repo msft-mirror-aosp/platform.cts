@@ -119,6 +119,7 @@ android_test {
     // This test uses private APIs
     platform_apis: true,
     jni_uses_sdk_apis: true,
+    test_config: "AndroidTest-mcts.xml",
     test_suites: [
         "mcts-media",
     ],

@@ -142,12 +142,14 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
                 .that(policy.isComponentEnabled(PowerComponent.AUDIO)).isTrue();
         expectWithMessage("WIFI component enabled status")
                 .that(policy.isComponentEnabled(PowerComponent.WIFI)).isFalse();
+        makeSureExecutorReady();
         expectWithMessage("Added audio listener's current policy ID")
                 .that(listenerAudioOne.getCurrentPolicyId(LISTENER_WAIT_TIME_MS))
                 .isEqualTo(policyId);
         makeSureExecutorReady();
         expectWithMessage("Removed audio listener's current policy")
                 .that(listenerAudioTwo.getCurrentPolicyId(NO_WAIT)).isNull();
+        makeSureExecutorReady();
         expectWithMessage("Added Wifi listener's current policy ID")
                 .that(listenerWifi.getCurrentPolicyId(LISTENER_WAIT_TIME_MS)).isEqualTo(policyId);
         makeSureExecutorReady();

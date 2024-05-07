@@ -22,7 +22,9 @@ import android.mediapc.cts.common.Requirements.HDRDisplayRequirement;
 import android.mediapc.cts.common.Requirements.SequentialWriteRequirement;
 
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -30,11 +32,14 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class RequirementsTest {
 
+    @Rule
+    public final TestName mTestName = new TestName();
 
     // HDRDisplayRequirement has two required measurements.
     @Test
     public void hdrDisplay_noHdr_1000nits() {
-        var req = HDRDisplayRequirement.create();
+        var pce = new PerformanceClassEvaluator(mTestName);
+        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1(pce);
         req.setIsHdr(false);
         req.setDisplayLuminanceNits(1000);
 
@@ -44,7 +49,8 @@ public class RequirementsTest {
 
     @Test
     public void hdrDisplay_900nits() {
-        var req = HDRDisplayRequirement.create();
+        var pce = new PerformanceClassEvaluator(mTestName);
+        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1(pce);
         req.setIsHdr(true);
         req.setDisplayLuminanceNits(900);
 
@@ -54,7 +60,8 @@ public class RequirementsTest {
 
     @Test
     public void hdrDisplay_1000nits() {
-        var req = HDRDisplayRequirement.create();
+        var pce = new PerformanceClassEvaluator(mTestName);
+        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1(pce);
         req.setIsHdr(true);
         req.setDisplayLuminanceNits(1000);
 
@@ -66,7 +73,8 @@ public class RequirementsTest {
     // SequentialWriteRequirement has more than one MPC level.
     @Test
     public void sequentialWrite_90mbps() {
-        var req = SequentialWriteRequirement.create();
+        var pce = new PerformanceClassEvaluator(mTestName);
+        SequentialWriteRequirement req = Requirements.addR8_2__H_1_1(pce);
         req.setFilesystemIoRateMbps(90);
 
         var pc = req.computePerformanceClass();
@@ -75,7 +83,8 @@ public class RequirementsTest {
 
     @Test
     public void sequentialWrite_100mbps() {
-        var req = SequentialWriteRequirement.create();
+        var pce = new PerformanceClassEvaluator(mTestName);
+        SequentialWriteRequirement req = Requirements.addR8_2__H_1_1(pce);
         req.setFilesystemIoRateMbps(100);
 
         var pc = req.computePerformanceClass();
@@ -84,7 +93,8 @@ public class RequirementsTest {
 
     @Test
     public void sequentialWrite_125mbps() {
-        var req = SequentialWriteRequirement.create();
+        var pce = new PerformanceClassEvaluator(mTestName);
+        SequentialWriteRequirement req = Requirements.addR8_2__H_1_1(pce);
         req.setFilesystemIoRateMbps(125);
 
         var pc = req.computePerformanceClass();
@@ -93,7 +103,8 @@ public class RequirementsTest {
 
     @Test
     public void sequentialWrite_150mbps() {
-        var req = SequentialWriteRequirement.create();
+        var pce = new PerformanceClassEvaluator(mTestName);
+        SequentialWriteRequirement req = Requirements.addR8_2__H_1_1(pce);
         req.setFilesystemIoRateMbps(150);
 
         var pc = req.computePerformanceClass();

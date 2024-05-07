@@ -21,6 +21,7 @@ import static android.app.admin.DevicePolicyManager.DELEGATION_APP_RESTRICTIONS;
 import static android.app.admin.DevicePolicyManager.DELEGATION_CERT_INSTALL;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
+import static com.android.bedstead.harrier.DeviceStateUsersKt.user;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.harrier.UserType.SECONDARY_USER;
@@ -139,19 +140,19 @@ import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwnerKt;
 import com.android.bedstead.harrier.annotations.enterprise.MostImportantCoexistenceTest;
 import com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
+import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUser;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnOrganizationOwnedProfileOwner;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwner;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfProfileOwnerUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner;
-import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
@@ -171,10 +172,6 @@ import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Tags;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHaveAppOp;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.permissions.annotations.EnsureHasAppOp;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.remotedpc.RemoteDelegate;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.testapp.NotFoundException;
@@ -465,7 +462,7 @@ public class DeviceStateTest {
     @Test
     @EnsureHasSecondaryUser
     public void user_userProvided_returnUser() {
-        assertThat(sDeviceState.user(SECONDARY_USER_TYPE_NAME)).isNotNull();
+        assertThat(user(sDeviceState, SECONDARY_USER_TYPE_NAME)).isNotNull();
     }
 
     @Test
@@ -1620,7 +1617,8 @@ public class DeviceStateTest {
     @Test
     public void ensureDefaultContentSuggestionsServiceDisabledAnnotation_onDifferentUser_defaultContentSuggestionsServiceIsDisabled() {
         assertThat(TestApis.content().suggestions().defaultServiceEnabled(
-                sDeviceState.additionalUser())).isFalse();
+                sDeviceState.additionalUser()
+        )).isFalse();
     }
 
     @EnsureHasAdditionalUser
@@ -1628,7 +1626,8 @@ public class DeviceStateTest {
     @Test
     public void ensureDefaultContentSuggestionsServiceEnabledAnnotation_onDifferentUser_defaultContentSuggestionsServiceIsEnabled() {
         assertThat(TestApis.content().suggestions().defaultServiceEnabled(
-                sDeviceState.additionalUser())).isTrue();
+                sDeviceState.additionalUser()
+        )).isTrue();
     }
 
     @Test

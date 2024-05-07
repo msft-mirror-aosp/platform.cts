@@ -30,6 +30,21 @@ android_test {
     ],
 }
 
+android_test {
+    name: "MctsMediaParserTestCases",
+    defaults: [
+        "CtsMediaParserTestCasesDefaults",
+        "cts_defaults",
+    ],
+    min_sdk_version: "29",
+    test_config: "AndroidTest-mcts.xml",
+    test_suites: [
+        "general-tests",
+        "mts-media",
+        "mcts-media",
+    ],
+}
+
 // App for host-side testing of the MediaParser integration with MediaMetrics.
 android_test_helper_app {
     name: "CtsMediaParserTestCasesApp",

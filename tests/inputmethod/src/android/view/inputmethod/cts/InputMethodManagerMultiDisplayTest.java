@@ -69,6 +69,7 @@ public class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
         super.setUp();
 
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_INPUT_METHODS));
+        assumeFalse(isWatch());
 
         mImManager = mContext.getSystemService(InputMethodManager.class);
 

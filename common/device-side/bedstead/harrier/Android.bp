@@ -21,6 +21,7 @@ java_library_host {
     name: "bedstead-core-annotations",
     srcs: [
         "common/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.java",
+        "common/src/main/java/com/android/bedstead/harrier/DeviceStateComponent.java",
         "common/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
         "common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
         "common/src/main/java/com/android/bedstead/harrier/annotations/enterprise/DevicePolicyRelevant.java",

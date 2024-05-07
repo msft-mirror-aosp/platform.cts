@@ -16,6 +16,7 @@
 
 package android.input.cts
 
+import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider

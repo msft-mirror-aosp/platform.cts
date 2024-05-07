@@ -78,6 +78,8 @@ class EmulateInputDevice {
                 Thread.sleep(1000)
                 touchscreen.tapOnScreen()
             }
+
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -133,7 +135,7 @@ class EmulateInputDevice {
                 touchpad.sendUp(0)
                 touchpad.sync()
             }
-            Thread.sleep(TOUCHPAD_POST_GESTURE_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -176,7 +178,7 @@ class EmulateInputDevice {
             touchpad.sendBtnTouch(false)
             touchpad.sendUp(1)
             touchpad.sync()
-            Thread.sleep(TOUCHPAD_POST_GESTURE_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -226,7 +228,7 @@ class EmulateInputDevice {
             touchpad.sendBtn(UinputTouchDevice.toolBtnForFingerCount(numFingers), false)
             touchpad.sendBtnTouch(false)
             touchpad.sync()
-            Thread.sleep(TOUCHPAD_POST_GESTURE_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -240,7 +242,7 @@ class EmulateInputDevice {
             // Do nothing: Adding a device should trigger the logging logic.
             // Wait until the Input device created is sent to KeyboardLayoutManager to trigger
             // logging logic
-            Thread.sleep(KEYBOARD_POST_EVENT_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -254,7 +256,7 @@ class EmulateInputDevice {
             // Wait for device to be added
             injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, KEY_PRESS, 0, 0, 0))
             injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, KEY_RELEASE, 0, 0, 0))
-            Thread.sleep(KEYBOARD_POST_EVENT_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -274,9 +276,6 @@ class EmulateInputDevice {
         // kernel) and the device being torn down. If the device is torn down first, one or more
         // frames of data get lost. To prevent flakes due to this race, we delay closing the device
         // for a while after sending the last event, so InputReader has time to read them all.
-        const val TOUCHPAD_POST_GESTURE_DELAY_MILLIS: Long = 500
-
-        // This delay is required for key events to be sent and handled correctly.
-        const val KEYBOARD_POST_EVENT_DELAY_MILLIS: Long = 500
+        const val UINPUT_POST_EVENT_DELAY_MILLIS: Long = 500
     }
 }

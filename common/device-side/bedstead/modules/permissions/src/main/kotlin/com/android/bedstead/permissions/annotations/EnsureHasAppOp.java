@@ -34,7 +34,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(EnsureHasAppOpGroup.class)
-@UsesAnnotationExecutor("com.android.bedstead.permissions.PermissionsAnnotationExecutor")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.PERMISSIONS)
 public @interface EnsureHasAppOp {
     String value();
 

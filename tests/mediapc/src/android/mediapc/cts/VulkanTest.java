@@ -22,7 +22,6 @@ import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.SystemUtil;
 
 import com.google.common.collect.ImmutableList;
 
@@ -49,19 +48,22 @@ public class VulkanTest {
     private static final int VK_EXT_GLOBAL_PRIORITY_SPEC_VERSION = 1;
 
     private ImmutableList<JSONObject> mVulkanDevices;
+    private static native String nativeGetVkJSON();
 
     @Rule
     public final TestName mTestName = new TestName();
 
+    static {
+        System.loadLibrary("ctsmediapc_vulkan_jni");
+    }
 
     /**
      * Test specific setup
      */
     @Before
     public void setUp() throws Exception {
-        final String output = SystemUtil.runShellCommand("cmd gpu vkjson");
-        final JSONArray vkjson = (new JSONObject(output)).getJSONArray("devices");
-
+        JSONObject instance = new JSONObject(nativeGetVkJSON());
+        final JSONArray vkjson = instance.getJSONArray("devices");
         var builder = ImmutableList.<JSONObject>builder();
         for (int i = 0; i < vkjson.length(); i++) {
             builder.add(vkjson.getJSONObject(i));
