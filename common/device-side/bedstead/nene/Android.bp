@@ -26,7 +26,7 @@ android_library {
 // TODO(b/203507664): Remove NeneInternal once we no longer need QUERY_ALL_PACKAGES to install
 android_library {
     name: "NeneInternal",
-    sdk_version: "system_current",
+    sdk_version: "test_current",
     srcs: [
         "src/main/java/**/*.java",
         "src/main/java/**/*.kt",
@@ -52,7 +52,7 @@ android_library {
 
 android_library {
     name: "Nene",
-    sdk_version: "system_current",
+    sdk_version: "test_current",
     srcs: [
         "src/main/java/**/*.java",
         "src/main/java/**/*.kt",
