@@ -90,7 +90,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
               self.dut, cam, preview_size, z_min, z_max, z_step_size, log_path)
       )
 
-      test_data = {}
+      test_data = []
       test_data_index = 0
 
       for capture_result, img_name in zip(capture_results, file_list):
@@ -127,9 +127,15 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
           logging.error('Unable to detect circle in %s', img_name)
           break
 
-        test_data[test_data_index] = {'z': z, 'circle': circle,
-                                      'r_tol': radius_tol, 'o_tol': offset_tol,
-                                      'fl': cap_fl}
+        test_data.append(
+            zoom_capture_utils.ZoomTestData(
+                result_zoom=z,
+                circle=circle,
+                radius_tol=radius_tol,
+                offset_tol=offset_tol,
+                focal_length=cap_fl
+            )
+        )
 
         logging.debug('test_data[%d] = %s', test_data_index,
                       str(test_data[test_data_index]))
