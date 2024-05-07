@@ -16,6 +16,7 @@ android_library {
     srcs: [
         "common/src/main/java/**/*.java",
         "common/src/main/java/**/*.kt",
+        "src/main/java/com/android/bedstead/nene/types/OptionalBoolean.kt",
     ],
     manifest: "src/main/AndroidManifestInternal.xml",
     sdk_version: "current",
