@@ -21,6 +21,7 @@ java_test_host {
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     test_suites: [
+        "cts",
         "general-tests",
         "mts",
         "mts-neuralnetworks",

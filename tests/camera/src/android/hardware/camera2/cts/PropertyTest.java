@@ -115,6 +115,7 @@ public class PropertyTest {
     public void testLandscapeToPortraitEnabled() {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
             if (Flags.cameraCompatForFreeform()) {
+                // `App1` has the override enabled.
                 Log.i(TAG, "System property enabled, testing getRotationOverride");
                 assertEquals("getRotationOverride should return"
                                 + " ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT",
@@ -122,6 +123,7 @@ public class PropertyTest {
                                 PROPERTY_APP1_PACKAGE_NAME),
                         CameraManager.ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT);
             } else {
+                // `App1` has the override enabled.
                 Log.i(TAG, "System property enabled, testing shouldOverrideToPortrait");
                 assertTrue("shouldOverrideToPortrait should return true",
                         CameraManager.shouldOverrideToPortrait(mPackageManager,
@@ -137,15 +139,17 @@ public class PropertyTest {
     public void testLandscapeToPortraitDisabled() {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
             if (Flags.cameraCompatForFreeform()) {
+                // `App2` has the override disabled.
                 Log.i(TAG, "System property enabled, testing getRotationOverride");
                 assertEquals("getRotationOverride should return ROTATION_OVERRIDE_NONE",
                         CameraManager.getRotationOverrideInternal(mContext, mPackageManager,
                                 PROPERTY_APP2_PACKAGE_NAME), CameraManager.ROTATION_OVERRIDE_NONE);
             } else {
+                // `App2` has the override disabled.
                 Log.i(TAG, "System property enabled, testing shouldOverrideToPortrait");
                 assertFalse("shouldOverrideToPortrait should return false",
                         CameraManager.shouldOverrideToPortrait(mPackageManager,
-                                PROPERTY_APP1_PACKAGE_NAME));
+                                PROPERTY_APP2_PACKAGE_NAME));
             }
         } else {
             Log.i(TAG, "LANDSCAPE_TO_PORTRAIT_PROP System property enabled.");

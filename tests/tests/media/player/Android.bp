@@ -53,6 +53,7 @@ android_test {
         "android.test.runner",
     ],
     test_suites: [
+        "cts",
         "general-tests",
         "mts-media",
         "mcts-media",

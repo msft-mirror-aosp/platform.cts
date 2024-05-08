@@ -99,6 +99,7 @@ java_defaults {
     platform_apis: true,
     // Tag this module as a cts test artifact
     test_suites: [
+        "cts",
         "general-tests",
         "mts-documentsui",
         "mcts-documentsui",

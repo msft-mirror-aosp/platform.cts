@@ -35,6 +35,7 @@ import android.os.BugreportParams;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
+import android.platform.test.annotations.PlatinumTest;
 import android.text.TextUtils;
 import android.util.Pair;
 
@@ -125,6 +126,7 @@ public class BugreportManagerTest {
 
     @LargeTest
     @Test
+    @PlatinumTest(focusArea = "bugreport")
     public void testTelephonyBugreport() throws Exception {
         Pair<String, String> brFiles = triggerBugreport(BugreportParams.BUGREPORT_MODE_TELEPHONY);
         String bugreport = brFiles.first;
@@ -138,6 +140,7 @@ public class BugreportManagerTest {
 
     @LargeTest
     @Test
+    @PlatinumTest(focusArea = "bugreport")
     public void testFullBugreport() throws Exception {
         Pair<String, String> brFiles = triggerBugreport(BugreportParams.BUGREPORT_MODE_FULL);
         String bugreport = brFiles.first;
@@ -152,6 +155,7 @@ public class BugreportManagerTest {
 
     @LargeTest
     @Test
+    @PlatinumTest(focusArea = "bugreport")
     public void testInteractiveBugreport() throws Exception {
         Pair<String, String> brFiles = triggerBugreport(BugreportParams.BUGREPORT_MODE_INTERACTIVE);
         String bugreport = brFiles.first;
@@ -171,6 +175,7 @@ public class BugreportManagerTest {
 
     @LargeTest
     @Test
+    @PlatinumTest(focusArea = "bugreport")
     public void testWifiBugreport() throws Exception {
         Pair<String, String> brFiles = triggerBugreport(BugreportParams.BUGREPORT_MODE_WIFI);
         String bugreport = brFiles.first;
@@ -184,6 +189,7 @@ public class BugreportManagerTest {
 
     @LargeTest
     @Test
+    @PlatinumTest(focusArea = "bugreport")
     public void testRemoteBugreport() throws Exception {
         Pair<String, String> brFiles = triggerBugreport(BugreportParams.BUGREPORT_MODE_REMOTE);
         String bugreport = brFiles.first;
@@ -197,6 +203,7 @@ public class BugreportManagerTest {
 
     @LargeTest
     @Test
+    @PlatinumTest(focusArea = "bugreport")
     public void testWearBugreport() throws Exception {
         Pair<String, String> brFiles = triggerBugreport(BugreportParams.BUGREPORT_MODE_WEAR);
         String bugreport = brFiles.first;
@@ -211,6 +218,7 @@ public class BugreportManagerTest {
 
     @LargeTest
     @Test
+    @PlatinumTest(focusArea = "bugreport")
     public void testOnboardingBugreport() throws Exception {
         Pair<String, String> brFiles = triggerBugreport(BUGREPORT_MODE_ONBOARDING);
         String bugreport = brFiles.first;

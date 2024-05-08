@@ -122,7 +122,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
         for i, stream in enumerate(stream_combination['combination']):
           fmt = None
           size = [int(e) for e in stream['size'].split('x')]
-          if stream['format'] == 'priv':
+          if stream['format'] == its_session_utils.PRIVATE_FORMAT:
             fmt = capture_request_utils.FMT_CODE_PRIV
           elif stream['format'] == 'jpeg':
             fmt = capture_request_utils.FMT_CODE_JPEG
@@ -181,7 +181,8 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
             # Construct output surfaces
             output_surfaces = []
             for configured_stream in configured_streams:
-              hlg10_stream = (configured_stream['format'] == 'priv')
+              hlg10_stream = (hlg10 and configured_stream['format'] ==
+                              its_session_utils.PRIVATE_FORMAT)
               output_surfaces.append({'format': configured_stream['format'],
                                       'width': configured_stream['width'],
                                       'height': configured_stream['height'],
@@ -223,7 +224,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
               img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
               req = capture_request_utils.auto_capture_request()
 
-              test_data = {}
+              test_data = []
               fmt_str = configured_streams[1]['format']
               for i, z in enumerate(z_list):
                 req['android.control.zoomRatio'] = z
@@ -267,8 +268,15 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
                 # Zoom is too large to find center circle
                 if circle is None:
                   break
-                test_data[i] = {'z': z, 'circle': circle, 'r_tol': radius_tol,
-                                'o_tol': offset_tol, 'fl': cap_fl}
+                test_data.append(
+                    zoom_capture_utils.ZoomTestData(
+                        result_zoom=z,
+                        circle=circle,
+                        radius_tol=radius_tol,
+                        offset_tol=offset_tol,
+                        focal_length=cap_fl
+                    )
+                )
 
               if not zoom_capture_utils.verify_zoom_results(
                   test_data, size, z_max, z_min):

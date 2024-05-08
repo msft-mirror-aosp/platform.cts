@@ -14,6 +14,8 @@
 """Utility functions for zoom capture.
 """
 
+from collections.abc import Iterable
+import dataclasses
 import logging
 import math
 import cv2
@@ -42,6 +44,16 @@ ZOOM_MIN_THRESH = 2.0
 ZOOM_MAX_THRESH = 10.0
 ZOOM_RTOL = 0.01  # variation of zoom ratio between capture result vs req
 JPEG_STR = 'jpg'
+
+
+@dataclasses.dataclass
+class ZoomTestData:
+  """Class to store zoom-related metadata for a capture."""
+  result_zoom: float
+  circle: Iterable[float]  # TODO: b/338638040 - create a dataclass for circles
+  radius_tol: float
+  offset_tol: float
+  focal_length: float
 
 
 def get_test_tols_and_cap_size(cam, props, chart_distance, debug):
@@ -223,17 +235,18 @@ def preview_zoom_data_to_string(test_data):
   Floats are capped at 2 floating points.
 
   Args:
-    test_data: dict; contains the detected circles for each zoom value
+    test_data: ZoomTestData with relevant test data.
 
   Returns:
     Formatted String
   """
   output = []
-  for key, value in test_data.items():
+  for key, value in dataclasses.asdict(test_data).items():
     if isinstance(value, float):
       output.append(f'{key}: {value:.2f}')
     elif isinstance(value, list):
-      output.append(f"{key}: [{', '.join([f'{item:.2f}' for item in value])}]")
+      output.append(
+          f"{key}: [{', '.join([f'{item:.2f}' for item in value])}]")
     else:
       output.append(f'{key}: {value}')
 
@@ -249,7 +262,7 @@ def verify_zoom_results(test_data, size, z_max, z_min):
   center of the image is proportional to the zoom ratio as well.
 
   Args:
-    test_data: dict; contains the detected circles for each zoom value
+    test_data: Iterable[ZoomTestData]
     size: array; the width and height of the images
     z_max: float; the maximum zoom ratio being tested
     z_min: float; the minimum zoom ratio being tested
@@ -265,7 +278,7 @@ def verify_zoom_results(test_data, size, z_max, z_min):
     zoom_max_thresh = z_max_ratio
 
   # handle capture orders like [1, 0.5, 1.5, 2...]
-  test_data_zoom_values = [v['z'] for v in test_data.values()]
+  test_data_zoom_values = [v.result_zoom for v in test_data]
   test_data_max_z = max(test_data_zoom_values) / min(test_data_zoom_values)
   logging.debug('test zoom ratio max: %.2f vs threshold %.2f',
                 test_data_max_z, zoom_max_thresh)
@@ -278,58 +291,59 @@ def verify_zoom_results(test_data, size, z_max, z_min):
     logging.error(e_msg)
 
   # initialize relative size w/ zoom[0] for diff zoom ratio checks
-  radius_0 = float(test_data[0]['circle'][2])
-  z_0 = float(test_data[0]['z'])
+  radius_0 = float(test_data[0].circle[2])
+  z_0 = float(test_data[0].result_zoom)
 
-  for i, data in test_data.items():
+  for i, data in enumerate(test_data):
     logging.debug(' ')  # add blank line between frames
     logging.debug('Frame# %d {%s}', i, preview_zoom_data_to_string(data))
-    logging.debug('Zoom: %.2f, fl: %.2f', data['z'], data['fl'])
-    offset_xy = [(data['circle'][0] - size[0] // 2),
-                 (data['circle'][1] - size[1] // 2)]
+    logging.debug('Zoom: %.2f, fl: %.2f', data.result_zoom, data.focal_length)
+    offset_xy = [(data.circle[0] - size[0] // 2),
+                 (data.circle[1] - size[1] // 2)]
     logging.debug('Circle r: %.1f, center offset x, y: %d, %d',
-                  data['circle'][2], offset_xy[0], offset_xy[1])
-    z_ratio = data['z'] / z_0
+                  data.circle[2], offset_xy[0], offset_xy[1])
+    z_ratio = data.result_zoom / z_0
 
     # check relative size against zoom[0]
-    radius_ratio = data['circle'][2] / radius_0
+    radius_ratio = data.circle[2] / radius_0
     logging.debug('r ratio req: %.3f, measured: %.3f',
                   z_ratio, radius_ratio)
-    msg = (f"{i} Circle radius ratio req({data['z']:.2f}/{z_0:.2f}): "
-           f"{z_ratio:.2f}, cap: {radius_ratio:.2f}, RTOL: {data['r_tol']}")
-    if not math.isclose(z_ratio, radius_ratio, rel_tol=data['r_tol']):
+    msg = (f'{i} Circle radius ratio req({data.result_zoom:.2f}/{z_0:.2f}): '
+           f'{z_ratio:.2f}, cap: {radius_ratio:.2f}, RTOL: {data.radius_tol}')
+    if not math.isclose(z_ratio, radius_ratio, rel_tol=data.radius_tol):
       test_failed = True
       logging.error(msg)
     else:
       logging.debug(msg)
 
     # check relative offset against init vals w/ no focal length change
-    if i == 0 or test_data[i-1]['fl'] != data['fl']:  # set init values
-      z_init = float(data['z'])
+    # set init values for first capture or change in physical cam focal length
+    if i == 0 or test_data[i-1].focal_length != data.focal_length:
+      z_init = float(data.result_zoom)
       offset_hypot_init = math.hypot(offset_xy[0], offset_xy[1])
       logging.debug('offset_hypot_init: %.3f', offset_hypot_init)
-      d_msg = (f"-- init {i} zoom: {data['z']:.2f}, "
+      d_msg = (f'-- init {i} zoom: {data.result_zoom:.2f}, '
                f'offset init: {offset_hypot_init:.1f}, '
                f'offset rel: {math.hypot(offset_xy[0], offset_xy[1]):.1f}, '
                f'zoom: {z_ratio:.1f} ')
       logging.debug(d_msg)
     else:  # check
-      z_ratio = data['z'] / z_init
+      z_ratio = data.result_zoom / z_init
       offset_hypot_rel = math.hypot(offset_xy[0], offset_xy[1]) / z_ratio
       logging.debug('offset_hypot_rel: %.3f', offset_hypot_rel)
 
-      rel_tol = data['o_tol']
+      rel_tol = data.offset_tol
       if not math.isclose(offset_hypot_init, offset_hypot_rel,
                           rel_tol=rel_tol, abs_tol=_OFFSET_ATOL):
         test_failed = True
-        e_msg = (f"{i} zoom: {data['z']:.2f}, "
+        e_msg = (f'{i} zoom: {data.result_zoom:.2f}, '
                  f'offset init: {offset_hypot_init:.4f}, '
                  f'offset rel: {offset_hypot_rel:.4f}, '
                  f'Zoom: {z_ratio:.1f}, '
                  f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
         logging.error(e_msg)
       else:
-        d_msg = (f"{i} zoom: {data['z']:.2f}, "
+        d_msg = (f'{i} zoom: {data.result_zoom:.2f}, '
                  f'offset init: {offset_hypot_init:.1f}, '
                  f'offset rel: {offset_hypot_rel:.1f}, '
                  f'offset dist: {math.hypot(offset_xy[0], offset_xy[1]):.1f}, '

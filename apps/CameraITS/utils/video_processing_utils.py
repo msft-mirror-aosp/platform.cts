@@ -222,10 +222,10 @@ def extract_all_frames_from_video(log_path, video_file_name, img_format):
   ffmpeg_image_name = f"{video_file_name.split('.')[0]}_frame"
   logging.debug('ffmpeg_image_name: %s', ffmpeg_image_name)
   ffmpeg_image_file_names = (
-      f'{os.path.join(log_path, ffmpeg_image_name)}_%03d.{img_format}')
+      f'{os.path.join(log_path, ffmpeg_image_name)}_%04d.{img_format}')
   cmd = [
       'ffmpeg', '-i', os.path.join(log_path, video_file_name),
-      '-vsync', 'vfr',  # force ffmpeg to use video fps instead of inferred fps
+      '-vsync', 'passthrough',  # prevents frame drops during decoding
       ffmpeg_image_file_names, '-loglevel', 'quiet'
   ]
   _ = subprocess.call(cmd,

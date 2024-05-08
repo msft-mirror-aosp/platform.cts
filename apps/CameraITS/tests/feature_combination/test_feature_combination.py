@@ -115,18 +115,20 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       test_failures = []
       for stream_combination in combinations:
         streams_name = stream_combination['name']
-        preview_size = None
         min_frame_duration = 0
         configured_streams = []
         skip = False
+        if (stream_combination['combination'][0]['format'] !=
+            its_session_utils.PRIVATE_FORMAT):
+          raise AssertionError(
+              f'First stream for {streams_name} must be PRIV')
+        preview_size = stream_combination['combination'][0]['size']
         for stream in stream_combination['combination']:
           fmt = None
           size = [int(e) for e in stream['size'].split('x')]
-          if stream['format'] == 'priv':
-            preview_size = stream['size']
+          if stream['format'] == its_session_utils.PRIVATE_FORMAT:
             fmt = capture_request_utils.FMT_CODE_PRIV
           elif stream['format'] == 'jpeg':
-            # TODO: b/269142636 - Add YUV
             fmt = capture_request_utils.FMT_CODE_JPEG
           config = [x for x in configs if
                     x['format'] == fmt and
@@ -149,9 +151,6 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         if skip:
           continue
 
-        if preview_size is None:
-          raise AssertionError('No preview size found!')
-
         # Fps ranges
         max_achievable_fps = _SEC_TO_NSEC / min_frame_duration
         fps_params = [fps for fps in fps_ranges if (
@@ -169,12 +168,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             # Construct output surfaces
             output_surfaces = []
             for configured_stream in configured_streams:
-              if configured_stream['format'] != 'priv':
-                hlg10 = False
+              hlg10_stream = (configured_stream['format'] ==
+                              its_session_utils.PRIVATE_FORMAT and hlg10)
               output_surfaces.append({'format': configured_stream['format'],
                                       'width': configured_stream['width'],
                                       'height': configured_stream['height'],
-                                      'hlg10': hlg10})
+                                      'hlg10': hlg10_stream})
 
             for stabilize in stabilization_params:
               settings = {
@@ -198,9 +197,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                   camera_properties_utils.STABILIZATION_MODE_PREVIEW):
                 is_stabilized = True
 
-              recording_obj = preview_processing_utils.collect_data(
-                  cam, self.tablet_device, preview_size, is_stabilized,
-                  rot_rig=rot_rig, fps_range=fps_range, hlg10=hlg10)
+              recording_obj = (
+                  preview_processing_utils.collect_data_with_surfaces(
+                      cam, self.tablet_device, output_surfaces, is_stabilized,
+                      rot_rig=rot_rig, fps_range=fps_range))
 
               if is_stabilized:
                 # Get gyro events

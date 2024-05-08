@@ -45,6 +45,7 @@ android_test {
         ":CtsBlamedPermissionApp2",
     ],
     test_suites: [
+        "cts",
         "general-tests",
         "mts-permission",
         "mcts-permission",
