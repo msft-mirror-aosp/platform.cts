@@ -105,7 +105,10 @@ open class PackageInstallerTestBase {
     val installDialogStarter = ActivityTestRule(FutureResultActivity::class.java)
 
     @get:Rule
-    val screenRecordRule = ScreenRecordRule(keepTestLevelRecordingOnSuccess = false)
+    val screenRecordRule = ScreenRecordRule(
+        keepTestLevelRecordingOnSuccess = false,
+        waitExtraAfterEnd = false
+    )
 
     protected val pm: PackageManager = context.packageManager
     protected val pi = pm.packageInstaller
