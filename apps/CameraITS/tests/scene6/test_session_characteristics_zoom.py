@@ -122,7 +122,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
         for i, stream in enumerate(stream_combination['combination']):
           fmt = None
           size = [int(e) for e in stream['size'].split('x')]
-          if stream['format'] == 'priv':
+          if stream['format'] == its_session_utils.PRIVATE_FORMAT:
             fmt = capture_request_utils.FMT_CODE_PRIV
           elif stream['format'] == 'jpeg':
             fmt = capture_request_utils.FMT_CODE_JPEG
@@ -181,7 +181,8 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
             # Construct output surfaces
             output_surfaces = []
             for configured_stream in configured_streams:
-              hlg10_stream = (configured_stream['format'] == 'priv')
+              hlg10_stream = (hlg10 and configured_stream['format'] ==
+                              its_session_utils.PRIVATE_FORMAT)
               output_surfaces.append({'format': configured_stream['format'],
                                       'width': configured_stream['width'],
                                       'height': configured_stream['height'],
