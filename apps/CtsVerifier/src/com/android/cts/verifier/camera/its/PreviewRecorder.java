@@ -43,6 +43,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class to record a preview like stream. It sets up a SurfaceTexture that the camera can write to,
@@ -134,8 +136,7 @@ class PreviewRecorder implements AutoCloseable {
     private final float[] mTexRotMatrix; // length = 4
     private final float[] mTransformMatrix = new float[16];
 
-    private int mNumFrames = 0;
-
+    private List<Long> mFrameTimeStamps = new ArrayList();
     /**
      * Initializes MediaRecorder/MediaCodec and EGL context. The result of recorded video will
      * be stored in {@code outputFile}.
@@ -184,10 +185,13 @@ class PreviewRecorder implements AutoCloseable {
 
     private void initPreviewRecorder(int cameraId, String outputFile,
             boolean hlg10Enabled, Context context) throws ItsException {
+
         // order of initialization is important
         if (hlg10Enabled) {
+            Logt.i(TAG, "HLG10 Enabled, using MediaCodec");
             setupMediaCodec(cameraId, outputFile, context);
         } else {
+            Logt.i(TAG, "HLG10 Disabled, using MediaRecorder");
             setupMediaRecorder(cameraId, outputFile, context);
         }
 
@@ -215,10 +219,10 @@ class PreviewRecorder implements AutoCloseable {
                     return;
                 }
                 try {
-                    Logt.i(TAG, "Recorded frame# " + mNumFrames + " timestamp = "
-                            + surfaceTexture.getTimestamp());
                     copyFrameToRecordSurface();
-                    mNumFrames++;
+                    mFrameTimeStamps.add(surfaceTexture.getTimestamp());
+                    Logt.v(TAG, "Recorded frame# " + mFrameTimeStamps.size() + " timestamp = "
+                            + surfaceTexture.getTimestamp());
                 } catch (ItsException e) {
                     Logt.e(TAG, "Failed to copy texture to recorder.", e);
                     throw new ItsRuntimeException("Failed to copy texture to recorder.", e);
@@ -487,7 +491,9 @@ class PreviewRecorder implements AutoCloseable {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, /* first= */0, /* count= */4);
         assertNoGLError("glDrawArrays");
 
-        EGL14.eglSwapBuffers(mEGLDisplay, mEGLRecorderSurface); // flush surface
+        if (!EGL14.eglSwapBuffers(mEGLDisplay, mEGLRecorderSurface)) {
+            throw new ItsException("EglSwapBuffers failed to copy buffer to recording surface");
+        }
     }
 
     /**
@@ -505,12 +511,6 @@ class PreviewRecorder implements AutoCloseable {
 
     Surface getCameraSurface() {
         return mCameraSurface;
-    }
-
-    int getNumFrames() {
-        synchronized (mRecordLock) {
-            return mNumFrames;
-        }
     }
 
     /**
@@ -673,5 +673,17 @@ class PreviewRecorder implements AutoCloseable {
         EGL14.eglDestroyContext(mEGLDisplay, mEGLContext);
 
         EGL14.eglTerminate(mEGLDisplay);
+    }
+
+    /**
+     * Returns Camera frame's timestamps only after recording completes.
+     */
+    public List<Long> getFrameTimeStamps() throws IllegalStateException {
+        synchronized (mRecordLock) {
+            if (mIsRecording) {
+                throw new IllegalStateException("Can't return timestamps during recording.");
+            }
+            return mFrameTimeStamps;
+        }
     }
 }

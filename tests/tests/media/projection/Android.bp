@@ -41,6 +41,7 @@ java_defaults {
     jni_uses_sdk_apis: true,
     // Tag this module as a cts test artifact
     test_suites: [
+        "cts",
         "general-tests",
         "mts-media",
         "mcts-media",

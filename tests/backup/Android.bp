@@ -41,6 +41,7 @@ android_test {
     host_required: ["CtsBackupHostTestCases"],
     srcs: ["src/**/*.java"],
     test_suites: [
+        "cts",
         "general-tests",
         "mts-permission",
         "mcts-permission",

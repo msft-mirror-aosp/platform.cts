@@ -368,7 +368,8 @@ public class CodecInitializationLatencyTest {
             }
         } else {
             if (isAudio) {
-                pce.addR5_1__H_1_13().setCodecInitLatencyMs(initializationLatency);
+                Requirements.addR5_1__H_1_13(pce).setCodecInitializationLatencyMs(
+                        initializationLatency);
             } else {
                 pce.addR5_1__H_1_12().setCodecInitLatencyMs(initializationLatency);
             }

@@ -39,7 +39,6 @@ _SIZES_COMMON = (
     (960, 720),
     (640, 480),
 )
-_PRIVATE_FORMAT = 'priv'
 
 
 # Before API level 30, only resolutions with the following listed aspect ratio
@@ -311,7 +310,7 @@ class AspectRatioAndCropTest(its_base_test.ItsBaseTest):
               fmt_cmpr, props, fmt['third_size'])
         test_sizes = capture_request_utils.get_available_output_sizes(
             fmt_iter, props, fmt['iter_max'])
-        if fmt_cmpr == _PRIVATE_FORMAT:
+        if fmt_cmpr == its_session_utils.PRIVATE_FORMAT:
           test_sizes = [size for size in test_sizes if size in _SIZES_COMMON]
         for size_iter in test_sizes:
           w_iter, h_iter = size_iter[0], size_iter[1]

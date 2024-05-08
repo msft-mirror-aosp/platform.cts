@@ -18,7 +18,9 @@ package android.settings.cts;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.provider.Settings.Secure;
+
 import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assume.assumeFalse;
 
 import android.app.slice.Slice;
@@ -153,8 +155,18 @@ public class WifiSliceTest {
     final ResolveInfo info = pm.resolveActivity(requestDefaultAssistant, 0);
 
     if (info != null) {
+      final String packageName;
+      if (!TextUtils.isEmpty(mAssistant)) {
+        packageName = ComponentName.unflattenFromString(mAssistant).getPackageName();
+        Log.i(TAG, "Default assistant: " + packageName);
+      } else {
+        packageName = info.activityInfo.packageName;
+        Log.i(TAG, "Set assistant: " + packageName);
+        Secure.putString(mContext.getContentResolver(), ASSISTANT,
+                new ComponentName(packageName, info.activityInfo.name).flattenToString());
+      }
       final int testPid = Process.myPid();
-      final int testUid = pm.getPackageUid(info.activityInfo.packageName, 0);
+      final int testUid = pm.getPackageUid(packageName, 0);
 
       assertThat(mSliceManager.checkSlicePermission(WIFI_SLICE_URI, testPid, testUid))
               .isEqualTo(PERMISSION_GRANTED);

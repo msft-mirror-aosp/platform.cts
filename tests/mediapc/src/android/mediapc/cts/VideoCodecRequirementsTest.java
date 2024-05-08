@@ -51,6 +51,8 @@ import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.media.codec.Flags;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.RGBA1010102ColorFormatRequirement;
 import android.mediapc.cts.common.Utils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
@@ -454,9 +456,8 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement colorFormatSupportReq =
-                pce.addColorFormatSupportReq();
-        colorFormatSupportReq.setColorFormatSupportReq(isSupported);
+        RGBA1010102ColorFormatRequirement colorFormatSupportReq = Requirements.addR5_12__H_1_2(pce);
+        colorFormatSupportReq.setRgba1010102ColorFormat(isSupported);
 
         pce.submitAndCheck();
     }

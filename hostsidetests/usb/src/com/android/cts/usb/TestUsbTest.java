@@ -15,6 +15,7 @@
  */
 package com.android.cts.usb;
 
+import android.cts.statsdatom.lib.AtomTestUtils;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 
@@ -145,7 +146,13 @@ public class TestUsbTest extends DeviceTestCase implements IAbiReceiver, IBuildR
                 trim();
         assertEquals("adb serial != ro.serialno" , adbSerial, roSerial);
 
-        CommandResult result = RunUtil.getDefault().runTimedCmd(15000, "lsusb", "-v");
+        CommandResult result = RunUtil.getDefault().runTimedCmdRetry(
+                /* timeout= */ 30000,
+                /* retryInterval= */ 1000,
+                /* attempts= */ 3,
+                "lsusb",
+                "-v"
+        );
         assertEquals("lsusb -v failed", result.getStatus(), CommandStatus.SUCCESS);
         String lsusbOutput = result.getStdout();
         Pattern pattern = Pattern.compile("^\\s+iSerial\\s+\\d+\\s+([a-zA-Z0-9\\._\\-,]+)",
@@ -164,6 +171,7 @@ public class TestUsbTest extends DeviceTestCase implements IAbiReceiver, IBuildR
         // now check Build.SERIAL
         clearLogCat();
         runTestOnDevice("logSerial");
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
         String logs = mDevice.executeAdbCommand(
                 "logcat", "-v", "brief", "-d", "CtsUsbSerialTest:W", "*:S");
         pattern = Pattern.compile("^.*CtsUsbSerialTest\\(.*\\):\\s+([a-zA-Z0-9\\._\\-,]+)",

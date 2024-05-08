@@ -132,7 +132,7 @@ def _define_metering_regions(img, img_path, chart_path, props, width, height):
   return ae_awb_regions
 
 
-def _do_ae_check(light, dark):
+def _do_ae_check(light, dark, file_name_with_path):
   """Checks luma change between two images is above threshold.
 
   Checks that the Y-average of image with darker metering region
@@ -142,6 +142,7 @@ def _do_ae_check(light, dark):
   Args:
     light: RGB image; metering light region.
     dark: RGB image; metering dark region.
+    file_name_with_path: str; path to preview recording.
   """
   # Converts img to YUV and returns Y-average
   light_y = opencv_processing_utils.convert_to_y(light, 'RGB')
@@ -158,6 +159,8 @@ def _do_ae_check(light, dark):
     raise AssertionError(
         f'Luma change {y_avg_change} is less than the threshold: '
         f'{_AE_CHANGE_THRESH}')
+  else:
+    its_session_utils.remove_mp4_file(file_name_with_path)
 
 
 def _do_awb_check(blue, yellow):
@@ -323,6 +326,7 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       # Grab the video from the save location on DUT
       self.dut.adb.pull([recording_obj['recordedOutputPath'], log_path])
       file_name = recording_obj['recordedOutputPath'].split('/')[-1]
+      file_name_with_path = os.path.join(log_path, file_name)
       logging.debug('file_name: %s', file_name)
 
       # Extract 8 key frames per 8 seconds of preview recording
@@ -342,13 +346,13 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
             _extract_and_process_key_frames_from_recording(
                 log_path, file_name))
 
-      # AE Check: Extract the Y component from rectangle patch
-      if max_ae_regions >= _AE_AWB_REGIONS_AVAILABLE:
-        _do_ae_check(light, dark)
-
       # AWB Check : Verify R/B ratio change is greater than threshold
       if max_awb_regions >= _AE_AWB_REGIONS_AVAILABLE:
         _do_awb_check(blue, yellow)
+
+      # AE Check: Extract the Y component from rectangle patch
+      if max_ae_regions >= _AE_AWB_REGIONS_AVAILABLE:
+        _do_ae_check(light, dark, file_name_with_path)
 
 if __name__ == '__main__':
   test_runner.main()

@@ -25,6 +25,7 @@ android_test {
     sdk_version: "22",
     // Tag this module as a cts test artifact
     test_suites: [
+        "cts",
         "general-tests",
         "mts-art",
         "mcts-art",

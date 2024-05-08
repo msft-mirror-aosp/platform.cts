@@ -185,26 +185,6 @@ public class PerformanceClassEvaluator {
             return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_12,
                     codec_init_latency);
         }
-
-        /**
-         * [2.2.7.1/5.1/H-1-13] Codec initialization latency of 30ms or less for a 128kbps or
-         * lower bitrate audio decoding session for all audio encoders when under load. Load here
-         * is defined as a concurrent 1080p to 720p video-only transcoding session using hardware
-         * video codecs together with the 1080p audio-video recording initialization.
-         */
-        public static CodecInitLatencyRequirement createR5_1__H_1_13() {
-            RequiredMeasurement<Long> codec_init_latency =
-                    RequiredMeasurement.<Long>builder().setId(
-                                    RequirementConstants.CODEC_INIT_LATENCY)
-                            .setPredicate(RequirementConstants.LONG_LTE)
-                            .addRequiredValue(Build.VERSION_CODES.TIRAMISU, 30L)
-                            .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, 30L)
-                            .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, 30L)
-                            .build();
-
-            return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_13,
-                    codec_init_latency);
-        }
     }
 
     // used for requirements [2.2.7.1/5.1/H-1-1], [2.2.7.1/5.1/H-1-2], [2.2.7.1/5.1/H-1-3],
@@ -1607,22 +1587,6 @@ public class PerformanceClassEvaluator {
 
             return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_22, requirement);
         }
-
-        /**
-         * [5.12/H-1-2] MUST support RGBA_1010102 color format for all hardware AV1 and HEVC
-         * encoders present on the device.
-         */
-        public static VideoCodecRequirement createColorFormatSupportReq() {
-            RequiredMeasurement<Boolean> requirement = RequiredMeasurement
-                    .<Boolean>builder()
-                    .setId(RequirementConstants.RGBA_1010102_COLOR_FORMAT_REQ)
-                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
-                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
-                    .build();
-
-            return new VideoCodecRequirement(RequirementConstants.R5_12__H_1_2, requirement);
-        }
     }
 
     public <R extends Requirement> R addRequirement(R req) {
@@ -1747,10 +1711,6 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_12());
     }
 
-    public CodecInitLatencyRequirement addR5_1__H_1_13() {
-        return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_13());
-    }
-
     /* Adds requirement 5.1/H-1-14 */
     public VideoCodecRequirement addRAV1DecoderReq() {
         return this.addRequirement(VideoCodecRequirement.createRAV1DecoderReq());
@@ -1829,12 +1789,6 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(SecureCodecRequirement.createR5_7__H_1_2());
     }
 
-
-    /* Adds requirement 5.12/H-1-2 */
-    public VideoCodecRequirement addColorFormatSupportReq() {
-        return this.addRequirement(VideoCodecRequirement.createColorFormatSupportReq());
-    }
-
     /* Adds requirement 5.12/H-1-3 */
     public ExtYuvTargetRequirement addExtYUVSupportReq() {
         return this.addRequirement(ExtYuvTargetRequirement.createExtensionReq());
@@ -1843,11 +1797,6 @@ public class PerformanceClassEvaluator {
     /** Add requirement <b>7.1.4.1/H-1-2</b> */
     public EglRequirement addR7_1_4_1__H_1_2() {
         return this.addRequirement(EglRequirement.createR7_1_4_1__H_1_2());
-    }
-
-    /** Add requirement <b>7.1.4.1/H-1-3</b> */
-    public VulkanRequirement addR7_1_4_1__H_1_3() {
-        return this.addRequirement(VulkanRequirement.createR7_1_4_1__H_1_3());
     }
 
     /* Adds requirement 7.5/H-1-1 */

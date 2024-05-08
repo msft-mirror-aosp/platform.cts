@@ -4,6 +4,7 @@ package {
 
 android_test {
     name: "CtsProviderTestCases",
+    team: "trendy_team_fwk_telecom",
     defaults: ["cts_defaults"],
 
     compile_multilib: "both",

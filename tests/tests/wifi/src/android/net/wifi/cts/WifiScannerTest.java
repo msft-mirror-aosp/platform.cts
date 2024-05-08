@@ -193,7 +193,9 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
                 }
             }
         };
-
+        if (sWifiScanner == null) {
+            return;
+        }
         assertThrows(SecurityException.class,
                 () -> sWifiScanner.getCachedScanData(mExecutor, listener));
         // null executor

@@ -8,6 +8,7 @@ java_library_host {
     srcs: [
         "common/src/main/java/**/*.java",
         "common/src/main/java/**/*.kt",
+        "src/main/java/com/android/bedstead/nene/utils/FailureDumper.kt",
     ],
 }
 

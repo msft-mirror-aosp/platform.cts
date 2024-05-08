@@ -3131,49 +3131,16 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             return;
         }
         runWithScanning(() -> {
-            UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation();
             TestExecutor executor = new TestExecutor();
             TestSoftApCallback callback = new TestSoftApCallback(mLock);
             try {
-                uiAutomation.adoptShellPermissionIdentity();
-
-                // start tethering which used to verify startTetheredHotspot
                 TetheringManager.TetheringRequest request =
                         new TetheringManager.TetheringRequest.Builder(
                                 TetheringManager.TETHERING_WIFI).build();
                 sWifiManager.startTetheredHotspot(request, executor, callback);
-                PollingCheck.check("startTetheredHotspot turn on failed!", TEST_WAIT_DURATION_MS,
-                        () -> {
-                            executor.runAll();
-                            return callback.getOnSoftApStateChangedCalled()
-                                    && callback.getCurrentSoftApState().getState()
-                                    == WifiManager.WIFI_AP_STATE_ENABLED;
-                        });
-                if (SdkLevel.isAtLeastV()) {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest())
-                            .isEqualTo(request);
-                } else {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest()).isNull();
-                }
-
-                // stop tethering which used to verify stopSoftAp
-                sTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
-                PollingCheck.check("startTetheredHotspot turn on failed!", TEST_WAIT_DURATION_MS,
-                        () -> {
-                            executor.runAll();
-                            return callback.getOnSoftApStateChangedCalled()
-                                    && callback.getCurrentSoftApState().getState()
-                                    == WifiManager.WIFI_AP_STATE_DISABLED;
-                        });
-                if (SdkLevel.isAtLeastV()) {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest())
-                            .isEqualTo(request);
-                } else {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest()).isNull();
-                }
-            } finally {
-                uiAutomation.dropShellPermissionIdentity();
+                fail("startTetheredHotspot succeeded even without NETWORK_STACK permission!");
+            } catch (SecurityException e) {
+                // Expected to fail without NETWORK_STACK
             }
         }, false /* run with disabled */);
     }

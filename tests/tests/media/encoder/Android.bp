@@ -39,6 +39,7 @@ android_test {
     platform_apis: true,
     jni_uses_sdk_apis: true,
     test_suites: [
+        "cts",
         "general-tests",
         "mts-media",
         "mcts-media",

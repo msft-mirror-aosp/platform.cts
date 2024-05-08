@@ -206,11 +206,6 @@ public class RequirementConstants {
     public static final String SHORT_RESOLUTION = "short_resolution_pixels";
     public static final String SUPPORTED_PERFORMANCE_POINTS = "supported_performance_points";
     public static final String TEST_RESOLUTION = "resolution";
-    public static final String VK_EXT_GLOBAL_PRIORITY = "vk_ext_global_priority";
-    public static final String VK_NON_CPU_DEVICE_COUNT = "vk_non_cpu_device_count";
-    public static final String VK_PHYSICAL_DEVICE_PROTECTED_MEMORY =
-            "vk_physical_device_protected_memory";
-
     // keep-sorted end
 
     public enum Result {

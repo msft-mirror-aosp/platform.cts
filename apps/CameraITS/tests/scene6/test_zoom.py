@@ -105,8 +105,8 @@ class ZoomTest(its_base_test.ItsBaseTest):
       test_failed = False
       for fmt in test_formats:
         logging.debug('testing %s format', fmt)
-        test_data = {}
-        for i, z in enumerate(z_list):
+        test_data = []
+        for z in z_list:
           req['android.control.zoomRatio'] = z
           logging.debug('zoom ratio: %.3f', z)
           cam.do_3a(
@@ -149,8 +149,15 @@ class ZoomTest(its_base_test.ItsBaseTest):
           # Zoom is too large to find center circle
           if circle is None:
             break
-          test_data[i] = {'z': z, 'circle': circle, 'r_tol': radius_tol,
-                          'o_tol': offset_tol, 'fl': cap_fl}
+          test_data.append(
+              zoom_capture_utils.ZoomTestData(
+                  result_zoom=z,
+                  circle=circle,
+                  radius_tol=radius_tol,
+                  offset_tol=offset_tol,
+                  focal_length=cap_fl
+              )
+          )
 
         if not zoom_capture_utils.verify_zoom_results(
             test_data, size, z_max, z_min):

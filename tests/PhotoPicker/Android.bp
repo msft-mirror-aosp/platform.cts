@@ -31,6 +31,7 @@ android_test {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
     sdk_version: "core_current",
     min_sdk_version: "30",

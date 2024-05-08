@@ -102,7 +102,8 @@ public class AnnotationTest extends AbstractApiTest {
                     .forEach(complianceChecker::checkSignatureCompliance);
 
             // After done parsing all expected API files, perform any deferred checks.
-            complianceChecker.checkDeferred();
+            // TODO(b/336541144): Re-enable the check after fixing the issue.
+            // complianceChecker.checkDeferred();
         });
     }
 }

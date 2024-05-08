@@ -514,18 +514,10 @@ public class BluetoothAdapterTest {
         assertFalse(mAdapter.registerBluetoothConnectionCallback(executor, null));
         assertFalse(mAdapter.unregisterBluetoothConnectionCallback(null));
 
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
-        // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(SecurityException.class,
-                () -> mAdapter.registerBluetoothConnectionCallback(executor, callback));
-
-        mUiAutomation.dropShellPermissionIdentity();
-        // Verify throws SecurityException without permission.BLUETOOTH_CONNECT
-        assertThrows(SecurityException.class, () ->
-                mAdapter.registerBluetoothConnectionCallback(executor, callback));
-        assertThrows(SecurityException.class, () ->
-                mAdapter.unregisterBluetoothConnectionCallback(callback));
+        assertFalse(mAdapter.registerBluetoothConnectionCallback(executor, callback));
+        assertTrue(mAdapter.unregisterBluetoothConnectionCallback(callback));
     }
 
     @Test

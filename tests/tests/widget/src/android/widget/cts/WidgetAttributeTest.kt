@@ -130,40 +130,64 @@ class WidgetAttributeTest {
         // ProgressBar that has an explicit style ExplicitStyle1 set via style = ...
         val progressBar = rootView.findViewById<ProgressBar>(R.id.progress_bar)
         val attributeMapProgressBar = progressBar!!.attributeSourceResourceMap
-        assertEquals(R.layout.widget_attribute_layout,
-                attributeMapProgressBar[android.R.attr.minWidth]!!.toInt())
-        assertEquals(R.layout.widget_attribute_layout,
-                attributeMapProgressBar[android.R.attr.maxWidth]!!.toInt())
-        assertEquals(R.layout.widget_attribute_layout,
-                attributeMapProgressBar[android.R.attr.progressTint]!!.toInt())
-        assertEquals(R.style.ExplicitStyle1,
-                attributeMapProgressBar[android.R.attr.progress]!!.toInt())
-        assertEquals(R.style.ExplicitStyle1,
-                attributeMapProgressBar[android.R.attr.padding]!!.toInt())
-        assertEquals(R.style.ExplicitStyle1,
-                attributeMapProgressBar[android.R.attr.max]!!.toInt())
-        assertEquals(R.style.ParentOfExplicitStyle1,
-                attributeMapProgressBar[android.R.attr.mirrorForRtl]!!.toInt())
+        assertEquals(
+            R.layout.widget_attribute_layout,
+                attributeMapProgressBar[android.R.attr.minWidth]!!.toInt()
+        )
+        assertEquals(
+            R.layout.widget_attribute_layout,
+                attributeMapProgressBar[android.R.attr.maxWidth]!!.toInt()
+        )
+        assertEquals(
+            R.layout.widget_attribute_layout,
+                attributeMapProgressBar[android.R.attr.progressTint]!!.toInt()
+        )
+        assertEquals(
+            R.style.ExplicitStyle1,
+                attributeMapProgressBar[android.R.attr.progress]!!.toInt()
+        )
+        assertEquals(
+            R.style.ExplicitStyle1,
+                attributeMapProgressBar[android.R.attr.padding]!!.toInt()
+        )
+        assertEquals(
+            R.style.ExplicitStyle1,
+                attributeMapProgressBar[android.R.attr.max]!!.toInt()
+        )
+        assertEquals(
+            R.style.ParentOfExplicitStyle1,
+                attributeMapProgressBar[android.R.attr.mirrorForRtl]!!.toInt()
+        )
 
         // Switch that has an explicit style ExplicitStyle2 set via style = ...
         val switch = rootView.findViewById<Switch>(R.id.switch_view)
         val attributeMapSwitch = switch!!.attributeSourceResourceMap
-        assertEquals(R.layout.widget_attribute_layout,
-                attributeMapSwitch[android.R.attr.switchPadding]!!.toInt())
+        assertEquals(
+            R.layout.widget_attribute_layout,
+                attributeMapSwitch[android.R.attr.switchPadding]!!.toInt()
+        )
 
         // Toolbar that has MyToolbarStyle set via the theme android:toolbarStyle = ...
         val toolbar = rootView.findViewById<Toolbar>(R.id.toolbar_view1)
         val attributeMapToobar = toolbar!!.attributeSourceResourceMap
-        assertEquals(R.style.MyToolbarStyle,
-                attributeMapToobar[android.R.attr.titleMarginEnd]!!.toInt())
-        assertEquals(R.style.MyToolbarStyleParent,
-                attributeMapToobar[android.R.attr.titleMarginStart]!!.toInt())
+        assertEquals(
+            R.style.MyToolbarStyle,
+                attributeMapToobar[android.R.attr.titleMarginEnd]!!.toInt()
+        )
+        assertEquals(
+            R.style.MyToolbarStyleParent,
+                attributeMapToobar[android.R.attr.titleMarginStart]!!.toInt()
+        )
 
         val textview1 = rootView.findViewById<TextView>(R.id.textview1)
         val attributeMapTextView1 = textview1!!.attributeSourceResourceMap
-        assertEquals(R.style.TextViewWithoutColorAndAppearance,
-                attributeMapTextView1[android.R.attr.textSize]!!.toInt())
-        assertEquals(R.style.ExplicitStyle1,
-                attributeMapTextView1[android.R.attr.textColorHighlight]!!.toInt())
+        assertEquals(
+            R.style.TextViewWithoutColorAndAppearance,
+                attributeMapTextView1[android.R.attr.textSize]!!.toInt()
+        )
+        assertEquals(
+            R.style.ExplicitStyle1,
+                attributeMapTextView1[android.R.attr.textColorHighlight]!!.toInt()
+        )
     }
 }
