@@ -19,20 +19,44 @@ package android.permission3.cts
 import android.app.Activity
 import android.app.Instrumentation
 import android.content.Intent
+import android.os.Bundle
+import android.util.Log
+import android.util.LruCache
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicInteger
 
 class StartForFutureActivity : Activity() {
-    private val future = CompletableFuture<Instrumentation.ActivityResult>()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-    fun startActivityForFuture(intent: Intent): CompletableFuture<Instrumentation.ActivityResult> {
-        startActivityForResult(intent, 1)
-        return future
+        if (savedInstanceState != null) {
+            Log.w(TAG, "Activity was recreated. (Perhaps due to a configuration change?)")
+        }
+    }
+
+    fun startActivityForFuture(
+        intent: Intent,
+        future: CompletableFuture<Instrumentation.ActivityResult>
+    ) {
+        val requestCode = nextRequestCode.getAndIncrement()
+        futures.put(requestCode, future)
+        startActivityForResult(intent, requestCode)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
+        val future =
+            futures.remove(requestCode)
+                ?: throw IllegalStateException(
+                    "StartForFutureActivity received an activity result with an unknown requestCode"
+                )
         future.complete(Instrumentation.ActivityResult(resultCode, data))
         finish()
+    }
+
+    companion object {
+        private val TAG = StartForFutureActivity::class.simpleName
+        private var nextRequestCode = AtomicInteger(1)
+        private val futures = LruCache<Int, CompletableFuture<Instrumentation.ActivityResult>>(10)
     }
 }
