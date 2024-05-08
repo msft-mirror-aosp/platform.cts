@@ -2574,8 +2574,8 @@ class ItsSession(object):
     """
     return [
         {'format': 'priv',
-         'width': int(size.split(':')[0]),
-         'height': int(size.split(':')[1]),
+         'width': int(size.split('x')[0]),
+         'height': int(size.split('x')[1]),
          'hlg10': hlg10_enabled}
     ]
 
