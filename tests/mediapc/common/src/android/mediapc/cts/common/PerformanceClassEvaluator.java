@@ -1633,10 +1633,6 @@ public class PerformanceClassEvaluator {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_6_4k());
     }
 
-    public CodecInitLatencyRequirement addR5_1__H_1_7(String mediaType) {
-        return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_7(mediaType));
-    }
-
     public ConcurrentCodecRequirement addR5_1__H_1_9_1080p() {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_9_1080p());
     }
