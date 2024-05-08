@@ -29,10 +29,8 @@ _AREA_720P_VIDEO = 1280 * 720
 _ASPECT_RATIO_16_9 = 16/9  # determine if preview fmt > 16:9
 _HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
 _IMG_FORMAT = 'png'
-_MAX_ZOOM_TOL = 0.1   # add Zoom tolerance to enable capture at max zoom
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
 _NUM_ROTATIONS = 24
-_NUM_STEPS = 10
 _PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 _PREVIEW_MIN_TESTED_AREA = 320 * 240
 _PREVIEW_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed
@@ -377,7 +375,7 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
 
   # recording preview
   preview_rec_obj = collect_preview_data_with_zoom(
-      cam, preview_size, z_min, z_max + _MAX_ZOOM_TOL, z_step_size,
+      cam, preview_size, z_min, z_max, z_step_size,
       _PREVIEW_DURATION)
 
   preview_file_name = its_session_utils.pull_file_from_dut(
