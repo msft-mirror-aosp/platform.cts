@@ -20,6 +20,8 @@ import os
 import threading
 import time
 
+import numpy as np
+
 import its_session_utils
 import image_processing_utils
 import sensor_fusion_utils
@@ -31,6 +33,7 @@ _HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
 _IMG_FORMAT = 'png'
 _MAX_ZOOM_TOL = 0.1   # add Zoom tolerance to enable capture at max zoom
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
+_NATURAL_ORIENTATION_PORTRAIT = (90, 270)  # orientation in "normal position"
 _NUM_ROTATIONS = 24
 _NUM_STEPS = 10
 _PREVIEW_MAX_TESTED_AREA = 1920 * 1440
@@ -322,6 +325,34 @@ def get_max_preview_test_size(cam, camera_id):
   logging.debug('Selected preview resolution: %s', preview_test_size)
 
   return preview_test_size
+
+
+def mirror_preview_image_by_sensor_orientation(
+    sensor_orientation, input_preview_img):
+  """If testing front camera, mirror preview image to match camera capture.
+
+  Preview are flipped on device's natural orientation, so for sensor
+  orientation 90 or 270, it is up or down. Sensor orientation 0 or 180
+  is left or right.
+
+  Args:
+    sensor_orientation: integer; display orientation in natural position.
+    input_preview_img: numpy array; image extracted from preview recording.
+  Returns:
+    output_preview_img: numpy array; flipped according to natural orientation.
+  """
+  if sensor_orientation in _NATURAL_ORIENTATION_PORTRAIT:
+    # Opencv expects a numpy array but np.flip generates a 'view' which
+    # doesn't work with opencv. ndarray.copy forces copy instead of view.
+    output_preview_img = np.ndarray.copy(np.flipud(input_preview_img))
+    logging.debug(
+        'Found sensor orientation %d, flipping up down', sensor_orientation)
+  else:
+    output_preview_img = np.ndarray.copy(np.fliplr(input_preview_img))
+    logging.debug(
+        'Found sensor orientation %d, flipping left right', sensor_orientation)
+
+  return output_preview_img
 
 
 def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,

@@ -18,13 +18,13 @@ import math
 import os
 
 from mobly import test_runner
-import numpy as np
 
 import its_base_test
 import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
 import its_session_utils
+import preview_processing_utils
 import video_processing_utils
 import zoom_capture_utils
 
@@ -142,8 +142,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
       first_api_level = its_session_utils.get_first_api_level(
           self.dut.serial)
       camera_properties_utils.skip_unless(
-          z_range and first_api_level >= its_session_utils.ANDROID14_API_LEVEL
-      )
+          z_range and first_api_level >= its_session_utils.ANDROID14_API_LEVEL)
       logging.debug('Testing zoomRatioRange: %s', z_range)
 
       # Determine zoom factors
@@ -239,28 +238,16 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
                 video_processing_utils.extract_last_key_frame_from_recording(
                     log_path, preview_file_name))
 
-            # If testing front camera, mirror preview image
-            # Opencv expects a numpy array but np.flip generates a 'view' which
-            # doesn't work with opencv. ndarray.copy forces copy instead of view
+            # If front camera, flip preview image to match camera capture
             if (props['android.lens.facing'] ==
                 camera_properties_utils.LENS_FACING['FRONT']):
-              # Preview are flipped on device's natural orientation
-              # so for sensor orientation 90 or 270, it is up or down
-              # Sensor orientation 0 or 180 is left or right
               img_name_stem = os.path.join(log_path, 'flipped_preview')
               img_name = (
                   f'{img_name_stem}_zoomRatio_{z:.2f}.'
                   f'{zoom_capture_utils.JPEG_STR}')
-              if props['android.sensor.orientation'] in (90, 270):
-                preview_img = np.ndarray.copy(np.flipud(preview_img))
-                logging.debug(
-                    'Found sensor orientation %d, flipping up down',
-                    props['android.sensor.orientation'])
-              else:
-                preview_img = np.ndarray.copy(np.fliplr(preview_img))
-                logging.debug(
-                    'Found sensor orientation %d, flipping left right',
-                    props['android.sensor.orientation'])
+              preview_img = (
+                  preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+                      props['android.sensor.orientation'], preview_img))
               image_processing_utils.write_image(preview_img / 255, img_name)
             else:
               img_name_stem = os.path.join(log_path, 'rear_preview')
