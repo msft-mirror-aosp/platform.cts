@@ -19,6 +19,7 @@ package {
 
 android_test {
     name: "CtsNNAPIBenchmarkTestCases",
+    team: "trendy_team_renderscript_nnapi",
     defaults: ["cts_defaults"],
     // Include both the 32 and 64 bit versions
     compile_multilib: "both",
