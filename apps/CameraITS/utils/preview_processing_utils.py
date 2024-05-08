@@ -101,7 +101,7 @@ def collect_data(cam, tablet_device, preview_size, stabilize, rot_rig,
     recording object; a dictionary containing output path, video size, etc.
   """
 
-  output_surfaces = its_session_utils.preview_surface(preview_size, hlg10)
+  output_surfaces = cam.preview_surface(preview_size, hlg10)
   return collect_data_with_surfaces(cam, tablet_device, output_surfaces,
                                     stabilize, rot_rig, zoom_ratio,
                                     fps_range, ois)
