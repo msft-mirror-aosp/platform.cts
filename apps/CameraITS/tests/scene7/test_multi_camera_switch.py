@@ -30,10 +30,10 @@ import opencv_processing_utils
 import preview_processing_utils
 import video_processing_utils
 
-_AE_RTOL = 0.015  # 1.5%
-_AF_RTOL = 0.02  # 2%
+_AE_ATOL = 0.015  # 1.5%
+_AF_ATOL = 0.02  # 2%
 _ARUCO_MARKERS_COUNT = 4
-_AWB_RTOL = 0.02  # 2%
+_AWB_ATOL = 0.02  # 2%
 _CH_FULL_SCALE = 255
 _COLORS = ('r', 'g', 'b', 'gray')
 _IMG_FORMAT = 'png'
@@ -97,9 +97,9 @@ def _do_af_check(uw_img, w_img, log_path):
   sharpness_w = _compute_slanted_edge_sharpness(w_img, f'{file_stem}_w.png')
   logging.debug('Sharpness for W patch: %.2f', sharpness_w)
 
-  if not math.isclose(sharpness_w, sharpness_uw, rel_tol=_AF_RTOL):
+  if not math.isclose(sharpness_w, sharpness_uw, abs_tol=_AF_ATOL):
     raise AssertionError('Sharpness change is greater than the threshold value.'
-                         f' RTOL: {_AF_RTOL} '
+                         f' ATOL: {_AF_ATOL} '
                          f'sharpness_w: {sharpness_w} '
                          f'sharpness_uw: {sharpness_uw}')
 
@@ -136,15 +136,15 @@ def _do_awb_check(uw_img, w_img):
   w_r_g_ratio, w_b_g_ratio = _get_color_ratios(w_img, 'W')
 
   if not math.isclose(uw_r_g_ratio, w_r_g_ratio,
-                      rel_tol=_AWB_RTOL):
+                      abs_tol=_AWB_ATOL):
     raise AssertionError(f'R/G change is greater than the threshold value: '
-                         f'RTOL: {_AWB_RTOL} '
+                         f'ATOL: {_AWB_ATOL} '
                          f'uw_r_g_ratio: {uw_r_g_ratio:.4f} '
                          f'w_r_g_ratio: {w_r_g_ratio:.4f}')
   if not math.isclose(uw_b_g_ratio, w_b_g_ratio,
-                      rel_tol=_AWB_RTOL):
+                      abs_tol=_AWB_ATOL):
     raise AssertionError(f'B/G change is greater than the threshold value: '
-                         f'RTOL: {_AWB_RTOL} '
+                         f'ATOL: {_AWB_ATOL} '
                          f'uw_b_g_ratio: {uw_b_g_ratio:.4f} '
                          f'w_b_g_ratio: {w_b_g_ratio:.4f}')
 
@@ -196,9 +196,9 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
   y_avg_change_percent = (abs(w_y_avg-uw_y_avg)/uw_y_avg)*100
   logging.debug('y_avg_change_percent: %.4f', y_avg_change_percent)
 
-  if not math.isclose(uw_y_avg, w_y_avg, rel_tol=_AE_RTOL):
+  if not math.isclose(uw_y_avg, w_y_avg, abs_tol=_AE_ATOL):
     raise AssertionError('y_avg change is greater than threshold value: '
-                         f'RTOL: {_AE_RTOL} '
+                         f'ATOL: {_AE_ATOL} '
                          f'uw_y_avg: {uw_y_avg:.4f} '
                          f'w_y_avg: {w_y_avg:.4f} ')
 
