@@ -49,6 +49,7 @@ android_test {
     test_config: "AndroidTest.xml",
     // Tag this module as a cts test artifact
     test_suites: [
+        "cts",
         "general-tests",
         "sts",
         "mts-documentsui",

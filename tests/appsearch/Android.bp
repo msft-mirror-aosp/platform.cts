@@ -35,6 +35,7 @@ android_test {
         ":CtsAppSearchTestsAidl",
     ],
     test_suites: [
+        "cts",
         "general-tests",
         "mts-appsearch",
         "mcts-appsearch",

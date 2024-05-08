@@ -27,6 +27,7 @@ android_test {
     ],
     test_suites: [
         "arcts",
+        "cts",
         "general-tests",
         "mts-permission",
         "mcts-permission",
