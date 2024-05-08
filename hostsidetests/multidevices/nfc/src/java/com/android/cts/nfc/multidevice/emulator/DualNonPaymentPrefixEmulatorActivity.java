@@ -35,6 +35,13 @@ public class DualNonPaymentPrefixEmulatorActivity extends BaseEmulatorActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        mCardEmulation.setPreferredService(this, PrefixAccessService.COMPONENT);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mCardEmulation.unsetPreferredService(this);
     }
 
     @Override
