@@ -2195,22 +2195,6 @@ public class PerformanceClassEvaluator {
 
             return new VideoCodecRequirement(RequirementConstants.R5_1__H_1_22, requirement);
         }
-
-        /**
-         * [5.12/H-1-2] MUST support RGBA_1010102 color format for all hardware AV1 and HEVC
-         * encoders present on the device.
-         */
-        public static VideoCodecRequirement createColorFormatSupportReq() {
-            RequiredMeasurement<Boolean> requirement = RequiredMeasurement
-                    .<Boolean>builder()
-                    .setId(RequirementConstants.RGBA_1010102_COLOR_FORMAT_REQ)
-                    .setPredicate(RequirementConstants.BOOLEAN_EQ)
-                    .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, true)
-                    .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, true)
-                    .build();
-
-            return new VideoCodecRequirement(RequirementConstants.R5_12__H_1_2, requirement);
-        }
     }
 
     public static class UltraWideZoomRatioRequirement extends Requirement {
@@ -2451,12 +2435,6 @@ public class PerformanceClassEvaluator {
 
     public SecureCodecRequirement addR5_7__H_1_2() {
         return this.addRequirement(SecureCodecRequirement.createR5_7__H_1_2());
-    }
-
-
-    /* Adds requirement 5.12/H-1-2 */
-    public VideoCodecRequirement addColorFormatSupportReq() {
-        return this.addRequirement(VideoCodecRequirement.createColorFormatSupportReq());
     }
 
     /* Adds requirement 5.12/H-1-3 */
