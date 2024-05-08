@@ -441,7 +441,6 @@ def convert_capture_to_planes(cap, props=None):
     assert_props_is_not_none(props)
     is_quad_bayer = 'QuadBayer' in cap['format']
     white_level = get_white_level(props, cap['metadata'])
-    logging.debug('dynamic white level: %.2f', white_level)
     img = numpy.ndarray(
         shape=(h * w,), dtype='<u2', buffer=cap['data'][0:w * h * 2])
     img = img.astype(numpy.float32).reshape(h, w) / white_level
@@ -595,7 +594,6 @@ def convert_raw_to_rgb_image(r_plane, gr_plane, gb_plane, b_plane, props,
   # Values required for the RAW to RGB conversion.
   assert_props_is_not_none(props)
   white_level = get_white_level(props, cap_res)
-  logging.debug('dynamic white level: %.2f', white_level)
   gains = cap_res['android.colorCorrection.gains']
   ccm = cap_res['android.colorCorrection.transform']
 
@@ -755,8 +753,10 @@ def get_white_level(props, cap_metadata=None):
       'android.sensor.dynamicWhiteLevel' in cap_metadata and
       cap_metadata['android.sensor.dynamicWhiteLevel'] is not None):
     white_level = cap_metadata['android.sensor.dynamicWhiteLevel']
+    logging.debug('dynamic white level: %.2f', white_level)
   else:
     white_level = props['android.sensor.info.whiteLevel']
+    logging.debug('white level: %.2f', white_level)
   return float(white_level)
 
 
