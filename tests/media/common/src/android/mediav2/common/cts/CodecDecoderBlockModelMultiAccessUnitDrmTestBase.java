@@ -35,6 +35,8 @@ import android.os.Build;
 import android.util.Log;
 import android.util.Pair;
 
+import androidx.test.filters.SdkSuppress;
+
 import org.junit.After;
 
 import java.util.ArrayDeque;
@@ -45,6 +47,7 @@ import java.util.UUID;
  * Wrapper class for trying and testing secure mediacodec decoder components in block model large
  * audio buffer mode
  */
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 @RequiresApi(api = Build.VERSION_CODES.R)
 public class CodecDecoderBlockModelMultiAccessUnitDrmTestBase
         extends CodecDecoderBlockModelMultiAccessUnitTestBase {
