@@ -222,6 +222,7 @@ public class FgsTimeoutTest {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
+    @RequiresFlagsDisabled(Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR)
     public void testAnr() throws Exception {
         final int anrExtraTimeout = 5000;
         updateDeviceConfig("fgs_anr_extra_wait_duration", anrExtraTimeout);
@@ -393,6 +394,7 @@ public class FgsTimeoutTest {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
+    @RequiresFlagsDisabled(Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR)
     public void testStartService_throwsExceptionAfterTimeout() {
         final long serviceStartTime = SystemClock.uptimeMillis();
         // Start the service
