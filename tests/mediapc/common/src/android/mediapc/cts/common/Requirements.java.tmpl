@@ -115,7 +115,25 @@ public final class Requirements {
     public static {{UpperCamelCase $r.GetName}}Requirement add{{ SafeReqID $r.GetId | UpperCase}}(
            PerformanceClassEvaluator pce) {
         return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create());
-     }
+    }
+
+    {{- range $v_id, $v := $r.GetVariants }}
+
+    /**
+      * Add a new {{UpperCamelCase $r.GetName}}Requirement for requirement {{ $r.GetId }}
+      * to a {@code PerformanceClassEvaluator} instance
+      * {{$v.GetDescription}}.
+      {{- with $r.GetDescription}}
+      *
+      * {{.}}{{end}}
+      */
+    public static {{UpperCamelCase $r.GetName}}Requirement add{{ SafeReqID $r.GetId | UpperCase}}
+              {{- UpperCamelCase $v_id}}(
+           PerformanceClassEvaluator pce) {
+        return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create
+            {{- UpperCamelCase $v_id}}());
+    }
+    {{- end }}{{/* range $v_id, $v */}}
 
     /**
       * {{ $r.GetId }} {{$r.GetName}}
@@ -153,6 +171,40 @@ public final class Requirements {
                     {{LowerCamelCase $m_id}}
                     {{- end}});
         }
+
+        {{- range $v_id, $v := $r.GetVariants }}
+        /**
+          * {{ $r.GetId }} {{$r.GetName}}{{- with $v.GetDescription}} {{.}}{{end}}
+          {{- with $r.GetDescription}}
+          *
+          * {{.}}{{end}}
+          */
+        private static {{UpperCamelCase $r.GetName}}Requirement create{{UpperCamelCase $v_id}}() {
+            {{- range $m_id, $m := $r.GetMeasurements }}
+            {{- $mt := $m.GetMeasurementType}}
+            {{- $c := $m.GetComparison}}
+            var {{LowerCamelCase $m_id}} = RequiredMeasurement
+                    .<{{template "JavaClass" $mt}}>builder()
+                    .setId("{{$m_id}}")
+                    .setPredicate(RequirementConstants.{{template "CompMethod" $m}})
+                    {{- range $mpc, $s := $r.GetSpecs }}
+                    {{- $vs := index $s.GetVariantSpecs $v_id}}
+                    {{- if $vs }}
+                    {{- with index $vs.GetRequiredValues $m_id}}
+                    .addRequiredValue({{template "VersionCode" $mpc}}, {{template
+                         "MeasurementValue" Dict "RequiredValue" . "MeasurementType" $mt}})
+                    {{- end}}{{/* if $vs */}}
+                    {{- end}}{{/* with rv */}}
+                    {{- end}}{{/* range $mpc, $s */}}
+                    .build();
+            {{- end}}{{/* range $m_id, $m */}}
+            return new {{UpperCamelCase $r.GetName}}Requirement(
+                    "{{SafeReqID $r.GetId }}"
+                    {{- range $m_id, $m := $r.GetMeasurements }},
+                    {{LowerCamelCase $m_id}}
+                    {{- end}});
+        }
+        {{- end }}{{/* range $v_id, $v */}}
 
         {{- range $m_id, $m := $r.GetMeasurements }}
         {{- $mt := $m.GetMeasurementType}}
