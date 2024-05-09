@@ -49,6 +49,8 @@ import static org.testng.Assert.expectThrows;
 
 import android.Manifest;
 import android.app.UiAutomation;
+import android.app.usage.StorageStats;
+import android.app.usage.StorageStatsManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -76,6 +78,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
+import android.os.storage.StorageManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -111,6 +114,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.cert.CertificateEncodingException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -417,6 +421,65 @@ public class PackageManagerShellCommandInstallTest {
                     commandResult.startsWith("Failure [INSTALL_PARSE_FAILED_NOT_APK"));
         }
         assertFalse(isAppInstalled(TEST_APP_PACKAGE));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.content.pm.Flags.FLAG_GET_PACKAGE_STORAGE_STATS)
+    public void testGetPackageStorageStats() throws Exception {
+        installPackage(TEST_HW5);
+        assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+        StorageStatsManager storageStatsManager =
+            getContext().getSystemService(StorageStatsManager.class);
+        StorageStats stats =
+            storageStatsManager.queryStatsForPackage(StorageManager.UUID_DEFAULT,
+                TEST_APP_PACKAGE, android.os.Process.myUserHandle());
+
+        String commandResult =
+            executeShellCommand("pm get-package-storage-stats " + TEST_APP_PACKAGE);
+        String[] lines = commandResult.split("\n");
+        for (String line : lines) {
+            String dataType = line.split(": ")[0];
+            String value = line.split(": ")[1];
+            switch (dataType) {
+                case "code":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytes()));
+                    break;
+                case "data":
+                    assertEquals(value, getDataSizeDisplay(stats.getDataBytes()));
+                    break;
+                case "cache":
+                    assertEquals(value, getDataSizeDisplay(stats.getCacheBytes()));
+                    break;
+                case "apk":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_FILE_TYPE_APK)));
+                    break;
+                case "lib":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_LIB)));
+                    break;
+                case "dm":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_FILE_TYPE_DM)));
+                    break;
+                case "dexopt artifacts":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_FILE_TYPE_DEXOPT_ARTIFACT)));
+                    break;
+                case "current profile":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_FILE_TYPE_CURRENT_PROFILE)));
+                    break;
+                case "reference profile":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_FILE_TYPE_REFERENCE_PROFILE)));
+                    break;
+                case "external cache":
+                    assertEquals(value, getDataSizeDisplay(stats.getExternalCacheBytes()));
+                    break;
+            }
+        }
     }
 
     @Test
@@ -2738,6 +2801,33 @@ public class PackageManagerShellCommandInstallTest {
                 .filter(line -> line.startsWith(prefix))
                 .map(s -> s.substring(prefix.length()))
                 .toList();
+    }
+
+    private String getFormattedBytes(long size) {
+        double k = size/1024.0;
+        double m = size/1048576.0;
+        double g = size/1073741824.0;
+
+        DecimalFormat dec = new DecimalFormat("0.00");
+        if (g > 1) {
+            return dec.format(g).concat(" Gb");
+        } else if (m > 1) {
+            return dec.format(m).concat(" Mb");
+        } else if (k > 1) {
+            return dec.format(k).concat(" Kb");
+        }
+        return "";
+    }
+
+    /**
+     * Return the string that displays the data size.
+     */
+    private String getDataSizeDisplay(long size) {
+        String formattedOutput = getFormattedBytes(size);
+        if (!formattedOutput.isEmpty()) {
+           formattedOutput = " (" + formattedOutput + ")";
+        }
+        return Long.toString(size) + " bytes" + formattedOutput;
     }
 
     static class PackageBroadcastReceiver extends BroadcastReceiver {
