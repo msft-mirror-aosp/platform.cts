@@ -17,6 +17,7 @@
 package android.ondeviceintelligence.cts;
 
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE;
+import static android.content.Context.RECEIVER_EXPORTED;
 import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructException;
 import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructTokenInfo;
 
@@ -41,7 +42,10 @@ import android.app.ondeviceintelligence.ProcessingCallback;
 import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
 import android.app.ondeviceintelligence.TokenInfo;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
@@ -121,6 +125,7 @@ public class OnDeviceIntelligenceManagerTest {
     public static final int REQUEST_TYPE_GET_CALLER_UID = 1005;
 
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
+    private static final String MODEL_LOADED_BROADCAST_ACTION = "TEST_MODEL_LOADED";
 
     private Context mContext;
     public OnDeviceIntelligenceManager mOnDeviceIntelligenceManager;
@@ -853,7 +858,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
 
-
     //===================== Tests for accessing file from isolated process via non-isolated =======
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
@@ -969,6 +973,54 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(augmentedContent.get()).isEqualTo(TEST_AUGMENT_CONTENT);
     }
 
+    //===================== Tests broadcasts are sent for model updates =====================
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void broadcastsMustBeSentOnModelUpdates() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        setTestableBroadcastKeys(new String[]{MODEL_LOADED_BROADCAST_ACTION, "blah"},
+                mContext.getPackageName());
+        Feature feature = new Feature.Builder(1).build();
+        CountDownLatch statusLatch = new CountDownLatch(2);
+        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                if (action != null) {
+                    Log.d(TAG, "Received broadcast with action: " + action);
+                    if (action == MODEL_LOADED_BROADCAST_ACTION) {
+                        statusLatch.countDown();
+                    }
+                }
+            }
+        };
+        mContext.registerReceiver(broadcastReceiver,
+                new IntentFilter(MODEL_LOADED_BROADCAST_ACTION), RECEIVER_EXPORTED);
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                Bundle.EMPTY, 1, null,
+                null, EXECUTOR, new StreamingProcessingCallback() {
+                    @Override
+                    public void onPartialResult(@NonNull Bundle partialResult) {
+                        Log.i(TAG, "New Content : " + partialResult);
+                    }
+
+                    @Override
+                    public void onResult(Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+
     public static void clearTestableOnDeviceIntelligenceService() {
         runShellCommand("cmd on_device_intelligence set-temporary-services");
     }
@@ -997,6 +1049,12 @@ public class OnDeviceIntelligenceManagerTest {
     private static boolean isAutomotive(Context context) {
         PackageManager pm = context.getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
+    public static void setTestableBroadcastKeys(String[] broadcastKeys, String packageName) {
+        runShellCommand(
+                "cmd on_device_intelligence set-model-broadcasts %s %s %s %d",
+                broadcastKeys[0], broadcastKeys[1], packageName, TEMPORARY_SERVICE_DURATION);
     }
 
     public static void setTestableOnDeviceIntelligenceServiceNames(String[] serviceNames) {
@@ -1028,4 +1086,6 @@ public class OnDeviceIntelligenceManagerTest {
             }
         }
     };
+
+
 }

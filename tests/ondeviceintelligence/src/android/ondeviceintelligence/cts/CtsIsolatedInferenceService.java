@@ -56,6 +56,11 @@ import java.util.concurrent.Future;
 public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceService {
     static final String TAG = "SampleIsolatedService";
 
+    // TODO(339594686): replace with API constants
+    private static final String REGISTER_MODEL_UPDATE_CALLBACK_BUNDLE_KEY =
+            "register_model_update_callback";
+    private static final String MODEL_LOADED_BUNDLE_KEY = "model_loaded";
+
     public static TokenInfo constructTokenInfo(int status, PersistableBundle persistableBundle) {
         if (persistableBundle == null) {
             return new TokenInfo(status);
@@ -227,6 +232,12 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
     public void onUpdateProcessingState(@NonNull Bundle processingState,
             @NonNull OutcomeReceiver<PersistableBundle, OnDeviceIntelligenceException> callback) {
         Log.i(TAG, "onUpdateProcessingState invoked.");
+        if (processingState.containsKey(REGISTER_MODEL_UPDATE_CALLBACK_BUNDLE_KEY)) {
+            Log.i(TAG, "ModelUpdate callback received.");
+            PersistableBundle resultBundle = new PersistableBundle();
+            resultBundle.putBoolean(MODEL_LOADED_BUNDLE_KEY, true);
+            callback.onResult(resultBundle);
+        }
         callback.onResult(PersistableBundle.EMPTY);
     }
 
