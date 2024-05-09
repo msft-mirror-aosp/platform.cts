@@ -89,14 +89,16 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
       combinations_str, combinations = cam.get_queryable_stream_combinations()
       logging.debug('Queryable stream combinations: %s', combinations_str)
 
-      # Stabilization modes
-      stabilization_params = [camera_properties_utils.STABILIZATION_MODE_OFF]
+      # Stabilization modes. Make sure to test ON first.
+      stabilization_params = []
       stabilization_modes = props[
           'android.control.availableVideoStabilizationModes']
       if (camera_properties_utils.STABILIZATION_MODE_PREVIEW in
           stabilization_modes):
         stabilization_params.append(
             camera_properties_utils.STABILIZATION_MODE_PREVIEW)
+      stabilization_params.append(
+          camera_properties_utils.STABILIZATION_MODE_OFF)
       logging.debug('stabilization modes: %s', stabilization_params)
 
       configs = props['android.scaler.streamConfigurationMap'][
@@ -172,11 +174,13 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
             max_achievable_fps >= fps[_MAX_FPS_INDEX] - _FPS_SELECTION_ATOL)]
 
         for fps_range in fps_params:
-          # HLG10
-          hlg10_params = [False]
+          # HLG10. Make sure to test ON first.
+          hlg10_params = []
           if camera_properties_utils.dynamic_range_ten_bit(props):
             hlg10_params.append(True)
+          hlg10_params.append(False)
 
+          features_tested = []  # feature combinations already tested
           for hlg10 in hlg10_params:
             # Construct output surfaces
             output_surfaces = []
@@ -199,11 +203,18 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
               logging.debug('combination name: %s', combination_name)
 
               # Is the feature combination supported?
-              supported = cam.is_stream_combination_supported(
-                  output_surfaces, settings)
-              if not supported:
+              if not cam.is_stream_combination_supported(
+                  output_surfaces, settings):
                 logging.debug('%s not supported', combination_name)
                 break
+
+              # If a superset of features are already tested, skip.
+              is_stabilized = (
+                  stabilize == camera_properties_utils.STABILIZATION_MODE_PREVIEW)
+              skip_test = its_session_utils.check_and_update_features_tested(
+                  features_tested, hlg10, is_stabilized)
+              if skip_test:
+                continue
 
               # Get zoom ratio range
               session_props = cam.get_session_properties(
