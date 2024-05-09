@@ -16,7 +16,7 @@
 
 package android.providerui.cts;
 
-import static android.provider.cts.ProviderTestUtils.resolveVolumeName;
+import static android.provider.cts.media.MediaProviderTestUtils.resolveVolumeName;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -43,7 +43,7 @@ import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
-import android.provider.cts.ProviderTestUtils;
+import android.provider.cts.media.MediaProviderTestUtils;
 import android.providerui.cts.GetResultActivity.Result;
 import android.system.Os;
 import android.text.format.DateUtils;
@@ -104,7 +104,7 @@ public class MediaStoreUiTest {
 
     @Parameters
     public static Iterable<? extends Object> data() {
-        return ProviderTestUtils.getSharedVolumeNames();
+        return MediaProviderTestUtils.getSharedVolumeNames();
     }
 
     @Before
