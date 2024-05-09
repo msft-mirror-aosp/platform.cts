@@ -23,6 +23,8 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Instrumentation;
 import android.car.builtin.util.AssistUtilsHelper;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -41,7 +43,10 @@ public final class AssistUtilsHelperTest {
     private static final String TAG = AssistUtilsHelper.class.getSimpleName();
     private static final String PERMISSION_ACCESS_VOICE_INTERACTION_SERVICE =
             "android.permission.ACCESS_VOICE_INTERACTION_SERVICE";
-    private static final int TIMEOUT_MS = 20_000;
+    private static final long TIMEOUT_MS = 2_000;
+    private static final long TIMEOUT_UI_MS = 1_000;
+
+    private Handler mHandler;
 
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
 
@@ -51,6 +56,7 @@ public final class AssistUtilsHelperTest {
     public void setUp() throws Exception {
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 PERMISSION_ACCESS_VOICE_INTERACTION_SERVICE);
+        mHandler = new Handler(Looper.getMainLooper());
     }
 
     @After
@@ -71,7 +77,7 @@ public final class AssistUtilsHelperTest {
 
         assertWithMessage("Voice session shown")
                 .that(callbackHelperImpl.isSessionOnShown()).isTrue();
-
+        waitForUI();
         hideSessionAndWait(listener);
     }
 
@@ -94,6 +100,7 @@ public final class AssistUtilsHelperTest {
 
         assertWithMessage("Voice interaction session running")
                 .that(AssistUtilsHelper.isSessionRunning(mContext)).isTrue();
+        waitForUI();
         hideSessionAndWait(listener);
     }
 
@@ -106,14 +113,13 @@ public final class AssistUtilsHelperTest {
         boolean isAssistantComponentAvailable = AssistUtilsHelper
                 .showPushToTalkSessionForActiveService(mContext, callbackHelperImpl);
         assumeTrue(isAssistantComponentAvailable);
-
         callbackHelperImpl.waitForCallback();
 
         listener.waitForSessionChange();
 
         assertWithMessage("Voice interaction session shown")
                 .that(listener.mIsSessionShown).isTrue();
-
+        waitForUI();
         hideSessionAndWait(listener);
     }
 
@@ -128,6 +134,7 @@ public final class AssistUtilsHelperTest {
         assumeTrue(isAssistantComponentAvailable);
         callbackHelperImpl.waitForCallback();
         listener.waitForSessionChange();
+        waitForUI();
         listener.reset();
 
         AssistUtilsHelper.hideCurrentSession(mContext);
@@ -140,6 +147,7 @@ public final class AssistUtilsHelperTest {
         }
         assertWithMessage("Voice interaction session when hidden")
                 .that(listener.mIsSessionShown).isFalse();
+        waitForUI();
     }
 
     private void hideSessionAndWait(TestVoiceInteractionSessionListener listener) throws Exception {
@@ -151,6 +159,15 @@ public final class AssistUtilsHelperTest {
         AssistUtilsHelper.hideCurrentSession(mContext);
 
         listener.waitForSessionChange();
+        waitForUI();
+    }
+
+    // TODO(b/338414165): Find out window delay to reduce failures
+    private void waitForUI() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        mHandler.postDelayed(latch::countDown, TIMEOUT_UI_MS);
+        boolean results = latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        Log.i(TAG, "Wait for UI result " + results);
     }
 
     private static final class TestVoiceInteractionSessionListener implements
