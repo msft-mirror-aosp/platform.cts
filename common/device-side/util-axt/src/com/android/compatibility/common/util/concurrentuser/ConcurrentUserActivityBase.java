@@ -84,7 +84,7 @@ public abstract class ConcurrentUserActivityBase extends Activity {
                 RECEIVER_EXPORTED);
         mReceiverRegistered = true;
         Bundle reply = new Bundle();
-        reply.putInt(KEY_USER_ID, getUserId());
+        reply.putInt(KEY_USER_ID, android.os.Process.myUserHandle().getIdentifier());
         callback.sendResult(reply);
     }
 

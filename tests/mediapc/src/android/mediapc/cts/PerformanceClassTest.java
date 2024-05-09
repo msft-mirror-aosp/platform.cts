@@ -29,7 +29,9 @@ import android.media.MediaFormat;
 import android.media.UnsupportedSchemeException;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.Android11MemoryRequirement;
 import android.mediapc.cts.common.Requirements.HDRDisplayRequirement;
+import android.mediapc.cts.common.Requirements.MemoryRequirement;
 import android.mediapc.cts.common.Utils;
 import android.util.Log;
 
@@ -199,11 +201,11 @@ public class PerformanceClassTest {
         Log.i(TAG, String.format("Total device memory = %,d MB", totalMemoryMb));
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.MemoryRequirement r7_6_1_h_1_1 = pce.addR7_6_1__H_1_1();
-        PerformanceClassEvaluator.MemoryRequirement r7_6_1_h_2_1 = pce.addR7_6_1__H_2_1();
+        Android11MemoryRequirement r7_6_1_h_1_1 = Requirements.addR7_6_1__H_1_1(pce);
+        MemoryRequirement r7_6_1_h_2_1 = Requirements.addR7_6_1__H_2_1(pce);
 
-        r7_6_1_h_1_1.setPhysicalMemory(totalMemoryMb);
-        r7_6_1_h_2_1.setPhysicalMemory(totalMemoryMb);
+        r7_6_1_h_1_1.setPhysicalMemoryMb(totalMemoryMb);
+        r7_6_1_h_2_1.setPhysicalMemoryMb(totalMemoryMb);
 
         pce.submitAndCheck();
     }

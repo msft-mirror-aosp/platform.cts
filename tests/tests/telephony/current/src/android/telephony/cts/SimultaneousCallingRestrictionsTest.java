@@ -440,7 +440,7 @@ public class SimultaneousCallingRestrictionsTest {
      */
     @Test
     public void testImsRegisteredWLAN() throws Exception {
-        Log.d(TAG, "testImsRegisteredWWAN_SimultaneousCallingDisabled");
+        Log.d(TAG, "testImsRegisteredWLAN");
         assumeTrue("Skip test: Not test on single SIM device", sIsMultiSimDevice);
         assumeTrue("Skip test: ImsService and/or FEATURE_TELEPHONY are not setup",
                 ImsUtils.shouldTestImsService());
@@ -459,14 +459,12 @@ public class SimultaneousCallingRestrictionsTest {
 
             verifyCellularSimultaneousCallingSupport(false,
                     sSimultaneousCallingListener);
-            // Register IMS via WWAN for both subs and then :
+            // Register IMS via WWAN for both subs:
             registerImsForBothSubsAndVerifyAttributes(IMS_REGI_TECH_IWLAN, IMS_REGI_TECH_IWLAN,
                     result_0.second, result_1.second);
-            // IMS is registered for both subs; allow SimultaneousCallingTracker time to process
-            // this:
             waitUntilPhAccountDsdaRestrictionsSetOrTimeout();
 
-            // verify that DSDA is enabled via IMS, but disabled via cellular:
+            // verify that DSDA is enabled via IMS even though it is disabled via cellular:
             verifySimultaneousCallingRestrictions(true);
         } finally {
             if (result_0 != null) {

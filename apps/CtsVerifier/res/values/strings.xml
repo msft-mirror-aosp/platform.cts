@@ -2851,6 +2851,15 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="widget_name">Widget Framework Test</string>
     <string name="widget_pass">Pass</string>
     <string name="widget_fail">Fail</string>
+    <string name="widget_generated_previews_test">Widget Generated Previews Test</string>
+    <string name="widget_generated_previews_test_info">This test checks that the widget picker
+        displays the generated preview for a widget if it is available. In order to perform the
+        test, press the Home button and open the widget picker. Scroll to find the widget titled
+        \"Generated Previews\", and verify that the widget preview displays the text
+        \"This is a generated preview\".</string>
+    <string name="widget_generated_previews_widget_name">Generated Previews</string>
+    <string name="widget_generated_previews_default_preview_text">static previewLayout preview</string>
+    <string name="widget_generated_previews_generated_preview_text">This is a generated preview</string>
 
     <string name="provisioning_byod_non_market_apps">Non-market app installation restrictions</string>
     <string name="provisioning_byod_non_market_apps_info">
@@ -5829,8 +5838,11 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="usbwarning_message_heading">Unvalidated USB Audio Adapter</string>
     <string name="usbwarning_paragraph_0">The connected USB audio device has not been verified for
         use in this test.</string>
-    <string name="usbwarning_paragraph_1_1">The test may succeed with this device, but if it does not,
-        please obtain a</string>
+    <string name="usbwarning_paragraph_1_1">The test may pass using this USB peripheral.
+        However, some adapters have been seen to implement noise
+        suppression and/or echo cancellation, or introduce significant latency that
+        may cause the test to fail. If the test does not pass with this adapter,
+        you should obtain the</string>
     <string name="usbwarning_googadapter">Google USB-C to 3.5mm Adapter</string>
     <string name="usbwarning_paragraph_1_2">for use in this test.</string>
 

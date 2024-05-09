@@ -195,11 +195,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * Checks that an installer needs user action to update a package when
      * it's not the update owner even if it has granted INSTALL_PACKAGES permission.
      * This test simulates sideloading an APK when an installed app has an update owner set.
-     * Installing an app via intent results in 2 "User Action Required" dialogs:
-     *      # First one to confirm app installation.
-     *      # Second to confirm ownership update.
-     *  Ownership update is checked after install session is committed by Pia. As a result, the
-     *  system server sends another STATUS_PENDING_USER_ACTION to the user.
      */
     @Test
     fun updateOwnershipEnforcement_updateViaIntentByNonOwner_hasUserAction() {
@@ -210,11 +205,8 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
             val result = startInstallationViaIntent()
-            // Since it is simulating a side load, a user confirmation will be required to
-            // install the app
-            clickInstallerUIButton(INSTALL_BUTTON_ID)
 
-            // The second dialog will be shown to confirm update ownership
+            // The dialog to confirm update ownership will be shown
             clickInstallerUIButton(INSTALL_BUTTON_ID)
 
             assertThat(result.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)

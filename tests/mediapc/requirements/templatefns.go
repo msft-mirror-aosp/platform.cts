@@ -16,6 +16,7 @@
 package templatefns
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 	"unicode"
@@ -26,15 +27,17 @@ import (
 func Funcs() template.FuncMap {
 	// These function are made available in templates by calling their key values, e.g. {{SnakeCase "HelloWorld"}}.
 	return template.FuncMap{
-		// Case conversion functions.
-		"LowerCase":      strings.ToLower,
-		"UpperCase":      strings.ToUpper,
-		"TitleCase":      titleCase,
-		"SnakeCase":      snakeCase,
+		// go/keep-sorted start
+		"Dict":           dict,
 		"KebabCase":      kebabCase,
-		"UpperCamelCase": upperCamelCase,
 		"LowerCamelCase": lowerCamelCase,
+		"LowerCase":      strings.ToLower,
 		"SafeReqID":      safeReqID,
+		"SnakeCase":      snakeCase,
+		"TitleCase":      titleCase,
+		"UpperCamelCase": upperCamelCase,
+		"UpperCase":      strings.ToUpper,
+		// go/keep-sorted end
 	}
 }
 
@@ -117,4 +120,37 @@ func safeReqID(s string) string {
 		return strings.Replace(a, b, c, -1)
 	}
 	return "r" + strings.ToLower(f(f(f(s, "/", "__"), ".", "_"), "-", "_"))
+}
+
+// dict converts a list of key-value pairs into a map.
+// If there is an odd number of values, the last value is nil.
+// The last key is preserved so in the template it can be referenced like {{$myDict.key}}.
+func dict(v ...any) map[string]any {
+	dict := map[string]any{}
+	lenv := len(v)
+	for i := 0; i < lenv; i += 2 {
+		key := toString(v[i])
+		if i+1 >= lenv {
+			dict[key] = nil
+			continue
+		}
+		dict[key] = v[i+1]
+	}
+	return dict
+}
+
+// toString converts a value to a string.
+func toString(v any) string {
+	switch v := v.(type) {
+	case string:
+		return v
+	case []byte:
+		return string(v)
+	case error:
+		return v.Error()
+	case fmt.Stringer:
+		return v.String()
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
