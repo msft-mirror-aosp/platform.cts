@@ -29,12 +29,12 @@
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
             <option name="cleanup-apks" value="true" />
             <option name="force-install-mode" value="FULL"/>
-            <option name="test-file-name" value="CtsNfcReaderTestApp.apk" />
+            <option name="test-file-name" value="NfcReaderTestApp.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
             <option name="cleanup-apks" value="true" />
             <option name="force-install-mode" value="FULL"/>
-            <option name="test-file-name" value="CtsNfcEmulatorTestApp.apk" />
+            <option name="test-file-name" value="NfcEmulatorTestApp.apk" />
         </target_preparer>
     </device>
     <device name="reader">
@@ -44,12 +44,12 @@
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
             <option name="cleanup-apks" value="true" />
             <option name="force-install-mode" value="FULL"/>
-            <option name="test-file-name" value="CtsNfcReaderTestApp.apk" />
+            <option name="test-file-name" value="NfcReaderTestApp.apk" />
         </target_preparer>
         <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
             <option name="cleanup-apks" value="true" />
             <option name="force-install-mode" value="FULL"/>
-            <option name="test-file-name" value="CtsNfcEmulatorTestApp.apk" />
+            <option name="test-file-name" value="NfcEmulatorTestApp.apk" />
         </target_preparer>
     </device>
 
