@@ -44,29 +44,3 @@ android_test {
     min_sdk_version: "29",
     target_sdk_version: "31",
 }
-
-android_test {
-    name: "MctsMediaExtractorTestCases",
-    defaults: ["cts_defaults"],
-    // include both the 32 and 64 bit versions
-    compile_multilib: "both",
-    static_libs: [
-        "ctstestrunner-axt",
-        "ctstestserver",
-        "cts-media-common",
-    ],
-    srcs: [
-        "src/**/*.java",
-    ],
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
-    test_config: "AndroidTest-mcts.xml",
-    test_suites: [
-        "general-tests",
-        "mts-media",
-        "mcts-media",
-    ],
-    host_required: ["cts-dynamic-config"],
-    min_sdk_version: "29",
-    target_sdk_version: "31",
-}

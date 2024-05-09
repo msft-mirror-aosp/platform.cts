@@ -81,6 +81,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     private final MediaCodecInfo[] mAllInfos =
             mAllCodecs.getCodecInfos();
 
+    private static final String MODULE_NAME = "CtsMediaCodecTestCases";
+
     @Before
     @Override
     public void setUp() throws Throwable {
