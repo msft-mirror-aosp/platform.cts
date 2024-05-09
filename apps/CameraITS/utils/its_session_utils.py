@@ -124,6 +124,8 @@ _USE_CASE_CROPPED_RAW = 6
 _EXTRA_TIMEOUT_FACTOR = 10
 _COPY_SCENE_DELAY_SEC = 1
 _DST_SCENE_DIR = '/sdcard/Download/'
+_BIT_HLG10 =  0x01  # bit 1 for feature mask
+_BIT_STABILIZATION =  0x02 # bit 2 for feature mask
 
 
 def validate_tablet(tablet_name, brightness, device_id):
@@ -2890,6 +2892,7 @@ def remove_frame_files(dir_name, save_files_list=None):
         if image not in save_files_list:
           os.remove(image)
 
+
 def remove_mp4_file(file_name_with_path):
   """Removes the mp4 file at given path.
 
@@ -2900,3 +2903,32 @@ def remove_mp4_file(file_name_with_path):
     os.remove(file_name_with_path)
   except FileNotFoundError:
     logging.debug('File not found: %s', file_name_with_path)
+
+
+def check_and_update_features_tested(
+    features_tested, hlg10, is_stabilized):
+  """Check if the [hlg10, is_stabilized] combination is already tested.
+
+  Args:
+    features_tested: The list of feature combinations already tested
+    hlg10: boolean; Whether HLG10 is enabled
+    is_stabilized: boolean; Whether preview stabilizatoin is enabled
+
+  Returns:
+    Whether the [hlg10, is_stabilized] is already tested.
+  """
+  feature_mask = 0
+  if hlg10: feature_mask |= _BIT_HLG10
+  if is_stabilized: feature_mask |= _BIT_STABILIZATION
+  tested = False
+  for tested_feature in features_tested:
+    # Only test a combination if they aren't already a subset
+    # of another tested combination.
+    if (tested_feature | feature_mask) == tested_feature:
+      tested = True
+      break
+
+  if not tested:
+    features_tested.append(feature_mask)
+
+  return tested
