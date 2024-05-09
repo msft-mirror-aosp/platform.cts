@@ -44,6 +44,8 @@ import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
 
+import com.android.compatibility.common.util.UiAutomatorUtils;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -175,17 +177,43 @@ public class MediaProjectionActivity extends Activity {
         pressStartRecording(isWatch);
     }
 
-    private static boolean selectEntireScreenOption(String entireScreenString) {
-        UiObject2 spinner = waitForObject(By.res(SPINNER_RESOURCE_ID));
-        if (spinner == null) {
-            Log.e(TAG, "Couldn't find spinner to select projection mode, now scrolling");
-            scrollToGivenResource(SPINNER_RESOURCE_ID);
+    @Nullable
+    private static UiObject2 findUiObject(String resourceId) {
+        return findUiObject(By.res(resourceId));
+    }
 
-            spinner = waitForObject(By.res(SPINNER_RESOURCE_ID));
-            if (spinner == null) {
-                Log.e(TAG, "Couldn't find spinner to select projection mode, even after scrolling");
-                return false;
+    @Nullable
+    private static UiObject2 findUiObject(BySelector selector) {
+        // Check if the View can be found on the current screen.
+        UiObject2 obj = waitForObject(selector);
+
+        // If the View is not found on the current screen. Try scrolling around to find it.
+        if (obj == null) {
+            Log.w(TAG, "Couldn't find " + selector + ", now scrolling to it.");
+            scrollToGivenResource(SPINNER_RESOURCE_ID);
+            obj = waitForObject(selector);
+        }
+        if (obj == null) {
+            Log.w(TAG, "Still couldn't find " + selector + ", now scrolling screen height.");
+            try {
+                obj = UiAutomatorUtils.waitFindObjectOrNull(selector);
+            } catch (UiObjectNotFoundException e) {
+                Log.e(TAG, "Error in looking for " + selector, e);
             }
+        }
+
+        if (obj == null) {
+            Log.e(TAG, "Unable to find " + selector);
+        }
+
+        return obj;
+    }
+
+    private static boolean selectEntireScreenOption(String entireScreenString) {
+        UiObject2 spinner = findUiObject(SPINNER_RESOURCE_ID);
+        if (spinner == null) {
+            Log.e(TAG, "Couldn't find spinner to select projection mode, even after scrolling");
+            return false;
         }
         spinner.click();
 
@@ -221,20 +249,8 @@ public class MediaProjectionActivity extends Activity {
 
     private static void pressStartRecording(boolean isWatch) {
         // May need to scroll down to the start button on small screen devices.
-        UiObject2 startRecordingButton = waitForObject(By.res(ACCEPT_RESOURCE_ID));
-        if (startRecordingButton == null) {
-            Log.e(TAG, "Couldn't find start recording button, now attempting to scroll to it");
-            scrollToGivenResource(ACCEPT_RESOURCE_ID);
-
-            startRecordingButton = waitForObject(By.res(ACCEPT_RESOURCE_ID));
-            if (startRecordingButton == null) {
-                Log.e(TAG, "Couldn't find start recording button, even after scrolling");
-            } else {
-                Log.d(TAG, "found permission dialog after scrolling down, clicked");
-                startRecordingButton.click();
-            }
-        } else {
-            Log.d(TAG, "found permission dialog after searching all windows, clicked");
+        UiObject2 startRecordingButton = findUiObject(ACCEPT_RESOURCE_ID);
+        if (startRecordingButton != null) {
             startRecordingButton.click();
         }
     }

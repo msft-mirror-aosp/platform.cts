@@ -28,7 +28,7 @@ import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
 import preview_processing_utils
-import video_processing_utils
+
 
 _AE_ATOL = 0.015  # 1.5%
 _AF_ATOL = 0.02  # 2%
@@ -333,30 +333,12 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
           cam, self.camera_id)
       cam.do_3a()
 
-      # dynamic preview recording
-      recording_obj = preview_processing_utils.collect_preview_data_with_zoom(
-          cam, preview_test_size, _ZOOM_RANGE_UW_W[0],
-          _ZOOM_RANGE_UW_W[1], _ZOOM_STEP, _RECORDING_DURATION)
-
-      # Grab the recording from DUT
-      self.dut.adb.pull([recording_obj['recordedOutputPath'], self.log_path])
-      preview_file_name = (
-          recording_obj['recordedOutputPath'].split('/')[-1])
-      logging.debug('preview_file_name: %s', preview_file_name)
-      logging.debug('recorded video size : %s', recording_obj['videoSize'])
-
-      # Extract frames as png from mp4 preview recording
-      file_list = video_processing_utils.extract_all_frames_from_video(
-          self.log_path, preview_file_name, _IMG_FORMAT
+      # Start dynamic preview recording and collect results
+      capture_results, file_list = (
+          preview_processing_utils.preview_over_zoom_range(
+              self.dut, cam, preview_test_size, _ZOOM_RANGE_UW_W[0],
+              _ZOOM_RANGE_UW_W[1], _ZOOM_STEP, self.log_path)
       )
-
-      # TODO(ruchamk): Raise error if capture result and
-      # frame count doesn't match.
-      capture_results = recording_obj['captureMetadata']
-
-      # skip frames which might not have 3A converged
-      capture_results = capture_results[_SKIP_INITIAL_FRAMES:]
-      file_list = file_list[_SKIP_INITIAL_FRAMES:]
 
       physical_id_before = None
       counter = 0  # counter for the index of crossover point result

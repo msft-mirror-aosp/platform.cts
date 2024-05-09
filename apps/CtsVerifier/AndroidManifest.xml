@@ -7292,6 +7292,31 @@
             <meta-data android:name="NonApiTest"
                        android:value="Helper class. Used to perform admin policy setup." />
         </activity>
+        <activity android:name=".widget.GeneratedPreviewsTestActivity"
+            android:exported="true"
+            android:label="@string/widget_generated_previews_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_other" />
+            <meta-data android:name="test_required_features"
+                android:value="android.software.app_widgets" />
+            <meta-data android:name="display_mode"
+                android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.appwidget.AppWidgetManager#setWidgetPreview|android.appwidget.AppWidgetManager#getWidgetPreview" />
+        </activity>
+        <receiver android:name=".widget.GeneratedPreviewWidgetProvider"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/widget_generated_previews_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/generated_previews_widget_info" />
+        </receiver>
     </application>
 
     <queries>

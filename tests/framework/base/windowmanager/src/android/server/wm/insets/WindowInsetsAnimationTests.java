@@ -50,8 +50,6 @@ import android.view.WindowInsetsAnimation;
 import android.view.WindowInsetsAnimation.Bounds;
 import android.view.WindowInsetsAnimation.Callback;
 
-import com.android.window.flags.Flags;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -110,11 +108,6 @@ public class WindowInsetsAnimationTests extends WindowInsetsAnimationTestBase {
 
     @Test
     public void testAnimationCallbacks_overlapping() {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
         assumeTrue(
                 "Test requires navBar and statusBar to create overlapping animations.",
                 hasWindowInsets(mRootView, navigationBars())

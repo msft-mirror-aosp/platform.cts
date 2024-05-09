@@ -15,6 +15,7 @@
 package templatefns
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -144,11 +145,34 @@ func TestLowerCamelCase(t *testing.T) {
 	}
 }
 
-func TestSafeReqID(t *testing.T) {
-	want := "r5_1__h_1_1"
-	id := "5.1/H-1-1"
-	got := safeReqID(id)
-	if got != want {
-		t.Fatalf("safeReqID(%q) = %q, want %q", id, got, want)
+func TestDict(t *testing.T) {
+	errorValue := errors.New("error_value")
+	var dictTest = []struct {
+		values []any
+		want   map[string]any
+	}{
+		{
+			values: []any{1, 2, 3},
+			want: map[string]any{
+				"1": 2,
+				"3": nil,
+			},
+		},
+		{
+			values: []any{"foo", "bar"},
+			want:   map[string]any{"foo": "bar"},
+		},
+		{
+			values: []any{errors.New("error_key"), errorValue},
+			want:   map[string]any{"error_key": errorValue},
+		},
+	}
+	for _, tt := range dictTest {
+		got := dict(tt.values...)
+		for k, v := range tt.want {
+			if got[k] != v {
+				t.Fatalf("dict(%v)[%q] = %q, want %q", tt.values, k, got[k], v)
+			}
+		}
 	}
 }

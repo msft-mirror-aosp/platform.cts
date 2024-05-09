@@ -158,6 +158,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ServiceTestRule;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FileUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
@@ -3921,6 +3922,7 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
 
     @Test
     @RequiresFlagsEnabled(FLAG_MIN_TARGET_SDK_24)
+    @CddTest(requirements = {"3.1/C-0-8"})
     public void testInstallTargetSdk23Fail() {
         assertThat(installPackageWithResult(CTS_TARGET_SDK_23)).contains(
                 "INSTALL_FAILED_DEPRECATED_SDK_VERSION");
@@ -3929,6 +3931,7 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
 
     @Test
     @RequiresFlagsEnabled(FLAG_MIN_TARGET_SDK_24)
+    @CddTest(requirements = {"3.1/C-0-8"})
     public void testInstallTargetSdk23Bypass() {
         String result = SystemUtil.runShellCommand(
                 "pm install -t -g --bypass-low-target-sdk-block " + CTS_TARGET_SDK_23);
@@ -3938,6 +3941,7 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
 
     @Test
     @RequiresFlagsDisabled(FLAG_MIN_TARGET_SDK_24)
+    @CddTest(requirements = {"3.1/C-0-8"})
     public void testInstallTargetSdk23Success() {
         assertThat(installPackage(CTS_TARGET_SDK_23)).isTrue();
         assertThat(installPackage(CTS_TARGET_SDK_24)).isTrue();

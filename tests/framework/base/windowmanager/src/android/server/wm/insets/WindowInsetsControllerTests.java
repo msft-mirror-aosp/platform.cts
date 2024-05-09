@@ -96,7 +96,6 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
-import com.android.window.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -879,11 +878,6 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
     @Test
     public void testDispatchApplyWindowInsetsCount_systemBars() throws InterruptedException {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
         assumeFalse(isCar() && remoteInsetsControllerControlsSystemBars());
 
         final TestActivity activity = startActivityInWindowingModeFullScreen(TestActivity.class);

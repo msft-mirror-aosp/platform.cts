@@ -25,6 +25,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNoException;
 
 import android.Manifest;
 import android.annotation.NonNull;
@@ -78,7 +79,11 @@ public class OnDeviceIntelligenceServiceTest {
     @Test
     public void sandboxedServiceConfiguredShouldBeIsolated() throws Exception {
         assumeFalse("Service not configured.", TextUtils.isEmpty(sanboxedServiceComponentName));
-        validateSandboxedService(sanboxedServiceComponentName);
+        try {
+            validateSandboxedService(sanboxedServiceComponentName);
+        } catch (PackageManager.NameNotFoundException e) {
+            assumeNoException("Service not present in the device.", e);
+        }
     }
 
     private void validateSandboxedService(String serviceName)

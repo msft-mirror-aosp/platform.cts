@@ -114,6 +114,37 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
         mApiMethods.add(method);
     }
 
+    /** Look for a matching constructor and mark it as covered by the given test method */
+    public void markConstructorCoveredTest(
+            List<String> parameterTypes, String testMethod) {
+        if (mSuperClass != null) {
+            // Mark matching constructors in the superclass
+            mSuperClass.markConstructorCoveredTest(parameterTypes, testMethod);
+        }
+        Optional<ApiConstructor> apiConstructor = getConstructor(parameterTypes);
+        apiConstructor.ifPresent(constructor -> constructor.setCoveredTest(testMethod));
+    }
+
+
+    /** Look for a matching method and if found and mark it as covered by the given test method */
+    public void markMethodCoveredTest(
+            String name, List<String> parameterTypes, String testMethod) {
+        if (mSuperClass != null) {
+            // Mark matching methods in the super class
+            mSuperClass.markMethodCoveredTest(name, parameterTypes, testMethod);
+        }
+        if (!mInterfaceMap.isEmpty()) {
+            // Mark matching methods in the interfaces
+            for (ApiClass mInterface : mInterfaceMap.values()) {
+                if (mInterface != null) {
+                    mInterface.markMethodCoveredTest(name, parameterTypes, testMethod);
+                }
+            }
+        }
+        Optional<ApiMethod> apiMethod = getMethod(name, parameterTypes);
+        apiMethod.ifPresent(method -> method.setCoveredTest(testMethod));
+    }
+
     /** Look for a matching constructor and mark it as covered */
     public void markConstructorCovered(List<String> parameterTypes, String coveredbyApk) {
         if (mSuperClass != null) {

@@ -25,6 +25,8 @@ import its_session_utils
 import preview_processing_utils
 import video_processing_utils
 
+_BIT_HLG10 = 0x01  # bit 1 for feature mask
+_BIT_STABILIZATION = 0x02 # bit 2 for feature mask
 _FPS_30_60 = (30, 60)
 _FPS_SELECTION_ATOL = 0.01
 _FPS_ATOL = 0.8
@@ -98,14 +100,15 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       combinations_str, combinations = cam.get_queryable_stream_combinations()
       logging.debug('Queryable stream combinations: %s', combinations_str)
 
-      # Stabilization modes
-      stabilization_params = [camera_properties_utils.STABILIZATION_MODE_OFF]
+      # Stabilization modes. Make sure to test ON first.
+      stabilization_params = []
       stabilization_modes = props[
           'android.control.availableVideoStabilizationModes']
       if (camera_properties_utils.STABILIZATION_MODE_PREVIEW in
           stabilization_modes):
         stabilization_params.append(
             camera_properties_utils.STABILIZATION_MODE_PREVIEW)
+      stabilization_modes.append(camera_properties_utils.STABILIZATION_MODE_OFF)
       logging.debug('stabilization modes: %s', stabilization_params)
 
       configs = props['android.scaler.streamConfigurationMap'][
@@ -158,12 +161,14 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             max_achievable_fps >= fps[1] - _FPS_SELECTION_ATOL)]
 
         for fps_range in fps_params:
-          # HLG10
-          hlg10_params = [False]
+          # HLG10. Make sure to test ON first.
+          hlg10_params = []
           if cam.is_hlg10_recording_supported_for_size_and_fps(
               preview_size, fps_range[1]):
             hlg10_params.append(True)
+          hlg10_params.append(False)
 
+          features_tested = [] # feature combinations already tested
           for hlg10 in hlg10_params:
             # Construct output surfaces
             output_surfaces = []
@@ -196,6 +201,21 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               if (stabilize ==
                   camera_properties_utils.STABILIZATION_MODE_PREVIEW):
                 is_stabilized = True
+
+              # If a superset of features are already tested, skip.
+              feature_mask = 0
+              if hlg10: feature_mask |= _BIT_HLG10
+              if is_stabilized: feature_mask |= _BIT_STABILIZATION
+              skip_test = False
+              for tested_feature in features_tested:
+                # Only test a combination if they aren't already a subset
+                # of another tested combination.
+                if (tested_feature | feature_mask) == tested_feature:
+                  skip_test = True
+                  break
+              if skip_test:
+                continue
+              features_tested.append(feature_mask)
 
               recording_obj = (
                   preview_processing_utils.collect_data_with_surfaces(
