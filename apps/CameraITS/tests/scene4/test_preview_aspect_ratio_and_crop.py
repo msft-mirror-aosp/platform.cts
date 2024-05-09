@@ -25,6 +25,7 @@ import image_fov_utils
 import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
+import preview_processing_utils
 import video_processing_utils
 
 
@@ -209,6 +210,13 @@ class PreviewAspectRatioAndCropTest(its_base_test.ItsBaseTest):
             video_processing_utils.extract_last_key_frame_from_recording(
                 self.log_path, preview_file_name)
         )
+
+        # If front camera, flip preview image to match camera capture
+        if (props['android.lens.facing'] ==
+            camera_properties_utils.LENS_FACING['FRONT']):
+          last_key_frame = (
+              preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+                  props['android.sensor.orientation'], last_key_frame))
 
         # Check FoV
         ref_img_name = (f'{name_with_log_path}_{preview_size}_circle.png')
