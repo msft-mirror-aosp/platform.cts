@@ -26,7 +26,7 @@ import preview_processing_utils
 import video_processing_utils
 
 _BIT_HLG10 = 0x01  # bit 1 for feature mask
-_BIT_STABILIZATION = 0x02 # bit 2 for feature mask
+_BIT_STABILIZATION = 0x02  # bit 2 for feature mask
 _FPS_30_60 = (30, 60)
 _FPS_SELECTION_ATOL = 0.01
 _FPS_ATOL = 0.8
@@ -108,7 +108,9 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
           stabilization_modes):
         stabilization_params.append(
             camera_properties_utils.STABILIZATION_MODE_PREVIEW)
-      stabilization_params.append(camera_properties_utils.STABILIZATION_MODE_OFF)
+      stabilization_params.append(
+          camera_properties_utils.STABILIZATION_MODE_OFF
+      )
       logging.debug('stabilization modes: %s', stabilization_params)
 
       configs = props['android.scaler.streamConfigurationMap'][
@@ -168,7 +170,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             hlg10_params.append(True)
           hlg10_params.append(False)
 
-          features_tested = [] # feature combinations already tested
+          features_tested = []  # feature combinations already tested
           for hlg10 in hlg10_params:
             # Construct output surfaces
             output_surfaces = []
