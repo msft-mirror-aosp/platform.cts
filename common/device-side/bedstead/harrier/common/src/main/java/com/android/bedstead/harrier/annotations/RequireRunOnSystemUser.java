@@ -16,8 +16,8 @@
 
 package com.android.bedstead.harrier.annotations;
 
-import static com.android.bedstead.harrier.annotations.AnnotationRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE;
-import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE;
+import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnUserAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
@@ -47,19 +47,21 @@ public @interface RequireRunOnSystemUser {
     /**
      * Should we ensure that we are switched to the given user.
      *
-     * <p>ANY will be treated as TRUE if no other annotation has forced a switch.
+     * <p>ANY will be treated as TRUE if no other annotation has forced a switch and the user
+     * can be switched to.
      */
-    OptionalBoolean switchedToUser() default TRUE;
+    OptionalBoolean switchedToUser() default ANY;
 
-    /**
-     * Weight sets the order that annotations will be resolved.
+     /**
+     * Priority sets the order that annotations will be resolved.
      *
-     * <p>Annotations with a lower weight will be resolved before annotations with a higher weight.
+     * <p>Annotations with a lower priority will be resolved before annotations with a higher
+     * priority.
      *
-     * <p>If there is an order requirement between annotations, ensure that the weight of the
+     * <p>If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     * <p>Weight can be set to a {@link AnnotationRunPrecedence} constant, or to any {@link int}.
+     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int weight() default REQUIRE_RUN_ON_PRECEDENCE;
+    int priority() default REQUIRE_RUN_ON_PRECEDENCE;
 }

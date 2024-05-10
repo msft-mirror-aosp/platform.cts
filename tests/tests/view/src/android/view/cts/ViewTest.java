@@ -17,6 +17,8 @@
 package android.view.cts;
 
 import static android.server.wm.ActivityManagerTestBase.isTablet;
+import static android.view.flags.Flags.FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY;
+import static android.view.flags.Flags.FLAG_VIEW_VELOCITY_API;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -66,6 +68,10 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.os.Vibrator;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.format.DateUtils;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -146,10 +152,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ViewTest {
     /** timeout delta when wait in case the system is sluggish */
     private static final long TIMEOUT_DELTA = 10000;
+    private static final long DEFAULT_TIMEOUT_MILLIS = 1000;
 
     private static final String LOG_TAG = "ViewTest";
 
     private Instrumentation mInstrumentation;
+    private CtsTouchUtils mCtsTouchUtils;
     private ViewTestCtsActivity mActivity;
     private Resources mResources;
     private MockViewParent mMockParent;
@@ -163,10 +171,15 @@ public class ViewTest {
     public ActivityTestRule<CtsActivity> mCtsActivityRule =
             new ActivityTestRule<>(CtsActivity.class, false, false);
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getTargetContext();
+        mCtsTouchUtils = new CtsTouchUtils(mContext);
         mActivity = mActivityRule.getActivity();
         WindowUtil.waitForFocus(mActivity);
         mResources = mActivity.getResources();
@@ -419,7 +432,7 @@ public class ViewTest {
         view.setTouchDelegate(delegate);
         assertSame(delegate, view.getTouchDelegate());
         verify(delegate, never()).onTouchEvent(any());
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, view);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, view);
         assertTrue(view.hasCalledOnTouchEvent());
         verify(delegate, times(1)).onTouchEvent(any());
         CtsMouseUtil.emulateHoverOnView(mInstrumentation, view, view.getWidth() / 2,
@@ -493,23 +506,11 @@ public class ViewTest {
 
         final int[] xy = new int[2];
         view.getLocationOnScreen(xy);
-        final int viewWidth = view.getWidth();
-        final int viewHeight = view.getHeight();
-        float x = xy[0] + viewWidth / 2.0f;
-        float y = xy[1] + viewHeight / 2.0f;
+        int x = xy[0] + view.getWidth() / 2;
+        int y = xy[1] + view.getHeight() / 2;
 
-        long eventTime = SystemClock.uptimeMillis();
-
-        MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[1];
-        pointerCoords[0] = new MotionEvent.PointerCoords();
-        pointerCoords[0].x = x;
-        pointerCoords[0].y = y;
-
-        final int[] pointerIds = new int[1];
-        pointerIds[0] = 0;
-
-        MotionEvent event = MotionEvent.obtain(0, eventTime, MotionEvent.ACTION_HOVER_MOVE,
-                1, pointerIds, pointerCoords, 0, 0, 0, 0, 0, InputDevice.SOURCE_MOUSE, 0);
+        final MotionEvent event =
+                EventUtils.generateMouseEvent(x, y, MotionEvent.ACTION_HOVER_MOVE, 0);
         mInstrumentation.sendPointerSync(event);
         mInstrumentation.waitForIdleSync();
 
@@ -522,11 +523,8 @@ public class ViewTest {
     @Test
     public void testAccessPointerIcon() {
         View view = mActivity.findViewById(R.id.pointer_icon_layout);
-        MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_HOVER_MOVE, 0, 0, 0);
-        // Only pointer sources (SOURCE_CLASS_POINTER) will have translation applied, since only
-        // they refer to locations on the screen. We need to set the source to get
-        // "setLocation" to work.
-        event.setSource(InputDevice.SOURCE_MOUSE);
+        final MotionEvent event =
+                EventUtils.generateMouseEvent(0, 0, MotionEvent.ACTION_HOVER_MOVE, 0);
 
         // First view has pointerIcon="help"
         assertEquals(PointerIcon.getSystemIcon(mActivity, PointerIcon.TYPE_HELP),
@@ -573,7 +571,8 @@ public class ViewTest {
         child2.setPointerIcon(iconChild2);
         child3.setPointerIcon(iconChild3);
 
-        MotionEvent event = MotionEvent.obtain(0, 0, MotionEvent.ACTION_HOVER_MOVE, 0, 0, 0);
+        final MotionEvent event =
+                EventUtils.generateMouseEvent(0, 0, MotionEvent.ACTION_HOVER_MOVE, 0);
 
         assertEquals(iconChild3, parent.onResolvePointerIcon(event, 0));
 
@@ -610,14 +609,14 @@ public class ViewTest {
     }
 
     private void onResolvePointerIcon_scrollabilityAffectsPointerIcon(boolean vertical,
-            boolean canScroll, boolean pointerIsSystemArrow) {
+            boolean canScroll, boolean pointerIsDefaultIcon) {
 
         // Arrange
 
-        int range = canScroll ? 101 : 100;
-        int thumbLength = ScrollBarUtils.getThumbLength(1, 10, 100, range);
+        final int range = canScroll ? 101 : 100;
+        final int thumbLength = ScrollBarUtils.getThumbLength(1, 10, 100, range);
 
-        PointerIcon expectedPointerIcon = PointerIcon.getSystemIcon(mContext,
+        final PointerIcon expectedPointerIcon = PointerIcon.getSystemIcon(mContext,
                 PointerIcon.TYPE_HAND);
 
         final ScrollTestView view = spy(new ScrollTestView(mContext));
@@ -633,20 +632,21 @@ public class ViewTest {
         when(view.computeHorizontalScrollExtent()).thenReturn(100);
         when(view.computeHorizontalScrollRange()).thenReturn(range);
 
-        int touchX = vertical ? 95 : thumbLength / 2;
-        int touchY = vertical ? thumbLength / 2 : 95;
-        MotionEvent event =
+        final int touchX = vertical ? 95 : thumbLength / 2;
+        final int touchY = vertical ? thumbLength / 2 : 95;
+        final MotionEvent event =
                 EventUtils.generateMouseEvent(touchX, touchY, MotionEvent.ACTION_HOVER_ENTER, 0);
 
         // Act
 
-        PointerIcon actualResult = view.onResolvePointerIcon(event, 0);
+        final PointerIcon actualResult = view.onResolvePointerIcon(event, 0);
         event.recycle();
 
         // Assert
 
-        if (pointerIsSystemArrow) {
-            assertEquals(PointerIcon.getSystemIcon(mContext, PointerIcon.TYPE_ARROW), actualResult);
+        if (pointerIsDefaultIcon) {
+            // onResolvePointerIcon should return null to show the default pointer icon.
+            assertNull(actualResult);
         } else {
             assertEquals(expectedPointerIcon, actualResult);
         }
@@ -1304,8 +1304,11 @@ public class ViewTest {
     }
 
     @Test
+    @UiThreadTest
     public void testAddFocusables() {
         View view = new View(mActivity);
+        mActivity.setContentView(view);
+
         ArrayList<View> viewList = new ArrayList<>();
 
         // view is not focusable
@@ -1325,8 +1328,11 @@ public class ViewTest {
     }
 
     @Test
+    @UiThreadTest
     public void testGetFocusables() {
         View view = new View(mActivity);
+        mActivity.setContentView(view);
+
         ArrayList<View> viewList;
 
         // view is not focusable
@@ -1346,8 +1352,11 @@ public class ViewTest {
     }
 
     @Test
+    @UiThreadTest
     public void testAddFocusablesWithoutTouchMode() {
         View view = new View(mActivity);
+        mActivity.setContentView(view);
+
         assertFalse("test sanity", view.isInTouchMode());
         focusableInTouchModeTest(view, false);
     }
@@ -1730,6 +1739,24 @@ public class ViewTest {
         assertFalse(view.isEnabled());
     }
 
+
+    @Test
+    public void testSetEnabled_receiveEvent() throws Throwable {
+        final View mockView = mActivity.findViewById(R.id.mock_view);
+        mInstrumentation.getUiAutomation().waitForIdle(2000, 4000);
+        mInstrumentation.getUiAutomation().executeAndWaitForEvent(
+                () -> mInstrumentation.runOnMainSync(() -> {
+                    mockView.setEnabled(!mockView.isEnabled());
+                }),
+                event -> isExpectedChangeType(event,
+                        AccessibilityEvent.CONTENT_CHANGE_TYPE_ENABLED),
+                DEFAULT_TIMEOUT_MILLIS);
+    }
+
+    private static boolean isExpectedChangeType(AccessibilityEvent event, int changeType) {
+        return (event.getContentChangeTypes() & changeType) == changeType;
+    }
+
     @Test
     public void testAccessSaveEnabled() {
         View view = new View(mActivity);
@@ -1776,6 +1803,30 @@ public class ViewTest {
 
         assertFalse(view.showContextMenu(0, 0));
         assertTrue(parent.hasShowContextMenuForChildXY());
+    }
+
+    @Test
+    public void testShowContextMenu_withDefaultHapticFeedbackDisabled_performHapticFeedback() {
+        MockView view = new MockView(mActivity);
+        View.OnLongClickListener listener = new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                return false;
+            }
+
+            @Override
+            public boolean onLongClickUseDefaultHapticFeedback(View v) {
+                return false;
+            }
+        };
+        view.setParent(mMockParent);
+        view.setOnLongClickListener(listener);
+        mMockParent.setShouldShowContextMenu(true);
+
+        assertTrue(view.performLongClick(0, 0));
+        assertTrue(mMockParent.hasShowContextMenuForChildXY());
+        assertTrue(view.hasCalledPerformHapticFeedback());
+        mMockParent.reset();
     }
 
     @Test
@@ -1876,6 +1927,66 @@ public class ViewTest {
         assertTrue(view.performLongClick());
         assertFalse(mMockParent.hasShowContextMenuForChild());
         verify(listener, times(1)).onLongClick(view);
+    }
+
+    @Test
+    public void testPerformLongClick_withDefaultHapticFeedbackEnabled_performHapticFeedback() {
+        MockView view = new MockView(mActivity);
+        View.OnLongClickListener listener = v -> true;
+
+        view.setParent(mMockParent);
+        view.setOnLongClickListener(listener);
+        view.reset();
+
+        assertTrue(view.performLongClick());
+        assertTrue(view.hasCalledPerformHapticFeedback());
+    }
+
+    @Test
+    public void testPerformLongClick_withDefaultHapticFeedbackDisabled_skipHapticFeedback() {
+        MockView view = new MockView(mActivity);
+        View.OnLongClickListener listener = new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                return true;
+            }
+
+            @Override
+            public boolean onLongClickUseDefaultHapticFeedback(View v) {
+                return false;
+            }
+        };
+
+        view.setParent(mMockParent);
+        view.setOnLongClickListener(listener);
+        view.reset();
+
+        assertTrue(view.performLongClick());
+        assertFalse(view.hasCalledPerformHapticFeedback());
+    }
+
+    @Test
+    public void testPerformLongClick_withListenerRemovedOnLongClick_upholdDefaultHapticOverride() {
+        final MockView view = new MockView(mActivity);
+        View.OnLongClickListener listener = new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                view.setOnLongClickListener(null);
+                return true;
+            }
+
+            @Override
+            public boolean onLongClickUseDefaultHapticFeedback(View v) {
+                return false;
+            }
+        };
+
+        view.setParent(mMockParent);
+        view.setOnLongClickListener(listener);
+        view.reset();
+
+        assertTrue(view.performLongClick());
+        assertFalse(view.hasCalledPerformHapticFeedback());
     }
 
     @Test(expected=NullPointerException.class)
@@ -2471,14 +2582,19 @@ public class ViewTest {
     }
 
     @Test
+    @UiThreadTest
     public void testIsInTouchMode() {
-        View view = new View(mActivity);
-        // mAttachInfo is null
-        assertFalse(view.isInTouchMode());
+        View detachedView = new View(mActivity);
+
+        // mAttachInfo is null, therefore it should return the touch mode default value
+        Resources resources = mActivity.getResources();
+        boolean defaultInTouchMode = resources.getBoolean(resources.getIdentifier(
+                "config_defaultInTouchMode", "bool", "android"));
+        assertEquals(defaultInTouchMode, detachedView.isInTouchMode());
 
         // mAttachInfo is not null
-        view = mActivity.findViewById(R.id.fit_windows);
-        assertFalse(view.isInTouchMode());
+        View attachedView = mActivity.findViewById(R.id.fit_windows);
+        assertFalse(attachedView.isInTouchMode());
     }
 
     @Test
@@ -3248,12 +3364,12 @@ public class ViewTest {
         MotionEvent downEvent =
                 MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0);
         downEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        mInstrumentation.getUiAutomation().injectInputEvent(downEvent, true);
+        mInstrumentation.sendPointerSync(downEvent);
         final long eventTime = SystemClock.uptimeMillis();
         MotionEvent upEvent =
                 MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_UP, x, y, 0);
         upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        mInstrumentation.getUiAutomation().injectInputEvent(upEvent, true);
+        mInstrumentation.sendPointerSync(upEvent);
 
         compareAndRecycleMotionEvents(downEvent, events.poll());
         compareAndRecycleMotionEvents(upEvent, events.poll());
@@ -3450,8 +3566,11 @@ public class ViewTest {
     }
 
     @Test
+    @UiThreadTest
     public void testRequestFocusFromTouch() {
         View view = new View(mActivity);
+        mActivity.setContentView(view);
+
         view.setFocusable(true);
         assertFalse(view.isFocused());
 
@@ -3627,7 +3746,7 @@ public class ViewTest {
         assertFalse(view.isClickable());
         assertFalse(view.isLongClickable());
 
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, view);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, view);
         assertTrue(view.hasCalledOnTouchEvent());
     }
 
@@ -3977,7 +4096,7 @@ public class ViewTest {
         assertFalse(mockView.isInTouchMode());
         assertFalse(fitWindowsView.isInTouchMode());
 
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mockView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mockView);
         assertFalse(fitWindowsView.isFocused());
         assertFalse(mockView.isFocused());
         mActivityRule.runOnUiThread(mockView::requestFocus);
@@ -3991,7 +4110,7 @@ public class ViewTest {
 
         KeyEvent keyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_0);
         mInstrumentation.sendKeySync(keyEvent);
-        assertTrue(mockView.isFocused());
+        mActivityRule.runOnUiThread(() -> assertTrue(mockView.isFocused()));
         assertFalse(fitWindowsView.isFocused());
         mActivityRule.runOnUiThread(fitWindowsView::requestFocus);
         mInstrumentation.waitForIdleSync();
@@ -4005,21 +4124,29 @@ public class ViewTest {
                 CtsMouseUtil.obtainMouseEvent(MotionEvent.ACTION_SCROLL, mockView,
                         mockView.getWidth() - 1, 0);
         mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
 
         mInstrumentation.sendKeySync(keyEvent);
-        assertFalse(fitWindowsView.isInTouchMode());
+        mInstrumentation.waitForIdleSync();
+        mActivityRule.runOnUiThread(() -> assertFalse(fitWindowsView.isInTouchMode()));
 
         event.setAction(MotionEvent.ACTION_DOWN);
         mInstrumentation.sendPointerSync(event);
+        event.setAction(MotionEvent.ACTION_UP);
+        mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
 
         mInstrumentation.sendKeySync(keyEvent);
-        assertFalse(fitWindowsView.isInTouchMode());
+        mInstrumentation.waitForIdleSync();
+        mActivityRule.runOnUiThread(() -> assertFalse(fitWindowsView.isInTouchMode()));
 
         // Stylus events should trigger touch mode.
+        event.setAction(MotionEvent.ACTION_DOWN);
         event.setSource(InputDevice.SOURCE_STYLUS);
         mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
     }
 
@@ -4347,7 +4474,7 @@ public class ViewTest {
         });
         mInstrumentation.waitForIdleSync();
 
-        mInstrumentation.sendKeySync(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK));
+        mInstrumentation.sendKeySync(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A));
         assertTrue(view.hasCalledDispatchKeyEventPreIme());
         assertTrue(view.hasCalledOnKeyPreIme());
     }
@@ -4355,7 +4482,6 @@ public class ViewTest {
     @Test
     public void testHapticFeedback() {
         Vibrator vib = (Vibrator) mActivity.getSystemService(Context.VIBRATOR_SERVICE);
-        boolean hasVibrator = vib.hasVibrator();
 
         final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
         final int LONG_PRESS = HapticFeedbackConstants.LONG_PRESS;
@@ -4367,12 +4493,25 @@ public class ViewTest {
         assertFalse(view.isHapticFeedbackEnabled());
         assertFalse(view.performHapticFeedback(LONG_PRESS));
         assertFalse(view.performHapticFeedback(LONG_PRESS, FLAG_IGNORE_GLOBAL_SETTING));
-        assertEquals(hasVibrator, view.performHapticFeedback(LONG_PRESS, ALWAYS));
+        assertPerformHapticFeedbackTrueIfHasVibrator(vib,
+                view.performHapticFeedback(LONG_PRESS, ALWAYS));
+        assertFalse(view.performHapticFeedback(HapticFeedbackConstants.NO_HAPTICS));
 
         view.setHapticFeedbackEnabled(true);
         assertTrue(view.isHapticFeedbackEnabled());
-        assertEquals(hasVibrator, view.performHapticFeedback(LONG_PRESS,
-                FLAG_IGNORE_GLOBAL_SETTING));
+        assertPerformHapticFeedbackTrueIfHasVibrator(vib,
+                view.performHapticFeedback(LONG_PRESS, FLAG_IGNORE_GLOBAL_SETTING));
+        assertFalse(view.performHapticFeedback(HapticFeedbackConstants.NO_HAPTICS));
+    }
+
+    /**
+     * Assert that the result must be true if the device has a vibrator. If no vibrator, the method
+     * may return true or false depending on whether USE_ASYNC_PERFORM_HAPTIC_FEEDBACK is active.
+     */
+    private void assertPerformHapticFeedbackTrueIfHasVibrator(Vibrator vib, boolean result) {
+        if (vib.hasVibrator()) {
+            assertTrue(result);
+        }
     }
 
     @Test
@@ -4628,13 +4767,17 @@ public class ViewTest {
     }
 
     private boolean startDragAndDrop(View view, View.DragShadowBuilder shadowBuilder) {
-        final Point size = new Point();
-        mActivity.getWindowManager().getDefaultDisplay().getSize(size);
+        final int[] viewOnScreenXY = new int[2];
+        View decorView = mActivity.getWindow().getDecorView();
+        decorView.getLocationOnScreen(viewOnScreenXY);
+        int xOnScreen = viewOnScreenXY[0] + decorView.getWidth() / 2;
+        int yOnScreen = viewOnScreenXY[1] + decorView.getHeight() / 2;
+
         final MotionEvent event = MotionEvent.obtain(
                 SystemClock.uptimeMillis(), SystemClock.uptimeMillis(),
-                MotionEvent.ACTION_DOWN, size.x / 2, size.y / 2, 1);
+                MotionEvent.ACTION_DOWN, xOnScreen, yOnScreen, 1);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        mInstrumentation.getUiAutomation().injectInputEvent(event, true);
+        mInstrumentation.sendPointerSync(event);
 
         return view.startDragAndDrop(ClipData.newPlainText("", ""), shadowBuilder, view, 0);
     }
@@ -4695,6 +4838,113 @@ public class ViewTest {
         View.DragShadowBuilder shadowBuilder = createDragShadowBuidler();
         view.updateDragShadow(shadowBuilder);
         verify(shadowBuilder, never()).onDrawShadow(any(Canvas.class));
+    }
+
+    /**
+     * Test for velocity APIs - it requires the flag to be enabled.
+     * To enable the flag:
+     * adb shell device_config put toolkit android.view.flags.view_velocity_api true
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_VIEW_VELOCITY_API)
+    public void testVelocityAPIsFlagEnabled() throws Throwable {
+        final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+        view.reset();
+        mActivityRule.runOnUiThread(() -> {
+            // The values of the velocities should be 0 by default
+            assertTrue(view.getFrameContentVelocity() == 0);
+
+            view.setFrameContentVelocity(-10);
+            assertTrue(view.getFrameContentVelocity() == 10);
+
+            view.setFrameContentVelocity(20);
+            assertTrue(view.getFrameContentVelocity() == 20);
+
+            view.requestLayout();
+        });
+        mInstrumentation.waitForIdleSync();
+        // the velocities should be reset once the view is drawn.
+        assertTrue(view.getFrameContentVelocity() == 0);
+    }
+
+    /**
+     * Test for velocity APIs - it requires the flag to be disabled (default value).
+     * To disable the flag:
+     * adb shell device_config put toolkit android.view.flags.view_velocity_api false
+     */
+    @Test
+    @RequiresFlagsDisabled(FLAG_VIEW_VELOCITY_API)
+    public void testVelocityAPIsFlagDisabled() throws Throwable {
+        final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+        view.reset();
+        mActivityRule.runOnUiThread(() -> {
+            // The values of the velocities should be 0 by default
+            assertTrue(view.getFrameContentVelocity() == 0);
+
+            view.setFrameContentVelocity(-10);
+            assertTrue(view.getFrameContentVelocity() == 0);
+
+            view.setFrameContentVelocity(20);
+            assertTrue(view.getFrameContentVelocity() == 0);
+
+            view.requestLayout();
+        });
+        mInstrumentation.waitForIdleSync();
+        // the velocities should be reset once the view is drawn.
+        assertTrue(view.getFrameContentVelocity() == 0);
+    }
+
+    /**
+     * Test for requested frame rate APIs
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY)
+    public void testFrameRateAPIsFlagEnabled() throws Throwable {
+        final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+        view.reset();
+        mActivityRule.runOnUiThread(() -> {
+            // The values of the velocities should be 0 by default
+            assertEquals(view.getRequestedFrameRate(),
+                    view.REQUESTED_FRAME_RATE_CATEGORY_DEFAULT, 0.1);
+
+            view.setRequestedFrameRate(10);
+            assertEquals(view.getRequestedFrameRate(), 10, 0.1);
+
+            view.setRequestedFrameRate(view.REQUESTED_FRAME_RATE_CATEGORY_LOW);
+            assertEquals(view.getRequestedFrameRate(), view.REQUESTED_FRAME_RATE_CATEGORY_LOW, 0.1);
+
+            view.requestLayout();
+        });
+
+        mInstrumentation.waitForIdleSync();
+        // the value should be remained the same
+        assertEquals(view.getRequestedFrameRate(), view.REQUESTED_FRAME_RATE_CATEGORY_LOW, 0.1);
+    }
+
+    /**
+     * Test for requested frame rate APIs
+     */
+    @Test
+    @RequiresFlagsDisabled(FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY)
+    public void testFrameRateAPIsFlagDisabled() throws Throwable {
+        final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+        view.reset();
+        mActivityRule.runOnUiThread(() -> {
+            // The values of the velocities should be 0 by default
+            assertEquals(view.getRequestedFrameRate(), 0, 0.1);
+
+            view.setRequestedFrameRate(10);
+            assertEquals(view.getRequestedFrameRate(), 0, 0.1);
+
+            view.setRequestedFrameRate(-1);
+            assertEquals(view.getRequestedFrameRate(), 0, 0.1);
+
+            view.requestLayout();
+        });
+
+        mInstrumentation.waitForIdleSync();
+        // the value should be 0
+        assertEquals(view.getRequestedFrameRate(), 0, 0.1);
     }
 
     private void setVisibilityOnUiThread(final View view, final int visibility) throws Throwable {
@@ -5259,6 +5509,7 @@ public class ViewTest {
         private boolean mHasShowContextMenuForChildXY = false;
         private boolean mHasChildDrawableStateChanged = false;
         private boolean mHasBroughtChildToFront = false;
+        private boolean mShouldShowContextMenu = false;
 
         private final static int[] DEFAULT_PARENT_STATE_SET = new int[] { 789 };
 
@@ -5270,6 +5521,10 @@ public class ViewTest {
 
         public MockViewParent(Context context) {
             super(context);
+        }
+
+        void setShouldShowContextMenu(boolean shouldShowContextMenu) {
+            mShouldShowContextMenu = shouldShowContextMenu;
         }
 
         @Override
@@ -5376,13 +5631,13 @@ public class ViewTest {
         @Override
         public boolean showContextMenuForChild(View originalView) {
             mHasShowContextMenuForChild = true;
-            return false;
+            return mShouldShowContextMenu;
         }
 
         @Override
         public boolean showContextMenuForChild(View originalView, float x, float y) {
             mHasShowContextMenuForChildXY = true;
-            return false;
+            return mShouldShowContextMenu;
         }
 
         @Override
@@ -5422,6 +5677,7 @@ public class ViewTest {
             mHasShowContextMenuForChildXY = false;
             mHasChildDrawableStateChanged = false;
             mHasBroughtChildToFront = false;
+            mShouldShowContextMenu = false;
         }
 
         @Override

@@ -20,10 +20,11 @@ import android.os.Environment;
 import android.util.Log;
 
 import com.android.compatibility.common.util.ReportLog;
-import com.android.compatibility.common.util.ReportLogDeviceInfoStore;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlSerializer;
 
@@ -31,13 +32,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 public class CtsVerifierReportLog extends ReportLog {
     private static final String TAG = CtsVerifierReportLog.class.getSimpleName();
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
 
-    private ReportLogDeviceInfoStore mStore;
+    private File mJsonFile;
+    private JSONObject mCurrentJson = new JSONObject();
 
     private static final String LOG_ERROR_STR = "Could not log metric.";
 
@@ -65,9 +69,7 @@ public class CtsVerifierReportLog extends ReportLog {
                 throw new IOException("Cannot create directory " + logDirectory
                         + " for device info files");
             } else {
-                File jsonFile = new File(logDirectory, mReportLogName + ".reportlog.json");
-                mStore = new ReportLogDeviceInfoStore(jsonFile, mStreamName);
-                mStore.open();
+                mJsonFile = new File(logDirectory, mReportLogName + ".reportlog.json");
             }
         } catch (Exception e) {
             Log.e(TAG, "Could not create report log file.", e);
@@ -75,7 +77,7 @@ public class CtsVerifierReportLog extends ReportLog {
     }
 
     public boolean isOpen() {
-        return mStore != null;
+        return mJsonFile != null;
     }
 
     /**
@@ -88,7 +90,25 @@ public class CtsVerifierReportLog extends ReportLog {
             Log.d(TAG, "submit()");
         }
         try {
-            mStore.close();
+            Log.d(TAG, "Submit JSON file at " + mJsonFile.getAbsolutePath());
+            Path path = mJsonFile.toPath();
+            JSONObject jsonObject;
+            // If the file currently exists, load into the JSONObject.
+            if (mJsonFile.exists()) {
+                String content = new String(Files.readAllBytes(path));
+                jsonObject = new JSONObject(content);
+            } else {
+                jsonObject = new JSONObject();
+            }
+            // Put the new JSON object into the existing JSON
+            jsonObject.put(mStreamName, mCurrentJson);
+            // Write as human readable text.
+            String newString = jsonObject.toString(2);
+            if (DEBUG) {
+                Log.d(TAG, "New JSON string:" + newString);
+            }
+            // Write the new JSON back into the file.
+            Files.write(path, newString.getBytes());
         } catch (Exception e) {
             Log.e(TAG, "ReportLog Submit Failed", e);
         }
@@ -102,8 +122,11 @@ public class CtsVerifierReportLog extends ReportLog {
      */
     @Override
     public void addValues(String message, double[] values, ResultType type, ResultUnit unit) {
-        // Do nothing. Subclasses may implement using InfoStore to write metrics to files.
-        Log.e(TAG, "No implementation for addValues(double[])");
+        try {
+            mCurrentJson.put(message, new JSONArray(values));
+        } catch (Exception e) {
+            Log.e(TAG, LOG_ERROR_STR + " (double[]) ", e);
+        }
     }
 
     /**
@@ -112,8 +135,11 @@ public class CtsVerifierReportLog extends ReportLog {
     @Override
     public void addValues(String source, String message, double[] values, ResultType type,
                           ResultUnit unit) {
-        // Do nothing. Subclasses may implement using InfoStore to write metrics to files.
-        Log.e(TAG, "No implementation for addValues(double[])");
+        try {
+            mCurrentJson.put(message, new JSONArray(values));
+        } catch (Exception e) {
+            Log.e(TAG, LOG_ERROR_STR + " (double[]) ", e);
+        }
     }
 
     /**
@@ -122,7 +148,7 @@ public class CtsVerifierReportLog extends ReportLog {
     @Override
     public void addValue(String message, double value, ResultType type, ResultUnit unit) {
         try {
-            mStore.addResult(message, value);
+            mCurrentJson.put(message, value);
         } catch (Exception e) {
             Log.e(TAG, LOG_ERROR_STR + " (double) ", e);
         }
@@ -135,7 +161,7 @@ public class CtsVerifierReportLog extends ReportLog {
     public void addValue(String source, String message, double value, ResultType type,
                          ResultUnit unit) {
         try {
-            mStore.addResult(message, value);
+            mCurrentJson.put(message, value);
         } catch (Exception e) {
             Log.e(TAG, LOG_ERROR_STR + " (double) ", e);
         }
@@ -147,7 +173,7 @@ public class CtsVerifierReportLog extends ReportLog {
     @Override
     public void addValue(String message, int value, ResultType type, ResultUnit unit) {
         try {
-            mStore.addResult(message, value);
+            mCurrentJson.put(message, value);
         } catch (Exception e) {
             Log.e(TAG, LOG_ERROR_STR + " (int) ", e);
         }
@@ -159,7 +185,7 @@ public class CtsVerifierReportLog extends ReportLog {
     @Override
     public void addValue(String message, long value, ResultType type, ResultUnit unit) {
         try {
-            mStore.addResult(message, value);
+            mCurrentJson.put(message, value);
         } catch (Exception e) {
             Log.e(TAG, LOG_ERROR_STR + " (long) ", e);
         }
@@ -171,7 +197,7 @@ public class CtsVerifierReportLog extends ReportLog {
     @Override
     public void addValue(String message, float value, ResultType type, ResultUnit unit) {
         try {
-            mStore.addResult(message, value);
+            mCurrentJson.put(message, value);
         } catch (Exception e) {
             Log.e(TAG, LOG_ERROR_STR + " (float) ", e);
         }
@@ -183,7 +209,7 @@ public class CtsVerifierReportLog extends ReportLog {
     @Override
     public void addValue(String message, boolean value, ResultType type, ResultUnit unit) {
         try {
-            mStore.addResult(message, value);
+            mCurrentJson.put(message, value);
         } catch (Exception e) {
             Log.e(TAG, LOG_ERROR_STR + " (boolean) ", e);
         }
@@ -195,7 +221,7 @@ public class CtsVerifierReportLog extends ReportLog {
     @Override
     public void addValue(String message, String value, ResultType type, ResultUnit unit) {
         try {
-            mStore.addResult(message, value);
+            mCurrentJson.put(message, value);
         } catch (Exception e) {
             Log.e(TAG, LOG_ERROR_STR + " (String) ", e);
         }
@@ -207,7 +233,7 @@ public class CtsVerifierReportLog extends ReportLog {
     @Override
     public void addValues(String message, int[] values, ResultType type, ResultUnit unit) {
         try {
-            mStore.addArrayResult(message, values);
+            mCurrentJson.put(message, new JSONArray(values));
         } catch (Exception e) {
             Log.e(TAG, LOG_ERROR_STR + " (int[]) ", e);
         }
@@ -219,7 +245,7 @@ public class CtsVerifierReportLog extends ReportLog {
     @Override
     public void addValues(String message, long[] values, ResultType type, ResultUnit unit) {
         try {
-            mStore.addArrayResult(message, values);
+            mCurrentJson.put(message, new JSONArray(values));
         } catch (Exception e) {
             Log.e(TAG, LOG_ERROR_STR + " (long[]) ", e);
         }
@@ -231,7 +257,7 @@ public class CtsVerifierReportLog extends ReportLog {
     @Override
     public void addValues(String message, float[] values, ResultType type, ResultUnit unit) {
         try {
-            mStore.addArrayResult(message, values);
+            mCurrentJson.put(message, new JSONArray(values));
         } catch (Exception e) {
             Log.e(TAG, LOG_ERROR_STR + " (float[]) ", e);
         }
@@ -243,7 +269,7 @@ public class CtsVerifierReportLog extends ReportLog {
     @Override
     public void addValues(String message, boolean[] values, ResultType type, ResultUnit unit) {
         try {
-            mStore.addArrayResult(message, values);
+            mCurrentJson.put(message, new JSONArray(values));
         } catch (Exception e) {
             Log.e(TAG, LOG_ERROR_STR + " (boolean[]) ", e);
         }
@@ -254,7 +280,11 @@ public class CtsVerifierReportLog extends ReportLog {
      */
     @Override
     public void addValues(String message, List<String> values, ResultType type, ResultUnit unit) {
-        Log.e(TAG, "No implementation for addValues(String, List<String>, ResultType, ResultUnit)");
+        try {
+            mCurrentJson.put(message, new JSONArray(values));
+        } catch (Exception e) {
+            Log.e(TAG, LOG_ERROR_STR + " (List<String>) ", e);
+        }
     }
 
     public static String serialize(ReportLog reportlog) throws XmlPullParserException,
@@ -279,5 +309,16 @@ public class CtsVerifierReportLog extends ReportLog {
 
     // Serializable writeObject
     private void writeObject(ObjectOutputStream outputStream) throws IOException {
+    }
+
+    /**
+     * Adds a JSONArray metric to the report.
+     */
+    public void addValues(String message, JSONArray values) {
+        try {
+            mCurrentJson.put(message, values);
+        } catch (Exception e) {
+            Log.e(TAG, LOG_ERROR_STR + " (JSONArray) ", e);
+        }
     }
 }

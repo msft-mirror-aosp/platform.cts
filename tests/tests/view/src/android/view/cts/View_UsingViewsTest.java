@@ -37,7 +37,6 @@ import android.app.Activity;
 import android.app.Instrumentation;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.support.test.uiautomator.UiDevice;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -50,6 +49,7 @@ import androidx.test.annotation.UiThreadTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
 
@@ -93,6 +93,8 @@ public class View_UsingViewsTest {
     private static final String CHINA_SYMBOL = "table tennis";
 
     private Instrumentation mInstrumentation;
+    private CtsTouchUtils mCtsTouchUtils;
+
     private Activity mActivity;
 
     private EditText mEditText;
@@ -108,6 +110,7 @@ public class View_UsingViewsTest {
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
         mActivity = mActivityRule.getActivity();
 
         mEditText = (EditText) mActivity.findViewById(R.id.entry);
@@ -389,7 +392,7 @@ public class View_UsingViewsTest {
 
         // long click the edit text
         mInstrumentation.waitForIdleSync();
-        CtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, mEditText);
+        mCtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, mEditText);
         verify(onLongClickListener, within(1000)).onLongClick(mEditText);
 
         // Wait for the UI Thread to become idle.
@@ -400,7 +403,7 @@ public class View_UsingViewsTest {
         mInstrumentation.waitForIdleSync();
         device.waitForIdle();
 
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButtonCancel);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButtonCancel);
         assertEquals("", mEditText.getText().toString());
 
         mInstrumentation.waitForIdleSync();
@@ -410,25 +413,25 @@ public class View_UsingViewsTest {
         mActivityRule.runOnUiThread(() -> mEditText.setText(ARGENTINA));
         mInstrumentation.waitForIdleSync();
 
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButtonOk);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButtonOk);
         assertEquals(ARGENTINA_SYMBOL, mSymbolTextView.getText().toString());
 
         mActivityRule.runOnUiThread(() -> mEditText.setText(AMERICA));
         mInstrumentation.waitForIdleSync();
 
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButtonOk);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButtonOk);
         assertEquals(AMERICA_SYMBOL, mSymbolTextView.getText().toString());
 
         mActivityRule.runOnUiThread(() -> mEditText.setText(CHINA));
         mInstrumentation.waitForIdleSync();
 
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButtonOk);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButtonOk);
         assertEquals(CHINA_SYMBOL, mSymbolTextView.getText().toString());
 
         mActivityRule.runOnUiThread(() -> mEditText.setText("Unknown"));
         mInstrumentation.waitForIdleSync();
 
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButtonOk);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButtonOk);
         assertEquals(View.VISIBLE, mWarningTextView.getVisibility());
     }
 

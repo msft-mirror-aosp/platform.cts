@@ -19,13 +19,12 @@
      package="android.view.inputmethod.cts.util"
      android:targetSandboxVersion="2">
 
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <application
          android:multiArch="true"
          android:supportsRtl="true">
 
         <activity android:name="android.view.inputmethod.cts.util.TestActivity"
-            android:theme="@style/no_starting_window"
+            android:theme="@style/AppTheme"
             android:label="TestActivity"
             android:configChanges="fontScale|smallestScreenSize|screenSize|screenLayout|orientation"
             android:exported="true">
@@ -35,7 +34,7 @@
             </intent-filter>
         </activity>
         <activity android:name="android.view.inputmethod.cts.util.TestActivity2"
-            android:theme="@style/no_starting_window"
+            android:theme="@style/AppTheme"
             android:label="TestActivity2"
             android:exported="true">
             <intent-filter>
@@ -45,7 +44,7 @@
         </activity>
 
         <activity android:name="android.view.inputmethod.cts.util.StateInitializeActivity"
-            android:theme="@style/no_starting_window"
+            android:theme="@style/AppTheme"
             android:label="StateInitializeActivity"
             android:configChanges="fontScale"
             android:exported="true">

@@ -30,6 +30,8 @@ import android.app.Instrumentation;
 import android.app.TaskInfo;
 import android.car.builtin.app.ActivityManagerHelper;
 import android.car.cts.builtin.activity.ActivityManagerTestActivityBase;
+import android.car.test.PermissionsCheckerRule;
+import android.car.test.PermissionsCheckerRule.EnsureHasPermission;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -41,6 +43,7 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WindowManagerState;
 import android.util.Log;
 
+import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -48,6 +51,8 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -59,6 +64,9 @@ import java.util.regex.Pattern;
 
 @RunWith(AndroidJUnit4.class)
 public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
+
+    @Rule
+    public final PermissionsCheckerRule mPermissionsCheckerRule = new PermissionsCheckerRule();
 
     // type values from frameworks/base/core/java/android/app/WindowConfiguration
     enum ActivityType {
@@ -139,6 +147,7 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @EnsureHasPermission(GRANTED_PERMISSION_INTERACT_ACROSS_USERS)
     public void testCheckComponentPermission() throws Exception {
         // not requested from Manifest
         assertComponentPermissionNotGranted(NOT_REQUESTED_PERMISSION_CAR_MILEAGE);
@@ -149,7 +158,7 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
     }
 
     @Test
-    public void testSetFocusedRootTask() throws Exception {
+    public void testSetFocusedTask() throws Exception {
         // setup
         ActivityA task1BottomActivity = launchTestActivity(ActivityA.class);
         ActivityB task1TopActivity = launchTestActivity(ActivityB.class);
@@ -174,7 +183,7 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
             mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                     PERMISSION_MANAGE_ACTIVITY_TASKS);
 
-            ActivityManagerHelper.setFocusedRootTask(task1BottomActivity.getTaskId());
+            ActivityManagerHelper.setFocusedTask(task1BottomActivity.getTaskId());
         } finally {
             mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
@@ -195,6 +204,7 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 274818424)
     public void testRemoveTask() throws Exception {
         // setup
         ActivityC testActivity = launchTestActivity(ActivityC.class);
@@ -269,6 +279,7 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
                 .isEqualTo(expectedLaunchAllowed);
     }
 
+    @Ignore("b/304870066")
     @Test
     public void testStopAllTasksForUser() throws Exception {
         int initialCurrentUserId = getCurrentUserId();

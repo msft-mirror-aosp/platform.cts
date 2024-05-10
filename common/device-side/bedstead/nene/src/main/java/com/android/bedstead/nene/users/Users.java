@@ -19,14 +19,16 @@ package com.android.bedstead.nene.users;
 import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
+import static android.Manifest.permission.QUERY_USERS;
 import static android.app.ActivityManager.STOP_USER_ON_SWITCH_DEFAULT;
 import static android.app.ActivityManager.STOP_USER_ON_SWITCH_FALSE;
 import static android.app.ActivityManager.STOP_USER_ON_SWITCH_TRUE;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Build.VERSION_CODES.S_V2;
+import static android.os.Build.VERSION_CODES.TIRAMISU;
+import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 import static android.os.Process.myUserHandle;
-
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SYSTEM_USER_TYPE_NAME;
@@ -56,6 +58,7 @@ import com.android.bedstead.nene.utils.Versions;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -103,6 +106,19 @@ public final class Users {
         ).collect(Collectors.toSet());
     }
 
+    /** Get all {@link UserReference}s in the instrumented user's profile group. */
+    @Experimental
+    public Collection<UserReference> profileGroup() {
+        return profileGroup(TestApis.users().instrumented());
+    }
+
+    /** Get all {@link UserReference}s in the given profile group. */
+    @Experimental
+    public Collection<UserReference> profileGroup(UserReference user) {
+        return users().filter(ui -> ui.profileGroupId == user.id()).map(ui -> find(ui.id)).collect(
+                Collectors.toSet());
+    }
+
     /**
      * Gets a {@link UserReference} for the initial user for the device.
      *
@@ -116,7 +132,7 @@ public final class Users {
             try {
                 UserReference user =
                         ShellCommand.builder("cmd car_service get-initial-user")
-                        .executeAndParseOutput(i -> find(Integer.parseInt(i.trim())));
+                                .executeAndParseOutput(i -> find(Integer.parseInt(i.trim())));
 
                 if (user.exists()) {
                     return user;
@@ -151,7 +167,9 @@ public final class Users {
         if (Versions.meetsMinimumSdkVersionRequirement(S)) {
             try (PermissionContext p =
                          TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
-                return find(ActivityManager.getCurrentUser());
+                int currentUserId = ActivityManager.getCurrentUser();
+                Log.d(LOG_TAG, "current(): finding " + currentUserId);
+                return find(currentUserId);
             }
         }
 
@@ -171,6 +189,20 @@ public final class Users {
     /** Get a {@link UserReference} for the system user. */
     public UserReference system() {
         return find(0);
+    }
+
+    /** Get a {@link UserReference} for the main user, if one exists. Null otherwise. */
+    @Nullable
+    public UserReference main() {
+        UserHandle mainUser;
+        try (PermissionContext p =
+                     TestApis.permissions().withPermission(QUERY_USERS)) {
+            mainUser = sUserManager.getMainUser();
+        }
+        if (mainUser == null) {
+            return null;
+        }
+        return find(mainUser);
     }
 
     /** Get a {@link UserReference} by {@code id}. */
@@ -285,6 +317,20 @@ public final class Users {
         return profiles.iterator().next();
     }
 
+
+    /**
+     * Find all users which have the given {@link UserType} and the instrumented user as parent.
+     *
+     * <p>If there are no users of the given type and parent, {@code Null} will be returned.
+     *
+     * <p>If there is more than one user of the given type and parent, {@link NeneException} will
+     * be thrown.
+     */
+    @Nullable
+    public UserReference findProfileOfType(UserType userType) {
+        return findProfileOfType(userType, TestApis.users().instrumented());
+    }
+
     private void ensureSupportedTypesCacheFilled() {
         if (mCachedUserTypes != null) {
             // SupportedTypes don't change so don't need to be refreshed
@@ -306,7 +352,7 @@ public final class Users {
     private UserType managedProfileUserType() {
         UserType.MutableUserType managedProfileMutableUserType = new UserType.MutableUserType();
         managedProfileMutableUserType.mName = MANAGED_PROFILE_TYPE_NAME;
-        managedProfileMutableUserType.mBaseType = Set.of(UserType.BaseType.PROFILE);
+        managedProfileMutableUserType.mBaseType = new HashSet<>(Arrays.asList(UserType.BaseType.PROFILE));
         managedProfileMutableUserType.mEnabled = true;
         managedProfileMutableUserType.mMaxAllowed = -1;
         managedProfileMutableUserType.mMaxAllowedPerParent = 1;
@@ -317,7 +363,7 @@ public final class Users {
         UserType.MutableUserType managedProfileMutableUserType = new UserType.MutableUserType();
         managedProfileMutableUserType.mName = SYSTEM_USER_TYPE_NAME;
         managedProfileMutableUserType.mBaseType =
-                Set.of(UserType.BaseType.FULL, UserType.BaseType.SYSTEM);
+                new HashSet<>(Arrays.asList(UserType.BaseType.FULL, UserType.BaseType.SYSTEM));
         managedProfileMutableUserType.mEnabled = true;
         managedProfileMutableUserType.mMaxAllowed = -1;
         managedProfileMutableUserType.mMaxAllowedPerParent = -1;
@@ -327,7 +373,7 @@ public final class Users {
     private UserType secondaryUserType() {
         UserType.MutableUserType managedProfileMutableUserType = new UserType.MutableUserType();
         managedProfileMutableUserType.mName = SECONDARY_USER_TYPE_NAME;
-        managedProfileMutableUserType.mBaseType = Set.of(UserType.BaseType.FULL);
+        managedProfileMutableUserType.mBaseType = new HashSet<>(Arrays.asList(UserType.BaseType.FULL));
         managedProfileMutableUserType.mEnabled = true;
         managedProfileMutableUserType.mMaxAllowed = -1;
         managedProfileMutableUserType.mMaxAllowedPerParent = -1;
@@ -461,11 +507,50 @@ public final class Users {
         }
     }
 
+    /** Checks if a profile of type {@code userType} can be created. */
+    @Experimental
+    public boolean canCreateProfile(UserType userType) {
+        // UserManager#getRemainingCreatableProfileCount is added in T, so we need a version guard.
+        if (Versions.meetsMinimumSdkVersionRequirement(TIRAMISU)) {
+            try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
+                return sUserManager.getRemainingCreatableProfileCount(userType.name()) > 0;
+            }
+        }
+
+        // For S and older versions, we need to keep the previous behavior by returning true here
+        // so that the check can pass.
+        Log.d(LOG_TAG, "canCreateProfile pre-T: true");
+        return true;
+    }
+
     /** See {@link UserManager#isHeadlessSystemUserMode()}. */
     @SuppressWarnings("NewApi")
     public boolean isHeadlessSystemUserMode() {
         if (Versions.meetsMinimumSdkVersionRequirement(S)) {
-            return UserManager.isHeadlessSystemUserMode();
+            boolean value = UserManager.isHeadlessSystemUserMode();
+            Log.d(LOG_TAG, "isHeadlessSystemUserMode: " + value);
+            return value;
+        }
+
+        Log.d(LOG_TAG, "isHeadlessSystemUserMode pre-S: false");
+        return false;
+    }
+
+    /** See {@link UserManager#isVisibleBackgroundUsersSupported()}. */
+    @SuppressWarnings("NewApi")
+    public boolean isVisibleBackgroundUsersSupported() {
+        if (Versions.meetsMinimumSdkVersionRequirement(UPSIDE_DOWN_CAKE)) {
+            return sUserManager.isVisibleBackgroundUsersSupported();
+        }
+
+        return false;
+    }
+
+    /** See {@link UserManager#isVisibleBackgroundUsersOnDefaultDisplaySupported()}. */
+    @SuppressWarnings("NewApi")
+    public boolean isVisibleBackgroundUsersOnDefaultDisplaySupported() {
+        if (Versions.meetsMinimumSdkVersionRequirement(UPSIDE_DOWN_CAKE)) {
+            return sUserManager.isVisibleBackgroundUsersOnDefaultDisplaySupported();
         }
 
         return false;
@@ -504,7 +589,12 @@ public final class Users {
         return UserManager.supportsMultipleUsers();
     }
 
+    /**
+     * Note: This method should not be run on < S.
+     */
     static Stream<UserInfo> users() {
+        Versions.requireMinimumVersion(S);
+
         if (Permissions.sIgnorePermissions.get()) {
             return sUserManager.getUsers(
                     /* excludePartial= */ false,
@@ -512,7 +602,9 @@ public final class Users {
                     /* excludePreCreated= */ false).stream();
         }
 
-        try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
+        try (PermissionContext p =
+                     TestApis.permissions().withPermission(CREATE_USERS)
+                             .withPermissionOnVersionAtLeast(Versions.U, QUERY_USERS)) {
             return sUserManager.getUsers(
                     /* excludePartial= */ false,
                     /* excludeDying= */ true,

@@ -19,38 +19,38 @@ package android.hibernation.cts
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING
-import android.app.Instrumentation
 import android.app.UiAutomation
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Point
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.os.ParcelFileDescriptor
 import android.os.Process
 import android.provider.DeviceConfig
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.UiDevice
-import android.support.test.uiautomator.UiObject2
-import android.support.test.uiautomator.UiScrollable
-import android.support.test.uiautomator.UiSelector
-import android.support.test.uiautomator.Until
 import android.util.Log
 import androidx.test.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
+import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.ExceptionUtils.wrappingExceptions
-import com.android.compatibility.common.util.LogcatInspector
+import com.android.compatibility.common.util.FeatureUtil
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.ThrowingSupplier
-import com.android.compatibility.common.util.UiAutomatorUtils
+import com.android.compatibility.common.util.UiAutomatorUtils2
 import com.android.compatibility.common.util.UiDumpUtils
 import com.android.compatibility.common.util.click
 import com.android.compatibility.common.util.depthFirstSearch
 import com.android.compatibility.common.util.textAsString
-import java.io.InputStream
+import com.android.modules.utils.build.SdkLevel
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.hamcrest.Matcher
@@ -58,24 +58,31 @@ import org.hamcrest.Matchers
 import org.junit.Assert
 import org.junit.Assert.assertThat
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeFalse
 
 private const val BROADCAST_TIMEOUT_MS = 60000L
 
+const val PROPERTY_SAFETY_CENTER_ENABLED = "safety_center_is_enabled"
 const val HIBERNATION_BOOT_RECEIVER_CLASS_NAME =
     "com.android.permissioncontroller.hibernation.HibernationOnBootReceiver"
 const val ACTION_SET_UP_HIBERNATION =
     "com.android.permissioncontroller.action.SET_UP_HIBERNATION"
 
 const val SYSUI_PKG_NAME = "com.android.systemui"
-const val NOTIF_LIST_ID = "com.android.systemui:id/notification_stack_scroller"
+const val NOTIF_LIST_ID = "notification_stack_scroller"
+const val NOTIF_LIST_ID_AUTOMOTIVE = "notifications"
 const val CLEAR_ALL_BUTTON_ID = "dismiss_text"
+const val MANAGE_BUTTON_AUTOMOTIVE = "manage_button"
 // Time to find a notification. Unlikely, but in cases with a lot of notifications, it may take
 // time to find the notification we're looking for
 const val NOTIF_FIND_TIMEOUT = 20000L
 const val VIEW_WAIT_TIMEOUT = 3000L
+const val JOB_RUN_TIMEOUT = 40000L
+const val JOB_RUN_WAIT_TIME = 3000L
 
 const val CMD_EXPAND_NOTIFICATIONS = "cmd statusbar expand-notifications"
 const val CMD_COLLAPSE = "cmd statusbar collapse"
+const val CMD_CLEAR_NOTIFS = "service call notification 1"
 
 const val APK_PATH_S_APP = "/data/local/tmp/cts/hibernation/CtsAutoRevokeSApp.apk"
 const val APK_PACKAGE_NAME_S_APP = "android.hibernation.cts.autorevokesapp"
@@ -120,22 +127,63 @@ fun runBootCompleteReceiver(context: Context, testTag: String) {
         countdownLatch.await(BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS))
 }
 
-fun runAppHibernationJob(context: Context, tag: String) {
-    val logcat = Logcat()
+fun bypassBatterySavingRestrictions(context: Context) {
+    if (SdkLevel.isAtLeastU()) {
+        val userId = Process.myUserHandle().identifier
+        val permissionControllerPackageName =
+            context.packageManager.permissionControllerPackageName
+        runShellCommandOrThrow("cmd tare set-vip $userId $permissionControllerPackageName true")
+    }
+}
 
-    // Sometimes first run observes stale package data
-    // so run twice to prevent that
-    repeat(2) {
-        val mark = logcat.mark(tag)
-        eventually {
-            runShellCommandOrThrow("cmd jobscheduler run -u " +
-                "${Process.myUserHandle().identifier} -f " +
-                "${context.packageManager.permissionControllerPackageName} 2")
-        }
-        logcat.assertLogcatContainsInOrder("*:*", 30_000,
-            mark,
-            "onStartJob",
-            "Done auto-revoke for user")
+fun resetBatterySavingRestrictions(context: Context) {
+    if (SdkLevel.isAtLeastU()) {
+        val userId = Process.myUserHandle().identifier
+        val permissionControllerPackageName =
+            context.packageManager.permissionControllerPackageName
+        runShellCommandOrThrow("cmd tare set-vip $userId $permissionControllerPackageName default")
+    }
+}
+
+fun resetJob(context: Context) {
+    val userId = Process.myUserHandle().identifier
+    val permissionControllerPackageName =
+        context.packageManager.permissionControllerPackageName
+    runShellCommandOrThrow("cmd jobscheduler reset-execution-quota -u " +
+            "$userId $permissionControllerPackageName")
+    runShellCommandOrThrow("cmd jobscheduler reset-schedule-quota")
+}
+
+fun runAppHibernationJob(context: Context, tag: String) {
+    runAppHibernationJobInternal(context, tag)
+    if (Build.VERSION.SDK_INT == 31) {
+        // On S and S only, run the job twice as a workaround for a deadlock. See b/291147868
+        runAppHibernationJobInternal(context, tag)
+    }
+}
+
+private fun runAppHibernationJobInternal(context: Context, tag: String) {
+    val userId = Process.myUserHandle().identifier
+    val permissionControllerPackageName =
+        context.packageManager.permissionControllerPackageName
+    runShellCommandOrThrow("cmd jobscheduler run -u " +
+            "$userId -f " +
+            "$permissionControllerPackageName 2")
+    eventually({
+        Thread.sleep(JOB_RUN_WAIT_TIME)
+        val jobState = runShellCommandOrThrow("cmd jobscheduler get-job-state -u " +
+            "$userId " +
+            "$permissionControllerPackageName 2")
+        Log.d(tag, "Job output: $jobState")
+        assertTrue("Job expected waiting but is $jobState", jobState.contains("waiting"))
+    }, JOB_RUN_TIMEOUT)
+}
+
+fun runPermissionEventCleanupJob(context: Context) {
+    eventually {
+        runShellCommandOrThrow("cmd jobscheduler run -u " +
+            "${Process.myUserHandle().identifier} -f " +
+            "${context.packageManager.permissionControllerPackageName} 3")
     }
 }
 
@@ -196,6 +244,16 @@ inline fun <T> withUnusedThresholdMs(threshold: Long, action: () -> T): T {
         threshold.toString(), action)
 }
 
+inline fun <T> withSafetyCenterEnabled(action: () -> T): T {
+    assumeFalse("This test is only supported on phones",
+        hasFeatureWatch() || hasFeatureTV() || hasFeatureAutomotive()
+    )
+
+    return withDeviceConfig(
+        DeviceConfig.NAMESPACE_PRIVACY, PROPERTY_SAFETY_CENTER_ENABLED,
+        true.toString(), action)
+}
+
 fun awaitAppState(pkg: String, stateMatcher: Matcher<Int>) {
     val context: Context = InstrumentationRegistry.getTargetContext()
     eventually {
@@ -218,6 +276,16 @@ fun startApp(packageName: String) {
 
 fun goHome() {
     runShellCommandOrThrow("input keyevent KEYCODE_HOME")
+    waitForIdle()
+}
+
+/**
+ * Clear notifications from shade
+ */
+fun clearNotifications() {
+    runWithShellPermissionIdentity {
+        runShellCommandOrThrow(CMD_CLEAR_NOTIFS)
+    }
 }
 
 /**
@@ -227,13 +295,36 @@ fun openUnusedAppsNotification() {
     val notifSelector = By.textContains("unused app")
     if (hasFeatureWatch()) {
         val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        expandNotificationsWatch(UiAutomatorUtils.getUiDevice())
-        waitFindObject(uiAutomation, notifSelector).click()
+        val clickRunnable = object : Runnable {
+            override fun run () {
+                waitFindObject(uiAutomation, notifSelector).click()
+            }
+        }
+        expandAndClickNotificationWatch(UiAutomatorUtils2.getUiDevice(), clickRunnable)
         // In wear os, notification has one additional button to open it
-        waitFindObject(uiAutomation, By.text("Open")).click()
+        waitFindObject(uiAutomation, By.textContains("Open")).click()
     } else {
-        runShellCommandOrThrow(CMD_EXPAND_NOTIFICATIONS)
-        waitFindNotification(notifSelector, NOTIF_FIND_TIMEOUT).click()
+        val permissionPkg: String = InstrumentationRegistry.getTargetContext()
+            .packageManager.permissionControllerPackageName
+        eventually({
+            // Eventually clause because clicking is sometimes inconsistent if the screen is
+            // scrolling
+            runShellCommandOrThrow(CMD_EXPAND_NOTIFICATIONS)
+            val notification = waitFindNotification(notifSelector, NOTIF_FIND_TIMEOUT)
+            if (hasFeatureAutomotive()) {
+                notification.click(Point(0, 0))
+            } else {
+                notification.click()
+            }
+            wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause) }) {
+                assertTrue(
+                    "Unused apps page did not open after tapping notification.",
+                    UiAutomatorUtils2.getUiDevice().wait(
+                        Until.hasObject(By.pkg(permissionPkg).depth(0)), VIEW_WAIT_TIMEOUT
+                    )
+                )
+            }
+        }, NOTIF_FIND_TIMEOUT)
     }
 }
 
@@ -249,12 +340,32 @@ fun hasFeatureTV(): Boolean {
                     PackageManager.FEATURE_TELEVISION)
 }
 
-private fun expandNotificationsWatch(uiDevice: UiDevice) {
+fun hasFeatureAutomotive(): Boolean {
+    return InstrumentationRegistry.getTargetContext().packageManager.hasSystemFeature(
+        PackageManager.FEATURE_AUTOMOTIVE)
+}
+
+private fun expandAndClickNotificationWatch(uiDevice: UiDevice, clickRunnable: Runnable) {
     with(uiDevice) {
         wakeUp()
-        // Swipe up from bottom to reveal notifications
         val x = displayWidth / 2
+        // Swipe up from bottom to reveal notifications
         swipe(x, displayHeight, x, 0, 1)
+        try {
+            clickRunnable.run()
+            return
+        } catch (e: Exception) {
+            // TODO(b/338772456) we catch the exception here since som watches have their
+            // notifications tray on the horizontal swipe. Find a way to find a solution that does
+            // not require vertical/horizontal swipe retries.
+        }
+        // Upwards swipe did not find notifications. Undo the upwards swipe, and try sideways.
+        swipe(x, 0, x, displayHeight, 5)
+        val y = displayHeight / 2
+        swipe(0, y, displayWidth, y, 5)
+
+        clickRunnable.run()
+
     }
 }
 
@@ -271,14 +382,25 @@ private fun waitFindNotification(selector: BySelector, timeoutMs: Long):
     UiObject2 {
     var view: UiObject2? = null
     val start = System.currentTimeMillis()
-    val uiDevice = UiAutomatorUtils.getUiDevice()
+    val uiDevice = UiAutomatorUtils2.getUiDevice()
 
     var isAtEnd = false
     var wasScrolledUpAlready = false
+    val notificationListId = if (FeatureUtil.isAutomotive()) {
+        NOTIF_LIST_ID_AUTOMOTIVE
+    } else {
+        NOTIF_LIST_ID
+    }
+    val notificationEndViewId = if (FeatureUtil.isAutomotive()) {
+        MANAGE_BUTTON_AUTOMOTIVE
+    } else {
+        CLEAR_ALL_BUTTON_ID
+    }
     while (view == null && start + timeoutMs > System.currentTimeMillis()) {
         view = uiDevice.wait(Until.findObject(selector), VIEW_WAIT_TIMEOUT)
         if (view == null) {
-            val notificationList = UiScrollable(UiSelector().resourceId(NOTIF_LIST_ID))
+            val notificationList = UiScrollable(UiSelector().resourceId(
+                SYSUI_PKG_NAME + ":id/" + notificationListId))
             wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause) }) {
                 Assert.assertTrue("Notification list view not found",
                     notificationList.waitForExists(VIEW_WAIT_TIMEOUT))
@@ -292,7 +414,7 @@ private fun waitFindNotification(selector: BySelector, timeoutMs: Long):
                 wasScrolledUpAlready = true
             } else {
                 notificationList.scrollForward()
-                isAtEnd = uiDevice.hasObject(By.res(SYSUI_PKG_NAME, CLEAR_ALL_BUTTON_ID))
+                isAtEnd = uiDevice.hasObject(By.res(SYSUI_PKG_NAME, notificationEndViewId))
             }
         }
     }
@@ -305,7 +427,7 @@ private fun waitFindNotification(selector: BySelector, timeoutMs: Long):
 
 fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 {
     try {
-        return UiAutomatorUtils.waitFindObject(selector)
+        return UiAutomatorUtils2.waitFindObject(selector)
     } catch (e: RuntimeException) {
         val ui = uiAutomation.rootInActiveWindow
 
@@ -313,7 +435,7 @@ fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 
             node.viewIdResourceName?.contains("alertTitle") == true
         }
         val okCloseButton = ui.depthFirstSearch { node ->
-            (node.textAsString?.equals("OK", ignoreCase = true) ?: false)  ||
+            (node.textAsString?.equals("OK", ignoreCase = true) ?: false) ||
                 (node.textAsString?.equals("Close app", ignoreCase = true) ?: false)
         }
         val titleString = title?.text?.toString()
@@ -324,17 +446,9 @@ fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 
             // Auto dismiss occasional system dialogs to prevent interfering with the test
             android.util.Log.w(AutoRevokeTest.LOG_TAG, "Ignoring exception", e)
             okCloseButton.click()
-            return UiAutomatorUtils.waitFindObject(selector)
+            return UiAutomatorUtils2.waitFindObject(selector)
         } else {
             throw e
         }
-    }
-}
-
-class Logcat() : LogcatInspector() {
-    override fun executeShellCommand(command: String?): InputStream {
-        val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
-        return ParcelFileDescriptor.AutoCloseInputStream(
-            instrumentation.uiAutomation.executeShellCommand(command))
     }
 }

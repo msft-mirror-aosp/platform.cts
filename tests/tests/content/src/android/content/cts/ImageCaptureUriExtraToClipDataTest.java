@@ -21,16 +21,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.provider.MediaStore;
 import android.test.AndroidTestCase;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ImageCaptureUriExtraToClipDataTest extends AndroidTestCase {
     private static final String FILE_NAME = "testFile.txt";
     private File mTestFile;
@@ -53,7 +54,7 @@ public class ImageCaptureUriExtraToClipDataTest extends AndroidTestCase {
             };
         IntentFilter filter = new IntentFilter();
         filter.addAction(ImageCaptureActivity.ACTION_FILE_READY);
-        getContext().registerReceiver(mReceiver, filter);
+        getContext().registerReceiver(mReceiver, filter, Context.RECEIVER_EXPORTED);
 
         mTestFile = new File(getContext().getFilesDir() + File.separator + FILE_NAME);
     }

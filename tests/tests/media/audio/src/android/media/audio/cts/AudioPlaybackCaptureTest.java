@@ -22,7 +22,6 @@ import static android.media.AudioAttributes.ALLOW_CAPTURE_BY_SYSTEM;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
@@ -31,23 +30,27 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.testng.Assert.assertThrows;
 
+import static java.util.stream.Collectors.toSet;
+
 import android.media.AudioAttributes;
 import android.media.AudioAttributes.AttributeUsage;
 import android.media.AudioAttributes.CapturePolicy;
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioPlaybackCaptureConfiguration;
 import android.media.AudioRecord;
-import android.media.cts.MediaProjectionActivity;
 import android.media.MediaPlayer;
-import android.media.audio.cts.R;
+import android.media.cts.MediaProjectionActivity;
 import android.media.projection.MediaProjection;
-import android.media.cts.NonMediaMainlineTest;
 import android.os.Handler;
 import android.os.Looper;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 
 import androidx.test.rule.ActivityTestRule;
+
+import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,6 +58,8 @@ import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +76,8 @@ import java.util.concurrent.TimeUnit;
  * Currently the test that some audio was recorded just check that at least one sample is non 0.
  * A better check needs to be used, eg: compare the power spectrum.
  */
-@NonMediaMainlineTest
+@NonMainlineTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AudioPlaybackCaptureTest {
     private static final String TAG = "AudioPlaybackCaptureTest";
     private static final int SAMPLE_RATE = 44100;
@@ -122,18 +128,18 @@ public class AudioPlaybackCaptureTest {
         }
 
         private void assertCorreclyBuilt(AudioPlaybackCaptureConfiguration config) {
-            assertEqualNullIsEmpty("matchingUsages", matchingUsages, config.getMatchingUsages());
-            assertEqualNullIsEmpty("excludeUsages", excludeUsages, config.getExcludeUsages());
-            assertEqualNullIsEmpty("matchingUids", matchingUids, config.getMatchingUids());
-            assertEqualNullIsEmpty("excludeUids", excludeUids, config.getExcludeUids());
+            assertEquals("matchingUsages",
+                    arraytoSet(matchingUsages), arraytoSet(config.getMatchingUsages()));
+            assertEquals("excludeUsages",
+                    arraytoSet(excludeUsages), arraytoSet(config.getExcludeUsages()));
+            assertEquals("matchingUids",
+                    arraytoSet(matchingUids), arraytoSet(config.getMatchingUids()));
+            assertEquals("excludeUids",
+                    arraytoSet(excludeUids), arraytoSet(config.getExcludeUids()));
         }
 
-        private void assertEqualNullIsEmpty(String msg, int[] expected, int[] found) {
-            if (expected == null) {
-                assertEquals(msg, 0, found.length);
-            } else {
-                assertArrayEquals(msg, expected, found);
-            }
+        private static Set<Integer> arraytoSet(int[] array) {
+            return array == null ? Set.of() : Arrays.stream(array).boxed().collect(toSet());
         }
     };
     private APCTestConfig mAPCTestConfig;
@@ -493,13 +499,33 @@ public class AudioPlaybackCaptureTest {
             // Check that all record can all be started
             for (AudioRecord audioRecord : audioRecords) {
                 audioRecord.startRecording();
+                assertEquals(AudioRecord.RECORDSTATE_RECORDING, audioRecord.getRecordingState());
             }
 
-            // Check that they all record audio
+            // Check that they all record audio. Since for a system under load it could
+            // take some time to establish the capture pipeline, allow for retries.
+            final int kDataAcquisitionAttempts = 3;
+            Stack<String> failedRecords = new Stack<>();
             for (AudioRecord audioRecord : audioRecords) {
-                ByteBuffer rawBuffer = readToBuffer(audioRecord, BUFFER_SIZE);
-                assertFalse("Expected data, but only silence was recorded",
-                            onlySilence(rawBuffer.asShortBuffer()));
+                boolean noData = true;
+                for (int attempt = 0; attempt < kDataAcquisitionAttempts; attempt++) {
+                    ByteBuffer rawBuffer = readToBuffer(audioRecord, BUFFER_SIZE);
+                    if (!onlySilence(rawBuffer.asShortBuffer())) {
+                        noData = false;
+                        break;
+                    }
+                }
+                if (noData) {
+                    AudioDeviceInfo device = audioRecord.getRoutedDevice();
+                    if (device != null) {
+                        failedRecords.push(device.getAddress());
+                    } else {
+                        failedRecords.push("null device");
+                    }
+                }
+            }
+            if (!failedRecords.empty()) {
+                fail("Expected data, but only silence was recorded for " + failedRecords);
             }
 
             // Stopping one AR must allow creating a new one

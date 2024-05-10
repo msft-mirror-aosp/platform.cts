@@ -50,6 +50,9 @@ import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.Xfermode;
 import android.os.LocaleList;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.SpannedString;
 
 import androidx.test.InstrumentationRegistry;
@@ -58,10 +61,13 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ColorUtils;
+import com.android.text.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.util.Locale;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -70,6 +76,9 @@ import java.util.function.Supplier;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class PaintTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final Typeface[] TYPEFACES = new Typeface[] {
             Typeface.DEFAULT,
             Typeface.DEFAULT_BOLD,
@@ -1013,9 +1022,17 @@ public class PaintTest {
         assertEquals(10.0f, p.getStrokeWidth(), 0.0f);
     }
 
+    private void changeToRobotoIfCustomized(Paint p) {
+        File fontFile = TypefaceTestUtil.getFirstFont("abc", p);
+        if (!fontFile.getName().startsWith("Roboto")) {
+            p.setTypeface(TypefaceTestUtil.getRobotoTypeface(400, false));
+        }
+    }
+
     @Test
     public void testSetFontFeatureSettings() {
         Paint p = new Paint();
+        changeToRobotoIfCustomized(p);
         // Roboto font (system default) has "fi" ligature
         String text = "fi";
         float[] widths = new float[text.length()];
@@ -1370,6 +1387,7 @@ public class PaintTest {
     @Test
     public void testHasGlyph() {
         Paint p = new Paint();
+        changeToRobotoIfCustomized(p);
 
         // This method tests both the logic of hasGlyph and the validity of fonts present
         // on the device.
@@ -1386,6 +1404,12 @@ public class PaintTest {
         assertFalse(p.hasGlyph("a\uDB40\uDDEF"));  // UTF-16 encoding of U+E01EF
         assertFalse(p.hasGlyph("\u2229\uFE0F"));  // base character is in mathematical symbol font
         // Note: U+FE0F is variation selection, unofficially reserved for emoji
+    }
+
+    @CddTest(requirement = "3.8.13/C-1-2")
+    @Test
+    public void testHasEmojiGlyph() {
+        Paint p = new Paint();
 
         // regional indicator symbols
         assertTrue(p.hasGlyph("\uD83C\uDDEF\uD83C\uDDF5"));   // "JP" U+1F1EF U+1F1F5
@@ -1765,6 +1789,7 @@ public class PaintTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_DEPRECATE_UI_FONTS)
     public void testElegantText() {
         final Paint p = new Paint();
         p.setTextSize(10);

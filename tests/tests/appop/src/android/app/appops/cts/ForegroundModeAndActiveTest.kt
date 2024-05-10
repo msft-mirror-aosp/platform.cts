@@ -32,6 +32,7 @@ import android.content.Context.BIND_NOT_FOREGROUND
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.ServiceConnection
+import android.location.LocationManager
 import android.os.IBinder
 import android.os.Process
 import android.platform.test.annotations.AppModeFull
@@ -40,17 +41,18 @@ import android.provider.Settings
 import android.provider.Settings.Global.APP_OPS_CONSTANTS
 import android.support.test.uiautomator.UiDevice
 import android.util.Log
+import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeoutException
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.TimeoutException
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatcanbeforcedintoforegroundstates"
 private const val TIMEOUT_MILLIS = 45000L
@@ -63,7 +65,9 @@ class ForegroundModeAndActiveTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
     private val appopsManager = context.getSystemService(AppOpsManager::class.java)!!
+    private val locationManager = context.getSystemService(LocationManager::class.java)!!
     private val testPkgUid = context.packageManager.getPackageUid(TEST_SERVICE_PKG, 0)
+    private var wasLocationEnabled = true
 
     private lateinit var foregroundControlService: IAppOpsForegroundControlService
     private lateinit var serviceConnection: ServiceConnection
@@ -97,6 +101,8 @@ class ForegroundModeAndActiveTest {
             Settings.Global.putString(context.contentResolver, APP_OPS_CONSTANTS,
                     "$KEY_TOP_STATE_SETTLE_TIME=300,$KEY_FG_SERVICE_STATE_SETTLE_TIME=100," +
                             "$KEY_BG_STATE_SETTLE_TIME=10")
+            wasLocationEnabled = locationManager.isLocationEnabled
+            locationManager.setLocationEnabledForUser(true, Process.myUserHandle())
         }
 
         // Wait until app counts as background
@@ -181,6 +187,7 @@ class ForegroundModeAndActiveTest {
     }
 
     @Test
+    @FlakyTest
     fun modeIsAllowedWhenForeground() {
         makeTop()
         eventually {
@@ -189,6 +196,7 @@ class ForegroundModeAndActiveTest {
     }
 
     @Test
+    @FlakyTest
     fun modeBecomesIgnoredAfterEnteringBackground() {
         makeTop()
         assertThat(testPkgAppOpMode).isEqualTo(MODE_ALLOWED)
@@ -214,6 +222,7 @@ class ForegroundModeAndActiveTest {
     }
 
     @Test
+    @FlakyTest
     fun modeChangeCallbackWhenEnteringBackground() {
         makeTop()
 
@@ -434,6 +443,7 @@ class ForegroundModeAndActiveTest {
                 Settings.Global.putString(context.contentResolver,
                         APP_OPS_CONSTANTS, previousAppOpsConstants)
             }
+            locationManager.setLocationEnabledForUser(wasLocationEnabled, Process.myUserHandle())
         }
     }
 }

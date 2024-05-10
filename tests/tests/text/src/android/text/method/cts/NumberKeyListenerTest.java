@@ -30,10 +30,8 @@ import android.text.method.NumberKeyListener;
 import android.view.KeyEvent;
 import android.widget.TextView.BufferType;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-import androidx.test.runner.AndroidJUnit4;
-
-import com.android.compatibility.common.util.CtsKeyEventUtil;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -151,13 +149,13 @@ public class NumberKeyListenerTest extends KeyListenerTestCase {
         mInstrumentation.waitForIdleSync();
         assertEquals("123456", mTextView.getText().toString());
         // press '0' key.
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_0);
+        sendKeys(mTextView, KeyEvent.KEYCODE_0);
         assertEquals("0123456", mTextView.getText().toString());
 
         // an unaccepted key if it exists.
         int keyCode = TextMethodUtils.getUnacceptedKeyCode(MockNumberKeyListener.DIGITS);
         if (-1 != keyCode) {
-            CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, keyCode);
+            sendKeys(mTextView, keyCode);
             // text of TextView will not be changed.
             assertEquals("0123456", mTextView.getText().toString());
         }
@@ -168,7 +166,7 @@ public class NumberKeyListenerTest extends KeyListenerTestCase {
         });
         mInstrumentation.waitForIdleSync();
         // press '0' key.
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_0);
+        sendKeys(mTextView, KeyEvent.KEYCODE_0);
         assertEquals("0123456", mTextView.getText().toString());
     }
 

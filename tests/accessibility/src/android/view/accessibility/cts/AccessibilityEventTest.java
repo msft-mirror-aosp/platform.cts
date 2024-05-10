@@ -16,6 +16,11 @@
 
 package android.view.accessibility.cts;
 
+import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
+import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_IN_DIRECTION;
+
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
@@ -31,7 +36,6 @@ import android.content.Context;
 import android.os.Message;
 import android.os.Parcel;
 import android.os.SystemClock;
-import android.platform.test.annotations.Presubmit;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.LocaleSpan;
@@ -60,7 +64,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeoutException;
 
 /** Class for testing {@link AccessibilityEvent}. */
-@Presubmit
+// TODO(b/263942937) Re-enable @Presubmit
 @RunWith(AndroidJUnit4.class)
 public class AccessibilityEventTest {
     private static final long IDLE_TIMEOUT_MS = 500;
@@ -93,10 +97,11 @@ public class AccessibilityEventTest {
 
     @Before
     public void setUp() throws Throwable {
-        final Activity activity = mActivityRule.launchActivity(null);
-        mPackageName = activity.getApplicationContext().getPackageName();
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
         sUiAutomation = sInstrumentation.getUiAutomation();
+        final Activity activity = launchActivityAndWaitForItToBeOnscreen(
+                sInstrumentation, sUiAutomation, mActivityRule);
+        mPackageName = activity.getApplicationContext().getPackageName();
         mInstrumentedAccessibilityServiceRule.enableService();
         sUiAutomation.executeAndWaitForEvent(() -> {
                     try {
@@ -270,6 +275,21 @@ public class AccessibilityEventTest {
     }
 
     @Test
+    public void testEventViewTargetedByScroll() throws Throwable {
+        final AccessibilityEvent awaitedEvent = sUiAutomation.executeAndWaitForEvent(
+                () -> {
+                    AccessibilityEvent event = new AccessibilityEvent(
+                            AccessibilityEvent.TYPE_VIEW_TARGETED_BY_SCROLL);
+                    event.setAction(ACTION_SCROLL_IN_DIRECTION.getId());
+                    mChildView.sendAccessibilityEventUnchecked(event);
+                },
+                event -> event.getEventType() == AccessibilityEvent.TYPE_VIEW_TARGETED_BY_SCROLL,
+                DEFAULT_TIMEOUT_MS);
+        assertThat(awaitedEvent.getAction()).isEqualTo(ACTION_SCROLL_IN_DIRECTION.getId());
+        assertThat(awaitedEvent.getSource()).isEqualTo(mChildView.createAccessibilityNodeInfo());
+    }
+
+    @Test
     public void testStateEvent() throws Throwable {
         sUiAutomation.executeAndWaitForEvent(
                 () -> {
@@ -373,6 +393,28 @@ public class AccessibilityEventTest {
         event.setContentChangeTypes(AccessibilityEvent.CONTENT_CHANGE_TYPE_STATE_DESCRIPTION);
         event.getText().add(text);
         view.sendAccessibilityEventUnchecked(event);
+    }
+
+    @Test
+    public void setTextError_receiveEvent() throws Throwable {
+        sUiAutomation.executeAndWaitForEvent(
+                () -> sInstrumentation.runOnMainSync(() -> mTextView.setError("error")),
+                event -> isExpectedChangeType(event,
+                        AccessibilityEvent.CONTENT_CHANGE_TYPE_ERROR
+                                | AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_INVALID)
+                        && event.getSource().getError() != null,
+                DEFAULT_TIMEOUT_MS);
+    }
+
+    @Test
+    public void setViewEnable_receiveEvent() throws Throwable {
+        sUiAutomation.executeAndWaitForEvent(
+                () -> sInstrumentation.runOnMainSync(() -> {
+                    mChildView.setEnabled(!mChildView.isEnabled());
+                }),
+                event -> isExpectedChangeType(event,
+                        AccessibilityEvent.CONTENT_CHANGE_TYPE_ENABLED),
+                DEFAULT_TIMEOUT_MS);
     }
 
     @Test

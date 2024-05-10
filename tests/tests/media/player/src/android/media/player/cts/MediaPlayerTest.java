@@ -22,6 +22,10 @@ import static junit.framework.TestCase.assertSame;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
+
+import android.content.ContentProvider;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -57,6 +61,7 @@ import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
+import androidx.core.content.FileProvider;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -79,6 +84,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -95,9 +102,6 @@ import java.util.stream.Stream;
 /**
  * Tests for the MediaPlayer API and local video/audio playback.
  *
- * The files in res/raw used by testLocalVideo* are (c) copyright 2008,
- * Blender Foundation / www.bigbuckbunny.org, and are licensed under the Creative Commons
- * Attribution 3.0 License at http://creativecommons.org/licenses/by/3.0/us/.
  */
 @SmallTest
 @RequiresDevice
@@ -115,6 +119,8 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
     private static final int  RECORDED_VIDEO_HEIGHT = 144;
     private static final long RECORDED_DURATION_MS  = 3000;
     private static final float FLOAT_TOLERANCE = .0001f;
+    private static final int PLAYBACK_DURATION_MS  = 10000;
+    private static final int ANR_DETECTION_TIME_MS  = 20000;
 
     private final Vector<Integer> mTimedTextTrackIndex = new Vector<>();
     private final Monitor mOnTimedTextCalled = new Monitor();
@@ -275,12 +281,48 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
     }
 
     @Test
+    public void testPlayContentUri() throws Exception {
+        String testFile = "testmp3_2.mp3";
+        File localFile;
+        try (AssetFileDescriptor mediaFd = getAssetFileDescriptorFor(testFile)) {
+            Environment.getExternalStorageDirectory();
+            File externalFilesDir = mContext.getExternalFilesDir(/* type= */ null);
+            localFile = new File(externalFilesDir, "test_files/" + testFile);
+            localFile.mkdirs();
+            Files.copy(
+                    mediaFd.createInputStream(),
+                    localFile.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        MediaPlayer mediaPlayer = new MediaPlayer();
+        try {
+            Uri contentUri = FileProvider.getUriForFile(
+                    mContext, /* authority= */ "com.android.media.player.cts.provider", localFile);
+            mediaPlayer.setDataSource(mContext, contentUri);
+            mediaPlayer.prepare();
+
+            assertFalse(mediaPlayer.isPlaying());
+            mediaPlayer.start();
+            assertTrue(mediaPlayer.isPlaying());
+
+            // waiting to complete
+            while (mediaPlayer.isPlaying()) {
+                Thread.sleep(SLEEP_TIME);
+            }
+        } finally {
+            mediaPlayer.release();
+            localFile.delete();
+        }
+    }
+
+    @Test
     public void testPlayAudioFromDataURI() throws Exception {
         final int mp3Duration = 34909;
         final int tolerance = 70;
         final int seekDuration = 100;
 
-        // This is "R.raw.testmp3_2", base64-encoded.
+        // This is "testmp3_2.raw", base64-encoded.
         final String res = "testmp3_3.raw";
 
         Preconditions.assertTestFileExists(mInpPrefix + res);
@@ -356,8 +398,10 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
 
     private void internalTestPlayAudio(final String res,
             int mp3Duration, int tolerance, int seekDuration) throws Exception {
-        Preconditions.assertTestFileExists(mInpPrefix + res);
-        MediaPlayer mp = MediaPlayer.create(mContext, Uri.fromFile(new File(mInpPrefix + res)));
+        String filePath = mInpPrefix + res;
+        Preconditions.assertTestFileExists(filePath);
+        assumeTrue("codecs not found for " +  filePath, MediaUtils.hasCodecsForResource(filePath));
+        MediaPlayer mp = MediaPlayer.create(mContext, Uri.fromFile(new File(filePath)));
         try {
             mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mp.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
@@ -675,10 +719,17 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
     public void testPlayAudioTwice() throws Exception {
 
         final String res = "camera_click.ogg";
+        AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        int oldVolume = Integer.MIN_VALUE;
 
         Preconditions.assertTestFileExists(mInpPrefix + res);
         MediaPlayer mp = MediaPlayer.create(mContext, Uri.fromFile(new File(mInpPrefix + res)));
         try {
+            // Test requires that the device is not muted. Store the current volume before setting
+            // it to a non-zero value and restore it at the end of the test.
+            oldVolume = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
+
             mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mp.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
 
@@ -699,6 +750,9 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
             listener.release();
         } finally {
             mp.release();
+            if (oldVolume != Integer.MIN_VALUE) {
+                am.setStreamVolume(AudioManager.STREAM_MUSIC, oldVolume, 0);
+            }
         }
     }
 
@@ -713,9 +767,9 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
             player.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             player.prepare();
             // Test needs the mediaplayer to playback at least about 5 seconds of content.
-            // Clip used here has a duration of 61 seconds, so seek to 50 seconds in the media file.
+            // Clip used here has a duration of 61 seconds, given PLAYBACK_DURATION_MS for play.
             // This leaves enough remaining time, with gapless enabled or disabled,
-            player.seekTo(50000);
+            player.seekTo(player.getDuration() - PLAYBACK_DURATION_MS);
         }
     }
 
@@ -757,6 +811,10 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
 
     @Test
     public void testSetNextMediaPlayer() throws Exception {
+        final int ITERATIONS = 3;
+        // the +1 is for the trailing test of setNextMediaPlayer(null)
+        final int TOTAL_TIMEOUT_MS = PLAYBACK_DURATION_MS * (ITERATIONS + 1)
+                        + ANR_DETECTION_TIME_MS + 5000 /* listener latency(ms) */;
         initMediaPlayer(mMediaPlayer);
 
         final Monitor mTestCompleted = new Monitor();
@@ -770,9 +828,9 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
                     return;
                 }
                 long now = SystemClock.elapsedRealtime();
-                if ((now - startTime) > 45000) {
-                    // We've been running for 45 seconds and still aren't done, so we're stuck
-                    // somewhere. Signal ourselves to dump the thread stacks.
+                if ((now - startTime) > TOTAL_TIMEOUT_MS) {
+                    // We've been running beyond TOTAL_TIMEOUT and still aren't done,
+                    // so we're stuck somewhere. Signal ourselves to dump the thread stacks.
                     android.os.Process.sendSignal(android.os.Process.myPid(), 3);
                     SystemClock.sleep(2000);
                     fail("Test is stuck, see ANR stack trace for more info. You may need to" +
@@ -785,7 +843,7 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
         timer.start();
 
         try {
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < ITERATIONS; i++) {
 
                 initMediaPlayer(mMediaPlayer2);
                 mOnCompletionCalled.reset();
@@ -825,6 +883,7 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
             }
 
             // Now test that setNextMediaPlayer(null) works. 1 is still playing, 2 is done
+            // this is the final "+1" in our time calculations above
             mOnCompletionCalled.reset();
             mOnInfoCalled.reset();
             initMediaPlayer(mMediaPlayer2);
@@ -927,7 +986,7 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
                         mContext.getPackageName(), getInstrumentation(), true /* on */);
             }
 
-            mp1 = new MediaPlayer();
+            mp1 = new MediaPlayer(mContext);
             mp1.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
             AssetFileDescriptor afd = getAssetFileDescriptorFor(res1);
@@ -937,7 +996,7 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
 
             int session = mp1.getAudioSessionId();
 
-            mp2 = new MediaPlayer();
+            mp2 = new MediaPlayer(mContext);
             mp2.setAudioSessionId(session);
             mp2.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
@@ -1278,7 +1337,12 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
         mOnSeekCompleteCalled.waitForSignal();
         Thread.sleep(playTime);
         assertFalse("MediaPlayer should not be playing", mMediaPlayer.isPlaying());
-        assertEquals("MediaPlayer position should be 0", 0, mMediaPlayer.getCurrentPosition());
+        int positionAtStart = mMediaPlayer.getCurrentPosition();
+        // Allow both 0 and 23 (the timestamp of the second audio sample) to avoid flaky failures
+        // on builds that don't include http://r.android.com/2700283.
+        if (positionAtStart != 0 && positionAtStart != 23) {
+            fail("MediaPlayer position should be 0 or 23");
+        }
 
         mMediaPlayer.start();
         Thread.sleep(playTime);
@@ -2615,4 +2679,18 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
             getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
     }
+
+    @Presubmit
+    @Test
+    public void testConstructorWithNullContextFails() {
+        assertThrows(NullPointerException.class, () -> new MediaPlayer(/*context=*/null));
+    }
+
+    /** {@link ContentProvider} implementation which serves local files using content:// URIs. */
+    public static final class TestFileProvider extends FileProvider {
+        public TestFileProvider() {
+            super(R.xml.media_player_test_content_path);
+        }
+    }
+
 }

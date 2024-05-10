@@ -17,6 +17,8 @@ message AndroidApp {
   repeated Metadata metadata = 8;
   string sharedUserId = 9;
   string label = 10;
+  bool cross_profile = 11;
+  repeated Receiver receivers = 12;
 }
 
 message UsesSdk {
@@ -50,4 +52,12 @@ message Service {
 message Metadata {
   string name = 1;
   string value = 2;
+}
+
+message Receiver {
+    string name = 1;
+    string permission = 2;
+    bool exported = 3;
+    repeated Metadata metadata = 4;
+    repeated IntentFilter intent_filters = 5;
 }

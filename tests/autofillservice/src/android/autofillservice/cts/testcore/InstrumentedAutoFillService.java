@@ -71,6 +71,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Implementation of {@link AutofillService} used in the tests.
@@ -241,7 +242,8 @@ public class InstrumentedAutoFillService extends AutofillService {
             return;
         }
         mHandler.post(
-                () -> sReplier.onFillRequest(request.getFillContexts(), request.getClientState(),
+                () -> sReplier.onFillRequest(request.getFillContexts(), request.getHints(),
+                        request.getClientState(),
                         cancellationSignal, callback, request.getFlags(),
                         request.getInlineSuggestionsRequest(),
                         request.getDelayedFillIntentSender(),
@@ -391,13 +393,15 @@ public class InstrumentedAutoFillService extends AutofillService {
         public final InlineSuggestionsRequest inlineRequest;
         public final IntentSender delayFillIntentSender;
         public final int requestId;
+        public final List<String> hints;
 
-        private FillRequest(List<FillContext> contexts, Bundle data,
+        private FillRequest(List<FillContext> contexts, List<String> hints, Bundle data,
                 CancellationSignal cancellationSignal, FillCallback callback, int flags,
                 InlineSuggestionsRequest inlineRequest,
                 IntentSender delayFillIntentSender,
                 int requestId) {
             this.contexts = contexts;
+            this.hints = hints;
             this.data = data;
             this.cancellationSignal = cancellationSignal;
             this.callback = callback;
@@ -454,6 +458,27 @@ public class InstrumentedAutoFillService extends AutofillService {
      */
     public static final class Replier {
 
+        /*
+         * This is used by the test to skip explicitly calling sReplier.getFillRequest().
+         * This will store a callback that gets called whenever a new Fill Request comes.
+         * This makes the code simpler, as only one step is needed to send FillResponse
+         * and verify FillRequest.
+         *
+         * Before:
+         *   sReplier.addResponse(...)
+         *   triggerFillRequestMechanism()
+         *   fr = sReplier.getFillRequest()
+         *   assert(fr)...isTrue()
+         *
+         * After:
+         *   sReplier.onRequest((fr) -> {
+         *      assert(fr)...isTrue()
+         *      return new FillResponse()
+         *   })
+         *   triggerFillRequestMechanism()
+         **/
+        private final BlockingQueue<Function<FillRequest, CannedFillResponse>> mLazyResponses =
+                new LinkedBlockingQueue<>();
         private final BlockingQueue<CannedFillResponse> mResponses = new LinkedBlockingQueue<>();
         private final BlockingQueue<FillRequest> mFillRequests = new LinkedBlockingQueue<>();
         private final BlockingQueue<SaveRequest> mSaveRequests = new LinkedBlockingQueue<>();
@@ -515,6 +540,14 @@ public class InstrumentedAutoFillService extends AutofillService {
                 throw new IllegalArgumentException("Cannot be null - use NO_RESPONSE instead");
             }
             mResponses.add(response);
+            return this;
+        }
+
+        public Replier onRequest(Function<FillRequest, CannedFillResponse> lazyResponse) {
+            if (lazyResponse == null) {
+                throw new IllegalArgumentException("Cannot be null - use NO_RESPONSE instead");
+            }
+            mLazyResponses.add(lazyResponse);
             return this;
         }
 
@@ -632,6 +665,7 @@ public class InstrumentedAutoFillService extends AutofillService {
          * Resets its internal state.
          */
         public void reset() {
+            mLazyResponses.clear();
             mResponses.clear();
             mFillRequests.clear();
             mSaveRequests.clear();
@@ -642,14 +676,32 @@ public class InstrumentedAutoFillService extends AutofillService {
             mReportUnhandledSaveRequest = true;
         }
 
-        private void onFillRequest(List<FillContext> contexts, Bundle data,
+        private void onFillRequest(List<FillContext> contexts, List<String> hints, Bundle data,
                 CancellationSignal cancellationSignal, FillCallback callback, int flags,
                 InlineSuggestionsRequest inlineRequest, IntentSender delayFillIntentSender,
                 int requestId) {
+            boolean hasLazyResponse = mLazyResponses.size() > 0;
             try {
                 CannedFillResponse response = null;
                 try {
-                    response = mResponses.poll(CONNECTION_TIMEOUT.ms(), TimeUnit.MILLISECONDS);
+                    if (hasLazyResponse) {
+                        response =
+                                mLazyResponses
+                                        .poll()
+                                        .apply(
+                                                new FillRequest(
+                                                        contexts,
+                                                        hints,
+                                                        data,
+                                                        cancellationSignal,
+                                                        callback,
+                                                        flags,
+                                                        inlineRequest,
+                                                        delayFillIntentSender,
+                                                        requestId));
+                    } else {
+                        response = mResponses.poll(CONNECTION_TIMEOUT.ms(), TimeUnit.MILLISECONDS);
+                    }
                 } catch (InterruptedException e) {
                     Log.w(TAG, "Interrupted getting CannedResponse: " + e);
                     Thread.currentThread().interrupt();
@@ -709,6 +761,11 @@ public class InstrumentedAutoFillService extends AutofillService {
                         fillResponse = response.asFillResponse(contexts,
                                 (id) -> Helper.findNodeByHtmlNameOrResourceId(contexts, id));
                         break;
+                    case PCC_ID:
+                        // TODO: SaveInfo undetermined for PCC
+                        fillResponse = response.asPccFillResponse(contexts,
+                                (id) -> Helper.findNodeByResourceId(contexts, id));
+                        break;
                     default:
                         throw new IllegalStateException("Unknown id mode: " + mIdMode);
                 }
@@ -720,7 +777,7 @@ public class InstrumentedAutoFillService extends AutofillService {
                         callback.onSuccess(fillResponse);
                         // Add a fill request to let test case know response was sent.
                         Helper.offer(mFillRequests,
-                                new FillRequest(contexts, data, cancellationSignal, callback,
+                                new FillRequest(contexts, hints, data, cancellationSignal, callback,
                                         flags, inlineRequest, delayFillIntentSender, requestId),
                                 CONNECTION_TIMEOUT.ms());
                     }, RESPONSE_DELAY_MS);
@@ -731,9 +788,12 @@ public class InstrumentedAutoFillService extends AutofillService {
             } catch (Throwable t) {
                 addException(t);
             } finally {
-                Helper.offer(mFillRequests, new FillRequest(contexts, data, cancellationSignal,
-                        callback, flags, inlineRequest, delayFillIntentSender, requestId),
-                        CONNECTION_TIMEOUT.ms());
+                if (!hasLazyResponse) {
+                    Helper.offer(mFillRequests, new FillRequest(contexts, hints, data,
+                            cancellationSignal, callback, flags, inlineRequest,
+                            delayFillIntentSender, requestId),
+                            CONNECTION_TIMEOUT.ms());
+                }
             }
         }
 

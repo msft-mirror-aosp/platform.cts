@@ -16,17 +16,14 @@
 package android.car.cts;
 
 import android.car.test.AbstractExpectableTestCase;
-import android.car.test.ApiCheckerRule;
-
-import org.junit.Rule;
 
 /**
- * Base class for tests that don't need to connect to a {@code android.car.Car} object.
+ * Base class for tests that don't need to connect to a {@link android.car.Car} object.
  *
- * <p>Typically used to test POJO-like (Plain-Old Java Objects) classes.
+ * <p>Typically used to test POJO-like (Plain-Old Java Objects) classes; for tests that need a
+ * {@link android.car.Car} object, use {@link AbstractCarTestCase} instead.
  */
 abstract class AbstractCarLessTestCase extends AbstractExpectableTestCase {
 
-    @Rule
-    public final ApiCheckerRule mApiCheckerRule = new ApiCheckerRule.Builder().build();
+    private static final String TAG = AbstractCarLessTestCase.class.getSimpleName();
 }

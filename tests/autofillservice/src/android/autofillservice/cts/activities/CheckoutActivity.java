@@ -136,7 +136,7 @@ public class CheckoutActivity extends AbstractAutoFillActivity {
      */
     private void buy() {
         final Intent intent = new Intent(this, WelcomeActivity.class);
-        intent.putExtra(WelcomeActivity.EXTRA_MESSAGE, "Thank you an come again!");
+        intent.putExtra(WelcomeActivity.EXTRA_MESSAGE, "Thank you and come again!");
         startActivity(intent);
         if (mBuyLatch != null) {
             // Latch is not set when activity launched outside tests

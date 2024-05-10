@@ -34,8 +34,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,44 +47,29 @@ import java.util.Objects;
 @RunWith(AndroidJUnit4.class)
 public class DistanceMeasurementMethodTest {
     private Context mContext;
-    private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
-    private boolean mIsDistanceMeasurementSupported;
 
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        if (!ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
-            return;
-        }
-        mHasBluetooth = TestUtils.hasBluetooth();
-        if (!mHasBluetooth) {
-            return;
-        }
+        Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
+        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
+
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-        mIsDistanceMeasurementSupported =
-                mAdapter.isDistanceMeasurementSupported() == FEATURE_SUPPORTED;
+        Assume.assumeTrue(mAdapter.isDistanceMeasurementSupported() == FEATURE_SUPPORTED);
     }
 
     @After
     public void tearDown() {
-        if (!mHasBluetooth) {
-            return;
-        }
-        if (mAdapter != null) {
-            assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        }
         TestUtils.dropPermissionAsShellUid();
         mAdapter = null;
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testCreateFromParcel() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void createFromParcel() {
         final Parcel parcel = Parcel.obtain();
         try {
             DistanceMeasurementMethod method = new DistanceMeasurementMethod
@@ -99,22 +86,18 @@ public class DistanceMeasurementMethodTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testSetGetId() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void setGetId() {
         DistanceMeasurementMethod method = new DistanceMeasurementMethod
                     .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI).build();
         assertEquals(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI,
                 method.getId(), 0.0);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testIsAzimuthAngleSupported() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void isAzimuthAngleSupported() {
         DistanceMeasurementMethod method = new DistanceMeasurementMethod
                     .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
                     .setAzimuthAngleSupported(true)
@@ -122,11 +105,9 @@ public class DistanceMeasurementMethodTest {
         assertEquals(true, method.isAzimuthAngleSupported());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testIsAltitudeAngleSupported() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void isAltitudeAngleSupported() {
         DistanceMeasurementMethod method = new DistanceMeasurementMethod
                     .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
                     .setAltitudeAngleSupported(true)
@@ -134,11 +115,9 @@ public class DistanceMeasurementMethodTest {
         assertEquals(true, method.isAltitudeAngleSupported());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testHashCode() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void validHashCode() {
         DistanceMeasurementMethod method = new DistanceMeasurementMethod
                     .Builder(DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI)
                     .setAltitudeAngleSupported(true)
@@ -159,9 +138,5 @@ public class DistanceMeasurementMethodTest {
         assertEquals(p.getId(), other.getId(), 0.0);
         assertEquals(p.isAzimuthAngleSupported(), other.isAzimuthAngleSupported());
         assertEquals(p.isAltitudeAngleSupported(), other.isAltitudeAngleSupported());
-    }
-
-    private boolean shouldSkipTest() {
-        return !mHasBluetooth || !mIsDistanceMeasurementSupported;
     }
 }

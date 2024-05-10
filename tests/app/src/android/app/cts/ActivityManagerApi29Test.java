@@ -16,8 +16,11 @@
 package android.app.cts;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
-import static android.app.ActivityManager.PROCESS_CAPABILITY_ALL;
+import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_CAMERA;
+import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_LOCATION;
+import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_MICROPHONE;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_NONE;
+import static android.app.ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_FOREGROUND;
 import static android.app.AppOpsManager.MODE_IGNORED;
@@ -44,12 +47,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.permission.cts.PermissionUtils;
-import android.provider.DeviceConfig;
 import android.provider.Settings;
-import android.support.test.uiautomator.UiDevice;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
 import org.junit.After;
 import org.junit.Before;
@@ -79,9 +81,13 @@ public class ActivityManagerApi29Test {
     private static final String ACTION_SERVICE_START_RESULT =
             "android.app.cts.activitymanager.api29.LocationForegroundService.RESULT";
     private static final String SERVICE_NAME = ".LocationForegroundService";
-    private static final String PROPERTY_PERMISSIONS_HUB_ENABLED = "permissions_hub_enabled";
     private static final int WAITFOR_MSEC = 10000;
     private static final int NOTEOP_COUNT = 5;
+
+    private static final int PROCESS_CAPABILITY_ALL = PROCESS_CAPABILITY_FOREGROUND_LOCATION
+            | PROCESS_CAPABILITY_FOREGROUND_CAMERA
+            | PROCESS_CAPABILITY_FOREGROUND_MICROPHONE
+            | PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK;
 
     private static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
@@ -102,7 +108,6 @@ public class ActivityManagerApi29Test {
     }
 
     private String mOldAppOpsSettings;
-    private boolean mWasPermissionsHubEnabled = false;
     private WatchUidRunner mUidWatcher;
 
     @Before
@@ -120,10 +125,6 @@ public class ActivityManagerApi29Test {
                     Settings.Global.APP_OPS_CONSTANTS,
                     "top_state_settle_time=0,fg_service_state_settle_time=0,"
                     + "bg_state_settle_time=0");
-            mWasPermissionsHubEnabled = DeviceConfig.getBoolean(DeviceConfig.NAMESPACE_PRIVACY,
-                    PROPERTY_PERMISSIONS_HUB_ENABLED, false);
-            DeviceConfig.setProperty(DeviceConfig.NAMESPACE_PRIVACY,
-                    PROPERTY_PERMISSIONS_HUB_ENABLED, Boolean.toString(true), false);
             sAppOps.clearHistory();
             sAppOps.resetHistoryParameters(); }
         );
@@ -140,9 +141,6 @@ public class ActivityManagerApi29Test {
             // restore old AppOps settings.
             Settings.Global.putString(sContext.getContentResolver(),
                     Settings.Global.APP_OPS_CONSTANTS, mOldAppOpsSettings);
-            DeviceConfig.setProperty(DeviceConfig.NAMESPACE_PRIVACY,
-                    PROPERTY_PERMISSIONS_HUB_ENABLED, Boolean.toString(mWasPermissionsHubEnabled),
-                    false);
             sAppOps.clearHistory();
             sAppOps.resetHistoryParameters(); }
         );

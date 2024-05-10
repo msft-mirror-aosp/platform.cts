@@ -29,9 +29,10 @@ import android.os.BatteryManager;
 import android.os.SystemClock;
 import android.util.Log;
 
+import androidx.test.filters.FlakyTest;
+
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.BatteryUtils;
-import com.android.compatibility.common.util.SettingsUtils;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.After;
@@ -86,13 +87,11 @@ public class ActionChargingTest extends BatterySavingTestBase {
     }
 
     private void setChargingDelay(long millis) {
-        SettingsUtils.set(SettingsUtils.NAMESPACE_GLOBAL,
-                "battery_stats_constants",
-                "battery_charged_delay_ms=" + millis);
+        sGlobalSettings.set("battery_stats_constants", "battery_charged_delay_ms=" + millis);
     }
 
     private void resetSetting() {
-        SettingsUtils.delete(SettingsUtils.NAMESPACE_GLOBAL, "battery_stats_constants");
+        sGlobalSettings.delete("battery_stats_constants");
         ShellIdentityUtils.invokeMethodWithShellPermissions(mBatteryManager,
                 (bm) -> bm.setChargingStateUpdateDelayMillis(-1));
     }
@@ -108,6 +107,7 @@ public class ActionChargingTest extends BatterySavingTestBase {
     }
 
     @Test
+    @FlakyTest
     public void testActionChargingDeferred_withGlobalSetting() throws Exception {
         // Change the default
         setChargingDelay(CHARGING_DELAY_MILLIS);

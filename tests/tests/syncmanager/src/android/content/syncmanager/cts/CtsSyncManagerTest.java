@@ -21,7 +21,6 @@ import static android.content.syncmanager.cts.common.Values.APP1_PACKAGE;
 
 import static com.android.compatibility.common.util.BundleUtils.makeBundle;
 import static com.android.compatibility.common.util.ConnectivityUtils.assertNetworkConnected;
-import static com.android.compatibility.common.util.SettingsUtils.putGlobalSetting;
 import static com.android.compatibility.common.util.SystemUtil.runCommandAndPrintOnLogcat;
 import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
@@ -57,6 +56,8 @@ import com.android.compatibility.common.util.OnFailureRule;
 import com.android.compatibility.common.util.ParcelUtils;
 import com.android.compatibility.common.util.ShellUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserSettings;
+import com.android.compatibility.common.util.UserSettings.Namespace;
 
 import org.junit.After;
 import org.junit.Before;
@@ -97,7 +98,8 @@ public class CtsSyncManagerTest {
 
         BatteryUtils.runDumpsysBatteryUnplug();
         BatteryUtils.enableAdaptiveBatterySaver(false);
-        BatteryUtils.enableBatterySaver(false);
+        // Don't wait so tests can also run for devices without battery saver.
+        BatteryUtils.enableBatterySaver(false, false);
 
         AmUtils.setStandbyBucket(APP1_PACKAGE, UsageStatsManager.STANDBY_BUCKET_ACTIVE);
 
@@ -119,8 +121,10 @@ public class CtsSyncManagerTest {
         BatteryUtils.runDumpsysBatteryReset();
     }
 
+    private static final UserSettings sGlobalSettings = new UserSettings(Namespace.GLOBAL);
+
     private static void resetSyncConfig() {
-        putGlobalSetting("sync_manager_constants", "null");
+        sGlobalSettings.set("sync_manager_constants", "null");
     }
 
     private static void writeSyncConfig(
@@ -128,7 +132,7 @@ public class CtsSyncManagerTest {
             float retryTimeIncreaseFactor,
             int maxSyncRetryTimeInSeconds,
             int maxRetriesWithAppStandbyExemption) {
-        putGlobalSetting("sync_manager_constants",
+        sGlobalSettings.set("sync_manager_constants",
                 "initial_sync_retry_time_in_seconds=" + initialSyncRetryTimeInSeconds + "," +
                 "retry_time_increase_factor=" + retryTimeIncreaseFactor + "," +
                 "max_sync_retry_time_in_seconds=" + maxSyncRetryTimeInSeconds + "," +

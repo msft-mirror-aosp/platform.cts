@@ -567,6 +567,9 @@ public class KeyEventTest {
         mKeyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_FOCUS);
         assertTrue(mKeyEvent.isSystem());
 
+        mKeyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_STEM_PRIMARY);
+        assertTrue(mKeyEvent.isSystem());
+
         mKeyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_0);
         assertFalse(mKeyEvent.isSystem());
     }
@@ -812,10 +815,10 @@ public class KeyEventTest {
         assertEquals(KeyEvent.KEYCODE_UNKNOWN, KeyEvent.keyCodeFromString("KEYCODE"));
         assertEquals(KeyEvent.KEYCODE_UNKNOWN, KeyEvent.keyCodeFromString("KEYCODE_"));
         assertEquals(KeyEvent.KEYCODE_UNKNOWN, KeyEvent.keyCodeFromString(""));
-        assertEquals(KeyEvent.LAST_KEYCODE,
-                KeyEvent.keyCodeFromString(Integer.toString(KeyEvent.LAST_KEYCODE)));
+        assertEquals(KeyEvent.getMaxKeyCode(),
+                KeyEvent.keyCodeFromString(Integer.toString(KeyEvent.getMaxKeyCode())));
         assertEquals(KeyEvent.KEYCODE_UNKNOWN,
-                KeyEvent.keyCodeFromString(Integer.toString(KeyEvent.LAST_KEYCODE + 1)));
+                KeyEvent.keyCodeFromString(Integer.toString(KeyEvent.getMaxKeyCode() + 1)));
     }
 
     @Test

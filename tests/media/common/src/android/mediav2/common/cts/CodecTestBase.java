@@ -17,6 +17,7 @@
 package android.mediav2.common.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HdrEditing;
+import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
 import static android.media.MediaCodecInfo.CodecProfileLevel.*;
 
 import static org.junit.Assert.assertEquals;
@@ -26,6 +27,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.content.Context;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.display.DisplayManager;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -37,6 +43,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.os.SystemProperties;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
@@ -57,14 +65,18 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * This class comprises of routines that are generic to media codec component trying and testing.
@@ -105,16 +117,43 @@ public abstract class CodecTestBase {
     public static final boolean IS_AT_LEAST_R = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
     public static final boolean IS_AT_LEAST_T =
             ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU);
-    //TODO(b/248315681) Remove codenameEquals() check once devices return correct version for U
-    public static final boolean IS_AT_LEAST_U = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU)
-            || ApiLevelUtil.codenameEquals("UpsideDownCake");
+    public static final boolean IS_AT_LEAST_U =
+            ApiLevelUtil.isAtLeast(Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
     public static final boolean IS_BEFORE_U = !IS_AT_LEAST_U;
+    //TODO(b/248315681) Remove codenameEquals() check once devices return correct version for V
+    public static final boolean IS_AT_LEAST_V =
+            ApiLevelUtil.isAfter(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+                || ApiLevelUtil.codenameEquals("VanillaIceCream");
     public static final boolean FIRST_SDK_IS_AT_LEAST_T =
             ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU);
+    public static final boolean FIRST_SDK_IS_AT_LEAST_V =
+            ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM);
     public static final boolean VNDK_IS_AT_LEAST_T =
             SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= Build.VERSION_CODES.TIRAMISU;
+    public static final boolean VNDK_IS_BEFORE_U =
+            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+    public static final boolean VNDK_IS_AT_MOST_U =
+            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+    public static final boolean BOARD_SDK_IS_AT_LEAST_T =
+            SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    >= Build.VERSION_CODES.TIRAMISU;
+    public static final boolean BOARD_SDK_IS_BEFORE_U =
+            SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+    public static final int ANDROID_VENDOR_API_202404 = 202404;
+    // ro.vendor.api_level is guaranteed to be set on devices running in Android T and above,
+    // so using a default of 0 when not defined is safe to detect devices launching with 202404.
+    // These tests run on older versions where ro.vendor.api_level is not defined. So this
+    // needs to use default of 0 to ensure that this does't get treated as >= 202404 on those
+    // builds.
+    public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202404 =
+            SystemProperties.getInt("ro.vendor.api_level", 0) >= ANDROID_VENDOR_API_202404;
     public static final boolean IS_HDR_EDITING_SUPPORTED;
+    public static final boolean IS_HLG_EDITING_SUPPORTED;
+    public static final boolean IS_HDR_CAPTURE_SUPPORTED;
     private static final String LOG_TAG = CodecTestBase.class.getSimpleName();
 
     public static final ArrayList<String> HDR_INFO_IN_BITSTREAM_CODECS = new ArrayList<>();
@@ -122,9 +161,8 @@ public abstract class CodecTestBase {
             "00 d0 84 80 3e c2 33 c4 86 4c 1d b8 0b 13 3d 42 40 a0 0f 32 00 10 27 df 0d";
     public static final String HDR_STATIC_INCORRECT_INFO =
             "00 d0 84 80 3e c2 33 c4 86 10 27 d0 07 13 3d 42 40 a0 0f 32 00 10 27 df 0d";
-    public static final HashMap<Integer, String> HDR_DYNAMIC_INFO = new HashMap<>();
-    public static final HashMap<Integer, String> HDR_DYNAMIC_INCORRECT_INFO = new HashMap<>();
     public static final String CODEC_PREFIX_KEY = "codec-prefix";
+    public static final String CODEC_FILTER_KEY = "codec-filter";
     public static final String MEDIA_TYPE_PREFIX_KEY = "media-type-prefix";
     public static final String MEDIA_TYPE_SEL_KEY = "media-type-sel";
     public static final Map<String, String> CODEC_SEL_KEY_MEDIA_TYPE_MAP = new HashMap<>();
@@ -172,7 +210,7 @@ public abstract class CodecTestBase {
     static final int[] VP9_HDR_PROFILES =
             combine(VP9_HLG_PROFILES, combine(VP9_HDR10_PROFILES, VP9_HDR10_PLUS_PROFILES));
     static final int[] VP9_PROFILES = combine(VP9_SDR_PROFILES, VP9_HDR_PROFILES);
-    static final int[] HEVC_SDR_PROFILES = new int[]{HEVCProfileMain, HEVCProfileMainStill};
+    static final int[] HEVC_SDR_PROFILES = new int[]{HEVCProfileMain};
     static final int[] HEVC_HLG_PROFILES = new int[]{HEVCProfileMain10};
     static final int[] HEVC_HDR10_PROFILES = new int[]{HEVCProfileMain10HDR10};
     static final int[] HEVC_HDR10_PLUS_PROFILES = new int[]{HEVCProfileMain10HDR10Plus};
@@ -191,14 +229,81 @@ public abstract class CodecTestBase {
             AACObjectLD, AACObjectELD, AACObjectXHE};
     public static final Context CONTEXT =
             InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+    public static final int MAX_DISPLAY_HEIGHT_CURRENT =
+            Arrays.stream(CONTEXT.getSystemService(DisplayManager.class).getDisplays())
+                    .map(Display::getSupportedModes)
+                    .flatMap(Stream::of)
+                    .max(Comparator.comparing(Display.Mode::getPhysicalHeight))
+                    .orElseThrow(() -> new RuntimeException("Failed to determine max height"))
+                    .getPhysicalHeight();
+    public static final int MAX_DISPLAY_WIDTH_CURRENT =
+            Arrays.stream(CONTEXT.getSystemService(DisplayManager.class).getDisplays())
+                    .map(Display::getSupportedModes)
+                    .flatMap(Stream::of)
+                    .max(Comparator.comparing(Display.Mode::getPhysicalHeight))
+                    .orElseThrow(() -> new RuntimeException("Failed to determine max height"))
+                    .getPhysicalWidth();
+    public static final int MAX_DISPLAY_WIDTH_LAND =
+            Math.max(MAX_DISPLAY_WIDTH_CURRENT, MAX_DISPLAY_HEIGHT_CURRENT);
+    public static final int MAX_DISPLAY_HEIGHT_LAND =
+            Math.min(MAX_DISPLAY_WIDTH_CURRENT, MAX_DISPLAY_HEIGHT_CURRENT);
+
+    public static final String HDR10_INFO_SCENE_A =
+            "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
+                    + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
+                    + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
+                    + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00";
+    public static final String HDR10_INFO_SCENE_B =
+            "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
+                    + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
+                    + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
+                    + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00";
+    public static final String HDR10_INFO_SCENE_C =
+            "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
+                    + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
+                    + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
+                    + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00";
+    public static final String HDR10_INFO_SCENE_D =
+            "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
+                    + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
+                    + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
+                    + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00";
+
+    public static final String HDR10_INCORRECT_INFO_SCENE_A =
+            "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
+                    + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
+                    + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
+                    + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00";
+    public static final String HDR10_INCORRECT_INFO_SCENE_B =
+            "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
+                    + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
+                    + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
+                    + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 01";
+    public static final String HDR10_INCORRECT_INFO_SCENE_C =
+            "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
+                    + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
+                    + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
+                    + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 02";
+    public static final String HDR10_INCORRECT_INFO_SCENE_D =
+            "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
+                    + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
+                    + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
+                    + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 03";
+
     public static String mediaTypeSelKeys;
     public static String codecPrefix;
     public static String mediaTypePrefix;
+    public static Pattern codecFilter;
 
     public enum SupportClass {
         CODEC_ALL, // All codecs must support
         CODEC_ANY, // At least one codec must support
         CODEC_DEFAULT, // Default codec must support
+        CODEC_HW, // If the component is hardware, then it must support
+        CODEC_SHOULD, // Codec support is optional, but recommended
+        CODEC_HW_RECOMMENDED, // Codec support is optional, but strongly recommended if component
+        // is hardware accelerated
         CODEC_OPTIONAL; // Codec support is optional
 
         public static String toString(SupportClass supportRequirements) {
@@ -209,6 +314,12 @@ public abstract class CodecTestBase {
                     return "CODEC_ANY";
                 case CODEC_DEFAULT:
                     return "CODEC_DEFAULT";
+                case CODEC_HW:
+                    return "CODEC_HW";
+                case CODEC_SHOULD:
+                    return "CODEC_SHOULD";
+                case CODEC_HW_RECOMMENDED:
+                    return "CODEC_HW_RECOMMENDED";
                 case CODEC_OPTIONAL:
                     return "CODEC_OPTIONAL";
                 default:
@@ -251,7 +362,7 @@ public abstract class CodecTestBase {
 
     protected final boolean mIsAudio;
     protected final boolean mIsVideo;
-    protected final CodecAsyncHandler mAsyncHandle;
+    protected CodecAsyncHandler mAsyncHandle;
     protected boolean mIsCodecInAsyncMode;
     protected boolean mSawInputEOS;
     protected boolean mSawOutputEOS;
@@ -274,13 +385,17 @@ public abstract class CodecTestBase {
     // This doesn't own the handle. The ownership with instances that manage
     // SurfaceView or TextureView, ... They hold the responsibility of calling release().
     protected CodecTestActivity mActivity;
+    protected ImageSurface mImageSurface;
 
     public static final MediaCodecList MEDIA_CODEC_LIST_ALL;
     public static final MediaCodecList MEDIA_CODEC_LIST_REGULAR;
     static {
         MEDIA_CODEC_LIST_ALL = new MediaCodecList(MediaCodecList.ALL_CODECS);
         MEDIA_CODEC_LIST_REGULAR = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-        IS_HDR_EDITING_SUPPORTED = isHDREditingSupported();
+        IS_HDR_CAPTURE_SUPPORTED = isHDRCaptureSupported();
+        IS_HDR_EDITING_SUPPORTED = isEncoderFeatureSupported(FEATURE_HdrEditing);
+        IS_HLG_EDITING_SUPPORTED = (IS_AT_LEAST_V && android.media.codec.Flags.hlgEditing())
+                ? isEncoderFeatureSupported(FEATURE_HlgEditing) : false;
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp8", MediaFormat.MIMETYPE_VIDEO_VP8);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp9", MediaFormat.MIMETYPE_VIDEO_VP9);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("av1", MediaFormat.MIMETYPE_VIDEO_AV1);
@@ -306,6 +421,10 @@ public abstract class CodecTestBase {
         mediaTypeSelKeys = args.getString(MEDIA_TYPE_SEL_KEY);
         codecPrefix = args.getString(CODEC_PREFIX_KEY);
         mediaTypePrefix = args.getString(MEDIA_TYPE_PREFIX_KEY);
+        String codecFilterStr = args.getString(CODEC_FILTER_KEY);
+        if (codecFilterStr != null) {
+            codecFilter = Pattern.compile(codecFilterStr);
+        }
 
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_SDR_PROFILES);
         PROFILE_SDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_SDR_PROFILES);
@@ -348,40 +467,6 @@ public abstract class CodecTestBase {
         HDR_INFO_IN_BITSTREAM_CODECS.add(MediaFormat.MIMETYPE_VIDEO_AV1);
         HDR_INFO_IN_BITSTREAM_CODECS.add(MediaFormat.MIMETYPE_VIDEO_AVC);
         HDR_INFO_IN_BITSTREAM_CODECS.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
-
-        HDR_DYNAMIC_INFO.put(0, "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
-                + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
-                + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
-                + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00");
-        HDR_DYNAMIC_INFO.put(4, "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
-                + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
-                + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
-                + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00");
-        HDR_DYNAMIC_INFO.put(12, "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
-                + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
-                + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
-                + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00");
-        HDR_DYNAMIC_INFO.put(22, "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
-                + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
-                + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
-                + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00");
-
-        HDR_DYNAMIC_INCORRECT_INFO.put(0, "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
-                + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
-                + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
-                + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00");
-        HDR_DYNAMIC_INCORRECT_INFO.put(4, "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
-                + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
-                + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
-                + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 01");
-        HDR_DYNAMIC_INCORRECT_INFO.put(12, "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
-                + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
-                + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
-                + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 02");
-        HDR_DYNAMIC_INCORRECT_INFO.put(22, "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
-                + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
-                + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
-                + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 03");
     }
 
     static int[] combine(int[] first, int[] second) {
@@ -417,7 +502,16 @@ public abstract class CodecTestBase {
     public static void checkFormatSupport(String codecName, String mediaType, boolean isEncoder,
             ArrayList<MediaFormat> formats, String[] features, SupportClass supportRequirements)
             throws IOException {
-        if (!areFormatsSupported(codecName, mediaType, formats)) {
+        boolean hasSupport = true;
+        if (formats != null) {
+            hasSupport &= areFormatsSupported(codecName, mediaType, formats);
+        }
+        if (features != null) {
+            for (String feature : features) {
+                hasSupport &= isFeatureSupported(codecName, mediaType, feature);
+            }
+        }
+        if (!hasSupport) {
             switch (supportRequirements) {
                 case CODEC_ALL:
                     fail("format(s) not supported by codec: " + codecName + " for mediaType : "
@@ -435,6 +529,23 @@ public abstract class CodecTestBase {
                                 + "for mediaType : " + mediaType + " formats: " + formats);
                     }
                     break;
+                case CODEC_HW:
+                    if (isHardwareAcceleratedCodec(codecName)) {
+                        fail("format(s) not supported by codec: " + codecName + " for mediaType : "
+                                + mediaType + " formats: " + formats);
+                    }
+                    break;
+                case CODEC_SHOULD:
+                    Assume.assumeTrue(String.format("format(s) not supported by codec: %s for"
+                            + " mediaType : %s. It is recommended to support it",
+                            codecName, mediaType), false);
+                    break;
+                case CODEC_HW_RECOMMENDED:
+                    Assume.assumeTrue(String.format(
+                            "format(s) not supported by codec: %s for mediaType : %s. It is %s "
+                                    + "recommended to support it", codecName, mediaType,
+                            isHardwareAcceleratedCodec(codecName) ? "strongly" : ""), false);
+                    break;
                 case CODEC_OPTIONAL:
                 default:
                     // the later assumeTrue() ensures we skip the test for unsupported codecs
@@ -445,24 +556,51 @@ public abstract class CodecTestBase {
         }
     }
 
-    public static boolean isFeatureSupported(String name, String mediaType, String feature)
-            throws IOException {
-        MediaCodec codec = MediaCodec.createByCodecName(name);
-        MediaCodecInfo.CodecCapabilities codecCapabilities =
-                codec.getCodecInfo().getCapabilitiesForType(mediaType);
-        boolean isSupported = codecCapabilities.isFeatureSupported(feature);
-        codec.release();
-        return isSupported;
+    public static boolean isFeatureSupported(String name, String mediaType, String feature) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
+            if (name.equals(codecInfo.getName())) {
+                return codecInfo.getCapabilitiesForType(mediaType).isFeatureSupported(feature);
+            }
+        }
+        return false;
     }
 
-    public static boolean isHDREditingSupported() {
+    public static boolean isHDRCaptureSupported() {
+        // If the device supports HDR, hlg support should always return true
+        if (!MediaUtils.hasCamera()) return false;
+        CameraManager cm = CONTEXT.getSystemService(CameraManager.class);
+        try {
+            String[] cameraIds = cm.getCameraIdList();
+            for (String id : cameraIds) {
+                CameraCharacteristics ch = cm.getCameraCharacteristics(id);
+                int[] caps = ch.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                if (IntStream.of(caps).anyMatch(x -> x
+                        == CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT)) {
+                    Set<Long> profiles =
+                            ch.get(CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES)
+                                    .getSupportedProfiles();
+                    if (profiles.contains(DynamicRangeProfiles.HLG10)) return true;
+                }
+            }
+        } catch (CameraAccessException e) {
+            Log.e(LOG_TAG, "encountered " + e.getMessage()
+                    + " marking hdr capture to be available to catch your attention");
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Check if any encoder on the device supports the given feature
+     */
+    public static boolean isEncoderFeatureSupported(String feature) {
         for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
             if (!codecInfo.isEncoder()) {
                 continue;
             }
             for (String mediaType : codecInfo.getSupportedTypes()) {
                 CodecCapabilities caps = codecInfo.getCapabilitiesForType(mediaType);
-                if (caps != null && caps.isFeatureSupported(FEATURE_HdrEditing)) {
+                if (caps != null && caps.isFeatureSupported(feature)) {
                     return true;
                 }
             }
@@ -508,38 +646,52 @@ public abstract class CodecTestBase {
     public static boolean canDisplaySupportHDRContent() {
         DisplayManager displayManager = CONTEXT.getSystemService(DisplayManager.class);
         return displayManager.getDisplay(Display.DEFAULT_DISPLAY).getHdrCapabilities()
-                .getSupportedHdrTypes().length != 0;
+                .getSupportedHdrTypes().length > 0;
+    }
+
+    public static boolean isFormatSupported(String name, String mediaType, MediaFormat format) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
+            if (name.equals(codecInfo.getName())) {
+                MediaCodecInfo.CodecCapabilities cap = codecInfo.getCapabilitiesForType(mediaType);
+                boolean isSupported = true;
+                if (format != null) {
+                    isSupported = cap.isFormatSupported(format);
+                }
+                if (isSupported) return true;
+            }
+        }
+        return false;
     }
 
     public static boolean areFormatsSupported(String name, String mediaType,
-            ArrayList<MediaFormat> formats) throws IOException {
-        MediaCodec codec = MediaCodec.createByCodecName(name);
-        MediaCodecInfo.CodecCapabilities codecCapabilities =
-                codec.getCodecInfo().getCapabilitiesForType(mediaType);
-        boolean isSupported = true;
-        if (formats != null) {
-            for (int i = 0; i < formats.size() && isSupported; i++) {
-                isSupported = codecCapabilities.isFormatSupported(formats.get(i));
+            List<MediaFormat> formats) throws IOException {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
+            if (name.equals(codecInfo.getName())) {
+                MediaCodecInfo.CodecCapabilities cap = codecInfo.getCapabilitiesForType(mediaType);
+                boolean isSupported = true;
+                if (formats != null) {
+                    for (int i = 0; i < formats.size() && isSupported; i++) {
+                        isSupported = cap.isFormatSupported(formats.get(i));
+                    }
+                }
+                if (isSupported) return true;
             }
         }
-        codec.release();
-        return isSupported;
+        return false;
     }
 
-    public static boolean hasSupportForColorFormat(String name, String mediaType, int colorFormat)
-            throws IOException {
-        MediaCodec codec = MediaCodec.createByCodecName(name);
-        MediaCodecInfo.CodecCapabilities cap =
-                codec.getCodecInfo().getCapabilitiesForType(mediaType);
-        boolean hasSupport = false;
-        for (int c : cap.colorFormats) {
-            if (c == colorFormat) {
-                hasSupport = true;
-                break;
+    public static boolean hasSupportForColorFormat(String name, String mediaType, int colorFormat) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
+            if (name.equals(codecInfo.getName())) {
+                MediaCodecInfo.CodecCapabilities cap = codecInfo.getCapabilitiesForType(mediaType);
+                for (int c : cap.colorFormats) {
+                    if (c == colorFormat) {
+                        return true;
+                    }
+                }
             }
         }
-        codec.release();
-        return hasSupport;
+        return false;
     }
 
     public static boolean isDefaultCodec(String codecName, String mediaType, boolean isEncoder)
@@ -583,7 +735,21 @@ public abstract class CodecTestBase {
         return false;
     }
 
-    protected static String paramToString(Object[] param) {
+    /**
+     * Stop the current codec session and transfer component to uninitialized state.
+     * <p>
+     * Some legacy OMX components do not properly clear the internal state at stop().
+     * Workaround the issue with resetting the component.
+     */
+    public static void endCodecSession(MediaCodec codec) {
+        if (codec.getName().toUpperCase(Locale.getDefault()).startsWith("OMX")) {
+            codec.reset();
+        } else {
+            codec.stop();
+        }
+    }
+
+    public static String paramToString(Object[] param) {
         StringBuilder paramStr = new StringBuilder("[  ");
         for (int j = 0; j < param.length - 1; j++) {
             Object o = param[j];
@@ -650,7 +816,6 @@ public abstract class CodecTestBase {
                 if (needVideo) {
                     list.add(MediaFormat.MIMETYPE_VIDEO_AVC);
                     list.add(MediaFormat.MIMETYPE_VIDEO_MPEG4);
-                    list.add(MediaFormat.MIMETYPE_VIDEO_H263);
                     list.add(MediaFormat.MIMETYPE_VIDEO_VP8);
                     list.add(MediaFormat.MIMETYPE_VIDEO_VP9);
                 }
@@ -672,6 +837,9 @@ public abstract class CodecTestBase {
                 // sec 2.3.2
                 list.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
                 list.add(MediaFormat.MIMETYPE_VIDEO_MPEG2);
+                if (IS_AT_LEAST_U) {
+                    list.add(MediaFormat.MIMETYPE_VIDEO_AV1);
+                }
             }
         } else {
             if (MediaUtils.hasMicrophone() && needAudio) {
@@ -688,6 +856,10 @@ public abstract class CodecTestBase {
                     list.add(MediaFormat.MIMETYPE_AUDIO_AAC);
                 }
                 if (needVideo) {
+                    if ((MediaUtils.isHandheld() || MediaUtils.isTablet() || MediaUtils.isTv())
+                            && IS_AT_LEAST_U) {
+                        list.add(MediaFormat.MIMETYPE_VIDEO_AV1);
+                    }
                     list.add(MediaFormat.MIMETYPE_VIDEO_AVC);
                     list.add(MediaFormat.MIMETYPE_VIDEO_VP8);
                 }
@@ -764,12 +936,19 @@ public abstract class CodecTestBase {
     public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs) {
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
-                mustTestAllCodecs, ComponentClass.ALL);
+                mustTestAllCodecs, ComponentClass.ALL, null /* features */);
     }
 
     public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
             ComponentClass selectSwitch) {
+        return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
+                mustTestAllCodecs, selectSwitch, null);
+    }
+
+    public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
+            boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
+            ComponentClass selectSwitch, String[] features) {
         ArrayList<String> mediaTypes = compileCompleteTestMediaTypesList(isEncoder,
                 needAudio, needVideo);
         ArrayList<String> cddRequiredMediaTypesList =
@@ -778,11 +957,12 @@ public abstract class CodecTestBase {
         int argLength = exhaustiveArgsList.get(0).length;
         for (String mediaType : mediaTypes) {
             ArrayList<String> totalListOfCodecs =
-                    selectCodecs(mediaType, null, null, isEncoder, selectSwitch);
+                    selectCodecs(mediaType, null /* formats */, features, isEncoder, selectSwitch);
             ArrayList<String> listOfCodecs = new ArrayList<>();
-            if (codecPrefix != null) {
+            if (codecPrefix != null || codecFilter != null) {
                 for (String codec : totalListOfCodecs) {
-                    if (codec.startsWith(codecPrefix)) {
+                    if ((codecPrefix != null && codec.startsWith(codecPrefix))
+                            || (codecFilter != null && codecFilter.matcher(codec).matches())) {
                         listOfCodecs.add(codec);
                     }
                 }
@@ -901,12 +1081,29 @@ public abstract class CodecTestBase {
         return Arrays.copyOfRange(tempArray, 0, i);
     }
 
+    public static String byteArrayToHexString(byte[] bytes) {
+        final char[] hexArray =
+                {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+        char[] hexChars = new char[bytes.length * 3];
+        int v;
+        for (int j = 0; j < bytes.length; j++) {
+            v = bytes[j] & 0xFF;
+            hexChars[j * 3] = hexArray[v >>> 4];
+            hexChars[j * 3 + 1] = hexArray[v & 0x0F];
+            hexChars[j * 3 + 2] = ' ';
+        }
+        return new String(hexChars);
+    }
+
     protected abstract void enqueueInput(int bufferIndex) throws IOException;
 
     protected abstract void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info);
 
     @Rule
     public final TestName mTestName = new TestName();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUpCodecTestBase() {
@@ -926,25 +1123,22 @@ public abstract class CodecTestBase {
             mActivity.finish();
             mActivity = null;
         }
+        if (mImageSurface != null) {
+            mImageSurface.release();
+            mImageSurface = null;
+        }
         if (mCodec != null) {
             mCodec.release();
             mCodec = null;
         }
     }
 
-    protected void configureCodec(MediaFormat format, boolean isAsync,
-            boolean signalEOSWithLastFrame, boolean isEncoder) {
+    // reusable portions of configureCodec(...) are handled here
+    protected void configureCodecCommon(MediaFormat format, boolean isAsync,
+            boolean signalEOSWithLastFrame, boolean isEncoder, int flags) {
         resetContext(isAsync, signalEOSWithLastFrame);
         mAsyncHandle.setCallBack(mCodec, isAsync);
-        // signalEOS flag has nothing to do with configure. We are using this flag to try all
-        // available configure apis
-        if (signalEOSWithLastFrame) {
-            mCodec.configure(format, mSurface, null,
-                    isEncoder ? MediaCodec.CONFIGURE_FLAG_ENCODE : 0);
-        } else {
-            mCodec.configure(format, mSurface, isEncoder ? MediaCodec.CONFIGURE_FLAG_ENCODE : 0,
-                    null);
-        }
+
         mTestEnv.setLength(0);
         mTestEnv.append("###################      Test Environment       #####################\n");
         mTestEnv.append(String.format("Component under test :- %s \n", mCodecName));
@@ -953,6 +1147,58 @@ public abstract class CodecTestBase {
                 (isAsync ? "asynchronous" : "synchronous")));
         mTestEnv.append(String.format("Component received input eos :- %s \n",
                 (signalEOSWithLastFrame ? "with full buffer" : "with empty buffer")));
+        mTestEnv.append(String.format("Component is :- %s \n",
+                (isEncoder ? "encoder" : "decoder")));
+        mTestEnv.append("Component configure flags :- ").append(flags).append("\n");
+    }
+
+    protected void configureCodec(MediaFormat format, boolean isAsync,
+            boolean cryptoCallAndSignalEosWithLastFrame, boolean isEncoder) {
+        configureCodec(format, isAsync, cryptoCallAndSignalEosWithLastFrame,
+                isEncoder, 0 /* flags */);
+    }
+
+    protected void configureCodec(MediaFormat format, boolean isAsync,
+            boolean cryptoCallAndSignalEosWithLastFrame, boolean isEncoder, int flags) {
+        if (IS_AT_LEAST_R && ((flags & MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL) != 0)) {
+            if (!isAsync) {
+                throw new RuntimeException("Block model feature testing requires mode of operation"
+                        + " to be asynchronous");
+            }
+        }
+
+        configureCodecCommon(format, isAsync, cryptoCallAndSignalEosWithLastFrame, isEncoder,
+                flags);
+
+        // signalEOS flag has nothing to do with configure. We are using this flag to try all
+        // available configure apis
+        if (cryptoCallAndSignalEosWithLastFrame) {
+            mCodec.configure(format, mSurface, null /* crypto */,
+                    (isEncoder ? MediaCodec.CONFIGURE_FLAG_ENCODE : 0) | flags);
+        } else {
+            mCodec.configure(format, mSurface,
+                    (isEncoder ? MediaCodec.CONFIGURE_FLAG_ENCODE : 0) | flags,
+                    null /* descrambler */);
+        }
+        if (ENABLE_LOGS) {
+            Log.v(LOG_TAG, "codec configured");
+        }
+    }
+
+    protected void configureCodecInDetachedMode(MediaFormat format, boolean isAsync,
+            boolean cryptoCallAndSignalEosWithLastFrame) {
+        configureCodecCommon(format, isAsync, cryptoCallAndSignalEosWithLastFrame,
+                false /* isEncoder */, MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE);
+
+        // signalEOS flag has nothing to do with configure. We are using this flag to try all
+        // available configure apis
+        if (cryptoCallAndSignalEosWithLastFrame) {
+            mCodec.configure(format, null /* surface */, null /* crypto */,
+                    MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE);
+        } else {
+            mCodec.configure(format, null /* surface */,
+                    MediaCodec.CONFIGURE_FLAG_DETACHED_SURFACE, null /* descrambler */);
+        }
         if (ENABLE_LOGS) {
             Log.v(LOG_TAG, "codec configured");
         }
@@ -964,6 +1210,10 @@ public abstract class CodecTestBase {
 
     public MediaFormat getOutputFormat() {
         return mIsCodecInAsyncMode ? mAsyncHandle.getOutputFormat() : mOutFormat;
+    }
+
+    public int getOutputCount() {
+        return mOutputCount;
     }
 
     protected void flushCodec() {
@@ -1117,7 +1367,7 @@ public abstract class CodecTestBase {
                     mOutputCount, mInputCount);
             // check the pts lists to see what frames are dropped, the below call is needed to
             // get useful error messages
-            boolean unused = mOutputBuff.isOutPtsListIdenticalToInpPtsList(true);
+            mOutputBuff.isOutPtsListIdenticalToInpPtsList(true);
             fail(msg + mTestConfig + mTestEnv + mOutputBuff.getErrMsg());
         }*/
     }
@@ -1194,19 +1444,17 @@ public abstract class CodecTestBase {
         }
     }
 
-    protected void validateHDRInfo(MediaFormat fmt, String hdrInfoKey, ByteBuffer hdrInfoRef) {
-        ByteBuffer hdrInfo = fmt.getByteBuffer(hdrInfoKey, null);
-        assertNotNull("error! no " + hdrInfoKey + " present in format : " + fmt + "\n "
-                + mTestConfig + mTestEnv, hdrInfo);
-        if (!hdrInfoRef.equals(hdrInfo)) {
+    protected void validateHDRInfo(String hdrInfoKey, ByteBuffer hdrInfoRef, ByteBuffer hdrInfoTest,
+            Long framePts) {
+        if (!hdrInfoRef.equals(hdrInfoTest)) {
             StringBuilder msg = new StringBuilder(
                     "###################       Error Details         #####################\n");
             byte[] ref = new byte[hdrInfoRef.capacity()];
             hdrInfoRef.get(ref);
             hdrInfoRef.rewind();
-            byte[] test = new byte[hdrInfo.capacity()];
-            hdrInfo.get(test);
-            hdrInfo.rewind();
+            byte[] test = new byte[hdrInfoTest.capacity()];
+            hdrInfoTest.get(test);
+            hdrInfoTest.rewind();
             msg.append("ref info :- \n");
             for (byte b : ref) {
                 msg.append(String.format("%2x ", b));
@@ -1215,14 +1463,30 @@ public abstract class CodecTestBase {
             for (byte b : test) {
                 msg.append(String.format("%2x ", b));
             }
-            fail("error! mismatch seen between ref and test info of " + hdrInfoKey + "\n"
-                    + mTestConfig + mTestEnv + msg);
+            fail("Frame pts " + framePts + ": error! mismatch seen between ref and test info of "
+                    + hdrInfoKey + "\n" + mTestConfig + mTestEnv + msg);
         }
+    }
+
+    protected void validateHDRInfo(MediaFormat fmt, String hdrInfoKey, ByteBuffer hdrInfoRef,
+            Long framePts) {
+        ByteBuffer hdrInfo = fmt.getByteBuffer(hdrInfoKey, null);
+        assertNotNull("error! no " + hdrInfoKey + " present in format : " + fmt + "\n "
+                + mTestConfig + mTestEnv, hdrInfo);
+        validateHDRInfo(hdrInfoKey, hdrInfoRef, hdrInfo, framePts);
     }
 
     protected void setUpSurface(CodecTestActivity activity) throws InterruptedException {
         activity.waitTillSurfaceIsCreated();
         mSurface = activity.getSurface();
+        assertNotNull("Surface created is null \n" + mTestConfig + mTestEnv, mSurface);
+        assertTrue("Surface created is invalid \n" + mTestConfig + mTestEnv, mSurface.isValid());
+    }
+
+    protected void setUpSurface(int width, int height, int format, int maxImages,
+            int surfaceId, Function<ImageSurface.ImageAndAttributes, Boolean> predicate) {
+        mImageSurface.createSurface(width, height, format, maxImages, surfaceId, predicate);
+        mSurface = mImageSurface.getSurface();
         assertNotNull("Surface created is null \n" + mTestConfig + mTestEnv, mSurface);
         assertTrue("Surface created is invalid \n" + mTestConfig + mTestEnv, mSurface.isValid());
     }

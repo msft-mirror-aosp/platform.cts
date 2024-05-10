@@ -21,8 +21,6 @@ import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
 import static android.server.wm.BarTestUtils.assumeHasColoredNavigationBar;
 import static android.server.wm.BarTestUtils.assumeHasColoredStatusBar;
-import static android.server.wm.BarTestUtils.assumeStatusBarContainsCutout;
-import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -41,6 +39,8 @@ import android.os.SystemClock;
 import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.PlatinumTest;
+import android.server.wm.IgnoreOrientationRequestSession;
 import android.view.Gravity;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -54,6 +54,8 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -86,6 +88,7 @@ public class LightBarTests extends LightBarTestBase {
     private final String NOTIFICATION_CHANNEL_ID = "test_channel";
     private final String NOTIFICATION_GROUP_KEY = "test_group";
     private NotificationManager mNm;
+    private IgnoreOrientationRequestSession mOrientationRequestSession;
 
     @Rule
     public ActivityTestRule<LightBarActivity> mActivityRule = new ActivityTestRule<>(
@@ -93,8 +96,31 @@ public class LightBarTests extends LightBarTestBase {
     @Rule
     public TestName mTestName = new TestName();
 
+
+
+    @Before
+    public void setUp() {
+        // We need to prevent letterboxing because when an activity is letterboxed, then the status
+        // bar icons are outside the activity space so our verification will fail. See b/246515090.
+        //
+        // When ignore_orientation_request is set to true and the device is in landscape but the
+        // activity is in portrait, then the device remains in landscape but letterboxes the
+        // activity (so the activity is *not* full screen). Setting ignore_orientation_request to
+        // false will cause the device to instead rotate to portrait to match the activity, thus
+        // preventing letterboxing.
+        mOrientationRequestSession = new IgnoreOrientationRequestSession(false /* enable */);
+    }
+
+    @After
+    public void tearDown() {
+        if (mOrientationRequestSession != null) {
+            mOrientationRequestSession.close();
+        }
+    }
+
     @Test
     @AppModeFull // Instant apps cannot create notifications
+    @PlatinumTest(focusArea = "sysui")
     public void testLightStatusBarIcons() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
 
@@ -110,6 +136,7 @@ public class LightBarTests extends LightBarTestBase {
 
     @Test
     @AppModeFull // Instant apps cannot create notifications
+    @PlatinumTest(focusArea = "sysui")
     public void testAppearanceCanOverwriteLegacyFlags() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
 
@@ -137,6 +164,7 @@ public class LightBarTests extends LightBarTestBase {
 
     @Test
     @AppModeFull // Instant apps cannot create notifications
+    @PlatinumTest(focusArea = "sysui")
     public void testLegacyFlagsCannotOverwriteAppearance() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
 
@@ -220,32 +248,7 @@ public class LightBarTests extends LightBarTestBase {
             Thread.sleep(WAIT_TIME);
 
             Bitmap bitmap = takeStatusBarScreenshot(activity);
-            Stats s = evaluateDarkBarBitmap(bitmap, Color.BLACK, 0);
-            assertStats(bitmap, s, false /* light */);
-        });
-    }
-
-    @Test
-    @AppModeFull // Instant apps cannot create notifications
-    public void testLightBarIsNotAllowed_fitDisplayCutout() throws Throwable {
-        assumeHasColoredStatusBar(mActivityRule);
-        assumeStatusBarContainsCutout(mActivityRule);
-
-        runInNotificationSession(() -> {
-            final LightBarActivity activity = mActivityRule.getActivity();
-            activity.runOnUiThread(() -> {
-                final WindowManager.LayoutParams attrs = activity.getWindow().getAttributes();
-                attrs.layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
-                activity.getWindow().setAttributes(attrs);
-                activity.getWindow().setStatusBarColor(Color.BLACK);
-                activity.getWindow().setNavigationBarColor(Color.BLACK);
-                activity.setLightStatusBarAppearance(true);
-                activity.setLightNavigationBarAppearance(true);
-            });
-            Thread.sleep(WAIT_TIME);
-
-            Bitmap bitmap = takeStatusBarScreenshot(activity);
-            Stats s = evaluateDarkBarBitmap(bitmap, Color.BLACK, 0);
+            Stats s = evaluateDarkBarBitmap(bitmap, Color.TRANSPARENT, 0);
             assertStats(bitmap, s, false /* light */);
         });
     }

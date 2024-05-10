@@ -19,6 +19,8 @@ import static org.hamcrest.CoreMatchers.both;
 
 import android.app.UiAutomation;
 import android.app.UiAutomation.AccessibilityEventFilter;
+import android.util.SparseArray;
+import android.view.Display;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityWindowInfo;
 
@@ -69,9 +71,16 @@ public class AccessibilityEventFilterUtils {
 
     public static AccessibilityEventFilter filterWindowsChangeTypesAndWindowTitle(
             @NonNull UiAutomation uiAutomation, int changeTypes, @NonNull String title) {
+        return filterWindowsChangeTypesAndWindowTitle(uiAutomation, changeTypes, title,
+                Display.DEFAULT_DISPLAY);
+    }
+
+    public static AccessibilityEventFilter filterWindowsChangeTypesAndWindowTitle(
+            @NonNull UiAutomation uiAutomation, int changeTypes, @NonNull String title,
+            int displayId) {
         return allOf(new AccessibilityEventTypeMatcher(AccessibilityEvent.TYPE_WINDOWS_CHANGED),
                 new WindowChangesMatcher(changeTypes),
-                new WindowTitleMatcher(uiAutomation, title))::matches;
+                new WindowTitleMatcher(uiAutomation, title, displayId))::matches;
     }
 
     public static AccessibilityEventFilter filterWindowsChangTypesAndWindowId(int windowId,
@@ -98,6 +107,50 @@ public class AccessibilityEventFilterUtils {
                 return mUnresolved.isEmpty();
             }
         };
+    }
+
+    /**
+     * Returns a matcher for a display id from getDisplayId().
+     * @param displayId the display id to match.
+     * @return a matcher for comparing display ids.
+     */
+    public static TypeSafeMatcher<AccessibilityEvent> matcherForDisplayId(int displayId) {
+        final TypeSafeMatcher<AccessibilityEvent> matchAction =
+                new PropertyMatcher<>(
+                        displayId, "Display id",
+                        (event, expect) -> event.getDisplayId() == displayId);
+        return matchAction;
+    }
+
+    /**
+     * Returns a matcher for a class name from getClassName().
+     * @param className the class name to match.
+     * @return a matcher for comparing class names.
+     */
+    public static TypeSafeMatcher<AccessibilityEvent> matcherForClassName(CharSequence className) {
+        final TypeSafeMatcher<AccessibilityEvent> matchAction =
+                new PropertyMatcher<>(
+                        className, "Class name",
+                        (event, expect) -> event.getClassName().equals(className));
+        return matchAction;
+    }
+
+    /**
+     * Returns a matcher for the first text instance from getText().
+     * @param text the text to match.
+     * @return a matcher for comparing first text instances.
+     */
+    public static TypeSafeMatcher<AccessibilityEvent> matcherForFirstText(CharSequence text) {
+        final TypeSafeMatcher<AccessibilityEvent> matchAction =
+                new PropertyMatcher<>(
+                        text, "Text",
+                        (event, expect) -> {
+                            if (event.getText() != null && event.getText().size() > 0) {
+                                return event.getText().get(0).equals(text);
+                            }
+                            return false;
+                        });
+        return matchAction;
     }
 
     public static class AccessibilityEventTypeMatcher extends TypeSafeMatcher<AccessibilityEvent> {
@@ -184,16 +237,21 @@ public class AccessibilityEventFilterUtils {
     public static class WindowTitleMatcher extends TypeSafeMatcher<AccessibilityEvent> {
         private final UiAutomation mUiAutomation;
         private final String mTitle;
+        private final int mDisplayId;
 
-        public WindowTitleMatcher(@NonNull UiAutomation uiAutomation, @NonNull String title) {
+        public WindowTitleMatcher(@NonNull UiAutomation uiAutomation, @NonNull String title,
+                int displayId) {
             super();
             mUiAutomation = uiAutomation;
             mTitle = title;
+            mDisplayId = displayId;
         }
 
         @Override
         protected boolean matchesSafely(AccessibilityEvent event) {
-            final List<AccessibilityWindowInfo> windows = mUiAutomation.getWindows();
+            final SparseArray<List<AccessibilityWindowInfo>> windowsOnAllDisplays =
+                    mUiAutomation.getWindowsOnAllDisplays();
+            final List<AccessibilityWindowInfo> windows = windowsOnAllDisplays.get(mDisplayId);
             final int eventWindowId = event.getWindowId();
             for (AccessibilityWindowInfo info : windows) {
                 if (eventWindowId == info.getId() && mTitle.equals(info.getTitle())) {

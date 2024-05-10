@@ -17,7 +17,7 @@
 package android.dpi.cts;
 
 import android.content.Context;
-import android.content.pm.PackageManager;
+import android.os.Build;
 import android.platform.test.annotations.Presubmit;
 import android.test.AndroidTestCase;
 import android.util.DisplayMetrics;
@@ -26,6 +26,7 @@ import android.view.WindowManager;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FeatureUtil;
+import com.android.compatibility.common.util.PropertyUtil;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -47,12 +48,22 @@ public class ConfigurationTest extends AndroidTestCase {
         display.getRealMetrics(mMetrics);
     }
 
+    @CddTest(requirement = "2.2.1")
     @Presubmit
     public void testScreenConfiguration() {
         double xInches = (double) mMetrics.widthPixels / mMetrics.xdpi;
         double yInches = (double) mMetrics.heightPixels / mMetrics.ydpi;
         double diagonalInches = Math.sqrt(Math.pow(xInches, 2) + Math.pow(yInches, 2));
         double minSize = 2.5d;
+        double minShortEdgeInches = 0.0d;
+        double minLongEdgeInches = 0.0d;
+        if (PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            minSize = 4.04d;
+            minShortEdgeInches = 2.2d;
+            minLongEdgeInches = 3.4d;
+        } else if (PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.R) {
+            minSize = 3.3d;
+        }
         if (FeatureUtil.isWatch()) {
             // Watches have a different minimum diagonal.
             minSize = 1.0d;
@@ -60,8 +71,20 @@ public class ConfigurationTest extends AndroidTestCase {
             // Cars have a different minimum diagonal.
             minSize = 6.0d;
         }
+
         assertTrue("Screen diagonal must be at least " + minSize + " inches: " + diagonalInches,
                 diagonalInches >= minSize);
+        // We can only verify short and long edge screen dimensions on non watch and auto devices.
+        if (!FeatureUtil.isAutomotive() && !FeatureUtil.isWatch()) {
+            assertTrue(
+                    "Screen short edge must be at least " + minShortEdgeInches + " inches: "
+                            + Math.min(xInches, yInches),
+                    Math.min(xInches, yInches) >= minShortEdgeInches);
+            assertTrue(
+                    "Screen long edge must be at least " + minLongEdgeInches + " inches: "
+                            + Math.max(xInches, yInches),
+                    Math.max(xInches, yInches) >= minLongEdgeInches);
+        }
 
         double density = 160.0d * mMetrics.density;
         assertTrue("Screen density must be at least 100 dpi: " + density, density >= 100.0d);
@@ -81,14 +104,20 @@ public class ConfigurationTest extends AndroidTestCase {
         allowedDensities.add(DisplayMetrics.DENSITY_XHIGH);
         allowedDensities.add(DisplayMetrics.DENSITY_340);
         allowedDensities.add(DisplayMetrics.DENSITY_360);
+        allowedDensities.add(DisplayMetrics.DENSITY_390);
         allowedDensities.add(DisplayMetrics.DENSITY_400);
         allowedDensities.add(DisplayMetrics.DENSITY_420);
         allowedDensities.add(DisplayMetrics.DENSITY_440);
         allowedDensities.add(DisplayMetrics.DENSITY_450);
         allowedDensities.add(DisplayMetrics.DENSITY_XXHIGH);
+        allowedDensities.add(DisplayMetrics.DENSITY_520);
         allowedDensities.add(DisplayMetrics.DENSITY_560);
         allowedDensities.add(DisplayMetrics.DENSITY_600);
         allowedDensities.add(DisplayMetrics.DENSITY_XXXHIGH);
+        // Backport of DENSITY_520 from Android 14 to android13-tests-dev
+        allowedDensities.add(520);
+        // Backport of DENSITY_390 to android14-tests-dev
+        allowedDensities.add(390);
         assertTrue("DisplayMetrics.DENSITY_DEVICE_STABLE must be one of the DisplayMetrics.DENSITY_* values: "
                 + allowedDensities, allowedDensities.contains(DisplayMetrics.DENSITY_DEVICE_STABLE));
 

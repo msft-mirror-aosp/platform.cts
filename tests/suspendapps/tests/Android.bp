@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -27,9 +28,13 @@ android_test {
     ],
 
     static_libs: [
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "androidx.test.rules",
         "compatibility-device-util-axt",
+        "platform-test-rules",
+        "Nene",
+        "Harrier",
+        "TestApp",
     ],
 
     platform_apis: true,

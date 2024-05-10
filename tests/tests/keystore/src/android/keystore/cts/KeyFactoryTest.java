@@ -97,6 +97,10 @@ public class KeyFactoryTest {
         // XDH is also a supported algorithm, but not available for other tests as the keys
         // generated with it have more limited set of uses.
         expectedAlgsLowerCase.add("xdh");
+        if (TestUtils.isEd25519AlgorithmExpectedToSupport()) {
+            // AndroidKeyStore supports key generation of curve Ed25519 from Android V preview
+            expectedAlgsLowerCase.add("ed25519");
+        }
         for (Service service : services) {
             if ("KeyFactory".equalsIgnoreCase(service.getType())) {
                 String algLowerCase = service.getAlgorithm().toLowerCase(Locale.US);

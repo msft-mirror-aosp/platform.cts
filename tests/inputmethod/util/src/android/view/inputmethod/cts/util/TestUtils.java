@@ -16,22 +16,32 @@
 
 package android.view.inputmethod.cts.util;
 
+import static android.view.Display.DEFAULT_DISPLAY;
+import static android.view.WindowInsets.Type.displayCutout;
+
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static org.junit.Assert.assertFalse;
 
+import android.app.Activity;
+import android.app.ActivityTaskManager;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.content.Context;
+import android.graphics.Rect;
+import android.hardware.display.DisplayManager;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.view.Display;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.WindowMetrics;
+import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -41,6 +51,8 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,6 +70,34 @@ public final class TestUtils {
      */
     public static void runOnMainSync(@NonNull Runnable task) {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(task);
+    }
+
+    /**
+     * Executes a call on the application's main thread, blocking until it is complete. When a
+     * Throwable is thrown in the runnable, the exception is propagated back to the
+     * caller's thread. If it is an unchecked throwable, it will be rethrown as is. If it is a
+     * checked exception, it will be rethrown as a {@link RuntimeException}.
+     *
+     * <p>A simple wrapper for {@link Instrumentation#runOnMainSync(Runnable)}.</p>
+     *
+     * @param task task to be called on the UI thread
+     */
+    public static void runOnMainSyncWithRethrowing(@NonNull Runnable task) {
+        FutureTask<Void> wrapped = new FutureTask<>(task, null);
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(wrapped);
+        try {
+            wrapped.get();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            } else if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            throw new RuntimeException(cause);
+        }
     }
 
     /**
@@ -120,6 +160,19 @@ public final class TestUtils {
     public static void waitOnMainUntil(@NonNull BooleanSupplier condition, long timeout)
             throws TimeoutException {
         waitOnMainUntil(condition, timeout, "");
+    }
+
+    public static boolean isInputMethodPickerShown(@NonNull InputMethodManager imm) {
+        return SystemUtil.runWithShellPermissionIdentity(imm::isInputMethodPickerShown);
+    }
+
+    /** Returns {@code true} if the default display supports split screen multi-window. */
+    public static boolean supportsSplitScreenMultiWindow() {
+        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        final DisplayManager dm = context.getSystemService(DisplayManager.class);
+        final Display defaultDisplay = dm.getDisplay(DEFAULT_DISPLAY);
+        return ActivityTaskManager.supportsSplitScreenMultiWindow(
+                context.createDisplayContext(defaultDisplay));
     }
 
     /**
@@ -207,17 +260,7 @@ public final class TestUtils {
      * @return the injected MotionEvent.
      */
     public static MotionEvent injectStylusDownEvent(@NonNull View view, int x, int y) {
-        int[] xy = new int[2];
-        view.getLocationOnScreen(xy);
-        x += xy[0];
-        y += xy[1];
-
-        // Inject stylus ACTION_DOWN
-        long downTime = SystemClock.uptimeMillis();
-        final MotionEvent downEvent =
-                getMotionEvent(downTime, downTime, MotionEvent.ACTION_DOWN, x, y);
-        injectMotionEvent(downEvent, true /* sync */);
-        return downEvent;
+        return injectStylusEvent(view, MotionEvent.ACTION_DOWN, x, y);
     }
 
     /**
@@ -228,16 +271,49 @@ public final class TestUtils {
      * @return the injected MotionEvent.
      */
     public static MotionEvent injectStylusUpEvent(@NonNull View view, int x, int y) {
+        return injectStylusEvent(view, MotionEvent.ACTION_UP, x, y);
+    }
+
+    public static void injectStylusHoverEvents(@NonNull View view, int x, int y) {
+        injectStylusEvent(view, MotionEvent.ACTION_HOVER_ENTER, x, y);
+        injectStylusEvent(view, MotionEvent.ACTION_HOVER_MOVE, x, y);
+        injectStylusEvent(view, MotionEvent.ACTION_HOVER_EXIT, x, y);
+    }
+
+    private static MotionEvent injectStylusEvent(@NonNull View view, int action, int x, int y) {
         int[] xy = new int[2];
         view.getLocationOnScreen(xy);
         x += xy[0];
         y += xy[1];
 
-        // Inject stylus ACTION_DOWN
-        long downTime = SystemClock.uptimeMillis();
-        final MotionEvent upEvent = getMotionEvent(downTime, downTime, MotionEvent.ACTION_UP, x, y);
-        injectMotionEvent(upEvent, true /* sync */);
-        return upEvent;
+        // Inject stylus action
+        long eventTime = SystemClock.uptimeMillis();
+        final MotionEvent event =
+                getMotionEvent(eventTime, eventTime, action, x, y,
+                        MotionEvent.TOOL_TYPE_STYLUS);
+        injectMotionEvent(event, true /* sync */);
+        return event;
+    }
+
+    /**
+     * Inject a finger touch action event to the screen using given view's coordinates.
+     * @param view  view whose coordinates are used to compute the event location.
+     * @return the injected MotionEvent.
+     */
+    public static MotionEvent injectFingerEventOnViewCenter(@NonNull View view, int action) {
+        final int[] xy = new int[2];
+        view.getLocationOnScreen(xy);
+
+        // Inject finger touch event
+        int x = xy[0] + view.getWidth() / 2;
+        int y = xy[1] + view.getHeight() / 2;
+        final long downTime = SystemClock.uptimeMillis();
+
+        MotionEvent event = getMotionEvent(
+                downTime, downTime, action, x, y, MotionEvent.TOOL_TYPE_FINGER);
+        injectMotionEvent(event, true /* sync */);
+
+        return event;
     }
 
     /**
@@ -266,7 +342,8 @@ public final class TestUtils {
             float x = startX + incrementX * i + xy[0];
             float y = startY + incrementY * i + xy[1];
             final MotionEvent moveEvent =
-                    getMotionEvent(time, time, MotionEvent.ACTION_MOVE, x, y);
+                    getMotionEvent(time, time, MotionEvent.ACTION_MOVE, x, y,
+                            MotionEvent.TOOL_TYPE_STYLUS);
             injectMotionEvent(moveEvent, true /* sync */);
             injectedEvents.add(moveEvent);
         }
@@ -293,16 +370,16 @@ public final class TestUtils {
     }
 
     private static MotionEvent getMotionEvent(long downTime, long eventTime, int action,
-            float x, float y) {
-        return getMotionEvent(downTime, eventTime, action, (int) x, (int) y, 0);
+            float x, float y, int toolType) {
+        return getMotionEvent(downTime, eventTime, action, (int) x, (int) y, 0, toolType);
     }
 
     private static MotionEvent getMotionEvent(long downTime, long eventTime, int action,
-            int x, int y, int displayId) {
+            int x, int y, int displayId, int toolType) {
         // Stylus related properties.
         MotionEvent.PointerProperties[] properties =
                 new MotionEvent.PointerProperties[] { new MotionEvent.PointerProperties() };
-        properties[0].toolType = MotionEvent.TOOL_TYPE_STYLUS;
+        properties[0].toolType = toolType;
         properties[0].id = 1;
         MotionEvent.PointerCoords[] coords =
                 new MotionEvent.PointerCoords[] { new MotionEvent.PointerCoords() };
@@ -390,5 +467,52 @@ public final class TestUtils {
         singleEvent.setActionButton(event.getActionButton());
         events.add(singleEvent);
         return events;
+    }
+
+    /**
+     * Inject Motion Events for swipe up on navbar with stylus.
+     * @param activity
+     * @param toolType of input {@link MotionEvent#getToolType(int)}.
+     */
+    public static void injectNavBarToHomeGestureEvents(
+            @NonNull Activity activity, int toolType) {
+        WindowMetrics metrics = activity.getWindowManager().getCurrentWindowMetrics();
+
+        var bounds = new Rect(metrics.getBounds());
+        bounds.inset(metrics.getWindowInsets().getInsetsIgnoringVisibility(displayCutout()));
+
+        int startY = bounds.bottom;
+        int startX = bounds.centerX();
+        int endY = bounds.bottom - bounds.height() / 3; // move a third of the screen up
+        int endX = startX;
+        int steps = 10;
+
+        final float incrementX = ((float) (endX - startX)) / (steps - 1);
+        final float incrementY = ((float) (endY - startY)) / (steps - 1);
+
+        // Inject stylus ACTION_MOVE & finally ACTION_UP.
+        for (int i = 0; i < steps; i++) {
+            long time = SystemClock.uptimeMillis();
+            float x = startX + incrementX * i;
+            float y = startY + incrementY * i;
+            if (i == 0) {
+                // ACTION_DOWN
+                injectMotionEvent(getMotionEvent(
+                        time, time, MotionEvent.ACTION_DOWN, x, y, toolType),
+                        true /* sync */);
+            }
+
+            // ACTION_MOVE
+            injectMotionEvent(getMotionEvent(
+                    time, time, MotionEvent.ACTION_MOVE, x, y, toolType),
+                    true /* sync */);
+
+            if (i == steps - 1) {
+                // ACTION_UP
+                injectMotionEvent(getMotionEvent(
+                        time, time, MotionEvent.ACTION_UP, x, y, toolType),
+                        true /* sync */);
+            }
+        }
     }
 }

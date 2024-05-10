@@ -12,21 +12,29 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.nfc.cardemulation.*;
+import android.nfc.Flags;
 import android.nfc.INfcCardEmulation;
 import android.nfc.NfcAdapter;
+import android.nfc.cardemulation.*;
 import android.os.RemoteException;
-import androidx.test.core.app.ApplicationProvider;
-import androidx.test.InstrumentationRegistry;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ApplicationProvider;
+
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.internal.util.reflection.FieldReader;
+import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,20 +45,42 @@ public class CardEmulationTest {
     private static final ComponentName mService =
         new ComponentName("android.nfc.cts", "android.nfc.cts.CtsMyHostApduService");
 
+    private INfcCardEmulation mOldService;
     @Mock private INfcCardEmulation mEmulation;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private boolean supportsHardware() {
         final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION);
     }
 
+    private boolean supportsHardwareForEse() {
+        final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_NFC_OFF_HOST_CARD_EMULATION_ESE);
+    }
+
     @Before
-    public void setUp() {
+    public void setUp() throws NoSuchFieldException, RemoteException {
         MockitoAnnotations.initMocks(this);
         assumeTrue(supportsHardware());
         Context mContext = InstrumentationRegistry.getContext();
         mAdapter = NfcAdapter.getDefaultAdapter(mContext);
         Assert.assertNotNull(mAdapter);
+
+        CardEmulation instance = CardEmulation.getInstance(mAdapter);
+        FieldReader serviceField = new FieldReader(instance,
+                instance.getClass().getDeclaredField("sService"));
+        mOldService = (INfcCardEmulation) serviceField.read();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        if (!supportsHardware()) return;
+        CardEmulation instance = CardEmulation.getInstance(mAdapter);
+        FieldSetter.setField(instance,
+                instance.getClass().getDeclaredField("sService"), mOldService);
     }
 
     @Test
@@ -134,6 +164,7 @@ public class CardEmulationTest {
 
     @Test
     public void testUnsetOffHostForService() throws NoSuchFieldException, RemoteException {
+        assumeTrue(supportsHardwareForEse());
         CardEmulation instance = createMockedInstance();
         when(mEmulation.unsetOffHostForService(anyInt(), any(ComponentName.class)))
             .thenReturn(true);
@@ -143,6 +174,7 @@ public class CardEmulationTest {
 
     @Test
     public void testSetOffHostForService() throws NoSuchFieldException, RemoteException {
+        assumeTrue(supportsHardwareForEse());
         CardEmulation instance = createMockedInstance();
         String offHostSecureElement = "eSE";
         when(mEmulation.setOffHostForService(anyInt(), any(ComponentName.class), anyString()))
@@ -240,6 +272,7 @@ public class CardEmulationTest {
     @Test
     public void testGetRouteDestinationForPreferredPaymentServiceWithOffHostAndSecureElement()
         throws NoSuchFieldException, RemoteException {
+        assumeTrue(supportsHardwareForEse());
         CardEmulation instance = createMockedInstance();
         String offHostSecureElement = "OffHost Secure Element";
         ApduServiceInfo serviceInfo = new ApduServiceInfo(new ResolveInfo(), /* onHost = */ false,
@@ -261,6 +294,19 @@ public class CardEmulationTest {
         when(mEmulation.getPreferredPaymentService(anyInt())).thenReturn(serviceInfo);
         CharSequence result = instance.getDescriptionForPreferredPaymentService();
         Assert.assertEquals(description, result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_MAINLINE)
+    public void testGetServices() throws NoSuchFieldException, RemoteException {
+        CardEmulation instance = createMockedInstance();
+        String description = "Preferred Payment Service Description";
+        ApduServiceInfo serviceInfo = new ApduServiceInfo(new ResolveInfo(), false,
+                /* description */ description, new ArrayList<AidGroup>(), new ArrayList<AidGroup>(),
+                false, 0, 0, "", "", "");
+        List<ApduServiceInfo> services = List.of(serviceInfo);
+        when(mEmulation.getServices(anyInt(), anyString())).thenReturn(services);
+        Assert.assertEquals(instance.getServices(CardEmulation.CATEGORY_PAYMENT, 0), services);
     }
 
     private Activity createAndResumeActivity() {

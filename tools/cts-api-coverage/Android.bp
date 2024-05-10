@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
@@ -21,7 +20,8 @@ java_library_host {
     name: "api-coverage",
 
     srcs: [
-        "**/*.java",
+        "src/com/android/cts/apicommon/**/*.java",
+        "src/com/android/cts/apicoverage/**/*.java",
         "proto/**/*.proto",
     ],
 
@@ -34,7 +34,7 @@ java_library_host {
 
     static_libs: [
         "compatibility-host-util",
-        "dexlib2",
+        "smali-dexlib2",
         // This tool is not checking any dependencies or metadata, so all of the
         // dependencies of all of the tests must be on its classpath. This is
         // super fragile.
@@ -50,10 +50,26 @@ java_binary_host {
     manifest: "MANIFEST.mf",
 }
 
-
 java_binary_host {
     name: "ndk-api-report",
     wrapper: "etc/ndk-api-report",
     static_libs: ["api-coverage"],
     manifest: "MANIFEST.mf",
+}
+
+java_library_host {
+    name: "api-map",
+    srcs: [
+        "src/com/android/cts/apicommon/**/*.java",
+        "src/com/android/cts/apimap/**/*.java",
+        "src/com/android/cts/ctsprofiles/**/*.java",
+    ],
+    static_libs: [
+        "apache-commons-math3",
+        "jsr305",
+        "ow2-asm",
+        "ow2-asm-analysis",
+        "ow2-asm-commons",
+        "ow2-asm-tree",
+    ],
 }

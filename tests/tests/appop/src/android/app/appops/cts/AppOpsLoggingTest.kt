@@ -29,7 +29,6 @@ import android.app.AppOpsManager.OPSTR_FINE_LOCATION
 import android.app.AppOpsManager.OPSTR_GET_ACCOUNTS
 import android.app.AppOpsManager.OPSTR_GET_USAGE_STATS
 import android.app.AppOpsManager.OPSTR_READ_CONTACTS
-import android.app.AppOpsManager.OPSTR_READ_EXTERNAL_STORAGE
 import android.app.AppOpsManager.OPSTR_RECORD_AUDIO
 import android.app.AppOpsManager.OPSTR_SEND_SMS
 import android.app.AppOpsManager.OPSTR_WRITE_CONTACTS
@@ -38,9 +37,9 @@ import android.app.AppOpsManager.strOpToOp
 import android.app.AsyncNotedAppOp
 import android.app.PendingIntent
 import android.app.SyncNotedAppOp
-import android.app.WallpaperManager
-import android.app.WallpaperManager.FLAG_SYSTEM
 import android.bluetooth.BluetoothManager
+import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
+import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
 import android.bluetooth.le.ScanCallback
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -51,10 +50,12 @@ import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.IntentFilter
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.content.pm.PackageManager.FEATURE_BLUETOOTH
 import android.content.pm.PackageManager.FEATURE_BLUETOOTH_LE
 import android.content.pm.PackageManager.FEATURE_TELEPHONY
-import android.content.pm.PackageManager.GET_ATTRIBUTIONS
+import android.content.pm.PackageManager.FEATURE_WIFI
+import android.content.pm.PackageManager.GET_ATTRIBUTIONS_LONG
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
@@ -81,8 +82,14 @@ import android.telephony.SmsManager
 import android.telephony.TelephonyManager
 import android.util.Log
 import android.util.Size
+import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.SystemUtil.waitForBroadcasts
 import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executor
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeoutException
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Assume.assumeNoException
@@ -90,12 +97,6 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executor
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.TimeoutException
-import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
-import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatusesappops"
 private const val TIMEOUT_MILLIS = 10000L
@@ -121,7 +122,7 @@ private external fun nativeStartStopAudioRecord(
 @AppModeFull(reason = "Test relies on other app to connect to. Instant apps can't see other apps")
 class AppOpsLoggingTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext as Context
-    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)
+    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
 
     private val myUid = Process.myUid()
     private val myUserHandle = Process.myUserHandle()
@@ -139,7 +140,7 @@ class AppOpsLoggingTest {
 
     @Before
     fun setLocationEnabled() {
-        val locationManager = context.getSystemService(LocationManager::class.java)
+        val locationManager = context.getSystemService(LocationManager::class.java)!!
         runWithShellPermissionIdentity {
             wasLocationEnabled = locationManager.isLocationEnabled
             locationManager.setLocationEnabledForUser(true, myUserHandle)
@@ -148,7 +149,7 @@ class AppOpsLoggingTest {
 
     @After
     fun restoreLocationEnabled() {
-        val locationManager = context.getSystemService(LocationManager::class.java)
+        val locationManager = context.getSystemService(LocationManager::class.java)!!
         runWithShellPermissionIdentity {
             locationManager.setLocationEnabledForUser(wasLocationEnabled, myUserHandle)
         }
@@ -442,8 +443,11 @@ class AppOpsLoggingTest {
      */
     @Test
     fun getWifiScanResults() {
+        assumeTrue("Device does not support WiFi feature",
+                context.packageManager.hasSystemFeature(FEATURE_WIFI))
+
         val wifiManager = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
-            .getSystemService(WifiManager::class.java)
+            .getSystemService(WifiManager::class.java)!!
 
         val results = wifiManager.scanResults
 
@@ -461,7 +465,7 @@ class AppOpsLoggingTest {
                 context.packageManager.hasSystemFeature(FEATURE_BLUETOOTH))
 
         val testContext = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
-        val btAdapter = testContext.getSystemService(BluetoothManager::class.java).adapter
+        val btAdapter = testContext.getSystemService(BluetoothManager::class.java)!!.adapter
 
         val wasEnabled = enableBTAdapter(btAdapter, testContext)
         assumeTrue("Need to be able enable BT", wasEnabled)
@@ -495,7 +499,7 @@ class AppOpsLoggingTest {
                 context.packageManager.hasSystemFeature(FEATURE_BLUETOOTH_LE))
 
         val testContext = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
-        val btAdapter = testContext.getSystemService(BluetoothManager::class.java).adapter
+        val btAdapter = testContext.getSystemService(BluetoothManager::class.java)!!.adapter
 
         val wasEnabled = enableBTAdapter(btAdapter, testContext)
         assumeTrue("Need to be able enable BT", wasEnabled)
@@ -529,7 +533,7 @@ class AppOpsLoggingTest {
     @Test
     fun getLastKnownLocation() {
         val locationManager = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
-            .getSystemService(LocationManager::class.java)
+            .getSystemService(LocationManager::class.java)!!
 
         assumeTrue("Device does not have a network provider",
             locationManager.getProviders(true).contains(LocationManager.NETWORK_PROVIDER))
@@ -549,7 +553,7 @@ class AppOpsLoggingTest {
     @Test
     fun getAsyncLocation() {
         val locationManager = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
-            .getSystemService(LocationManager::class.java)
+            .getSystemService(LocationManager::class.java)!!
 
         assumeTrue("Device does not have a network provider",
             locationManager.getProviders(true).contains(LocationManager.NETWORK_PROVIDER))
@@ -557,11 +561,11 @@ class AppOpsLoggingTest {
         val gotLocationChangeCallback = CompletableFuture<Unit>()
 
         val locationListener = object : LocationListener {
-            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
-            override fun onProviderEnabled(provider: String?) {}
-            override fun onProviderDisabled(provider: String?) {}
+            override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
+            override fun onProviderEnabled(provider: String) {}
+            override fun onProviderDisabled(provider: String) {}
 
-            override fun onLocationChanged(location: Location?) {
+            override fun onLocationChanged(location: Location) {
                 gotLocationChangeCallback.complete(Unit)
             }
         }
@@ -681,7 +685,7 @@ class AppOpsLoggingTest {
         assumeTrue(context.packageManager.hasSystemFeature(FEATURE_TELEPHONY))
 
         val telephonyManager = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
-            .getSystemService(TelephonyManager::class.java)
+            .getSystemService(TelephonyManager::class.java)!!
 
         telephonyManager.allCellInfo
 
@@ -781,7 +785,7 @@ class AppOpsLoggingTest {
     }
 
     private fun openCamera(context: Context) {
-        val cameraManager = context.getSystemService(CameraManager::class.java)
+        val cameraManager = context.getSystemService(CameraManager::class.java)!!
 
         val openedCamera = CompletableFuture<CameraDevice>()
 
@@ -840,6 +844,7 @@ class AppOpsLoggingTest {
      * Realistic end-to-end test for opening camera
      */
     @Test
+    @FlakyTest
     fun openCameraWithAttribution() {
         openCamera(context.createAttributionContext(TEST_ATTRIBUTION_TAG))
     }
@@ -854,31 +859,15 @@ class AppOpsLoggingTest {
     }
 
     /**
-     * Realistic end-to-end test for getting wallpaper
-     */
-    @Test
-    fun getWallpaper() {
-        val wallpaperManager = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
-                .getSystemService(WallpaperManager::class.java)
-        assumeTrue("Device does not support wallpaper",
-                wallpaperManager.isWallpaperSupported())
-
-        wallpaperManager.getWallpaperFile(FLAG_SYSTEM)
-
-        assertThat(noted[0].first.op).isEqualTo(OPSTR_READ_EXTERNAL_STORAGE)
-        assertThat(noted[0].first.attributionTag).isEqualTo(TEST_ATTRIBUTION_TAG)
-        assertThat(noted[0].second.map { it.methodName }).contains("getWallpaper")
-    }
-
-    /**
      * Realistic end-to-end test for sending a SMS message
      */
     @Test
+    @Ignore // TODO(b/244623752): Enable again after the test consistently passes.
     fun sendSms() {
         assumeTrue(context.packageManager.hasSystemFeature(FEATURE_TELEPHONY))
 
         val smsManager = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
-                .getSystemService(SmsManager::class.java)
+                .getSystemService(SmsManager::class.java)!!
 
         // No need for valid data. The permission is checked before the parameters are validated
         try {
@@ -918,7 +907,7 @@ class AppOpsLoggingTest {
         }
 
         val dropBoxManager = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
-                .getSystemService(DropBoxManager::class.java)
+                .getSystemService(DropBoxManager::class.java)!!
 
         val entry = dropBoxManager.getNextEntry("foo", 100)
         entry?.close()
@@ -936,11 +925,13 @@ class AppOpsLoggingTest {
         }
 
         val testContext = context.createAttributionContext(TEST_ATTRIBUTION_TAG)
-        testContext.registerReceiver(receiver, IntentFilter(PRIVATE_ACTION))
+        testContext.registerReceiver(receiver, IntentFilter(PRIVATE_ACTION),
+                Context.RECEIVER_EXPORTED)
 
         try {
             context.sendOrderedBroadcast(Intent(PRIVATE_ACTION), READ_CONTACTS, OPSTR_READ_CONTACTS,
                     null, null, RESULT_OK, null, null)
+            waitForBroadcasts()
 
             eventually {
                 assertThat(asyncNoted[0].op).isEqualTo(OPSTR_READ_CONTACTS)
@@ -957,6 +948,7 @@ class AppOpsLoggingTest {
     fun receiveBroadcastManifestReceiver() {
         context.sendOrderedBroadcast(Intent(PUBLIC_ACTION).setPackage(myPackage), READ_CONTACTS,
                 OPSTR_READ_CONTACTS, null, null, RESULT_OK, null, null)
+        waitForBroadcasts()
 
         eventually {
             assertThat(asyncNoted[0].op).isEqualTo(OPSTR_READ_CONTACTS)
@@ -971,6 +963,7 @@ class AppOpsLoggingTest {
     fun sendBroadcastToProtectedReceiver() {
         context.createAttributionContext(TEST_ATTRIBUTION_TAG)
                 .sendBroadcast(Intent(PROTECTED_ACTION).setPackage(myPackage))
+        waitForBroadcasts()
 
         eventually {
             assertThat(asyncNoted[0].op).isEqualTo(OPSTR_READ_CONTACTS)
@@ -981,8 +974,8 @@ class AppOpsLoggingTest {
     @Test
     fun checkAttributionsAreUserVisible() {
         val pi = context.packageManager.getPackageInfo(
-                TEST_SERVICE_PKG, GET_ATTRIBUTIONS)
-        assertThat(pi.applicationInfo.areAttributionsUserVisible())
+                TEST_SERVICE_PKG, PackageManager.PackageInfoFlags.of(GET_ATTRIBUTIONS_LONG))
+        assertThat(pi.applicationInfo?.areAttributionsUserVisible()).isTrue()
     }
 
     @After
@@ -1004,7 +997,7 @@ class AppOpsLoggingTest {
         val testService: IAppOpsUserService? = null
     ) : IAppOpsUserClient.Stub() {
         private val handler = Handler(Looper.getMainLooper())
-        private val appOpsManager = context.getSystemService(AppOpsManager::class.java)
+        private val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
 
         private val myUid = Process.myUid()
         private val myPackage = context.packageName

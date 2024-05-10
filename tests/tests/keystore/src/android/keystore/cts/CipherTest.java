@@ -23,8 +23,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.KeyguardManager;
 import android.content.Context;
@@ -34,10 +36,16 @@ import android.keystore.cts.util.ImportedKey;
 import android.keystore.cts.util.TestUtils;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.LockScreenSession;
 import android.server.wm.UiDeviceUtils;
+import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -46,6 +54,7 @@ import com.android.compatibility.common.util.ApiTest;
 
 import com.google.common.collect.ObjectArrays;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -60,6 +69,7 @@ import java.security.Provider.Service;
 import java.security.Security;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.MGF1ParameterSpec;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -88,6 +98,9 @@ import javax.crypto.spec.SecretKeySpec;
  */
 @RunWith(AndroidJUnit4.class)
 public class CipherTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String EXPECTED_PROVIDER_NAME = TestUtils.EXPECTED_CRYPTO_OP_PROVIDER_NAME;
 
@@ -305,7 +318,7 @@ public class CipherTest {
 
         public DeviceLockSession() throws Exception {
             setUp();
-            mLockCredential = new LockScreenSession();
+            mLockCredential = new LockScreenSession(mInstrumentation, mWmState);
             mLockCredential.setLockCredential();
         }
 
@@ -619,16 +632,11 @@ public class CipherTest {
         return (pm != null && pm.hasSystemFeature("android.software.leanback_only"));
     }
 
-    private boolean hasSecureLockScreen() {
-        PackageManager pm = getContext().getPackageManager();
-        return (pm != null && pm.hasSystemFeature("android.software.secure_lock_screen"));
-    }
-
     @Presubmit
     @Test
     public void testKeyguardLockAndUnlock()
             throws Exception {
-        if (!hasSecureLockScreen()) {
+        if (!TestUtils.hasSecureLockScreen(getContext())) {
             return;
         }
 
@@ -650,7 +658,7 @@ public class CipherTest {
         final boolean isUnlockedDeviceRequired = true;
         final boolean isUserAuthRequired = false;
 
-        if (!hasSecureLockScreen()) {
+        if (!TestUtils.hasSecureLockScreen(getContext())) {
             return;
         }
 
@@ -732,6 +740,73 @@ public class CipherTest {
                     }
                 }
             }
+        }
+    }
+
+    private KeyProtection getUnlockedDeviceRequiredParams(String algorithm) {
+        return TestUtils.getMinimalWorkingImportParametersForCipheringWith(algorithm,
+                KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT,
+                /* ivProvidedWhenEncrypting= */ false,
+                /* isUnlockedDeviceRequired= */ true, /* isUserAuthRequired= */ false);
+    }
+
+    // TODO(b/299298338): remove this test, which tests for the wrong behavior
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_FIX_UNLOCKED_DEVICE_REQUIRED_KEYS_V2)
+    @Test
+    public void testUnlockedDeviceRequiredKeysRequireSecureLockScreen() throws Exception {
+        for (String algorithm : BASIC_ALGORITHMS) {
+            assertThrows(KeyStoreException.class, () -> importDefaultKatKey(algorithm,
+                        getUnlockedDeviceRequiredParams(algorithm)));
+        }
+    }
+
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_FIX_UNLOCKED_DEVICE_REQUIRED_KEYS_V2)
+    @Test
+    public void testUnlockedDeviceRequiredKeysDoNotRequireSecureLockScreen() throws Exception {
+        for (String algorithm : BASIC_ALGORITHMS) {
+            assertInitEncryptSucceeds(algorithm, getUnlockedDeviceRequiredParams(algorithm));
+        }
+    }
+
+    // TODO(b/299298338): remove this test, which tests for the wrong behavior
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_FIX_UNLOCKED_DEVICE_REQUIRED_KEYS_V2)
+    @Test
+    public void testUnlockedDeviceRequiredKeysAreInvalidatedByLockRemoval() throws Exception {
+        assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
+
+        List<ImportedKey> importedKeys = new ArrayList<>();
+        try (DeviceLockSession dl = new DeviceLockSession()) {
+            for (String algorithm : BASIC_ALGORITHMS) {
+                KeyProtection importParams = getUnlockedDeviceRequiredParams(algorithm);
+                importedKeys.add(importDefaultKatKey(algorithm, importParams));
+            }
+        }
+
+        for (ImportedKey key : importedKeys) {
+            assertFalse(TestUtils.keyExists(key.getAlias()));
+        }
+    }
+
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_FIX_UNLOCKED_DEVICE_REQUIRED_KEYS_V2)
+    @Test
+    public void testUnlockedDeviceRequiredKeysAreNotInvalidatedByLockRemoval() throws Exception {
+        assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
+
+        List<Pair<String, ImportedKey>> importedKeys = new ArrayList<>();
+        try (DeviceLockSession dl = new DeviceLockSession()) {
+            for (String algorithm : BASIC_ALGORITHMS) {
+                KeyProtection importParams = getUnlockedDeviceRequiredParams(algorithm);
+                ImportedKey key = importDefaultKatKey(algorithm, importParams);
+                importedKeys.add(Pair.create(algorithm, key));
+            }
+        }
+
+        for (Pair<String, ImportedKey> pair : importedKeys) {
+            String algorithm = pair.first;
+            ImportedKey key = pair.second;
+            assertTrue(TestUtils.keyExists(key.getAlias()));
+            Cipher cipher = Cipher.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
+            cipher.init(Cipher.ENCRYPT_MODE, key.getKeystoreBackedEncryptionKey());
         }
     }
 
@@ -1168,7 +1243,7 @@ public class CipherTest {
         });
         int kmVersion = TestUtils.getFeatureVersionKeystore(getContext());
         for (String algorithm : EXPECTED_ALGORITHMS) {
-            if (kmVersion < Attestation.KM_VERSION_KEYMINT_1
+            if (kmVersion < Attestation.KM_VERSION_KEYMINT_3
                     && keymasterNonSupportedAlgos.contains(algorithm)) {
                 // Skipping algorithms which are not supported in older KeyMaster.
                 // This functionality has to support through software emulation.
@@ -1218,7 +1293,7 @@ public class CipherTest {
         final boolean isUnlockedDeviceRequired = false;
         final boolean isUserAuthRequired = true;
 
-        if (!hasSecureLockScreen()) {
+        if (!TestUtils.hasSecureLockScreen(getContext())) {
             return;
         }
 
@@ -1262,6 +1337,31 @@ public class CipherTest {
                 // Expected behavior
                 assertThat(e.getCause()).isInstanceOf(IllegalStateException.class);
             }
+        }
+    }
+
+    @Test
+    public void testAuthBoundKeysAreInvalidatedByLockRemoval() throws Exception {
+        assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
+
+        List<ImportedKey> importedKeys = new ArrayList<>();
+        try (DeviceLockSession dl = new DeviceLockSession()) {
+            for (String algorithm : BASIC_ALGORITHMS) {
+                KeyProtection importParams =
+                        TestUtils.getMinimalWorkingImportParametersForCipheringWith(algorithm,
+                                KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT,
+                                /* ivProvidedWhenEncrypting= */ false,
+                                /* isUnlockedDeviceRequired= */ false,
+                                /* isUserAuthRequired= */ true);
+                ImportedKey key = importDefaultKatKey(algorithm, importParams);
+                importedKeys.add(key);
+                assertTrue(TestUtils.keyExists(key.getAlias()));
+            }
+        } // DeviceLockSession#close() removes the secure lock screen.
+
+        // Removing the secure lock screen should have invalidated the auth-bound keys.
+        for (ImportedKey key : importedKeys) {
+            assertFalse(TestUtils.keyExists(key.getAlias()));
         }
     }
 

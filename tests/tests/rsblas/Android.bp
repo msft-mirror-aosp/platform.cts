@@ -37,13 +37,16 @@ android_test {
         "cts",
         "general-tests",
     ],
-    sdk_version: "current",
+    // The SDK version is pinned because ScriptC throw an exception starting
+    // at API level 35 (see b/297019750).
+    sdk_version: "34",
 }
 
 genrule {
     name: "CtsRsBlasTestCases-rscript",
     srcs: [
         "src/**/*.rscript",
+        "src/**/*.rsh",
         ":rs_script_api",
         ":rs_clang_headers",
     ],

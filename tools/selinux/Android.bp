@@ -13,19 +13,9 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_platform_security",
     // See: http://go/android-license-faq
     default_applicable_licenses: ["Android-Apache-2.0"],
-}
-
-python_library_host {
-    name: "SELinuxNeverallowTestFrame",
-    srcs: ["SELinuxNeverallowTestFrame.py"],
-}
-
-python_binary_host {
-    name: "SELinuxNeverallowTestGen",
-    srcs: ["SELinuxNeverallowTestGen.py"],
-    libs: ["SELinuxNeverallowTestFrame"],
 }
 
 sh_test_host {

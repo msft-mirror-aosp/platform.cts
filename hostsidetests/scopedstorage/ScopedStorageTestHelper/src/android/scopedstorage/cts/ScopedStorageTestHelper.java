@@ -16,7 +16,7 @@
 package android.scopedstorage.cts;
 
 import static android.scopedstorage.cts.lib.RedactionTestHelper.EXIF_METADATA_QUERY;
-import static android.scopedstorage.cts.lib.RedactionTestHelper.getExifMetadata;
+import static android.scopedstorage.cts.lib.RedactionTestHelper.getExifMetadataFromFile;
 import static android.scopedstorage.cts.lib.TestUtils.CAN_OPEN_FILE_FOR_READ_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.CAN_OPEN_FILE_FOR_WRITE_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.CAN_READ_WRITE_QUERY;
@@ -24,9 +24,13 @@ import static android.scopedstorage.cts.lib.TestUtils.CHECK_DATABASE_ROW_EXISTS_
 import static android.scopedstorage.cts.lib.TestUtils.CREATE_FILE_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.CREATE_IMAGE_ENTRY_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.DELETE_FILE_QUERY;
+import static android.scopedstorage.cts.lib.TestUtils.DELETE_MEDIA_BY_URI_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.DELETE_RECURSIVE_QUERY;
+import static android.scopedstorage.cts.lib.TestUtils.FILE_EXISTS_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXCEPTION;
+import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXTRA_ARGS;
 import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXTRA_CALLING_PKG;
+import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXTRA_CONTENT;
 import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXTRA_PATH;
 import static android.scopedstorage.cts.lib.TestUtils.INTENT_EXTRA_URI;
 import static android.scopedstorage.cts.lib.TestUtils.IS_URI_REDACTED_VIA_FILEPATH;
@@ -35,13 +39,17 @@ import static android.scopedstorage.cts.lib.TestUtils.IS_URI_REDACTED_VIA_FILE_D
 import static android.scopedstorage.cts.lib.TestUtils.OPEN_FILE_FOR_READ_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.OPEN_FILE_FOR_WRITE_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.QUERY_MAX_ROW_ID;
+import static android.scopedstorage.cts.lib.TestUtils.QUERY_MEDIA_BY_URI_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.QUERY_MIN_ROW_ID;
+import static android.scopedstorage.cts.lib.TestUtils.QUERY_OWNER_PACKAGE_NAMES;
 import static android.scopedstorage.cts.lib.TestUtils.QUERY_TYPE;
 import static android.scopedstorage.cts.lib.TestUtils.QUERY_URI;
+import static android.scopedstorage.cts.lib.TestUtils.QUERY_WITH_ARGS;
 import static android.scopedstorage.cts.lib.TestUtils.READDIR_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.RENAME_FILE_PARAMS_SEPARATOR;
 import static android.scopedstorage.cts.lib.TestUtils.RENAME_FILE_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.SETATTR_QUERY;
+import static android.scopedstorage.cts.lib.TestUtils.UPDATE_MEDIA_BY_URI_QUERY;
 import static android.scopedstorage.cts.lib.TestUtils.canOpen;
 import static android.scopedstorage.cts.lib.TestUtils.deleteRecursively;
 import static android.scopedstorage.cts.lib.TestUtils.getFileRowIdFromDatabase;
@@ -58,17 +66,28 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.FileUtils;
+import android.os.IBinder;
+import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
+import android.os.RemoteException;
 import android.provider.MediaStore;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
 
+import com.google.common.base.Strings;
+
 import java.io.File;
 import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -99,6 +118,7 @@ public class ScopedStorageTestHelper extends Activity {
                 case READDIR_QUERY:
                     returnIntent = sendDirectoryEntries(queryType);
                     break;
+                case FILE_EXISTS_QUERY:
                 case CAN_READ_WRITE_QUERY:
                 case CREATE_FILE_QUERY:
                 case DELETE_FILE_QUERY:
@@ -109,6 +129,15 @@ public class ScopedStorageTestHelper extends Activity {
                 case OPEN_FILE_FOR_WRITE_QUERY:
                 case SETATTR_QUERY:
                     returnIntent = accessFile(queryType);
+                    break;
+                case DELETE_MEDIA_BY_URI_QUERY:
+                    returnIntent = deleteMediaByUri(queryType);
+                    break;
+                case UPDATE_MEDIA_BY_URI_QUERY:
+                    returnIntent = updateMediaByUri(queryType);
+                    break;
+                case QUERY_MEDIA_BY_URI_QUERY:
+                    returnIntent = queryMediaByUri(queryType);
                     break;
                 case EXIF_METADATA_QUERY:
                     returnIntent = sendMetadata(queryType);
@@ -135,6 +164,12 @@ public class ScopedStorageTestHelper extends Activity {
                 case QUERY_MAX_ROW_ID:
                 case QUERY_MIN_ROW_ID:
                     returnIntent = queryRowId(queryType);
+                    break;
+                case QUERY_OWNER_PACKAGE_NAMES:
+                    returnIntent = queryOwnerPackageNames(queryType);
+                    break;
+                case QUERY_WITH_ARGS:
+                    returnIntent = queryWithArgs(queryType);
                     break;
                 case "null":
                 default:
@@ -174,6 +209,102 @@ public class ScopedStorageTestHelper extends Activity {
             if (c != null && c.moveToFirst()) {
                 intent.putExtra(queryType, c.getLong(0));
             }
+        } catch (Exception e) {
+            intent.putExtra(INTENT_EXCEPTION, e);
+        }
+
+        return intent;
+    }
+
+    private Intent queryOwnerPackageNames(String queryType) {
+        final Intent intent = new Intent(queryType);
+        final Uri uri = getIntent().getParcelableExtra(INTENT_EXTRA_URI);
+
+        try {
+            final Cursor c = getContentResolver().query(uri,
+                    new String[]{MediaStore.MediaColumns.OWNER_PACKAGE_NAME}, null, null);
+            final Set<String> ownerPackageNames = new HashSet<>();
+            while (c.moveToNext()) {
+                final String ownerPackageName = c.getString(0);
+                if (!Strings.isNullOrEmpty(ownerPackageName)) {
+                    ownerPackageNames.add(ownerPackageName);
+                }
+            }
+            intent.putExtra(queryType, ownerPackageNames.toArray(new String[0]));
+        } catch (Exception e) {
+            intent.putExtra(INTENT_EXCEPTION, e);
+        }
+
+        return intent;
+    }
+
+    private Intent deleteMediaByUri(String queryType) {
+        final Intent intent = new Intent(queryType);
+        final Uri uri = getIntent().getParcelableExtra(INTENT_EXTRA_URI);
+
+        try {
+            int rowsDeleted = getContentResolver().delete(uri, null);
+            intent.putExtra(queryType, rowsDeleted);
+        } catch (Exception e) {
+            intent.putExtra(INTENT_EXCEPTION, e);
+        }
+
+        return intent;
+    }
+
+    private Intent updateMediaByUri(String queryType) {
+        final Intent intent = new Intent(queryType);
+        final Uri uri = getIntent().getParcelableExtra(INTENT_EXTRA_URI);
+        final Bundle attributes = getIntent().getBundleExtra(INTENT_EXTRA_ARGS);
+
+        final ContentValues values = new ContentValues();
+        for (String key : attributes.keySet()) {
+            values.put(key, attributes.getString(key));
+        }
+
+        try {
+            getContentResolver().update(uri, values, null, null);
+            intent.putExtra(queryType, true);
+        } catch (Exception e) {
+            intent.putExtra(INTENT_EXCEPTION, e);
+        }
+
+        return intent;
+    }
+
+    private Intent queryMediaByUri(String queryType) {
+        final Intent intent = new Intent(queryType);
+        final Uri uri = getIntent().getParcelableExtra(INTENT_EXTRA_URI);
+        final Bundle projection = getIntent().getBundleExtra(INTENT_EXTRA_ARGS);
+
+        try (Cursor c = getContentResolver()
+                .query(uri, projection.keySet().toArray(new String[0]), null, null)) {
+            final Bundle result = new Bundle();
+            if (c.getCount() == 1) {
+                c.moveToFirst();
+                for (String column : projection.keySet()) {
+                    result.putString(column, c.getString(c.getColumnIndex(column)));
+                }
+            } else {
+                Log.d(TAG, String.format("Uri in QUERY_MEDIA_BY_URI_QUERY query points "
+                        + "to %d media files", c.getCount()));
+            }
+            intent.putExtra(queryType, result);
+        } catch (Exception e) {
+            intent.putExtra(INTENT_EXCEPTION, e);
+        }
+
+        return intent;
+    }
+
+    private Intent queryWithArgs(String queryType) {
+        final Intent intent = new Intent(queryType);
+        final Uri uri = getIntent().getParcelableExtra(INTENT_EXTRA_URI);
+        final Bundle args = getIntent().getBundleExtra(INTENT_EXTRA_ARGS);
+        try {
+            final Cursor c = getContentResolver().query(uri,
+                    new String[]{MediaStore.MediaColumns.DISPLAY_NAME}, args, null);
+            intent.putExtra(queryType, c.getCount());
         } catch (Exception e) {
             intent.putExtra(INTENT_EXCEPTION, e);
         }
@@ -253,7 +384,7 @@ public class ScopedStorageTestHelper extends Activity {
         if (getIntent().hasExtra(INTENT_EXTRA_PATH)) {
             final String filePath = getIntent().getStringExtra(INTENT_EXTRA_PATH);
             if (EXIF_METADATA_QUERY.equals(queryType)) {
-                intent.putExtra(queryType, getExifMetadata(new File(filePath)));
+                intent.putExtra(queryType, getExifMetadataFromFile(new File(filePath)));
             }
         } else {
             throw new IllegalStateException(
@@ -289,15 +420,15 @@ public class ScopedStorageTestHelper extends Activity {
             final String relativePath = path.substring(0, path.lastIndexOf('/'));
             final String name = path.substring(path.lastIndexOf('/') + 1);
 
-            ContentValues values = new ContentValues();
+            final ContentValues values = new ContentValues();
             values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
             values.put(MediaStore.Images.Media.RELATIVE_PATH, relativePath);
             values.put(MediaStore.Images.Media.DISPLAY_NAME, name);
 
-            getContentResolver().insert(getImageContentUri(), values);
+            final Uri imageUri = getContentResolver().insert(getImageContentUri(), values);
 
             final Intent intent = new Intent(queryType);
-            intent.putExtra(queryType, true);
+            intent.putExtra(queryType, imageUri.toString());
             return intent;
         } else {
             throw new IllegalStateException(
@@ -305,13 +436,16 @@ public class ScopedStorageTestHelper extends Activity {
         }
     }
 
-    private Intent accessFile(String queryType) throws IOException {
+    private Intent accessFile(String queryType) throws IOException, RemoteException {
         if (getIntent().hasExtra(INTENT_EXTRA_PATH)) {
             final String packageName = getIntent().getStringExtra(INTENT_EXTRA_CALLING_PKG);
             final String filePath = getIntent().getStringExtra(INTENT_EXTRA_PATH);
             final File file = new File(filePath);
             final Intent intent = new Intent(queryType);
             switch (queryType) {
+                case FILE_EXISTS_QUERY:
+                    intent.putExtra(queryType, file.exists());
+                    return intent;
                 case CAN_READ_WRITE_QUERY:
                     intent.putExtra(queryType, file.exists() && file.canRead() && file.canWrite());
                     return intent;
@@ -320,7 +454,11 @@ public class ScopedStorageTestHelper extends Activity {
                     if (!file.getParentFile().exists()) {
                         file.getParentFile().mkdirs();
                     }
-                    intent.putExtra(queryType, file.createNewFile());
+                    boolean success = file.createNewFile();
+                    if (success && getIntent().hasExtra(INTENT_EXTRA_CONTENT)) {
+                        success = createFileContent(file);
+                    }
+                    intent.putExtra(queryType, success);
                     return intent;
                 case DELETE_FILE_QUERY:
                     intent.putExtra(queryType, file.delete());
@@ -356,6 +494,25 @@ public class ScopedStorageTestHelper extends Activity {
             }
         } else {
             throw new IllegalStateException(queryType + ": File path not set from launcher app");
+        }
+    }
+
+    private boolean createFileContent(File file) throws RemoteException {
+        final Bundle content = getIntent().getBundleExtra(
+                INTENT_EXTRA_CONTENT);
+        IBinder binder = content.getBinder(INTENT_EXTRA_CONTENT);
+        Parcel reply = Parcel.obtain();
+        binder.transact(IBinder.FIRST_CALL_TRANSACTION, Parcel.obtain(), reply, 0);
+        try (ParcelFileDescriptor inputPFD = reply.readFileDescriptor();
+             FileInputStream fileInputStream = new FileInputStream(
+                     inputPFD.getFileDescriptor());
+             FileOutputStream outputStream = new FileOutputStream(file)) {
+            long copied = FileUtils.copy(fileInputStream, outputStream);
+            outputStream.getFD().sync();
+            return copied > 0;
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage(), e);
+            return false;
         }
     }
 

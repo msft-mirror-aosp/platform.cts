@@ -16,15 +16,12 @@
 
 package android.server.wm.jetpack.utils;
 
-import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getActivityBounds;
-
 import android.app.Activity;
-import android.content.Context;
 import android.content.res.Configuration;
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.concurrent.CountDownLatch;
@@ -35,38 +32,28 @@ import java.util.concurrent.TimeUnit;
  * androidx.window.TestActivity.
  */
 public class TestActivity extends Activity implements View.OnLayoutChangeListener {
-
-    private int mRootViewId;
     private CountDownLatch mLayoutLatch;
-    private CountDownLatch mBoundsChangeLatch;
-    private final Rect mPreviousBounds = new Rect();
+    private CountDownLatch mOnConfigurationChangeLatch = new CountDownLatch(1);
     private static CountDownLatch sResumeLatch = new CountDownLatch(1);
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        final View contentView = new TestContentViewForConfigurationChange(this);
-        mRootViewId = View.generateViewId();
-        contentView.setId(mRootViewId);
-        setContentView(contentView);
 
         resetLayoutCounter();
-        resetBoundsChangeCounter();
         getWindow().getDecorView().addOnLayoutChangeListener(this);
-    }
-
-    int getWidth() {
-        return findViewById(mRootViewId).getWidth();
-    }
-
-    int getHeight() {
-        return findViewById(mRootViewId).getHeight();
     }
 
     @Override
     public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft,
             int oldTop, int oldRight, int oldBottom) {
         mLayoutLatch.countDown();
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        mOnConfigurationChangeLatch.countDown();
     }
 
     @Override
@@ -84,15 +71,6 @@ public class TestActivity extends Activity implements View.OnLayoutChangeListene
     }
 
     /**
-     * Resets bounds change counter when waiting for a bounds change to happen before calling
-     * {@link #waitForBoundsChange()}.
-     */
-    public void resetBoundsChangeCounter() {
-        mPreviousBounds.set(getActivityBounds(this));
-        mBoundsChangeLatch = new CountDownLatch(1);
-    }
-
-    /**
      * Blocks and waits for the next layout to happen. {@link #resetLayoutCounter()} must be called
      * before calling this method.
      * @return {@code true} if the layout happened before the timeout count reached zero and
@@ -107,14 +85,21 @@ public class TestActivity extends Activity implements View.OnLayoutChangeListene
     }
 
     /**
-     * Blocks and waits for the next bounds change to happen. {@link #resetBoundsChangeCounter()}
-     * must be called before calling this method.
-     * @return {@code true} if the bounds change happened before the timeout count reached zero and
-     *         {@code false} if the waiting time elapsed before the bounds change happened.
+     * Resets the configuration change counter.
      */
-    public boolean waitForBoundsChange() {
+    public void resetOnConfigurationChangeCounter() {
+        mOnConfigurationChangeLatch = new CountDownLatch(1);
+    }
+
+    /**
+     * Waits for a configuration change callback.
+     *
+     * @return {@code true} if the configuration change callback is triggered, {@code false}
+     * otherwise.
+     */
+    public boolean waitForConfigurationChange() {
         try {
-            return mBoundsChangeLatch.await(3, TimeUnit.SECONDS);
+            return mOnConfigurationChangeLatch.await(3, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             return false;
         }
@@ -139,26 +124,6 @@ public class TestActivity extends Activity implements View.OnLayoutChangeListene
             return sResumeLatch.await(3, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             return false;
-        }
-    }
-
-    /**
-     * Sometimes activity configuration change does not trigger when embedding status change, need
-     * to use View's instead.
-     */
-    class TestContentViewForConfigurationChange extends View {
-        public TestContentViewForConfigurationChange(Context context) {
-            super(context);
-        }
-
-        @Override
-        protected void onConfigurationChanged(Configuration newConfig) {
-            super.onConfigurationChanged(newConfig);
-            final Rect newActivityBounds = getActivityBounds(TestActivity.this);
-            if (!newActivityBounds.equals(mPreviousBounds)) {
-                mPreviousBounds.set(newActivityBounds);
-                mBoundsChangeLatch.countDown();
-            }
         }
     }
 }

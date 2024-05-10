@@ -18,7 +18,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.app.cts">
 
-    <uses-sdk android:minSdkVersion="11" />
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <uses-permission android:name="android.permission.BODY_SENSORS" />
     <uses-permission android:name="android.permission.ENTER_CAR_MODE_PRIORITIZED" />
@@ -30,17 +29,27 @@
     <uses-permission android:name="android.permission.TOGGLE_AUTOMOTIVE_PROJECTION" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <queries>
+        <intent>
+            <action android:name="android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT" />
+            <data android:scheme="package" />
+        </intent>
+    </queries>
 
     <application android:usesCleartextTraffic="true">
         <uses-library android:name="android.test.runner" />
         <uses-library android:name="org.apache.http.legacy" android:required="false" />
+
+        <service android:name=".InstrumentationHelperService"
+                android:exported="true"
+                android:process=":helper" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
             android:targetPackage="android.app.stubs"
             android:label="CTS tests of android.app">
-        <meta-data android:name="listener"
-            android:value="com.android.cts.runner.CtsTestRunListener" />
     </instrumentation>
 
     <instrumentation android:name=".DefaultProcessInstrumentation"
@@ -62,4 +71,11 @@
                      android:targetProcesses="com.android.cts.launcherapps.simpleapp:other,com.android.cts.launcherapps.simpleapp">
     </instrumentation>
 
+    <instrumentation android:name=".ChainedInstrumentationFirst"
+            android:targetPackage="com.android.test.cantsavestate1" >
+    </instrumentation>
+
+    <instrumentation android:name=".ChainedInstrumentationSecond"
+            android:targetPackage="com.android.test.cantsavestate2" >
+    </instrumentation>
 </manifest>

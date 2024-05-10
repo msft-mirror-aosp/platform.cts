@@ -18,6 +18,7 @@ package com.android.bedstead.testapp;
 
 import static android.app.AppOpsManager.OPSTR_START_FOREGROUND;
 import static android.app.admin.DevicePolicyManager.OPERATION_SAFETY_REASON_DRIVING_DISTRACTION;
+import static android.content.Context.RECEIVER_EXPORTED;
 import static android.content.PermissionChecker.PERMISSION_GRANTED;
 import static android.os.Build.VERSION_CODES.Q;
 import static android.os.Build.VERSION_CODES.S;
@@ -25,6 +26,7 @@ import static android.os.Build.VERSION_CODES.S;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.permissions.CommonPermissions.BLUETOOTH_CONNECT;
 import static com.android.bedstead.nene.permissions.CommonPermissions.READ_CONTACTS;
+import static com.android.bedstead.nene.permissions.CommonPermissions.READ_PRIVILEGED_PHONE_STATE;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -55,7 +57,7 @@ import org.junit.runner.RunWith;
 import java.time.Duration;
 
 @RunWith(BedsteadJUnit4.class)
-public class TestAppInstanceTest {
+public final class TestAppInstanceTest {
 
     @ClassRule
     @Rule
@@ -131,7 +133,7 @@ public class TestAppInstanceTest {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
             testAppInstance.keepAlive();
 
-//            testAppInstance.process().kill();
+            testAppInstance.process().kill();
 
             Poll.forValue("running process", () -> sTestApp.pkg().runningProcess(sUser))
                     .toNotBeNull()
@@ -188,7 +190,7 @@ public class TestAppInstanceTest {
     @Test
     public void registerReceiver_receivesBroadcast() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
-            testAppInstance.registerReceiver(INTENT_FILTER);
+            testAppInstance.registerReceiver(INTENT_FILTER, RECEIVER_EXPORTED);
 
             sContext.sendBroadcast(INTENT);
 
@@ -201,8 +203,8 @@ public class TestAppInstanceTest {
     @Test
     public void registerReceiver_multipleIntentFilters_receivesAllMatchingBroadcasts() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
-            testAppInstance.registerReceiver(INTENT_FILTER);
-            testAppInstance.registerReceiver(INTENT_FILTER_2);
+            testAppInstance.registerReceiver(INTENT_FILTER, RECEIVER_EXPORTED);
+            testAppInstance.registerReceiver(INTENT_FILTER_2, RECEIVER_EXPORTED);
 
             sContext.sendBroadcast(INTENT);
             sContext.sendBroadcast(INTENT_2);
@@ -220,19 +222,18 @@ public class TestAppInstanceTest {
     public void registerReceiver_processIsRunning() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
 
-            testAppInstance.registerReceiver(INTENT_FILTER);
+            testAppInstance.registerReceiver(INTENT_FILTER, RECEIVER_EXPORTED);
 
             assertThat(sTestApp.pkg().runningProcess(sUser)).isNotNull();
         }
     }
 
     @Test
-    @Ignore("b/203758521 need to re-add support for killing processes")
     public void stop_registeredReceiver_doesNotReceiveBroadcast() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
-            testAppInstance.registerReceiver(INTENT_FILTER);
+            testAppInstance.registerReceiver(INTENT_FILTER, RECEIVER_EXPORTED);
 
-//            testAppInstance.stop();
+            testAppInstance.stop();
             sContext.sendBroadcast(INTENT);
 
             EventLogs<BroadcastReceivedEvent> logs =
@@ -245,7 +246,7 @@ public class TestAppInstanceTest {
     @Test
     public void unregisterReceiver_registeredReceiver_doesNotReceiveBroadcast() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
-            testAppInstance.registerReceiver(INTENT_FILTER);
+            testAppInstance.registerReceiver(INTENT_FILTER, RECEIVER_EXPORTED);
 
             testAppInstance.unregisterReceiver(INTENT_FILTER);
             sContext.sendBroadcast(INTENT);
@@ -260,8 +261,8 @@ public class TestAppInstanceTest {
     @Test
     public void unregisterReceiver_doesNotUnregisterOtherReceivers() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
-            testAppInstance.registerReceiver(INTENT_FILTER);
-            testAppInstance.registerReceiver(INTENT_FILTER_2);
+            testAppInstance.registerReceiver(INTENT_FILTER, RECEIVER_EXPORTED);
+            testAppInstance.registerReceiver(INTENT_FILTER_2, RECEIVER_EXPORTED);
 
             testAppInstance.unregisterReceiver(INTENT_FILTER);
             sContext.sendBroadcast(INTENT);
@@ -292,8 +293,8 @@ public class TestAppInstanceTest {
     @Ignore("b/203758521 need to re-add support for killing processes")
     public void registerReceiver_appIsKilled_stillReceivesBroadcast() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
-            testAppInstance.registerReceiver(INTENT_FILTER);
-//            testApp.pkg().runningProcess(sUser).kill();
+            testAppInstance.registerReceiver(INTENT_FILTER, RECEIVER_EXPORTED);
+            sTestApp.pkg().runningProcess(sUser).kill();
             Poll.forValue("running process", () -> sTestApp.pkg().runningProcess(sUser))
                     .toNotBeNull()
                     .errorOnFail()
@@ -305,6 +306,24 @@ public class TestAppInstanceTest {
                     BroadcastReceivedEvent.queryPackage(sTestApp.packageName())
                             .whereIntent().action().isEqualTo(INTENT_ACTION);
             assertThat(logs.poll()).isNotNull();
+        }
+    }
+
+    @Test
+    public void testApi_canCall() {
+        try (TestAppInstance testAppInstance = sTestApp.install()) {
+            // Arbitrary call which does not require specific permissions to confirm no crash
+            testAppInstance.devicePolicyManager()
+                    .isFactoryResetProtectionPolicySupported();
+        }
+    }
+
+    @Test
+    public void systemApi_canCall() {
+        try (TestAppInstance testAppInstance = sTestApp.install()) {
+            // Arbitrary call which does not require specific permissions to confirm no crash
+            testAppInstance.devicePolicyManager()
+                    .createProvisioningIntentFromNfcIntent(new Intent());
         }
     }
 
@@ -334,7 +353,6 @@ public class TestAppInstanceTest {
             testAppInstance.wifiManager().getMaxNumberOfNetworkSuggestionsPerApp();
         }
     }
-
     @Test
     public void hardwarePropertiesManager_returnsUsableInstance() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
@@ -349,6 +367,15 @@ public class TestAppInstanceTest {
     public void packageManager_returnsUsableInstance() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
             assertThat(testAppInstance.packageManager().hasSystemFeature("")).isFalse();
+        }
+    }
+
+    @Test
+    public void telephonyManager_returnsUsableInstance() {
+        try (TestAppInstance testAppInstance = sTestApp.install();
+             PermissionContext p = testAppInstance.permissions().withPermission(
+                     READ_PRIVILEGED_PHONE_STATE)) {
+            assertThat(testAppInstance.telephonyManager().getDeviceId()).isNotNull();
         }
     }
 
@@ -499,6 +526,13 @@ public class TestAppInstanceTest {
                 assertThrows(NullPointerException.class,
                         () -> testApp.devicePolicyManager().hasGrantedPolicy(null, 0));
             }
+        }
+    }
+
+    @Test
+    public void telecomManager_returnsUsableInstance() {
+        try (TestAppInstance testAppInstance = sTestApp.install()) {
+            testAppInstance.telecomManager().getSystemDialerPackage();
         }
     }
 }

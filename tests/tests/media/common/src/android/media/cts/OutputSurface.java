@@ -16,6 +16,8 @@
 
 package android.media.cts;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.graphics.SurfaceTexture;
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
@@ -24,6 +26,8 @@ import android.opengl.EGLDisplay;
 import android.opengl.EGLSurface;
 import android.util.Log;
 import android.view.Surface;
+
+import org.junit.Assume;
 
 
 /**
@@ -45,6 +49,11 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     private static final String TAG = "OutputSurface";
     private static final boolean VERBOSE = false;
 
+    public static int EGL_PROTECTED_CONTENT_EXT = 0x32C0;
+
+    // https://www.khronos.org/registry/EGL/extensions/EXT/EGL_EXT_protected_content.txt
+    private static final String EXTENSION_PROTECTED_CONTENT = "EGL_EXT_protected_content";
+
     private EGLDisplay mEGLDisplay = EGL14.EGL_NO_DISPLAY;
     private EGLContext mEGLContext = EGL14.EGL_NO_CONTEXT;
     private EGLSurface mEGLSurface = EGL14.EGL_NO_SURFACE;
@@ -54,6 +63,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
 
     private Object mFrameSyncObject = new Object();     // guards mFrameAvailable
     private boolean mFrameAvailable;
+    private boolean mSecureMode = false;
 
     private TextureRender mTextureRender;
 
@@ -63,13 +73,18 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
      * to MediaCodec.configure().
      */
     public OutputSurface(int width, int height) {
-        this(width, height, false);
+        this(width, height, false, false);
     }
 
     public OutputSurface(int width, int height, boolean useHighBitDepth) {
+        this(width, height, useHighBitDepth, false);
+    }
+
+    public OutputSurface(int width, int height, boolean useHighBitDepth, boolean secure) {
         if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException();
         }
+        mSecureMode = secure;
 
         eglSetup(width, height, useHighBitDepth);
         makeCurrent();
@@ -89,12 +104,18 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
         setup(listener);
     }
 
+    private boolean isSecureSurfaceSupported() {
+        EGLDisplay display = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
+        String eglExtensions = EGL14.eglQueryString(display, EGL14.EGL_EXTENSIONS);
+        return eglExtensions != null && eglExtensions.contains(EXTENSION_PROTECTED_CONTENT);
+    }
+
     /**
      * Creates instances of TextureRender and SurfaceTexture, and a Surface associated
      * with the SurfaceTexture.
      */
     private void setup(SurfaceTexture.OnFrameAvailableListener listener) {
-        mTextureRender = new TextureRender();
+        mTextureRender = new TextureRender(mSecureMode);
         mTextureRender.surfaceCreated();
 
         // Even if we don't access the SurfaceTexture after the constructor returns, we
@@ -133,6 +154,11 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
             mEGLDisplay = null;
             throw new RuntimeException("unable to initialize EGL14");
         }
+        if (mSecureMode) {
+            Assume.assumeTrue("EGL_PROTECTED_CONTENT_EXT not supported",
+                    isSecureSurfaceSupported());
+            checkEglError("EGL_PROTECTED_CONTENT_EXT not supported");
+        }
 
         // Configure EGL for pbuffer and OpenGL ES 2.0.  We want enough RGB bits
         // to be able to tell if the frame is reasonable.
@@ -150,15 +176,30 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
         EGLConfig[] configs = new EGLConfig[1];
         int[] numConfigs = new int[1];
         if (!EGL14.eglChooseConfig(mEGLDisplay, configAttribList, 0, configs, 0, configs.length,
-                numConfigs, 0)) {
-            throw new RuntimeException("unable to find RGB888+recordable ES2 EGL config");
+                numConfigs, 0) || numConfigs[0] == 0) {
+            String message = "Unable to find EGL config supporting renderable-type:ES2 "
+                    + "surface-type:pbuffer r:" + eglColorSize + " g:" + eglColorSize
+                    + " b:" + eglColorSize + " a:" + eglAlphaSize + ".";
+            // When eglChooseConfig fails for RGBA10102, skip high bit depth testing as it is not
+            // mandatory for devices to support this configuration.
+            assumeFalse(message + " Skipping the test for high bit depth case", useHighBitDepth);
+            throw new RuntimeException(message);
         }
 
         // Configure context for OpenGL ES 2.0.
-        int[] contextAttribList = {
-                EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
-                EGL14.EGL_NONE
-        };
+        int[] contextAttribList;
+        if (!mSecureMode) {
+            contextAttribList =  new int [] {
+                    EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
+                    EGL14.EGL_NONE
+            };
+        } else {
+            contextAttribList =  new int [] {
+                    EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
+                    EGL_PROTECTED_CONTENT_EXT, EGL14.EGL_TRUE,
+                    EGL14.EGL_NONE
+            };
+        }
         mEGLContext = EGL14.eglCreateContext(mEGLDisplay, configs[0], EGL14.EGL_NO_CONTEXT,
                 contextAttribList, 0);
         checkEglError("eglCreateContext");
@@ -168,11 +209,22 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
 
         // Create a pbuffer surface.  By using this for output, we can use glReadPixels
         // to test values in the output.
-        int[] surfaceAttribs = {
-                EGL14.EGL_WIDTH, width,
-                EGL14.EGL_HEIGHT, height,
-                EGL14.EGL_NONE
-        };
+        int[] surfaceAttribs;
+
+        if (!mSecureMode) {
+            surfaceAttribs = new int[] {
+                    EGL14.EGL_WIDTH, width,
+                    EGL14.EGL_HEIGHT, height,
+                    EGL14.EGL_NONE
+            };
+        } else {
+            surfaceAttribs = new int[] {
+                    EGL14.EGL_WIDTH, width,
+                    EGL14.EGL_HEIGHT, height,
+                    EGL_PROTECTED_CONTENT_EXT, EGL14.EGL_TRUE,
+                    EGL14.EGL_NONE
+            };
+        }
         mEGLSurface = EGL14.eglCreatePbufferSurface(mEGLDisplay, configs[0], surfaceAttribs, 0);
         checkEglError("eglCreatePbufferSurface");
         if (mEGLSurface == null) {

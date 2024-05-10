@@ -16,11 +16,11 @@
 
 package com.android.bedstead.harrier.annotations.parameterized;
 
-import static com.android.bedstead.harrier.annotations.AnnotationRunPrecedence.EARLY;
-import static com.android.bedstead.harrier.annotations.AnnotationRunPrecedence.LATE;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
 
-import com.android.bedstead.harrier.annotations.AnnotationRunPrecedence;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
+import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDelegate;
 import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 
@@ -35,18 +35,20 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @ParameterizedAnnotation
-@RequireRunOnWorkProfile(dpcIsPrimary = true)
+@RequireRunOnWorkProfile(dpcIsPrimary = true, dpcKey = "dpc")
 @EnsureHasNoDeviceOwner
+@EnsureHasNoDelegate
 public @interface IncludeRunOnProfileOwnerProfileWithNoDeviceOwner {
-    /**
-     * Weight sets the order that annotations will be resolved.
+     /**
+     * Priority sets the order that annotations will be resolved.
      *
-     * <p>Annotations with a lower weight will be resolved before annotations with a higher weight.
+     * <p>Annotations with a lower priority will be resolved before annotations with a higher
+     * priority.
      *
-     * <p>If there is an order requirement between annotations, ensure that the weight of the
+     * <p>If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     * <p>Weight can be set to a {@link AnnotationRunPrecedence} constant, or to any {@link int}.
+     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int weight() default EARLY;
+    int priority() default EARLY;
 }

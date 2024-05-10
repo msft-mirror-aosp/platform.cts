@@ -19,22 +19,31 @@ package android.display.cts;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED;
 
+import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
+import android.app.ActivityOptions;
 import android.app.Presentation;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.hardware.display.VirtualDisplayConfig;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
@@ -42,8 +51,10 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.provider.Settings;
+import android.server.wm.IgnoreOrientationRequestSession;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -51,11 +62,15 @@ import android.view.Surface;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.ImageView;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.DisplayStateManager;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
+import com.android.compatibility.common.util.StateKeeperRule;
+import com.android.compatibility.common.util.UserSettings.Namespace;
 
 import org.junit.After;
 import org.junit.Before;
@@ -65,6 +80,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -75,6 +92,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * are required.  See also framework VirtualDisplayTest unit tests.
  */
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class VirtualDisplayTest {
     private static final String TAG = "VirtualDisplayTest";
 
@@ -82,6 +100,7 @@ public class VirtualDisplayTest {
     private static final int WIDTH = 720;
     private static final int HEIGHT = 480;
     private static final int DENSITY = DisplayMetrics.DENSITY_MEDIUM;
+    private static final float REQUESTED_REFRESH_RATE = 30.0f;
     private static final int TIMEOUT = 40000;
 
     // Colors that we use as a signal to determine whether some desired content was
@@ -102,20 +121,28 @@ public class VirtualDisplayTest {
     private HandlerThread mCheckThread;
     private Handler mCheckHandler;
 
-    @Rule
+    @Rule(order = 0)
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
             InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            Manifest.permission.ADD_TRUSTED_DISPLAY,
             Manifest.permission.WRITE_SECURE_SETTINGS);
 
     @ClassRule
     public static final SettingsStateKeeperRule mAreUserDisabledHdrFormatsAllowedSettingsKeeper =
-            new SettingsStateKeeperRule(InstrumentationRegistry.getTargetContext(),
-                    Settings.Global.ARE_USER_DISABLED_HDR_FORMATS_ALLOWED);
+            new SettingsStateKeeperRule(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext(),
+                    Namespace.GLOBAL, Settings.Global.ARE_USER_DISABLED_HDR_FORMATS_ALLOWED);
 
     @ClassRule
     public static final SettingsStateKeeperRule mUserDisabledHdrFormatsSettingsKeeper =
-            new SettingsStateKeeperRule(InstrumentationRegistry.getTargetContext(),
-                    Settings.Global.USER_DISABLED_HDR_FORMATS);
+            new SettingsStateKeeperRule(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext(),
+                    Namespace.GLOBAL, Settings.Global.USER_DISABLED_HDR_FORMATS);
+
+    @Rule(order = 1)
+    public StateKeeperRule<DisplayStateManager.DisplayState> mDisplayManagerStateKeeper =
+            new StateKeeperRule<>(new DisplayStateManager(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext()));
 
     @Before
     public void setUp() throws Exception {
@@ -269,6 +296,9 @@ public class VirtualDisplayTest {
      */
     @Test
     public void testTrustedVirtualDisplay() throws Exception {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity();
+
         try {
             VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
                     WIDTH, HEIGHT, DENSITY, mSurface, VIRTUAL_DISPLAY_FLAG_TRUSTED);
@@ -278,6 +308,99 @@ public class VirtualDisplayTest {
         }
         fail("SecurityException must be thrown if a trusted virtual display is created without"
                 + "holding the permission ADD_TRUSTED_DISPLAY.");
+    }
+
+    /**
+     * Ensures that an application can create a private virtual display with a requested
+     * refresh rate and show its own windows on it.
+     */
+    @Test
+    public void testVirtualDisplayWithRequestedRefreshRate() throws Exception {
+        VirtualDisplayConfig config = new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                .setSurface(mSurface)
+                .setRequestedRefreshRate(REQUESTED_REFRESH_RATE)
+                .build();
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(config);
+        assertNotNull("virtual display must not be null", virtualDisplay);
+        Display display = virtualDisplay.getDisplay();
+        try {
+            assertDisplayRegistered(display, Display.FLAG_PRIVATE);
+            assertEquals(mSurface, virtualDisplay.getSurface());
+
+            assertEquals(display.getRefreshRate(), REQUESTED_REFRESH_RATE, 0.1f);
+        } finally {
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(display);
+    }
+
+    @Test
+    public void testVirtualDisplayRotatesWithContent() throws Exception {
+        assumeTrue(supportsActivitiesOnSecondaryDisplays());
+        assumeTrue(supportsRotation());
+
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
+                WIDTH, HEIGHT, DENSITY, mSurface,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT);
+        assertNotNull("virtual display must not be null", virtualDisplay);
+
+        Display display = virtualDisplay.getDisplay();
+        assertEquals(Surface.ROTATION_0, display.getRotation());
+        SimpleActivity activity = launchTestActivityOnDisplay(display.getDisplayId());
+        try (IgnoreOrientationRequestSession unused =
+                     new IgnoreOrientationRequestSession(/* enable= */ false)) {
+            {
+                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                assertTrue(waiter.rotationChanged());
+                assertEquals(getExpectedPortraitRotation(), display.getRotation());
+            }
+            {
+                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                assertTrue(waiter.rotationChanged());
+                assertEquals(Surface.ROTATION_0, display.getRotation());
+            }
+        } finally {
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(display);
+    }
+
+    @Test
+    public void testVirtualDisplayDoesNotRotateWithContent() throws Exception {
+        assumeTrue(supportsActivitiesOnSecondaryDisplays());
+
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
+                WIDTH, HEIGHT, DENSITY, mSurface,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+        assertNotNull("virtual display must not be null", virtualDisplay);
+
+        Display display = virtualDisplay.getDisplay();
+        assertEquals(Surface.ROTATION_0, display.getRotation());
+        SimpleActivity activity = launchTestActivityOnDisplay(display.getDisplayId());
+        try {
+            {
+                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                assertFalse(waiter.rotationChanged());
+                assertEquals(Surface.ROTATION_0, display.getRotation());
+            }
+            {
+                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+                assertFalse(waiter.rotationChanged());
+                assertEquals(Surface.ROTATION_0, display.getRotation());
+            }
+        } finally {
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(display);
     }
 
     @Test
@@ -376,6 +499,29 @@ public class VirtualDisplayTest {
         }
     }
 
+    private SimpleActivity launchTestActivityOnDisplay(int displayId) {
+        Intent intent = new Intent(getApplicationContext(), SimpleActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        ActivityOptions activityOptions = ActivityOptions.makeBasic();
+        activityOptions.setLaunchDisplayId(displayId);
+        return (SimpleActivity) InstrumentationRegistry.getInstrumentation()
+                .startActivitySync(intent, activityOptions.toBundle());
+    }
+
+    private boolean supportsActivitiesOnSecondaryDisplays() {
+        return mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS);
+    }
+
+    private boolean supportsRotation() {
+        final boolean supportsLandscape = mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_SCREEN_LANDSCAPE);
+        final boolean supportsPortrait = mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_SCREEN_PORTRAIT);
+        return (supportsLandscape && supportsPortrait)
+                || (!supportsLandscape && !supportsPortrait);
+    }
+
     private void runOnUiThread(Runnable runnable) {
         Runnable waiter = new Runnable() {
             @Override
@@ -402,6 +548,56 @@ public class VirtualDisplayTest {
             }
         }
         return null;
+    }
+
+    private int getExpectedPortraitRotation() {
+        if (mContext.getResources().getBoolean(Resources.getSystem().getIdentifier(
+                "config_reverseDefaultRotation", "bool", "android"))) {
+            return Surface.ROTATION_90;
+        } else {
+            return Surface.ROTATION_270;
+        }
+    }
+
+    private final class RotationChangeWaiter {
+        private static final int DISPLAY_CHANGE_TIMEOUT_SECS = 3;
+
+        private final Display mDisplay;
+        private int mCurrentRotation;
+        final CountDownLatch mRotationChangedLatch = new CountDownLatch(1);
+
+        private final DisplayManager.DisplayListener mListener =
+                new DisplayManager.DisplayListener() {
+                    @Override
+                    public void onDisplayAdded(int displayId) {}
+
+                    @Override
+                    public void onDisplayRemoved(int displayId) {}
+
+                    @Override
+                    public void onDisplayChanged(int displayId) {
+                        if (mDisplay.getDisplayId() == displayId
+                                && mCurrentRotation != mDisplay.getRotation()) {
+                            mCurrentRotation = mDisplay.getRotation();
+                            mRotationChangedLatch.countDown();
+                        }
+                    }
+                };
+
+        RotationChangeWaiter(Display display) {
+            mDisplay = display;
+            mCurrentRotation = mDisplay.getRotation();
+            Handler handler = new Handler(Looper.getMainLooper());
+            mDisplayManager.registerDisplayListener(mListener, handler);
+        }
+
+        boolean rotationChanged() throws Exception {
+            try {
+                return mRotationChangedLatch.await(DISPLAY_CHANGE_TIMEOUT_SECS, TimeUnit.SECONDS);
+            } finally {
+                mDisplayManager.unregisterDisplayListener(mListener);
+            }
+        }
     }
 
     private final class TestPresentation extends Presentation {

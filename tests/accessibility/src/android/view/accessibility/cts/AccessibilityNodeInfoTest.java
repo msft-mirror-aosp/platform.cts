@@ -35,10 +35,12 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.platform.test.annotations.Presubmit;
 import android.text.InputType;
+import android.text.NoCopySpan;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ClickableSpan;
 import android.text.style.ImageSpan;
 import android.text.style.ReplacementSpan;
 import android.util.ArrayMap;
@@ -49,6 +51,7 @@ import android.view.accessibility.AccessibilityNodeInfo.CollectionInfo;
 import android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo;
 import android.view.accessibility.AccessibilityNodeInfo.RangeInfo;
 import android.view.accessibility.AccessibilityNodeInfo.TouchDelegateInfo;
+import android.view.accessibility.Flags;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -57,6 +60,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -241,15 +245,12 @@ public class AccessibilityNodeInfoTest {
         final String replaceSpan1 = " ";
         final String replaceSpan2 = "%s";
         final Spannable stringWithSpans = new SpannableString(testString);
-        final int span1Start = testString.indexOf(replaceSpan1);
-        final int span1End = span1Start + replaceSpan1.length();
-        final int span2Start = testString.indexOf(replaceSpan2);
-        final int span2End = span2Start + replaceSpan2.length();
         final AccessibilityNodeInfo sentInfo = AccessibilityNodeInfo.obtain();
         final Parcel parcel = Parcel.obtain();
 
-        stringWithSpans.setSpan(span1, span1Start, span1End, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        stringWithSpans.setSpan(span2, span2Start, span2End, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        replaceSpan(stringWithSpans, replaceSpan1, testString.indexOf(replaceSpan1), span1);
+        replaceSpan(stringWithSpans, replaceSpan2, testString.indexOf(replaceSpan2), span2);
+
         sentInfo.setText(stringWithSpans);
         sentInfo.writeToParcelNoRecycle(parcel, 0);
         parcel.setDataPosition(0);
@@ -261,6 +262,23 @@ public class AccessibilityNodeInfoTest {
 
         assertEquals(span1.getContentDescription(), actualSpans[0].getContentDescription());
         assertEquals(span2.getContentDescription(), actualSpans[1].getContentDescription());
+    }
+
+    @SmallTest
+    @Test
+    public void testNoCopySpan_avoidsOutOfBounds() {
+        final TestClickableSpan span1 = new TestClickableSpan();
+        final TestNoCopySpan span2 = new TestNoCopySpan();
+        final String testString = "test string%s";
+        final String replaceSpan1 = " ";
+        final String replaceSpan2 = "%s";
+        final Spannable stringWithSpans = new SpannableString(testString);
+        final AccessibilityNodeInfo sentInfo = AccessibilityNodeInfo.obtain();
+
+        replaceSpan(stringWithSpans, replaceSpan1, testString.indexOf(replaceSpan1), span1);
+        replaceSpan(stringWithSpans, replaceSpan2, testString.indexOf(replaceSpan2), span2);
+        // If handled improperly, this call should trigger the Out of Bounds.
+        sentInfo.setText(stringWithSpans);
     }
 
     @SmallTest
@@ -284,7 +302,8 @@ public class AccessibilityNodeInfoTest {
     private void fullyPopulateAccessibilityNodeInfo(AccessibilityNodeInfo info) {
         // Populate 10 fields
         info.setBoundsInParent(new Rect(1,1,1,1));
-        info.setBoundsInScreen(new Rect(2,2,2,2));
+        info.setBoundsInScreen(new Rect(3, 3, 3, 3));
+        info.setBoundsInWindow(new Rect(2, 2, 2, 2));
         info.setClassName("foo.bar.baz.Class");
         info.setContentDescription("content description");
         info.setStateDescription("state description");
@@ -309,6 +328,7 @@ public class AccessibilityNodeInfoTest {
         info.setMovementGranularities(AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE);
         info.setViewIdResourceName("foo.bar:id/baz");
         info.setUniqueId("foo.bar:id/baz10");
+        info.setContainerTitle("Container title");
         info.setDrawingOrder(5);
         info.setAvailableExtraData(
                 Arrays.asList(AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY));
@@ -335,6 +355,7 @@ public class AccessibilityNodeInfoTest {
         info.setLeashedParent(new MockBinder(), 1); // Populates 2 fields
         info.setTraversalBefore(new View(getContext()));
         info.setTraversalAfter(new View(getContext()));
+        info.setMinDurationBetweenContentChanges(Duration.ofMillis(200));
 
         // Populate 3 fields
         info.setLabeledBy(new View(getContext()));
@@ -343,7 +364,7 @@ public class AccessibilityNodeInfoTest {
 
         // And Boolean properties are another field. Total is 38
 
-        // 10 Boolean properties
+        // 11 Boolean properties
         info.setCheckable(true);
         info.setChecked(true);
         info.setFocusable(true);
@@ -354,6 +375,9 @@ public class AccessibilityNodeInfoTest {
         info.setEnabled(true);
         info.setPassword(true);
         info.setScrollable(true);
+        if (Flags.granularScrolling()) {
+            info.setGranularScrollingSupported(true);
+        }
 
         // 10 Boolean properties
         info.setAccessibilityFocused(true);
@@ -367,11 +391,13 @@ public class AccessibilityNodeInfoTest {
         info.setImportantForAccessibility(true);
         info.setScreenReaderFocusable(true);
 
-        // 4 Boolean properties
+        // 6 Boolean properties
         info.setShowingHintText(true);
         info.setHeading(true);
         info.setTextEntryKey(true);
         info.setTextSelectable(true);
+        info.setRequestInitialAccessibilityFocus(true);
+        info.setAccessibilityDataSensitive(true);
     }
 
     /**
@@ -418,7 +444,7 @@ public class AccessibilityNodeInfoTest {
      */
     public static void assertEqualsAccessibilityNodeInfo(AccessibilityNodeInfo expectedInfo,
             AccessibilityNodeInfo receivedInfo) {
-        // Check 9 fields
+        // Check 10 fields
         Rect expectedBounds = new Rect();
         Rect receivedBounds = new Rect();
         expectedInfo.getBoundsInParent(expectedBounds);
@@ -427,6 +453,9 @@ public class AccessibilityNodeInfoTest {
         expectedInfo.getBoundsInScreen(expectedBounds);
         receivedInfo.getBoundsInScreen(receivedBounds);
         assertEquals("boundsInScreen has incorrect value", expectedBounds, receivedBounds);
+        expectedInfo.getBoundsInWindow(expectedBounds);
+        receivedInfo.getBoundsInWindow(receivedBounds);
+        assertEquals("boundsInWindow has incorrect value", expectedBounds, receivedBounds);
         assertEquals("className has incorrect value", expectedInfo.getClassName(),
                 receivedInfo.getClassName());
         assertEquals("contentDescription has incorrect value", expectedInfo.getContentDescription(),
@@ -456,8 +485,13 @@ public class AccessibilityNodeInfoTest {
                 receivedInfo.getMovementGranularities());
         assertEquals("viewId has incorrect value", expectedInfo.getViewIdResourceName(),
                 receivedInfo.getViewIdResourceName());
+        assertEquals("MinDurationBetweenContentChanges has incorrect value",
+                expectedInfo.getMinDurationBetweenContentChanges().toMillis(),
+                receivedInfo.getMinDurationBetweenContentChanges().toMillis());
         assertEquals("Unique id has incorrect value", expectedInfo.getUniqueId(),
             receivedInfo.getUniqueId());
+        assertEquals("Container title has incorrect value", expectedInfo.getContainerTitle(),
+                receivedInfo.getContainerTitle());
         assertEquals("drawing order has incorrect value", expectedInfo.getDrawingOrder(),
                 receivedInfo.getDrawingOrder());
         assertEquals("Extra data flags have incorrect value", expectedInfo.getAvailableExtraData(),
@@ -578,6 +612,11 @@ public class AccessibilityNodeInfoTest {
                 receivedInfo.isPassword());
         assertSame("scrollable has incorrect value", expectedInfo.isScrollable(),
                 receivedInfo.isScrollable());
+        if (Flags.granularScrolling()) {
+            assertSame("supportsGranularScrolling has incorrect value",
+                    expectedInfo.isGranularScrollingSupported(),
+                    receivedInfo.isGranularScrollingSupported());
+        }
 
         // 10 Boolean properties
         assertSame("AccessibilityFocused has incorrect value",
@@ -603,7 +642,7 @@ public class AccessibilityNodeInfoTest {
         assertSame("isScreenReaderFocusable has incorrect value",
                 expectedInfo.isScreenReaderFocusable(), receivedInfo.isScreenReaderFocusable());
 
-        // 3 Boolean properties
+        // 6 Boolean properties
         assertSame("isShowingHint has incorrect value",
                 expectedInfo.isShowingHintText(), receivedInfo.isShowingHintText());
         assertSame("isHeading has incorrect value",
@@ -612,6 +651,12 @@ public class AccessibilityNodeInfoTest {
                 expectedInfo.isTextEntryKey(), receivedInfo.isTextEntryKey());
         assertSame("isTexSelectable has incorrect value",
                 expectedInfo.isTextSelectable(), receivedInfo.isTextSelectable());
+        assertSame("hasRequestInitialAccessibilityFocus has incorrect value",
+                expectedInfo.hasRequestInitialAccessibilityFocus(),
+                receivedInfo.hasRequestInitialAccessibilityFocus());
+        assertSame("isAccessibilityDataSensitive has incorrect value",
+                expectedInfo.isAccessibilityDataSensitive(),
+                receivedInfo.isAccessibilityDataSensitive());
     }
 
     /**
@@ -633,6 +678,8 @@ public class AccessibilityNodeInfoTest {
         assertNull("packageName not properly recycled", info.getPackageName());
         assertNull("text not properly recycled", info.getText());
         assertNull("Hint text not properly recycled", info.getHintText());
+        assertNull("minDurationBetweenContentChanges not properly recycled",
+                info.getMinDurationBetweenContentChanges().toMillis());
         assertEquals("Children list not properly recycled", 0, info.getChildCount());
         // Actions are in one field
         assertSame("actions not properly recycled", 0, info.getActions());
@@ -643,6 +690,7 @@ public class AccessibilityNodeInfoTest {
                 info.getMovementGranularities());
         assertNull("viewId not properly recycled", info.getViewIdResourceName());
         assertNull("Unique id not properly recycled", info.getUniqueId());
+        assertNull("Container title not properly recycled", info.getContainerTitle());
         assertEquals(0, info.getDrawingOrder());
         assertTrue(info.getAvailableExtraData().isEmpty());
         assertNull("Pane title not properly recycled", info.getPaneTitle());
@@ -675,7 +723,7 @@ public class AccessibilityNodeInfoTest {
         //  leashedParentNodeId (not directly observable)
         // a total of 38
 
-        // 10 Boolean properties
+        // 11 Boolean properties
         assertFalse("checkable not properly recycled", info.isCheckable());
         assertFalse("checked not properly recycled", info.isChecked());
         assertFalse("focusable not properly recycled", info.isFocusable());
@@ -686,6 +734,10 @@ public class AccessibilityNodeInfoTest {
         assertFalse("enabled not properly recycled", info.isEnabled());
         assertFalse("password not properly recycled", info.isPassword());
         assertFalse("scrollable not properly recycled", info.isScrollable());
+        if (Flags.granularScrolling()) {
+            assertFalse("granularScrollingSupported is not properly recycled",
+                    info.isGranularScrollingSupported());
+        }
 
         // 10 Boolean properties
         assertFalse("accessibility focused not properly recycled", info.isAccessibilityFocused());
@@ -700,14 +752,35 @@ public class AccessibilityNodeInfoTest {
                 info.isImportantForAccessibility());
         assertFalse("ScreenReaderFocusable not properly recycled", info.isScreenReaderFocusable());
 
-        // 3 Boolean properties
+        // 6 Boolean properties
         assertFalse("isShowingHint not properly reset", info.isShowingHintText());
         assertFalse("isHeading not properly reset", info.isHeading());
         assertFalse("isTextEntryKey not properly reset", info.isTextEntryKey());
         assertFalse("isTextSelectable not properly reset", info.isTextSelectable());
+        assertFalse("hasRequestInitialAccessibilityFocus not properly reset",
+                info.hasRequestInitialAccessibilityFocus());
+        assertFalse("isAccessibilityDataSensitive not properly reset",
+                info.isAccessibilityDataSensitive());
+    }
 
+    private static void replaceSpan(
+            Spannable stringWithSpans,
+            String replaceSpan,
+            int spanStart,
+            Object span) {
+        final int spanEnd = spanStart + replaceSpan.length();
+        stringWithSpans.setSpan(span, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
     private static class MockBinder extends Binder {
+    }
+
+    private class TestClickableSpan extends ClickableSpan {
+        @Override
+        public void onClick(View widget) {
+        }
+    }
+
+    private class TestNoCopySpan extends TestClickableSpan implements NoCopySpan {
     }
 }

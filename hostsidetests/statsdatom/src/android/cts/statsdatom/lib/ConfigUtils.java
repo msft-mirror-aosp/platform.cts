@@ -16,8 +16,6 @@
 
 package android.cts.statsdatom.lib;
 
-import com.android.tradefed.util.RunUtil;
-import com.android.os.AtomsProto.AppBreadcrumbReported;
 import com.android.internal.os.StatsdConfigProto.AtomMatcher;
 import com.android.internal.os.StatsdConfigProto.EventMetric;
 import com.android.internal.os.StatsdConfigProto.FieldFilter;
@@ -26,14 +24,13 @@ import com.android.internal.os.StatsdConfigProto.FieldValueMatcher;
 import com.android.internal.os.StatsdConfigProto.GaugeMetric;
 import com.android.internal.os.StatsdConfigProto.MessageMatcher;
 import com.android.internal.os.StatsdConfigProto.Position;
-import com.android.internal.os.StatsdConfigProto.Predicate;
 import com.android.internal.os.StatsdConfigProto.SimpleAtomMatcher;
-import com.android.internal.os.StatsdConfigProto.SimplePredicate;
 import com.android.internal.os.StatsdConfigProto.StatsdConfig;
 import com.android.internal.os.StatsdConfigProto.TimeUnit;
 import com.android.os.AtomsProto.Atom;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.log.LogUtil.CLog;
+import com.android.tradefed.util.RunUtil;
 
 import com.google.common.io.Files;
 
@@ -46,6 +43,7 @@ import javax.annotation.Nullable;
 public final class ConfigUtils {
     public static final long CONFIG_ID = "cts_config".hashCode(); // evaluates to -1572883457
     public static final String CONFIG_ID_STRING = String.valueOf(CONFIG_ID);
+    public static final String SHELL_UID_STRING = "2000";
 
     // Attribution chains are the first field in atoms.
     private static final int ATTRIBUTION_CHAIN_FIELD_NUMBER = 1;
@@ -272,19 +270,23 @@ public final class ConfigUtils {
         CLog.d("Uploading the following config to statsd:\n" + config.toString());
 
         File configFile = File.createTempFile("statsdconfig", ".config");
-        configFile.deleteOnExit();
-        Files.write(config.toByteArray(), configFile);
+        try {
+            Files.write(config.toByteArray(), configFile);
 
-        // Push config to temporary location
-        String remotePath = "/data/local/tmp/" + configFile.getName();
-        device.pushFile(configFile, remotePath);
+            // Push config to temporary location
+            String remotePath = "/data/local/tmp/" + configFile.getName();
+            device.pushFile(configFile, remotePath);
 
-        // Send config to statsd
-        device.executeShellCommand(String.join(" ", "cat", remotePath, "|", UPDATE_CONFIG_CMD,
-                CONFIG_ID_STRING));
+            // Send config to statsd
+            device.executeShellCommand(
+                    String.join(" ", "cat", remotePath, "|", UPDATE_CONFIG_CMD, SHELL_UID_STRING,
+                            CONFIG_ID_STRING));
 
-        // Remove config from temporary location
-        device.executeShellCommand("rm " + remotePath);
+            // Remove config from temporary location
+            device.executeShellCommand("rm " + remotePath);
+        } finally {
+            configFile.delete();
+        }
 
         // Sleep for a bit so that statsd receives config before more work is done within the test.
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
@@ -294,7 +296,8 @@ public final class ConfigUtils {
      * Removes any pre-existing CTS configs from statsd.
      */
     public static void removeConfig(ITestDevice device) throws Exception {
-        device.executeShellCommand(String.join(" ", REMOVE_CONFIG_CMD, CONFIG_ID_STRING));
+        device.executeShellCommand(String.join(" ", REMOVE_CONFIG_CMD, SHELL_UID_STRING,
+                    CONFIG_ID_STRING));
     }
 
     public static void uploadConfigForPushedAtomWithUid(ITestDevice device, String pkgName,

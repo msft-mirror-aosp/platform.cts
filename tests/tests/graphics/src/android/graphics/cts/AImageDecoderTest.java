@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.ContentResolver;
 import android.content.res.AssetManager;
@@ -34,6 +35,7 @@ import android.graphics.ColorSpace.Named;
 import android.graphics.ImageDecoder;
 import android.graphics.Rect;
 import android.graphics.drawable.cts.AnimatedImageDrawableTest;
+import android.media.MediaFormat;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.system.ErrnoException;
@@ -41,6 +43,10 @@ import android.system.Os;
 import android.util.DisplayMetrics;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.RequiresDevice;
+
+import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -76,9 +82,11 @@ public class AImageDecoderTest {
     // These match the formats in the NDK.
     // ANDROID_BITMAP_FORMAT_NONE is used by nTestDecode to signal using the default.
     private static final int ANDROID_BITMAP_FORMAT_NONE = 0;
+    private static final int ANDROID_BITMAP_FORMAT_RGBA_8888 = 1;
     private static final int ANDROID_BITMAP_FORMAT_RGB_565 = 4;
     private static final int ANDROID_BITMAP_FORMAT_A_8 = 8;
     private static final int ANDROID_BITMAP_FORMAT_RGBA_F16 = 9;
+    private static final int ANDROID_BITMAP_FORMAT_RGBA_1010102 = 10;
 
     @Test
     public void testEmptyCreate() {
@@ -111,6 +119,20 @@ public class AImageDecoderTest {
         return Utils.crossProduct(getRecords(), new Object[] { 2, 3, 4, 8, 16 });
     }
 
+    private static Object[] getBitMapFormatsUnpremul() {
+        return Utils.crossProduct(
+            new Object[] {
+                ANDROID_BITMAP_FORMAT_NONE,
+                ANDROID_BITMAP_FORMAT_RGBA_1010102,
+                ANDROID_BITMAP_FORMAT_RGB_565,
+                ANDROID_BITMAP_FORMAT_RGBA_F16
+            },
+            new Object[] {
+                true,
+                false
+            });
+    }
+
     @Test
     @Parameters(method = "getAssetRecords")
     public void testNullDecoder(ImageDecoderTest.AssetRecord record) {
@@ -121,7 +143,8 @@ public class AImageDecoderTest {
         if (cs == null) {
             return DataSpace.ADATASPACE_UNKNOWN;
         }
-        return DataSpace.fromColorSpace(cs);
+
+        return cs.getDataSpace();
     }
 
     @Test
@@ -309,6 +332,79 @@ public class AImageDecoderTest {
             return decode(src, unpremul);
         } finally {
             res.getDisplayMetrics().densityDpi = originalDensity;
+        }
+    }
+
+    @Test
+    @RequiresDevice
+    @Parameters(method = "getBitMapFormatsUnpremul")
+    public void testDecode10BitHeif(int bitmapFormat, boolean unpremul) throws IOException {
+        if (!MediaUtils.hasHardwareCodec(MediaFormat.MIMETYPE_VIDEO_HEVC, false)) {
+            return;
+        }
+        final int resId = R.raw.heifimage_10bit;
+        Bitmap bm = null;
+        switch (bitmapFormat) {
+            case ANDROID_BITMAP_FORMAT_NONE:
+            case ANDROID_BITMAP_FORMAT_RGBA_1010102:
+                bm = decode(resId, unpremul);
+                break;
+            case ANDROID_BITMAP_FORMAT_RGB_565:
+                bm = decode(resId, Bitmap.Config.RGB_565);
+                break;
+            case ANDROID_BITMAP_FORMAT_RGBA_F16:
+                BitmapFactory.Options opt = new BitmapFactory.Options();
+                opt.inPreferredConfig = Bitmap.Config.RGBA_F16;
+                opt.inPremultiplied = !unpremul;
+                bm = BitmapFactory.decodeStream(getResources().openRawResource(resId), null, opt);
+                break;
+            default:
+                fail("Unsupported Bitmap format: " + bitmapFormat);
+        }
+        assertNotNull(bm);
+
+        try (ParcelFileDescriptor pfd = open(resId)) {
+            long aimagedecoder = nCreateFromFd(pfd.getFd());
+            nTestDecode(aimagedecoder, bitmapFormat, unpremul, bm);
+        } catch (FileNotFoundException e) {
+            fail("Could not open " + Utils.getAsResourceUri(resId));
+        }
+    }
+
+    @Test
+    @RequiresDevice
+    @CddTest(requirements = {"5.1.5/C-0-7"})
+    @Parameters(method = "getBitMapFormatsUnpremul")
+    public void testDecode10BitAvif(int bitmapFormat, boolean unpremul) throws IOException {
+        assumeTrue("AVIF is not supported on this device, skip this test.",
+                ImageDecoder.isMimeTypeSupported("image/avif"));
+
+        final int resId = R.raw.avif_yuv_420_10bit;
+        Bitmap bm = null;
+        switch (bitmapFormat) {
+            case ANDROID_BITMAP_FORMAT_NONE:
+            case ANDROID_BITMAP_FORMAT_RGBA_1010102:
+                bm = decode(resId, unpremul);
+                break;
+            case ANDROID_BITMAP_FORMAT_RGB_565:
+                bm = decode(resId, Bitmap.Config.RGB_565);
+                break;
+            case ANDROID_BITMAP_FORMAT_RGBA_F16:
+                BitmapFactory.Options opt = new BitmapFactory.Options();
+                opt.inPreferredConfig = Bitmap.Config.RGBA_F16;
+                opt.inPremultiplied = !unpremul;
+                bm = BitmapFactory.decodeStream(getResources().openRawResource(resId), null, opt);
+                break;
+            default:
+                fail("Unsupported Bitmap format: " + bitmapFormat);
+        }
+        assertNotNull(bm);
+
+        try (ParcelFileDescriptor pfd = open(resId)) {
+            long aimagedecoder = nCreateFromFd(pfd.getFd());
+            nTestDecode(aimagedecoder, bitmapFormat, unpremul, bm);
+        } catch (FileNotFoundException e) {
+            fail("Could not open " + Utils.getAsResourceUri(resId));
         }
     }
 
@@ -918,7 +1014,7 @@ public class AImageDecoderTest {
 
             String mimeType = uri.toString().contains("webp") ? "image/webp" : "image/jpeg";
             nTestInfo(aimagedecoder, 100, 80, mimeType, false,
-                    DataSpace.fromColorSpace(bm.getColorSpace()));
+                    bm.getColorSpace().getDataSpace());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             fail("Could not open " + uri + " to check info");
@@ -1014,7 +1110,7 @@ public class AImageDecoderTest {
         File file = createCompressedBitmap(width, height, colorSpace, format);
         assertNotNull(file);
 
-        int dataSpace = DataSpace.fromColorSpace(colorSpace);
+        int dataSpace = colorSpace.getDataSpace();
 
         try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(file,
                 ParcelFileDescriptor.MODE_READ_ONLY)) {
@@ -1043,7 +1139,7 @@ public class AImageDecoderTest {
     @Test
     @Parameters(method = "rgbColorSpaces")
     public void testSetDataSpace(ColorSpace colorSpace) {
-        int dataSpace = DataSpace.fromColorSpace(colorSpace);
+        int dataSpace = colorSpace.getDataSpace();
         if (dataSpace == DataSpace.ADATASPACE_UNKNOWN) {
             // AImageDecoder cannot decode to these ADATASPACEs
             return;

@@ -21,7 +21,7 @@ import static android.os.ParcelFileDescriptor.MODE_CREATE;
 import static android.os.ParcelFileDescriptor.MODE_READ_WRITE;
 import static android.scopedstorage.cts.lib.RedactionTestHelper.assertExifMetadataMatch;
 import static android.scopedstorage.cts.lib.RedactionTestHelper.assertExifMetadataMismatch;
-import static android.scopedstorage.cts.lib.RedactionTestHelper.getExifMetadata;
+import static android.scopedstorage.cts.lib.RedactionTestHelper.getExifMetadataFromFile;
 import static android.scopedstorage.cts.lib.RedactionTestHelper.getExifMetadataFromRawResource;
 import static android.scopedstorage.cts.lib.TestUtils.BYTES_DATA2;
 import static android.scopedstorage.cts.lib.TestUtils.STR_DATA2;
@@ -49,6 +49,7 @@ import static android.scopedstorage.cts.lib.TestUtils.deleteWithMediaProvider;
 import static android.scopedstorage.cts.lib.TestUtils.deleteWithMediaProviderNoThrow;
 import static android.scopedstorage.cts.lib.TestUtils.denyAppOpsToUid;
 import static android.scopedstorage.cts.lib.TestUtils.executeShellCommand;
+import static android.scopedstorage.cts.lib.TestUtils.fileExistsAs;
 import static android.scopedstorage.cts.lib.TestUtils.getAlarmsDir;
 import static android.scopedstorage.cts.lib.TestUtils.getAndroidDataDir;
 import static android.scopedstorage.cts.lib.TestUtils.getAndroidMediaDir;
@@ -59,6 +60,7 @@ import static android.scopedstorage.cts.lib.TestUtils.getDocumentsDir;
 import static android.scopedstorage.cts.lib.TestUtils.getDownloadDir;
 import static android.scopedstorage.cts.lib.TestUtils.getExternalFilesDir;
 import static android.scopedstorage.cts.lib.TestUtils.getExternalMediaDir;
+import static android.scopedstorage.cts.lib.TestUtils.getExternalObbDir;
 import static android.scopedstorage.cts.lib.TestUtils.getExternalStorageDir;
 import static android.scopedstorage.cts.lib.TestUtils.getFileMimeTypeFromDatabase;
 import static android.scopedstorage.cts.lib.TestUtils.getFileOwnerPackageFromDatabase;
@@ -79,6 +81,8 @@ import static android.scopedstorage.cts.lib.TestUtils.installAppWithStoragePermi
 import static android.scopedstorage.cts.lib.TestUtils.isAppInstalled;
 import static android.scopedstorage.cts.lib.TestUtils.listAs;
 import static android.scopedstorage.cts.lib.TestUtils.openWithMediaProvider;
+import static android.scopedstorage.cts.lib.TestUtils.pollForPermission;
+import static android.scopedstorage.cts.lib.TestUtils.queryAudioFile;
 import static android.scopedstorage.cts.lib.TestUtils.queryFile;
 import static android.scopedstorage.cts.lib.TestUtils.queryFileExcludingPending;
 import static android.scopedstorage.cts.lib.TestUtils.queryImageFile;
@@ -134,6 +138,8 @@ import android.os.Process;
 import android.os.storage.StorageManager;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.scopedstorage.cts.lib.RedactionTestHelper;
+import android.scopedstorage.cts.lib.ScopedStorageBaseDeviceTest;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.StructStat;
@@ -169,7 +175,9 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * Device-side test suite to verify scoped storage business logic.
+ * We are in process of splitting CtsScopedStorageDeviceOnlyTest module into multiple ones.
+ * This is a temporary test class, and it will be deleted
+ * after all the links to new modules are created.
  */
 @RunWith(Parameterized.class)
 public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
@@ -177,7 +185,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     public static final byte[] BYTES_DATA1 = STR_DATA1.getBytes();
 
-    static final String TAG = "ScopedStorageDeviceTest";
+    static final String TAG = "ScopedStorageDeviceTestCopy";
     static final String THIS_PACKAGE_NAME = getContext().getPackageName();
 
     /**
@@ -270,7 +278,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     }
 
     @Before
-    public void setupExternalStorage() {
+    public void setupExternalStorage() throws Exception {
         super.setupExternalStorage(mVolumeName);
         Log.i(TAG, "Using volume : " + mVolumeName);
     }
@@ -868,7 +876,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
             try (InputStream in =
                          getContext().getResources().openRawResource(R.raw.img_with_metadata);
-                FileOutputStream out = new FileOutputStream(jpgFile)) {
+                 FileOutputStream out = new FileOutputStream(jpgFile)) {
                 // Dump the image we have to external storage
                 FileUtils.copy(in, out);
                 // Sync file to disk to ensure file is fully written to the lower fs attempting to
@@ -876,7 +884,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                 // EXIF tags and might misleadingly think there are not tags to redact
                 out.getFD().sync();
 
-                HashMap<String, String> exif = getExifMetadata(jpgFile);
+                HashMap<String, String> exif = getExifMetadataFromFile(jpgFile);
                 assertExifMetadataMatch(exif, originalExif);
 
                 HashMap<String, String> exifFromTestApp =
@@ -1132,6 +1140,11 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     }
 
     @Test
+    // There is a minor bug which, alghough fixed in sc-dev (aosp/1834457),
+    // cannot be propagated to the already released sc-release branche
+    // (b/234145920), where mainline-modules are tested.
+    // Skip this test in S to avoid failures in outdated targets.
+    @SdkSuppress(minSdkVersion = 33, codeName = "T")
     public void testAppendUpdatesMtime() throws Exception {
         writeAndCheckMtime(true);
     }
@@ -1200,11 +1213,10 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         File upperCaseFile = new File(getDownloadDir(), "CACHE_CONSISTENCY_FOR_CASE_INSENSITIVITY");
         File lowerCaseFile = new File(getDownloadDir(), "cache_consistency_for_case_insensitivity");
 
-        try {
-            ParcelFileDescriptor upperCasePfd =
-                    ParcelFileDescriptor.open(upperCaseFile, MODE_READ_WRITE | MODE_CREATE);
-            ParcelFileDescriptor lowerCasePfd =
-                    ParcelFileDescriptor.open(lowerCaseFile, MODE_READ_WRITE | MODE_CREATE);
+        try (ParcelFileDescriptor upperCasePfd =
+                     ParcelFileDescriptor.open(upperCaseFile, MODE_READ_WRITE | MODE_CREATE);
+             ParcelFileDescriptor lowerCasePfd =
+                     ParcelFileDescriptor.open(lowerCaseFile, MODE_READ_WRITE | MODE_CREATE)) {
 
             assertRWR(upperCasePfd, lowerCasePfd);
             assertRWR(lowerCasePfd, upperCasePfd);
@@ -1239,7 +1251,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             assertThat(fileInPodcastsDirLowerCase.createNewFile()).isTrue();
         } finally {
             fileInPodcastsDirLowerCase.delete();
-            deleteAsLegacyApp(podcastsDirLowerCase);
+            deleteRecursivelyAsLegacyApp(podcastsDirLowerCase);
             podcastsDir.mkdirs();
         }
     }
@@ -1267,15 +1279,15 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     public void testReadStorageInvalidation() throws Exception {
         if (SdkLevel.isAtLeastT()) {
             testAppOpInvalidation(
-                APP_C,
-                new File(getDcimDir(), "read_storage.jpg"),
-                Manifest.permission.READ_MEDIA_IMAGES,
-                AppOpsManager.OPSTR_READ_MEDIA_IMAGES,
-                /* forWrite */ false);
+                    APP_C,
+                    new File(getDcimDir(), "read_storage.jpg"),
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    AppOpsManager.OPSTR_READ_MEDIA_IMAGES,
+                    /* forWrite */ false);
         } else {
             testAppOpInvalidation(APP_C, new File(getDcimDir(), "read_storage.jpg"),
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                AppOpsManager.OPSTR_READ_EXTERNAL_STORAGE, /* forWrite */ false);
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    AppOpsManager.OPSTR_READ_EXTERNAL_STORAGE, /* forWrite */ false);
         }
     }
 
@@ -1314,13 +1326,13 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                     getExifMetadataFromRawResource(R.raw.img_with_metadata);
             try (InputStream in =
                          getContext().getResources().openRawResource(R.raw.img_with_metadata);
-                FileOutputStream out = new FileOutputStream(imgFile)) {
+                 FileOutputStream out = new FileOutputStream(imgFile)) {
                 // Dump the image we have to external storage
                 FileUtils.copy(in, out);
                 // Sync file to disk to ensure file is fully written to the lower fs.
                 out.getFD().sync();
             }
-            HashMap<String, String> exif = getExifMetadata(imgFile);
+            HashMap<String, String> exif = getExifMetadataFromFile(imgFile);
             assertExifMetadataMatch(exif, originalExif);
 
             // Install test app
@@ -1328,6 +1340,8 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
             // Grant A_M_L and verify access to sensitive data
             grantPermission(APP_C.getPackageName(), Manifest.permission.ACCESS_MEDIA_LOCATION);
+            pollForPermission(APP_C.getPackageName(),
+                    Manifest.permission.ACCESS_MEDIA_LOCATION, /* granted */ true);
             HashMap<String, String> exifFromTestApp =
                     readExifMetadataFromTestApp(APP_C, imgFile.getPath());
             assertExifMetadataMatch(exifFromTestApp, originalExif);
@@ -1337,6 +1351,8 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                     APP_C.getPackageName(), Manifest.permission.ACCESS_MEDIA_LOCATION);
             // revokePermission waits for permission status to be updated, but MediaProvider still
             // needs to get permission change callback and clear its permission cache.
+            pollForPermission(APP_C.getPackageName(),
+                    Manifest.permission.ACCESS_MEDIA_LOCATION, /* granted */ false);
             Thread.sleep(500);
             exifFromTestApp = readExifMetadataFromTestApp(APP_C, imgFile.getPath());
             assertExifMetadataMismatch(exifFromTestApp, originalExif);
@@ -1345,6 +1361,8 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             grantPermission(APP_C.getPackageName(), Manifest.permission.ACCESS_MEDIA_LOCATION);
             // grantPermission waits for permission status to be updated, but MediaProvider still
             // needs to get permission change callback and clear its permission cache.
+            pollForPermission(APP_C.getPackageName(),
+                    Manifest.permission.ACCESS_MEDIA_LOCATION, /* granted */ true);
             Thread.sleep(500);
             exifFromTestApp = readExifMetadataFromTestApp(APP_C, imgFile.getPath());
             assertExifMetadataMatch(exifFromTestApp, originalExif);
@@ -1514,6 +1532,10 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
             // Assert we can read from the file
             assertFileContent(otherAppImageFile, BYTES_DATA1);
+
+            // Assert has access to redacted information
+            RedactionTestHelper.assertConsistentNonRedactedAccess(otherAppImageFile,
+                    R.raw.img_with_metadata);
 
             // Assert we can delete the file
             assertThat(otherAppImageFile.delete()).isTrue();
@@ -1771,6 +1793,37 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
     }
 
     /**
+     * Test that renaming file paths to an external directory such as Android/* and Android/* /*
+     * except Android/media/* /* is not allowed.
+     */
+    @Test
+    public void testRenameFileToAppSpecificDir() throws Exception {
+        final File testFile = new File(getExternalMediaDir(), IMAGE_FILE_NAME);
+        final File testFileNew = new File(getExternalMediaDir(), NONMEDIA_FILE_NAME);
+
+        try {
+            // Create a file in app's external media directory
+            if (!testFile.exists()) {
+                assertThat(testFile.createNewFile()).isTrue();
+            }
+
+            final String androidDirPath = getExternalStorageDir().getPath() + "/Android";
+
+            // Verify that we can't rename a file to Android/ or Android/data or
+            // Android/media directory
+            assertCantRenameFile(testFile, new File(androidDirPath, IMAGE_FILE_NAME));
+            assertCantRenameFile(testFile, new File(androidDirPath + "/data", IMAGE_FILE_NAME));
+            assertCantRenameFile(testFile, new File(androidDirPath + "/media", IMAGE_FILE_NAME));
+
+            // Verify that we can rename a file to app specific media directory.
+            assertCanRenameFile(testFile, testFileNew);
+        } finally {
+            testFile.delete();
+            testFileNew.delete();
+        }
+    }
+
+    /**
      * Test that renaming directories is allowed and aligns to default directory restrictions.
      */
     @Test
@@ -1809,13 +1862,17 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             assertCantRenameDirectory(downloadDir, new File(dcimDir, TEST_DIRECTORY_NAME), null);
 
             // Moving media directory to Download directory is allowed.
+            // Allow falling back to a recursive copy, since the rename will fail on ARCVM
+            // due to EXDEV.
             assertCanRenameDirectory(mediaDirectory1, mediaDirectory2, new File[] {videoFile1},
-                    new File[] {videoFile2});
+                    new File[] {videoFile2}, true /* allowCopyFallback */);
 
             // Moving media directory to Movies directory and renaming directory in new path is
             // allowed.
+            // Allow falling back to a recursive copy, since the rename will fail on ARCVM
+            // due to EXDEV.
             assertCanRenameDirectory(mediaDirectory2, mediaDirectory3, new File[] {videoFile2},
-                    new File[] {videoFile3});
+                    new File[] {videoFile3}, true /* allowCopyFallback */);
 
             // Can't rename a mediaDirectory to non empty non Media directory.
             assertCantRenameDirectory(mediaDirectory3, nonMediaDirectory, new File[] {videoFile3});
@@ -2627,8 +2684,8 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             // We can't rename a non-top level directory to a top level directory.
             assertCantRenameDirectory(nonTopLevelDir, topLevelDir2, null);
         } finally {
-            deleteAsLegacyApp(topLevelDir1);
-            deleteAsLegacyApp(topLevelDir2);
+            deleteRecursivelyAsLegacyApp(topLevelDir1);
+            deleteRecursivelyAsLegacyApp(topLevelDir2);
             deleteRecursively(nonTopLevelDir);
         }
     }
@@ -2638,7 +2695,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         final File podcastsDir = getPodcastsDir();
         try {
             if (podcastsDir.exists()) {
-                deleteAsLegacyApp(podcastsDir);
+                deleteRecursivelyAsLegacyApp(podcastsDir);
             }
             assertThat(podcastsDir.mkdir()).isTrue();
         } finally {
@@ -2660,7 +2717,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             if (cameraDir.exists()) {
                 // This is a work around to address a known inode cache inconsistency issue
                 // that occurs when test runs for the second time.
-                deleteAsLegacyApp(cameraDir);
+                deleteRecursivelyAsLegacyApp(cameraDir);
             }
 
             createDirectoryAsLegacyApp(cameraDir);
@@ -2684,7 +2741,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         } finally {
             deleteWithMediaProviderNoThrow(targetUri);
             deleteAsLegacyApp(nomediaFile);
-            deleteAsLegacyApp(cameraDir);
+            deleteRecursivelyAsLegacyApp(cameraDir);
         }
     }
 
@@ -2737,7 +2794,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         } finally {
             deleteAsLegacyApp(videoFile);
             deleteAsLegacyApp(nomediaFile);
-            deleteAsLegacyApp(directory);
+            deleteRecursivelyAsLegacyApp(directory);
         }
     }
 
@@ -2996,6 +3053,45 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         }
     }
 
+    /**
+     * Test that renaming a file to {@link Environment#DIRECTORY_RINGTONES} sets
+     * {@link MediaStore.Audio.AudioColumns#IS_RINGTONE}
+     */
+
+    @Test
+    public void testRenameToRingtoneDirectory() throws Exception {
+        final File fileInDownloads = new File(getDownloadDir(), AUDIO_FILE_NAME);
+        final File fileInRingtones = new File(getRingtonesDir(), AUDIO_FILE_NAME);
+
+        try {
+            assertThat(fileInDownloads.createNewFile()).isTrue();
+            assertThat(MediaStore.scanFile(getContentResolver(), fileInDownloads)).isNotNull();
+
+            assertCanRenameFile(fileInDownloads, fileInRingtones);
+
+            try (Cursor c = queryAudioFile(fileInRingtones,
+                    MediaStore.Audio.AudioColumns.IS_RINGTONE)) {
+                assertTrue(c.moveToFirst());
+                assertWithMessage("Expected " + MediaStore.Audio.AudioColumns.IS_RINGTONE
+                        + " to be set after renaming to " + fileInRingtones)
+                        .that(c.getInt(0)).isEqualTo(1);
+            }
+
+            assertCanRenameFile(fileInRingtones, fileInDownloads);
+
+            try (Cursor c = queryAudioFile(fileInDownloads,
+                    MediaStore.Audio.AudioColumns.IS_RINGTONE)) {
+                assertTrue(c.moveToFirst());
+                assertWithMessage("Expected " + MediaStore.Audio.AudioColumns.IS_RINGTONE
+                        + " to be unset after renaming to " + fileInDownloads)
+                        .that(c.getInt(0)).isEqualTo(0);
+            }
+        } finally {
+            fileInDownloads.delete();
+            fileInRingtones.delete();
+        }
+    }
+
     @Test
     @SdkSuppress(minSdkVersion = 31, codeName = "S")
     public void testTransformsDirFileOperations() throws Exception {
@@ -3049,6 +3145,31 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         }
         assertWritableMountModeForProvider(DocumentsContract.EXTERNAL_STORAGE_PROVIDER_AUTHORITY);
         assertWritableMountModeForProvider(DocumentsContract.DOWNLOADS_PROVIDER_AUTHORITY);
+    }
+
+    /**
+     * Test that normal apps cannot access Android/data and Android/obb dirs of other apps
+     */
+    @Test
+    public void testCantProbeOtherAppsExternalDirs() throws Exception {
+        // Before fuse-bpf, apps could see other app's external storage
+        boolean expectToSee = !isFuseBpfEnabled()
+                && mVolumeName.equals(MediaStore.VOLUME_EXTERNAL);
+        String message = expectToSee
+                ? "Expected to see other app's private dirs"
+                : "Expected not to see other app's private dirs";
+
+        assertWithMessage(message)
+                .that(fileExistsAs(APP_B_NO_PERMS, new File(getExternalFilesDir().getParent())))
+                .isEqualTo(expectToSee);
+
+        assertWithMessage(message)
+                .that(fileExistsAs(APP_B_NO_PERMS, getExternalObbDir()))
+                .isEqualTo(expectToSee);
+    }
+
+    private boolean isFuseBpfEnabled() throws Exception {
+        return executeShellCommand("getprop ro.fuse.bpf.is_running").trim().equals("true");
     }
 
     private void assertWritableMountModeForProvider(String auth) {

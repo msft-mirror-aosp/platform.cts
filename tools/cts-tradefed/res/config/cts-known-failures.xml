@@ -23,6 +23,10 @@
     <option name="compatibility:exclude-filter" value="CtsLocationTestCases android.location.cts.GnssTtffTests#testTtffWithNetwork" />
     <option name="compatibility:exclude-filter" value="CtsLocationTestCases[instant] android.location.cts.GnssTtffTests#testTtffWithNetwork" />
 
+    <!-- b/17989532 -->
+    <option name="compatibility:exclude-filter" value="CtsCameraTestCases android.hardware.camera2.cts.SurfaceViewPreviewTest#testPreparePerformance" />
+    <option name="compatibility:exclude-filter" value="CtsCameraTestCases[instant] android.hardware.camera2.cts.SurfaceViewPreviewTest#testPreparePerformance" />
+
     <!-- b/23776893 -->
     <option name="compatibility:exclude-filter" value="CtsDumpsysHostTestCases android.dumpsys.cts.DumpsysHostTest#testBatterystatsOutput" />
     <option name="compatibility:exclude-filter" value="CtsDumpsysHostTestCases android.dumpsys.cts.DumpsysHostTest#testGfxinfoFramestats" />
@@ -107,9 +111,6 @@
     <!-- b/64221494 -->
     <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxHostTest#testAospSeappContexts" />
 
-    <!-- b/63378294 b/64382381 -->
-    <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules440" />
-
     <!-- b/36686383 -->
     <option name="compatibility:exclude-filter" value="CtsIncidentHostTestCases com.android.server.cts.ErrorsTest#testANR" />
 
@@ -135,13 +136,9 @@
     <!-- b/62481870 -->
     <option name="compatibility:exclude-filter" value="CtsNativeMediaAAudioTestCases android.nativemedia.aaudio.AAudioOutputStreamCallbackTest#testPlayback" />
 
-    <!-- b/192313064 , b/192984235 -->
-    <option name="compatibility:exclude-filter" value="CtsNativeMediaAAudioTestCases android.nativemedia.aaudio.AAudioTests#test_aaudio_mmap_testBasicMmapOutput" />
-    <option name="compatibility:exclude-filter" value="CtsNativeMediaAAudioTestCases[instant] android.nativemedia.aaudio.AAudioTests#test_aaudio_mmap_testBasicMmapOutput" />
-
-    <!-- b/134654621 -->
-    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.AppConfigurationTests#testTaskCloseRestoreFreeOrientation" />
-    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.AppConfigurationTests#testAppOrientationRequestConfigClears" />
+    <!-- b/192313064 , b/192984235 , b/274369142 -->
+    <option name="compatibility:exclude-filter" value="CtsNativeMediaAAudioTestCases android.nativemedia.aaudio.AAudioTests#AAudioTestMMap_testBasicMmapOutput" />
+    <option name="compatibility:exclude-filter" value="CtsNativeMediaAAudioTestCases[instant] android.nativemedia.aaudio.AAudioTests#AAudioTestMMap_testBasicMmapOutput" />
 
     <!-- b/62976713 -->
     <option name="compatibility:exclude-filter" value="arm64-v8a CtsMediaBitstreamsTestCases" />
@@ -209,13 +206,6 @@
     <!-- b/126548816 -->
     <option name="compatibility:exclude-filter" value="CtsRcsTestCases" />
 
-    <!-- b/112688380 -->
-    <option name="compatibility:exclude-filter" value="CtsActivityManagerDeviceTestCases android.server.am.ActivityManagerAppConfigurationTests#testAppOrientationRequestConfigClears" />
-    <option name="compatibility:exclude-filter" value="CtsActivityManagerDeviceTestCases android.server.am.ActivityManagerAppConfigurationTests#testTaskCloseRestoreFreeOrientation" />
-    <!-- b/112688380, b/139936670 -->
-    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.AppConfigurationTests#testAppOrientationRequestConfigClears" />
-    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.AppConfigurationTests#testTaskCloseRestoreFreeOrientation" />
-
     <!-- b/167931576 -->
     <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.ActivityVisibilityTests#testTurnScreenOnAttrNoLockScreen" />
 
@@ -240,7 +230,7 @@
     <option name="compatibility:exclude-filter" value="CtsPrintTestCases[instant]" />
 
     <!-- b/194146521 -->
-    <option name="compatibility:exclude-filter" value="CtsPermission3TestCases android.permission3.cts.PermissionTest23#testNoResidualPermissionsOnUninstall" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest23#testNoResidualPermissionsOnUninstall" />
 
     <!-- b/198992105 -->
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
@@ -253,6 +243,20 @@
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:1:TENT] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:2:HALF_FOLDED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:3:OPEN] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <!-- b/300310474 -->
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DUAL] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DUAL] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <!-- b/319385496 -->
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:2:HALF_OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:3:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:4:OPENED_REVERSE] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:6:OPENED_REVERSE_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:2:HALF_OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:3:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:4:OPENED_REVERSE] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:6:OPENED_REVERSE_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
 
     <!-- b/202357331 -->
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testCreateAdminSupportIntent" />
@@ -265,55 +269,14 @@
     <!-- b/182630972, b/214019488 -->
     <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases android.server.wm.PinnedStackTests#testEnterPipWithMinimalSize" />
 
-    <!-- b/198021503 -->
-    <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.StorageHostTest#testFullDisk" />
-
     <!-- b/231976012 -->
     <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.DocumentsTest#testCreateWebLink" />
 
     <!-- b/216546060 -->
     <option name="compatibility:exclude-filter" value="CtsFragmentTestCases android.fragment.cts.FragmentAnimatorTest#saveWhileAnimatingAway" />
 
-    <!-- b/216553645 -->
-    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.ECDSASignatureTest#testNONEwithECDSATruncatesInputToFieldSize" />
-
-    <!-- b/216546060 -->
-    <option name="compatibility:exclude-filter" value="CtsVoiceRecognitionTestCases android.voicerecognition.cts.RecognitionServiceMicIndicatorTest#testTrustedRecognitionServiceCanBlameCallingApp" />
-
-    <!-- b/216546060 -->
-    <option name="compatibility:exclude-filter" value="CtsMonkeyTestCases com.android.cts.monkey.CategoryTest#testDefaultCategories" />
-    <option name="compatibility:exclude-filter" value="CtsMonkeyTestCases com.android.cts.monkey.CategoryTest#testSingleCategory" />
-    <option name="compatibility:exclude-filter" value="CtsMonkeyTestCases com.android.cts.monkey.CategoryTest#testMultipleCategories" />
-
     <!-- b/208909067 -->
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases android.display.cts.DisplayTest#testActivityContextGetMetrics" />
-
-    <!-- b/235453601 -->
-    <option name="compatibility:exclude-filter" value="CtsMediaPerformanceClassTestCases android.mediapc.cts.MultiDecoderPerfTest" />
-
-    <!-- b/237035040 -->
-    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
-    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
-
-    <!-- b/223402586 -->
-    <option name="compatibility:exclude-filter" value="CtsAppCompatHostTestCases com.android.cts.appcompat.CompatChangesValidConfigTest#testOnlyAllowedlistedChangesAreOverridable" />
-
-    <!-- b/241204351 -->
-    <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testBluetoothRestriction" />
-    <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileTest#testBluetoothSharingRestriction" />
-
-    <!-- b/249936107 -->
-    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.cts.SubscriptionManagerTest#testSubscriptionGroupingWithPermission" />
-    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.cts.SubscriptionManagerTest#testAddSubscriptionIntoNewGroupWithPermission" />
-
-    <!-- b/260037367 -->
-    <option name="compatibility:exclude-filter" value="odsign_e2e_tests com.android.tests.odsign.CompOsSigningHostTest" />
-
-    <!-- b/264824229 -->
-    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilter_data" />
-    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilter_port_match" />
-    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilter_port_mismatch" />
-    <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilter_port_anydata" />
 
     <!-- b/266101051-->
     <option name="compatibility:exclude-filter" value="CtsGameServiceTestCases" />
@@ -322,4 +285,113 @@
     <option name="compatibility:exclude-filter" value="CtsGameManagerTestCases android.gamemanager.cts.GameManagerTest#testSetGameStatePerformanceMode" />
     <option name="compatibility:exclude-filter" value="CtsGameManagerTestCases android.gamemanager.cts.GameManagerTest#testSetGameStatePerformanceMode_withParams" />
     <option name="compatibility:exclude-filter" value="CtsGameManagerTestCases android.gamemanager.cts.GameManagerTest#testSetGameStateStandardMode" />
+    <option name="compatibility:exclude-filter" value="CtsGameManagerTestCases[instant] android.gamemanager.cts.GameManagerTest#testSetGameStatePerformanceMode" />
+    <option name="compatibility:exclude-filter" value="CtsGameManagerTestCases[instant] android.gamemanager.cts.GameManagerTest#testSetGameStatePerformanceMode_withParams" />
+    <option name="compatibility:exclude-filter" value="CtsGameManagerTestCases[instant] android.gamemanager.cts.GameManagerTest#testSetGameStateStandardMode" />
+
+    <!-- b/284365711, b/285449475 -->
+    <option name="compatibility:exclude-filter" value="CtsBluetoothMultiDevicesTestCases BluetoothMultiDevicesTest" />
+
+    <!--- b/289540897 -->
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_small_medium_sizes" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_large_sizes" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_realloc" />
+
+    <!-- b/284406623 -->
+    <option name="compatibility:exclude-filter" value="CtsUwbMultiDeviceTestCase_FiraRangingTests" />
+    <option name="compatibility:exclude-filter" value="CtsUwbMultiDeviceTestCase_RangingMeasurementTests" />
+
+    <!-- b/326655855 -->
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[instant] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:1:TENT] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:3:OPEN] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[instant] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[foldable:1:TENT] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[foldable:3:OPEN] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+
+    <!-- b/326656256 -->
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+
+    <!-- b/328010720 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_not_contains" />
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_contains" />
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases[instant] android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_not_contains" />
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases[instant] android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_contains" />
+
+    <!-- b/330276352 -->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostSideDeviceTestCases android.healthconnect.cts.device.HealthConnectDeviceTest#testAppCanReadChangeLogsUsingDataOriginFilters" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectServiceStatsTests#testChangeLogTokenRequest" />
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectServiceStatsTests#testChangeLogsRequest" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_dataOrigin_filter_correct" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insertAndDelete_dataOrigin_filter_correct" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insertAndDelete_beforePermission" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insertAndDelete_default" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_default_withNextPageToken" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_default" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_dataOrigin_filter_incorrect" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_checkToken_hasMorePages_False" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_default_withPageSize" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insert_default_withSamePageToken" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testGetChangeLogToken" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectChangeLogsTests#testChangeLogs_insertAndDelete_dataOrigin_filter_incorrect" />
+    <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectManagerTest#testDataApis_migrationInProgress_apisBlocked" />
+
+    <!-- b/330278028 -->
+    <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.PreviewApiTest#testRecordObservation" />
+
+    <!-- b/330283216 -->
+    <option name="compatibility:exclude-filter" value="CtsAdServicesTopicsConnectionTests com.android.adservices.tests.cts.topics.connection.TopicsConnectionTest#testEnableGlobalKillSwitch" />
+
+    <!-- b/325695985 -->
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+
 </configuration>

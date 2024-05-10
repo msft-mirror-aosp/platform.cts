@@ -8,5 +8,10 @@
     {
       "name": "CtsBluetoothTestCases"
     }
+  ],
+  "kernel-presubmit": [
+    {
+      "name": "CtsBluetoothTestCases"
+    }
   ]
 }

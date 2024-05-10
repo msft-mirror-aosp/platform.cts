@@ -16,14 +16,15 @@
 
 package android.photopicker.cts;
 
-import static android.photopicker.cts.util.PhotoPickerAssertionsUtils.assertPickerUriFormat;
-import static android.photopicker.cts.util.PhotoPickerAssertionsUtils.assertRedactedReadOnlyAccess;
-import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImages;
+import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUris;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.deleteMedia;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAddButton;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findItemList;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findProfileButton;
+import static android.photopicker.cts.util.ResultsAssertionsUtils.assertPickerUriFormat;
+import static android.photopicker.cts.util.ResultsAssertionsUtils.assertRedactedReadOnlyAccess;
+import static android.provider.MediaStore.ACTION_PICK_IMAGES;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -33,6 +34,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.provider.MediaStore;
 
+import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiSelector;
@@ -41,9 +43,11 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
+import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.After;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,6 +59,7 @@ import java.util.List;
  * Photo Picker Device only tests for cross profile interaction flows.
  */
 @RunWith(BedsteadJUnit4.class)
+@LargeTest
 public class PhotoPickerCrossProfileTest extends PhotoPickerBaseTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
@@ -80,17 +85,24 @@ public class PhotoPickerCrossProfileTest extends PhotoPickerBaseTest {
     @RequireRunOnWorkProfile
     @SdkSuppress(minSdkVersion = 32, codeName = "T")
     public void testWorkApp_canAccessPersonalProfileContents() throws Exception {
-        final int imageCount = 2;
-        createImages(imageCount, sDeviceState.primaryUser().id(), mUriList);
+        final int primaryUserId;
+        if (SdkLevel.isAtLeastU()) {
+            primaryUserId = sDeviceState.initialUser().id();
+        } else {
+            primaryUserId = sDeviceState.primaryUser().id();
+        }
 
-        Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+        final int imageCount = 2;
+        mUriList.addAll(createImagesAndGetUris(imageCount, primaryUserId));
+
+        Intent intent = new Intent(ACTION_PICK_IMAGES);
         intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, imageCount);
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
         // Click the profile button to change to personal profile
         final UiObject profileButton = findProfileButton();
         profileButton.click();
-        mDevice.waitForIdle();
+        sDevice.waitForIdle();
 
         final List<UiObject> itemList = findItemList(imageCount);
         final int itemCount = itemList.size();
@@ -98,19 +110,19 @@ public class PhotoPickerCrossProfileTest extends PhotoPickerBaseTest {
         for (int i = 0; i < itemCount; i++) {
             final UiObject item = itemList.get(i);
             item.click();
-            mDevice.waitForIdle();
+            sDevice.waitForIdle();
         }
 
         final UiObject addButton = findAddButton();
         addButton.click();
-        mDevice.waitForIdle();
+        sDevice.waitForIdle();
 
         final ClipData clipData = mActivity.getResult().data.getClipData();
         final int count = clipData.getItemCount();
         assertThat(count).isEqualTo(imageCount);
         for (int i = 0; i < count; i++) {
             Uri uri = clipData.getItemAt(i).getUri();
-            assertPickerUriFormat(uri, sDeviceState.primaryUser().id());
+            assertPickerUriFormat(ACTION_PICK_IMAGES, uri, primaryUserId);
             assertRedactedReadOnlyAccess(uri);
         }
     }
@@ -137,14 +149,14 @@ public class PhotoPickerCrossProfileTest extends PhotoPickerBaseTest {
     }
 
     private void assertBlockedByAdmin(boolean isInvokedFromWorkProfile) throws Exception {
-        Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+        Intent intent = new Intent(ACTION_PICK_IMAGES);
         intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit());
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
         // Click the profile button to change to work profile
         final UiObject profileButton = findProfileButton();
         profileButton.click();
-        mDevice.waitForIdle();
+        sDevice.waitForIdle();
 
         assertBlockedByAdminDialog(isInvokedFromWorkProfile);
     }

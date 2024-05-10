@@ -15,6 +15,7 @@
 //
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -31,7 +32,7 @@ java_defaults {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
     ],
     libs: [
         "android.test.runner",

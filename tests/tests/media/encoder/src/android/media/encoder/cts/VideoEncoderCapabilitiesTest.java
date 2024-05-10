@@ -22,6 +22,7 @@ import static org.junit.Assume.assumeTrue;
 import android.media.MediaFormat;
 import android.platform.test.annotations.AppModeFull;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Test;
@@ -42,7 +43,7 @@ public class VideoEncoderCapabilitiesTest {
     final private int mBitRate;
     final private boolean mOptional;
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}x{2}_{3}_{4}_{5})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}x{2}_{3}_{4}_{5}")
     public static Collection<Object[]> input() {
         final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
                 // MediaType, width, height, frame-rate, bit-rate, optional
@@ -90,6 +91,7 @@ public class VideoEncoderCapabilitiesTest {
     }
 
     // Tests encoder profiles required by CDD.
+    @CddTest(requirements = {"5.2.2/C-1-2", "5.2.3/C-1-1", "5.2.4/C-SR-1", "5.2.5/C-SR-1"})
     @Test
     public void testEncoderAvailability() {
         MediaFormat format = MediaFormat.createVideoFormat(mMediaType, mWidth, mHeight);

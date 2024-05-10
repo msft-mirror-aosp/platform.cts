@@ -132,8 +132,7 @@ public class TestTaskOrganizer extends TaskOrganizer {
 
             // Set the roots as adjacent to each other.
             final WindowContainerTransaction wct = new WindowContainerTransaction();
-            wct.setAdjacentRoots(mRootPrimary.getToken(), mRootSecondary.getToken(),
-                    true /* moveTogether */);
+            wct.setAdjacentRoots(mRootPrimary.getToken(), mRootSecondary.getToken());
             wct.setLaunchAdjacentFlagRoot(mRootSecondary.getToken());
             applyTransaction(wct);
         }
@@ -163,11 +162,15 @@ public class TestTaskOrganizer extends TaskOrganizer {
         notifyAll();
     }
 
-    private void registerOrganizerIfNeeded() {
-        if (mRegistered) return;
+    public void registerOrganizerIfNeeded() {
+        synchronized (this) {
+            if (mRegistered) return;
 
-        registerOrganizer();
-        mRegistered = true;
+            NestedShellPermission.run(() -> {
+                registerOrganizer();
+            });
+            mRegistered = true;
+        }
     }
 
     public void unregisterOrganizerIfNeeded() {
@@ -255,11 +258,11 @@ public class TestTaskOrganizer extends TaskOrganizer {
         dismissSplitScreen(false /* primaryOnTop */);
     }
 
-    void dismissSplitScreen(boolean primaryOnTop) {
+    public void dismissSplitScreen(boolean primaryOnTop) {
         dismissSplitScreen(new WindowContainerTransaction(), primaryOnTop);
     }
 
-    void dismissSplitScreen(WindowContainerTransaction t, boolean primaryOnTop) {
+    public void dismissSplitScreen(WindowContainerTransaction t, boolean primaryOnTop) {
         synchronized (this) {
             NestedShellPermission.run(() -> {
                 t.setLaunchRoot(mRootPrimary.getToken(), null, null)
@@ -302,7 +305,7 @@ public class TestTaskOrganizer extends TaskOrganizer {
         }
     }
 
-    void setRootPrimaryTaskBounds(Rect bounds) {
+    public void setRootPrimaryTaskBounds(Rect bounds) {
         setTaskBounds(mRootPrimary.getToken(), bounds);
     }
 
@@ -328,11 +331,11 @@ public class TestTaskOrganizer extends TaskOrganizer {
         }
     }
 
-    int getPrimarySplitTaskCount() {
+    public int getPrimarySplitTaskCount() {
         return mPrimaryChildrenTaskIds.size();
     }
 
-    int getSecondarySplitTaskCount() {
+    public int getSecondarySplitTaskCount() {
         return mSecondaryChildrenTaskIds.size();
     }
 
@@ -344,7 +347,7 @@ public class TestTaskOrganizer extends TaskOrganizer {
         return mRootSecondary != null ? mRootSecondary.taskId : INVALID_TASK_ID;
     }
 
-    ActivityManager.RunningTaskInfo getTaskInfo(int taskId) {
+    public ActivityManager.RunningTaskInfo getTaskInfo(int taskId) {
         synchronized (this) {
             ActivityManager.RunningTaskInfo taskInfo = mKnownTasks.get(taskId);
             if (taskInfo != null) return taskInfo;
@@ -359,9 +362,16 @@ public class TestTaskOrganizer extends TaskOrganizer {
         }
     }
 
+    /** Waits and asserts that given Task to appear. */
+    public void waitForAndAssertTaskAppeared(int taskId) {
+        synchronized (this) {
+            waitForAndAssert(o -> mKnownTasks.containsKey(taskId), "Can't find task=" + taskId);
+        }
+    }
+
     @Override
-    public void onTaskAppeared(@NonNull ActivityManager.RunningTaskInfo taskInfo,
-            SurfaceControl leash) {
+    public void onTaskAppeared(
+            @NonNull ActivityManager.RunningTaskInfo taskInfo, SurfaceControl leash) {
         synchronized (this) {
             notifyOnEnd(() -> {
                 SurfaceControl.Transaction t = new SurfaceControl.Transaction();

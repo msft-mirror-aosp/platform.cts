@@ -30,10 +30,10 @@ public class AppWidgetConfirmPin extends Activity {
     private PinItemRequest mRequest;
 
     private BroadcastReceiver mReceiver;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         try {
             final LauncherApps launcherApps = getSystemService(LauncherApps.class);
             mRequest = launcherApps.getPinItemRequest(getIntent());
@@ -53,7 +53,8 @@ public class AppWidgetConfirmPin extends Activity {
                     onCommandReceive(intent);
                 }
             };
-            registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_CONFIRM_PIN));
+            registerReceiver(mReceiver, new IntentFilter(Constants.ACTION_CONFIRM_PIN),
+                    Context.RECEIVER_EXPORTED);
             sendSetupReply(true);
         } catch (Exception e) {
             sendSetupReply(false);

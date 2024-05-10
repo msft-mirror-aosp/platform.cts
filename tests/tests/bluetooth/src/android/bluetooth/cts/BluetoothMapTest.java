@@ -18,32 +18,48 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothMap;
 import android.bluetooth.BluetoothProfile;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.sysprop.BluetoothProperties;
-import android.test.AndroidTestCase;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class BluetoothMapTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+@LargeTest
+public class BluetoothMapTest {
     private static final String TAG = BluetoothMapTest.class.getSimpleName();
 
     private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
 
+    private Context mContext;
     private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
     private UiAutomation mUiAutomation;
@@ -51,40 +67,40 @@ public class BluetoothMapTest extends AndroidTestCase {
     private BluetoothMap mBluetoothMap;
     private boolean mIsMapSupported;
     private boolean mIsProfileReady;
-    private Condition mConditionProfileIsConnected;
-    private ReentrantLock mProfileConnectedlock;
+    private Condition mConditionProfileConnection;
+    private ReentrantLock mProfileConnectionlock;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
-            mHasBluetooth = getContext().getPackageManager().hasSystemFeature(
-                    PackageManager.FEATURE_BLUETOOTH);
-            if (!mHasBluetooth) return;
+        if (!ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) return;
 
-            mIsMapSupported = BluetoothProperties.isProfileMapServerEnabled().orElse(false);
-            if (!mIsMapSupported) return;
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
-            mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-            mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
+        mHasBluetooth = mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_BLUETOOTH);
+        if (!mHasBluetooth) return;
 
-            BluetoothManager manager = getContext().getSystemService(BluetoothManager.class);
-            mAdapter = manager.getAdapter();
-            assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        mIsMapSupported = BluetoothProperties.isProfileMapServerEnabled().orElse(false);
+        if (!mIsMapSupported) return;
 
-            mProfileConnectedlock = new ReentrantLock();
-            mConditionProfileIsConnected  = mProfileConnectedlock.newCondition();
-            mIsProfileReady = false;
-            mBluetoothMap = null;
+        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-            mAdapter.getProfileProxy(getContext(), new BluetoothMapServiceListener(),
-                    BluetoothProfile.MAP);
-        }
+        BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
+        mAdapter = manager.getAdapter();
+        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+
+        mProfileConnectionlock = new ReentrantLock();
+        mConditionProfileConnection = mProfileConnectionlock.newCondition();
+        mIsProfileReady = false;
+        mBluetoothMap = null;
+
+        mAdapter.getProfileProxy(mContext, new BluetoothMapServiceListener(),
+                BluetoothProfile.MAP);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
-        super.tearDown();
         if (!(mHasBluetooth && mIsMapSupported)) {
             return;
         }
@@ -96,9 +112,21 @@ public class BluetoothMapTest extends AndroidTestCase {
         mAdapter = null;
     }
 
-    public void test_getConnectedDevices() {
-        if (!(mHasBluetooth && mIsMapSupported)) return;
+    @Test
+    public void closeProfileProxy() {
+        assumeTrue(mHasBluetooth && mIsMapSupported);
+        assertTrue(waitForProfileConnect());
+        assertNotNull(mBluetoothMap);
+        assertTrue(mIsProfileReady);
 
+        mAdapter.closeProfileProxy(BluetoothProfile.MAP, mBluetoothMap);
+        assertTrue(waitForProfileDisconnect());
+        assertFalse(mIsProfileReady);
+    }
+
+    @Test
+    public void getConnectedDevices() {
+        assumeTrue(mHasBluetooth && mIsMapSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothMap);
 
@@ -109,9 +137,9 @@ public class BluetoothMapTest extends AndroidTestCase {
         assertTrue(connectedDevices.isEmpty());
     }
 
-    public void test_getConnectionPolicy() {
-        if (!(mHasBluetooth && mIsMapSupported)) return;
-
+    @Test
+    public void getConnectionPolicy() {
+        assumeTrue(mHasBluetooth && mIsMapSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothMap);
 
@@ -128,9 +156,9 @@ public class BluetoothMapTest extends AndroidTestCase {
                 mBluetoothMap.getConnectionPolicy(testDevice));
     }
 
-    public void test_getConnectionState() {
-        if (!(mHasBluetooth && mIsMapSupported)) return;
-
+    @Test
+    public void getConnectionState() {
+        assumeTrue(mHasBluetooth && mIsMapSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothMap);
 
@@ -147,9 +175,9 @@ public class BluetoothMapTest extends AndroidTestCase {
                 mBluetoothMap.getConnectionState(testDevice));
     }
 
-    public void test_getDevicesMatchingConnectionStates() {
-        if (!(mHasBluetooth && mIsMapSupported)) return;
-
+    @Test
+    public void getDevicesMatchingConnectionStates() {
+        assumeTrue(mHasBluetooth && mIsMapSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothMap);
 
@@ -161,9 +189,9 @@ public class BluetoothMapTest extends AndroidTestCase {
         assertTrue(connectedDevices.isEmpty());
     }
 
-    public void test_setConnectionPolicy() {
-        if (!(mHasBluetooth && mIsMapSupported)) return;
-
+    @Test
+    public void setConnectionPolicy() {
+        assumeTrue(mHasBluetooth && mIsMapSupported);
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothMap);
 
@@ -183,11 +211,11 @@ public class BluetoothMapTest extends AndroidTestCase {
     }
 
     private boolean waitForProfileConnect() {
-        mProfileConnectedlock.lock();
+        mProfileConnectionlock.lock();
         try {
             // Wait for the Adapter to be disabled
             while (!mIsProfileReady) {
-                if (!mConditionProfileIsConnected.await(
+                if (!mConditionProfileConnection.await(
                         PROXY_CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
                     // Timeout
                     Log.e(TAG, "Timeout while waiting for Profile Connect");
@@ -197,9 +225,29 @@ public class BluetoothMapTest extends AndroidTestCase {
         } catch (InterruptedException e) {
             Log.e(TAG, "waitForProfileConnect: interrupted");
         } finally {
-            mProfileConnectedlock.unlock();
+            mProfileConnectionlock.unlock();
         }
         return mIsProfileReady;
+    }
+
+    private boolean waitForProfileDisconnect() {
+        mConditionProfileConnection = mProfileConnectionlock.newCondition();
+        mProfileConnectionlock.lock();
+        try {
+            while (mIsProfileReady) {
+                if (!mConditionProfileConnection.await(
+                        PROXY_CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                    // Timeout
+                    Log.e(TAG, "Timeout while waiting for Profile Disconnect");
+                    break;
+                } // else spurious wakeups
+            }
+        } catch (InterruptedException e) {
+            Log.e(TAG, "waitForProfileDisconnect: interrupted");
+        } finally {
+            mProfileConnectionlock.unlock();
+        }
+        return !mIsProfileReady;
     }
 
     private final class BluetoothMapServiceListener implements
@@ -207,18 +255,25 @@ public class BluetoothMapTest extends AndroidTestCase {
 
         @Override
         public void onServiceConnected(int profile, BluetoothProfile proxy) {
-            mProfileConnectedlock.lock();
+            mProfileConnectionlock.lock();
             try {
                 mBluetoothMap = (BluetoothMap) proxy;
                 mIsProfileReady = true;
-                mConditionProfileIsConnected.signal();
+                mConditionProfileConnection.signal();
             } finally {
-                mProfileConnectedlock.unlock();
+                mProfileConnectionlock.unlock();
             }
         }
 
         @Override
         public void onServiceDisconnected(int profile) {
+            mProfileConnectionlock.lock();
+            mIsProfileReady = false;
+            try {
+                mConditionProfileConnection.signal();
+            } finally {
+                mProfileConnectionlock.unlock();
+            }
         }
     }
 }

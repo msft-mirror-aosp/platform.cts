@@ -16,13 +16,26 @@
 
 package android.bluetooth.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import android.bluetooth.le.AdvertiseData;
-import android.bluetooth.le.TransportDiscoveryData;
 import android.bluetooth.le.TransportBlock;
+import android.bluetooth.le.TransportDiscoveryData;
 import android.os.Parcel;
 import android.os.ParcelUuid;
-import android.test.AndroidTestCase;
 import android.test.suitebuilder.annotation.SmallTest;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,17 +46,22 @@ import java.util.List;
  * To run the test, use adb shell am instrument -e class 'android.bluetooth.le.AdvertiseDataTest' -w
  * 'com.android.bluetooth.tests/android.bluetooth.BluetoothTestRunner'
  */
-public class AdvertiseDataTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class AdvertiseDataTest {
 
     private AdvertiseData.Builder mAdvertiseDataBuilder;
 
-    @Override
-    protected void setUp() {
+    @Before
+    public void setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(
+                InstrumentationRegistry.getInstrumentation().getTargetContext()));
         mAdvertiseDataBuilder = new AdvertiseData.Builder();
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testEmptyData() {
+    @Test
+    public void emptyData() {
         Parcel parcel = Parcel.obtain();
         AdvertiseData data = mAdvertiseDataBuilder.build();
         data.writeToParcel(parcel, 0);
@@ -58,8 +76,10 @@ public class AdvertiseDataTest extends AndroidTestCase {
         assertTrue(dataFromParcel.getServiceUuids().isEmpty());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testEmptyServiceUuid() {
+    @Test
+    public void emptyServiceUuid() {
         Parcel parcel = Parcel.obtain();
         AdvertiseData data = mAdvertiseDataBuilder.setIncludeDeviceName(true).build();
         data.writeToParcel(parcel, 0);
@@ -71,8 +91,10 @@ public class AdvertiseDataTest extends AndroidTestCase {
         assertTrue(dataFromParcel.getServiceUuids().isEmpty());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testEmptyManufacturerData() {
+    @Test
+    public void emptyManufacturerData() {
         Parcel parcel = Parcel.obtain();
         int manufacturerId = 50;
         byte[] manufacturerData = new byte[0];
@@ -87,8 +109,10 @@ public class AdvertiseDataTest extends AndroidTestCase {
         TestUtils.assertArrayEquals(new byte[0], dataFromParcel.getManufacturerSpecificData().get(manufacturerId));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testEmptyServiceData() {
+    @Test
+    public void emptyServiceData() {
         Parcel parcel = Parcel.obtain();
         ParcelUuid uuid = ParcelUuid.fromString("0000110A-0000-1000-8000-00805F9B34FB");
         byte[] serviceData = new byte[0];
@@ -103,8 +127,10 @@ public class AdvertiseDataTest extends AndroidTestCase {
         TestUtils.assertArrayEquals(new byte[0], dataFromParcel.getServiceData().get(uuid));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testServiceUuid() {
+    @Test
+    public void serviceUuid() {
         Parcel parcel = Parcel.obtain();
         ParcelUuid uuid = ParcelUuid.fromString("0000110A-0000-1000-8000-00805F9B34FB");
         ParcelUuid uuid2 = ParcelUuid.fromString("0000110B-0000-1000-8000-00805F9B34FB");
@@ -121,8 +147,10 @@ public class AdvertiseDataTest extends AndroidTestCase {
         assertTrue(dataFromParcel.getServiceUuids().contains(uuid2));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testServiceSolicitationUuids() {
+    @Test
+    public void serviceSolicitationUuids() {
         AdvertiseData emptyData = mAdvertiseDataBuilder.build();
         assertEquals(0, emptyData.getServiceSolicitationUuids().size());
 
@@ -142,8 +170,10 @@ public class AdvertiseDataTest extends AndroidTestCase {
         assertTrue(dataFromParcel.getServiceSolicitationUuids().contains(uuid2));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testManufacturerData() {
+    @Test
+    public void manufacturerData() {
         Parcel parcel = Parcel.obtain();
         ParcelUuid uuid = ParcelUuid.fromString("0000110A-0000-1000-8000-00805F9B34FB");
         ParcelUuid uuid2 = ParcelUuid.fromString("0000110B-0000-1000-8000-00805F9B34FB");
@@ -165,8 +195,10 @@ public class AdvertiseDataTest extends AndroidTestCase {
                 dataFromParcel.getManufacturerSpecificData().get(manufacturerId));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testServiceData() {
+    @Test
+    public void serviceData() {
         Parcel parcel = Parcel.obtain();
         ParcelUuid uuid = ParcelUuid.fromString("0000110A-0000-1000-8000-00805F9B34FB");
         byte[] serviceData = new byte[] {
@@ -182,8 +214,10 @@ public class AdvertiseDataTest extends AndroidTestCase {
         TestUtils.assertArrayEquals(serviceData, dataFromParcel.getServiceData().get(uuid));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testTransportDiscoveryData() {
+    @Test
+    public void transportDiscoveryData() {
         Parcel parcel = Parcel.obtain();
         ParcelUuid uuid = ParcelUuid.fromString("0000110A-0000-1000-8000-00805F9B34FB");
         List<TransportBlock> transportBlocks = new ArrayList();
@@ -216,8 +250,10 @@ public class AdvertiseDataTest extends AndroidTestCase {
         assertEquals(data, dataFromParcel);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testIncludeTxPower() {
+    @Test
+    public void includeTxPower() {
         Parcel parcel = Parcel.obtain();
         AdvertiseData data = mAdvertiseDataBuilder.setIncludeTxPowerLevel(true).build();
         data.writeToParcel(parcel, 0);
@@ -227,8 +263,10 @@ public class AdvertiseDataTest extends AndroidTestCase {
         assertEquals(dataFromParcel.getIncludeTxPowerLevel(), true);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testDescribeContents() {
+    @Test
+    public void describeContents() {
         AdvertiseData data = new AdvertiseData.Builder().build();
         assertEquals(0, data.describeContents());
     }

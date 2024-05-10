@@ -26,12 +26,14 @@ java_test_host {
     libs: [
         "tradefed",
         "compatibility-host-util",
-        "truth-prebuilt",
+        "truth",
     ],
     // tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
+        "automotive-tests",
+        "automotive-general-tests",
     ],
     static_libs: [
         "cts-statsd-atom-host-test-utils",

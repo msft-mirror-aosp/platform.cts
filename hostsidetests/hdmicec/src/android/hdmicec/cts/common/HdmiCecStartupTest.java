@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.hdmicec.cts.BaseHdmiCecCtsTest;
 import android.hdmicec.cts.CecOperand;
+import android.hdmicec.cts.HdmiCecConstants;
 
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -46,6 +47,7 @@ public final class HdmiCecStartupTest extends BaseHdmiCecCtsTest {
             RuleChain
                     .outerRule(CecRules.requiresCec(this))
                     .around(CecRules.requiresLeanback(this))
+                    .around(CecRules.requiresPhysicalDevice(this))
                     .around(hdmiCecClient);
 
     /**
@@ -62,12 +64,21 @@ public final class HdmiCecStartupTest extends BaseHdmiCecCtsTest {
                 CecOperand.REPORT_PHYSICAL_ADDRESS);
         List<CecOperand> allowedMessages = new ArrayList<>(
                 Arrays.asList(CecOperand.VENDOR_COMMAND, CecOperand.GIVE_DEVICE_VENDOR_ID,
+                        CecOperand.VENDOR_COMMAND_WITH_ID,
                         CecOperand.SET_OSD_NAME, CecOperand.GIVE_OSD_NAME, CecOperand.CEC_VERSION,
                         CecOperand.DEVICE_VENDOR_ID, CecOperand.GIVE_POWER_STATUS,
                         CecOperand.GET_MENU_LANGUAGE, CecOperand.ACTIVE_SOURCE,
                         CecOperand.REQUEST_ACTIVE_SOURCE, CecOperand.GIVE_PHYSICAL_ADDRESS,
                         CecOperand.REPORT_POWER_STATUS, CecOperand.GIVE_SYSTEM_AUDIO_MODE_STATUS));
         allowedMessages.addAll(expectedMessages);
+
+        String deviceType = device.getProperty(HdmiCecConstants.HDMI_DEVICE_TYPE_PROPERTY);
+        boolean isAudioSystem = deviceType.contains(
+                Integer.toString(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
+        if (isAudioSystem) {
+            allowedMessages.addAll(new ArrayList<>(
+                Arrays.asList(CecOperand.SET_SYSTEM_AUDIO_MODE, CecOperand.INITIATE_ARC)));
+        }
 
         device.reboot();
         /* Monitor CEC messages for 20s after reboot */

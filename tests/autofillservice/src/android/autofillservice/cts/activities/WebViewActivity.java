@@ -24,7 +24,9 @@ import android.autofillservice.cts.testcore.UiBot;
 import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
+import android.view.autofill.VirtualViewFillInfo;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
@@ -175,5 +177,47 @@ public class WebViewActivity extends AbstractWebViewActivity {
     @Override
     public void clearFocus() {
         syncRunOnUiThread(() -> mParent.requestFocus());
+    }
+
+    public void notifyViewReady(String[] hints) throws Exception {
+        VirtualViewFillInfo info = null;
+        if (hints != null) {
+            info = new VirtualViewFillInfo.Builder()
+                    .setAutofillHints(hints)
+                    .build();
+        }
+        SparseArray<VirtualViewFillInfo> viewInfo = new SparseArray<>();
+        viewInfo.put(65536, info);
+        getAutofillManager().notifyVirtualViewsReady(mWebView, viewInfo);
+    }
+
+    /*
+        To notify two views are ready.
+     */
+    public void notifyViewReady(String[] hints1, String[] hints2) throws Exception {
+        VirtualViewFillInfo info1 = null;
+        if (hints1 != null) {
+            info1 = new VirtualViewFillInfo.Builder()
+                .setAutofillHints(hints1)
+                .build();
+        }
+        VirtualViewFillInfo info2 = null;
+        if (hints2 != null) {
+            info2 = new VirtualViewFillInfo.Builder()
+                .setAutofillHints(hints2)
+                .build();
+        }
+        SparseArray<VirtualViewFillInfo> viewInfo = new SparseArray<>();
+        viewInfo.put(65536, info1);
+        viewInfo.put(65537, info2);
+        getAutofillManager().notifyVirtualViewsReady(mWebView, viewInfo);
+    }
+
+    public void notifyViewReadyWithEmptyInfo() throws Exception {
+        getAutofillManager().notifyVirtualViewsReady(mWebView, new SparseArray<>());
+    }
+
+    public void notifyViewReadyWithNullInfo() throws Exception {
+        getAutofillManager().notifyVirtualViewsReady(mWebView, null);
     }
 }

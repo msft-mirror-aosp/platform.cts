@@ -21,6 +21,7 @@ import android.app.Activity;
 import android.app.AppComponentFactory;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.app.WallpaperManager;
 import android.app.admin.DevicePolicyManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
@@ -28,6 +29,7 @@ import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.RestrictionsManager;
 import android.content.pm.CrossProfileApps;
 import android.content.pm.LauncherApps;
 import android.content.pm.PackageManager;
@@ -35,6 +37,9 @@ import android.net.wifi.WifiManager;
 import android.os.HardwarePropertiesManager;
 import android.os.UserManager;
 import android.security.KeyChain;
+import android.telecom.TelecomManager;
+import android.telephony.SmsManager;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.android.bedstead.testapp.processor.annotations.FrameworkClass;
@@ -59,7 +64,18 @@ import com.android.eventlib.premade.EventLibService;
                 @FrameworkClass(frameworkClass = BluetoothManager.class, constructor = "context.getSystemService(android.bluetooth.BluetoothManager.class)"),
                 @FrameworkClass(frameworkClass = BluetoothAdapter.class, constructor = "context.getSystemService(android.bluetooth.BluetoothManager.class).getAdapter()"),
                 @FrameworkClass(frameworkClass = KeyChain.class, constructor = "null"), // KeyChain can not be instantiated - all calls are static
-                @FrameworkClass(frameworkClass = NotificationManager.class, constructor = "context.getSystemService(android.app.NotificationManager.class)")
+                @FrameworkClass(frameworkClass = NotificationManager.class, constructor =
+                        "context.getSystemService(android.app.NotificationManager.class)"),
+                @FrameworkClass(frameworkClass = TelecomManager.class, constructor =
+                        "context.getSystemService(android.telecom.TelecomManager.class)"),
+                @FrameworkClass(frameworkClass = RestrictionsManager.class, constructor =
+                        "context.getSystemService(android.content.RestrictionsManager.class)"),
+                @FrameworkClass(frameworkClass = SmsManager.class, constructor =
+                        "context.getSystemService(android.telephony.SmsManager.class)"),
+                @FrameworkClass(frameworkClass = WallpaperManager.class, constructor =
+                        "context.getSystemService(android.app.WallpaperManager.class)"),
+                @FrameworkClass(frameworkClass = TelephonyManager.class, constructor =
+                        "context.getSystemService(android.telephony.TelephonyManager.class)")
         }
 )
 public final class TestAppAppComponentFactory extends AppComponentFactory {
@@ -137,6 +153,25 @@ public final class TestAppAppComponentFactory extends AppComponentFactory {
                 return super.instantiateService(
                         classLoader,
                         TestAppAccountAuthenticatorService.class.getName(),
+                        intent);
+            } else if (className.endsWith("ContentSuggestionsService")) {
+                Log.d(LOG_TAG, "Service class (" + className
+                        + ") not found, routing to BaseTestAppContentSuggestionsService");
+                BaseTestAppContentSuggestionsService service =
+                        (BaseTestAppContentSuggestionsService) super.instantiateService(
+                        classLoader,
+                        BaseTestAppContentSuggestionsService.class.getName(),
+                        intent);
+                service.setOverrideServiceClassName(className);
+                return service;
+            }
+
+            if (className.endsWith("CredentialProviderService")) {
+                Log.d(LOG_TAG, "Service class (" + className
+                        + ") not found, routing to BaseTestAppCredentialProviderService");
+                return super.instantiateService(
+                        classLoader,
+                        BaseTestAppCredentialProviderService.class.getName(),
                         intent);
             }
 

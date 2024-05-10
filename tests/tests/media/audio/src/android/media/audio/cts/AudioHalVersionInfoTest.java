@@ -21,14 +21,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.media.AudioHalVersionInfo;
-import android.media.cts.NonMediaMainlineTest;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@NonMediaMainlineTest
+@NonMainlineTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioHalVersionInfoTest {
     /**
@@ -36,6 +39,7 @@ public class AudioHalVersionInfoTest {
      *
      * @throws Exception
      */
+    @SuppressWarnings("SelfComparison")
     @Test
     public void testComparator() throws Exception {
         int listSize = AudioHalVersionInfo.VERSIONS.size();
@@ -122,11 +126,14 @@ public class AudioHalVersionInfoTest {
      */
     @Test
     public void test_VERSIONS_contains() throws Exception {
+        // supported AIDL versions
+        assertTrue(AudioHalVersionInfo.VERSIONS.contains(AudioHalVersionInfo.AIDL_1_0));
+
+        // supported HIDL versions
         assertTrue(AudioHalVersionInfo.VERSIONS.contains(AudioHalVersionInfo.HIDL_7_1));
         assertTrue(AudioHalVersionInfo.VERSIONS.contains(AudioHalVersionInfo.HIDL_7_0));
         assertTrue(AudioHalVersionInfo.VERSIONS.contains(AudioHalVersionInfo.HIDL_6_0));
         assertTrue(AudioHalVersionInfo.VERSIONS.contains(AudioHalVersionInfo.HIDL_5_0));
-        assertTrue(AudioHalVersionInfo.VERSIONS.contains(AudioHalVersionInfo.HIDL_4_0));
     }
 
     /**
@@ -135,9 +142,7 @@ public class AudioHalVersionInfoTest {
      */
     @Test
     public void test_VERSIONS_not_contains() throws Exception {
-        // TODO: move AIDL to test_VERSIONS_contains() once we support AIDL.
-        assertFalse(AudioHalVersionInfo.VERSIONS.contains(AudioHalVersionInfo.AIDL_1_0));
-
         assertFalse(AudioHalVersionInfo.VERSIONS.contains(AudioHalVersionInfo.HIDL_2_0));
+        assertFalse(AudioHalVersionInfo.VERSIONS.contains(AudioHalVersionInfo.HIDL_4_0));
     }
 }

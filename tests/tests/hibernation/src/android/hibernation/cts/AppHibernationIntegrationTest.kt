@@ -34,24 +34,26 @@ import android.platform.test.annotations.AppModeFull
 import android.provider.DeviceConfig
 import android.provider.DeviceConfig.NAMESPACE_APP_HIBERNATION
 import android.provider.Settings
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.UiDevice
-import android.support.test.uiautomator.UiObject2
-import android.support.test.uiautomator.UiScrollable
-import android.support.test.uiautomator.UiSelector
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
+import com.android.compatibility.common.util.ApiTest
+import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.DisableAnimationRule
+import com.android.compatibility.common.util.ExceptionUtils.wrappingExceptions
 import com.android.compatibility.common.util.FreezeRotationRule
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
-import com.android.compatibility.common.util.UiAutomatorUtils
-import java.util.Locale
+import com.android.compatibility.common.util.UiAutomatorUtils2
+import com.android.compatibility.common.util.UiDumpUtils
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.hamcrest.CoreMatchers
@@ -65,7 +67,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.BeforeClass
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -75,6 +76,7 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 @AppModeFull(reason = "Instant apps cannot access app hibernation")
+@CddTest(requirements = ["3.5.2"])
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S, codeName = "S")
 class AppHibernationIntegrationTest {
     companion object {
@@ -123,10 +125,15 @@ class AppHibernationIntegrationTest {
         assertThat(
             runShellCommandOrThrow("cmd statusbar collapse"),
             CoreMatchers.equalTo(""))
+        clearNotifications()
 
         // Wake up the device
         runShellCommandOrThrow("input keyevent KEYCODE_WAKEUP")
         runShellCommandOrThrow("input keyevent 82")
+        runShellCommandOrThrow("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS")
+
+        resetJob(context)
+        bypassBatterySavingRestrictions(context)
     }
 
     @After
@@ -136,10 +143,11 @@ class AppHibernationIntegrationTest {
             DeviceConfig.setProperty(NAMESPACE_APP_HIBERNATION, HIBERNATION_ENABLED_KEY,
                 oldHibernationValue, false /* makeDefault */)
         }
+        resetBatterySavingRestrictions(context)
     }
 
     @Test
-    @Ignore("b/201545116")
+    @CddTest(requirement = "3.5.2/C-1-2")
     fun testUnusedApp_getsForceStopped() {
         withUnusedThresholdMs(TEST_UNUSED_THRESHOLD) {
             withApp(APK_PATH_S_APP, APK_PACKAGE_NAME_S_APP) {
@@ -171,6 +179,7 @@ class AppHibernationIntegrationTest {
     }
 
     @Test
+    @CddTest(requirement = "3.5.2/C-1-2")
     fun testPreSVersionUnusedApp_doesntGetForceStopped() {
         assumeFalse(
             "TV may have different behaviour for Pre-S version apps",
@@ -198,6 +207,7 @@ class AppHibernationIntegrationTest {
     }
 
     @Test
+    @ApiTest(apis = ["android.permission.PermissionControllerManager#getUnusedAppCount"])
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
     fun testUnusedAppCount() {
         withUnusedThresholdMs(TEST_UNUSED_THRESHOLD) {
@@ -233,6 +243,7 @@ class AppHibernationIntegrationTest {
     }
 
     @Test
+    @ApiTest(apis = ["android.permission.PermissionControllerManager#getHibernationEligibility"])
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
     fun testGetHibernationEligibility_eligibleByDefault() {
         withApp(APK_PATH_S_APP, APK_PACKAGE_NAME_S_APP) {
@@ -256,6 +267,7 @@ class AppHibernationIntegrationTest {
     }
 
     @Test
+    @ApiTest(apis = ["android.apphibernation.AppHibernationManager#getHibernationStatsForUser"])
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
     fun testGetHibernationStatsForUser_getsStatsForIndividualPackages() {
         val appHibernationManager = context.getSystemService(AppHibernationManager::class.java)!!
@@ -272,6 +284,7 @@ class AppHibernationIntegrationTest {
     }
 
     @Test
+    @ApiTest(apis = ["android.apphibernation.AppHibernationManager#getHibernationStatsForUser"])
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
     fun testGetHibernationStatsForUser_getsStatsForAllPackages() {
         val appHibernationManager = context.getSystemService(AppHibernationManager::class.java)!!
@@ -287,6 +300,27 @@ class AppHibernationIntegrationTest {
     }
 
     @Test
+    @ApiTest(apis = ["android.apphibernation.AppHibernationManager#isOatArtifactDeletionEnabled"])
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+        codeName = "UpsideDownCake")
+    fun testIsOatArtifactDeletionEnabled_verifyConfigWithRuntimeValue() {
+        val appHibernationManager = context.getSystemService(AppHibernationManager::class.java)!!
+        withApp(APK_PATH_S_APP, APK_PACKAGE_NAME_S_APP) {
+            runWithShellPermissionIdentity {
+                val enabled =
+                    appHibernationManager.isOatArtifactDeletionEnabled()
+                val res = InstrumentationRegistry.getInstrumentation().getContext().getResources()
+                val runtimeConfig = res.getBoolean(res.getIdentifier(
+                    "config_hibernationDeletesOatArtifactsEnabled", "bool", "android"))
+
+                assertEquals("Expected API return value is different from device config value",
+                    enabled, runtimeConfig)
+            }
+        }
+    }
+
+    @Test
+    @CddTest(requirements = ["3.5.1/C-1-2, C-1-4"])
     fun testAppInfo_RemovePermissionsAndFreeUpSpaceToggleExists() {
         assumeFalse(
             "Remove permissions and free up space toggle may be unavailable on TV",
@@ -294,10 +328,6 @@ class AppHibernationIntegrationTest {
         assumeFalse(
             "Remove permissions and free up space toggle may be unavailable on Wear",
             hasFeatureWatch())
-        // This assumption is not needed for U or above.
-        assumeFalse(
-            "The device can be treated as U for its Build.VERSION.CODENAME",
-            isCodeNameAtLeastU())
 
         withApp(APK_PATH_S_APP, APK_PACKAGE_NAME_S_APP) {
             // Open app info
@@ -305,10 +335,10 @@ class AppHibernationIntegrationTest {
             val uri = Uri.fromParts("package", APK_PACKAGE_NAME_S_APP, null /* fragment */)
             intent.data = uri
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
             context.startActivity(intent)
 
             waitForIdle()
-            UiAutomatorUtils.getUiDevice()
 
             val packageManager = context.packageManager
             val settingsPackage = intent.resolveActivity(packageManager).packageName
@@ -316,19 +346,30 @@ class AppHibernationIntegrationTest {
             val title = res.getString(
                 res.getIdentifier("unused_apps_switch", "string", settingsPackage))
 
-            // Settings can have multiple scrollable containers so all of them should be
-            // searched.
-            var toggleFound = UiDevice.getInstance(instrumentation)
-                .findObject(UiSelector().text(title))
-                .waitForExists(WAIT_TIME_MS)
-            var i = 0
-            var scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(i))
-            while (!toggleFound && scrollableObject.waitForExists(WAIT_TIME_MS)) {
-                toggleFound = scrollableObject.scrollTextIntoView(title)
-                scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(++i))
+            // Attempt standard search first (only uses first scrollable instance)
+            var toggleFound = UiAutomatorUtils2.waitFindObjectOrNull(By.text(title)) != null
+
+            if (!toggleFound) {
+                // Settings can have multiple scrollable containers so all of them should be
+                // searched.
+                var i = 0
+                var scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(i))
+                // Assert that at least one scrollable exists on screen
+                var scrollableExists = scrollableObject.waitForExists(WAIT_TIME_MS)
+                wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause)}) {
+                    assertTrue("No scrollable exists on screen", scrollableExists)
+                }
+                while (!toggleFound && scrollableExists) {
+                    toggleFound = scrollableObject.scrollTextIntoView(title) ||
+                        UiAutomatorUtils2.waitFindObjectOrNull(By.text(title)) != null
+                    scrollableObject = UiScrollable(UiSelector().scrollable(true).instance(++i))
+                    scrollableExists = scrollableObject.waitForExists(WAIT_TIME_MS)
+                }
             }
 
-            assertTrue("Remove permissions and free up space toggle not found", toggleFound)
+            wrappingExceptions({ cause: Throwable? -> UiDumpUtils.wrapWithUiDump(cause)}) {
+                assertTrue("Remove permissions and free up space toggle not found", toggleFound)
+            }
         }
     }
 
@@ -358,10 +399,5 @@ class AppHibernationIntegrationTest {
 
     private fun waitFindObject(selector: BySelector): UiObject2 {
         return waitFindObject(instrumentation.uiAutomation, selector)
-    }
-
-    private fun isCodeNameAtLeastU(): Boolean {
-        val buildCodeName = Build.VERSION.CODENAME.toUpperCase(Locale.ROOT)
-        return buildCodeName.compareTo("UPSIDEDOWNCAKE") >= 0
     }
 }

@@ -13,33 +13,27 @@
 # limitations under the License.
 """Verify video is stable during phone movement."""
 
+import fnmatch
 import logging
 import math
-import multiprocessing
 import os
+import threading
 import time
 
 from mobly import test_runner
-import numpy as np
 
 import its_base_test
 import camera_properties_utils
 import image_processing_utils
 import its_session_utils
-import opencv_processing_utils
 import sensor_fusion_utils
 import video_processing_utils
 
-_ARDUINO_ANGLES = (10, 25)  # degrees
-_ARDUINO_MOVE_TIME = 0.30  # seconds
-_ARDUINO_SERVO_SPEED = 10
 _ASPECT_RATIO_16_9 = 16/9  # determine if video fmt > 16:9
 _IMG_FORMAT = 'png'
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_ROTATIONS = 24
-_RADS_TO_DEGS = 180/math.pi
-_SEC_TO_NSEC = 1E9
 _START_FRAME = 30  # give 3A 1s to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
 _VIDEO_DURATION = 5.5  # seconds
@@ -51,34 +45,7 @@ _SIZE_TO_PROFILE = {'176x144': 'QCIF:2', '352x288': 'CIF:3',
                     '320x240': 'QVGA:7'}
 
 
-def _conv_acceleration_to_movement(gyro_events):
-  """Convert gyro_events time and speed to movement during video time.
-
-  Args:
-    gyro_events: sorted dict of entries with 'time', 'x', 'y', and 'z'
-
-  Returns:
-    'z' acceleration converted to movement for times around VIDEO playing.
-  """
-  gyro_times = np.array([e['time'] for e in gyro_events])
-  gyro_speed = np.array([e['z'] for e in gyro_events])
-  gyro_time_min = gyro_times[0]
-  logging.debug('gyro start time: %dns', gyro_time_min)
-  logging.debug('gyro stop time: %dns', gyro_times[-1])
-  gyro_rotations = []
-  video_time_start = gyro_time_min + _VIDEO_DELAY_TIME*_SEC_TO_NSEC
-  video_time_stop = video_time_start + _VIDEO_DURATION*_SEC_TO_NSEC
-  logging.debug('video start time: %dns', video_time_start)
-  logging.debug('video stop time: %dns', video_time_stop)
-
-  for i, t in enumerate(gyro_times):
-    if video_time_start <= t <= video_time_stop:
-      gyro_rotations.append((gyro_times[i]-gyro_times[i-1])/_SEC_TO_NSEC *
-                            gyro_speed[i])
-  return np.array(gyro_rotations)
-
-
-def _collect_data(cam, video_profile, video_quality, rot_rig):
+def _collect_data(cam, tablet_device, video_profile, video_quality, rot_rig):
   """Capture a new set of data from the device.
 
   Captures camera frames while the user is moving the device in the prescribed
@@ -86,6 +53,7 @@ def _collect_data(cam, video_profile, video_quality, rot_rig):
 
   Args:
     cam: camera object
+    tablet_device: boolean; based on config.yml
     video_profile: str; number of video profile
     video_quality: str; key string for video quality. ie. 1080P
     rot_rig: dict with 'cntl' and 'ch' defined
@@ -97,11 +65,31 @@ def _collect_data(cam, video_profile, video_quality, rot_rig):
   props = cam.get_camera_properties()
   props = cam.override_with_hidden_physical_camera_props(props)
 
+  serial_port = None
+  if rot_rig['cntl'].lower() == sensor_fusion_utils.ARDUINO_STRING.lower():
+    # identify port
+    serial_port = sensor_fusion_utils.serial_port_def(
+        sensor_fusion_utils.ARDUINO_STRING)
+    # send test cmd to Arduino until cmd returns properly
+    sensor_fusion_utils.establish_serial_comm(serial_port)
   # Start camera vibration
-  p = multiprocessing.Process(
+  if tablet_device:
+    servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION_TABLET
+  else:
+    servo_speed = sensor_fusion_utils.ARDUINO_SERVO_SPEED_STABILIZATION
+
+  p = threading.Thread(
       target=sensor_fusion_utils.rotation_rig,
-      args=(rot_rig['cntl'], rot_rig['ch'], _NUM_ROTATIONS,
-            _ARDUINO_ANGLES, _ARDUINO_SERVO_SPEED, _ARDUINO_MOVE_TIME,))
+      args=(
+          rot_rig['cntl'],
+          rot_rig['ch'],
+          _NUM_ROTATIONS,
+          sensor_fusion_utils.ARDUINO_ANGLES_STABILIZATION,
+          servo_speed,
+          sensor_fusion_utils.ARDUINO_MOVE_TIME_STABILIZATION,
+          serial_port,
+      ),
+  )
   p.start()
 
   cam.start_sensor_events()
@@ -151,12 +139,8 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
           vendor_api_level >= its_session_utils.ANDROID13_API_LEVEL and
           _VIDEO_STABILIZATION_MODE in supported_stabilization_modes)
 
-      # Calculate camera FoV and convert from string to float
-      camera_fov = float(cam.calc_camera_fov(props))
-
-      # Get ffmpeg version being used
-      ffmpeg_version = video_processing_utils.get_ffmpeg_version()
-      logging.debug('ffmpeg_version: %s', ffmpeg_version)
+      # Log ffmpeg version being used
+      video_processing_utils.log_ffmpeg_version()
 
       # Raise error if not FRONT or REAR facing camera
       facing = props['android.lens.facing']
@@ -168,17 +152,13 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
       rot_rig['cntl'] = self.rotator_cntl
       rot_rig['ch'] = self.rotator_ch
       if rot_rig['cntl'].lower() != 'arduino':
-        raise AssertionError(f'You must use the arduino controller for {_NAME}.')
+        raise AssertionError(f'You must use an arduino controller for {_NAME}.')
 
-      if camera_fov > opencv_processing_utils.FOV_THRESH_WFOV:
-        excluded_sizes = video_processing_utils.LOW_RESOLUTION_SIZES['UW']
-      else:
-        excluded_sizes = video_processing_utils.LOW_RESOLUTION_SIZES['W']
+      # Create list of video qualities to test
+      excluded_sizes = video_processing_utils.LOW_RESOLUTION_SIZES
       excluded_qualities = [
           _SIZE_TO_PROFILE[s] for s in excluded_sizes if s in _SIZE_TO_PROFILE
       ]
-
-      # Create list of video qualities to test
       supported_video_qualities = cam.get_supported_video_qualities(
           self.camera_id)
       logging.debug('Supported video qualities: %s', supported_video_qualities)
@@ -201,7 +181,7 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
 
         # Record video
         recording_obj = _collect_data(
-            cam, video_profile, video_quality, rot_rig)
+            cam, self.tablet_device, video_profile, video_quality, rot_rig)
 
         # Grab the video from the save location on DUT
         self.dut.adb.pull([recording_obj['recordedOutputPath'], log_path])
@@ -239,7 +219,8 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
         # Extract gyro rotations
         sensor_fusion_utils.plot_gyro_events(
             gyro_events, f'{_NAME}_{video_quality}', log_path)
-        gyro_rots = _conv_acceleration_to_movement(gyro_events)
+        gyro_rots = sensor_fusion_utils.conv_acceleration_to_movement(
+            gyro_events, _VIDEO_DELAY_TIME)
         max_gyro_angle = sensor_fusion_utils.calc_max_rotation_angle(
             gyro_rots, 'Gyro')
         logging.debug(
@@ -272,6 +253,22 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
               f"Max gyro angle: {max_angles['gyro']:.3f}, "
               f"ratio: {max_angles['cam']/max_angles['gyro']:.3f} "
               f'THRESH: {video_stabilization_factor}.')
+        else:  # remove frames if PASS
+          temp_files = []
+          try:
+            temp_files = os.listdir(log_path)
+          except FileNotFoundError:
+            logging.debug('/tmp directory: %s not found', log_path)
+          for file in temp_files:
+            if fnmatch.fnmatch(
+                file, f'*_{video_quality}_*_stabilized_frame_*.png'):
+              file_to_remove = os.path.join(log_path, file)
+              try:
+                os.remove(file_to_remove)
+              except FileNotFoundError:
+                logging.debug('File not found: %s', str(file))
+          logging.debug('Quality %s passes, frame images have been removed',
+                        video_quality)
       if test_failures:
         raise AssertionError(test_failures)
 

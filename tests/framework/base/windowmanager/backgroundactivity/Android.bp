@@ -13,11 +13,12 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_responsible_apis",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test {
-    name: "CtsActivityManagerBackgroundActivityTestCases",
+    name: "CtsWindowManagerBackgroundActivityTestCases",
     defaults: ["cts_defaults"],
 
     // TODO(b/129909356): Consolidate this to CtsWindowManagerDeviceTestCases.apk
@@ -35,6 +36,10 @@ android_test {
         "cts-wm-app-base",
         "cts-core-test-runner-axt",
         "cts-background-activity-common",
+        "cts_window-sidecar",
+        "cts_window-extensions",
+        "cts_window_jetpack_utils",
+        "com.android.window.flags.window-aconfig-java",
     ],
 
     test_suites: [
@@ -43,7 +48,11 @@ android_test {
     ],
     data: [
         ":CtsBackgroundActivityAppA",
+        ":CtsBackgroundActivityAppA33",
         ":CtsBackgroundActivityAppB",
+        ":CtsBackgroundActivityAppB33",
+        ":CtsBackgroundActivityAppC",
+        ":CtsBackgroundActivityAppC33",
     ],
     per_testcase_directory: true,
 }

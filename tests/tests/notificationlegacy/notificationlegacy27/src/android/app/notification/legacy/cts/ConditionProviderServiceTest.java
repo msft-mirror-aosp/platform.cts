@@ -26,6 +26,7 @@ import static junit.framework.TestCase.fail;
 
 import static java.lang.Thread.sleep;
 
+import android.Manifest;
 import android.app.AutomaticZenRule;
 import android.app.Instrumentation;
 import android.app.NotificationManager;
@@ -42,6 +43,9 @@ import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.AmUtils;
+import com.android.compatibility.common.util.SystemUtil;
 
 import junit.framework.Assert;
 
@@ -63,45 +67,53 @@ public class ConditionProviderServiceTest {
     private ZenModeBroadcastReceiver mModeReceiver;
     private IntentFilter mModeFilter;
     private ArraySet<String> ids = new ArraySet<>();
+    private static final int BROADCAST_TIMEOUT_MS = 5000;
 
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getContext();
+        mModeReceiver = new ZenModeBroadcastReceiver();
+        mModeFilter = new IntentFilter();
+        mModeFilter.addAction(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED);
+        mContext.registerReceiver(mModeReceiver, mModeFilter, Context.RECEIVER_EXPORTED);
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
         LegacyConditionProviderService.requestRebind(LegacyConditionProviderService.getId());
         SecondaryConditionProviderService.requestRebind(SecondaryConditionProviderService.getId());
         mNm = (NotificationManager) mContext.getSystemService(
                 Context.NOTIFICATION_SERVICE);
-        mNm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL);
-        mModeReceiver = new ZenModeBroadcastReceiver();
-        mModeFilter = new IntentFilter();
-        mModeFilter.addAction(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED);
-        mContext.registerReceiver(mModeReceiver, mModeFilter);
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> mNm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL),
+                Manifest.permission.STATUS_BAR_SERVICE);
     }
 
     @After
-    public void tearDown() throws Exception {
-        mContext.unregisterReceiver(mModeReceiver);
-        if (mNm == null) {
-            // assumption in setUp is false, so mNm is not initialized
-            return;
-        }
+    public void tearDown() {
         try {
-            for (String id : ids) {
-                if (id != null) {
-                    if (!mNm.removeAutomaticZenRule(id)) {
-                        throw new Exception("Could not remove rule " + id);
+            if (mNm != null) {
+                try {
+                    for (String id : ids) {
+                        if (id != null) {
+                            if (!mNm.removeAutomaticZenRule(id)) {
+                                throw new Exception("Could not remove rule " + id);
+                            }
+                            sleep(100);
+                            assertNull(mNm.getAutomaticZenRule(id));
+                        }
                     }
-                    sleep(100);
-                    assertNull(mNm.getAutomaticZenRule(id));
+                } finally {
+                    toggleNotificationPolicyAccess(mContext.getPackageName(),
+                            InstrumentationRegistry.getInstrumentation(), false);
+                    pollForConnection(LegacyConditionProviderService.class, false);
+                    pollForConnection(SecondaryConditionProviderService.class, false);
                 }
             }
-        } finally {
-            toggleNotificationPolicyAccess(mContext.getPackageName(),
-                    InstrumentationRegistry.getInstrumentation(), false);
-            pollForConnection(LegacyConditionProviderService.class, false);
-            pollForConnection(SecondaryConditionProviderService.class, false);
+            if (mModeReceiver != null) {
+                mContext.unregisterReceiver(mModeReceiver);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error cleaning up test", e);
         }
     }
 
@@ -118,7 +130,7 @@ public class ConditionProviderServiceTest {
         addRule(cn, INTERRUPTION_FILTER_ALARMS, true);
         pollForSubscribe(SecondaryConditionProviderService.getInstance());
 
-        mModeReceiver.waitFor(1/*Secondary only*/, 1000/*Limit is 1 second*/);
+        mModeReceiver.waitFor(1/*Secondary only*/, BROADCAST_TIMEOUT_MS);
         assertEquals(INTERRUPTION_FILTER_ALARMS, mNm.getCurrentInterruptionFilter());
 
         // unbind service
@@ -149,7 +161,7 @@ public class ConditionProviderServiceTest {
         addRule(SecondaryConditionProviderService.getId(), INTERRUPTION_FILTER_ALARMS, true);
         pollForSubscribe(SecondaryConditionProviderService.getInstance());
 
-        mModeReceiver.waitFor(2/*Legacy and Secondary*/, 1000/*Limit is 1 second*/);
+        mModeReceiver.waitFor(2/*Legacy and Secondary*/, BROADCAST_TIMEOUT_MS);
         assertEquals(INTERRUPTION_FILTER_ALARMS, mNm.getCurrentInterruptionFilter());
 
         // unbind one of the services
@@ -182,7 +194,7 @@ public class ConditionProviderServiceTest {
         addRule(SecondaryConditionProviderService.getId(), INTERRUPTION_FILTER_ALARMS, true);
         pollForSubscribe(SecondaryConditionProviderService.getInstance());
 
-        mModeReceiver.waitFor(2/*Legacy and Secondary*/, 1000/*Limit is 1 second*/);
+        mModeReceiver.waitFor(2/*Legacy and Secondary*/, BROADCAST_TIMEOUT_MS);
         assertEquals(INTERRUPTION_FILTER_ALARMS, mNm.getCurrentInterruptionFilter());
 
         // unbind one of the services
@@ -279,6 +291,7 @@ public class ConditionProviderServiceTest {
         String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName;
 
         runCommand(command, instrumentation);
+        AmUtils.waitForBroadcastBarrier();
 
         NotificationManager nm = mContext.getSystemService(NotificationManager.class);
         Assert.assertEquals("Notification Policy Access Grant is " +

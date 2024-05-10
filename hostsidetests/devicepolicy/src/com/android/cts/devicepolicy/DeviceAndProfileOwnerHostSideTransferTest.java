@@ -2,8 +2,6 @@ package com.android.cts.devicepolicy;
 
 import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assert.fail;
 
 import android.stats.devicepolicy.EventId;
@@ -60,24 +58,6 @@ public abstract class DeviceAndProfileOwnerHostSideTransferTest extends BaseDevi
     }
 
     @Test
-    public void testTransferInvalidTarget() throws Exception {
-        installAppAsUser(INVALID_TARGET_APK, mUserId);
-        runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG,
-                mOutgoingTestClassName,
-                "testTransferInvalidTarget", mUserId);
-    }
-
-    @Test
-    public void testTransferPolicies() throws Exception {
-        runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG,
-                mOutgoingTestClassName,
-                "testTransferWithPoliciesOutgoing", mUserId);
-        runDeviceTestsAsUser(TRANSFER_OWNER_INCOMING_PKG,
-                mIncomingTestClassName,
-                "testTransferPoliciesAreRetainedAfterTransfer", mUserId);
-    }
-
-    @Test
     public void testTransferOwnershipChangedBroadcast() throws Exception {
         runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG,
                 mOutgoingTestClassName,
@@ -112,34 +92,6 @@ public abstract class DeviceAndProfileOwnerHostSideTransferTest extends BaseDevi
     }
 
     @Test
-    public void testIsTransferBundlePersisted() throws DeviceNotAvailableException {
-        runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG,
-                mOutgoingTestClassName,
-                "testTransferOwnershipBundleSaved", mUserId);
-        runDeviceTestsAsUser(TRANSFER_OWNER_INCOMING_PKG,
-                mIncomingTestClassName,
-                "testTransferOwnershipBundleLoaded", mUserId);
-    }
-
-    @Test
-    public void testGetTransferOwnershipBundleOnlyCalledFromAdmin()
-            throws DeviceNotAvailableException {
-        runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG,
-                mOutgoingTestClassName,
-                "testGetTransferOwnershipBundleOnlyCalledFromAdmin", mUserId);
-    }
-
-    @Test
-    public void testBundleEmptyAfterTransferWithNullBundle() throws DeviceNotAvailableException {
-        runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG,
-                mOutgoingTestClassName,
-                "testTransferOwnershipNullBundle", mUserId);
-        runDeviceTestsAsUser(TRANSFER_OWNER_INCOMING_PKG,
-                mIncomingTestClassName,
-                "testTransferOwnershipEmptyBundleLoaded", mUserId);
-    }
-
-    @Test
     public void testIsBundleNullNoTransfer() throws DeviceNotAvailableException {
         runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG,
                 mOutgoingTestClassName,
@@ -163,39 +115,5 @@ public abstract class DeviceAndProfileOwnerHostSideTransferTest extends BaseDevi
         }
         startUserAndWait(userId);
         return userId;
-    }
-
-    @Test
-    public void testTargetDeviceAdminServiceBound() throws Exception {
-        runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG,
-            mOutgoingTestClassName,
-            "testTransferOwnership", mUserId);
-        assertServiceRunning(INCOMING_ADMIN_SERVICE_FULL_NAME);
-    }
-
-    private void assertServiceRunning(String serviceName) throws DeviceNotAvailableException {
-        final String result = getDevice().executeShellCommand(
-                String.format("dumpsys activity services %s", serviceName));
-        assertThat(result).contains("app=ProcessRecord");
-    }
-
-    protected void setSameAffiliationId(int profileUserId, String testClassName)
-        throws Exception {
-        runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG,
-            testClassName,
-            "testSetAffiliationId1", mPrimaryUserId);
-        runDeviceTestsAsUser(TRANSFER_OWNER_OUTGOING_PKG,
-            testClassName,
-            "testSetAffiliationId1", profileUserId);
-    }
-
-    protected void assertAffiliationIdsAreIntact(int profileUserId,
-        String testClassName) throws Exception {
-        runDeviceTestsAsUser(TRANSFER_OWNER_INCOMING_PKG,
-            testClassName,
-            "testIsAffiliationId1", mPrimaryUserId);
-        runDeviceTestsAsUser(TRANSFER_OWNER_INCOMING_PKG,
-            testClassName,
-            "testIsAffiliationId1", profileUserId);
     }
 }

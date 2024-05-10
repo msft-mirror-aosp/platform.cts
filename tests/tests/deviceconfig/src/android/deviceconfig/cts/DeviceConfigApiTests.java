@@ -16,8 +16,6 @@
 
 package android.deviceconfig.cts;
 
-import static android.provider.Settings.RESET_MODE_PACKAGE_DEFAULTS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -34,6 +32,8 @@ import android.provider.DeviceConfig.Properties;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.modules.utils.build.SdkLevel;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -42,19 +42,30 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public final class DeviceConfigApiTests {
     private static final String NAMESPACE1 = "namespace1";
     private static final String NAMESPACE2 = "namespace2";
+    private static final String NAMESPACE3 = "namespace3";
+    private static final String NAMESPACE4 = "namespace4";
     private static final String EMPTY_NAMESPACE = "empty_namespace";
     private static final String KEY1 = "key1";
     private static final String KEY2 = "key2";
+    private static final String KEY3 = "key3";
+    private static final String KEY4 = "key4";
     private static final String VALUE1 = "value1";
     private static final String VALUE2 = "value2";
+    private static final String VALUE3 = "value3";
+    private static final String VALUE4 = "value4";
     private static final String DEFAULT_VALUE = "default_value";
 
     private static final boolean DEFAULT_BOOLEAN_TRUE = true;
@@ -75,6 +86,11 @@ public final class DeviceConfigApiTests {
     private static final float VALID_FLOAT = 456.789f;
     private static final String INVALID_FLOAT = "34343et";
 
+    private static final int RESET_MODE_PACKAGE_DEFAULTS = 1;
+    private static final int SYNC_DISABLED_MODE_NONE = 0;
+
+    private static final long OPERATION_TIMEOUT_MS = 5000;
+
     private static final Context CONTEXT = InstrumentationRegistry.getContext();
 
     private static final Executor EXECUTOR = CONTEXT.getMainExecutor();
@@ -90,16 +106,22 @@ public final class DeviceConfigApiTests {
     private static final String READ_DEVICE_CONFIG_PERMISSION =
             "android.permission.READ_DEVICE_CONFIG";
 
+    private static final String MONITOR_DEVICE_CONFIG_ACCESS =
+            "android.permission.MONITOR_DEVICE_CONFIG_ACCESS";
+
     // String used to skip tests if not support.
     // TODO: ideally it would be simpler to just use assumeTrue() in the @BeforeClass method, but
     // then the test would crash - it might be an issue on atest / AndroidJUnit4
     private static String sUnsupportedReason;
+
+    private int mInitialSyncDisabledMode;
 
     /**
      * Get necessary permissions to access and modify properties through DeviceConfig API.
      */
     @BeforeClass
     public static void setUp() throws Exception {
+        assumeTrue(SdkLevel.isAtLeastU());
         if (CONTEXT.getUserId() != UserHandle.USER_SYSTEM
                 && CONTEXT.getPackageManager().isInstantApp()) {
             sUnsupportedReason = "cannot run test as instant app on secondary user "
@@ -108,12 +130,19 @@ public final class DeviceConfigApiTests {
         }
 
         InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                WRITE_DEVICE_CONFIG_PERMISSION, READ_DEVICE_CONFIG_PERMISSION);
+                WRITE_DEVICE_CONFIG_PERMISSION, READ_DEVICE_CONFIG_PERMISSION,
+                MONITOR_DEVICE_CONFIG_ACCESS);
     }
 
     @Before
     public void assumeSupported() {
         assumeTrue(sUnsupportedReason, isSupported());
+    }
+
+    @Before
+    public void setUpSyncDisabledMode() {
+        mInitialSyncDisabledMode = DeviceConfig.getSyncDisabledMode();
+        DeviceConfig.setSyncDisabledMode(SYNC_DISABLED_MODE_NONE);
     }
 
     /**
@@ -127,11 +156,19 @@ public final class DeviceConfigApiTests {
         // invoked in the test methods got emitted. So that the callbacks
         // won't interfere with setPropertiesAndAssertSuccessfulChange invoked
         // in nullifyProperty.
+        if (SdkLevel.isAtLeastV()) {
+            DeviceConfig.clearAllLocalOverrides();
+        }
         TimeUnit.MILLISECONDS.sleep(WAIT_FOR_PROPERTY_CHANGE_TIMEOUT_MILLIS);
         nullifyProperty(NAMESPACE1, KEY1);
         nullifyProperty(NAMESPACE2, KEY1);
         nullifyProperty(NAMESPACE1, KEY2);
         nullifyProperty(NAMESPACE2, KEY2);
+        nullifyProperty(NAMESPACE3, KEY3);
+        nullifyProperty(NAMESPACE4, KEY3);
+        nullifyProperty(NAMESPACE3, KEY4);
+        nullifyProperty(NAMESPACE4, KEY4);
+        DeviceConfig.setSyncDisabledMode(mInitialSyncDisabledMode);
     }
 
     /**
@@ -148,6 +185,137 @@ public final class DeviceConfigApiTests {
         deletePropertyThrowShell(NAMESPACE2, KEY2);
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
+    }
+
+    @Test
+    public void testPropertiesIncludedInGetAllProperties() {
+        if (!SdkLevel.isAtLeastV()) {
+            return;
+        }
+
+        DeviceConfig.setProperty(NAMESPACE3, KEY3, VALUE3, false);
+        DeviceConfig.setProperty(NAMESPACE4, KEY4, VALUE4, false);
+
+        boolean containsNamespace3 = false;
+        boolean containsNamespace4 = false;
+        for (Properties properties : DeviceConfig.getAllProperties()) {
+            System.out.println(properties);
+            boolean hasNamespace3 = properties.getNamespace().equals(NAMESPACE3);
+            boolean hasValue3 = VALUE3.equals(properties.getString(KEY3, null));
+            if (hasNamespace3 && hasValue3) {
+                containsNamespace3 = true;
+                assertEquals(VALUE3, properties.getString(KEY3, null));
+            }
+
+            boolean hasNamespace4 = properties.getNamespace().equals(NAMESPACE4);
+            boolean hasValue4 = VALUE4.equals(properties.getString(KEY4, null));
+            if (hasNamespace4 && hasValue4) {
+                containsNamespace4 = true;
+            }
+        }
+
+        assertTrue(containsNamespace3);
+        assertTrue(containsNamespace4);
+    }
+
+    /**
+     * Test that creating a sticky local override for a flag prevents further writes to that flag.
+     */
+    @Test
+    public void testAddStickyLocalOverridePreventsWrites() {
+        if (!SdkLevel.isAtLeastV()) {
+            return;
+        }
+
+        DeviceConfig.setLocalOverride(NAMESPACE3, KEY3, VALUE3);
+
+        String key3Value = DeviceConfig.getProperty(NAMESPACE3, KEY3);
+        assertEquals(VALUE3, key3Value);
+
+        DeviceConfig.setProperty(NAMESPACE3, KEY3, VALUE4, /* makeDefault= */ false);
+        key3Value = DeviceConfig.getProperty(NAMESPACE3, KEY3);
+        assertEquals(VALUE3, key3Value);
+    }
+
+    /**
+     * Test that when we locally override a flag, we can still write other flags.
+     */
+    @Test
+    public void testAddStickyLocalOverrideDoesNotAffectOtherFlags() {
+        if (!SdkLevel.isAtLeastV()) {
+            return;
+        }
+
+        DeviceConfig.setLocalOverride(NAMESPACE3, KEY3, VALUE3);
+        DeviceConfig.setProperty(NAMESPACE3, KEY4, VALUE4, /* makeDefault= */ false);
+        String key4Value = DeviceConfig.getProperty(NAMESPACE3, KEY4);
+        assertEquals(VALUE4, key4Value);
+    }
+
+    /**
+     * Test that when we apply some overrides, they show up in the override list.
+     */
+    @Test
+    public void testGetStickyLocalOverrides() {
+        if (!SdkLevel.isAtLeastV()) {
+            return;
+        }
+
+        DeviceConfig.setProperty(NAMESPACE3, KEY3, VALUE4, false);
+        DeviceConfig.setProperty(NAMESPACE3, KEY4, VALUE3, false);
+        DeviceConfig.setLocalOverride(NAMESPACE3, KEY3, VALUE3);
+        DeviceConfig.setLocalOverride(NAMESPACE3, KEY4, VALUE4);
+
+        Map<String, Map<String, String>> expectedOverrides = new HashMap<>();
+        Map<String, String> expectedInnerMap = new HashMap<>();
+        expectedInnerMap.put(KEY3, VALUE4);
+        expectedInnerMap.put(KEY4, VALUE3);
+        expectedOverrides.put(NAMESPACE3, expectedInnerMap);
+
+        assertEquals(expectedOverrides, DeviceConfig.getUnderlyingValuesForOverriddenFlags());
+    }
+
+    /**
+     * Test that when we clear all overrides, the override list is empty.
+     */
+    @Test
+    public void testClearStickyLocalOverrides() {
+        if (!SdkLevel.isAtLeastV()) {
+            return;
+        }
+
+        DeviceConfig.setLocalOverride(NAMESPACE4, KEY3, VALUE3);
+        DeviceConfig.setLocalOverride(NAMESPACE4, KEY4, VALUE4);
+
+        DeviceConfig.clearAllLocalOverrides();
+
+        Map<String, Map<String, String>> overrides =
+                DeviceConfig.getUnderlyingValuesForOverriddenFlags();
+        assertTrue(overrides.isEmpty());
+    }
+
+    /**
+     * Test that when we clear a single override, it doesn't appear in the list.
+     */
+    @Test
+    public void testClearStickyLocalOverride() {
+        if (!SdkLevel.isAtLeastV()) {
+            return;
+        }
+
+        DeviceConfig.setProperty(NAMESPACE3, KEY3, VALUE4, false);
+        DeviceConfig.setProperty(NAMESPACE4, KEY4, VALUE3, false);
+        DeviceConfig.setLocalOverride(NAMESPACE3, KEY3, VALUE3);
+        DeviceConfig.setLocalOverride(NAMESPACE4, KEY4, VALUE4);
+
+        DeviceConfig.clearLocalOverride(NAMESPACE3, KEY3);
+
+        Map<String, Map<String, String>> expectedOverrides = new HashMap<>();
+        Map<String, String> expectedInnerMap = new HashMap<>();
+        expectedInnerMap.put(KEY4, VALUE3);
+        expectedOverrides.put(NAMESPACE4, expectedInnerMap);
+
+        assertEquals(expectedOverrides, DeviceConfig.getUnderlyingValuesForOverriddenFlags());
     }
 
     /**
@@ -1114,6 +1282,115 @@ public final class DeviceConfigApiTests {
         DeviceConfig.resetToDefaults(RESET_MODE_PACKAGE_DEFAULTS, NAMESPACE1);
 
         assertEquals(DeviceConfig.getProperty(NAMESPACE1, KEY1), VALUE1);
+    }
+
+    /**
+     * Test updating syncDisabledMode.
+     */
+    @Test
+    public void testSetSyncDisabledMode() {
+        DeviceConfig.setSyncDisabledMode(SYNC_DISABLED_MODE_NONE);
+        assertEquals(SYNC_DISABLED_MODE_NONE, DeviceConfig.getSyncDisabledMode());
+        DeviceConfig.setSyncDisabledMode(RESET_MODE_PACKAGE_DEFAULTS);
+        assertEquals(RESET_MODE_PACKAGE_DEFAULTS, DeviceConfig.getSyncDisabledMode());
+    }
+
+
+    /**
+     * Test getting public name spaces.
+     */
+    @Test
+    public void testGetPublicNameSpace() {
+        List<String> publicNameSpaces = Arrays.asList("textclassifier", "runtime", "statsd_java",
+                "statsd_java_boot", "selection_toolbar", "autofill",
+                "device_policy_manager", "content_capture");
+
+        assertTrue(DeviceConfig.getPublicNamespaces().containsAll(publicNameSpaces));
+    }
+
+    /**
+     * Test set monitor callback.
+     */
+    @Test
+    public void testSetMonitorCallback() {
+        final CountDownLatch latch = new CountDownLatch(2);
+        final TestMonitorCallback callback = new TestMonitorCallback(latch);
+
+        DeviceConfig.setMonitorCallback(CONTEXT.getContentResolver(),
+                Executors.newSingleThreadExecutor(), callback);
+        try {
+            DeviceConfig.setProperties(new Properties.Builder(NAMESPACE1)
+                    .setString(KEY1, VALUE1).setString(KEY2, VALUE2).build());
+        } catch (DeviceConfig.BadConfigException e) {
+            fail("Callback set strings" + e.toString());
+        }
+
+        // Reading properties triggers the monitor callback function.
+        DeviceConfig.getString(NAMESPACE1, KEY1, null);
+
+        try {
+            if (!latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                fail("Callback function was not called");
+            }
+        } catch (InterruptedException e) {
+            // this part is executed when an exception (in this example InterruptedException) occurs
+            fail("Callback function was not called due to interruption" + e.toString());
+        }
+        assertEquals(callback.onNamespaceUpdateCalls, 1);
+        assertEquals(callback.onDeviceConfigAccessCalls, 1);
+        DeviceConfig.clearMonitorCallback(CONTEXT.getContentResolver());
+    }
+
+    /**
+     * Test clear monitor callback.
+     */
+    @Test
+    public void testClearMonitorCallback() {
+        final CountDownLatch latch = new CountDownLatch(2);
+        final TestMonitorCallback callback = new TestMonitorCallback(latch);
+
+        DeviceConfig.setMonitorCallback(CONTEXT.getContentResolver(),
+                Executors.newSingleThreadExecutor(), callback);
+        DeviceConfig.clearMonitorCallback(CONTEXT.getContentResolver());
+        // Reading properties triggers the monitor callback function.
+        DeviceConfig.getString(NAMESPACE1, KEY1, null);
+        try {
+            DeviceConfig.setProperties(new Properties.Builder(NAMESPACE1)
+                    .setString(KEY1, VALUE1).setString(KEY2, VALUE2).build());
+        } catch (DeviceConfig.BadConfigException e) {
+            fail("Callback set strings" + e.toString());
+        }
+
+        try {
+            if (latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                fail("Callback function was called while it has been cleared");
+            }
+        } catch (InterruptedException e) {
+            // this part is executed when an exception (in this example InterruptedException) occurs
+            fail("un expected interruption occur" + e.toString());
+        }
+        assertEquals(callback.onNamespaceUpdateCalls, 0);
+        assertEquals(callback.onDeviceConfigAccessCalls, 0);
+    }
+
+    private class TestMonitorCallback implements DeviceConfig.MonitorCallback {
+        public int onNamespaceUpdateCalls = 0;
+        public int onDeviceConfigAccessCalls = 0;
+        public CountDownLatch latch;
+
+        TestMonitorCallback(CountDownLatch latch) {
+            this.latch = latch;
+        }
+
+        public void onNamespaceUpdate(String updatedNamespace) {
+            onNamespaceUpdateCalls++;
+            latch.countDown();
+        }
+
+        public void onDeviceConfigAccess(String callingPackage, String namespace) {
+            onDeviceConfigAccessCalls++;
+            latch.countDown();
+        }
     }
 
     private OnPropertiesChangedListener createOnPropertiesChangedListener(

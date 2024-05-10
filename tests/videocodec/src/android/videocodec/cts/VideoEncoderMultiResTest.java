@@ -19,6 +19,7 @@ package android.videocodec.cts;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
+import static android.videocodec.cts.VideoEncoderInput.getRawResource;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -31,19 +32,15 @@ import android.mediav2.common.cts.RawResource;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -66,23 +63,6 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
     private static final int FRAME_LIMIT = 30;
     private static final int BIT_RATE = 5000000;
     private static final List<Object[]> exhaustiveArgsList = new ArrayList<>();
-    private static final HashMap<String, RawResource> RES_YUV_MAP = new HashMap<>();
-
-    @BeforeClass
-    public static void decodeResourcesToYuv() {
-        ArrayList<CompressedResource> resources = new ArrayList<>();
-        for (Object[] arg : exhaustiveArgsList) {
-            resources.add((CompressedResource) arg[2]);
-        }
-        decodeStreamsToYuv(resources, RES_YUV_MAP, FRAME_LIMIT);
-    }
-
-    @AfterClass
-    public static void cleanUpResources() {
-        for (RawResource res : RES_YUV_MAP.values()) {
-            new File(res.mFileName).delete();
-        }
-    }
 
     private static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int width,
             int height, int frameRate, int bitRateMode, int maxBFrames, int intraFrameInterval) {
@@ -112,21 +92,20 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
                 }
                 for (int bitRateMode : bitRateModes) {
                     for (int intraInterval : intraIntervals) {
-                        // mediaType, cfg, res, label
+                        // mediaType, cfg, label
                         String label = String.format("%dx%d_%dfps_maxb-%d_%s_i-dist-%d", width,
                                 height, frameRate, maxBFrames, bitRateModeToString(bitRateMode),
                                 intraInterval);
                         exhaustiveArgsList.add(new Object[]{mediaType,
                                 getVideoEncoderCfgParams(mediaType, width, height, frameRate,
-                                        bitRateMode, maxBFrames, intraInterval),
-                                BIRTHDAY_FULLHD_LANDSCAPE, label});
+                                        bitRateMode, maxBFrames, intraInterval), label});
                     }
                 }
             }
         }
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{4})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{3}")
     public static Collection<Object[]> input() {
         addParams(1080, 1920, 30);
         addParams(720, 1280, 30);
@@ -163,10 +142,9 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
         return prepareParamList(exhaustiveArgsList, true, false, true, false, HARDWARE);
     }
 
-    public VideoEncoderMultiResTest(String encoder, String mediaType,
-            EncoderConfigParams cfgParams, CompressedResource res,
+    public VideoEncoderMultiResTest(String encoder, String mediaType, EncoderConfigParams cfgParams,
             @SuppressWarnings("unused") String testLabel, String allTestParams) {
-        super(encoder, mediaType, cfgParams, res, allTestParams);
+        super(encoder, mediaType, cfgParams, allTestParams);
     }
 
     @Before
@@ -175,7 +153,8 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
     }
 
     @ApiTest(apis = {"android.media.MediaFormat#KEY_WIDTH",
-            "android.media.MediaFormat#KEY_HEIGHT"})
+            "android.media.MediaFormat#KEY_HEIGHT",
+            "android.media.MediaFormat#KEY_FRAME_RATE"})
     @Test
     public void testMultiRes() throws IOException, InterruptedException {
         MediaFormat format = mEncCfgParams[0].getFormat();
@@ -183,9 +162,9 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
         formats.add(format);
         Assume.assumeTrue("Encoder: " + mCodecName + " doesn't support format: " + format,
                 areFormatsSupported(mCodecName, mMediaType, formats));
-        RawResource res = RES_YUV_MAP.getOrDefault(mCRes.uniqueLabel(), null);
+        RawResource res = getRawResource(mEncCfgParams[0]);
         assertNotNull("no raw resource found for testing config : " + mEncCfgParams[0] + mTestConfig
-                + mTestEnv, res);
+                + mTestEnv + DIAGNOSTICS, res);
         encodeToMemory(mCodecName, mEncCfgParams[0], res, FRAME_LIMIT, false, true);
         assertEquals("Output width is different from configured width \n" + mTestConfig
                 + mTestEnv, mEncCfgParams[0].mWidth, getWidth(getOutputFormat()));
@@ -199,10 +178,9 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
             final double[] minPSNR = cs.getMinimumPSNR();
             for (int i = 0; i < minPSNR.length; i++) {
                 if (minPSNR[i] < MIN_ACCEPTABLE_QUALITY) {
-                    msg.append(String.format(
-                            "For %d plane, minPSNR is less than tolerance threshold, Got %f, "
-                                    + "Threshold %f",
-                            i, minPSNR[i], MIN_ACCEPTABLE_QUALITY));
+                    msg.append(String.format("For %d plane, minPSNR is less than tolerance"
+                            + " threshold, Got %f, Threshold %f", i, minPSNR[i],
+                            MIN_ACCEPTABLE_QUALITY));
                     isOk = false;
                     break;
                 }
@@ -210,7 +188,6 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
         } finally {
             if (cs != null) cs.cleanUp();
         }
-        new File(mMuxedOutputFile).delete();
         assertEquals("encoder did not encode the requested number of frames \n"
                 + mTestConfig + mTestEnv, FRAME_LIMIT, mOutputCount);
         assertTrue("Encountered frames with PSNR less than configured threshold "

@@ -287,6 +287,8 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
     @Test
     public void testSave_afterRotation() throws Exception {
         assumeTrue("Rotation is supported", Helper.isRotationSupported(mContext));
+        assumeTrue("Device state is not REAR_DISPLAY",
+                !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.REAR_DISPLAY));
         mUiBot.setScreenOrientation(UiBot.PORTRAIT);
         try {
             saveTest(true);
@@ -856,6 +858,11 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
         autofillExpecation.assertAutoFilled();
     }
 
+    /**
+     * This test is being migrated to ../androidx-tests/SaveUiTest.java
+     * If making changes, modify SaveUiTest#testTapLink_changeOrientationThenTapBack
+     * instead, as this might be deprecated in the future.
+     */
     @Override
     protected void saveUiRestoredAfterTappingLinkTest(PostSaveLinkTappedAction type)
             throws Exception {
@@ -1741,6 +1748,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
     @Test
     @AppModeFull(reason = "No real use case for instant mode af service")
     public void testTapUrlSpanOnCustomDescription_thenTapBack() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         saveUiRestoredAfterTappingSpanTest(DescriptionType.CUSTOM,
                 ViewActionActivity.ActivityCustomAction.NORMAL_ACTIVITY);
     }
@@ -1768,6 +1776,7 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
     @AppModeFull(reason = "No real use case for instant mode af service")
     public void testTapUrlSpanOnCustomDescription_forwardAnotherActivityThenTapBack()
             throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         saveUiRestoredAfterTappingSpanTest(DescriptionType.CUSTOM,
                 ViewActionActivity.ActivityCustomAction.FAST_FORWARD_ANOTHER_ACTIVITY);
     }

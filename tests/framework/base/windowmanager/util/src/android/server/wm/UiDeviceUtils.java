@@ -25,14 +25,19 @@ import static android.view.KeyEvent.KEYCODE_WINDOW;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import android.app.DreamManager;
 import android.app.KeyguardManager;
+import android.content.Context;
 import android.graphics.Point;
 import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.SystemClock;
-import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
 import android.view.KeyEvent;
+
+import androidx.test.uiautomator.UiDevice;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 import java.util.function.BooleanSupplier;
 
@@ -51,6 +56,22 @@ public class UiDeviceUtils {
         getDevice().waitForIdle(timeout);
     }
 
+    public static void wakeUpAndUnlock(Context context) {
+        final KeyguardManager keyguardManager = context.getSystemService(KeyguardManager.class);
+        final PowerManager powerManager = context.getSystemService(PowerManager.class);
+        final DreamManager dreamManager = context.getSystemService(DreamManager.class);
+        if (keyguardManager == null || powerManager == null) {
+            return;
+        }
+
+        if (keyguardManager.isKeyguardLocked() || !powerManager.isInteractive()
+                || (dreamManager != null
+                && SystemUtil.runWithShellPermissionIdentity(dreamManager::isDreaming))) {
+            pressWakeupButton();
+            pressUnlockButton();
+        }
+    }
+
     public static void wakeUpDevice() throws RemoteException {
         if (DEBUG) Log.d(TAG, "wakeUpDevice");
         getDevice().wakeUp();
@@ -61,7 +82,7 @@ public class UiDeviceUtils {
         getDevice().drag(from.x, from.y, to.x, to.y, steps);
     }
 
-    static void pressEnterButton() {
+    public static void pressEnterButton() {
         if (DEBUG) Log.d(TAG, "pressEnterButton");
         getDevice().pressEnter();
     }
@@ -85,7 +106,7 @@ public class UiDeviceUtils {
         getDevice().pressMenu();
     }
 
-    static void pressSleepButton() {
+    public static void pressSleepButton() {
         if (DEBUG) Log.d(TAG, "pressSleepButton");
         final PowerManager pm = getInstrumentation()
                 .getContext().getSystemService(PowerManager.class);
@@ -109,12 +130,12 @@ public class UiDeviceUtils {
                 "***Waiting for device unlock...");
     }
 
-    static void pressWindowButton() {
+    public static void pressWindowButton() {
         if (DEBUG) Log.d(TAG, "pressWindowButton");
         pressKeyCode(KEYCODE_WINDOW);
     }
 
-    static void pressAppSwitchButton() {
+    public static void pressAppSwitchButton() {
         if (DEBUG) Log.d(TAG, "pressAppSwitchButton");
         pressKeyCode(KEYCODE_APP_SWITCH);
     }

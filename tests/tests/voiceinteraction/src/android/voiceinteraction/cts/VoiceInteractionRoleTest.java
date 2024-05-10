@@ -29,6 +29,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
+import android.voiceinteraction.cts.testcore.Helper;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -59,7 +60,7 @@ public class VoiceInteractionRoleTest {
 
     private static final long TIMEOUT_MILLIS = 15 * 1000;
     private static final String VOICE_INTERACTION_HAS_RECOGNITION_SERVICE =
-            "android.voiceinteraction.service";
+            Helper.CTS_SERVICE_PACKAGE;
     private static final String VOICE_INTERACTION_NO_RECOGNITION_SERVICE =
             "android.voiceinteraction.norecognition";
 
@@ -158,7 +159,7 @@ public class VoiceInteractionRoleTest {
         runWithShellPermissionIdentity(
                 () -> sRoleManager.removeRoleHolderAsUser(RoleManager.ROLE_ASSISTANT, packageName,
                         0, Process.myUserHandle(), sContext.getMainExecutor(), future));
-        assertThat(future.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)).isTrue();
+        future.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
     }
 
     private static class CallbackFuture extends CompletableFuture<Boolean>

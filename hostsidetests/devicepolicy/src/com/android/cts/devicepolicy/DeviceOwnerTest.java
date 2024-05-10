@@ -46,14 +46,13 @@ import java.util.Map;
 /**
  * Set of tests for Device Owner use cases.
  */
-public class DeviceOwnerTest extends BaseDeviceOwnerTest {
+public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
     private static final String MANAGED_PROFILE_PKG = "com.android.cts.managedprofile";
     private static final String MANAGED_PROFILE_APK = "CtsManagedProfileApp.apk";
     private static final String MANAGED_PROFILE_ADMIN =
             MANAGED_PROFILE_PKG + ".BaseManagedProfileTest$BasicAdminReceiver";
 
-    private static final String INTENT_RECEIVER_PKG = "com.android.cts.intent.receiver";
     private static final String INTENT_RECEIVER_APK = "CtsIntentReceiverApp.apk";
 
     private static final String SIMPLE_APP_APK ="CtsSimpleApp.apk";
@@ -70,9 +69,6 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
     private static final String ARG_NETWORK_LOGGING_BATCH_COUNT = "batchCount";
     private static final String ARG_PID_BEFORE_STOP = "pidOfSimpleapp";
-
-    private static final String LAUNCHER_TESTS_HAS_LAUNCHER_ACTIVITY_APK =
-            "CtsHasLauncherActivityApp.apk";
 
     private static final int TYPE_NONE = 0;
 
@@ -101,18 +97,6 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
     public void testProxyPacProxyTest() throws Exception {
         assumeFalse("Test does not apply to WearOS", mIsWatch);
         executeDeviceOwnerTest("proxy.PacProxyTest");
-    }
-
-    @Test
-    public void testRemoteBugreportWithTwoUsers() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
-        final int userId = createUser();
-        try {
-            executeDeviceTestMethod(".RemoteBugreportTest",
-                    "testRequestBugreportThrowsSecurityException");
-        } finally {
-            removeUser(userId);
-        }
     }
 
     @Test
@@ -528,15 +512,11 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
             // This test will be skipped for headless system user mode since headless system user
             // does not have IME.
             executeDeviceTestMethod(".AdminActionBookkeepingTest",
-                    "testIsDefaultInputMethodSet");
-            executeDeviceTestMethod(".AdminActionBookkeepingTest",
                     "testGetPolicyInstalledCaCerts");
         }
 
         executeDeviceTestMethod(".AdminActionBookkeepingTest",
                 "testRetrieveSecurityLogs");
-        executeDeviceTestMethod(".AdminActionBookkeepingTest",
-                "testRequestBugreport");
         executeDeviceTestMethod(".AdminActionBookkeepingTest",
                 "testGetLastNetworkLogRetrievalTime");
         executeDeviceTestMethod(".AdminActionBookkeepingTest",
@@ -552,21 +532,11 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
         new DevicePolicyEventWrapper.Builder(EventId.RETRIEVE_PRE_REBOOT_SECURITY_LOGS_VALUE)
                 .setAdminPackageName(DEVICE_OWNER_PKG)
                 .build());
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".AdminActionBookkeepingTest", "testRequestBugreport");
-        }, new DevicePolicyEventWrapper.Builder(EventId.REQUEST_BUGREPORT_VALUE)
-                .setAdminPackageName(DEVICE_OWNER_PKG)
-                .build());
     }
 
     @Test
     public void testBluetoothRestriction() throws Exception {
         executeDeviceOwnerTest("BluetoothRestrictionTest");
-    }
-
-    @Test
-    public void testSetTime() throws Exception {
-        executeDeviceOwnerTest("SetTimeTest");
     }
 
     @Test
@@ -588,6 +558,11 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
     @Test
     public void testDisallowFactoryReset() throws Exception {
+        if (isHeadlessSystemUserMode()) {
+            // Need to access dpm.getPolicyExemptApps() which is a TestApi.
+            allowTestApiAccess(DEVICE_OWNER_PKG);
+        }
+
         int adminVersion = 24;
         // NOTE: the restriction must be set on primary user as it will launch SetPolicyActivity,
         // but the admin must be installed on USER_SYSTEM, otherwise wipeData() on headless system
@@ -714,11 +689,6 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
             getDevice().executeShellCommand(command);
             getDevice().uninstallPackage(TEST_APP_PKG);
         }
-    }
-
-    @Test
-    public void testAirplaneModeRestriction() throws Exception {
-        executeDeviceOwnerTest("AirplaneModeRestrictionTest");
     }
 
     @Test
@@ -1002,11 +972,6 @@ public class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @Test
     public void testDevicePolicySafetyCheckerIntegration_allOperations() throws Exception {
         executeDeviceTestMethod(".DevicePolicySafetyCheckerIntegrationTest", "testAllOperations");
-    }
-
-    @Test
-    public void testDevicePolicySafetyCheckerIntegration_isSafeOperation() throws Exception {
-        executeDeviceTestMethod(".DevicePolicySafetyCheckerIntegrationTest", "testIsSafeOperation");
     }
 
     @Test

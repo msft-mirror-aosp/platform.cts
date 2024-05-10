@@ -96,9 +96,21 @@ public:
      */
     bool isLowLatencyStream();
 
+    /**
+     * Returns true if the hardware supports 24 bit audio.
+     */
+    bool has24BitHardwareSupport();
+
+    /**
+     * Gets the hardware format.
+     */
+    int getHardwareFormat();
+
     aaudio_result_t getError() {
         return mInputError ? mInputError : mOutputError;
     }
+
+    double measureTimestampLatencyMillis();
 
     AAudioStream      *mInputStream = nullptr;
     AAudioStream      *mOutputStream = nullptr;
@@ -118,6 +130,8 @@ private:
 
     int32_t readFormattedData(int32_t numFrames);
 
+    bool has24BitSupport(aaudio_format_t format);
+
     WhiteNoiseLatencyAnalyzer mWhiteNoiseLatencyAnalyzer;
     LoopbackProcessor   *mLoopbackProcessor;
 
@@ -135,9 +149,14 @@ private:
     int32_t            mFramesWrittenTotal = 0;
     bool               mIsDone = false;
     bool               mIsLowLatencyStream = false;
+    bool               mHas24BitHardwareSupport = false;
+    int32_t            mHardwareFormat = 0;
 
     int32_t            mOutputDeviceId = 0;
     int32_t            mInputDeviceId = 0;
+
+    std::atomic<bool> mWriteReadDeltaValid{false};
+    std::atomic<int64_t> mWriteReadDelta{0};
 
     static constexpr int kLogPeriodMillis         = 1000;
     static constexpr int kNumInputChannels        = 1;

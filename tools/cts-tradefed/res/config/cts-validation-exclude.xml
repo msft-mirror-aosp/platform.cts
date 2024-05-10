@@ -22,8 +22,26 @@
     <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases" />
     <option name="compatibility:exclude-filter" value="CtsTelecomTestCases" />
     <option name="compatibility:exclude-filter" value="CtsDynamicMimeHostTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsDynamicMimePreferredActivitiesHostTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsDynamicMimeSingleAppRebootHostTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsDynamicMimeRemoveRebootHostTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsDynamicMimeSingleAppGroupRebootHostTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsDynamicMimeIndependentGroupRebootHostTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsDynamicMimeComplexFilterRebootHostTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsDynamicMimeComplexFilterClearGroupRebootHostTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsDynamicMimeChangedGroupAppUpdateHostTestCases" />
     <option name="compatibility:exclude-filter" value="CtsViewTestCases" />
     <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceActivity" />
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceAm" />
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceBackNavigation" />
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceDisplay" />
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceKeyguard" />
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceInsets" />
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTaskFragment" />
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceScvh" />
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceWindow" />
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceOther" />
     <option name="compatibility:exclude-filter" value="CtsProviderTestCases" />
     <option name="compatibility:exclude-filter" value="CtsContentTestCases" />
     <option name="compatibility:exclude-filter" value="CtsLocationGnssTestCases" />
@@ -43,10 +61,10 @@
     <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases" />
     <option name="compatibility:exclude-filter" value="CtsCallLogTestCases" />
     <option name="compatibility:exclude-filter" value="CtsFragmentTestCases" />
-    <option name="compatibility:exclude-filter" value="CtsPermission3TestCases" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases" />
     <option name="compatibility:exclude-filter" value="CtsTransitionTestCases" />
     <option name="compatibility:exclude-filter" value="CtsRoleTestCases" />
-    <option name="compatibility:exclude-filter" value="CtsPermission2TestCases" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionPolicyTestCases" />
     <option name="compatibility:exclude-filter" value="CtsAnimationTestCases" />
     <option name="compatibility:exclude-filter" value="CtsBackupTestCases" />
     <option name="compatibility:exclude-filter" value="CtsInputMethodServiceHostTestCases" />
@@ -67,7 +85,7 @@
     <option name="compatibility:exclude-filter" value="CtsBlobStoreTestHelperDiffSig2" />
     <option name="compatibility:exclude-filter" value="CtsPackageManagerPreferredActivityHostTestCases" />
     <option name="compatibility:exclude-filter" value="CtsShortcutManagerPackage2" />
-    <option name="compatibility:exclude-filter" value="CtsPermission5TestCases" />
+    <option name="compatibility:exclude-filter" value="CtsAttributionSourceTestCases" />
     <option name="compatibility:exclude-filter" value="CtsHiddenApiBlocklistApi27TestCases" />
     <option name="compatibility:exclude-filter" value="CtsActivityManagerBackgroundActivityTestCases" />
     <option name="compatibility:exclude-filter" value="CtsToastLegacyTestCases" />
@@ -134,7 +152,6 @@
     <option name="compatibility:exclude-filter" value="CtsDownloadManagerApi28" />
     <option name="compatibility:exclude-filter" value="CtsAppSearchTestCases" />
     <option name="compatibility:exclude-filter" value="CtsContentCaptureServiceTestCases" />
-    <option name="compatibility:exclude-filter" value="CtsPermission4TestCases" />
     <option name="compatibility:exclude-filter" value="CtsDomainVerificationHostTestCases" />
     <option name="compatibility:exclude-filter" value="CtsSliceTestCases" />
     <option name="compatibility:exclude-filter" value="CtsTranslationTestCases" />
@@ -496,4 +513,31 @@
     <!-- b/204720226 -->
     <option name="compatibility:exclude-filter" value="CtsPhotoPickerTest android.photopicker.cts.PhotoPickerCrossProfileTest#testPersonalApp_cannotAccessWorkProfile_default" />
     <option name="compatibility:exclude-filter" value="CtsMediaHostTestCases android.media.session.cts.MediaSessionManagerHostTest#testGetActiveSessionsFull_managedProfiles" />
+
+    <!-- b/292213604 -->
+    <option name="compatibility:exclude-filter" value="CtsDomainVerificationDeviceMultiUserTestCases" />
+
+    <!-- b/292536082 -->
+    <option name="compatibility:exclude-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_policyNotAllowedToBeSet_throwsSecurityException[DelegateWithoutValidScope]" />
+    <option name="compatibility:exclude-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_policyNotAllowedToBeSet_throwsSecurityException[IncludeRunOnFinancedDeviceOwnerUser]" />
+    <option name="compatibility:exclude-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_nullPolicy_allowsAllProviders[IncludeRunOnDeviceOwnerUser]" />
+    <option name="compatibility:exclude-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_allowlistAndSystemPolicy_allowsAllowlistedAndSystemProviders[IncludeRunOnDeviceOwnerUser]" />
+    <option name="compatibility:exclude-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_null_setsPolicy[IncludeRunOnDeviceOwnerUser]" />
+    <option name="compatibility:exclude-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_blocklistPolicy_allowsNotBlocklistedProviders[IncludeRunOnDeviceOwnerUser]" />
+    <option name="compatibility:exclude-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_allowlistPolicy_allowsAllowlistedProviders[IncludeRunOnDeviceOwnerUser]" />
+    <option name="compatibility:exclude-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_policyIsSet[IncludeRunOnDeviceOwnerUser]" />
+    <option name="compatibility:exclude-filter" value="CtsCredentialManagerTestCases android.credentials.cts.CtsDevicePolicyTest#setCredentialManagerPolicy_allowlistAndSystemPolicy_allowsAllowlistedAndSystemProviders_SDK[IncludeRunOnDeviceOwnerUser]" />
+
+    <!-- b/302404278 -->
+    <option name="compatibility:exclude-filter" value="CtsDomainVerificationDeviceMultiUserTestCases com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileCrossProfileIntentTests#inPersonal_unverified" />
+    <option name="compatibility:exclude-filter" value="CtsDomainVerificationDeviceMultiUserTestCases com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileCrossProfileIntentTests#inPersonal_verifiedInOtherProfile" />
+    <option name="compatibility:exclude-filter" value="CtsDomainVerificationDeviceMultiUserTestCases CtsDomainVerificationDeviceMultiUserTestCases com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileCrossProfileIntentTests#inPersonal_verifiedInBothProfiles" />
+    <option name="compatibility:exclude-filter" value="CtsDomainVerificationDeviceMultiUserTestCases com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileAllowParentLinkingTests#inPersonal_verifiedInOtherProfile" />
+    <option name="compatibility:exclude-filter" value="CtsDomainVerificationDeviceMultiUserTestCases com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileAllowParentLinkingTests#inPersonal_verifiedInBothProfiles" />
+    <option name="compatibility:exclude-filter" value="CtsDomainVerificationDeviceMultiUserTestCases com.android.cts.packagemanager.verify.domain.device.multiuser.DomainVerificationWorkProfileAllowParentLinkingTests#inPersonal_verifiedInCurrentProfile" />
+
+    <!-- b/323332123 -->
+    <option name="compatibility:exclude-filter" value="CtsAppCloningHostTest com.android.cts.appcloning.contacts.ManagedProfileContactsAccessTest#testClonedAppsAccessManagedProfileContacts_contactReadsBlocked" />
+    <option name="compatibility:exclude-filter" value="CtsAppCloningHostTest com.android.cts.appcloning.contacts.ManagedProfileContactsAccessTest#testClonedAppsAccessManagedProfileContacts_contactReadSuccessfully" />
+
 </configuration>

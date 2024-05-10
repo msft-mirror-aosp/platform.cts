@@ -18,6 +18,8 @@ package android.net.vcn.cts;
 
 import static android.net.cts.util.CtsNetUtils.TestNetworkCallback;
 
+import static org.junit.Assert.fail;
+
 import android.annotation.NonNull;
 import android.content.Context;
 import android.ipsec.ike.cts.IkeTunUtils;
@@ -54,6 +56,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -66,6 +69,7 @@ public class TestNetworkWrapper implements AutoCloseable {
     private static final String POLICY_LISTENER_TAG =
             TestNetworkAgent.TestVcnNetworkPolicyChangeListener.class.getSimpleName();
 
+    private static final int POLICY_CHANGE_TIMEOUT_MS = 500;
     public static final int NETWORK_CB_TIMEOUT_MS = 5000;
 
     private static final int IP4_PREFIX_LEN = 32;
@@ -99,7 +103,7 @@ public class TestNetworkWrapper implements AutoCloseable {
     public TestNetworkWrapper(
             @NonNull Context context,
             int mtu,
-            boolean isMetered,
+            @NonNull Set<Integer> capabilities,
             @NonNull Set<Integer> subIds,
             @NonNull InetAddress localAddress)
             throws Exception {
@@ -124,8 +128,9 @@ public class TestNetworkWrapper implements AutoCloseable {
             vcnNetworkCallback = new VcnTestNetworkCallback();
             mConnectivityManager.requestNetwork(nr, vcnNetworkCallback);
 
+            // Build TestNetworkAgent
             final NetworkCapabilities nc =
-                    createNetworkCapabilitiesForIface(iface, isMetered, subIds);
+                    createNetworkCapabilitiesForIface(iface, capabilities, subIds);
             final LinkProperties lp = createLinkPropertiesForIface(iface, mtu);
 
             final VcnNetworkPolicyResult policy = mVcnManager.applyVcnNetworkPolicy(nc, lp);
@@ -150,21 +155,18 @@ public class TestNetworkWrapper implements AutoCloseable {
     }
 
     private static NetworkCapabilities createNetworkCapabilitiesForIface(
-            @NonNull String iface, boolean isMetered, Set<Integer> subIds) {
+            @NonNull String iface, Set<Integer> capabilities, Set<Integer> subIds) {
         NetworkCapabilities.Builder builder =
                 NetworkCapabilities.Builder.withoutDefaultCapabilities()
                         .addTransportType(NetworkCapabilities.TRANSPORT_TEST)
                         .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
-                        .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
                         .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VCN_MANAGED)
-                        .addCapability(NetworkCapabilities.NET_CAPABILITY_MMS)
-                        .addCapability(NetworkCapabilities.NET_CAPABILITY_DUN)
-                        .addCapability(NetworkCapabilities.NET_CAPABILITY_FOTA)
                         .setNetworkSpecifier(new TestNetworkSpecifier(iface))
                         .setSubscriptionIds(subIds);
-        if (!isMetered) {
-            builder.addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED);
+        for (int cap : capabilities) {
+            builder.addCapability(cap);
         }
+
         return builder.build();
     }
 
@@ -258,6 +260,10 @@ public class TestNetworkWrapper implements AutoCloseable {
         close();
     }
 
+    public VcnNetworkPolicyResult awaitVcnNetworkPolicyChange() throws Exception {
+        return mTestNetworkAgent.mPolicyListener.awaitPolicyChange();
+    }
+
     /**
      * Test-only NetworkAgent to be used for instrumented TUN Networks.
      *
@@ -265,7 +271,7 @@ public class TestNetworkWrapper implements AutoCloseable {
      */
     private class TestNetworkAgent extends NetworkAgent {
         private final CloseGuard mCloseGuard = new CloseGuard();
-        private final VcnNetworkPolicyChangeListener mPolicyListener =
+        private final TestVcnNetworkPolicyChangeListener mPolicyListener =
                 new TestVcnNetworkPolicyChangeListener();
 
         private final LinkProperties mLinkProperties;
@@ -330,7 +336,10 @@ public class TestNetworkWrapper implements AutoCloseable {
             return mLinkProperties;
         }
 
-        private class TestVcnNetworkPolicyChangeListener implements VcnNetworkPolicyChangeListener {
+        public class TestVcnNetworkPolicyChangeListener implements VcnNetworkPolicyChangeListener {
+            private final CompletableFuture<VcnNetworkPolicyResult> mFutureOnPolicyChanged =
+                    new CompletableFuture<>();
+
             @Override
             public void onPolicyChanged() {
                 synchronized (TestNetworkAgent.this) {
@@ -338,6 +347,8 @@ public class TestNetworkWrapper implements AutoCloseable {
                             mVcnManager.applyVcnNetworkPolicy(
                                     mTestNetworkAgent.getNetworkCapabilities(),
                                     mTestNetworkAgent.getLinkProperties());
+
+                    mFutureOnPolicyChanged.complete(policy);
                     if (policy.isTeardownRequested()) {
                         Log.w(POLICY_LISTENER_TAG, "network teardown requested on policy change");
                         teardown();
@@ -346,6 +357,10 @@ public class TestNetworkWrapper implements AutoCloseable {
 
                     updateNetworkCapabilities(policy.getNetworkCapabilities());
                 }
+            }
+
+            public VcnNetworkPolicyResult awaitPolicyChange() throws Exception {
+                return mFutureOnPolicyChanged.get(POLICY_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -368,6 +383,27 @@ public class TestNetworkWrapper implements AutoCloseable {
             return mLostHistory.poll(NETWORK_CB_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         }
 
+        /**
+         * Continue polling from the mLostHistory until the expected network is found
+         *
+         * <p>Callers should prefer this method over #waitForLost if they care about a specific
+         * network. #waitForLost only returns the head of the mLostHistory. Since there might be
+         * more than one networks that have been reported by #onLost and also #onLost for the same
+         * network might called multiple times, the target network might not always be in the head
+         * of the queue
+         */
+        public void waitForLostNetwork(Network network) throws InterruptedException {
+            final long endTime = System.currentTimeMillis() + NETWORK_CB_TIMEOUT_MS;
+
+            while (System.currentTimeMillis() < endTime) {
+                if (Objects.equals(network, waitForLost())) {
+                    return;
+                }
+            }
+
+            fail("Timeout on waitForLostNetwork " + network);
+        }
+
         public CapabilitiesChangedEvent waitForOnCapabilitiesChanged() throws Exception {
             return waitForOnCapabilitiesChanged(NETWORK_CB_TIMEOUT_MS);
         }
@@ -375,6 +411,10 @@ public class TestNetworkWrapper implements AutoCloseable {
         public CapabilitiesChangedEvent waitForOnCapabilitiesChanged(long timeoutMillis)
                 throws Exception {
             return mCapabilitiesChangedHistory.poll(timeoutMillis, TimeUnit.MILLISECONDS);
+        }
+
+        public void clearLostHistory() {
+            mLostHistory.clear();
         }
 
         @Override

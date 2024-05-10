@@ -32,12 +32,17 @@
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
             </intent-filter>
         </activity>
+
+        <receiver android:name=".GameManagerCtsActivity.GameModeReceiver"
+                  android:exported="true" android:enabled="true">
+            <intent-filter>
+                <action android:name="android.gamemanager.cts.GAME_MODE"/>
+            </intent-filter>
+        </receiver>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.gamemanager.cts"
          android:label="CTS tests of android Game Manager service">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 </manifest>

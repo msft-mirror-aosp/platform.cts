@@ -29,7 +29,11 @@ import static android.hardware.camera2.cts.CameraTestUtils.getSupportedVideoSize
 
 import static com.android.ex.camera2.blocking.BlockingStateCallback.STATE_CLOSED;
 
+import static junit.framework.Assert.assertTrue;
+
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.graphics.ColorSpace;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCaptureSession.CaptureCallback;
@@ -69,6 +73,9 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
     private static final String TAG = "Camera2AndroidTestCase";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
 
+    // include both standalone camera IDs and "hidden" physical camera IDs
+    private String[] mAllCameraIds;
+
     // Default capture size: VGA size is required by CDD.
     protected static final Size DEFAULT_CAPTURE_SIZE = new Size(640, 480);
     protected static final int CAPTURE_WAIT_TIMEOUT_MS = 7000;
@@ -77,8 +84,6 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
     protected CameraCaptureSession mCameraSession;
     protected BlockingSessionCallback mCameraSessionListener;
     protected BlockingStateCallback mCameraListener;
-    // include both standalone camera IDs and "hidden" physical camera IDs
-    protected String[] mAllCameraIds;
     protected HashMap<String, StaticMetadata> mAllStaticInfo;
     protected ImageReader mReader;
     protected Surface mReaderSurface;
@@ -126,14 +131,15 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
 
         mAllStaticInfo = new HashMap<String, StaticMetadata>();
         List<String> hiddenPhysicalIds = new ArrayList<>();
-        for (String cameraId : mCameraIdsUnderTest) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (String cameraId : cameraIdsUnderTest) {
             CameraCharacteristics props = mCameraManager.getCameraCharacteristics(cameraId);
             StaticMetadata staticMetadata = new StaticMetadata(props,
                     CheckLevel.ASSERT, /*collector*/null);
             mAllStaticInfo.put(cameraId, staticMetadata);
 
             for (String physicalId : props.getPhysicalCameraIds()) {
-                if (!Arrays.asList(mCameraIdsUnderTest).contains(physicalId) &&
+                if (!Arrays.asList(cameraIdsUnderTest).contains(physicalId) &&
                         !hiddenPhysicalIds.contains(physicalId)) {
                     hiddenPhysicalIds.add(physicalId);
                     props = mCameraManager.getCameraCharacteristics(physicalId);
@@ -144,10 +150,10 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
                 }
             }
         }
-        mAllCameraIds = new String[mCameraIdsUnderTest.length + hiddenPhysicalIds.size()];
-        System.arraycopy(mCameraIdsUnderTest, 0, mAllCameraIds, 0, mCameraIdsUnderTest.length);
+        mAllCameraIds = new String[cameraIdsUnderTest.length + hiddenPhysicalIds.size()];
+        System.arraycopy(cameraIdsUnderTest, 0, mAllCameraIds, 0, cameraIdsUnderTest.length);
         for (int i = 0; i < hiddenPhysicalIds.size(); i++) {
-            mAllCameraIds[mCameraIdsUnderTest.length + i] = hiddenPhysicalIds.get(i);
+            mAllCameraIds[cameraIdsUnderTest.length + i] = hiddenPhysicalIds.get(i);
         }
     }
 
@@ -169,6 +175,16 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
         } finally {
             super.tearDown();
         }
+    }
+
+    public String[] getAllCameraIds() throws Exception {
+        // If external camera is supported, verify that it is connected as part of the camera Ids
+        // under test. If the external camera is not connected, an exception will be thrown to
+        // prevent bypassing CTS testing for external camera
+        CameraTestUtils.verifyExternalCameraConnected(mCameraManager.getCameraIdListNoLazy(),
+                mContext.getPackageManager(), mCameraManager);
+
+        return mAllCameraIds;
     }
 
     /**
@@ -221,7 +237,7 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
      * @param cameraId The id of the camera device to be opened.
      */
     protected void openDevice(String cameraId) throws Exception {
-        openDevice(cameraId, mCameraListener);
+        openDevice(cameraId, /*overrideToPortrait*/false, mCameraListener);
     }
 
     /**
@@ -231,8 +247,30 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
      * @param listener The {@link #BlockingStateCallback} used to wait for states.
      */
     protected void openDevice(String cameraId, BlockingStateCallback listener) throws Exception {
+        openDevice(cameraId, /*overrideToPortrait*/false, listener);
+    }
+
+    /**
+     * Open a {@link #CameraDevice} and get the StaticMetadata for a given camera id and listener.
+     *
+     * @param cameraId The id of the camera device to be opened.
+     * @param overrideToPortrait Whether to enable the landscape-to-portrait override
+     */
+    protected void openDevice(String cameraId, boolean overrideToPortrait) throws Exception {
+        openDevice(cameraId, overrideToPortrait, mCameraListener);
+    }
+
+    /**
+     * Open a {@link #CameraDevice} and get the StaticMetadata for a given camera id and listener.
+     *
+     * @param cameraId The id of the camera device to be opened.
+     * @param overrideToPortrait Whether to enable the landscape-to-portrait override
+     * @param listener The {@link #BlockingStateCallback} used to wait for states.
+     */
+    protected void openDevice(String cameraId, boolean overrideToPortrait,
+            BlockingStateCallback listener) throws Exception {
         mCamera = CameraTestUtils.openCamera(
-                mCameraManager, cameraId, listener, mHandler);
+                mCameraManager, cameraId, overrideToPortrait, listener, mHandler);
         mCollector.setCameraId(cameraId);
         mStaticInfo = mAllStaticInfo.get(cameraId);
         if (mStaticInfo.isColorOutputSupported()) {
@@ -276,12 +314,26 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
      * Create a {@link #CameraCaptureSession} using the currently open camera with
      * OutputConfigurations.
      *
-     * @param outputSurfaces The set of output surfaces to configure for this session
+     * @param outputConfigs The set of output configurations for this session
      */
     protected void createSessionByConfigs(List<OutputConfiguration> outputConfigs) throws Exception {
         mCameraSessionListener = new BlockingSessionCallback();
         mCameraSession = CameraTestUtils.configureCameraSessionWithConfig(mCamera, outputConfigs,
                 mCameraSessionListener, mHandler);
+    }
+
+    /**
+     * Create a {@link #CameraCaptureSession} using the currently open camera with
+     * OutputConfigurations and a ColorSpace.
+     *
+     * @param outputConfigs The set of output configurations for this session
+     * @param colorSpace The color space for this session
+     */
+    protected void createSessionByConfigsAndColorSpace(List<OutputConfiguration> outputConfigs,
+            ColorSpace.Named colorSpace) throws Exception {
+        mCameraSessionListener = new BlockingSessionCallback();
+        mCameraSession = CameraTestUtils.configureCameraSessionWithColorSpace(mCamera,
+                outputConfigs, mCameraSessionListener, mHandler, colorSpace);
     }
 
     /**
@@ -498,10 +550,8 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
         return captureBuilder;
     }
 
-    protected CaptureRequest.Builder prepareCaptureRequestForConfigs(
+    protected CaptureRequest.Builder prepareCaptureRequestBuilderWithConfig(
             List<OutputConfiguration> outputConfigs, int template) throws Exception {
-        createSessionByConfigs(outputConfigs);
-
         CaptureRequest.Builder captureBuilder =
                 mCamera.createCaptureRequest(template);
         assertNotNull("Fail to get captureRequest", captureBuilder);
@@ -510,8 +560,20 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
                 captureBuilder.addTarget(s);
             }
         }
-
         return captureBuilder;
+    }
+
+    protected CaptureRequest.Builder prepareCaptureRequestForConfigs(
+            List<OutputConfiguration> outputConfigs, int template) throws Exception {
+        createSessionByConfigs(outputConfigs);
+        return prepareCaptureRequestBuilderWithConfig(outputConfigs, template);
+    }
+
+    protected CaptureRequest.Builder prepareCaptureRequestForColorSpace(
+            List<OutputConfiguration> outputConfigs, int template, ColorSpace.Named colorSpace)
+            throws Exception {
+        createSessionByConfigsAndColorSpace(outputConfigs, colorSpace);
+        return prepareCaptureRequestBuilderWithConfig(outputConfigs, template);
     }
 
     /**

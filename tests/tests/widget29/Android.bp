@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_ui_toolkit",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -29,7 +30,7 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "platform-test-annotations",
-        "truth-prebuilt",
+        "truth",
     ],
 
     libs: ["android.test.runner"],

@@ -21,7 +21,6 @@ import static android.appsecurity.cts.Utils.waitForBootCompleted;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 
@@ -52,6 +51,7 @@ public class AppDataIsolationTests extends BaseAppSecurityTest {
     private static final String APPA_CLASS =
             "com.android.cts.appdataisolation.appa.AppATests";
     private static final String APPA_METHOD_CREATE_CE_DE_DATA = "testCreateCeDeAppData";
+    private static final String APPA_METHOD_DELETE_EXTERNAL_DIRS = "testDeleteExternalDirs";
     private static final String APPA_METHOD_CHECK_CE_DATA_EXISTS = "testAppACeDataExists";
     private static final String APPA_METHOD_CHECK_CE_DATA_DOES_NOT_EXIST =
             "testAppACeDataDoesNotExist";
@@ -204,7 +204,6 @@ public class AppDataIsolationTests extends BaseAppSecurityTest {
 
         try {
             // Setup screenlock
-            getDevice().executeShellCommand("settings put global require_password_to_decrypt 0");
             getDevice().executeShellCommand("locksettings set-disabled false");
             String response = getDevice().executeShellCommand("locksettings set-pin 1234");
             if (!response.contains("1234")) {
@@ -250,10 +249,12 @@ public class AppDataIsolationTests extends BaseAppSecurityTest {
                 try {
                     runDeviceTests(APPA_PKG, APPA_CLASS, APPA_METHOD_TEST_UNLOCK_DEVICE);
                 } catch (Exception e) {}
+                try {
+                    runDeviceTests(APPA_PKG, APPA_CLASS, APPA_METHOD_DELETE_EXTERNAL_DIRS);
+                } catch (Exception e) {}
+
                 getDevice().executeShellCommand("locksettings clear --old 1234");
                 getDevice().executeShellCommand("locksettings set-disabled true");
-                getDevice().executeShellCommand(
-                        "settings delete global require_password_to_decrypt");
             } finally {
                 // Get ourselves back into a known-good state
                 getDevice().rebootUntilOnline();

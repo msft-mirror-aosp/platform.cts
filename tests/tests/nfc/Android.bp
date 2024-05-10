@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_fwk_nfc",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -21,19 +22,56 @@ android_test {
     defaults: ["cts_defaults"],
     platform_apis: true,
     static_libs: [
+        "android.nfc.flags-aconfig-java",
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
+        "flag-junit",
+        "platform-test-annotations",
         "testng",
+        "androidx.appcompat_appcompat",
     ],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/android/nfc/cts/*.java",
+        "src/android/nfc/tech/cts/*.java",
+        // TODO(b/263565193): Temp hack until NFC APK can link against module_current.
+        ":framework-nfc-updatable-sources",
+    ],
     // was: sdk_version: "current",
     libs: [
         "android.test.runner",
         "android.test.base",
+        "framework-nfc.impl",
+        "unsupportedappusage",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
+}
+
+android_test {
+    name: "CtsNfcInteractiveTestCases",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "ActivityContext",
+        "Interactive",
+        "ctstestrunner-axt",
+        "com.google.android.material_material",
+        "androidx.appcompat_appcompat",
+    ],
+    srcs: [
+        "src/android/nfc/cts/interactive/*.java",
+        "src/android/nfc/tech/cts/interactive/*.java",
+    ],
+    libs: [
+        "android.test.runner",
+        "android.test.base",
+        "framework-nfc.impl",
+    ],
+    test_suites: [
+        "cts-interactive",
+        "general-tests",
+    ],
+    test_config: "InteractiveAndroidTest.xml",
 }

@@ -13,35 +13,39 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test_import {
     name: "CtsCorruptApkTests_b71360999",
     apk: "b71360999.apk",
+    preprocessed: true,
     presigned: true,
     test_suites: [
         "cts",
         "general-tests",
-    ]
+    ],
 }
 
 android_test_import {
     name: "CtsCorruptApkTests_b71361168",
     apk: "b71361168.apk",
+    preprocessed: true,
     presigned: true,
     test_suites: [
         "cts",
         "general-tests",
-    ]
+    ],
 }
 
 android_test_import {
     name: "CtsCorruptApkTests_b79488511",
     apk: "b79488511.apk",
+    preprocessed: true,
     presigned: true,
     test_suites: [
         "cts",
         "general-tests",
-    ]
+    ],
 }

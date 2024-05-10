@@ -17,18 +17,25 @@
 package com.android.bedstead.nene.roles;
 
 import static com.android.bedstead.nene.permissions.CommonPermissions.BYPASS_ROLE_QUALIFICATION;
+import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
 import static com.android.bedstead.nene.utils.Versions.T;
 
 import android.annotation.TargetApi;
 import android.app.role.RoleManager;
 import android.content.Context;
 import android.os.Build;
+import android.os.UserHandle;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Versions;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Test APIs related to roles.
@@ -56,6 +63,30 @@ public class Roles {
                 BYPASS_ROLE_QUALIFICATION)) {
             sContext.getSystemService(RoleManager.class)
                     .setBypassingRoleQualification(bypassingRoleQualification);
+        }
+    }
+
+    /**
+     * @see RoleManager#getRoleHolders(String)
+     */
+    @Experimental
+    public Set<String> getRoleHolders(String role) {
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                MANAGE_ROLE_HOLDERS)) {
+            return new HashSet<>(sContext.getSystemService(RoleManager.class).getRoleHolders(role));
+        }
+    }
+
+    /**
+     * @see RoleManager#getRoleHoldersAsUser(String, UserHandle)
+     */
+    @Experimental
+    public Set<String> getRoleHoldersAsUser(String role, UserReference user) {
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                MANAGE_ROLE_HOLDERS).withPermission(INTERACT_ACROSS_USERS_FULL)) {
+            return new HashSet<>(
+                    sContext.getSystemService(RoleManager.class).getRoleHoldersAsUser(role,
+                            user.userHandle()));
         }
     }
 }

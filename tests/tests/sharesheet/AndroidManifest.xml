@@ -28,6 +28,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
 
+    <uses-permission android:name="android.permission.SHOW_CUSTOMIZED_RESOLVER"/>
+
     <application android:requestLegacyExternalStorage="true"
          android:label="@string/test_app_label">
 
@@ -45,6 +47,12 @@
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="test/cts"/>
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="test/cts_alternate"/>
             </intent-filter>
 
             <!-- Used to provide Sharing Shortcuts -->
@@ -73,8 +81,6 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.sharesheet.cts"
          android:label="CTS tests of android.sharesheet">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 
 </manifest>

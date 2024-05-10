@@ -57,9 +57,12 @@ public class FontScaleActivity extends AbstractLifecycleLogActivity {
                     throw new AssertionError("android:attr/textSize not found");
                 }
 
-                Log.i(getTag(), "fontPixelSize=" + fontPixelSize);
-                TestJournalProvider.putExtras(this,
-                        bundle -> bundle.putInt(EXTRA_FONT_PIXEL_SIZE, fontPixelSize));
+                final float fontScale = getResources().getConfiguration().fontScale;
+
+                Log.i(getTag(), "fontPixelSize=" + fontPixelSize + ", fontScale=" + fontScale);
+                TestJournalProvider.putExtras(this, bundle -> {
+                    bundle.putInt(EXTRA_FONT_PIXEL_SIZE, fontPixelSize);
+                });
             } finally {
                 ta.recycle();
             }

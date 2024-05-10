@@ -17,6 +17,8 @@
 package com.android.cts.apicoverage;
 
 
+import com.android.cts.apicommon.ApiCoverage;
+
 import org.xml.sax.SAXException;
 
 import java.io.File;

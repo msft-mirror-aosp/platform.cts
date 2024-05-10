@@ -27,24 +27,21 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.Log;
 import android.util.SparseArray;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FeatureUtil;
-import com.android.compatibility.common.util.RequiredFeatureRule;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -59,13 +56,11 @@ import java.util.concurrent.locks.ReentrantLock;
 @RequiresDevice
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant Apps cannot get Bluetooth related permissions")
-public class CarBluetoothTest {
-    @ClassRule
-    public static final RequiredFeatureRule sRequiredFeatureRule = new RequiredFeatureRule(
-            PackageManager.FEATURE_AUTOMOTIVE);
+public final class CarBluetoothTest extends AbstractCarTestCase {
 
-    private static final String TAG = "CarBluetoothTest";
+    private static final String TAG = CarBluetoothTest.class.getSimpleName();
     private static final boolean DBG = false;
+
     private Context mContext;
 
     // Bluetooth Core objects
@@ -359,7 +354,7 @@ public class CarBluetoothTest {
     // and waits for all of them to connect (proving they are there and implemented), or for the
     // configured timeout. If all required profiles connect, the test passes.
     @Test
-    @CddTest(requirement = "7.4.3/A-0-2")
+    @CddTest(requirements = {"7.4.3/A-0-2"})
     public void testRequiredBluetoothProfilesExist() throws Exception {
         if (DBG) {
             Log.d(TAG, "Begin testRequiredBluetoothProfilesExist()");

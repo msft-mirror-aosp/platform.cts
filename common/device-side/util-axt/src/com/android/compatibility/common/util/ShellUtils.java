@@ -16,14 +16,18 @@
 
 package com.android.compatibility.common.util;
 
-import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
-
 import android.text.TextUtils;
+import android.util.AndroidRuntimeException;
 import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Provides Shell-based utilities such as running a command.
@@ -31,6 +35,45 @@ import androidx.test.InstrumentationRegistry;
 public final class ShellUtils {
 
     private static final String TAG = "ShellHelper";
+
+    private static final UserHelper sUserHelper = new UserHelper();
+
+    /**
+     * Runs a Shell command with a timeout, returning a trimmed response.
+     */
+    @NonNull
+    public static String runShellCommandWithTimeout(@NonNull String command, long timeoutInSecond)
+            throws TimeoutException {
+        AtomicReference<Exception> exception = new AtomicReference<>(null);
+        AtomicReference<String> result = new AtomicReference<>(null);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        new Thread(() -> {
+            try {
+                result.set(runShellCommand(command));
+            } catch (Exception e) {
+                exception.set(e);
+            } finally {
+                latch.countDown();
+            }
+        }).start();
+
+        try {
+            if (!latch.await(timeoutInSecond, TimeUnit.SECONDS)) {
+                throw new TimeoutException("Command: '" + command + "' could not run in "
+                        + timeoutInSecond + " seconds");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        if (exception.get() != null) {
+            throw new AndroidRuntimeException(exception.get());
+        }
+
+        return result.get();
+    }
 
     /**
      * Runs a Shell command, returning a trimmed response.
@@ -59,9 +102,8 @@ public final class ShellUtils {
         final int x = (int) (xy[0] + (viewWidth / 2.0f));
         final int y = (int) (xy[1] + (viewHeight / 2.0f));
 
-        runShellCommand("input touchscreen tap %d %d", x, y);
+        runShellCommand("%s tap %d %d", sUserHelper.getInputCmd("touchscreen"), x, y);
     }
-
 
     private ShellUtils() {
         throw new UnsupportedOperationException("contain static methods only");
@@ -73,7 +115,7 @@ public final class ShellUtils {
      * @param keyCode key event to fire.
      */
     public static void sendKeyEvent(String keyCode) {
-        runShellCommand("input keyevent " + keyCode);
+        runShellCommand("%s %s", sUserHelper.getInputCmd("keyevent"), keyCode);
     }
 
     /**
@@ -81,6 +123,7 @@ public final class ShellUtils {
      */
     public static void setOverlayPermissions(@NonNull String packageName, boolean allowed) {
         final String action = allowed ? "allow" : "ignore";
-        runShellCommand("appops set %s SYSTEM_ALERT_WINDOW %s", packageName, action);
+        runShellCommand("%s %s SYSTEM_ALERT_WINDOW %s",
+                sUserHelper.getAppopsCmd("set"), packageName, action);
     }
 }

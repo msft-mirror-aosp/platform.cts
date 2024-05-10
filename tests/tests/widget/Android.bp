@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_ui_toolkit",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -25,13 +26,20 @@ android_test {
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "ctsdeviceutillegacy-axt",
+        "flag-junit",
         "mockito-target-minus-junit4",
         "android-common",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "platform-test-annotations",
-        "truth-prebuilt",
-        "CtsMockInputMethodLib",
+        "truth",
+        "androidx.test.uiautomator_uiautomator",
+        "androidx.test.espresso.core",
+        "cts-wm-util",
+        "testables",
+        "com.android.text.flags-aconfig-java",
+        "android.view.inputmethod.flags-aconfig-java",
+        "flag-junit",
     ],
 
     libs: ["android.test.runner"],
@@ -52,7 +60,6 @@ android_test {
 
     data: [
         ":TestIme",
-        ":CtsMockInputMethod",
         ":CtsWidgetApp",
     ],
     per_testcase_directory: true,

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_mainline_modularization",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -27,7 +28,8 @@ java_test_host {
     ],
     static_libs: [
         "compat-classpaths-testing",
-        "dexlib2-no-guava-no-cli",
+        "modules-utils-build-testing",
+        "smali-dexlib2-no-guava",
     ],
     // tag this module as a cts test artifact
     test_suites: [

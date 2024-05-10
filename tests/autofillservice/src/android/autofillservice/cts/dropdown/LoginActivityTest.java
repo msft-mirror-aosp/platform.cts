@@ -37,12 +37,15 @@ import static android.autofillservice.cts.testcore.Helper.assertTextIsSanitized;
 import static android.autofillservice.cts.testcore.Helper.assertTextOnly;
 import static android.autofillservice.cts.testcore.Helper.assertValue;
 import static android.autofillservice.cts.testcore.Helper.assertViewAutofillState;
+import static android.autofillservice.cts.testcore.Helper.disablePccDetectionFeature;
 import static android.autofillservice.cts.testcore.Helper.disallowOverlays;
 import static android.autofillservice.cts.testcore.Helper.dumpStructure;
+import static android.autofillservice.cts.testcore.Helper.enablePccDetectionFeature;
 import static android.autofillservice.cts.testcore.Helper.findAutofillIdByResourceId;
 import static android.autofillservice.cts.testcore.Helper.findNodeByResourceId;
 import static android.autofillservice.cts.testcore.Helper.getActivityTitle;
 import static android.autofillservice.cts.testcore.Helper.isAutofillWindowFullScreen;
+import static android.autofillservice.cts.testcore.Helper.isPccFieldClassificationSet;
 import static android.autofillservice.cts.testcore.Helper.setUserComplete;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.SERVICE_CLASS;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.SERVICE_PACKAGE;
@@ -62,6 +65,7 @@ import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_PAYMENT_CARD;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_USERNAME;
 import static android.text.InputType.TYPE_NULL;
 import static android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD;
+import static android.view.View.AUTOFILL_HINT_USERNAME;
 import static android.view.View.IMPORTANT_FOR_AUTOFILL_NO;
 import static android.view.WindowManager.LayoutParams.FLAG_SECURE;
 
@@ -70,6 +74,8 @@ import static com.android.compatibility.common.util.ShellUtils.tap;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+
+import static org.junit.Assert.assertThrows;
 
 import android.app.PendingIntent;
 import android.app.assist.AssistStructure.ViewNode;
@@ -82,6 +88,7 @@ import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.CannedFillResponse.CannedDataset;
 import android.autofillservice.cts.testcore.DismissType;
 import android.autofillservice.cts.testcore.Helper;
+import android.autofillservice.cts.testcore.IdMode;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.FillRequest;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.SaveRequest;
 import android.autofillservice.cts.testcore.MyAutofillCallback;
@@ -99,9 +106,11 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
 import android.service.autofill.FillContext;
 import android.service.autofill.SaveInfo;
@@ -122,6 +131,7 @@ import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.RetryableException;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -135,6 +145,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class LoginActivityTest extends LoginActivityCommonTestCase {
 
     private static final String TAG = "LoginActivityTest";
+
+    @After
+    public void disablePcc() {
+        Log.d(TAG, "@After: disablePcc()");
+        disablePccDetectionFeature(sContext);
+    }
 
     @Test
     @AppModeFull(reason = "testAutoFillOneDataset() is enough")
@@ -372,6 +388,9 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertDatasets("THE DUDE");
     }
 
+    @FlakyTest(
+            bugId = 292280793,
+            detail = "Meet July-31-23 trunk stable no flaky SLO. Deflake asap")
     @Presubmit
     @Test
     public void testAutoFillOneDataset() throws Exception {
@@ -390,6 +409,9 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         autofillOneDatasetTest(BorderType.FOOTER_ONLY);
     }
 
+    @FlakyTest(
+            bugId = 292285138,
+            detail = "Meet July-31-23 trunk stable no flaky SLO. Deflake asap")
     @Presubmit
     @Test
     public void testAutoFillOneDataset_withHeaderAndFooter() throws Exception {
@@ -401,6 +423,76 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         HEADER_ONLY,
         FOOTER_ONLY,
         BOTH
+    }
+
+    @FlakyTest(bugId = 281726966)
+    @Test
+    public void autofillPccDatasetTest_setForAllHints() throws Exception {
+        // Set service.
+        enablePccDetectionFeature(sContext, "username", "password", "new_password");
+        sReplier.setIdMode(IdMode.PCC_ID);
+        enableService();
+
+        boolean isPccEnabled = isPccFieldClassificationSet(sContext);
+
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(AUTOFILL_HINT_USERNAME, "dude")
+                        .setField("allField1")
+                        .setPresentation(createPresentation("The Dude"))
+                        .build())
+                .addDataset(new CannedDataset.Builder()
+                        .setField("allField2")
+                        .setPresentation(createPresentation("generic user"))
+                        .build());
+        sReplier.addResponse(builder.build());
+
+        // Trigger auto-fill.
+        requestFocusOnUsername();
+
+        final FillRequest request = sReplier.getNextFillRequest();
+        if (isPccEnabled) {
+            assertThat(request.hints.size()).isEqualTo(3);
+        }
+
+        disablePccDetectionFeature(sContext);
+        sReplier.setIdMode(IdMode.RESOURCE_ID);
+    }
+
+    @FlakyTest(bugId = 281726966)
+    @Test
+    public void autofillPccDatasetTest() throws Exception {
+        // Set service.
+        enablePccDetectionFeature(sContext, "username");
+        sReplier.setIdMode(IdMode.PCC_ID);
+        enableService();
+
+        boolean isPccEnabled = isPccFieldClassificationSet(sContext);
+
+        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "dude")
+                        .setField(ID_PASSWORD, "sweet")
+                        .setPresentation(createPresentation("The Dude"))
+                        .build())
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "user1")
+                        .setField(ID_PASSWORD, "pass1")
+                        .setPresentation(createPresentation("generic user"))
+                        .build());
+        sReplier.addResponse(builder.build());
+
+        // Trigger auto-fill.
+        requestFocusOnUsername();
+
+        final FillRequest request = sReplier.getNextFillRequest();
+        if (isPccEnabled) {
+            assertThat(request.hints.size()).isEqualTo(1);
+            assertThat(request.hints.get(0)).isEqualTo("username");
+        }
+
+        disablePccDetectionFeature(sContext);
+        sReplier.setIdMode(IdMode.RESOURCE_ID);
     }
 
     private void autofillOneDatasetTest(BorderType borderType) throws Exception {
@@ -737,6 +829,9 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mActivity.assertAutoFilled();
     }
 
+    @FlakyTest(
+            bugId = 292285136,
+            detail = "Meet July-31-23 trunk stable no flaky SLO. Deflake asap")
     @Presubmit
     @Test
     public void testAutoFillWhenViewHasChildAccessibilityNodes() throws Exception {
@@ -856,6 +951,28 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertNoDatasets();
     }
 
+    @Test
+    public void testUiNotShowAfterSessionEnds() throws Exception {
+        // Set service.
+        enableService();
+
+        // Set expectations.
+        sReplier.addResponse(new CannedDataset.Builder()
+                .setField(ID_USERNAME, "dude")
+                .setField(ID_PASSWORD, "sweet")
+                .setPresentation(createPresentation("The Dude"))
+                .build());
+        // Trigger auto-fill.
+        requestFocusOnUsername();
+        sReplier.getNextFillRequest();
+
+        // Call commit to end the session
+        final AutofillManager afm = mActivity.getAutofillManager();
+        afm.commit();
+
+        mUiBot.assertNoDatasetsEver();
+    }
+
     @Presubmit
     @Test
     public void testAutofillCallbacks() throws Exception {
@@ -897,6 +1014,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mActivity.assertAutoFilled();
     }
 
+    @FlakyTest(bugId = 275112488)
     @Test
     @AppModeFull(reason = "testAutofillCallbacks() is enough")
     public void testAutofillCallbackDisabled() throws Exception {
@@ -1385,6 +1503,47 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mActivity.assertAutoFilled();
     }
 
+    @Test
+    @AsbSecurityTest(cveBugId = 281533566)
+    public void remoteViews_doesNotSpillAcrossUsers() throws Exception {
+        // Set service.
+        enableService();
+
+
+        RemoteViews firstRv = createPresentation("hello");
+        RemoteViews secondRv = createPresentation("world");
+
+        // bad url, should not be displayed
+        firstRv.setImageViewIcon(R.id.icon,
+                Icon.createWithContentUri("content://1000@com.android.contacts/display_photo/1"));
+        secondRv.setImageViewIcon(R.id.icon,
+                Icon.createWithContentUri("content://1000@com.android.contacts/display_photo/1"));
+
+        // Set expectations.
+        sReplier.addResponse(new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                    .setField(ID_USERNAME, "dude", firstRv)
+                    .setField(ID_PASSWORD, "sweet", secondRv)
+                    .build())
+                .setHeader(firstRv)
+                .setFooter(secondRv)
+                .build());
+
+        mActivity.expectAutoFill("dude", "sweet");
+
+        // Trigger auto-fill.
+        mActivity.onUsername(View::requestFocus);
+        sReplier.getNextFillRequest();
+
+        // Assert that the dataset is not shown
+        assertThrows(RetryableException.class,
+                () -> mUiBot.assertDatasets("The Dude"));
+
+        // Assert that header/footer is not shown
+        assertThrows(RetryableException.class,
+                () -> mUiBot.assertDatasetsWithBorders("hello", "world", "The Dude"));
+    }
+
     /**
      * Tests the scenario where the service uses custom remote views for different fields (username
      * and password), but each dataset has a different number of fields.
@@ -1536,20 +1695,24 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertSaveShowing(SAVE_DATA_TYPE_PASSWORD);
 
         // Then make sure it goes away when user doesn't want it..
+        String when;
         switch (dismissType) {
             case BACK_BUTTON:
+                when = "back button tapped";
                 mUiBot.pressBack();
                 break;
             case HOME_BUTTON:
+                when = "home button tapped";
                 mUiBot.pressHome();
                 break;
             case TOUCH_OUTSIDE:
+                when = "touched outside";
                 mUiBot.touchOutsideSaveDialog();
                 break;
             default:
                 throw new IllegalArgumentException("invalid dismiss type: " + dismissType);
         }
-        mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_PASSWORD);
+        mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_PASSWORD, when);
     }
 
     @Test
@@ -1997,7 +2160,8 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
         // Configure the save UI.
         final IntentSender listener = PendingIntent.getBroadcast(mContext, 0,
-                new Intent(intentAction), PendingIntent.FLAG_IMMUTABLE).getIntentSender();
+                new Intent(intentAction).setPackage(mContext.getPackageName()),
+                PendingIntent.FLAG_IMMUTABLE).getIntentSender();
 
         sReplier.addResponse(new CannedFillResponse.Builder()
                 .setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD)
@@ -2298,11 +2462,11 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
          */
         // Set expectations.
         sReplier.addResponse(new CannedDataset.Builder()
-                .setField(ID_USERNAME, "dude")
+                .setField(ID_USERNAME, "dud")
                 .setField(ID_PASSWORD, "sweet")
                 .setPresentation(createPresentation("The Dude"))
                 .build());
-        mActivity.expectAutoFill("dude", "sweet");
+        mActivity.expectAutoFill("dud", "sweet");
 
         // Trigger auto-fill.
         requestFocusOnUsername();
@@ -2338,7 +2502,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         // Assert request.
         final FillRequest fillRequest2 = sReplier.getNextFillRequest();
         assertHasFlags(fillRequest2.flags, FLAG_MANUAL_REQUEST);
-        assertValue(fillRequest2.structure, ID_USERNAME, "dude");
+        assertValue(fillRequest2.structure, ID_USERNAME, "dud");
         assertTextIsSanitized(fillRequest2.structure, ID_PASSWORD);
 
         // Select it.
@@ -2359,11 +2523,11 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
          */
         // Set expectations.
         sReplier.addResponse(new CannedDataset.Builder()
-                .setField(ID_USERNAME, "dude")
+                .setField(ID_USERNAME, "dud")
                 .setField(ID_PASSWORD, "sweet")
                 .setPresentation(createPresentation("The Dude"))
                 .build());
-        mActivity.expectAutoFill("dude", "sweet");
+        mActivity.expectAutoFill("dud", "sweet");
 
         // Trigger auto-fill.
         mActivity.forceAutofillOnUsername();
@@ -2399,7 +2563,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         // Assert request.
         final FillRequest fillRequest2 = sReplier.getNextFillRequest();
         assertHasFlags(fillRequest2.flags, FLAG_MANUAL_REQUEST);
-        assertValue(fillRequest2.structure, ID_USERNAME, "dude");
+        assertValue(fillRequest2.structure, ID_USERNAME, "dud");
         assertTextIsSanitized(fillRequest2.structure, ID_PASSWORD);
 
         // Select it.
@@ -2598,10 +2762,10 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
         // Now disable user_complete and try again.
         try {
-            setUserComplete(mContext, false);
+            setUserComplete(false);
             Helper.assertAutofillEnabled(afm, false);
         } finally {
-            setUserComplete(mContext, true);
+            setUserComplete(true);
         }
     }
 
@@ -2625,7 +2789,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertDatasets("The Dude");
 
         // Now disable service by setting another service
-        Helper.enableAutofillService(mContext, NoOpAutofillService.SERVICE_NAME);
+        Helper.enableAutofillService(NoOpAutofillService.SERVICE_NAME);
 
         // ...and make sure popup's gone
         mUiBot.assertNoDatasets();
@@ -2663,7 +2827,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertDatasets("The Dude");
 
         // Now disable service by setting another service...
-        Helper.enableAutofillService(mContext, serviceName);
+        Helper.enableAutofillService(serviceName);
 
         // ...and make sure popup's gone
         mUiBot.assertNoDatasets();
@@ -2941,7 +3105,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     public void testSwitchInputMethod_noNewFillRequest() throws Exception {
         // TODO(b/187664861): Find better solution for small display device.
         mUiBot.assumeMinimumResolution(500);
-
+	mUiBot.setScreenResolution();
         // Set service
         enableService();
 
@@ -2972,5 +3136,6 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
         // No new fill request
         sReplier.assertNoUnhandledFillRequests();
+        mUiBot.resetScreenResolution();
     }
 }

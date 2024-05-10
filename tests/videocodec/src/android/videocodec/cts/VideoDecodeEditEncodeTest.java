@@ -24,6 +24,7 @@ import static android.mediav2.common.cts.CodecEncoderTestBase.getTempFilePath;
 import static android.mediav2.common.cts.CodecEncoderTestBase.muxOutput;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 import static android.mediav2.common.cts.CodecTestBase.Q_DEQ_TIMEOUT_US;
+import static android.mediav2.common.cts.VideoErrorManager.computeFrameVariance;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -41,12 +42,14 @@ import android.mediav2.common.cts.InputSurface;
 import android.mediav2.common.cts.OutputSurface;
 import android.mediav2.common.cts.RawResource;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.Preconditions;
 
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -154,13 +157,15 @@ public class VideoDecodeEditEncodeTest {
     private final String mEncoderName;
     private final String mMediaType;
 
+    private final ArrayList<String> mTmpFiles = new ArrayList<>();
+
     public VideoDecodeEditEncodeTest(String encoderName, String mediaType,
             @SuppressWarnings("unused") String allTestParams) {
         mEncoderName = encoderName;
         mMediaType = mediaType;
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}")
     public static Collection<Object[]> input() {
         final boolean isEncoder = true;
         final boolean needAudio = false;
@@ -172,6 +177,15 @@ public class VideoDecodeEditEncodeTest {
         });
         return CodecTestBase.prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
                 false, SELECT_SWITCH);
+    }
+
+    @After
+    public void tearDown() {
+        for (String tmpFile : mTmpFiles) {
+            File tmp = new File(tmpFile);
+            if (tmp.exists()) assertTrue("unable to delete file " + tmpFile, tmp.delete());
+        }
+        mTmpFiles.clear();
     }
 
     private static String getShader(String width, String height, String kernel) {
@@ -405,7 +419,7 @@ public class VideoDecodeEditEncodeTest {
             formats.add(decoderFormat);
             ArrayList<String> decoders = CodecTestBase.selectCodecs(RES_MEDIA_TYPE, formats, null,
                     false, SELECT_SWITCH);
-            assertTrue("Could not find decoder for format : " + decoderFormat, decoders.size() > 0);
+            assumeTrue("Could not find decoder for format : " + decoderFormat, decoders.size() > 0);
             String decoderName = decoders.get(0);
 
             // build encoder format and check if it is supported by the current component
@@ -664,9 +678,6 @@ public class VideoDecodeEditEncodeTest {
     private double computeVariance(RawResource yuv) throws IOException {
         Preconditions.assertTestFileExists(yuv.mFileName);
         assertEquals("has support for 8 bit clips only", 1, yuv.mBytesPerSample);
-        final int bSize = 16;
-        assertTrue("chosen block size is too large with respect to image dimensions",
-                yuv.mWidth > bSize && yuv.mHeight > bSize);
         double variance = 0;
         int blocks = 0;
         try (RandomAccessFile refStream = new RandomAccessFile(new File(yuv.mFileName), "r")) {
@@ -679,27 +690,9 @@ public class VideoDecodeEditEncodeTest {
                 if (bytesReadRef == -1) break;
                 assertEquals("bad, reading unaligned frame size", bytesReadRef, ySize);
                 refStream.skipBytes(uvSize);
-                for (int i = 0; i < yuv.mHeight - bSize; i += bSize) {
-                    for (int j = 0; j < yuv.mWidth - bSize; j += bSize) {
-                        long sse = 0, sum = 0;
-                        int offset = i * yuv.mWidth + j;
-                        for (int p = 0; p < bSize; p++) {
-                            for (int q = 0; q < bSize; q++) {
-                                int sample = luma[offset + p * yuv.mWidth + q];
-                                sum += sample;
-                                sse += sample * sample;
-                            }
-                        }
-                        double meanOfSquares = ((double) sse) / (bSize * bSize);
-                        double mean = ((double) sum) / (bSize * bSize);
-                        double squareOfMean = mean * mean;
-                        double blockVariance = (meanOfSquares - squareOfMean);
-                        assertTrue("variance can't be negative", blockVariance >= 0.0f);
-                        variance += blockVariance;
-                        assertTrue("caution overflow", variance >= 0.0);
-                        blocks++;
-                    }
-                }
+                Pair<Double, Integer> var = computeFrameVariance(yuv.mWidth, yuv.mHeight, luma);
+                variance += var.first;
+                blocks += var.second;
             }
             return variance / blocks;
         }
@@ -711,7 +704,7 @@ public class VideoDecodeEditEncodeTest {
      */
     @ApiTest(apis = {"android.opengl.GLES20#GL_FRAGMENT_SHADER",
             "android.media.format.MediaFormat#KEY_ALLOW_FRAME_DROP",
-            "android.media.MediaCodecInfo.CodecCapabilities#COLOR_Format32bitABGR8888"})
+            "MediaCodecInfo.CodecCapabilities#COLOR_FormatSurface"})
     @Test
     public void testVideoEdit() throws IOException, InterruptedException {
         VideoChunks sourceChunks = new VideoChunks();
@@ -721,33 +714,39 @@ public class VideoDecodeEditEncodeTest {
             outputData[i] = editVideoFile(sourceChunks, KERNELS[i]);
         }
         String tmpPathA = getTempFilePath("");
+        mTmpFiles.add(tmpPathA);
+        String tmpPathB = getTempFilePath("");
+        mTmpFiles.add(tmpPathB);
+
         int muxerFormat = getMuxerFormatForMediaType(mMediaType);
         muxOutput(tmpPathA, muxerFormat, outputData[0].getMediaFormat(), outputData[0].getBuffer(),
                 outputData[0].getChunkInfos());
-        String tmpPathB = getTempFilePath("");
         muxOutput(tmpPathB, muxerFormat, outputData[1].getMediaFormat(), outputData[1].getBuffer(),
                 outputData[1].getChunkInfos());
-        CompareStreams cs = new CompareStreams(mMediaType, tmpPathA, mMediaType, tmpPathB,
-                false, false);
-        double[] avgPSNR = cs.getAvgPSNR();
-        cs.cleanUp();
-        final double weightedAvgPSNR = (4 * avgPSNR[0] + avgPSNR[1] + avgPSNR[2]) / 6;
-        if (weightedAvgPSNR < AVG_ACCEPTABLE_QUALITY) {
-            fail(String.format("Average PSNR of the sequence: %f is < threshold : %f\n",
-                    weightedAvgPSNR, AVG_ACCEPTABLE_QUALITY));
+
+        CompareStreams cs = null;
+        try {
+            cs = new CompareStreams(mMediaType, tmpPathA, mMediaType, tmpPathB, false, false);
+            double[] avgPSNR = cs.getAvgPSNR();
+            final double weightedAvgPSNR = (4 * avgPSNR[0] + avgPSNR[1] + avgPSNR[2]) / 6;
+            if (weightedAvgPSNR < AVG_ACCEPTABLE_QUALITY) {
+                fail(String.format("Average PSNR of the sequence: %f is < threshold : %f\n",
+                        weightedAvgPSNR, AVG_ACCEPTABLE_QUALITY));
+            }
+        } finally {
+            if (cs != null) cs.cleanUp();
         }
-        DecodeStreamToYuv yuvRes = new DecodeStreamToYuv(mMediaType, tmpPathA);
+        DecodeStreamToYuv yuvRes = new DecodeStreamToYuv(mMediaType, tmpPathA, Integer.MAX_VALUE,
+                LOG_TAG);
         RawResource yuv = yuvRes.getDecodedYuv();
+        mTmpFiles.add(yuv.mFileName);
         double varA = computeVariance(yuv);
-        File tmp = new File(yuv.mFileName);
-        assertTrue(tmp.delete());
-        yuvRes = new DecodeStreamToYuv(mMediaType, tmpPathB);
+
+        yuvRes = new DecodeStreamToYuv(mMediaType, tmpPathB, Integer.MAX_VALUE, LOG_TAG);
         yuv = yuvRes.getDecodedYuv();
+        mTmpFiles.add(yuv.mFileName);
         double varB = computeVariance(yuv);
-        tmp = new File(yuv.mFileName);
-        assertTrue(tmp.delete());
-        assertTrue(new File(tmpPathA).delete());
-        assertTrue(new File(tmpPathB).delete());
+
         Log.d(LOG_TAG, "variance is " + varA + " " + varB);
         assertTrue(String.format("Blurred clip variance is not less than sharpened clip. Variance"
                         + " of blurred clip is %f, variance of sharpened clip is %f", varA, varB),

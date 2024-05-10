@@ -41,6 +41,9 @@ public abstract class USBAudioPeripheralActivity extends PassFailButtons.Activit
     // Host Mode Support
     protected boolean mHasHostMode;
 
+    // Record if pass the test
+    protected boolean mHasPassedTest;
+
     // Profile
     protected ProfileManager mProfileManager = new ProfileManager();
     protected PeripheralProfile mSelectedProfile;
@@ -93,11 +96,24 @@ public abstract class USBAudioPeripheralActivity extends PassFailButtons.Activit
                 setUsbAudioStatus(mHasHostMode);
             } else if (id == R.id.uap_tests_no_btn) {
                 mHasHostMode = false;
+                // If the device doesn't support USB host mode, no test need to run.
+                // In that case, the test should always be passed.
+                mHasPassedTest = true;
                 setUsbAudioStatus(mHasHostMode);
             } else if (id == R.id.uap_test_info_btn) {
                 showUAPInfoDialog();
             }
         }
+    }
+
+    @Override
+    public boolean requiresReportLog() {
+        return true;
+    }
+
+    @Override
+    public String getReportFileName() {
+        return PassFailButtons.AUDIO_TESTS_REPORT_LOG_NAME;
     }
 
     private void recordUSBAudioStatus(boolean has) {
@@ -113,14 +129,12 @@ public abstract class USBAudioPeripheralActivity extends PassFailButtons.Activit
         recordUSBAudioStatus(has);
 
         // UI & Pass/Fail status
-        getPassButton().setEnabled(!mHasHostMode);
+        getPassButton().setEnabled(!mHasHostMode || mHasPassedTest);
         findViewById(R.id.uap_tests_yes_btn).setEnabled(mHasHostMode);
         findViewById(R.id.uap_tests_no_btn).setEnabled(!mHasHostMode);
     }
 
     public USBAudioPeripheralActivity(boolean mandatedRequired) {
-        super();
-
         // determine if to show "UNSUPPORTED" if the mandated peripheral is required.
         mIsMandatedRequired = mandatedRequired;
 

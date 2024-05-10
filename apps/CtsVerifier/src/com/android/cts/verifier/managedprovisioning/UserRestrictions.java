@@ -88,7 +88,7 @@ public class UserRestrictions {
             R.string.disallow_config_location,
             R.string.disallow_airplane_mode,
             R.string.disallow_config_screen_timeout,
-            R.string.disallow_config_brightness
+            R.string.disallow_config_brightness,
         };
 
         final int[] restrictionActions = new int[] {
@@ -115,7 +115,7 @@ public class UserRestrictions {
             R.string.disallow_config_location_action,
             R.string.disallow_airplane_mode_action,
             R.string.disallow_config_screen_timeout_action,
-            R.string.disallow_config_brightness_action
+            R.string.disallow_config_brightness_action,
         };
 
         final String[] settingsIntentActions = new String[] {
@@ -278,6 +278,8 @@ public class UserRestrictions {
 
     public static boolean isRestrictionValid(Context context, String restriction) {
         final PackageManager pm = context.getPackageManager();
+        final TelephonyManager tm =
+                context.getSystemService(TelephonyManager.class);
         switch (restriction) {
             case UserManager.DISALLOW_ADD_USER:
                 return UserManager.supportsMultipleUsers();
@@ -294,8 +296,6 @@ public class UserRestrictions {
                         .getIdentifier("config_disable_all_cb_messages", "bool", "android"))) {
                     return false;
                 }
-                final TelephonyManager tm =
-                    context.getSystemService(TelephonyManager.class);
                 if (!tm.isSmsCapable()) {
                     return false;
                 }

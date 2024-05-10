@@ -16,20 +16,39 @@
 
 package android.bluetooth.cts;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.le.ScanSettings;
 import android.os.Parcel;
-import android.test.AndroidTestCase;
 import android.test.suitebuilder.annotation.SmallTest;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Test for Bluetooth LE {@link ScanSettings}.
  */
-public class ScanSettingsTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class ScanSettingsTest {
 
+    @Before
+    public void setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(
+                InstrumentationRegistry.getInstrumentation().getContext()));
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testDefaultSettings() {
+    @Test
+    public void defaultSettings() {
         ScanSettings settings = new ScanSettings.Builder().build();
         assertEquals(ScanSettings.CALLBACK_TYPE_ALL_MATCHES, settings.getCallbackType());
         assertEquals(ScanSettings.SCAN_MODE_LOW_POWER, settings.getScanMode());
@@ -39,8 +58,10 @@ public class ScanSettingsTest extends AndroidTestCase {
         assertEquals(ScanSettings.PHY_LE_ALL_SUPPORTED, settings.getPhy());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testBuilderSettings() {
+    @Test
+    public void builderSettings() {
         ScanSettings.Builder builder = new ScanSettings.Builder();
 
         // setScanMode boundary check
@@ -108,15 +129,18 @@ public class ScanSettingsTest extends AndroidTestCase {
         assertEquals(0xCAFE, settings.getPhy());
     }
 
-
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testDescribeContents() {
+    @Test
+    public void describeContents() {
         ScanSettings settings = new ScanSettings.Builder().build();
         assertEquals(0, settings.describeContents());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testReadWriteParcel() {
+    @Test
+    public void readWriteParcel() {
         final long reportDelayMillis = 60 * 1000;
         Parcel parcel = Parcel.obtain();
         ScanSettings settings = new ScanSettings.Builder()

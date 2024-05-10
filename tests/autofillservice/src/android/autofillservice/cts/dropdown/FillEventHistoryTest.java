@@ -24,6 +24,7 @@ import static android.autofillservice.cts.testcore.Helper.NULL_DATASET_ID;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForDatasetSelected;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForDatasetShown;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForSaveShown;
+import static android.autofillservice.cts.testcore.Helper.assertFillEventForViewEntered;
 import static android.autofillservice.cts.testcore.Helper.findAutofillIdByResourceId;
 import static android.service.autofill.FillEventHistory.Event.TYPE_CONTEXT_COMMITTED;
 import static android.service.autofill.FillEventHistory.Event.UI_TYPE_MENU;
@@ -123,18 +124,18 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
 
         sReplier.addResponse(new CannedFillResponse.Builder().addDataset(
                 new CannedDataset.Builder()
-                        .setField(ID_USERNAME, "username1")
-                        .setField(ID_PASSWORD, "password1")
+                        .setField(ID_USERNAME, "ab1")
+                        .setField(ID_PASSWORD, "ab1")
                         .setPresentation(createPresentation("dataset1"))
                         .build())
                 .addDataset(new CannedDataset.Builder()
-                        .setField(ID_USERNAME, "username2")
-                        .setField(ID_PASSWORD, "password2")
+                        .setField(ID_USERNAME, "ab2")
+                        .setField(ID_PASSWORD, "ab2")
                         .setPresentation(createPresentation("dataset2"))
                         .build())
                 .setFillResponseFlags(FillResponse.FLAG_TRACK_CONTEXT_COMMITED)
                 .build());
-        mActivity.expectAutoFill("username1", "password1");
+        mActivity.expectAutoFill("ab1", "ab1");
 
         // Trigger autofill on username
         mActivity.onUsername(View::requestFocus);
@@ -152,10 +153,10 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
         }
 
         // Finish the context by login in
-        mActivity.onUsername((v) -> v.setText("USERNAME"));
-        mActivity.onPassword((v) -> v.setText("USERNAME"));
+        mActivity.onUsername((v) -> v.setText("AB"));
+        mActivity.onPassword((v) -> v.setText("AB"));
 
-        final String expectedMessage = getWelcomeMessage("USERNAME");
+        final String expectedMessage = getWelcomeMessage("AB");
         final String actualMessage = mActivity.tapLogin();
         assertWithMessage("Wrong welcome msg").that(actualMessage).isEqualTo(expectedMessage);
         mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_PASSWORD);
@@ -367,19 +368,19 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
         sReplier.addResponse(new CannedFillResponse.Builder().addDataset(
                 new CannedDataset.Builder()
                         .setId("id1")
-                        .setField(ID_USERNAME, "username1")
-                        .setField(ID_PASSWORD, "password1")
+                        .setField(ID_USERNAME, "ab1")
+                        .setField(ID_PASSWORD, "ab1")
                         .setPresentation(createPresentation("dataset1"))
                         .build())
                 .addDataset(new CannedDataset.Builder()
                         .setId("id2")
-                        .setField(ID_USERNAME, "username2")
-                        .setField(ID_PASSWORD, "password2")
+                        .setField(ID_USERNAME, "ab2")
+                        .setField(ID_PASSWORD, "ab2")
                         .setPresentation(createPresentation("dataset2"))
                         .build())
                 .setFillResponseFlags(FillResponse.FLAG_TRACK_CONTEXT_COMMITED)
                 .build());
-        mActivity.expectAutoFill("username1", "password1");
+        mActivity.expectAutoFill("ab1", "ab1");
 
         // Trigger autofill on username
         mActivity.onUsername(View::requestFocus);
@@ -397,10 +398,10 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
         }
 
         // Finish the context by login in
-        mActivity.onUsername((v) -> v.setText("USERNAME"));
-        mActivity.onPassword((v) -> v.setText("USERNAME"));
+        mActivity.onUsername((v) -> v.setText("AB"));
+        mActivity.onPassword((v) -> v.setText("AB"));
 
-        final String expectedMessage = getWelcomeMessage("USERNAME");
+        final String expectedMessage = getWelcomeMessage("AB");
         final String actualMessage = mActivity.tapLogin();
         assertWithMessage("Wrong welcome msg").that(actualMessage).isEqualTo(expectedMessage);
         mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_PASSWORD);
@@ -475,12 +476,13 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
 
         {
             // Verify fill history
-            final List<Event> events = InstrumentedAutoFillService.getFillEvents(4);
+            final List<Event> events = InstrumentedAutoFillService.getFillEvents(5);
 
             assertFillEventForDatasetShown(events.get(0), UI_TYPE_MENU);
             assertFillEventForDatasetSelected(events.get(1), "id1", UI_TYPE_MENU);
-            assertFillEventForDatasetShown(events.get(2), UI_TYPE_MENU);
-            assertFillEventForDatasetSelected(events.get(3), "id2", UI_TYPE_MENU);
+            assertFillEventForViewEntered(events.get(2));
+            assertFillEventForDatasetShown(events.get(3), UI_TYPE_MENU);
+            assertFillEventForDatasetSelected(events.get(4), "id2", UI_TYPE_MENU);
         }
 
         // Finish the context by login in
@@ -497,10 +499,10 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
 
             assertFillEventForDatasetShown(events.get(0), UI_TYPE_MENU);
             assertFillEventForDatasetSelected(events.get(1), "id1", UI_TYPE_MENU);
-            assertFillEventForDatasetShown(events.get(2), UI_TYPE_MENU);
-            assertFillEventForDatasetSelected(events.get(3), "id2", UI_TYPE_MENU);
+            assertFillEventForViewEntered(events.get(2));
+            assertFillEventForDatasetShown(events.get(3), UI_TYPE_MENU);
+            assertFillEventForDatasetSelected(events.get(4), "id2", UI_TYPE_MENU);
 
-            assertFillEventForDatasetShown(events.get(4), UI_TYPE_MENU);
             final FillEventHistory.Event event3 = events.get(5);
             assertThat(event3.getType()).isEqualTo(TYPE_CONTEXT_COMMITTED);
             assertThat(event3.getDatasetId()).isNull();
@@ -561,12 +563,13 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
 
         {
             // Verify fill history
-            final List<Event> events = InstrumentedAutoFillService.getFillEvents(4);
+            final List<Event> events = InstrumentedAutoFillService.getFillEvents(5);
 
             assertFillEventForDatasetShown(events.get(0), UI_TYPE_MENU);
             assertFillEventForDatasetSelected(events.get(1), "id1", UI_TYPE_MENU);
-            assertFillEventForDatasetShown(events.get(2), UI_TYPE_MENU);
-            assertFillEventForDatasetSelected(events.get(3), "id2", UI_TYPE_MENU);
+            assertFillEventForViewEntered(events.get(2));
+            assertFillEventForDatasetShown(events.get(3), UI_TYPE_MENU);
+            assertFillEventForDatasetSelected(events.get(4), "id2", UI_TYPE_MENU);
         }
 
         // Finish the context by login in
@@ -577,14 +580,15 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
 
         {
             // Verify fill history
-            final List<Event> events = InstrumentedAutoFillService.getFillEvents(5);
+            final List<Event> events = InstrumentedAutoFillService.getFillEvents(6);
 
             assertFillEventForDatasetShown(events.get(0), UI_TYPE_MENU);
             assertFillEventForDatasetSelected(events.get(1), "id1", UI_TYPE_MENU);
-            assertFillEventForDatasetShown(events.get(2), UI_TYPE_MENU);
-            assertFillEventForDatasetSelected(events.get(3), "id2", UI_TYPE_MENU);
+            assertFillEventForViewEntered(events.get(2));
+            assertFillEventForDatasetShown(events.get(3), UI_TYPE_MENU);
+            assertFillEventForDatasetSelected(events.get(4), "id2", UI_TYPE_MENU);
 
-            final FillEventHistory.Event event3 = events.get(4);
+            final FillEventHistory.Event event3 = events.get(5);
             assertThat(event3.getType()).isEqualTo(TYPE_CONTEXT_COMMITTED);
             assertThat(event3.getDatasetId()).isNull();
             assertThat(event3.getClientState()).isNull();
@@ -608,13 +612,13 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
         sReplier.addResponse(new CannedFillResponse.Builder().addDataset(
                 new CannedDataset.Builder()
                         .setId("id1")
-                        .setField(ID_USERNAME, "username")
-                        .setField(ID_PASSWORD, "username")
+                        .setField(ID_USERNAME, "abc")
+                        .setField(ID_PASSWORD, "abc")
                         .setPresentation(createPresentation("dataset1"))
                         .build())
                 .setFillResponseFlags(FillResponse.FLAG_TRACK_CONTEXT_COMMITED)
                 .build());
-        mActivity.expectAutoFill("username", "username");
+        mActivity.expectAutoFill("abc", "abc");
 
         // Trigger autofill on username
         mActivity.onUsername(View::requestFocus);
@@ -630,15 +634,15 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
             assertFillEventForDatasetSelected(events.get(1), "id1", UI_TYPE_MENU);
         }
 
-        // Change the fields to different values from0 datasets
-        mActivity.onUsername((v) -> v.setText("USERNAME"));
-        mActivity.onPassword((v) -> v.setText("USERNAME"));
+        // Change the fields to different values from original datasets
+        mActivity.onUsername((v) -> v.setText("ABC"));
+        mActivity.onPassword((v) -> v.setText("ABC"));
 
         // Then change back to dataset values
-        mActivity.onUsername((v) -> v.setText("username"));
-        mActivity.onPassword((v) -> v.setText("username"));
+        mActivity.onUsername((v) -> v.setText("abc"));
+        mActivity.onPassword((v) -> v.setText("abc"));
 
-        final String expectedMessage = getWelcomeMessage("username");
+        final String expectedMessage = getWelcomeMessage("abc");
         final String actualMessage = mActivity.tapLogin();
         assertWithMessage("Wrong welcome msg").that(actualMessage).isEqualTo(expectedMessage);
         mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_PASSWORD);

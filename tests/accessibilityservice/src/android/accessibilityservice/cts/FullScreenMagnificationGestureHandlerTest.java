@@ -46,11 +46,12 @@ import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule
 import android.accessibilityservice.GestureDescription;
 import android.accessibilityservice.GestureDescription.StrokeDescription;
 import android.accessibilityservice.cts.AccessibilityGestureDispatchTest.GestureDispatchActivity;
-import android.accessibilityservice.cts.utils.EventCapturingTouchListener;
+import android.accessibilityservice.cts.utils.EventCapturingMotionEventListener;
 import android.app.Instrumentation;
 import android.content.pm.PackageManager;
 import android.graphics.PointF;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.view.ViewConfiguration;
 import android.widget.TextView;
@@ -58,6 +59,8 @@ import android.widget.TextView;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -72,13 +75,16 @@ import org.junit.runner.RunWith;
  */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
+@CddTest(requirements = {"3.10/C-1-1,C-1-2"})
+@Presubmit
 public class FullScreenMagnificationGestureHandlerTest {
 
     private static final double MIN_SCALE = 1.2;
 
     private InstrumentedAccessibilityService mService;
     private Instrumentation mInstrumentation;
-    private EventCapturingTouchListener mTouchListener = new EventCapturingTouchListener();
+    private EventCapturingMotionEventListener mTouchListener =
+            new EventCapturingMotionEventListener();
     float mCurrentScale = 1f;
     PointF mCurrentZoomCenter = null;
     PointF mTapLocation;
@@ -274,9 +280,12 @@ public class FullScreenMagnificationGestureHandlerTest {
         dispatch(doubleTap(mTapLocation));
         mTouchListener.assertPropagated(ACTION_DOWN, ACTION_UP, ACTION_DOWN, ACTION_UP);
 
+        // Smaller display devices does not have much screen space in Zoomed state
+        PackageManager pm = mInstrumentation.getTargetContext().getPackageManager();
+        int y = (pm.hasSystemFeature(pm.FEATURE_WATCH)) ? 5 : 29;
         dispatch(swipe(
                 mTapLocation,
-                add(mTapLocation, 0, 29)));
+                add(mTapLocation, 0, y)));
         mTouchListener.assertPropagated(ACTION_DOWN, ACTION_MOVE, ACTION_UP);
     }
 

@@ -17,11 +17,16 @@
 package android.telephony.cts;
 
 import static androidx.test.InstrumentationRegistry.getContext;
+import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
+import android.annotation.Nullable;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -31,11 +36,19 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.PersistableBundle;
 import android.os.SystemClock;
+import android.telephony.CarrierConfigManager;
 import android.telephony.SmsManager;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.util.DefaultSmsAppHelper;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.flags.Flags;
 
 import com.google.android.mms.ContentType;
 import com.google.android.mms.InvalidHeaderValueException;
@@ -50,13 +63,18 @@ import com.google.android.mms.pdu.PduPart;
 import com.google.android.mms.pdu.SendConf;
 import com.google.android.mms.pdu.SendReq;
 
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test sending MMS using {@link android.telephony.SmsManager}.
@@ -66,6 +84,8 @@ public class MmsTest {
 
     private static final String ACTION_MMS_SENT = "CTS_MMS_SENT_ACTION";
     private static final String ACTION_MMS_DOWNLOAD = "CTS_MMS_DOWNLOAD_ACTION";
+    public static final String ACTION_WAP_PUSH_DELIVER_DEFAULT_APP =
+            "CTS_WAP_PUSH_DELIVER_DEFAULT_APP_ACTION";
     private static final long DEFAULT_EXPIRY_TIME = 7 * 24 * 60 * 60;
     private static final int DEFAULT_PRIORITY = PduHeaders.PRIORITY_NORMAL;
     private static final long MESSAGE_ID = 912412L;
@@ -89,65 +109,83 @@ public class MmsTest {
             "</smil>";
 
     private static final long SENT_TIMEOUT = 1000 * 60 * 5; // 5 minutes
+    private static final long NO_CALLS_TIMEOUT = 1000; // 1 second
 
     private static final String PROVIDER_AUTHORITY = "telephonyctstest";
 
     private Random mRandom;
     private SentReceiver mSentReceiver;
+    private SentReceiver mDeliveryReceiver;
     private TelephonyManager mTelephonyManager;
+    @Nullable private String mOriginalDefaultSmsApp;
+    private static CarrierConfigReceiver sCarrierConfigReceiver;
 
     private static class SentReceiver extends BroadcastReceiver {
         private final Object mLock;
         private boolean mSuccess;
         private boolean mDone;
         private int mExpectedErrorResultCode;
+        private String mAction;
 
-        SentReceiver(int expectedErrorResultCode) {
+        SentReceiver(int expectedErrorResultCode, String action) {
             mLock = new Object();
             mSuccess = false;
             mDone = false;
             mExpectedErrorResultCode = expectedErrorResultCode;
+            mAction = action;
         }
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.i(TAG, "Action " + intent.getAction());
-            if (!ACTION_MMS_SENT.equals(intent.getAction())) {
-                return;
-            }
-            final int resultCode = getResultCode();
-            if (resultCode == Activity.RESULT_OK) {
-                final byte[] response = intent.getByteArrayExtra(SmsManager.EXTRA_MMS_DATA);
-                if (response != null) {
-                    final GenericPdu pdu = new PduParser(
-                            response, shouldParseContentDisposition()).parse();
-                    if (pdu != null && pdu instanceof SendConf) {
-                        final SendConf sendConf = (SendConf) pdu;
-                        if (sendConf.getResponseStatus() == PduHeaders.RESPONSE_STATUS_OK) {
-                            mSuccess = true;
+            Log.i(TAG, "onReceive Action " + intent.getAction() + ", mAction " + mAction);
+
+            switch (intent.getAction()) {
+                case ACTION_MMS_SENT:
+                    final int resultCode = getResultCode();
+                    if (resultCode == Activity.RESULT_OK) {
+                        final byte[] response = intent.getByteArrayExtra(SmsManager.EXTRA_MMS_DATA);
+                        if (response != null) {
+                            final GenericPdu pdu = new PduParser(
+                                    response, shouldParseContentDisposition()).parse();
+                            if (pdu != null && pdu instanceof SendConf) {
+                                final SendConf sendConf = (SendConf) pdu;
+                                if (sendConf.getResponseStatus() == PduHeaders.RESPONSE_STATUS_OK) {
+                                    mSuccess = true;
+                                } else {
+                                    Log.e(TAG,
+                                            "SendConf response status="
+                                                    + sendConf.getResponseStatus());
+                                }
+                            } else {
+                                Log.e(TAG, "Not a SendConf: " + (pdu != null
+                                        ? pdu.getClass().getCanonicalName() : "NULL"));
+                            }
                         } else {
-                            Log.e(TAG, "SendConf response status=" + sendConf.getResponseStatus());
+                            Log.e(TAG, "Empty response");
                         }
                     } else {
-                        Log.e(TAG, "Not a SendConf: " +
-                                (pdu != null ? pdu.getClass().getCanonicalName() : "NULL"));
+                        Log.e(TAG, "Failure result=" + resultCode);
+                        if (resultCode == mExpectedErrorResultCode) {
+                            mSuccess = true;
+                        }
+                        if (resultCode == SmsManager.MMS_ERROR_HTTP_FAILURE) {
+                            final int httpError = intent.getIntExtra(
+                                    SmsManager.EXTRA_MMS_HTTP_STATUS,
+                                    0);
+                            Log.e(TAG, "HTTP failure=" + httpError);
+                        }
                     }
-                } else {
-                    Log.e(TAG, "Empty response");
-                }
-            } else {
-                Log.e(TAG, "Failure result=" + resultCode);
-                if (resultCode == mExpectedErrorResultCode) {
+                    break;
+                case ACTION_WAP_PUSH_DELIVER_DEFAULT_APP:
                     mSuccess = true;
-                }
-                if (resultCode == SmsManager.MMS_ERROR_HTTP_FAILURE) {
-                    final int httpError = intent.getIntExtra(SmsManager.EXTRA_MMS_HTTP_STATUS, 0);
-                    Log.e(TAG, "HTTP failure=" + httpError);
-                }
+                    break;
             }
-            synchronized (mLock) {
-                mDone = true;
-                mLock.notify();
+
+            if (intent.getAction().equals(mAction)) {
+                synchronized (mLock) {
+                    mDone = true;
+                    mLock.notify();
+                }
             }
         }
 
@@ -167,6 +205,45 @@ public class MmsTest {
                 return mDone && mSuccess;
             }
         }
+
+        public boolean verifyNoCalls(long timeout) {
+            synchronized (mLock) {
+                try {
+                    mLock.wait(timeout);
+                } catch (InterruptedException e) {
+                    // Ignore
+                }
+                return (!mDone && !mSuccess);
+            }
+        }
+    }
+
+    /**
+     * Setup before all tests.
+     */
+    @BeforeClass
+    public static void beforeAllTests() {
+        Log.i(TAG, "beforeAllTests");
+        sCarrierConfigReceiver = new CarrierConfigReceiver(
+                SmsManager.getDefaultSmsSubscriptionId());
+        IntentFilter filter = new IntentFilter(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED);
+        // ACTION_CARRIER_CONFIG_CHANGED is sticky, so we will get a callback right away.
+        getInstrumentation().getContext().registerReceiver(sCarrierConfigReceiver, filter);
+    }
+
+    /**
+     * Clean up resources after all tests.
+     */
+    @AfterClass
+    public static void afterAllTests() {
+        Log.i(TAG, "afterAllTests");
+
+        // Ensure there are no CarrierConfig overrides.
+        overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), null);
+        if (sCarrierConfigReceiver != null) {
+            getInstrumentation().getContext().unregisterReceiver(sCarrierConfigReceiver);
+            sCarrierConfigReceiver = null;
+        }
     }
 
     @Before
@@ -176,43 +253,132 @@ public class MmsTest {
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         assumeTrue(getContext().getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        mOriginalDefaultSmsApp = DefaultSmsAppHelper.getDefaultSmsApp(getContext());
+        DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        if (!TextUtils.isEmpty(mOriginalDefaultSmsApp)) {
+            assertTrue(DefaultSmsAppHelper.setDefaultSmsApp(getContext(), mOriginalDefaultSmsApp));
+        }
     }
 
     @Test
+    @ApiTest(apis = "android.telephony.SmsManager#sendMultimediaMessage")
     public void testSendMmsMessage() {
-        sendMmsMessage(0L /* messageId */, Activity.RESULT_OK, SmsManager.getDefault());
+        Log.i("MmsTest", "testSendMmsMessage");
+
+        // Test non-default SMS app
+        sendMmsMessage(0L /* messageId */, Activity.RESULT_OK, SmsManager.getDefault(), false);
+
+        // Test default SMS app
+        DefaultSmsAppHelper.ensureDefaultSmsApp();
+        sendMmsMessage(0L /* messageId */, Activity.RESULT_OK, SmsManager.getDefault(), true);
+        DefaultSmsAppHelper.stopBeingDefaultSmsApp();
     }
 
     @Test
+    @ApiTest(apis = "android.telephony.SmsManager#sendMultimediaMessage")
     public void testSendMmsMessageWithInactiveSubscriptionId() {
         int inactiveSubId = 127;
+
+        // Test non-default SMS app
         sendMmsMessage(0L /* messageId */, SmsManager.MMS_ERROR_INACTIVE_SUBSCRIPTION,
-                SmsManager.getSmsManagerForSubscriptionId(inactiveSubId));
+                SmsManager.getSmsManagerForSubscriptionId(inactiveSubId), false);
+
+        // Test default SMS app
+        DefaultSmsAppHelper.ensureDefaultSmsApp();
+        sendMmsMessage(0L /* messageId */, SmsManager.MMS_ERROR_INACTIVE_SUBSCRIPTION,
+                SmsManager.getSmsManagerForSubscriptionId(inactiveSubId), true);
+        DefaultSmsAppHelper.stopBeingDefaultSmsApp();
     }
 
     @Test
+    @ApiTest(apis = "android.telephony.SmsManager#sendMultimediaMessage")
+    public void testSendMmsMessageWithMmsDisabled() {
+        if (!Flags.mmsDisabledError()) {
+            Log.i(TAG, "testSendMmsMessageWithMmsDisabled: mmsDisabledError is not enabled");
+            return;
+        }
+        Log.i(TAG, "testSendMmsMessageWithMmsDisabled");
+
+        // Disable MMS carrier config
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(SmsManager.MMS_CONFIG_MMS_ENABLED, false);
+        assertTrue(overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), bundle));
+        assertFalse(doesSupportMMS());
+
+        // It takes some time for the new carrier config loaded to MmsConfigManager
+        waitFor(TimeUnit.SECONDS.toMillis(1));
+
+        // Test non-default SMS app
+        sendMmsMessage(0L /* messageId */, SmsManager.MMS_ERROR_MMS_DISABLED_BY_CARRIER,
+                SmsManager.getDefault(), false);
+
+        // Test default SMS app
+        DefaultSmsAppHelper.ensureDefaultSmsApp();
+        sendMmsMessage(0L /* messageId */, SmsManager.MMS_ERROR_MMS_DISABLED_BY_CARRIER,
+                SmsManager.getDefault(), true);
+        DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+
+        // Restore MMS config
+        if (doesSupportMMS()) {
+            bundle.putBoolean(SmsManager.MMS_CONFIG_MMS_ENABLED, true);
+            assertTrue(overrideCarrierConfig(SmsManager.getDefaultSmsSubscriptionId(), bundle));
+        }
+    }
+
+    @Test
+    @ApiTest(apis = "android.telephony.SmsManager#sendMultimediaMessage")
     public void testSendMmsMessageWithMessageId() {
-        sendMmsMessage(MESSAGE_ID, Activity.RESULT_OK, SmsManager.getDefault());
+        // Test non-default SMS app
+        sendMmsMessage(MESSAGE_ID, Activity.RESULT_OK, SmsManager.getDefault(), false);
+
+        // Test default SMS app
+        DefaultSmsAppHelper.ensureDefaultSmsApp();
+        sendMmsMessage(MESSAGE_ID, Activity.RESULT_OK, SmsManager.getDefault(), true);
+        DefaultSmsAppHelper.stopBeingDefaultSmsApp();
     }
 
     private void sendMmsMessage(long messageId, int expectedErrorResultCode,
-            SmsManager smsManager) {
-        if (!doesSupportMMS()) {
+            SmsManager smsManager, boolean defaultSmsApp) {
+        if (!doesSupportMMS()
+                && expectedErrorResultCode != SmsManager.MMS_ERROR_MMS_DISABLED_BY_CARRIER) {
             Log.i(TAG, "testSendMmsMessage skipped: no telephony available or MMS not supported");
             return;
         }
+
+        String selfNumber;
+        getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+        try {
+            int subId = mTelephonyManager.getSubscriptionId();
+            SubscriptionManager subscriptionManager = getContext()
+                    .getSystemService(SubscriptionManager.class);
+            selfNumber = subscriptionManager.getPhoneNumber(subId);
+        } finally {
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+        assertFalse("[RERUN] SIM card does not provide phone number. Use a suitable SIM Card.",
+                TextUtils.isEmpty(selfNumber));
 
         Log.i(TAG, "testSendMmsMessage");
 
         final Context context = getContext();
         // Register sent receiver
-        mSentReceiver = new SentReceiver(expectedErrorResultCode);
-        context.registerReceiver(mSentReceiver, new IntentFilter(ACTION_MMS_SENT));
+        mSentReceiver = new SentReceiver(expectedErrorResultCode, ACTION_MMS_SENT);
+        context.registerReceiver(mSentReceiver, new IntentFilter(ACTION_MMS_SENT),
+                Context.RECEIVER_EXPORTED);
+
+        mDeliveryReceiver = new SentReceiver(expectedErrorResultCode,
+                ACTION_WAP_PUSH_DELIVER_DEFAULT_APP);
+        context.registerReceiver(mDeliveryReceiver,
+                new IntentFilter(ACTION_WAP_PUSH_DELIVER_DEFAULT_APP), Context.RECEIVER_EXPORTED);
+
         // Create local provider file for sending PDU
         final String fileName = "send." + String.valueOf(Math.abs(mRandom.nextLong())) + ".dat";
         final File sendFile = new File(context.getCacheDir(), fileName);
-        final String selfNumber = getSimNumber(context);
-        assertTrue(!TextUtils.isEmpty(selfNumber));
         final byte[] pdu = buildPdu(context, selfNumber, SUBJECT, MESSAGE_BODY);
         assertNotNull(pdu);
         assertTrue(writePdu(sendFile, pdu));
@@ -223,7 +389,8 @@ public class MmsTest {
                 .build();
         // Send
         final PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context, 0, new Intent(ACTION_MMS_SENT), PendingIntent.FLAG_MUTABLE);
+                context, 0, new Intent(ACTION_MMS_SENT).setPackage(context.getPackageName()),
+                PendingIntent.FLAG_MUTABLE);
         if (messageId == 0L) {
             smsManager.sendMultimediaMessage(context,
                     contentUri, null/*locationUrl*/, null/*configOverrides*/, pendingIntent);
@@ -233,7 +400,24 @@ public class MmsTest {
                     messageId);
         }
         assertTrue(mSentReceiver.waitForSuccess(SENT_TIMEOUT));
-        assertTrue(mSentReceiver.getResultCode() == expectedErrorResultCode);
+        assertEquals(expectedErrorResultCode, mSentReceiver.getResultCode());
+
+        if (expectedErrorResultCode == Activity.RESULT_OK) {
+            int carrierId = mTelephonyManager.getSimCarrierId();
+            assertFalse("[RERUN] Carrier [carrier-id: " + carrierId + "] does not support "
+                            + "loop back messages. Use another carrier.",
+                    CarrierCapability.UNSUPPORT_LOOP_BACK_MESSAGES.contains(carrierId));
+        }
+
+        if (defaultSmsApp && expectedErrorResultCode == Activity.RESULT_OK) {
+            // Default SMS App should receive android.provider.Telephony.WAP_PUSH_DELIVER
+            assertTrue(mDeliveryReceiver.waitForSuccess(SENT_TIMEOUT));
+        } else {
+            // Non-default SMS App should not receive android.provider.Telephony.WAP_PUSH_DELIVER.
+            // Default SMS App will not receive android.provider.Telephony.WAP_PUSH_DELIVER in case
+            // of fail to send a message.
+            assertTrue(mDeliveryReceiver.verifyNoCalls(NO_CALLS_TIMEOUT));
+        }
         sendFile.delete();
     }
 
@@ -329,12 +513,6 @@ public class MmsTest {
         pb.addPart(0, smilPart);
     }
 
-    private static String getSimNumber(Context context) {
-        final TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(
-                Context.TELEPHONY_SERVICE);
-        return telephonyManager.getLine1Number();
-    }
-
     private static boolean shouldParseContentDisposition() {
         return SmsManager
                 .getDefault()
@@ -370,11 +548,7 @@ public class MmsTest {
         final SmsManager smsManager = SmsManager.getDefault();
         smsManager.getCarrierConfigValues();
         // MMS config is loaded asynchronously. Wait a bit so it will be loaded.
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            // Ignore
-        }
+        waitFor(TimeUnit.SECONDS.toMillis(1));
 
         final Context context = getContext();
         // Create local provider file
@@ -387,7 +561,7 @@ public class MmsTest {
                 .build();
 
         final PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context, 0, new Intent(ACTION_MMS_DOWNLOAD),
+                context, 0, new Intent(ACTION_MMS_DOWNLOAD).setPackage(context.getPackageName()),
                 PendingIntent.FLAG_MUTABLE);
 
         if (messageId == 0L) {
@@ -402,6 +576,64 @@ public class MmsTest {
             // initiate the downloading has been implemented.
             smsManager.downloadMultimediaMessage(context, "foo/fake", contentUri,
                     null /* configOverrides */, pendingIntent, MESSAGE_ID);
+        }
+    }
+
+    private abstract static class BaseReceiver extends BroadcastReceiver {
+        protected CountDownLatch mLatch = new CountDownLatch(1);
+
+        void clearQueue() {
+            mLatch = new CountDownLatch(1);
+        }
+
+        boolean waitForChanged() throws Exception {
+            return mLatch.await(5000, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private static class CarrierConfigReceiver extends BaseReceiver {
+        private final int mSubId;
+
+        CarrierConfigReceiver(int subId) {
+            mSubId = subId;
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED.equals(intent.getAction())) {
+                int subId = intent.getIntExtra(CarrierConfigManager.EXTRA_SUBSCRIPTION_INDEX, -1);
+                Log.d(TAG, "Carrier config changed for subId=" + subId
+                        + ", mSubId=" + mSubId);
+                if (mSubId == subId) {
+                    mLatch.countDown();
+                }
+            }
+        }
+    }
+
+    private static boolean overrideCarrierConfig(int subId, PersistableBundle bundle) {
+        try {
+            CarrierConfigManager carrierConfigManager = getInstrumentation()
+                    .getContext().getSystemService(CarrierConfigManager.class);
+            sCarrierConfigReceiver.clearQueue();
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(carrierConfigManager,
+                    (m) -> m.overrideConfig(subId, bundle));
+            return sCarrierConfigReceiver.waitForChanged();
+        } catch (Exception ex) {
+            Log.e(TAG, "overrideCarrierConfig(), ex=" + ex);
+            return false;
+        }
+    }
+
+    private static void waitFor(long timeoutMillis) {
+        Object delayTimeout = new Object();
+        synchronized (delayTimeout) {
+            try {
+                delayTimeout.wait(timeoutMillis);
+            } catch (InterruptedException ex) {
+                // Ignore the exception
+                Log.d(TAG, "waitFor: delayTimeout ex=" + ex);
+            }
         }
     }
 }

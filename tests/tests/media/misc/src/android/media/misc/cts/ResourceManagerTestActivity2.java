@@ -16,8 +16,6 @@
 
 package android.media.misc.cts;
 
-import android.app.Activity;
-import android.os.Bundle;
 import android.util.Log;
 
 public class ResourceManagerTestActivity2 extends ResourceManagerTestActivityBase {
@@ -28,7 +26,22 @@ public class ResourceManagerTestActivity2 extends ResourceManagerTestActivityBas
         Log.d(TAG, "onResume called.");
         super.onResume();
 
-        int result = (allocateCodecs(1 /* max */) == 1) ? RESULT_OK : RESULT_CANCELED;
-        finishWithResult(result);
+        // Try to create as many as MAX_INSTANCES codecs from this foreground activity
+        // so that we run into Resource conflict (INSUFFICIENT_RESOURCE) situation
+        // and eventually reclaim a codec from the background activity.
+        int codecCount = allocateCodecs(MAX_INSTANCES);
+        int result = RESULT_OK;
+        // See if we have failed to create at least one codec.
+        if (codecCount == 0) {
+            result = RESULT_CANCELED;
+        }
+        // If we have set codec-importance, then we expect reclaim error, provided,
+        // the activity has already created MAX_INSTANCES of codecs.
+        // So wait for the codecs to be used and reclaim error to be thrown.
+        if (mChangingCodecImportance && result == RESULT_OK && codecCount < MAX_INSTANCES) {
+            useCodecs();
+        } else {
+            finishWithResult(result);
+        }
     }
 }

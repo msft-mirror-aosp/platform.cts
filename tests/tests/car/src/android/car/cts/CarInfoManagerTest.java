@@ -41,17 +41,19 @@ import java.util.List;
 @RequiresDevice
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot get car related permissions.")
-public class CarInfoManagerTest extends CarApiTestBase {
+public final class CarInfoManagerTest extends AbstractCarTestCase {
 
-    private CarInfoManager mCarInfoManager;
+    private static final String TAG = CarInfoManagerTest.class.getSimpleName();
+
     // SCAME EvConnectorType in VHAL
     private static final int SCAME = 11;
     // GBT_DC EvConnectorType in VHAL
     private static final int GBT_DC = 10;
 
+    private CarInfoManager mCarInfoManager;
+
     @Before
     public void setUp() throws Exception {
-        super.setUp();
         mCarInfoManager = (CarInfoManager) getCar().getCarManager(Car.INFO_SERVICE);
     }
 

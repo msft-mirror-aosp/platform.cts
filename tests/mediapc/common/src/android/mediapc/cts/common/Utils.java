@@ -23,23 +23,26 @@ import static org.junit.Assume.assumeTrue;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Rect;
+import android.hardware.display.DisplayManager;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.VideoCapabilities.PerformancePoint;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.os.SystemProperties;
+import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.WindowManager;
-import android.view.WindowMetrics;
+import android.view.Display;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Test utilities.
@@ -56,13 +59,15 @@ public class Utils {
     public static final int MIN_DISPLAY_LONG_CANDIDATE_PIXELS = 1920;
     public static final int DISPLAY_SHORT_PIXELS;
     public static final int MIN_DISPLAY_SHORT_CANDIDATE_PIXELS = 1080;
+    public static final boolean IS_HDR;
+    public static final float HDR_DISPLAY_AVERAGE_LUMINANCE;
 
     public static final long TOTAL_MEMORY_MB;
     // Media performance requires 6 GB minimum RAM, but keeping the following to 5 GB
     // as activityManager.getMemoryInfo() returns around 5.4 GB on a 6 GB device.
     public static final long MIN_MEMORY_PERF_CLASS_CANDIDATE_MB = 5 * 1024;
     // Android T Media performance requires 8 GB min RAM, so setting lower as above
-    public static final long MIN_MEMORY_PERF_CLASS_T_MB = 7 * 1024;
+    public static final long MIN_MEMORY_PERF_CLASS_T_MB = 6800;
 
     private static final boolean MEETS_AVC_CODEC_PRECONDITIONS;
     static {
@@ -97,14 +102,36 @@ public class Utils {
         }
         // When used from ItsService, context will be null
         if (context != null) {
-            WindowManager windowManager = context.getSystemService(WindowManager.class);
-            WindowMetrics metrics = windowManager.getMaximumWindowMetrics();
-            Rect displayBounds = metrics.getBounds();
-            int widthPixels = displayBounds.width();
-            int heightPixels = displayBounds.height();
-            DISPLAY_DPI = context.getResources().getConfiguration().densityDpi;
-            DISPLAY_LONG_PIXELS = Math.max(widthPixels, heightPixels);
-            DISPLAY_SHORT_PIXELS = Math.min(widthPixels, heightPixels);
+            DisplayManager displayManager = context.getSystemService(DisplayManager.class);
+            Display defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
+            Display.Mode maxResolutionDisplayMode =
+                    Arrays.stream(displayManager.getDisplays())
+                            .map(Display::getSupportedModes)
+                            .flatMap(Stream::of)
+                            .max(Comparator.comparing(Display.Mode::getPhysicalHeight))
+                            .orElseThrow(
+                                    () -> new RuntimeException("Failed to determine max height"));
+            int maxWidthPixels = maxResolutionDisplayMode.getPhysicalWidth();
+            int maxHeightPixels = maxResolutionDisplayMode.getPhysicalHeight();
+            DISPLAY_LONG_PIXELS = Math.max(maxWidthPixels, maxHeightPixels);
+            DISPLAY_SHORT_PIXELS = Math.min(maxWidthPixels, maxHeightPixels);
+
+            int widthPixels = defaultDisplay.getMode().getPhysicalWidth();
+            int heightPixels = defaultDisplay.getMode().getPhysicalHeight();
+
+            DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+            final double widthInch = (double) widthPixels / (double) metrics.xdpi;
+            final double heightInch = (double) heightPixels / (double) metrics.ydpi;
+            final double diagonalInch = Math.sqrt(widthInch * widthInch + heightInch * heightInch);
+            final double maxDiagonalPixels =
+                    Math.sqrt(maxWidthPixels * maxWidthPixels + maxHeightPixels * maxHeightPixels);
+            // Use max of computed dpi and advertised dpi as these values differ in some devices.
+            DISPLAY_DPI = Math.max((int) (maxDiagonalPixels / diagonalInch),
+                    context.getResources().getConfiguration().densityDpi);
+
+            IS_HDR = defaultDisplay.isHdr();
+            HDR_DISPLAY_AVERAGE_LUMINANCE =
+                defaultDisplay.getHdrCapabilities().getDesiredMaxAverageLuminance();
 
             ActivityManager activityManager = context.getSystemService(ActivityManager.class);
             ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
@@ -115,6 +142,8 @@ public class Utils {
             DISPLAY_LONG_PIXELS = 0;
             DISPLAY_SHORT_PIXELS = 0;
             TOTAL_MEMORY_MB = 0;
+            IS_HDR = false;
+            HDR_DISPLAY_AVERAGE_LUMINANCE = 0;
         }
         MEETS_AVC_CODEC_PRECONDITIONS = meetsAvcCodecPreconditions();
     }
@@ -136,10 +165,22 @@ public class Utils {
         return sPc == Build.VERSION_CODES.TIRAMISU;
     }
 
+    public static boolean isBeforeTPerfClass() {
+        return sPc < Build.VERSION_CODES.TIRAMISU;
+    }
+
+    public static boolean isUPerfClass() {
+        return sPc == Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+    }
+
+    public static boolean isVPerfClass() {
+        return sPc == Build.VERSION_CODES.VANILLA_ICE_CREAM;
+    }
+
     /**
      * Latest defined media performance class.
      */
-    private static final int LAST_PERFORMANCE_CLASS = Build.VERSION_CODES.TIRAMISU;
+    private static final int LAST_PERFORMANCE_CLASS = Build.VERSION_CODES.VANILLA_ICE_CREAM;
 
     public static boolean isHandheld() {
         // handheld nature is not exposed to package manager, for now
@@ -209,6 +250,14 @@ public class Utils {
                 && meetsAvcCodecPreconditions(/* isEncoder */ false);
     }
 
+    private static boolean meetsMemoryPrecondition() {
+        if (isBeforeTPerfClass()) {
+            return TOTAL_MEMORY_MB >= MIN_MEMORY_PERF_CLASS_CANDIDATE_MB;
+        } else {
+            return TOTAL_MEMORY_MB >= MIN_MEMORY_PERF_CLASS_T_MB;
+        }
+    }
+
     public static int getPerfClass() {
         return sPc;
     }
@@ -226,7 +275,7 @@ public class Utils {
         // If device doesn't advertise performance class, check if this can be ruled out as a
         // candidate for performance class tests.
         if (!isHandheld()
-                || TOTAL_MEMORY_MB < MIN_MEMORY_PERF_CLASS_CANDIDATE_MB
+                || !meetsMemoryPrecondition()
                 || DISPLAY_DPI < MIN_DISPLAY_CANDIDATE_DPI
                 || DISPLAY_LONG_PIXELS < MIN_DISPLAY_LONG_CANDIDATE_PIXELS
                 || DISPLAY_SHORT_PIXELS < MIN_DISPLAY_SHORT_CANDIDATE_PIXELS

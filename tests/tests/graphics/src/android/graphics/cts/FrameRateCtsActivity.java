@@ -58,7 +58,7 @@ public class FrameRateCtsActivity extends Activity {
     }
 
     private static final String TAG = "FrameRateCtsActivity";
-    private static final long FRAME_RATE_SWITCH_GRACE_PERIOD_SECONDS = 2;
+    private static final long FRAME_RATE_SWITCH_GRACE_PERIOD_SECONDS = 4;
     private static final long STABLE_FRAME_RATE_WAIT_SECONDS = 1;
     private static final long POST_BUFFER_INTERVAL_MILLIS = 500;
     private static final int PRECONDITION_WAIT_MAX_ATTEMPTS = 5;
@@ -257,6 +257,25 @@ public class FrameRateCtsActivity extends Activity {
             return rc;
         }
 
+        public int clearFrameRate() {
+            Log.i(TAG,
+                    String.format("Clearing frame rate for %s", mName));
+            int rc = 0;
+            if (mApi == Api.SURFACE) {
+                mSurface.clearFrameRate();
+            } else if (mApi == Api.ANATIVE_WINDOW) {
+                rc = nativeWindowClearFrameRate(mSurface);
+            } else if (mApi == Api.SURFACE_CONTROL) {
+                try (SurfaceControl.Transaction transaction = new SurfaceControl.Transaction()) {
+                    transaction.clearFrameRate(mSurfaceControl);
+                    transaction.apply();
+                }
+            } else if (mApi == Api.NATIVE_SURFACE_CONTROL) {
+                nativeSurfaceControlClearFrameRate(mNativeSurfaceControl);
+            }
+            return rc;
+        }
+
         public void setInvalidFrameRate(float frameRate, int compatibility,
                 int changeFrameRateStrategy) {
             if (mApi == Api.SURFACE) {
@@ -421,7 +440,8 @@ public class FrameRateCtsActivity extends Activity {
         List<Float> seamedRefreshRates = new ArrayList<>();
         Display.Mode[] modes = display.getSupportedModes();
         for (Display.Mode otherMode : modes) {
-            if (!DisplayUtil.isModeSwitchSeamless(mode, otherMode)) {
+            if (hasSameResolution(mode, otherMode)
+                    && !DisplayUtil.isModeSwitchSeamless(mode, otherMode)) {
                 seamedRefreshRates.add(otherMode.getRefreshRate());
             }
         }
@@ -686,6 +706,10 @@ public class FrameRateCtsActivity extends Activity {
                 ? "seamless" : "always";
         runTestsWithPreconditions(api -> testExactFrameRateMatch(api, changeFrameRateStrategy),
                 type + " exact frame rate match");
+    }
+
+    public void testClearFrameRate() throws InterruptedException {
+        runTestsWithPreconditions(this::testClearFrameRate, "clear frame rate");
     }
 
     private void testExactFrameRateMatch(Api api, int changeFrameRateStrategy)
@@ -957,6 +981,45 @@ public class FrameRateCtsActivity extends Activity {
         });
     }
 
+    private void testClearFrameRate(Api api) throws InterruptedException {
+        Display display = mDisplayManager.getDisplay(Display.DEFAULT_DISPLAY);
+        Display.Mode initialMode = display.getMode();
+
+        int width = mSurfaceView.getHolder().getSurfaceFrame().width();
+        int height = mSurfaceView.getHolder().getSurfaceFrame().height() / 2;
+        Rect destFrameA = new Rect(/*left=*/0, /*top=*/0, /*right=*/width, /*bottom=*/height);
+        TestSurface surface = new TestSurface(api, mSurfaceView.getSurfaceControl(), mSurface,
+                "surface", destFrameA, /*visible=*/true, Color.RED);
+
+        // Verify clear frame rate if set frame rate is seamless
+        List<Float> seamlessRefreshRates =
+                Floats.asList(initialMode.getAlternativeRefreshRates());
+        verifyClearFrameRate(surface, seamlessRefreshRates, initialMode.getRefreshRate(),
+                Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
+
+        // Verify clear frame rate if set frame rate is non-seamless
+        List<Float> seamedRefreshRates = getSeamedRefreshRates(initialMode, display);
+        verifyClearFrameRate(surface, seamedRefreshRates, initialMode.getRefreshRate(),
+                Surface.CHANGE_FRAME_RATE_ALWAYS);
+    }
+
+    private void verifyClearFrameRate(TestSurface surface, List<Float> refreshRates,
+            float initialRefreshRate, int changeFrameRateStrategy) throws InterruptedException {
+        for (float frameRate : refreshRates) {
+            if (initialRefreshRate != frameRate) {
+                surface.setFrameRate(frameRate, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT,
+                        changeFrameRateStrategy);
+                verifyCompatibleAndStableFrameRate(frameRate, FRAME_RATE_TOLERANCE_RELAXED,
+                        surface);
+
+                // Clear the frame-rate
+                surface.clearFrameRate();
+                waitForStableFrameRate(surface);
+                break;
+            }
+        }
+    }
+
     public void testMatchContentFramerate_Always() throws InterruptedException {
         runTestsWithPreconditions(this::testMatchContentFramerate_Always,
                 "testMatchContentFramerate_Always");
@@ -972,4 +1035,6 @@ public class FrameRateCtsActivity extends Activity {
     private static native void nativeSurfaceControlSetVisibility(
             long surfaceControl, boolean visible);
     private static native boolean nativeSurfaceControlPostBuffer(long surfaceControl, int color);
+    private static native int nativeWindowClearFrameRate(Surface surface);
+    private static native void nativeSurfaceControlClearFrameRate(long surfaceControl);
 }

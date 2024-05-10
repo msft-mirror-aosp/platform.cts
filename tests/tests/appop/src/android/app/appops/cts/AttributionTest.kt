@@ -20,15 +20,16 @@ import android.app.AppOpsManager
 import android.app.AppOpsManager.OPSTR_READ_CONTACTS
 import android.app.AppOpsManager.OPSTR_WIFI_SCAN
 import android.app.AppOpsManager.OP_FLAGS_ALL
-import android.content.Intent
 import android.content.ComponentName
+import android.content.Intent
 import android.platform.test.annotations.AppModeFull
+import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
+import java.lang.Thread.sleep
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
-import java.lang.Thread.sleep
 
 private const val APK_PATH = "/data/local/tmp/cts/appops/"
 
@@ -47,7 +48,7 @@ class AttributionTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
     private val uiAutomation = instrumentation.getUiAutomation()
-    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)
+    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
     private val appUid by lazy { context.packageManager.getPackageUid(APP_PKG, 0) }
 
     private fun installApk(apk: String) {
@@ -71,6 +72,7 @@ class AttributionTest {
     }
 
     @Test
+    @FlakyTest
     fun manifestReceiverTagging() {
         val PKG = "android.app.appops.cts.appwithreceiverattribution"
 
@@ -88,10 +90,10 @@ class AttributionTest {
             appOpsManager.noteOp(OPSTR_READ_CONTACTS, uid, PKG, ATTRIBUTION_3, null)
         }
 
-        sleep(1)
+        sleep(50)
         val before = getOpEntry(uid, PKG, OPSTR_READ_CONTACTS)!!
         context.sendBroadcast(intent, android.Manifest.permission.READ_CONTACTS)
-        sleep(1)
+        sleep(50)
 
         eventually {
             // 1 and 2 should be attributed for the broadcast, 3 should not.
@@ -109,6 +111,7 @@ class AttributionTest {
                     .isEqualTo(before.attributedOpEntries[ATTRIBUTION_3]!!
                             .getLastAccessTime(OP_FLAGS_ALL))
         }
+        runCommand("pm uninstall $PKG")
     }
 
     @Test

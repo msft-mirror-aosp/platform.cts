@@ -33,6 +33,7 @@ import android.media.Image.Plane;
 import android.media.ImageReader;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
+import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.VideoCapabilities;
 import android.media.MediaExtractor;
@@ -79,8 +80,7 @@ import java.util.concurrent.TimeUnit;
  * test. For decoder test, hw and sw decoders are tested,
  * </p>
  */
-// TODO(b/210947256) Enable presubmit once this test works on Pixel 4
-//@Presubmit
+@Presubmit
 @SmallTest
 @RequiresDevice
 @AppModeFull(reason = "Instant apps cannot access the SD card")
@@ -125,7 +125,7 @@ public class ImageReaderDecoderTest {
         mTestId = testId;
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{4})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{4}")
     public static Collection<Object[]> input() {
         final List<Object[]> argsList = new ArrayList<>();
         for (MediaAssets assets : ASSETS) {
@@ -364,7 +364,6 @@ public class ImageReaderDecoderTest {
 
         mediaFormat = mExtractor.getTrackFormat(0);
         mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
-
 
         MediaCodecInfo info = mDecoder.getCodecInfo();
         CodecCapabilities caps = info.getCapabilitiesForType(mMime);

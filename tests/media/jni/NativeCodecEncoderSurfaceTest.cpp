@@ -60,7 +60,7 @@ class CodecEncoderSurfaceTest {
     std::string mErrorLogs;
     std::string mTestEnv;
 
-    bool setUpExtractor(const char* srcFile, int colorFormat);
+    bool setUpExtractor(const char* srcFile, const char* srcMediaType, int colorFormat);
     void deleteExtractor();
     bool configureCodec(bool isAsync, bool signalEOSWithLastFrame, bool usePersistentSurface);
     void resetContext(bool isAsync, bool signalEOSWithLastFrame);
@@ -84,7 +84,8 @@ class CodecEncoderSurfaceTest {
     ~CodecEncoderSurfaceTest();
 
     bool testSimpleEncode(const char* encoder, const char* decoder, const char* srcPath,
-                          const char* muxOutPath, int colorFormat, bool usePersistentSurface);
+                          const char* srcMediaType, const char* muxOutPath, int colorFormat,
+                          bool usePersistentSurface);
 };
 
 CodecEncoderSurfaceTest::CodecEncoderSurfaceTest(const char* mediaType, const char* cfgParams,
@@ -100,7 +101,14 @@ CodecEncoderSurfaceTest::CodecEncoderSurfaceTest(const char* mediaType, const ch
     resetContext(false, false);
     mMaxBFrames = 0;
     if (mEncFormat != nullptr) {
-        AMediaFormat_getInt32(mEncFormat, TBD_AMEDIACODEC_PARAMETER_KEY_MAX_B_FRAMES, &mMaxBFrames);
+        // key formalized in Android U (sdk==34).
+        // Use internally-defined when running on earlier releases, such as happens with MTS
+        if (__builtin_available(android __ANDROID_API_U__, *)) {
+            AMediaFormat_getInt32(mEncFormat, AMEDIAFORMAT_KEY_MAX_B_FRAMES, &mMaxBFrames);
+        } else {
+            AMediaFormat_getInt32(mEncFormat, COMPATIBLE_AMEDIAFORMAT_KEY_MAX_B_FRAMES,
+                                  &mMaxBFrames);
+        }
     }
     mLatency = mMaxBFrames;
     mReviseLatency = false;
@@ -135,7 +143,8 @@ CodecEncoderSurfaceTest::~CodecEncoderSurfaceTest() {
     delete mTestBuff;
 }
 
-bool CodecEncoderSurfaceTest::setUpExtractor(const char* srcFile, int colorFormat) {
+bool CodecEncoderSurfaceTest::setUpExtractor(const char* srcFile, const char* srcMediaType,
+                                             int colorFormat) {
     FILE* fp = fopen(srcFile, "rbe");
     struct stat buf {};
     if (fp && !fstat(fileno(fp), &buf)) {
@@ -151,7 +160,7 @@ bool CodecEncoderSurfaceTest::setUpExtractor(const char* srcFile, int colorForma
                 AMediaFormat* currFormat = AMediaExtractor_getTrackFormat(mExtractor, trackID);
                 const char* mediaType = nullptr;
                 AMediaFormat_getString(currFormat, AMEDIAFORMAT_KEY_MIME, &mediaType);
-                if (mediaType && strncmp(mediaType, "video/", strlen("video/")) == 0) {
+                if (mediaType && strcmp(mediaType, srcMediaType) == 0) {
                     AMediaExtractor_selectTrack(mExtractor, trackID);
                     AMediaFormat_setInt32(currFormat, AMEDIAFORMAT_KEY_COLOR_FORMAT, colorFormat);
                     mDecFormat = currFormat;
@@ -320,6 +329,8 @@ bool CodecEncoderSurfaceTest::dequeueEncoderOutput(size_t bufferIndex,
     if (info->size > 0) {
         size_t buffSize;
         uint8_t* buf = AMediaCodec_getOutputBuffer(mEncoder, bufferIndex, &buffSize);
+        // NdkMediaCodec calls ABuffer::data, which already adds offset
+        info->offset = 0;
         if (mSaveToMem) {
             mOutputBuff->saveToMemory(buf, info);
         }
@@ -346,22 +357,19 @@ bool CodecEncoderSurfaceTest::dequeueEncoderOutput(size_t bufferIndex,
 bool CodecEncoderSurfaceTest::tryEncoderOutput(long timeOutUs) {
     if (mIsCodecInAsyncMode) {
         if (!hasSeenError() && !mSawEncOutputEOS) {
-            int retry = 0;
             while (mReviseLatency) {
-                if (mAsyncHandleEncoder.hasOutputFormatChanged()) {
-                    int actualLatency;
-                    mReviseLatency = false;
-                    if (AMediaFormat_getInt32(mAsyncHandleEncoder.getOutputFormat(),
-                                              AMEDIAFORMAT_KEY_LATENCY, &actualLatency)) {
-                        if (mLatency < actualLatency) {
-                            mLatency = actualLatency;
-                            return !hasSeenError();
-                        }
+                if (!mAsyncHandleEncoder.waitOnFormatChange()) {
+                    mErrorLogs.append("taking too long to receive onOutputFormatChanged callback");
+                    return false;
+                }
+                int actualLatency;
+                mReviseLatency = false;
+                if (AMediaFormat_getInt32(mAsyncHandleEncoder.getOutputFormat(),
+                                          AMEDIAFORMAT_KEY_LATENCY, &actualLatency)) {
+                    if (mLatency < actualLatency) {
+                        mLatency = actualLatency;
+                        return !hasSeenError();
                     }
-                } else {
-                    if (retry > kRetryLimit) return false;
-                    usleep(kQDeQTimeOutUs);
-                    retry++;
                 }
             }
             callbackObject element = mAsyncHandleEncoder.getOutput();
@@ -547,9 +555,11 @@ bool CodecEncoderSurfaceTest::doWork(int frameLimit) {
 }
 
 bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* decoder,
-                                               const char* srcPath, const char* muxOutPath,
-                                               int colorFormat, bool usePersistentSurface) {
-    RETURN_IF_FALSE(setUpExtractor(srcPath, colorFormat), std::string{"setUpExtractor failed"})
+                                               const char* srcPath, const char *srcMediaType,
+                                               const char* muxOutPath, int colorFormat,
+                                               bool usePersistentSurface) {
+    RETURN_IF_FALSE(setUpExtractor(srcPath, srcMediaType, colorFormat),
+                    std::string{"setUpExtractor failed"})
     bool muxOutput = muxOutPath != nullptr;
 
     /* TODO(b/149027258) */
@@ -573,16 +583,14 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
         RETURN_IF_NULL(mEncoder, StringFormat("unable to create media codec by name %s", encoder))
         FILE* ofp = nullptr;
         if (muxOutput && loopCounter == 0) {
-            int muxerFormat = 0;
+            OutputFormat muxerFormat = AMEDIAMUXER_OUTPUT_FORMAT_MPEG_4;
             if (!strcmp(mMediaType, AMEDIA_MIMETYPE_VIDEO_VP8) ||
                 !strcmp(mMediaType, AMEDIA_MIMETYPE_VIDEO_VP9)) {
-                muxerFormat = OUTPUT_FORMAT_WEBM;
-            } else {
-                muxerFormat = OUTPUT_FORMAT_MPEG_4;
+                muxerFormat = AMEDIAMUXER_OUTPUT_FORMAT_WEBM;
             }
             ofp = fopen(muxOutPath, "wbe+");
             if (ofp) {
-                mMuxer = AMediaMuxer_new(fileno(ofp), (OutputFormat)muxerFormat);
+                mMuxer = AMediaMuxer_new(fileno(ofp), muxerFormat);
             }
         }
         if (!configureCodec(isAsync, false, usePersistentSurface)) return false;
@@ -615,22 +623,22 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
                        StringFormat("Decoder output count is not equal to decoder input count\n "
                                     "Input count : %s, Output count : %s\n",
                                     mDecInputCount, mDecOutputCount))
-        /* TODO(b/153127506)
-         *  Currently disabling all encoder output checks. Added checks only for encoder timeStamp
-         *  is in increasing order or not.
-         *  Once issue is fixed remove increasing timestamp check and enable encoder checks.
-         */
-        /*RETURN_IF_TRUE((mEncOutputCount != mDecOutputCount),
-                       StringFormat("Encoder output count is not equal to decoder input count\n "
-                                    "Input count : %s, Output count : %s\n",
+        RETURN_IF_TRUE((mMaxBFrames == 0 && !mOutputBuff->isPtsStrictlyIncreasing(INT32_MIN)),
+                       std::string{"Output timestamps are not strictly increasing \n"}.append(
+                               ref->getErrorMsg()))
+        RETURN_IF_TRUE((mEncOutputCount != mDecOutputCount),
+                       StringFormat("Encoder output count is not equal to decoder input "
+                                    "count\n Input count : %s, Output count : %s\n",
                                     mDecInputCount, mEncOutputCount))
-        RETURN_IF_TRUE((loopCounter != 0 && !ref->equals(test)),
-                       std::string{"Encoder output is not consistent across runs \n"}.append(
-                               test->getErrorMsg()))
-        RETURN_IF_TRUE((loopCounter == 0 &&
-                        !mOutputBuff->isOutPtsListIdenticalToInpPtsList(mMaxBFrames != 0)),
+        RETURN_IF_TRUE(!mOutputBuff->isOutPtsListIdenticalToInpPtsList(mMaxBFrames != 0),
                        std::string{"Input pts list and Output pts list are not identical \n"}
-                               .append(ref->getErrorMsg()))*/
+                               .append(ref->getErrorMsg()))
+        // TODO:(b/149027258) Remove false once output is validated across runs
+        if (false) {
+            RETURN_IF_TRUE((loopCounter != 0 && !ref->equals(test)),
+                           std::string{"Encoder output is not consistent across runs \n"}.append(
+                                   test->getErrorMsg()))
+        }
         loopCounter++;
         ANativeWindow_release(mWindow);
         mWindow = nullptr;
@@ -643,18 +651,21 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
 }
 
 static jboolean nativeTestSimpleEncode(JNIEnv* env, jobject, jstring jEncoder, jstring jDecoder,
-                                       jstring jMediaType, jstring jtestFile, jstring jmuxFile,
+                                       jstring jMediaType, jstring jtestFile,
+                                       jstring jTestFileMediaType, jstring jmuxFile,
                                        jint jColorFormat, jboolean jUsePersistentSurface,
                                        jstring jCfgParams, jstring jSeparator, jobject jRetMsg) {
     const char* cEncoder = env->GetStringUTFChars(jEncoder, nullptr);
     const char* cDecoder = env->GetStringUTFChars(jDecoder, nullptr);
     const char* cMediaType = env->GetStringUTFChars(jMediaType, nullptr);
     const char* cTestFile = env->GetStringUTFChars(jtestFile, nullptr);
+    const char* cTestFileMediaType = env->GetStringUTFChars(jTestFileMediaType, nullptr);
     const char* cMuxFile = jmuxFile ? env->GetStringUTFChars(jmuxFile, nullptr) : nullptr;
     const char* cCfgParams = env->GetStringUTFChars(jCfgParams, nullptr);
     const char* cSeparator = env->GetStringUTFChars(jSeparator, nullptr);
     auto codecEncoderSurfaceTest = new CodecEncoderSurfaceTest(cMediaType, cCfgParams, cSeparator);
-    bool isPass = codecEncoderSurfaceTest->testSimpleEncode(cEncoder, cDecoder, cTestFile, cMuxFile,
+    bool isPass = codecEncoderSurfaceTest->testSimpleEncode(cEncoder, cDecoder, cTestFile,
+                                                            cTestFileMediaType, cMuxFile,
                                                             jColorFormat, jUsePersistentSurface);
     std::string msg = isPass ? std::string{} : codecEncoderSurfaceTest->getErrorMsg();
     delete codecEncoderSurfaceTest;
@@ -666,6 +677,7 @@ static jboolean nativeTestSimpleEncode(JNIEnv* env, jobject, jstring jEncoder, j
     env->ReleaseStringUTFChars(jDecoder, cDecoder);
     env->ReleaseStringUTFChars(jMediaType, cMediaType);
     env->ReleaseStringUTFChars(jtestFile, cTestFile);
+    env->ReleaseStringUTFChars(jTestFileMediaType, cTestFileMediaType);
     if (cMuxFile) env->ReleaseStringUTFChars(jmuxFile, cMuxFile);
     env->ReleaseStringUTFChars(jCfgParams, cCfgParams);
     env->ReleaseStringUTFChars(jSeparator, cSeparator);
@@ -676,8 +688,9 @@ static jboolean nativeTestSimpleEncode(JNIEnv* env, jobject, jstring jEncoder, j
 int registerAndroidMediaV2CtsEncoderSurfaceTest(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestSimpleEncode",
-             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;"
-             "Ljava/lang/String;IZLjava/lang/String;Ljava/lang/String;Ljava/lang/StringBuilder;)Z",
+             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
+             "String;Ljava/lang/String;IZLjava/lang/String;Ljava/lang/String;Ljava/lang/"
+             "StringBuilder;)Z",
              (void*)nativeTestSimpleEncode},
     };
     jclass c = env->FindClass("android/mediav2/cts/CodecEncoderSurfaceTest");

@@ -450,9 +450,9 @@ public class TvViewTest extends ActivityInstrumentationTestCase2<TvViewStubActiv
         assertTrue(mTvView.isFocused());
 
         verifyKeyEvent(
-                new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BUTTON_16), unhandledEvent);
+                new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_0), unhandledEvent);
         verifyKeyEvent(
-                new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BUTTON_16), unhandledEvent);
+                new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_0), unhandledEvent);
     }
 
     public void testConnectionFailed() throws Throwable {
@@ -508,6 +508,37 @@ public class TvViewTest extends ActivityInstrumentationTestCase2<TvViewStubActiv
         mInstrumentation.waitForIdleSync();
         mTvView.setZOrderOnTop(false);
         mInstrumentation.waitForIdleSync();
+    }
+
+    public void testGetAudioPresentations() throws Exception {
+        if (!Utils.hasTvInputFramework(getActivity())) {
+            return;
+        }
+
+        StubTunerTvInputService.insertChannels(mActivity.getContentResolver(), mStubInfo);
+
+        Uri uri = TvContract.buildChannelsUriForInput(mStubInfo.getId());
+        String[] projection = {TvContract.Channels._ID};
+        try (Cursor cursor =
+                        mActivity.getContentResolver().query(uri, projection, null, null, null)) {
+            assertNotNull(cursor);
+            assertTrue(cursor.moveToNext());
+            long channelId = cursor.getLong(0);
+            Uri channelUri = TvContract.buildChannelUri(channelId);
+            mTvView.tune(mStubInfo.getId(), channelUri);
+            mInstrumentation.waitForIdleSync();
+            new PollingCheck(TIME_OUT_MS) {
+                @Override
+                protected boolean check() {
+                    return !mTvView.getAudioPresentations().isEmpty();
+                }
+            }.run();
+        }
+        assertTrue(mTvView.getAudioPresentations().size() == 1);
+        assertTrue(mTvView.getAudioPresentations().get(0).getPresentationId()
+                == StubTunerTvInputService.TEST_AUDIO_PRESENTATION.getPresentationId());
+        assertTrue(mTvView.getAudioPresentations().get(0).getProgramId()
+                == StubTunerTvInputService.TEST_AUDIO_PRESENTATION.getProgramId());
     }
 
     @UiThreadTest

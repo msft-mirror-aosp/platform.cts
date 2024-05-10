@@ -18,6 +18,7 @@ package android.widget.cts;
 
 import static android.util.TypedValue.COMPLEX_UNIT_DIP;
 import static android.util.TypedValue.COMPLEX_UNIT_PX;
+import static android.view.inputmethod.Flags.FLAG_HOME_SCREEN_HANDWRITING_DELEGATOR;
 import static android.widget.RemoteViews.MARGIN_BOTTOM;
 import static android.widget.RemoteViews.MARGIN_END;
 import static android.widget.RemoteViews.MARGIN_LEFT;
@@ -26,6 +27,7 @@ import static android.widget.RemoteViews.MARGIN_START;
 import static android.widget.RemoteViews.MARGIN_TOP;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
+import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
 import static junit.framework.Assert.fail;
 
@@ -56,6 +58,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.util.ArrayMap;
 import android.util.DisplayMetrics;
@@ -140,6 +145,10 @@ public class RemoteViewsTest {
 
     @Rule
     public ExpectedException mExpectedException = ExpectedException.none();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Instrumentation mInstrumentation;
 
@@ -827,7 +836,7 @@ public class RemoteViewsTest {
 
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         PendingIntent pendingIntent =
-                PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_MUTABLE);
+                PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         mRemoteViews.setOnClickPendingIntent(R.id.remoteView_image, pendingIntent);
         mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mContext, mResult));
         mActivityRule.runOnUiThread(() -> view.performClick());
@@ -837,11 +846,54 @@ public class RemoteViewsTest {
         newActivity.finish();
     }
 
+    @LargeTest
+    @Test
+    @RequiresFlagsEnabled(FLAG_HOME_SCREEN_HANDWRITING_DELEGATOR)
+    public void testSetOnStylusHandwritingPendingIntent() throws Throwable {
+        ActivityMonitor am = mInstrumentation.addMonitor(MockURLSpanTestActivity.class.getName(),
+                null, false);
+
+        Uri uri = Uri.parse("ctstest://RemoteView/test");
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        PendingIntent pendingIntent =
+                PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        mRemoteViews.setOnStylusHandwritingPendingIntent(R.id.remoteView_image, pendingIntent);
+        mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mContext, mResult));
+        View view = mResult.findViewById(R.id.remoteView_image);
+        mActivityRule.runOnUiThread(view.getHandwritingDelegatorCallback());
+
+        Activity newActivity = am.waitForActivityWithTimeout(TEST_TIMEOUT);
+        assertNotNull(newActivity);
+        assertTrue(newActivity instanceof MockURLSpanTestActivity);
+        newActivity.finish();
+    }
+
+    @LargeTest
+    @Test
+    @RequiresFlagsEnabled(FLAG_HOME_SCREEN_HANDWRITING_DELEGATOR)
+    public void testSetOnStylusHandwritingPendingIntent_null() throws Throwable {
+        ActivityMonitor am = mInstrumentation.addMonitor(MockURLSpanTestActivity.class.getName(),
+                null, false);
+
+        Uri uri = Uri.parse("ctstest://RemoteView/test");
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        PendingIntent pendingIntent =
+                PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        mRemoteViews.setOnStylusHandwritingPendingIntent(R.id.remoteView_image, pendingIntent);
+        mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mContext, mResult));
+        mRemoteViews.setOnStylusHandwritingPendingIntent(R.id.remoteView_image, null);
+        mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mContext, mResult));
+
+        View view = mResult.findViewById(R.id.remoteView_image);
+        assertNull(view.getHandwritingDelegatorCallback());
+    }
+
     @Test
     public void testSetOnCheckedChangeResponse() throws Throwable {
         String action = "my-checked-change-action";
         MockBroadcastReceiver receiver =  new MockBroadcastReceiver();
-        mContext.registerReceiver(receiver, new IntentFilter(action));
+        mContext.registerReceiver(receiver, new IntentFilter(action),
+                Context.RECEIVER_EXPORTED_UNAUDITED);
 
         Intent intent = new Intent(action).setPackage(mContext.getPackageName());
         PendingIntent pendingIntent =
@@ -1991,19 +2043,30 @@ public class RemoteViewsTest {
                 actual == null ? null : actual.toString());
     }
 
-    private <T extends Throwable>  void assertThrowsOnReapply(Class<T> klass) throws Throwable {
-        assertThrows(klass, () -> mRemoteViews.reapply(mContext, mResult));
+    private <T extends Throwable> void assertThrowsOnReapply(Class<T> klass) throws Throwable {
+        assertThrows(klass,
+                () -> mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mContext, mResult)));
     }
 
-    // Change the night mode and return the previous mode
-    private String changeNightMode(boolean nightMode) {
+    private String getCurrentNightMode() {
         final String nightModeText = runShellCommand("cmd uimode night");
         final String[] nightModeSplit = nightModeText.split(":");
         if (nightModeSplit.length != 2) {
             fail("Failed to get initial night mode value from " + nightModeText);
         }
-        String previousMode = nightModeSplit[1].trim();
-        runShellCommand("cmd uimode night " + (nightMode ? "yes" : "no"));
+        return nightModeSplit[1].trim();
+    }
+
+    // Change the night mode and return the previous mode
+    private String changeNightMode(boolean nightMode) throws Exception {
+        String previousMode = getCurrentNightMode();
+        String wantedNightMode = nightMode ? "yes" : "no";
+        runShellCommand("cmd uimode night " + wantedNightMode);
+        waitUntil(
+                /* message= */ "Night mode did not change to " + wantedNightMode,
+                /* timeoutSecond= */ 5,
+                /* predicate= */ () -> wantedNightMode.equals(getCurrentNightMode())
+        );
         return previousMode;
     }
 

@@ -16,11 +16,16 @@
 
 package android.server.biometrics;
 
+import static android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL;
+
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -35,15 +40,24 @@ import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricManager.Authenticators;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
+import android.hardware.biometrics.Flags;
 import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
+import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.support.test.uiautomator.UiObject2;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
+import androidx.test.uiautomator.UiObject2;
+
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.server.biometrics.nano.SensorStateProto;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -59,10 +73,19 @@ import java.util.concurrent.TimeUnit;
 public class BiometricSimpleTests extends BiometricTestBase {
     private static final String TAG = "BiometricTests/Simple";
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     /**
      * Tests that enrollments created via {@link BiometricTestSession} show up in the
      * biometric dumpsys.
      */
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricTestSession#startEnroll",
+            "android.hardware.biometrics."
+                    + "BiometricTestSession#finishEnroll"})
     @Test
     public void testEnroll() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -78,6 +101,9 @@ public class BiometricSimpleTests extends BiometricTestBase {
      * Tests that the sensorIds retrieved via {@link BiometricManager#getSensorProperties()} and
      * the dumpsys are consistent with each other.
      */
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#getSensorProperties"})
     @Test
     public void testSensorPropertiesAndDumpsysMatch() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -92,6 +118,11 @@ public class BiometricSimpleTests extends BiometricTestBase {
     /**
      * Tests that the PackageManager features and biometric dumpsys are consistent with each other.
      */
+    @ApiTest(apis = {
+            "android.content.pm."
+                    + "PackageManager#FEATURE_FINGERPRINT",
+            "android.content.pm."
+                    + "PackageManager#FEATURE_FACE"})
     @Test
     public void testPackageManagerAndDumpsysMatch() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -118,6 +149,9 @@ public class BiometricSimpleTests extends BiometricTestBase {
         }
     }
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate"})
     @Test
     public void testCanAuthenticate_whenNoSensors() {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -129,6 +163,13 @@ public class BiometricSimpleTests extends BiometricTestBase {
         }
     }
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testInvalidInputs() {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -159,6 +200,15 @@ public class BiometricSimpleTests extends BiometricTestBase {
      * 2) BiometricPrompt#setAllowedAuthenticators(DEVICE_CREDENTIAL)
      * 3) @deprecated BiometricPrompt#setDeviceCredentialAllowed(true)
      */
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setDeviceCredentialAllowed",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testWhenCredentialNotEnrolled() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -213,9 +263,22 @@ public class BiometricSimpleTests extends BiometricTestBase {
      * 3b) Cancelling authentication for the above
      * 4) Cancelling auth for options 2) and 3)
      */
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setDeviceCredentialAllowed",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.AuthenticationCallback#onAuthenticationSucceeded",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testWhenCredentialEnrolled() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
+        //TODO: b/331955301 need to update Auto biometric UI
+        assumeFalse(isCar());
         try (CredentialSession session = new CredentialSession()) {
             session.setCredential();
 
@@ -257,6 +320,12 @@ public class BiometricSimpleTests extends BiometricTestBase {
         }
     }
 
+    @CddTest(requirements = {"7.3.10/C-4-2"})
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.AuthenticationCallback#onAuthenticationError"})
     @Test
     public void testSimpleBiometricAuth_convenience() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -306,6 +375,24 @@ public class BiometricSimpleTests extends BiometricTestBase {
      * TODO(b/236763921): fix this test and unignore.
      */
     @Ignore
+    @CddTest(requirements = {"7.3.10/C-4-2"})
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setTitle",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setSubtitle",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setDescription",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setNegativeButton",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.AuthenticationCallback#onAuthenticationSucceeded",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.AuthenticationResult#getAuthenticationType"})
     @Test
     public void testSimpleBiometricAuth_nonConvenience() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -376,9 +463,22 @@ public class BiometricSimpleTests extends BiometricTestBase {
      * Upon successful authentication, checks that the result is
      * {@link BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
      */
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setTitle",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setSubtitle",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setDescription",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.AuthenticationResult#getAuthenticationType"})
     @Test
     public void testSimpleCredentialAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
+        //TODO: b/331955301 need to update Auto biometric UI
+        assumeFalse(isCar());
         try (CredentialSession session = new CredentialSession()){
             session.setCredential();
 
@@ -418,6 +518,9 @@ public class BiometricSimpleTests extends BiometricTestBase {
     /**
      * Tests that cancelling auth succeeds, and that ERROR_CANCELED is received.
      */
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.AuthenticationCallback#onAuthenticationError"})
     @Test
     public void testBiometricCancellation() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -443,5 +546,72 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 verifyNoMoreInteractions(callback);
             }
         }
+    }
+
+    /**
+     * Tests that {@link BiometricManager#getLastAuthenticationTime(int)} result changes
+     * appropriately for DEVICE_CREDENTIAL after a PIN unlock.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LAST_AUTHENTICATION_TIME)
+    public void testGetLastAuthenticationTime_unlockWithCorrectDeviceCredential() throws Exception {
+        try (CredentialSession credentialSession = new CredentialSession()) {
+            credentialSession.setCredential();
+
+            final long startTime = SystemClock.elapsedRealtime();
+
+            credentialSession.verifyCredential();
+
+            // There's a race between the auth token being sent to keystore2 and the
+            // getLastAuthenticationTime() call, so retry if we don't get a valid time.
+            long lastAuthTime = BiometricManager.BIOMETRIC_NO_AUTHENTICATION;
+            for (int i = 0; i < 10; i++) {
+                lastAuthTime = mBiometricManager.getLastAuthenticationTime(
+                        DEVICE_CREDENTIAL);
+                if (lastAuthTime != BiometricManager.BIOMETRIC_NO_AUTHENTICATION) {
+                    break;
+                }
+
+                Thread.sleep(100);
+            }
+
+            assertThat(lastAuthTime).isGreaterThan(startTime);
+        }
+    }
+
+    /**
+     * Tests that {@link BiometricManager#getLastAuthenticationTime(int)} result does not change
+     * when an incorrect PIN is entered.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LAST_AUTHENTICATION_TIME)
+    public void testGetLastAuthenticationTime_unlockWithIncorrectDeviceCredential()
+            throws Exception {
+        try (CredentialSession credentialSession = new CredentialSession()) {
+            credentialSession.setCredential();
+
+            final long initialLastAuthTime = mBiometricManager.getLastAuthenticationTime(
+                    DEVICE_CREDENTIAL);
+
+            credentialSession.verifyIncorrectCredential();
+
+            long lastAuthTime = mBiometricManager.getLastAuthenticationTime(
+                    DEVICE_CREDENTIAL);
+
+            assertThat(lastAuthTime).isEqualTo(initialLastAuthTime);
+        }
+    }
+
+    /**
+     * Tests that {@link BiometricManager#getLastAuthenticationTime(int)} result returns
+     * {@link BiometricManager#BIOMETRIC_NO_AUTHENTICATION} if there is no password/PIN set.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_LAST_AUTHENTICATION_TIME)
+    public void testGetLastAuthenticationTime_noCredential() throws Exception {
+        final long lastAuthTime = mBiometricManager.getLastAuthenticationTime(
+                DEVICE_CREDENTIAL);
+
+        assertThat(lastAuthTime).isEqualTo(BiometricManager.BIOMETRIC_NO_AUTHENTICATION);
     }
 }

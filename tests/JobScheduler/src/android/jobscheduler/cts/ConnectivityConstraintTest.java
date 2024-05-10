@@ -15,27 +15,36 @@
  */
 package android.jobscheduler.cts;
 
+import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
+import static android.Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED;
 import static android.net.NetworkCapabilities.TRANSPORT_CELLULAR;
 
+import static org.junit.Assert.assertNotEquals;
+
 import android.annotation.TargetApi;
+import android.app.ActivityManager;
+import android.app.compat.CompatChanges;
+import android.app.compat.PackageOverride;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.net.ConnectivityManager;
-import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.wifi.WifiManager;
 import android.platform.test.annotations.RequiresDevice;
-import android.provider.Settings;
 import android.util.Log;
 
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.SystemUtil;
+
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Schedules jobs with the {@link android.app.job.JobScheduler} that have network connectivity
@@ -59,10 +68,6 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
     /** Whether the device running these tests supports WiFi. */
     private boolean mHasWifi;
-    /** Whether the device running these tests supports telephony. */
-    private boolean mHasTelephony;
-    /** Track whether the restricted bucket was enabled in case we toggle it. */
-    private String mInitialRestrictedBucketEnabled;
 
     private JobInfo.Builder mBuilder;
 
@@ -78,19 +83,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         PackageManager packageManager = mContext.getPackageManager();
         mHasWifi = packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI);
-        mHasTelephony = packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
         mBuilder = new JobInfo.Builder(CONNECTIVITY_JOB_ID, kJobServiceComponent);
 
-        if (mHasWifi) {
-            mNetworkingHelper.ensureSavedWifiNetwork();
-        }
-        mInitialRestrictedBucketEnabled = Settings.Global.getString(mContext.getContentResolver(),
-                Settings.Global.ENABLE_RESTRICTED_BUCKET);
         setDataSaverEnabled(false);
         mNetworkingHelper.setAllNetworksEnabled(true);
-        // Force the test app out of the never bucket.
-        SystemUtil.runShellCommand("am set-standby-bucket "
-                + TestAppInterface.TEST_APP_PACKAGE + " rare");
     }
 
     @Override
@@ -101,10 +97,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mJobScheduler.cancel(CONNECTIVITY_JOB_ID);
 
         BatteryUtils.runDumpsysBatteryReset();
-
-        // Restore initial restricted bucket setting.
-        Settings.Global.putString(mContext.getContentResolver(),
-                Settings.Global.ENABLE_RESTRICTED_BUCKET, mInitialRestrictedBucketEnabled);
+        BatteryUtils.resetBatterySaver();
 
         // Ensure that we leave WiFi in its previous state.
         mNetworkingHelper.tearDown();
@@ -229,7 +222,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
     /**
      * Schedule a job with a generic connectivity constraint, and ensure that it isn't stopped when
-     * the device transitions to WiFi.
+     * the device transitions to WiFi, but is informed of the network change.
      */
     public void testConnectivityConstraintExecutes_transitionNetworks() throws Exception {
         if (!mHasWifi) {
@@ -242,7 +235,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         disconnectWifiToConnectToMobile();
 
         kTestEnvironment.setExpectedExecutions(1);
+        kTestEnvironment.setContinueAfterStart();
         kTestEnvironment.setExpectedStopped();
+        kTestEnvironment.setExpectedNetworkChange();
         mJobScheduler.schedule(
                 mBuilder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                         .build());
@@ -251,11 +246,17 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         assertTrue("Job with connectivity constraint did not fire on mobile.",
                 kTestEnvironment.awaitExecution());
+        JobParameters startParams = kTestEnvironment.getLastStartJobParameters();
 
         connectToWifi();
         assertFalse(
                 "Job with connectivity constraint was stopped when network transitioned to WiFi.",
                 kTestEnvironment.awaitStopped());
+        assertTrue("Job didn't get network change signal when network transitioned to WiFi.",
+                kTestEnvironment.awaitNetworkChange());
+        JobParameters networkChangedParams = kTestEnvironment.getLastNetworkChangedJobParameters();
+        assertNotNull(networkChangedParams.getNetwork());
+        assertNotEquals(startParams.getNetwork(), networkChangedParams.getNetwork());
     }
 
     /**
@@ -362,8 +363,6 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
 
-        Settings.Global.putString(mContext.getContentResolver(),
-                Settings.Global.ENABLE_RESTRICTED_BUCKET, "1");
         mDeviceConfigStateHelper.set("qc_max_session_count_restricted", "0");
         SystemUtil.runShellCommand("am set-standby-bucket "
                 + kJobServiceComponent.getPackageName() + " restricted");
@@ -389,6 +388,10 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             Log.d(TAG, "Skipping test that requires battery saver support");
             return;
         }
+        if (hasEthernetConnection()) {
+            // We need to use a metered network but can't control the ethernet connection.
+            return;
+        }
         if (mHasWifi) {
             setWifiMeteredState(true);
         } else if (checkDeviceSupportsMobileData()) {
@@ -411,6 +414,29 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         assertTrue(
                 "Expedited job requiring connectivity did not fire with Battery Saver on.",
                 kTestEnvironment.awaitExecution());
+    }
+
+    /**
+     * Schedule an expedited job that requires a network connection, and verify that it runs
+     * even when Doze is on.
+     */
+    public void testExpeditedJobExecutes_DozeOn() throws Exception {
+        if (!isDeviceIdleFeatureEnabled()) {
+            // Test requires device idle feature
+            return;
+        }
+
+        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+
+        mNetworkingHelper.setAllNetworksEnabled(true);
+        toggleScreenOn(false);
+        setDeviceIdleState(true);
+
+        mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, true);
+
+        mTestAppInterface.runSatisfiedJob();
+        assertTrue("UI job requiring connectivity did not fire with Doze on.",
+                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
     }
 
     /**
@@ -465,8 +491,6 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
 
-        Settings.Global.putString(mContext.getContentResolver(),
-                Settings.Global.ENABLE_RESTRICTED_BUCKET, "1");
         mDeviceConfigStateHelper.set("qc_max_session_count_restricted", "0");
         SystemUtil.runShellCommand("am set-standby-bucket "
                 + kJobServiceComponent.getPackageName() + " restricted");
@@ -485,6 +509,65 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                 kTestEnvironment.awaitExecution());
     }
 
+    /**
+     * Schedule a user-initiated job that requires a network connection, and verify that it runs
+     * even when Battery Saver is on.
+     */
+    public void testUserInitiatedJobExecutes_BatterySaverOn() throws Exception {
+        if (!BatteryUtils.isBatterySaverSupported()) {
+            Log.d(TAG, "Skipping test that requires battery saver support");
+            return;
+        }
+
+        BatteryUtils.runDumpsysBatteryUnplug();
+        BatteryUtils.enableBatterySaver(true);
+
+        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        // Put app in a valid state to schedule a UI job.
+        mTestAppInterface.startAndKeepTestActivity();
+        toggleScreenOn(true);
+
+        mNetworkingHelper.setAllNetworksEnabled(true);
+        mTestAppInterface.scheduleJob(false,  JobInfo.NETWORK_TYPE_ANY, false, true);
+
+        mTestAppInterface.runSatisfiedJob();
+        assertTrue("UI job requiring connectivity did not fire with Battery Saver on.",
+                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+    }
+
+    /**
+     * Schedule a user-initiated job that requires a network connection, and verify that it runs
+     * even when Doze is on.
+     */
+    public void testUserInitiatedJobExecutes_DozeOn() throws Exception {
+        if (!isDeviceIdleFeatureEnabled()) {
+            // Test requires device idle feature
+            return;
+        }
+
+        try (TestNotificationListener.NotificationHelper notificationHelper =
+                     new TestNotificationListener.NotificationHelper(
+                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
+            mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+            // Put app in a valid state to schedule a UI job.
+            mNetworkingHelper.setAllNetworksEnabled(true);
+            toggleScreenOn(false);
+            setDeviceIdleState(true);
+            mTestAppInterface.postUiInitiatingNotification(
+                    Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                            JobInfo.NETWORK_TYPE_ANY
+                    )
+            );
+
+            notificationHelper.clickNotification();
+
+            assertTrue("UI job requiring connectivity did not fire with Doze on.",
+                    mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        }
+    }
+
     // --------------------------------------------------------------------------------------------
     // Positives & Negatives - schedule jobs under conditions that require that pass initially and
     // then fail with a constraint change.
@@ -499,6 +582,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
         disconnectWifiToConnectToMobile();
+        setDataSaverEnabled(false);
 
         mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
 
@@ -539,17 +623,27 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         if (!hasEthernetConnection()) {
             // Deadline passed with no network satisfied.
             mNetworkingHelper.setAllNetworksEnabled(false);
-            ji = mBuilder
-                    .setRequiredNetwork(nr)
-                    .setOverrideDeadline(0)
-                    .build();
 
-            kTestEnvironment.setExpectedExecutions(1);
-            mJobScheduler.schedule(ji);
-            runSatisfiedJob(CONNECTIVITY_JOB_ID);
-            assertTrue("Job didn't fire immediately", kTestEnvironment.awaitExecution());
-
-            params = kTestEnvironment.getLastStartJobParameters();
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> CompatChanges.putPackageOverrides(
+                            TestAppInterface.TEST_APP_PACKAGE,
+                            Map.of(TestAppInterface.ENFORCE_MINIMUM_TIME_WINDOWS,
+                                    new PackageOverride.Builder().setEnabled(false).build())
+                    ),
+                    OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD, INTERACT_ACROSS_USERS_FULL);
+            mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+            mTestAppInterface.scheduleJob(
+                    Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                            JobInfo.NETWORK_TYPE_ANY
+                    ),
+                    Map.of(TestJobSchedulerReceiver.EXTRA_DEADLINE, 0L)
+            );
+            mTestAppInterface.runSatisfiedJob();
+            assertTrue("Job didn't fire immediately",
+                    mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+            params = mTestAppInterface.getLastParams();
             assertNull(params.getNetwork());
         }
 
@@ -563,6 +657,26 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         params = kTestEnvironment.getLastStartJobParameters();
         assertNull(params.getNetwork());
+    }
+
+    public void testJobUidState() throws Exception {
+        // Turn screen off so any lingering activity close processing from previous tests
+        // don't affect this one.
+        toggleScreenOn(false);
+        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface.scheduleJob(
+                Map.of(TestJobSchedulerReceiver.EXTRA_REQUEST_JOB_UID_STATE, true),
+                Map.of(
+                        TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                        JobInfo.NETWORK_TYPE_ANY
+                )
+        );
+        mTestAppInterface.forceRunJob();
+        assertTrue("Job did not start after scheduling",
+                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
+                0, // Regular jobs should not have any privileged network capabilities
+                250 /* ProcessList.PERCEPTIBLE_LOW_APP_ADJ */);
     }
 
     // --------------------------------------------------------------------------------------------
@@ -609,7 +723,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.runSatisfiedJob();
 
         assertFalse("Job requiring cellular connectivity executed with Data Saver on",
-                mTestAppInterface.awaitJobStop(DEFAULT_TIMEOUT_MILLIS));
+                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
     }
 
     /**
@@ -630,7 +744,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.runSatisfiedJob();
 
         assertFalse("BG expedited job requiring cellular connectivity executed with Data Saver on",
-                mTestAppInterface.awaitJobStop(DEFAULT_TIMEOUT_MILLIS));
+                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
     }
 
     /**
@@ -710,7 +824,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
-     * Schedule an expedited job that requires a network connection, and verify that it runs even
+     * Schedule an expedited job that requires a network connection, and verify that it doesn't run
      * when Data Saver is on and the device is not connected to WiFi.
      */
     public void testBgExpeditedJobDoesNotBypassDataSaver() throws Exception {
@@ -760,8 +874,6 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
 
-        Settings.Global.putString(mContext.getContentResolver(),
-                Settings.Global.ENABLE_RESTRICTED_BUCKET, "1");
         mDeviceConfigStateHelper.set("qc_max_session_count_restricted", "0");
         SystemUtil.runShellCommand("am set-standby-bucket "
                 + kJobServiceComponent.getPackageName() + " restricted");
@@ -778,6 +890,119 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                 mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
     }
 
+    /**
+     * Schedule a user-initiated job that requires a network connection, and verify that it runs
+     * even when Data Saver is on and the device is not connected to WiFi.
+     */
+    public void testBgUiJobBypassesDataSaver() throws Exception {
+        if (hasEthernetConnection()) {
+            Log.d(TAG, "Skipping test since ethernet is connected.");
+            return;
+        }
+        if (mHasWifi) {
+            setWifiMeteredState(true);
+        } else if (checkDeviceSupportsMobileData()) {
+            disconnectWifiToConnectToMobile();
+        } else {
+            Log.d(TAG, "Skipping test that requires a metered network.");
+            return;
+        }
+
+        try (TestNotificationListener.NotificationHelper notificationHelper =
+                     new TestNotificationListener.NotificationHelper(
+                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
+            setDataSaverEnabled(true);
+
+            mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+            mTestAppInterface.closeActivity(true);
+            mTestAppInterface.postUiInitiatingNotification(
+                    Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                            JobInfo.NETWORK_TYPE_ANY
+                    )
+            );
+
+            // Clicking on the notification should put the app into a BAL approved state.
+            notificationHelper.clickNotification();
+
+            assertTrue("BG UI job requiring connectivity didn't fire with Data Saver on.",
+                    mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+        }
+    }
+
+    /**
+     * Make sure that regular and expedited jobs don't run during data saver
+     * even if a user-initiated job is running at the same time.
+     */
+    public void testBgNonUiJobDoesNotBypassDataSaverWhenUiJobRunning() throws Exception {
+        if (hasEthernetConnection()) {
+            Log.d(TAG, "Skipping test since ethernet is connected.");
+            return;
+        }
+        if (mHasWifi) {
+            setWifiMeteredState(true);
+        } else if (checkDeviceSupportsMobileData()) {
+            disconnectWifiToConnectToMobile();
+        } else {
+            Log.d(TAG, "Skipping test that requires a metered network.");
+            return;
+        }
+
+        try (TestNotificationListener.NotificationHelper notificationHelper =
+                     new TestNotificationListener.NotificationHelper(
+                             mContext, TestAppInterface.TEST_APP_PACKAGE)) {
+            setDataSaverEnabled(true);
+
+            final int uiJobId = CONNECTIVITY_JOB_ID;
+            final int expJobId = CONNECTIVITY_JOB_ID + 1;
+            final int regJobId = CONNECTIVITY_JOB_ID + 2;
+            mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+            mTestAppInterface.closeActivity(true);
+            // Regular job
+            mTestAppInterface.scheduleJob(
+                    Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, regJobId,
+                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                            JobInfo.NETWORK_TYPE_ANY
+                    )
+            );
+            // EJ
+            mTestAppInterface.scheduleJob(
+                    Map.of(TestJobSchedulerReceiver.EXTRA_AS_EXPEDITED, true),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, expJobId,
+                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                            JobInfo.NETWORK_TYPE_ANY
+                    )
+            );
+            // UI job
+            mTestAppInterface.postUiInitiatingNotification(
+                    Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, uiJobId,
+                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                            JobInfo.NETWORK_TYPE_ANY
+                    )
+            );
+
+            // Clicking on the notification should put the app into a BAL approved state.
+            notificationHelper.clickNotification();
+
+            assertTrue("BG UI job requiring connectivity didn't fire with Data Saver on.",
+                    mTestAppInterface.awaitJobStart(uiJobId, DEFAULT_TIMEOUT_MILLIS));
+            // The UI job may have started immediately, so keep the standard timeout for the
+            // EJ check to give enough time to confirm the job didn't start.
+            assertFalse("BG EJ requiring connectivity fired with Data Saver on.",
+                    mTestAppInterface.awaitJobStart(expJobId, DEFAULT_TIMEOUT_MILLIS));
+            // At this point, there's been enough time for this job to start, so don't have
+            // a long wait time.
+            assertFalse("BG job requiring connectivity fired with Data Saver on.",
+                    mTestAppInterface.awaitJobStart(regJobId, 1000));
+        }
+    }
+
     // --------------------------------------------------------------------------------------------
     // Utility methods
     // --------------------------------------------------------------------------------------------
@@ -787,21 +1012,8 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * mobile data.
      * @return True if this device will support a mobile data connection.
      */
-    private boolean checkDeviceSupportsMobileData() {
-        if (!mHasTelephony) {
-            Log.d(TAG, "Skipping test that requires telephony features, not supported by this" +
-                    " device");
-            return false;
-        }
-        Network[] networks = mCm.getAllNetworks();
-        for (Network network : networks) {
-            if (mCm.getNetworkCapabilities(network)
-                    .hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-                return true;
-            }
-        }
-        Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
-        return false;
+    private boolean checkDeviceSupportsMobileData() throws Exception {
+        return mNetworkingHelper.hasCellularNetwork();
     }
 
     private boolean hasEthernetConnection() {
@@ -831,7 +1043,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * best effort - there are no public APIs to force connecting to cell data. We disable WiFi
      * and wait for a broadcast that we're connected to cell.
      * We will not call into this function if the device doesn't support telephony.
-     * @see #mHasTelephony
+     * @see NetworkingHelper#hasCellularNetwork
      * @see #checkDeviceSupportsMobileData()
      */
     private void disconnectWifiToConnectToMobile() throws Exception {

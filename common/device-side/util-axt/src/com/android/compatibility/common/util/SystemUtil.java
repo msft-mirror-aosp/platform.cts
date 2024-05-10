@@ -29,15 +29,15 @@ import android.os.StatFs;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.modules.utils.build.SdkLevel;
 
-import java.io.ByteArrayOutputStream;
+import org.junit.runners.model.TestTimedOutException;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
@@ -100,7 +100,7 @@ public class SystemUtil {
      * @param cmd        the command to run
      * @return the standard output of the command as a byte array
      */
-    static byte[] runShellCommandByteOutput(UiAutomation automation, String cmd)
+    public static byte[] runShellCommandByteOutput(UiAutomation automation, String cmd)
             throws IOException {
         checkCommandBeforeRunning(cmd);
         ParcelFileDescriptor pfd = automation.executeShellCommand(cmd);
@@ -346,6 +346,8 @@ public class SystemUtil {
             try {
                 r.run();
                 return;
+            } catch (TestTimedOutException e) {
+                throw new RuntimeException(e);
             } catch (Throwable e) {
                 if (System.currentTimeMillis() - start < timeoutMillis) {
                     try {
@@ -387,6 +389,8 @@ public class SystemUtil {
         while (true) {
             try {
                 return c.call();
+            } catch (TestTimedOutException e) {
+                throw e;
             } catch (Throwable e) {
                 if (System.currentTimeMillis() - start < timeoutMillis) {
                     try {
@@ -398,6 +402,29 @@ public class SystemUtil {
                     throw e;
                 }
             }
+        }
+    }
+
+    public static void waitForBroadcasts() {
+        String cmd;
+        if (SdkLevel.isAtLeastU()) {
+            // wait for pending broadcasts to be completed.
+            cmd = "am wait-for-broadcast-barrier";
+        } else {
+            // wait for broadcast queues to be idle.
+            cmd = "am wait-for-broadcast-idle";
+        }
+        runShellCommand(cmd);
+    }
+
+    /**
+     * waits for a particular broadcast dispatch.
+     */
+    public static void waitForBroadcastDispatch(@NonNull String action) {
+        if (SdkLevel.isAtLeastU()) {
+            runShellCommand(String.format("am wait-for-broadcast-dispatch -a %s", action));
+        } else {
+            runShellCommand("am wait-for-broadcast-idle");
         }
     }
 }

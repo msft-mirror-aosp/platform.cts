@@ -20,12 +20,14 @@ import static org.junit.Assert.assertEquals;
 
 import android.bluetooth.BluetoothProfile;
 import android.media.BluetoothProfileConnectionInfo;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class BluetoothProfileConnectionInfoTest {
 
@@ -67,6 +69,18 @@ public class BluetoothProfileConnectionInfoTest {
         assertEquals(info.getProfile(), BluetoothProfile.LE_AUDIO);
         assertEquals(info.isSuppressNoisyIntent(), supprNoisy);
         assertEquals(info.isLeOutput(), isLeOutput);
+    }
+
+    @Test
+    public void testCoverageLeOutputAudio() {
+        final boolean supprNoisy = true;
+        final int volume = 7;
+        final BluetoothProfileConnectionInfo info = BluetoothProfileConnectionInfo
+                .createLeAudioOutputInfo(supprNoisy, volume);
+        assertEquals(info.getProfile(), BluetoothProfile.LE_AUDIO);
+        assertEquals(info.isSuppressNoisyIntent(), supprNoisy);
+        assertEquals(info.isLeOutput(), true);
+        assertEquals(info.getVolume(), volume);
     }
 }
 

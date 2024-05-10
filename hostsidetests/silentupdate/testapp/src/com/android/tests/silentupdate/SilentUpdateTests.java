@@ -38,6 +38,7 @@ import android.content.pm.PackageInstaller;
 import android.content.pm.PackageInstaller.SessionParams;
 import android.content.pm.PackageManager;
 import android.os.SystemClock;
+import android.util.ArraySet;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -69,8 +70,8 @@ import java.util.function.Supplier;
 @RunWith(JUnit4.class)
 public class SilentUpdateTests {
     private static final String CURRENT_APK = "SilentInstallCurrent.apk";
-    private static final String Q_APK = "SilentInstallQ.apk";
     private static final String R_APK = "SilentInstallR.apk";
+    private static final String S_APK = "SilentInstallS.apk";
     private static final String INSTALLER_PACKAGE_NAME = "com.android.tests.silentupdate";
     static final long SILENT_UPDATE_THROTTLE_TIME_SECOND = 10;
 
@@ -80,12 +81,21 @@ public class SilentUpdateTests {
                     .whereTestOnly().isFalse()
                     .get();
 
+    private final ArraySet<Integer> mPendingAbandonSessionIds = new ArraySet<>();
+
     private static Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getContext();
     }
 
     @After
     public void tearDown() {
+        if (mPendingAbandonSessionIds.size() > 0) {
+            for (int i = 0; i < mPendingAbandonSessionIds.size(); i++) {
+                int sessionId = mPendingAbandonSessionIds.valueAt(i);
+                getContext().getPackageManager().getPackageInstaller().abandonSession(sessionId);
+            }
+            mPendingAbandonSessionIds.clear();
+        }
         sDpcApp.uninstall();
         resetSilentUpdatesPolicy();
     }
@@ -133,17 +143,17 @@ public class SilentUpdateTests {
     }
 
     @Test
-    public void updatePreRApp_RequiresUserAction() throws Exception {
-        Assert.assertEquals("Updating to a pre-R app should require user action",
+    public void updatePreSApp_RequiresUserAction() throws Exception {
+        Assert.assertEquals("Updating to a pre-S app should require user action",
                 PackageInstaller.STATUS_PENDING_USER_ACTION,
-                silentInstallResource(Q_APK));
+                silentInstallResource(R_APK));
     }
 
     @Test
-    public void updateRApp_RequiresNoUserAction() throws Exception {
-        Assert.assertEquals("Updating to an R app should not require user action",
+    public void updateSApp_RequiresNoUserAction() throws Exception {
+        Assert.assertEquals("Updating to an S app should not require user action",
                 PackageInstaller.STATUS_SUCCESS,
-                silentInstallResource(R_APK));
+                silentInstallResource(S_APK));
     }
 
     @Test
@@ -154,9 +164,13 @@ public class SilentUpdateTests {
                 .edit()
                 .putLong("lastUpdateTime", lastUpdateTime)
                 .commit();
-        commit(fileSupplier(
+        InstallStatusListener isl = commit(fileSupplier(
                 "/data/local/tmp/silentupdatetest/CtsSilentUpdateTestCases_mdpi-v4.apk"),
                 false /* requireUserAction */, INSTALLER_PACKAGE_NAME);
+        final Intent statusUpdate = isl.getResult();
+        final int result =
+                statusUpdate.getIntExtra(PackageInstaller.EXTRA_STATUS, Integer.MIN_VALUE);
+        Assert.assertEquals(PackageInstaller.STATUS_SUCCESS, result);
     }
 
     @Test
@@ -273,7 +287,7 @@ public class SilentUpdateTests {
         if (result != PackageInstaller.STATUS_SUCCESS) {
             final int sessionId =
                     statusUpdate.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, Integer.MIN_VALUE);
-            getContext().getPackageManager().getPackageInstaller().abandonSession(sessionId);
+            mPendingAbandonSessionIds.add(sessionId);
         }
         return result;
     }
@@ -377,8 +391,9 @@ public class SilentUpdateTests {
         public IntentSender getIntentSender() {
             final Context context = getContext();
             final String action = UUID.randomUUID().toString();
-            context.registerReceiver(this, new IntentFilter(action));
-            Intent intent = new Intent(action);
+            context.registerReceiver(this, new IntentFilter(action),
+                    Context.RECEIVER_EXPORTED_UNAUDITED);
+            Intent intent = new Intent(action).setPackage(context.getPackageName());
             PendingIntent pending = PendingIntent.getBroadcast(context, 0, intent, FLAG_MUTABLE);
             return pending.getIntentSender();
         }

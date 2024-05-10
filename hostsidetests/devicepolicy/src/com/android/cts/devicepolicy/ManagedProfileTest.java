@@ -15,27 +15,22 @@
  */
 package com.android.cts.devicepolicy;
 
-import com.android.tradefed.util.RunUtil;
 import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
-
-import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 import android.stats.devicepolicy.EventId;
 
-import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.DoesNotRequireFeature;
 import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
+import com.android.tradefed.util.RunInterruptedException;
+import com.android.tradefed.util.RunUtil;
 
-
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -45,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Set of tests for Managed Profile use cases.
  */
-public class ManagedProfileTest extends BaseManagedProfileTest {
+public final class ManagedProfileTest extends BaseManagedProfileTest {
 
     private static final String DEVICE_OWNER_PKG = "com.android.cts.deviceowner";
     private static final String DEVICE_OWNER_APK = "CtsDeviceOwnerApp.apk";
@@ -57,27 +52,6 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
         runDeviceTestsAsUser(
                 MANAGED_PROFILE_PKG, MANAGED_PROFILE_PKG + ".ManagedProfileSetupTest",
                 mProfileUserId);
-    }
-
-    @DoesNotRequireFeature
-    @Test
-    public void testMaxOneManagedProfile() throws Exception {
-        int newUserId = -1;
-        try {
-            newUserId = createManagedProfile(mParentUserId);
-        } catch (AssertionError expected) {
-        }
-        if (newUserId > 0) {
-            removeUser(newUserId);
-            if (mFeaturesCheckerRule.hasRequiredFeatures()) {
-                // Exception is Android TV which can create multiple managed profiles
-                if (!isTv()) {
-                    fail("Device must allow creating only one managed profile");
-                }
-            } else {
-                fail("Device must not allow creating a managed profile");
-            }
-        }
     }
 
     /**
@@ -122,16 +96,6 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
     public void testParentProfileApiDisabled() throws Exception {
         runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".ParentProfileTest",
                 "testParentProfileApiDisabled", mProfileUserId);
-    }
-
-    @Test
-    public void testOverrideApn() throws Exception {
-        assumeHasTelephonyFeature();
-
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".OverrideApnTest",
-                "testAddGetRemoveOverrideApn", mProfileUserId);
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".OverrideApnTest",
-                "testUpdateOverrideApn", mProfileUserId);
     }
 
     @Test
@@ -196,23 +160,6 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
     }
 
     @Test
-    public void testBluetoothContactSharingDisabled() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".ContactsTest",
-                    "testSetBluetoothContactSharingDisabled_setterAndGetter", mProfileUserId);
-        }, new DevicePolicyEventWrapper
-                    .Builder(EventId.SET_BLUETOOTH_CONTACT_SHARING_DISABLED_VALUE)
-                    .setAdminPackageName(MANAGED_PROFILE_PKG)
-                    .setBoolean(false)
-                    .build(),
-            new DevicePolicyEventWrapper
-                    .Builder(EventId.SET_BLUETOOTH_CONTACT_SHARING_DISABLED_VALUE)
-                    .setAdminPackageName(MANAGED_PROFILE_PKG)
-                    .setBoolean(true)
-                    .build());
-    }
-
-    @Test
     public void testCannotSetProfileOwnerAgain() throws Exception {
         // verify that we can't set the same admin receiver as profile owner again
         assertFalse(setProfileOwner(
@@ -255,17 +202,6 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
                 "testNfcShareDisabled", mProfileUserId);
         runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".NfcTest",
                 "testNfcShareEnabled", mParentUserId);
-    }
-
-    @Test
-    public void testIsProvisioningAllowed() throws DeviceNotAvailableException {
-        // Not allowed to add a managed profile from another managed profile.
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".PreManagedProfileTest",
-                "testIsProvisioningAllowedFalse", mProfileUserId);
-
-        // Not allowed to add a managed profile to the parent user if one already exists.
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".PreManagedProfileTest",
-                "testIsProvisioningAllowedFalse", mParentUserId);
     }
 
     @Test
@@ -380,29 +316,6 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
         }
     }
 
-    // TODO(b/149580605): Fix this flaky test.
-    @Test
-    @FlakyTest
-    @Ignore
-    public void testBasicCheck() throws Exception {
-        // Install SimpleApp in work profile only and check activity in it can be launched.
-        installAppAsUser(SIMPLE_APP_APK, mProfileUserId);
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".BasicTest", mProfileUserId);
-    }
-
-    @Test
-    public void testBluetoothSharingRestriction() throws Exception {
-        assumeHasBluetoothFeature();
-
-        // Primary profile should be able to use bluetooth sharing.
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".BluetoothSharingRestrictionPrimaryProfileTest",
-                "testBluetoothSharingAvailable", mPrimaryUserId);
-
-        // Managed profile owner should be able to control it via DISALLOW_BLUETOOTH_SHARING.
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".BluetoothSharingRestrictionTest",
-                "testOppDisabledWhenRestrictionSet", mProfileUserId);
-    }
-
     @Test
     public void testProfileOwnerOnPersonalDeviceCannotGetDeviceIdentifiers() throws Exception {
         // The Profile Owner should have access to all device identifiers.
@@ -419,15 +332,6 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
         }, new DevicePolicyEventWrapper.Builder(EventId.SET_PROFILE_NAME_VALUE)
                 .setAdminPackageName(MANAGED_PROFILE_PKG)
                 .build());
-    }
-
-    @Test
-    public void userManagerIsManagedProfileReturnsCorrectValues() throws Exception {
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".UserManagerTest",
-                "testIsManagedProfileReturnsTrue", mProfileUserId);
-
-        runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".UserManagerTest",
-                "testIsManagedProfileReturnsFalse", mPrimaryUserId);
     }
 
     @Test
@@ -557,29 +461,6 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
         }
     }
 
-    @Test
-    public void testChooserActivityLaunchedFromWorkProfileWithSelectedPersonalTab()
-            throws Exception {
-        installAppAsUser(SHARING_APP_1_APK, mPrimaryUserId);
-        installAppAsUser(SHARING_APP_2_APK, mPrimaryUserId);
-        installAppAsUser(SHARING_APP_1_APK, mProfileUserId);
-        installAppAsUser(SHARING_APP_2_APK, mProfileUserId);
-        try {
-            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileSharingTest",
-                    "addCrossProfileIntents", mProfileUserId);
-            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileSharingTest",
-                    "startSwitchToOtherProfileIntent_chooser", mProfileUserId);
-
-            RunUtil.getDefault().sleep(30000);
-
-            assertChooserActivityInForeground(mProfileUserId);
-        } finally {
-            pressHome();
-            runDeviceTestsAsUser(MANAGED_PROFILE_PKG, ".CrossProfileSharingTest",
-                    "clearCrossProfileIntents", mProfileUserId);
-        }
-    }
-
     private void pressHome() throws Exception {
         executeShellCommand("input keyevent KEYCODE_HOME");
     }
@@ -614,8 +495,8 @@ public class ManagedProfileTest extends BaseManagedProfileTest {
                 return;
             }
             try {
-                Thread.sleep(100);
-            } catch (InterruptedException e){
+                RunUtil.getDefault().sleep(100);
+            } catch (RunInterruptedException e){
                 e.printStackTrace();
                 Thread.currentThread().interrupt();
             }

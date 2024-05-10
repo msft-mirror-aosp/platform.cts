@@ -27,6 +27,7 @@
   <queries>
     <package android:name="android.localemanager.cts.app" />
     <package android:name="android.localemanager.cts.installer" />
+    <package android:name="android.localemanager.cts.ime" />
   </queries>
 
   <application android:debuggable="true">
@@ -36,8 +37,6 @@
   <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
       android:targetPackage="android.localemanager.cts"
       android:label="CTS tests for android.localemanager">
-    <meta-data android:name="listener"
-        android:value="com.android.cts.runner.CtsTestRunListener"/>
   </instrumentation>
 
 </manifest>

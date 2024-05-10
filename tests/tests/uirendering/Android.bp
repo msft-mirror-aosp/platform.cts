@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_core_graphics_stack",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -35,6 +36,8 @@ android_test {
         "kotlin-test",
         "testng",
         "junit-params",
+        "flag-junit",
+        "hwui_flags_java_lib",
     ],
     jni_libs: ["libctsuirendering_jni"],
 

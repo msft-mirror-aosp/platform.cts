@@ -25,8 +25,9 @@ import org.junit.Test;
 
 import java.util.List;
 
-public class VehicleGearTest {
-    private static final String TAG = "VehicleGearTest";
+public class VehicleGearTest extends AbstractCarLessTestCase {
+
+    private static final String TAG = VehicleGearTest.class.getSimpleName();
 
     /**
      * Test for {@link VehicleGear#toString()}

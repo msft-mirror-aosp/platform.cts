@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_fwk_telephony",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -20,20 +21,22 @@ android_library {
     name: "android.telephony.mockmodem",
     srcs: [
         "src/**/*.java",
-        ":cts-telephony-utils",
     ],
     libs: [
         "android-support-annotations",
     ],
     static_libs: [
         "androidx.test.rules",
-        "android.hardware.radio.config-V1-java",
-        "android.hardware.radio.modem-V1-java",
-        "android.hardware.radio.sim-V1-java",
-        "android.hardware.radio.network-V1-java",
-        "android.hardware.radio.data-V1-java",
-        "android.hardware.radio.messaging-V1-java",
-        "android.hardware.radio.voice-V1-java",
+        "android.hardware.radio.config-V3-java",
+        "android.hardware.radio.modem-V3-java",
+        "android.hardware.radio.sim-V3-java",
+        "android.hardware.radio.network-V3-java",
+        "android.hardware.radio.data-V3-java",
+        "android.hardware.radio.messaging-V3-java",
+        "android.hardware.radio.voice-V3-java",
+        "android.hardware.radio.ims-V2-java",
+        "telephony-cts-utils",
+        "compatibility-device-util-axt",
     ],
 
     min_sdk_version: "30",

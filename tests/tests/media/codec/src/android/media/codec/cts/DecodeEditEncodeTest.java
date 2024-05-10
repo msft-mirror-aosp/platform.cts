@@ -34,14 +34,17 @@ import android.media.MediaFormat;
 import android.media.cts.InputSurface;
 import android.media.cts.OutputSurface;
 import android.media.cts.TestArgs;
+import android.media.cts.TestUtils;
 import android.opengl.GLES20;
 import android.opengl.GLES30;
 import android.os.Build;
+import android.platform.test.annotations.PlatinumTest;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Before;
@@ -73,15 +76,14 @@ import java.util.List;
  * no longer exercising the code in the way we expect it to be used (and the code
  * gets a bit unwieldy).
  */
+@PlatinumTest(focusArea = "media")
 @RunWith(Parameterized.class)
 public class DecodeEditEncodeTest {
     private static final String TAG = "DecodeEditEncode";
     private static final boolean WORK_AROUND_BUGS = false;  // avoid fatal codec bugs
     private static final boolean VERBOSE = false;           // lots of logging
     private static final boolean DEBUG_SAVE_FILE = false;   // save copy of encoded movie
-    //TODO(b/248315681) Remove codenameEquals() check once devices return correct version for U
-    private static final boolean IS_AFTER_T = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU)
-            || ApiLevelUtil.codenameEquals("UpsideDownCake");
+    private static final boolean IS_AFTER_T = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU);
 
     // parameters for the encoder
     private static final int FRAME_RATE = 15;               // 15fps
@@ -227,9 +229,17 @@ public class DecodeEditEncodeTest {
             assumeTrue("Color conversion related tests are not valid on cuttlefish releases "
                     + "through android T for format: " + format, IS_AFTER_T);
         }
+        // Pre Android U, this test only checked the 1st codec (which is usually a hardware codec)
+        // and software codecs exercised a problem in the underlying graphis code.
+        // So we will only run this for CTS mode or if we're on versions after Android T
+        // (where the graphics code is fixed)
+        if (TestUtils.isMtsMode()) {
+            assumeTrue("Color conversion related tests are skipped in MTS on releases "
+                    + "through android T for format: " + format, IS_AFTER_T);
+        }
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{2}_{3}_{4}_{5})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}_{3}_{4}_{5}")
     public static Collection<Object[]> input() {
         final List<Object[]> baseArgsList = Arrays.asList(new Object[][]{
                 // width, height, bitrate
@@ -270,6 +280,15 @@ public class DecodeEditEncodeTest {
         mUseHighBitDepth = useHighBitDepth;
     }
 
+    @ApiTest(apis = {"android.opengl.GLES20#GL_FRAGMENT_SHADER",
+            "android.opengl.GLES20#glReadPixels",
+            "android.opengl.GLES30#glReadPixels",
+            "android.media.format.MediaFormat#KEY_ALLOW_FRAME_DROP",
+            "android.media.MediaCodecInfo.CodecCapabilities#COLOR_FormatSurface",
+            "android.media.MediaCodecInfo.CodecCapabilities#COLOR_Format32bitABGR2101010",
+            "android.media.MediaFormat#KEY_COLOR_RANGE",
+            "android.media.MediaFormat#KEY_COLOR_STANDARD",
+            "android.media.MediaFormat#KEY_COLOR_TRANSFER"})
     @Test
     public void testVideoEdit() throws Throwable {
         VideoEditWrapper.runTest(this);
@@ -783,7 +802,7 @@ public class DecodeEditEncodeTest {
         if (VERBOSE) Log.d(TAG, "checkVideoFile");
 
         try {
-            surface = new OutputSurface(mWidth, mHeight);
+            surface = new OutputSurface(mWidth, mHeight, mUseHighBitDepth);
 
             MediaFormat format = inputData.getMediaFormat();
             decoder = MediaCodec.createByCodecName(mDecoderName);

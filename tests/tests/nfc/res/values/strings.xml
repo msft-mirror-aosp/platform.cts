@@ -15,4 +15,11 @@
 -->
 <resources>
     <string name="CtsPaymentService">CTS Nfc Test Service</string>
+    <string name="nfc_scan_tag">Place device on a writable NDEF tag</string>
+    <string name="nfc_scan_tag_again">Place tag on device again to verify that contents match</string>
+    <string name="nfc_wrong_tag_title">Wrong type of tag scanned</string>
+    <string name="nfc_writing_tag_error">Error writing NFC tag</string>
+    <string name="nfc_reading_tag_error">Error reading NFC tag</string>
+    <string name="nfc_successful_write">Successful write. Moved to verify</string>
+    <string name="nfc_ndef_content">Id: %1$s\nMime: %2$s\nPayload: %3$s</string>
 </resources>

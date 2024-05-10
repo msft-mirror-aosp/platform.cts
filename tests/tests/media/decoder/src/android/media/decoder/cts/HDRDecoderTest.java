@@ -30,6 +30,7 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.cts.MediaHeavyPresubmitTest;
 import android.media.cts.MediaTestBase;
+import android.media.cts.TestUtils;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
@@ -193,6 +194,10 @@ public class HDRDecoderTest extends MediaTestBase {
             String[] decoderNames = MediaUtils.getDecoderNames(format);
 
             for (String decoder : decoderNames) {
+                if (TestUtils.isMtsMode() && !TestUtils.isMainlineCodec(decoder)) {
+                    Log.i(TAG, "operating as MTS; skipping non-mainline codec " + decoder);
+                    continue;
+                }
                 Object[] testArgs = new Object[argLength + 2];
                 testArgs[0] = decoder;
                 testArgs[1] = dynamic ? "dynamic" : "static";
@@ -203,7 +208,7 @@ public class HDRDecoderTest extends MediaTestBase {
         return argsList;
     }
 
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{2})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
     public static Collection<Object[]> input() {
         final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
                 {MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR_RES, AV1_HDR_STATIC_INFO, null, false},
@@ -283,7 +288,7 @@ public class HDRDecoderTest extends MediaTestBase {
         CountDownLatch latch = new CountDownLatch(1);
         mExtractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
 
-        MediaCodec mDecoder = MediaCodec.createByCodecName(mCodecName);
+        mDecoder = MediaCodec.createByCodecName(mCodecName);
         mDecoder.setCallback(new MediaCodec.Callback() {
             boolean mInputEOS;
             boolean mOutputReceived;

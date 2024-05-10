@@ -16,6 +16,7 @@
 
 package android.dynamicmime.testapp.preferred;
 
+import static android.dynamicmime.common.Constants.APPLICATION_LABEL_TEST_APP;
 import static android.dynamicmime.common.Constants.ACTIVITY_BOTH;
 import static android.dynamicmime.common.Constants.ACTIVITY_FIRST;
 import static android.dynamicmime.common.Constants.APK_PREFERRED_APP;
@@ -63,8 +64,8 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
     private static final String NAV_BAR_INTERACTION_MODE_RES_NAME = "config_navBarInteractionMode";
     private static final int NAV_BAR_INTERACTION_MODE_GESTURAL = 2;
 
-    private static final String BUTTON_ALWAYS_RES_ID = "android:id/button_always";
-    private static final BySelector BUTTON_ALWAYS = By.res(BUTTON_ALWAYS_RES_ID);
+    private static final String BUTTON_ALWAYS_RES_ID = ".*:id/button_always.*";
+    private static final BySelector BUTTON_ALWAYS = By.res(Pattern.compile(BUTTON_ALWAYS_RES_ID));
     private static final UiSelector BUTTON_ALWAYS_UI_SELECTOR =
             new UiSelector().resourceId(BUTTON_ALWAYS_RES_ID);
     private static final BySelector RESOLVER_DIALOG = By.res(Pattern.compile(".*:id/contentPanel.*"));
@@ -118,6 +119,11 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
             public String preferredActivity() {
                 return ACTIVITY_FIRST;
             }
+
+            @Override
+            public String preferredApplicationLabel() {
+                return APPLICATION_LABEL_TEST_APP;
+            }
         });
     }
 
@@ -143,6 +149,11 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
             public String preferredActivity() {
                 return ACTIVITY_FIRST;
             }
+
+            @Override
+            public String preferredApplicationLabel() {
+                return APPLICATION_LABEL_TEST_APP;
+            }
         });
     }
 
@@ -163,6 +174,11 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
             public String preferredActivity() {
                 return ACTIVITY_FIRST;
             }
+
+            @Override
+            public String preferredApplicationLabel() {
+                return APPLICATION_LABEL_TEST_APP;
+            }
         });
     }
 
@@ -182,6 +198,11 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
             @Override
             public String preferredActivity() {
                 return ACTIVITY_FIRST;
+            }
+
+            @Override
+            public String preferredApplicationLabel() {
+                return APPLICATION_LABEL_TEST_APP;
             }
 
             @Override
@@ -218,6 +239,11 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
             @Override
             public String preferredActivity() {
                 return ACTIVITY_BOTH;
+            }
+
+            @Override
+            public String preferredApplicationLabel() {
+                return APPLICATION_LABEL_TEST_APP;
             }
 
             @Override
@@ -295,13 +321,20 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
     }
 
     private void chooseActivity(String label) {
-        findActivityInDialog(label).click();
+        UiObject2 mUIObject = findObjectInDialog(label);
+        // Get UIObject based on application label, if chooser dialog displays application first
+        if (mUIObject == null) {
+            mUIObject = findObjectInDialog(mTest.preferredApplicationLabel());
+            mUIObject.click();
+            mUIObject = findObjectInDialog(label);
+        }
+        mUIObject.click();
         chooseUseAlways();
 
         getUiDevice().pressBack();
     }
 
-    private UiObject2 findActivityInDialog(String label) {
+    private UiObject2 findObjectInDialog(String label) {
         if (!Utils.hasFeature(FEATURE_WEARABLE)) {
             getUiDevice()
                 .wait(Until.findObject(RESOLVER_DIALOG), TIMEOUT)
@@ -363,6 +396,8 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
         }
 
         String preferredActivity();
+
+        String preferredApplicationLabel();
 
         default boolean isActivityPreferredAfterChange() {
             return false;

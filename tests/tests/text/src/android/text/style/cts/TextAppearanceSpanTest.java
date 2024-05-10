@@ -36,9 +36,9 @@ import android.text.TextPaint;
 import android.text.style.TextAppearanceSpan;
 import android.widget.TextView;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +52,7 @@ public class TextAppearanceSpanTest {
 
     @Before
     public void setup() {
-        mContext = InstrumentationRegistry.getTargetContext();
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
         int[][] states = new int[][] { new int[0], new int[0] };
         int[] colors = new int[] { Color.rgb(0, 0, 255), Color.BLACK };
@@ -356,6 +356,15 @@ public class TextAppearanceSpanTest {
     }
 
     @Test
+    public void testCreateFromStyle_letterSpacing() {
+        final TextAppearanceSpan span = new TextAppearanceSpan(mContext,
+                android.text.cts.R.style.textAppearanceWithLetterSpacing);
+        final TextPaint tp = new TextPaint();
+        span.updateDrawState(tp);
+        assertEquals(1.0f, tp.getLetterSpacing(), 0f);
+    }
+
+    @Test
     public void testWriteReadParcel_FontResource() {
         final TextAppearanceSpan span = new TextAppearanceSpan(mContext,
                 android.text.cts.R.style.customFont);
@@ -427,6 +436,7 @@ public class TextAppearanceSpanTest {
         assertEquals(span.getFontFeatureSettings(), unparceledSpan.getFontFeatureSettings());
         assertEquals(span.getFontVariationSettings(), unparceledSpan.getFontVariationSettings());
         assertEquals(span.isElegantTextHeight(), unparceledSpan.isElegantTextHeight());
+        assertEquals(span.getLetterSpacing(), unparceledSpan.getLetterSpacing(), 0f);
     }
 
     @Test

@@ -16,6 +16,8 @@
 
 package android.car.cts;
 
+import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -39,20 +41,23 @@ import java.util.stream.IntStream;
 @RequiresDevice
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot get car related permissions.")
-public class CarSensorManagerTest extends CarApiTestBase {
+public final class CarSensorManagerTest extends AbstractCarTestCase {
+
+    private static final String TAG = CarSensorManagerTest.class.getSimpleName();
 
     private int[] mSupportedSensors;
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
-        CarSensorManager carSensorManager =
-                (CarSensorManager) getCar().getCarManager(Car.SENSOR_SERVICE);
-        mSupportedSensors = carSensorManager.getSupportedSensors();
-        assertNotNull(mSupportedSensors);
+        runWithShellPermissionIdentity(() -> {
+            CarSensorManager carSensorManager = (CarSensorManager) getCar().getCarManager(
+                    Car.SENSOR_SERVICE);
+            mSupportedSensors = carSensorManager.getSupportedSensors();
+            assertNotNull(mSupportedSensors);
+        });
     }
 
-    @CddTest(requirement="2.5.1")
+    @CddTest(requirements = {"2.5.1"})
     @Test
     public void testRequiredSensorsForDrivingState() throws Exception {
         boolean foundSpeed =
@@ -62,7 +67,7 @@ public class CarSensorManagerTest extends CarApiTestBase {
         assertTrue("Must support SENSOR_TYPE_GEAR", foundGear);
     }
 
-    @CddTest(requirement="2.5.1")
+    @CddTest(requirements = {"2.5.1"})
     @Test
     public void testMustSupportNightSensor() {
         boolean foundNightSensor =
@@ -70,7 +75,7 @@ public class CarSensorManagerTest extends CarApiTestBase {
         assertTrue("Must support SENSOR_TYPE_NIGHT", foundNightSensor);
     }
 
-    @CddTest(requirement = "2.5.1")
+    @CddTest(requirements = {"2.5.1"})
     @Test
     public void testMustSupportParkingBrake() throws Exception {
         boolean foundParkingBrake =

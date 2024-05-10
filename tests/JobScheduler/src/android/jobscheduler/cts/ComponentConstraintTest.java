@@ -35,11 +35,18 @@ public class ComponentConstraintTest extends BaseJobSchedulerTest {
         mBuilder = new JobInfo.Builder(COMPONENT_JOB_ID, kJobServiceComponent);
     }
 
+    @Override
+    public void tearDown() throws Exception {
+        setJobServiceEnabled(true);
+        super.tearDown();
+    }
+
     public void testScheduleAfterComponentEnabled() throws Exception {
         setJobServiceEnabled(true);
         kTestEnvironment.setExpectedExecutions(1);
-        mJobScheduler.schedule(mBuilder.setOverrideDeadline(0).build());
+        mJobScheduler.schedule(mBuilder.build());
 
+        runSatisfiedJob(COMPONENT_JOB_ID);
         assertTrue("Job with enabled service didn't fire.", kTestEnvironment.awaitExecution());
     }
 
@@ -51,8 +58,9 @@ public class ComponentConstraintTest extends BaseJobSchedulerTest {
         public void testScheduleAfterComponentDisabled() throws Exception {
             setJobServiceEnabled(false);
             kTestEnvironment.setExpectedExecutions(0);
-            mJobScheduler.schedule(mBuilder.setOverrideDeadline(0).build());
+            mJobScheduler.schedule(mBuilder.build());
 
+            runSatisfiedJob(COMPONENT_JOB_ID);
             assertTrue("Job with disabled service fired.", kTestEnvironment.awaitTimeout());
         }
     */
@@ -60,21 +68,24 @@ public class ComponentConstraintTest extends BaseJobSchedulerTest {
     public void testComponentDisabledAfterSchedule() throws Exception {
         setJobServiceEnabled(true);
         kTestEnvironment.setExpectedExecutions(0);
-        mJobScheduler.schedule(mBuilder.setMinimumLatency(1000).setOverrideDeadline(2000).build());
+        mJobScheduler.schedule(mBuilder.setMinimumLatency(1000).build());
         setJobServiceEnabled(false);
 
+        runSatisfiedJob(COMPONENT_JOB_ID);
         assertTrue("Job with disabled service fired.", kTestEnvironment.awaitTimeout());
     }
 
     public void testComponentDisabledAndReenabledAfterSchedule() throws Exception {
         setJobServiceEnabled(true);
         kTestEnvironment.setExpectedExecutions(1);
-        mJobScheduler.schedule(mBuilder.setMinimumLatency(1000).setOverrideDeadline(2000).build());
+        mJobScheduler.schedule(mBuilder.setMinimumLatency(1000).build());
 
         setJobServiceEnabled(false);
+        runSatisfiedJob(COMPONENT_JOB_ID);
         assertTrue("Job with disabled service fired.", kTestEnvironment.awaitTimeout());
 
         setJobServiceEnabled(true);
+        runSatisfiedJob(COMPONENT_JOB_ID);
         assertTrue("Job with enabled service didn't fire.", kTestEnvironment.awaitExecution());
     }
 

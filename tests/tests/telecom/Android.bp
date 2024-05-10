@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_fwk_telephony",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -32,6 +33,25 @@ filegroup {
     ],
     path: "aidl/",
 }
+
+filegroup {
+    name: "self-managed-cs-app-srcs",
+    srcs: [
+        "src/android/telecom/cts/selfmanagedcstestapp/ConnectionServiceCallController.java",
+        "src/android/telecom/cts/CtsSelfManagedConnectionService.java",
+        "src/android/telecom/cts/selfmanagedcstestapp/CtsSelfManagedConnectionServiceControl.java",
+    ],
+    path: "src/",
+}
+
+filegroup {
+    name: "self-managed-cs-app-aidl",
+    srcs: [
+        "aidl/android/telecom/cts/selfmanagedcstestapp/ICtsSelfManagedConnectionServiceControl.aidl",
+    ],
+    path: "aidl/",
+}
+
 filegroup {
     name: "third-pty-dialer-app-srcs",
     srcs: [
@@ -41,12 +61,30 @@ filegroup {
     ],
     path: "ThirdPtyInCallServiceTestApp/",
 }
+
 filegroup {
     name: "third-pty-dialer-app-aidl",
     srcs: [
         "ThirdPtyInCallServiceTestApp/aidl/android/telecom/cts/thirdptyincallservice/ICtsThirdPartyInCallServiceControl.aidl",
     ],
     path: "ThirdPtyInCallServiceTestApp/",
+}
+
+filegroup {
+    name: "non-ui-ics-wo-export-srcs",
+    srcs: [
+        "NonUiInCallServiceWoExport/src/android/telecom/cts/nonuiincallservicewoexport/CtsNonUiInCallServiceWoExport.java",
+        "NonUiInCallServiceWoExport/src/android/telecom/cts/nonuiincallservicewoexport/CtsNonUiInCallServiceWoExportControl.java",
+    ],
+    path: "NonUiInCallServiceWoExport/",
+}
+
+filegroup {
+    name: "non-ui-ics-wo-export-aidl",
+    srcs: [
+        "NonUiInCallServiceWoExport/aidl/android/telecom/cts/nonuiincallservicewoexport/ICtsNonUiInCallServiceWoExportControl.aidl",
+    ],
+    path: "NonUiInCallServiceWoExport/",
 }
 
 android_test {
@@ -58,6 +96,7 @@ android_test {
         "androidx.test.core",
         "androidx.test.rules",
         "CtsTelecomUtilLib",
+        "telecom_flags_core_java_lib",
     ],
     libs: [
         "android.test.base",
@@ -68,16 +107,21 @@ android_test {
         "aidl/**/I*.aidl",
         "CallScreeningServiceTestApp/**/*.java",
         "CallScreeningServiceTestApp/**/I*.aidl",
+        "CallStreamingServiceTestApp/**/*.java",
+        "CallStreamingServiceTestApp/**/I*.aidl",
         "ThirdPtyInCallServiceTestApp/**/*.java",
         "ThirdPtyInCallServiceTestApp/**/I*.aidl",
         "CallRedirectionServiceTestApp/**/*.java",
         "CallRedirectionServiceTestApp/**/I*.aidl",
         "Api29InCallServiceTestApp/**/*.java",
         "Api29InCallServiceTestApp/**/I*.aidl",
+        "NonUiInCallServiceWoExport/**/*.java",
+        "NonUiInCallServiceWoExport/**/I*.aidl",
         "ThirdPtyDialerTestApp/**/*.java",
         "ThirdPtyDialerTestAppTwo/**/*.java",
         "CarModeTestAppSelfManaged/**/*.java",
         "CarModeTestAppTwo/**/*.java",
+        "SelfManagedCSTestAppOne/**/*.java",
     ],
     exclude_srcs: [
         "src/android/telecom/cts/SelfManagedConnection.java",
@@ -86,9 +130,11 @@ android_test {
     ],
     aidl: {
         local_include_dirs: [
+            "NonUiInCallServiceWoExport/aidl/",
             "ThirdPtyInCallServiceTestApp/aidl/",
             "CallRedirectionServiceTestApp/aidl/",
             "CallScreeningServiceTestApp/aidl/",
+            "CallStreamingServiceTestApp/aidl/",
             "aidl/",
         ],
     },
@@ -100,8 +146,10 @@ android_test {
         "general-tests",
     ],
     data: [
+        ":NonUiInCallServiceWoExport",
         ":ThirdPtyInCallServiceTestApp",
         ":CarModeTestAppTwo",
+        ":SelfManagedCSTestAppOne",
         ":Api29InCallServiceTestApp",
         ":CallRedirectionServiceTestApp",
         ":ThirdPtyDialerTestAppTwo",
@@ -109,6 +157,7 @@ android_test {
         ":CarModeTestApp",
         ":CarModeTestAppSelfManaged",
         ":CallScreeningServiceTestApp",
+        ":CallStreamingServiceTestApp",
     ],
     per_testcase_directory: true,
 }

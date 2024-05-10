@@ -16,6 +16,8 @@
 
 package android.car.cts;
 
+import static com.android.tradefed.targetprep.UserHelper.RUN_TESTS_AS_USER_KEY;
+
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
@@ -93,6 +95,7 @@ public abstract class CarHostJUnit4TestCase extends BaseHostJUnit4Test {
     private final HashSet<Integer> mUsersToBeRemoved = new HashSet<>();
 
     private int mInitialUserId;
+    private int mTestRunningUserId;
     private Integer mInitialMaximumNumberOfUsers;
 
     // It is possible that during test initial user is deleted and it is not possible to switch
@@ -107,6 +110,18 @@ public abstract class CarHostJUnit4TestCase extends BaseHostJUnit4Test {
         removeUsers(USER_PREFIX);
 
         mInitialUserId = getCurrentUserId();
+
+        // The test runs as the current user in most cases. For secondary_user_on_secondary_display
+        // case, we set mTestRunningUserId from RUN_TEST_AS_USER.
+        mTestRunningUserId = getCurrentUserId();
+        if (getDevice().isVisibleBackgroundUsersSupported()) {
+            try {
+                mTestRunningUserId = Integer.parseInt(
+                        getTestInformation().properties().get(RUN_TESTS_AS_USER_KEY));
+            } catch (Exception e) {
+                CLog.e("Failed to parse the userId for " + RUN_TESTS_AS_USER_KEY + " due to " + e);
+            }
+        }
     }
 
     /**
@@ -151,9 +166,7 @@ public abstract class CarHostJUnit4TestCase extends BaseHostJUnit4Test {
      * Returns whether device is in headless system user mode.
      */
     boolean isHeadlessSystemUserMode() throws Exception {
-        String result = getDevice()
-                .executeShellCommand("getprop ro.fw.mu.headless_system_user").trim();
-        return Boolean.valueOf(result);
+        return getDevice().isHeadlessSystemUserMode();
     }
 
     /**
@@ -297,10 +310,45 @@ public abstract class CarHostJUnit4TestCase extends BaseHostJUnit4Test {
     }
 
     /**
+     * Gets the user's id that is running the test.
+     *
+     * <p>The tests run as the current user so this is same as {@link #getCurrentUserId()} in most
+     * cases. For secondary_user_on_secondary_display case, this is returned from RUN_TEST_AS_USER.
+     */
+    protected int getTestRunningUserId()  {
+        return mTestRunningUserId;
+    }
+
+    /**
      * Gets the current user's id.
      */
     protected int getCurrentUserId() throws DeviceNotAvailableException {
         return getDevice().getCurrentUser();
+    }
+
+    /**
+     * Waits until the user switch to {@code userId} completes.
+     *
+     * <p>There is asynchronous part of a user switch after the core user switch. This method
+     * ensures a user switch to {@code userId} completes by {@code CarService}.
+     */
+    protected void waitForUserSwitchCompleted(int userId) throws Exception {
+        CommonTestUtils.waitUntil("timed out (" + DEFAULT_TIMEOUT_SEC
+                + "s) waiting for the last active userId to be " + userId
+                + ", but it is " + getLastActiveUserId(),
+                DEFAULT_TIMEOUT_SEC,
+                () -> getLastActiveUserId() == userId);
+    }
+
+    /**
+     * Gets the global settings value of android.car.LAST_ACTIVE_USER_ID, which is set by
+     * {@code CarUserService} when a user switch completes.
+     *
+     * @return userId of the current active user.
+     */
+    protected int getLastActiveUserId() throws Exception {
+        return executeAndParseCommand(output -> Integer.parseInt(output.trim()),
+                "cmd settings get global android.car.LAST_ACTIVE_USER_ID");
     }
 
     /**
@@ -550,7 +598,17 @@ public abstract class CarHostJUnit4TestCase extends BaseHostJUnit4Test {
      * Gets the system server uptime (or {@code -1} if not available).
      */
     protected long getSystemServerUptime() throws DeviceNotAvailableException {
-        return getDevice().getIntProperty("sys.system_server.start_uptime", -1);
+        // Do not use getDevice().getIntProperty because it internally caches the value and will
+        // not return the latest value.
+        try {
+            return Long.parseLong(getDevice().executeShellCommand(
+                    "getprop sys.system_server.start_uptime").strip());
+        } catch (DeviceNotAvailableException e) {
+            throw e;
+        } catch (Exception e) {
+            CLog.w("Failed to getprop sys.system_server.start_uptime", e);
+            return -1;
+        }
     }
 
     /**

@@ -27,6 +27,7 @@ import android.media.MediaMuxer;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
@@ -89,6 +90,7 @@ public class MuxerUnitTest {
             muxer.writeSampleData(trackID, metaBuff, metaInfo);
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#MediaMuxer")
         @Test
         public void testIfNullPathIsRejected() {
             MediaMuxer muxer = null;
@@ -105,6 +107,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#MediaMuxer")
         @Test
         public void testIfNullFdIsRejected() {
             MediaMuxer muxer = null;
@@ -121,6 +124,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#MediaMuxer")
         @Test
         public void testIfInvalidFdIsRejected() {
             MediaMuxer muxer = null;
@@ -137,6 +141,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#MediaMuxer")
         @Test
         public void testIfReadOnlyFdIsRejected() {
             MediaMuxer muxer = null;
@@ -152,6 +157,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#MediaMuxer")
         @Test
         public void testIfNonSeekableFdIsRejected() {
             MediaMuxer muxer = null;
@@ -168,6 +174,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#MediaMuxer")
         @Test
         public void testIfInvalidOutputFormatIsRejected() {
             MediaMuxer muxer = null;
@@ -183,6 +190,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#addTrack")
         @Test
         public void testIfNullMediaFormatIsRejected() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -196,6 +204,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#addTrack")
         @Test
         public void testIfInvalidMediaFormatIsRejected() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -223,14 +232,14 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#addTrack")
         @Test
-        @Ignore("TODO(b/146923138)")
         public void testIfCorruptMediaFormatIsRejected() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
 
-             /* TODO: Audio/Video formats, have certain keys required to be set. It is noticed
-                that even when these keys are not set, no exceptions were raised. Do we need to
-                add fixtures for those cases. */
+             /* TODO(b/278260304): Audio/Video formats, have certain keys required to be set. It
+                is noticed that even when these keys are not set, no exceptions were raised. Do we
+                need to add fixtures for those cases. */
             try {
                 MediaFormat format = new MediaFormat();
                 format.setString(MediaFormat.KEY_MIME, MediaFormat.MIMETYPE_AUDIO_AAC);
@@ -245,6 +254,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#addTrack")
         @Test
         public void testIfAddTrackSucceedsAfterStart() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -264,6 +274,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#addTrack")
         @Test
         public void testIfAddTrackSucceedsAfterWriteSampleData() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -284,6 +295,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#addTrack")
         @Test
         public void testIfAddTrackSucceedsAfterStop() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -305,6 +317,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#addTrack")
         @Test
         public void testIfAddTrackSucceedsAfterRelease() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -323,6 +336,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#start")
         @Test
         public void testIfMuxerStartsBeforeAddTrack() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -341,6 +355,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#start")
         @Test
         public void testIdempotentStart() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -361,6 +376,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#start")
         @Test
         public void testIfMuxerStartsAfterWriteSampleData() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -382,6 +398,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#start")
         @Test
         public void testIfMuxerStartsAfterStop() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -404,6 +421,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#start")
         @Test
         public void testIfMuxerStartsAfterRelease() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -421,6 +439,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#stop")
         @Test
         public void testStopOnANonStartedMuxer() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -437,6 +456,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#stop")
         @Test
         public void testIdempotentStop() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -459,6 +479,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#stop")
         @Test
         public void testStopAfterRelease() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -475,6 +496,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = {"android.media.MediaMuxer#start", "android.media.MediaMuxer#stop"})
         @Test
         public void testSimpleStartStopMuxer() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -492,6 +514,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#writeSampleData")
         @Test
         public void testIfWriteSampleDataRejectsInvalidTrackIndex() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -511,6 +534,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#writeSampleData")
         @Test
         public void testIfWriteSampleDataRejectsNullByteBuffer() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -536,6 +560,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#writeSampleData")
         @Test
         public void testIfWriteSampleDataRejectsNullBuffInfo() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -560,6 +585,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#writeSampleData")
         @Test
         public void testIfWriteSampleDataRejectsInvalidBuffInfo() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -631,6 +657,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#writeSampleData")
         @Test
         @Ignore("TODO(b/147128377)")
         public void testIfWriteSampleDataRejectsInvalidPts() throws IOException {
@@ -651,6 +678,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#writeSampleData")
         @Test
         public void testIfWriteSampleDataSucceedsBeforeStart() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -670,6 +698,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#writeSampleData")
         @Test
         public void testIfWriteSampleDataSucceedsAfterStop() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -692,6 +721,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#writeSampleData")
         @Test
         public void testIfWriteSampleDataSucceedsAfterRelease() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -714,6 +744,7 @@ public class MuxerUnitTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#release")
         @Test
         public void testIdempotentRelease() throws IOException {
             MediaMuxer muxer = new MediaMuxer(mOutLoc, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -774,103 +805,122 @@ public class MuxerUnitTest {
         private native boolean nativeTestIfWriteSampleDataSucceedsBeforeStart(String outPath);
         private native boolean nativeTestIfWriteSampleDataSucceedsAfterStop(String outPath);
 
+        @ApiTest(apis = "AMediaMuxer_new")
         @Test
         public void testIfInvalidFdIsRejected() {
             assertTrue(nativeTestIfInvalidFdIsRejected());
         }
 
+        @ApiTest(apis = "AMediaMuxer_new")
         @Test
         public void testIfReadOnlyFdIsRejected() {
             assertTrue(nativeTestIfReadOnlyFdIsRejected(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_new")
         @Test
         public void testIfNonSeekableFdIsRejected() {
             assertTrue(nativeTestIfNonSeekableFdIsRejected());
         }
 
+        @ApiTest(apis = "AMediaMuxer_new")
         @Test
         public void testIfInvalidOutputFormatIsRejected() {
             assertTrue(nativeTestIfInvalidOutputFormatIsRejected(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_addTrack")
         @Test
         public void testIfInvalidMediaFormatIsRejected() {
             assertTrue(nativeTestIfInvalidMediaFormatIsRejected(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_addTrack")
         @Test
-        @Ignore("TODO(b/146923138)")
         public void testIfCorruptMediaFormatIsRejected() {
             assertTrue(nativeTestIfCorruptMediaFormatIsRejected(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_addTrack")
         @Test
         public void testIfAddTrackSucceedsAfterStart() {
             assertTrue(nativeTestIfAddTrackSucceedsAfterStart(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_addTrack")
         @Test
         public void testIfAddTrackSucceedsAfterWriteSampleData() {
             assertTrue(nativeTestIfAddTrackSucceedsAfterWriteSampleData(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_addTrack")
         @Test
         public void testIfAddTrackSucceedsAfterStop() {
             assertTrue(nativeTestIfAddTrackSucceedsAfterStop(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_start")
         @Test
         public void testIfMuxerStartsBeforeAddTrack() {
             assertTrue(nativeTestIfMuxerStartsBeforeAddTrack(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_start")
         @Test
         public void testIdempotentStart() {
             assertTrue(nativeTestIdempotentStart(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_start")
         @Test
         public void testIfMuxerStartsAfterWriteSampleData() {
             assertTrue(nativeTestIfMuxerStartsAfterWriteSampleData(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_start")
         @Test
         public void testIfMuxerStartsAfterStop() {
             assertTrue(nativeTestIfMuxerStartsAfterStop(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_stop")
         @Test
         public void testStopOnANonStartedMuxer() {
             assertTrue(nativeTestStopOnANonStartedMuxer(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_stop")
         @Test
         public void testIdempotentStop() {
             assertTrue(nativeTestIdempotentStop(mOutLoc));
         }
 
+        @ApiTest(apis = {"AMediaMuxer_start", "AMediaMuxer_stop"})
         @Test
         public void testSimpleStartStopMuxer() {
             assertTrue(nativeTestSimpleStartStop(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_writeSampleData")
         @Test
         public void testIfWriteSampleDataRejectsInvalidTrackIndex() {
             assertTrue(nativeTestIfWriteSampleDataRejectsInvalidTrackIndex(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_writeSampleData")
         @Test
         @Ignore("TODO(b/147128377)")
         public void testIfWriteSampleDataRejectsInvalidPts() {
             assertTrue(nativeTestIfWriteSampleDataRejectsInvalidPts(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_writeSampleData")
         @Test
         public void testIfWriteSampleDataSucceedsBeforeStart() {
             assertTrue(nativeTestIfWriteSampleDataSucceedsBeforeStart(mOutLoc));
         }
 
+        @ApiTest(apis = "AMediaMuxer_writeSampleData")
         @Test
         public void testIfWriteSampleDataSucceedsAfterStop() {
             assertTrue(nativeTestIfWriteSampleDataSucceedsAfterStop(mOutLoc));

@@ -16,14 +16,16 @@
 
 package com.android.bedstead.harrier.annotations.enterprise;
 
-import static com.android.bedstead.harrier.annotations.AnnotationRunPrecedence.MIDDLE;
+import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ADMIN;
 
-import com.android.bedstead.harrier.annotations.AnnotationRunPrecedence;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
+import com.android.bedstead.harrier.annotations.RequireNotWatch;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
+import com.android.queryable.annotations.Query;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -50,12 +52,47 @@ import java.lang.annotation.Target;
 @RequireFeature(FEATURE_DEVICE_ADMIN)
 // TODO(b/206441366): Add instant app support
 @RequireNotInstantApp(reason = "Instant Apps cannot run Enterprise Tests")
+@RequireNotWatch(reason = "b/270121483 Watches get marked as paired which means we can't change Device Owner")
 public @interface EnsureHasDeviceOwner {
 
-    int DO_PO_WEIGHT = MIDDLE;
+    /** See {@link EnsureHasDeviceOwner#headlessDeviceOwnerType }. */
+    enum HeadlessDeviceOwnerType {
+        /**
+         * When used - the Device Owner will be set but no profile owners will be set.
+         */
+        NONE,
+
+        /**
+         * When used - when setting the device owner on a headless system user mode device, a profile
+         * owner will also be set on the initial user. This matches the behaviour when setting up
+         * a new HSUM device.
+         *
+         * <p>Note that when this is set - a default affiliation ID will be added to the Device
+         * Owner and to the Profile Owner set on any other users.
+         */
+        AFFILIATED;
+    }
+
+    int DO_PO_PRIORITY = MIDDLE;
+
+    String DEFAULT_KEY = "deviceOwner";
+
+    /**
+     * The key used to identify this DPC.
+     *
+     * <p>This can be used with {@link AdditionalQueryParameters} to modify the requirements for
+     * the DPC. */
+    String key() default DEFAULT_KEY;
 
     /** Behaviour if the device owner cannot be set. */
     FailureMode failureMode() default FailureMode.FAIL;
+
+    /**
+     * Requirements for the DPC.
+     *
+     * <p>Defaults to the default version of RemoteDPC.
+     */
+    Query dpc() default @Query();
 
     /**
      * Whether this DPC should be returned by calls to {@code Devicestate#dpc()}.
@@ -69,21 +106,27 @@ public @interface EnsureHasDeviceOwner {
      */
     String[] affiliationIds() default {};
 
-    /**
-     * Weight sets the order that annotations will be resolved.
+     /**
+     * Priority sets the order that annotations will be resolved.
      *
-     * <p>Annotations with a lower weight will be resolved before annotations with a higher weight.
+     * <p>Annotations with a lower priority will be resolved before annotations with a higher
+     * priority.
      *
-     * <p>If there is an order requirement between annotations, ensure that the weight of the
+     * <p>If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     * <p>Weight can be set to a {@link AnnotationRunPrecedence} constant, or to any {@link int}.
+     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int weight() default DO_PO_WEIGHT;
+    int priority() default DO_PO_PRIORITY;
 
     /**
      * The type of device owner that is managing the device which can be {@link
      * DeviceOwnerType#DEFAULT} or {@link DeviceOwnerType#FINANCED}.
      */
     int type() default DeviceOwnerType.DEFAULT;
+
+    /**
+     * The behaviour when running tests on a HSUM device.
+     */
+    HeadlessDeviceOwnerType headlessDeviceOwnerType() default HeadlessDeviceOwnerType.AFFILIATED;
 }

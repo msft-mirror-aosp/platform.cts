@@ -29,7 +29,9 @@ import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyProperties;
 import android.test.MoreAsserts;
+import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -47,6 +49,7 @@ import org.junit.runner.RunWith;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -60,6 +63,7 @@ import java.security.Provider.Service;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.Signature;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECKey;
@@ -85,6 +89,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import javax.crypto.KeyAgreement;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -173,6 +178,10 @@ public class KeyPairGeneratorTest {
         // XDH is also a supported algorithm, but not available for other tests as the keys
         // generated with it have more limited set of uses.
         expectedAlgsLowerCase.add("xdh");
+        if (TestUtils.isEd25519AlgorithmExpectedToSupport()) {
+            // AndroidKeyStore supports key generation of curve Ed25519 from Android V preview
+            expectedAlgsLowerCase.add("ed25519");
+        }
 
         for (Service service : services) {
             if ("KeyPairGenerator".equalsIgnoreCase(service.getType())) {
@@ -621,6 +630,57 @@ public class KeyPairGeneratorTest {
         replacesOldEntryWithSameAliasHelper(false /* useStrongbox */);
         if (TestUtils.hasStrongBox(getContext())) {
             replacesOldEntryWithSameAliasHelper(true /* useStrongbox */);
+        }
+    }
+
+    @Test
+    public void testGenerate_VerifyDifferentValidityPeriods() throws Exception {
+        // Generate keys with different validity durations, (Now, Now + 1 year),
+        // (Now, Now + 2 years), ..., (Now, Now + 10 years)
+        List<Pair<Date, Date>> certDurations = new ArrayList<Pair<Date, Date>>();
+        for (int year = 1; year <= 10; year++) {
+            Date notAfterDate = new Date(NOW.getYear() + year, 0, 1);
+            certDurations.add(new Pair<Date, Date>(NOW, notAfterDate));
+        }
+        // Add a new entry with not-before = Jan, 01, 2011 and not-after = Jan 01, 2032
+        certDurations.add(new Pair<Date, Date>(new Date(1293840000000L), new Date(1956528000000L)));
+
+        generateKeyWithDifferentValidityPeriods(certDurations, false /* useStrongbox */);
+        if (TestUtils.hasStrongBox(getContext())) {
+            generateKeyWithDifferentValidityPeriods(certDurations, true /* useStrongbox */);
+        }
+    }
+
+    private void generateKeyWithDifferentValidityPeriods(
+            List<Pair<Date, Date>> durations, boolean useStrongbox)
+            throws Exception {
+        for (Pair<Date, Date> pair : durations) {
+            KeyPairGenerator generator = getRsaGenerator();
+            Date certNotBefore = pair.first;
+            Date certNotAfter = pair.second;
+            generator.initialize(new KeyGenParameterSpec.Builder(
+                    TEST_ALIAS_1,
+                    KeyProperties.PURPOSE_SIGN
+                            | KeyProperties.PURPOSE_VERIFY
+                            | KeyProperties.PURPOSE_ENCRYPT
+                            | KeyProperties.PURPOSE_DECRYPT)
+                    .setDigests(KeyProperties.DIGEST_NONE)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
+                    .setCertificateSubject(TEST_DN_1)
+                    .setCertificateSerialNumber(TEST_SERIAL_1)
+                    .setCertificateNotBefore(certNotBefore)
+                    .setCertificateNotAfter(certNotAfter)
+                    .setIsStrongBoxBacked(useStrongbox)
+                    .build());
+            assertGeneratedKeyPairAndSelfSignedCertificate(
+                    generator.generateKeyPair(),
+                    TEST_ALIAS_1,
+                    "RSA",
+                    2048,
+                    TEST_DN_1,
+                    TEST_SERIAL_1,
+                    certNotBefore,
+                    certNotAfter);
         }
     }
 
@@ -2086,5 +2146,131 @@ public class KeyPairGeneratorTest {
 
     private KeyGenParameterSpec.Builder getWorkingSpec(int purposes) {
         return new KeyGenParameterSpec.Builder(TEST_ALIAS_1, purposes);
+    }
+
+    @Test
+    public void testUniquenessOfRsaKeys() throws Exception {
+        KeyGenParameterSpec.Builder specBuilder = getWorkingSpec(KeyProperties.PURPOSE_SIGN)
+                .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
+                .setDigests(KeyProperties.DIGEST_SHA256);
+        testUniquenessOfAsymmetricKeys("RSA", "SHA256WithRSA",
+                specBuilder.build());
+    }
+
+    @Test
+    public void testUniquenessOfRsaKeysInStrongBox() throws Exception {
+        TestUtils.assumeStrongBox();
+        KeyGenParameterSpec.Builder specBuilder = getWorkingSpec(KeyProperties.PURPOSE_SIGN)
+                .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
+                .setDigests(KeyProperties.DIGEST_SHA256);
+        specBuilder.setIsStrongBoxBacked(true);
+        testUniquenessOfAsymmetricKeys("RSA", "SHA256WithRSA",
+                specBuilder.build());
+    }
+
+    @Test
+    public void testUniquenessOfEcKeys() throws Exception {
+        KeyGenParameterSpec.Builder specBuilder = getWorkingSpec(KeyProperties.PURPOSE_SIGN)
+                .setDigests(KeyProperties.DIGEST_SHA256);
+        testUniquenessOfAsymmetricKeys("EC", "SHA256WithECDSA",
+                specBuilder.build());
+    }
+
+    @Test
+    public void testUniquenessOfEcKeysInStrongBox() throws Exception {
+        TestUtils.assumeStrongBox();
+        KeyGenParameterSpec.Builder specBuilder = getWorkingSpec(KeyProperties.PURPOSE_SIGN)
+                .setDigests(KeyProperties.DIGEST_SHA256);
+        specBuilder.setIsStrongBoxBacked(true);
+        testUniquenessOfAsymmetricKeys("EC", "SHA256WithECDSA",
+                specBuilder.build());
+    }
+
+    @Test
+    public void testUniquenessOfEd25519Keys() throws Exception {
+        KeyGenParameterSpec.Builder specBuilder = getWorkingSpec(KeyProperties.PURPOSE_SIGN)
+                .setAlgorithmParameterSpec(new ECGenParameterSpec("ed25519"))
+                .setDigests(KeyProperties.DIGEST_NONE);
+        testUniquenessOfAsymmetricKeys("EC", "Ed25519",
+                specBuilder.build());
+    }
+
+    private void testUniquenessOfAsymmetricKeys(String keyAlgo, String signAlgo,
+                                                KeyGenParameterSpec spec) throws Exception {
+        byte []randomMsg = new byte[20];
+        SecureRandom.getInstance("SHA1PRNG").nextBytes(randomMsg);
+        byte[][] msgArr = new byte[][]{
+                {},
+                "message".getBytes(StandardCharsets.UTF_8),
+                randomMsg
+        };
+        for (byte[] msg : msgArr) {
+            int numberOfKeysToTest = 10;
+            Set results = new HashSet();
+            for (int i = 0; i < numberOfKeysToTest; i++) {
+                KeyPairGenerator generator = getGenerator(keyAlgo);
+                generator.initialize(spec);
+                KeyPair keyPair = generator.generateKeyPair();
+                Signature signer = Signature.getInstance(signAlgo,
+                        TestUtils.EXPECTED_CRYPTO_OP_PROVIDER_NAME);
+                signer.initSign(keyPair.getPrivate());
+                signer.update(msg);
+                byte[] signature = signer.sign();
+                // Add generated signature to HashSet so that only unique signatures will be
+                // counted.
+                results.add(new String(signature));
+            }
+            // Verify different signatures are generated for fixed message with all different keys
+            assertEquals(TextUtils.formatSimple("%d different signature should have been generated"
+                    + " for %d different keys.", numberOfKeysToTest, numberOfKeysToTest),
+                    numberOfKeysToTest, results.size());
+        }
+    }
+
+    @Test
+    public void testUniquenessOfEcdhKeys() throws Exception {
+        testUniquenessOfECAgreementKeys("secp256r1", "ECDH", false /* useStrongbox */);
+    }
+
+    @Test
+    public void testUniquenessOfEcdhKeysInStrongBox() throws Exception {
+        TestUtils.assumeStrongBox();
+        testUniquenessOfECAgreementKeys("secp256r1", "ECDH", true /* useStrongbox */);
+    }
+
+    @Test
+    public void testUniquenessOfX25519Keys() throws Exception {
+        testUniquenessOfECAgreementKeys("x25519", "XDH", false /* useStrongbox */);
+    }
+
+    private void testUniquenessOfECAgreementKeys(String curve, String agreeAlgo,
+                                                        boolean useStrongbox) throws Exception {
+        int numberOfKeysToTest = 10;
+        Set results = new HashSet();
+        KeyGenParameterSpec spec = getWorkingSpec(KeyProperties.PURPOSE_AGREE_KEY)
+                .setIsStrongBoxBacked(useStrongbox)
+                .setAlgorithmParameterSpec(new ECGenParameterSpec(curve))
+                .build();
+        // Generate a local key pair
+        KeyPairGenerator generator = getGenerator("EC");
+        generator.initialize(spec);
+        KeyPair keyPairA = generator.generateKeyPair();
+
+        for (int i = 0; i < numberOfKeysToTest; i++) {
+            // Generate remote key
+            generator.initialize(spec);
+            KeyPair keyPairB = generator.generateKeyPair();
+            KeyAgreement keyAgreement = KeyAgreement.getInstance(agreeAlgo,
+                    EXPECTED_PROVIDER_NAME);
+            keyAgreement.init(keyPairB.getPrivate());
+            keyAgreement.doPhase(keyPairA.getPublic(), true);
+            byte[] secret = keyAgreement.generateSecret();
+            // Add generated secret to HashSet so that only unique secrets will be counted.
+            results.add(new String(secret));
+        }
+        // Verify different key agreement secrets generated for all different keys
+        assertEquals(TextUtils.formatSimple("%d different secrets should have been generated for "
+                + "%d different keys.", numberOfKeysToTest, numberOfKeysToTest),
+                numberOfKeysToTest, results.size());
     }
 }

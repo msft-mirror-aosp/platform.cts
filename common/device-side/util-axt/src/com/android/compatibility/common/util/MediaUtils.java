@@ -42,6 +42,7 @@ import android.os.ParcelFileDescriptor;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Range;
+import android.util.Size;
 import android.view.WindowManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -413,6 +414,13 @@ public class MediaUtils {
 
         Log.w(TAG, "unsupported size " + w + "x" + h);
         return false;
+    }
+
+    /**
+     * returns true if the given codec component of mediaType supports the given resolution
+     */
+    public static boolean supports(String codecName, String mediaType, Size size) {
+        return supports(codecName, mediaType, size.getWidth(), size.getHeight());
     }
 
     public static boolean supports(String codecName, MediaFormat format) {
@@ -894,6 +902,7 @@ public class MediaUtils {
                 } catch (IllegalArgumentException e) {
                      // mime is not supported
                      Log.w(TAG, "not supported mime: " + mime);
+                     return false;
                 }
             }
         }

@@ -27,6 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.hardware.biometrics.BiometricPrompt;
@@ -40,6 +41,8 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.compatibility.common.util.ApiTest;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -50,6 +53,11 @@ import org.junit.Test;
 public class BiometricActivityTests extends BiometricTestBase {
     private static final String TAG = "BiometricTests/Activity";
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOnly_authenticateFromForegroundActivity() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -72,7 +80,7 @@ public class BiometricActivityTests extends BiometricTestBase {
             @NonNull BiometricTestSession session, int sensorId,
             @NonNull ActivitySession activitySession) throws Exception {
         Log.d(TAG, "testBiometricOnly_authenticateFromForegroundActivity_forSensor: " + sensorId);
-        final int userId = 0;
+        final int userId = Utils.getUserId();
         waitForAllUnenrolled();
         enrollForSensor(session, sensorId);
         final TestJournalProvider.TestJournal journal = TestJournalProvider.TestJournalContainer
@@ -103,6 +111,11 @@ public class BiometricActivityTests extends BiometricTestBase {
         assertEquals(callbackState.toString(), 0, callbackState.mNumAuthRejected);
     }
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOnly_rejectThenErrorFromForegroundActivity() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -126,7 +139,7 @@ public class BiometricActivityTests extends BiometricTestBase {
             @NonNull ActivitySession activitySession) throws Exception {
         Log.d(TAG, "testBiometricOnly_rejectThenErrorFromForegroundActivity_forSensor: "
                 + sensorId);
-        final int userId = 0;
+        final int userId = Utils.getUserId();
         waitForAllUnenrolled();
         enrollForSensor(session, sensorId);
 
@@ -170,6 +183,11 @@ public class BiometricActivityTests extends BiometricTestBase {
                 (int) callbackState.mErrorsReceived.get(0));
     }
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOnly_rejectThenAuthenticate() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -193,7 +211,7 @@ public class BiometricActivityTests extends BiometricTestBase {
             @NonNull ActivitySession activitySession) throws Exception {
         Log.d(TAG, "testBiometricOnly_rejectThenAuthenticate_forSensor: " + sensorId);
 
-        final int userId = 0;
+        final int userId = Utils.getUserId();
         waitForAllUnenrolled();
         enrollForSensor(session, sensorId);
 
@@ -240,6 +258,13 @@ public class BiometricActivityTests extends BiometricTestBase {
 
     // TODO(b/236763921): fix this test and unignore.
     @Ignore
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setNegativeButton",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOnly_negativeButtonInvoked() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -290,6 +315,11 @@ public class BiometricActivityTests extends BiometricTestBase {
 
     // TODO(b/236763921): fix this test and unignore.
     @Ignore
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOrCredential_credentialButtonInvoked_biometricEnrolled()
             throws Exception {
@@ -314,6 +344,11 @@ public class BiometricActivityTests extends BiometricTestBase {
         }
     }
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOrCredential_credentialButtonInvoked_biometricNotEnrolled()
             throws Exception {
@@ -334,11 +369,18 @@ public class BiometricActivityTests extends BiometricTestBase {
         }
     }
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOrCredential_credentialButtonInvoked_noBiometricSensor()
             throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         assumeTrue(mSensorProperties.isEmpty());
+        //TODO: b/331955301 need to update Auto biometric UI
+        assumeFalse(isCar());
         try (CredentialSession credentialSession = new CredentialSession()) {
             credentialSession.setCredential();
             try (ActivitySession activitySession =

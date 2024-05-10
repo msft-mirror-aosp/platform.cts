@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_platform_security",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -26,17 +27,21 @@ java_test_host {
         "general-tests",
         "sts",
     ],
+    static_libs: ["sts-host-util"],
     // Must match the package name in CtsTestCaseList.mk
     libs: [
         "compatibility-host-util",
         "cts-tradefed",
-        "sts-host-util",
         "tradefed",
     ],
     data: [
         ":CtsHostLaunchAnyWhereApp",
         ":MainlineModuleDetector",
         ":hotspot",
+    ],
+    target_required: [
+        // Need for running inputflinger test in TEST_MAPPING
+        "Bug-115739809",
     ],
     per_testcase_directory: true,
 }

@@ -1,4 +1,5 @@
 package {
+    default_team: "trendy_team_android_settings_app",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -17,9 +18,14 @@ android_test {
         "androidx.slice_slice-core",
         "androidx.slice_slice-view",
         "androidx.window_window",
+        "compatibility-common-util-devicesidelib",
+        "compatibility-device-util-axt",
         "ctstestrunner-axt",
+        "Nene",
+        "TestApp",
+        "Harrier",
         "junit",
-        "truth-prebuilt",
+        "truth",
     ],
 
     srcs: ["src/**/*.java"],

@@ -15,6 +15,7 @@
 //
 
 package {
+    default_team: "trendy_team_lse_app_compat",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -29,7 +30,7 @@ android_test_helper_app {
     static_libs: [
         "ctstestrunner-axt",
         "testng",
-        "truth-prebuilt",
+        "truth",
     ],
 
     // Tag this module as a cts test artifact

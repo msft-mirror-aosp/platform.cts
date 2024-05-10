@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
@@ -174,6 +175,7 @@ public class MediaStore_FilesTest {
 
     @Test
     public void testCaseSensitivity() throws IOException {
+        assumeTrue(Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.R);
         final String name = "Test-" + System.nanoTime() + ".Mp3";
         final File dir = ProviderTestUtils.stageDir(mVolumeName);
         final File file = new File(dir, name);
@@ -184,8 +186,7 @@ public class MediaStore_FilesTest {
         ContentValues values = new ContentValues();
         values.put(MediaColumns.DATA, fileLower.getAbsolutePath());
         Uri fileUri = mResolver.insert(allFilesUri, values);
-        try {
-            ParcelFileDescriptor pfd = mResolver.openFileDescriptor(fileUri, "r");
+        try (ParcelFileDescriptor pfd = mResolver.openFileDescriptor(fileUri, "r")) {
             pfd.close();
         } finally {
             mResolver.delete(fileUri, null, null);

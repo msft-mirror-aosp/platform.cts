@@ -19,10 +19,10 @@ import os
 
 from mobly import test_runner
 
+import its_base_test
 import camera_properties_utils
 import image_fov_utils
 import image_processing_utils
-import its_base_test
 import its_session_utils
 import opencv_processing_utils
 import video_processing_utils
@@ -34,6 +34,7 @@ _MAX_STABILIZED_RADIUS_RATIO = 1.25  # An FOV reduction of 20% corresponds to an
                                      # increase in lengths of 25%. So the
                                      # stabilized circle's radius can be at most
                                      # 1.25 times that of an unstabilized circle
+_MAX_STABILIZED_RADIUS_ATOL = 1  # 1 pixel tol for radii inaccuracy
 _ROUNDESS_DELTA_THRESHOLD = 0.05
 
 _MAX_CENTER_THRESHOLD_PERCENT = 0.075
@@ -97,8 +98,7 @@ def _calculate_center_offset_threshold(image_size):
 
   img_area = image_size[0] * image_size[1]
 
-  normalized_area = ((img_area - _MIN_AREA) /
-                         (_MAX_AREA - _MIN_AREA))
+  normalized_area = (img_area - _MIN_AREA) / (_MAX_AREA - _MIN_AREA)
 
   if normalized_area > 1 or normalized_area < 0:
     raise AssertionError(f'normalized area > 1 or < 0! '
@@ -111,7 +111,8 @@ def _calculate_center_offset_threshold(image_size):
                                   (_MAX_CENTER_THRESHOLD_PERCENT -
                                    _MIN_CENTER_THRESHOLD_PERCENT))
 
-  return (normalized_threshold_percent + _MIN_CENTER_THRESHOLD_PERCENT)
+  return normalized_threshold_percent + _MIN_CENTER_THRESHOLD_PERCENT
+
 
 class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
   """Tests if stabilized preview FoV is within spec.
@@ -151,9 +152,8 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
           'First API level should be {} or higher. Found {}.'.format(
               its_session_utils.ANDROID13_API_LEVEL, first_api_level))
 
-      # Get ffmpeg version being used.
-      ffmpeg_version = video_processing_utils.get_ffmpeg_version()
-      logging.debug('ffmpeg_version: %s', ffmpeg_version)
+      # Log ffmpeg version being used
+      video_processing_utils.log_ffmpeg_version()
 
       supported_stabilization_modes = props[
           'android.control.availableVideoStabilizationModes'
@@ -174,7 +174,7 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
 
       # List of preview resolutions to test
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      for size in video_processing_utils.LOW_RESOLUTION_SIZES['W']:
+      for size in video_processing_utils.LOW_RESOLUTION_SIZES:
         if size in supported_preview_sizes:
           supported_preview_sizes.remove(size)
       logging.debug('Supported preview resolutions: %s',
@@ -245,9 +245,9 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
 
         # Ensure the circles are equally round w/ and w/o stabilization
         ustab_roundness = ustab_circle['w'] / ustab_circle['h']
-        logging.debug('unstabilized roundess: %f', ustab_roundness)
+        logging.debug('unstabilized roundness: %f', ustab_roundness)
         stab_roundness = stab_circle['w'] / stab_circle['h']
-        logging.debug('stabilized roundess: %f', stab_roundness)
+        logging.debug('stabilized roundness: %f', stab_roundness)
 
         roundness_diff = abs(stab_roundness - ustab_roundness)
         if roundness_diff > _ROUNDESS_DELTA_THRESHOLD:
@@ -284,7 +284,8 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
         stab_radius = stab_circle['r']
         logging.debug('stabilized radius: %f', stab_radius)
 
-        max_stab_radius = ustab_radius * _MAX_STABILIZED_RADIUS_RATIO
+        max_stab_radius = (ustab_radius * _MAX_STABILIZED_RADIUS_RATIO +
+                           _MAX_STABILIZED_RADIUS_ATOL)
         if stab_radius > max_stab_radius:
           failure_string += (f'Too much FoV reduction: '
                              f'unstabilized radius: {ustab_radius}, '

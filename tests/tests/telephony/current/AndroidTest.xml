@@ -21,26 +21,21 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="not_secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
+    <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
     <option name="not-shardable" value="true" />
+    <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
+        <!-- Disable package verifier before installing APKs -->
+        <option name="set-global-setting" key="verifier_verify_adb_installs" value="0" />
+        <option name="restore-settings" value="true" />
+        <option name="force-skip-system-props" value="true" />
+    </target_preparer>
     <target_preparer class="android.telephony.cts.preconditions.TelephonyPreparer">
         <option name="apk" value="CtsTelephonyPreparerApp.apk" />
         <option name="package" value="android.telephony.cts.preconditions.preparerApp" />
     </target_preparer>
-  <target_preparer class="android.telephony.cts.preconditions.TelephonyCleaner">
-    <option name="apk" value="CtsTelephonyCleanerApp.apk" />
-    <option name="package" value="android.telephony.cts.preconditions.cleanerApp" />
-  </target_preparer>
-    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-        <option name="cleanup-apks" value="true" />
-        <option name="test-file-name" value="CtsTelephonyTestCases.apk" />
-        <option name="test-file-name" value="EmbmsMiddlewareCtsTestApp.apk"/>
-        <option name="test-file-name" value="TestSmsApp22.apk"/>
-        <option name="test-file-name" value="TestSmsApp.apk"/>
-        <option name="test-file-name" value="TestSmsRetrieverApp.apk"/>
-        <option name="test-file-name" value="TestFinancialSmsApp.apk"/>
-        <option name="test-file-name" value="LocationAccessingApp.apk"/>
-        <option name="test-file-name" value="LocationAccessingAppSdk28.apk"/>
-        <option name="test-file-name" value="TestExternalImsServiceApp.apk"/>
+    <target_preparer class="android.telephony.cts.preconditions.TelephonyCleaner">
+      <option name="apk" value="CtsTelephonyCleanerApp.apk" />
+      <option name="package" value="android.telephony.cts.preconditions.cleanerApp" />
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.telephony.cts" />
@@ -55,5 +50,31 @@
         <option name="run-command" value="pm disable com.android.dialer/com.android.voicemail.impl.OmtpService" />
         <option name="teardown-command" value="pm enable com.android.dialer/com.android.voicemail.impl.StatusCheckJobService" />
         <option name="teardown-command" value="pm enable com.android.dialer/com.android.voicemail.impl.OmtpService" />
+        <!-- Disable PARIS to prevent unexpected APN insertions -->
+        <option name="run-command" value="pm disable com.google.android.carrier" />
+        <option name="teardown-command" value="pm enable com.google.android.carrier" />
+        <option name="run-command" value="setprop persist.radio.allow_mock_modem true" />
+        <option name="teardown-command" value="setprop persist.radio.allow_mock_modem false" />
+        <option name="run-command" value="device_config set_sync_disabled_for_tests persistent" />
+        <option name="teardown-command" value="device_config set_sync_disabled_for_tests none" />
+    </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer" >
+        <option name="flag-value" value="telephony/com.android.internal.telephony.flags.oem_enabled_satellite_flag=true" />
+        <option name="flag-value" value="telephony/com.android.internal.telephony.flags.carrier_enabled_satellite_flag=true" />
+    </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <option name="test-file-name" value="CtsTelephonyTestCases.apk" />
+        <option name="test-file-name" value="EmbmsMiddlewareCtsTestApp.apk"/>
+        <option name="test-file-name" value="TestSmsApp22.apk"/>
+        <option name="test-file-name" value="TestSmsApp.apk"/>
+        <option name="test-file-name" value="TestSmsRetrieverApp.apk"/>
+        <option name="test-file-name" value="TestFinancialSmsApp.apk"/>
+        <option name="test-file-name" value="LocationAccessingApp.apk"/>
+        <option name="test-file-name" value="LocationAccessingAppSdk28.apk"/>
+        <option name="test-file-name" value="TestExternalImsServiceApp.apk"/>
+        <option name="test-file-name" value="MockSatelliteGatewayServiceApp.apk"/>
+        <option name="test-file-name" value="MockSatelliteServiceApp.apk"/>
+        <option name="test-file-name" value="MockPointingUiApp.apk"/>
     </target_preparer>
 </configuration>

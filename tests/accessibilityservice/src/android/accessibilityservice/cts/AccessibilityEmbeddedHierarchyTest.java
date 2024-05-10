@@ -19,31 +19,35 @@ package android.accessibilityservice.cts;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.cts.activities.AccessibilityTestActivity;
+import android.accessibilityservice.cts.utils.DisplayUtils;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
+import android.platform.test.annotations.Presubmit;
+import android.server.wm.CtsWindowInfoUtils;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Display;
 import android.view.SurfaceControlViewHost;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.view.accessibility.AccessibilityWindowInfo;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -53,6 +57,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -61,7 +66,9 @@ import java.util.concurrent.TimeoutException;
  * Tests that AccessibilityNodeInfos from an embedded hierarchy that is present to another
  * hierarchy are properly populated.
  */
+@CddTest(requirements = {"3.10/C-1-1,C-1-2"})
 @RunWith(AndroidJUnit4.class)
+@Presubmit
 public class AccessibilityEmbeddedHierarchyTest {
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
@@ -69,10 +76,10 @@ public class AccessibilityEmbeddedHierarchyTest {
     private final ActivityTestRule<AccessibilityEmbeddedHierarchyActivity> mActivityRule =
             new ActivityTestRule<>(AccessibilityEmbeddedHierarchyActivity.class, false, false);
 
-    private static final String HOST_VIEW_RESOURCE_NAME =
+    private static final String HOST_PARENT_RESOURCE_NAME =
             "android.accessibilityservice.cts:id/host_surfaceview";
     private static final String EMBEDDED_VIEW_RESOURCE_NAME =
-            "android.accessibilityservice.cts:id/embedded_button";
+            "android.accessibilityservice.cts:id/embedded_editText";
 
     private final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
@@ -109,7 +116,31 @@ public class AccessibilityEmbeddedHierarchyTest {
     public void testEmbeddedViewCanBeFound() {
         final AccessibilityNodeInfo target =
                 findEmbeddedAccessibilityNodeInfo(sUiAutomation.getRootInActiveWindow());
-        assertNotNull(target);
+        assertThat(target).isNotNull();
+    }
+
+    @Test
+    public void testEmbeddedView_PerformActionTransfersWindowInputFocus() {
+        final View hostView = mActivity.mInputFocusableView;
+        final View embeddedView = mActivity.mViewHost.getView();
+        final AccessibilityNodeInfo embeddedNode =
+                findEmbeddedAccessibilityNodeInfo(sUiAutomation.getRootInActiveWindow());
+        assertThat(hostView.isFocusable()).isTrue();
+        assertThat(embeddedView.isFocusable()).isTrue();
+
+        // Start by ensuring the host-side view has window input focus.
+        hostView.performClick();
+        assertThat(CtsWindowInfoUtils.waitForWindowFocus(hostView, true)).isTrue();
+        assertThat(embeddedView.hasWindowFocus()).isFalse();
+
+        // ACTION_ACCESSIBILITY_FOCUS should not transfer window input focus.
+        embeddedNode.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
+        assertThat(CtsWindowInfoUtils.waitForWindowFocus(embeddedView, true)).isFalse();
+
+        // Other actions like ACTION_CLICK should transfer window input focus.
+        embeddedNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+        assertThat(CtsWindowInfoUtils.waitForWindowFocus(embeddedView, true)).isTrue();
+        assertThat(hostView.hasWindowFocus()).isFalse();
     }
 
     @Test
@@ -117,7 +148,7 @@ public class AccessibilityEmbeddedHierarchyTest {
         final AccessibilityNodeInfo target =
                 findEmbeddedAccessibilityNodeInfo(sUiAutomation.getRootInActiveWindow());
         final AccessibilityNodeInfo parent = target.getParent();
-        assertTrue(HOST_VIEW_RESOURCE_NAME.equals(parent.getViewIdResourceName()));
+        assertThat(parent.getViewIdResourceName()).isEqualTo(HOST_PARENT_RESOURCE_NAME);
     }
 
     @Test
@@ -128,58 +159,68 @@ public class AccessibilityEmbeddedHierarchyTest {
 
         final Rect hostViewBoundsInScreen = new Rect();
         final Rect embeddedViewBoundsInScreen = new Rect();
+        parent.refresh();
+        target.refresh();
         parent.getBoundsInScreen(hostViewBoundsInScreen);
         target.getBoundsInScreen(embeddedViewBoundsInScreen);
 
-        assertTrue("hostViewBoundsInScreen" + hostViewBoundsInScreen.toShortString()
+        assertWithMessage(
+                "hostViewBoundsInScreen" + hostViewBoundsInScreen.toShortString()
                         + " doesn't contain embeddedViewBoundsInScreen"
-                        + embeddedViewBoundsInScreen.toShortString(),
-                hostViewBoundsInScreen.contains(embeddedViewBoundsInScreen));
+                        + embeddedViewBoundsInScreen.toShortString()).that(
+                DisplayUtils.fuzzyBoundsInScreenContains(
+                        hostViewBoundsInScreen, embeddedViewBoundsInScreen)).isTrue();
     }
 
     @Test
     public void testEmbeddedViewHasCorrectBoundAfterHostViewMove() throws TimeoutException {
         final AccessibilityNodeInfo target =
                 findEmbeddedAccessibilityNodeInfo(sUiAutomation.getRootInActiveWindow());
+        final AccessibilityNodeInfo parent = target.getParent();
 
         final Rect hostViewBoundsInScreen = new Rect();
         final Rect newEmbeddedViewBoundsInScreen = new Rect();
         final Rect oldEmbeddedViewBoundsInScreen = new Rect();
+        target.refresh();
         target.getBoundsInScreen(oldEmbeddedViewBoundsInScreen);
 
-        // Move Host SurfaceView from (0, 0) to (50, 50).
-        mActivity.requestNewLayoutForTest(50, 50);
+        // Move the host's SurfaceView away from (0,0).
+        int moveAmountPx = mActivity.getResources().getDimensionPixelSize(
+                R.dimen.embedded_hierarchy_embedded_layout_movement_size);
+        mActivity.moveSurfaceViewLayoutPosition(moveAmountPx, moveAmountPx, false);
 
+        parent.refresh();
         target.refresh();
-        final AccessibilityNodeInfo parent = target.getParent();
-
-        target.getBoundsInScreen(newEmbeddedViewBoundsInScreen);
         parent.getBoundsInScreen(hostViewBoundsInScreen);
+        target.getBoundsInScreen(newEmbeddedViewBoundsInScreen);
 
-        assertTrue("hostViewBoundsInScreen" + hostViewBoundsInScreen.toShortString()
+        assertWithMessage(
+                "hostViewBoundsInScreen" + hostViewBoundsInScreen.toShortString()
                         + " doesn't contain newEmbeddedViewBoundsInScreen"
-                        + newEmbeddedViewBoundsInScreen.toShortString(),
-                hostViewBoundsInScreen.contains(newEmbeddedViewBoundsInScreen));
-        assertFalse("newEmbeddedViewBoundsInScreen" + newEmbeddedViewBoundsInScreen.toShortString()
+                        + newEmbeddedViewBoundsInScreen.toShortString()).that(
+                DisplayUtils.fuzzyBoundsInScreenContains(hostViewBoundsInScreen,
+                        newEmbeddedViewBoundsInScreen)).isTrue();
+        assertWithMessage(
+                "newEmbeddedViewBoundsInScreen" + newEmbeddedViewBoundsInScreen.toShortString()
                         + " shouldn't be the same with oldEmbeddedViewBoundsInScreen"
-                        + oldEmbeddedViewBoundsInScreen.toShortString(),
-                newEmbeddedViewBoundsInScreen.equals(oldEmbeddedViewBoundsInScreen));
+                        + oldEmbeddedViewBoundsInScreen.toShortString()).that(
+                newEmbeddedViewBoundsInScreen.equals(oldEmbeddedViewBoundsInScreen)).isFalse();
     }
 
     @Test
     public void testEmbeddedViewIsInvisibleAfterMovingOutOfScreen() throws TimeoutException {
         final AccessibilityNodeInfo target =
                 findEmbeddedAccessibilityNodeInfo(sUiAutomation.getRootInActiveWindow());
-        assertTrue("Embedded view should be visible at beginning.",
-                target.isVisibleToUser());
+        assertWithMessage("Embedded view should be visible at beginning.").that(
+                target.isVisibleToUser()).isTrue();
 
         // Move Host SurfaceView out of screen
         final Point screenSize = getScreenSize();
-        mActivity.requestNewLayoutForTest(screenSize.x, screenSize.y);
+        mActivity.moveSurfaceViewLayoutPosition(screenSize.x * 2, screenSize.y * 2, true);
 
         target.refresh();
-        assertFalse("Embedded view should be invisible after moving out of screen.",
-                target.isVisibleToUser());
+        assertWithMessage("Embedded view should be invisible after moving out of screen.").that(
+                target.isVisibleToUser()).isFalse();
     }
 
     private AccessibilityNodeInfo findEmbeddedAccessibilityNodeInfo(AccessibilityNodeInfo root) {
@@ -199,6 +240,13 @@ public class AccessibilityEmbeddedHierarchyTest {
         return null;
     }
 
+    private static AccessibilityNodeInfo findHostAccessibilityNodeInfo(
+            AccessibilityNodeInfo root) {
+        List<AccessibilityNodeInfo> nodes =
+                root.findAccessibilityNodeInfosByViewId(HOST_PARENT_RESOURCE_NAME);
+        return nodes.isEmpty() ? null : nodes.get(0);
+    }
+
     private Point getScreenSize() {
         final DisplayManager dm = sInstrumentation.getContext().getSystemService(
                 DisplayManager.class);
@@ -209,17 +257,15 @@ public class AccessibilityEmbeddedHierarchyTest {
     }
 
     /**
-     * This class is an dummy {@link android.app.Activity} used to perform embedded hierarchy
+     * This class is an placeholder {@link android.app.Activity} used to perform embedded hierarchy
      * testing of the accessibility feature by interaction with the UI widgets.
      */
     public static class AccessibilityEmbeddedHierarchyActivity extends
             AccessibilityTestActivity implements SurfaceHolder.Callback {
         private final CountDownLatch mCountDownLatch = new CountDownLatch(1);
 
-        private static final int DEFAULT_WIDTH = 150;
-        private static final int DEFAULT_HEIGHT = 150;
-
         private SurfaceView mSurfaceView;
+        private View mInputFocusableView;
         private SurfaceControlViewHost mViewHost;
 
         @Override
@@ -228,6 +274,7 @@ public class AccessibilityEmbeddedHierarchyTest {
             setContentView(R.layout.accessibility_embedded_hierarchy_test_host_side);
             mSurfaceView = findViewById(R.id.host_surfaceview);
             mSurfaceView.getHolder().addCallback(this);
+            mInputFocusableView = findViewById(R.id.host_editText);
         }
 
         @Override
@@ -239,7 +286,9 @@ public class AccessibilityEmbeddedHierarchyTest {
 
             View layout = getLayoutInflater().inflate(
                     R.layout.accessibility_embedded_hierarchy_test_embedded_side, null);
-            mViewHost.setView(layout, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            final int viewSizePx = getResources().getDimensionPixelSize(
+                    R.dimen.embedded_hierarchy_embedded_layout_size);
+            mViewHost.setView(layout, viewSizePx, viewSizePx);
             mCountDownLatch.countDown();
         }
 
@@ -253,28 +302,43 @@ public class AccessibilityEmbeddedHierarchyTest {
             // No-op
         }
 
-        public void waitForEmbeddedHierarchy() {
+        private void waitForEmbeddedHierarchy() {
             try {
-                assertTrue("timed out waiting for embedded hierarchy to init.",
-                        mCountDownLatch.await(3, TimeUnit.SECONDS));
+                assertWithMessage("timed out waiting for embedded hierarchy to init.").that(
+                        mCountDownLatch.await(3, TimeUnit.SECONDS)).isTrue();
             } catch (InterruptedException e) {
                 throw new AssertionError(e);
             }
         }
 
-        public void requestNewLayoutForTest(int x, int y) throws TimeoutException {
+        private void moveSurfaceViewLayoutPosition(int x, int y, boolean offScreen)
+                throws TimeoutException {
+            final AccessibilityNodeInfo surfaceViewNode = findHostAccessibilityNodeInfo(
+                    sUiAutomation.getRootInActiveWindow());
+            final Rect expectedBounds = new Rect(), boundsAfter = new Rect();
+            surfaceViewNode.getBoundsInScreen(expectedBounds);
+            expectedBounds.offset(x, y);
             sUiAutomation.executeAndWaitForEvent(
                     () -> sInstrumentation.runOnMainSync(() -> {
-                        mSurfaceView.setX(x);
-                        mSurfaceView.setY(y);
-                        mSurfaceView.requestLayout();
+                        mSurfaceView.setTranslationX(x);
+                        mSurfaceView.setTranslationY(y);
                     }),
                     (event) -> {
-                        final Rect boundsInScreen = new Rect();
-                        final AccessibilityWindowInfo window =
-                                sUiAutomation.getRootInActiveWindow().getWindow();
-                        window.getBoundsInScreen(boundsInScreen);
-                        return !boundsInScreen.isEmpty();
+                        surfaceViewNode.refresh();
+                        surfaceViewNode.getBoundsInScreen(boundsAfter);
+                        final boolean hasExpectedPosition;
+                        if (offScreen) {
+                            hasExpectedPosition = !surfaceViewNode.isVisibleToUser();
+                        } else {
+                            hasExpectedPosition = DisplayUtils.fuzzyBoundsInScreenSameOrigin(
+                                    expectedBounds, boundsAfter);
+                        }
+                        if (!hasExpectedPosition) {
+                            Log.i(AccessibilityEmbeddedHierarchyTest.class.getSimpleName(),
+                                    "mSurfaceView expected bounds: " + expectedBounds
+                                            + "\tActual bounds: " + boundsAfter);
+                        }
+                        return hasExpectedPosition;
                     }, DEFAULT_TIMEOUT_MS);
         }
     }

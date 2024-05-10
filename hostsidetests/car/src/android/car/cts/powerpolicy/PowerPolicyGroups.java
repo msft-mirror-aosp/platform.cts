@@ -16,9 +16,16 @@
 
 package android.car.cts.powerpolicy;
 
-import java.util.ArrayList;
+import com.android.car.power.CarPowerDumpProto.PolicyReaderProto;
+import com.android.car.power.CarPowerDumpProto.PolicyReaderProto.IdToPolicyGroup;
+import com.android.car.power.CarPowerDumpProto.PolicyReaderProto.IdToPolicyGroup.PolicyGroup;
+import com.android.car.power.CarPowerDumpProto.PolicyReaderProto.IdToPolicyGroup.PolicyGroup.StateToDefaultPolicy;
+import com.android.tradefed.log.LogUtil;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public final class PowerPolicyGroups {
     private final HashMap<String, PowerPolicyGroupDef> mPolicyGroups = new HashMap<>();
@@ -31,7 +38,15 @@ public final class PowerPolicyGroups {
         }
     }
 
-    public void add(String id, String waitForVHALPolicy, String onPolicy) throws Exception {
+    /**
+     * Add a policy group
+     * @param id policy group ID
+     * @param waitForVHALPolicy ID of default policy for wait for VHAL power state
+     * @param onPolicy ID of default policy for on power state
+     * @throws IllegalArgumentException if a policy group with {@code id} already exists
+     */
+    public void add(String id, String waitForVHALPolicy, String onPolicy)
+            throws IllegalArgumentException {
         if (mPolicyGroups.containsKey(id)) {
             throw new IllegalArgumentException(id + " policy group already exists");
         }
@@ -60,22 +75,81 @@ public final class PowerPolicyGroups {
         return mPolicyGroups.equals(peer.mPolicyGroups);
     }
 
-    public static PowerPolicyGroups parse(ArrayList<String> defStrs) throws Exception {
-        if ((defStrs.size() % 3) != 0) {
-            throw new IllegalArgumentException("each policy group def needs 3 lines of data");
-        }
-
+    /**
+     * Parse an array of strings representing power policy groups in order to define them
+     * @param defStrs strings representing power policy group definitions
+     * @return the {@code PowerPolicyGroups} object with the new power policy group definitions
+     */
+    public static PowerPolicyGroups parse(List<String> defStrs) {
         PowerPolicyGroups policyGroups = new PowerPolicyGroups();
-        for (int i = 0; i < defStrs.size(); i += 3) {
-            String groupId = defStrs.get(i).trim();
-            String waitForVHALPolicy = parsePolicyGroupDef("WaitForVHAL", defStrs.get(i + 1));
-            String onPolicy = parsePolicyGroupDef("On", defStrs.get(i + 2));
+        String groupId = null;
+        String waitForVHALPolicy = null;
+        String onPolicy = null;
+
+        String groupDefDelimiter = "-->";
+        for (int i = 0; i < defStrs.size(); ++i) {
+            String line = defStrs.get(i);
+            if (line.contains(groupDefDelimiter)) {
+                // this is policy group definition
+                if (line.contains("WaitForVHAL")) {
+                    waitForVHALPolicy = parsePolicyGroupDef("WaitForVHAL", line);
+                } else if (line.contains("On")) {
+                    onPolicy = parsePolicyGroupDef("On", line);
+                } else {
+                    LogUtil.CLog.d("Policy group is ignored: " + line);
+                }
+            } else {
+                // Found name, if name is not empty, another group was already found
+                // add previous group to the policyGroups before proceeding with current one
+                if (groupId != null) {
+                    policyGroups.add(groupId, waitForVHALPolicy, onPolicy);
+                    waitForVHALPolicy = null;
+                    onPolicy = null;
+                }
+                groupId = line.trim();
+            }
+        }
+        // If group wasn't saved (indicated by non-null values of policies), save it
+        if (groupId != null && (waitForVHALPolicy != null || onPolicy != null)) {
             policyGroups.add(groupId, waitForVHALPolicy, onPolicy);
         }
         return policyGroups;
     }
 
-    private static String parsePolicyGroupDef(String stateName, String defStr) throws Exception {
+    static PowerPolicyGroups parseProto(PolicyReaderProto policyReaderProto)
+            throws Exception {
+        PowerPolicyGroups policyGroups = new PowerPolicyGroups();
+        int numPolicyGroups = policyReaderProto.getPowerPolicyGroupMappingsCount();
+        for (int i = 0; i < numPolicyGroups; i++) {
+            IdToPolicyGroup policyGroupMapping = policyReaderProto.getPowerPolicyGroupMappings(i);
+            String policyGroupId = policyGroupMapping.getPolicyGroupId();
+            PolicyGroup policyGroup = policyGroupMapping.getPolicyGroup();
+            int numPolicies = policyGroup.getDefaultPolicyMappingsCount();
+            String waitForVhalPolicy = null;
+            String onPolicy = null;
+            for (int j = 0; j < numPolicies; j++) {
+                StateToDefaultPolicy policyMapping = policyGroup.getDefaultPolicyMappings(j);
+                String state = policyMapping.getState();
+                String policyId = policyMapping.getDefaultPolicyId();
+                if (state.equals("WaitForVHAL") && waitForVhalPolicy == null) {
+                    waitForVhalPolicy = policyId;
+                } else if (state.equals("On") && onPolicy == null) {
+                    onPolicy = policyId;
+                } else {
+                    String errMsg = "Incorrect power policy groups format\nPolicy reader proto:\n"
+                            + "state: " + state + "\npolicyId: " + policyId
+                            + "\nwaitForVHAL policy: " + waitForVhalPolicy + "\non policy: "
+                            + onPolicy;
+                    LogUtil.CLog.e(errMsg);
+                    throw new IllegalArgumentException(errMsg);
+                }
+            }
+            policyGroups.add(policyGroupId, waitForVhalPolicy, onPolicy);
+        }
+        return policyGroups;
+    }
+
+    private static String parsePolicyGroupDef(String stateName, String defStr) {
         String[] tokens = defStr.trim().split("(\\s*)(-{1,2})(>?)(\\s*)");
         if (tokens.length != 3) {
             throw new IllegalArgumentException("malformatted policy group def str: " + defStr);
@@ -88,6 +162,23 @@ public final class PowerPolicyGroups {
         }
 
         return tokens[2].trim();
+    }
+
+    public Set<String> getGroupIds() {
+        return mPolicyGroups.keySet();
+    }
+
+    public PowerPolicyGroupDef getGroup(String groupId) {
+        return mPolicyGroups.get(groupId);
+    }
+
+    public boolean containsGroup(String groupId, PowerPolicyGroupDef expectedGroupDef) {
+        PowerPolicyGroupDef policyGroup = mPolicyGroups.get(groupId);
+        if (policyGroup == null) {
+            return false;
+        }
+
+        return policyGroup.equals(expectedGroupDef);
     }
 
     public static final class PowerPolicyGroupDef {

@@ -31,18 +31,20 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.SuspendDialogInfo;
 import android.os.Bundle;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
-import android.support.test.uiautomator.Until;
+import android.platform.test.rule.ScreenRecordRule;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -58,6 +60,9 @@ public class DialogTests {
     /** Used to poll for the intents sent by the system to this package */
     static final SynchronousQueue<Intent> sIncomingIntent = new SynchronousQueue<>();
 
+    @Rule
+    public final ScreenRecordRule mScreenRecordRule = new ScreenRecordRule();
+
     private Context mContext;
     private TestAppInterface mTestAppInterface;
     private UiDevice mUiDevice;
@@ -68,6 +73,7 @@ public class DialogTests {
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mTestAppInterface = new TestAppInterface(mContext);
         turnScreenOn();
+        SuspendTestUtils.unsuspendAll();
     }
 
     private void turnScreenOn() throws Exception {
@@ -78,6 +84,7 @@ public class DialogTests {
     }
 
     @Test
+    @ScreenRecordRule.ScreenRecord
     public void testInterceptorActivity_unsuspend() throws Exception {
         final SuspendDialogInfo dialogInfo = new SuspendDialogInfo.Builder()
                 .setIcon(R.drawable.ic_settings)

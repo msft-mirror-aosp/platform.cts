@@ -15,15 +15,16 @@
  */
 package android.security.cts;
 
+
 import static android.app.ActivityOptions.ANIM_SCENE_TRANSITION;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NO_USER_ACTION;
 import static android.view.Window.FEATURE_ACTIVITY_TRANSITIONS;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -31,15 +32,13 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.Application;
-
 import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.os.RemoteException;
-
 import android.os.Process;
+import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.util.Log;
@@ -52,11 +51,9 @@ import android.window.TransitionInfo;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.SystemUtil;
-
 import com.android.compatibility.common.util.ShellUtils;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
-
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,7 +61,6 @@ import org.junit.runner.RunWith;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.Callable;
-
 
 @RunWith(AndroidJUnit4.class)
 public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
@@ -242,6 +238,11 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
                     SurfaceControl.Transaction t, IBinder mergeTarget,
                     IRemoteTransitionFinishedCallback finishCallback) throws RemoteException {
             }
+
+            @Override
+            public void onTransitionConsumed(IBinder transition, boolean aborted)
+                throws RemoteException {
+            }
         });
         ActivityOptions opts = ActivityOptions.makeRemoteTransition(someRemote);
         assertTrue(waitUntil(() -> baseActivity.mResumed));
@@ -262,6 +263,87 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
         assertNull(activity.mReceivedTransition);
     }
 
+    @AsbSecurityTest(cveBugId = 286882367)
+    @Test
+    public void testActivityManager_rejectRemoteTransition() throws Exception {
+        Context targetContext = getInstrumentation().getTargetContext();
+        final Intent baseIntent = new Intent(targetContext, WaitEnterAnimActivity.class);
+        baseIntent.setFlags(FLAG_ACTIVITY_NO_USER_ACTION | FLAG_ACTIVITY_NEW_TASK);
+
+        final boolean[] remoteCalled = new boolean[]{false};
+        RemoteTransition someRemote = new RemoteTransition(new IRemoteTransition.Stub() {
+            @Override
+            public void startAnimation(IBinder token, TransitionInfo info,
+                    SurfaceControl.Transaction t,
+                    IRemoteTransitionFinishedCallback finishCallback) throws RemoteException {
+                remoteCalled[0] = true;
+                t.apply();
+                finishCallback.onTransitionFinished(null /* wct */, null /* sct */);
+            }
+
+            @Override
+            public void mergeAnimation(IBinder token, TransitionInfo info,
+                    SurfaceControl.Transaction t, IBinder mergeTarget,
+                    IRemoteTransitionFinishedCallback finishCallback) throws RemoteException {
+                remoteCalled[0] = true;
+            }
+
+            @Override
+            public void onTransitionConsumed(IBinder transition, boolean aborted)
+                throws RemoteException {
+            }
+        });
+        ActivityOptions opts = ActivityOptions.makeRemoteTransition(someRemote);
+
+        boolean securityException = false;
+        final WaitEnterAnimActivity baseActivity;
+        try {
+            baseActivity = (WaitEnterAnimActivity)
+                    getInstrumentation().startActivitySync(baseIntent, opts.toBundle());
+            assertTrue(waitUntil(() -> baseActivity.mAnimComplete));
+        } catch (SecurityException se) {
+            securityException = true;
+        }
+
+        assertFalse(remoteCalled[0]);
+        assertTrue(securityException);
+    }
+
+    @AsbSecurityTest(cveBugId = 289549315)
+    @Test
+    public void testActivityManager_backupAgentCreated_rejectIfCallerUidNotEqualsPackageUid()
+            throws Exception {
+        SecurityException securityException = null;
+        Exception unexpectedException = null;
+        try {
+            final Object iam = ActivityManager.class.getDeclaredMethod("getService").invoke(null);
+            Class.forName("android.app.IActivityManager").getDeclaredMethod("backupAgentCreated",
+                            String.class, IBinder.class, int.class)
+                    .invoke(iam, /* agentPackageName*/ "android", /* agent */ null, /* userId */ 0);
+        } catch (SecurityException e) {
+            securityException = e;
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof SecurityException) {
+                securityException = (SecurityException) e.getCause();
+            } else {
+                unexpectedException = e;
+            }
+        } catch (Exception e) {
+            unexpectedException = e;
+        }
+        if (unexpectedException != null) {
+            Log.w("ActivityManagerTest", "Unexpected exception", unexpectedException);
+            fail("ActivityManagerNative.backupAgentCreated() API should have thrown "
+                    + "SecurityException when invoked from process with uid not matching target "
+                    + "package uid.");
+        }
+
+        assertNotNull("Expected SecurityException when caller's uid doesn't match package uid",
+                securityException);
+        assertEquals("android does not belong to uid " + Process.myUid(),
+                securityException.getMessage());
+    }
+
     /**
      * Run ActivityManager.getHistoricalProcessExitReasons once, return the time spent on it.
      */
@@ -272,6 +354,28 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
         } catch (Exception e) {
         }
         return System.nanoTime() - start;
+    }
+
+    static final class UidImportanceObserver implements ActivityManager.OnUidImportanceListener {
+
+        private boolean mObservedNonOwned = false;
+        private int mMyUid;
+
+        UidImportanceObserver() {
+            mMyUid = UserHandle.getUserId(Process.myUid());
+        }
+
+        public void onUidImportance(int uid, int importance) {
+            Log.i("ActivityManagerTestObserver", "Observing change for "
+                    + uid + " by user " + UserHandle.getUserId(uid));
+            if (UserHandle.getUserId(uid) != mMyUid) {
+                mObservedNonOwned = true;
+            }
+        }
+
+        public boolean didObserverOtherUser() {
+            return this.mObservedNonOwned;
+        }
     }
 
     private boolean waitUntil(Callable<Boolean> test) throws Exception {
@@ -304,6 +408,15 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
         public void onResume() {
             super.onResume();
             mResumed = true;
+        }
+    }
+
+    public static class WaitEnterAnimActivity extends Activity {
+        public boolean mAnimComplete = false;
+
+        @Override
+        public void onEnterAnimationComplete() {
+            mAnimComplete = true;
         }
     }
 
@@ -375,28 +488,6 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
             @Override
             public void onActivityDestroyed(Activity activity) {
             }
-        }
-    }
-
-    static final class UidImportanceObserver implements ActivityManager.OnUidImportanceListener {
-
-        private boolean mObservedNonOwned = false;
-        private int mMyUid;
-
-        UidImportanceObserver() {
-            mMyUid = UserHandle.getUserId(Process.myUid());
-        }
-
-        public void onUidImportance(int uid, int importance) {
-            Log.i("ActivityManagerTestObserver", "Observing change for "
-                    + uid + " by user " + UserHandle.getUserId(uid));
-            if (UserHandle.getUserId(uid) != mMyUid) {
-                mObservedNonOwned = true;
-            }
-        }
-
-        public boolean didObserverOtherUser() {
-            return this.mObservedNonOwned;
         }
     }
 }

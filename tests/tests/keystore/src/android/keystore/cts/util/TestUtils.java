@@ -42,6 +42,7 @@ import com.android.internal.util.HexDump;
 import org.junit.Assert;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -58,6 +59,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.UnrecoverableEntryException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -92,11 +94,31 @@ public class TestUtils {
 
     private TestUtils() {}
 
+    private static Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
+    public static File getFilesDir() {
+        Context context = getContext();
+        final String packageName = context.getPackageName();
+        return new File(context.getFilesDir(), packageName);
+    }
+
     static public void assumeStrongBox() {
         PackageManager packageManager =
                 InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageManager();
         assumeTrue("Can only test if we have StrongBox",
                 packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE));
+    }
+
+    /**
+     * Returns 0 if not implemented. Otherwise returns the feature version.
+     */
+    public static int getFeatureVersionKeystore(Context appContext, boolean useStrongbox) {
+        if (useStrongbox) {
+            return getFeatureVersionKeystoreStrongBox(appContext);
+        }
+        return getFeatureVersionKeystore(appContext);
     }
 
     // Returns 0 if not implemented. Otherwise returns the feature version.
@@ -194,6 +216,33 @@ public class TestUtils {
      */
     public static boolean supports3DES() {
         return "true".equals(SystemProperties.get("ro.hardware.keystore_desede"));
+    }
+
+    /**
+     * Returns VSR API level.
+     */
+    public static int getVendorApiLevel() {
+        int vendorApiLevel = SystemProperties.getInt("ro.vendor.api_level", -1);
+        if (vendorApiLevel != -1) {
+            return vendorApiLevel;
+        }
+
+        // Android S and older devices do not define ro.vendor.api_level
+        vendorApiLevel = SystemProperties.getInt("ro.board.api_level", -1);
+        if (vendorApiLevel == -1) {
+            vendorApiLevel = SystemProperties.getInt("ro.board.first_api_level", -1);
+        }
+
+        int productApiLevel = SystemProperties.getInt("ro.product.first_api_level", -1);
+        if (productApiLevel == -1) {
+            productApiLevel = Build.VERSION.SDK_INT;
+        }
+
+        // VSR API level is the minimum of vendorApiLevel and productApiLevel.
+        if (vendorApiLevel == -1 || vendorApiLevel > productApiLevel) {
+            return productApiLevel;
+        }
+        return vendorApiLevel;
     }
 
     /**
@@ -608,6 +657,17 @@ public class TestUtils {
                 alias,
                 new KeyPair(originalCert.getPublicKey(), originalPrivateKey),
                 keystoreBacked);
+    }
+
+    /** Returns true if a key with the given alias exists. */
+    public static boolean keyExists(String alias) throws Exception {
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+        try {
+            return keyStore.getEntry(alias, null) != null;
+        } catch (UnrecoverableKeyException e) {
+            return false;
+        }
     }
 
     public static byte[] drain(InputStream in) throws IOException {
@@ -1129,15 +1189,27 @@ public class TestUtils {
             String encryptionPadding = TestUtils.getCipherEncryptionPadding(transformation);
             boolean randomizedEncryptionRequired =
                     !KeyProperties.ENCRYPTION_PADDING_NONE.equalsIgnoreCase(encryptionPadding);
-            return new KeyProtection.Builder(
+            // For algorithm transformation such as "RSA/ECB/OAEPWithSHA-224AndMGF1Padding",
+            // Some providers uses same digest for OAEP main digest(SHA-224) and
+            // MGF1 digest(SHA-224), and some providers uses main digest as (SHA-224) and
+            // MGF1 digest as (SHA-1) hence adding both digest for MGF1 digest.
+            String[] mgf1DigestList = null;
+            if (digest != null) {
+                mgf1DigestList = digest.equalsIgnoreCase("SHA-1")
+                        ? new String[] {digest} : new String[] {digest, "SHA-1"};
+            }
+            KeyProtection.Builder keyProtectionBuilder = new KeyProtection.Builder(
                     purposes)
                     .setDigests((digest != null) ? new String[] {digest} : EmptyArray.STRING)
                     .setEncryptionPaddings(encryptionPadding)
                     .setRandomizedEncryptionRequired(randomizedEncryptionRequired)
                     .setUserAuthenticationRequired(isUserAuthRequired)
                     .setUserAuthenticationValidityDurationSeconds(3600)
-                    .setUnlockedDeviceRequired(isUnlockedDeviceRequired)
-                    .build();
+                    .setUnlockedDeviceRequired(isUnlockedDeviceRequired);
+            if (mgf1DigestList != null && android.security.Flags.mgf1DigestSetterV2()) {
+                keyProtectionBuilder.setMgf1Digests(mgf1DigestList);
+            }
+            return keyProtectionBuilder.build();
         } else {
             throw new IllegalArgumentException("Unsupported key algorithm: " + keyAlgorithm);
         }
@@ -1166,5 +1238,29 @@ public class TestUtils {
 
     public static boolean isPropertyEmptyOrUnknown(String property) {
         return TextUtils.isEmpty(property) || property.equals(Build.UNKNOWN);
+    }
+
+    public static boolean hasSecureLockScreen(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return (pm != null && pm.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN));
+    }
+
+    /**
+     * Determines whether running build is GSI or not.
+     * @return true if running build is GSI, false otherwise.
+     */
+    public static boolean isGsiImage() {
+        final File initGsiRc = new File("/system/system_ext/etc/init/init.gsi.rc");
+        return initGsiRc.exists();
+    }
+
+    /**
+     * Ed25519 algorithm name is added in Android V. So CTS using this algorithm
+     * name should check SDK_INT for Android V/preview.
+     * @return true if current SDK_INT is 34 and PREVIEW_SDK_INT >= 1 or SDK_INT >= 35
+     */
+    public static boolean isEd25519AlgorithmExpectedToSupport() {
+        return ((Build.VERSION.SDK_INT == 34 && Build.VERSION.PREVIEW_SDK_INT >= 1)
+                || Build.VERSION.SDK_INT >= 35);
     }
 }

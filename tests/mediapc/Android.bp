@@ -22,14 +22,13 @@ android_test {
     compile_multilib: "both",
     static_libs: [
         "compatibility-device-util-axt",
+        "ctsmediav2common",
         "ctstestrunner-axt",
-        "ctstestserver",
         "MediaPerformanceClassCommon",
+        "mediapc-requirements",
     ],
-    libs: [
-        "org.apache.http.legacy",
-        "android.test.runner",
-        "android.test.base",
+    jni_libs: [
+        "libctsmediapc_vulkan_jni",
     ],
     platform_apis: true,
     srcs: ["src/**/*.java"],

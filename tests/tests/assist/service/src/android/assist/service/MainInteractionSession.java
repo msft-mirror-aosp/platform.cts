@@ -85,7 +85,8 @@ public class MainInteractionSession extends VoiceInteractionSession {
         };
         IntentFilter filter = new IntentFilter();
         filter.addAction(Utils.HIDE_SESSION);
-        mContext.registerReceiver(mReceiver, filter, Context.RECEIVER_VISIBLE_TO_INSTANT_APPS);
+        mContext.registerReceiver(mReceiver, filter,
+                Context.RECEIVER_VISIBLE_TO_INSTANT_APPS | Context.RECEIVER_EXPORTED);
     }
 
     @Override
@@ -152,8 +153,11 @@ public class MainInteractionSession extends VoiceInteractionSession {
                     boolean statusBarContainsCutout = !android.graphics.Insets.NONE.equals(min);
                     Log.d(TAG, "statusBarContainsCutout=" + statusBarContainsCutout);
                     displayPoint.y = statusBarContainsCutout
-                            ? bound.height() - min.top - min.bottom : bound.height();
-                    displayPoint.x = bound.width();
+                            ? bound.height() - min.top - min.bottom :
+                            bound.height() - displayCutoutInsets.top - displayCutoutInsets.bottom;
+                    displayPoint.x = statusBarContainsCutout ?
+                            bound.width() - min.left - min.right :
+                            bound.width() - displayCutoutInsets.left - displayCutoutInsets.right;
                     DisplayCutout dc = d.getCutout();
                     if (dc != null) {
                         // Means the device has a cutout area
@@ -187,6 +191,17 @@ public class MainInteractionSession extends VoiceInteractionSession {
         Log.i(TAG, "onHandleAssist()");
         Log.i(TAG, String.format("Bundle: %s, Activity: %s, Structure: %s, Content: %s",
                 data, activity, structure, content));
+
+        // The structure becomes null under following conditions
+        // May be null if assist data has been disabled by the user or device policy;
+        // Will be an empty stub if the application has disabled assist by marking its window as secure.
+        // The CTS testcase will fail under the condition(automotive usecases) where
+        // there are multiple displays and some of the displays are marked with FLAG_SECURE
+
+        if ((Utils.isAutomotive(mContext)) && (structure == null)) {
+            Log.i(TAG, "Ignoring... Structure is null");
+            return;
+        }
 
         if (activity != null && Utils.isAutomotive(mContext)
                 && !activity.getPackageName().startsWith("android.assist")) {

@@ -56,6 +56,8 @@ public class ViewTreeObserverTest {
     private static int TIMEOUT_MS = 2000;
 
     private Instrumentation mInstrumentation;
+    private CtsTouchUtils mCtsTouchUtils;
+
     private Activity mActivity;
     private ViewTreeObserver mViewTreeObserver;
 
@@ -69,6 +71,7 @@ public class ViewTreeObserverTest {
     @Before
     public void setup() throws Throwable {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
         mActivity = mActivityRule.getActivity();
         WindowUtil.waitForFocus(mActivity);
         layout(R.layout.viewtreeobserver_layout);
@@ -166,7 +169,7 @@ public class ViewTreeObserverTest {
     @Test
     public void testAddOnTouchModeChangeListener() throws Throwable {
         // let the button be touch mode.
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButton);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButton);
 
         mViewTreeObserver = mButton.getViewTreeObserver();
 
@@ -254,18 +257,21 @@ public class ViewTreeObserverTest {
 
     @LargeTest
     @Test
-    public void testRemoveOnPreDrawListener() {
+    public void testRemoveOnPreDrawListener() throws Throwable {
         mViewTreeObserver = mLinearLayout.getViewTreeObserver();
 
         final ViewTreeObserver.OnPreDrawListener listener =
                 mock(ViewTreeObserver.OnPreDrawListener.class);
-        mViewTreeObserver.addOnPreDrawListener(listener);
-        mViewTreeObserver.dispatchOnPreDraw();
-        verify(listener, times(1)).onPreDraw();
+        mActivityRule.runOnUiThread(() -> {
+            reset(listener); // in case draw happened before now.
+            mViewTreeObserver.addOnPreDrawListener(listener);
+            mViewTreeObserver.dispatchOnPreDraw();
+            verify(listener, times(1)).onPreDraw();
 
-        reset(listener);
-        mViewTreeObserver.removeOnPreDrawListener(listener);
-        mViewTreeObserver.dispatchOnPreDraw();
+            reset(listener);
+            mViewTreeObserver.removeOnPreDrawListener(listener);
+            mViewTreeObserver.dispatchOnPreDraw();
+        });
         // Since we've unregistered our listener, we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
@@ -276,7 +282,7 @@ public class ViewTreeObserverTest {
     @Test
     public void testRemoveOnTouchModeChangeListener() throws Throwable {
         // let the button be touch mode.
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButton);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mButton);
 
         mViewTreeObserver = mButton.getViewTreeObserver();
 

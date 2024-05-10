@@ -33,6 +33,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -58,6 +59,7 @@ import android.media.cts.TestUtils;
 import android.net.Uri;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.view.Surface;
@@ -106,10 +108,15 @@ import java.util.zip.CRC32;
 public class DecoderTest extends MediaTestBase {
     private static final String TAG = "DecoderTest";
     private static final String REPORT_LOG_NAME = "CtsMediaDecoderTestCases";
-    private static boolean mIsAtLeastR = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
-    private static boolean sIsBeforeS = ApiLevelUtil.isBefore(Build.VERSION_CODES.S);
-    private static boolean sIsAfterT = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU)
-            || ApiLevelUtil.codenameEquals("UpsideDownCake");
+
+    public static final boolean WAS_LAUNCHED_ON_S_OR_LATER =
+            SystemProperties.getInt("ro.product.first_api_level",
+                                    Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    >= Build.VERSION_CODES.S;
+
+    private static boolean IS_AT_LEAST_R = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
+    private static boolean IS_BEFORE_S = ApiLevelUtil.isBefore(Build.VERSION_CODES.S);
+    private static boolean IS_AFTER_T = ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU);
 
     private static final int RESET_MODE_NONE = 0;
     private static final int RESET_MODE_RECONFIGURE = 1;
@@ -368,7 +375,7 @@ public class DecoderTest extends MediaTestBase {
     private void verifyChannelsAndRates(String[] mimetypes, int[] sampleRates,
                                        int[] channelMasks) throws Exception {
 
-        if (!MediaUtils.check(mIsAtLeastR, "test invalid before Android 11")) return;
+        if (!MediaUtils.check(IS_AT_LEAST_R, "test invalid before Android 11")) return;
 
         for (String mimetype : mimetypes) {
             // ensure we find a codec for all listed mime/channel/rate combinations
@@ -1486,7 +1493,7 @@ public class DecoderTest extends MediaTestBase {
             throws IOException {
 
         // CODEC_DEFAULT behaviors started with S
-        if (sIsBeforeS) {
+        if (IS_BEFORE_S) {
             codecSupportMode = CODEC_ALL;
         }
         MediaExtractor ex = new MediaExtractor();
@@ -1514,7 +1521,7 @@ public class DecoderTest extends MediaTestBase {
                         continue;
                     }
                     if (codecSupportMode == CODEC_ALL) {
-                        if (sIsAfterT) {
+                        if (IS_AFTER_T) {
                             // This is an extractor failure as often as it is a codec failure
                             assertTrue(info.getName() + " does not declare support for "
                                     + format.toString(),
@@ -3329,12 +3336,19 @@ public class DecoderTest extends MediaTestBase {
         assertTrue("MediaCodecPlayer.prepare() failed!", mMediaCodecPlayer.prepare());
         mMediaCodecPlayer.startCodec();
 
+        // When video codecs are started, large chunks of contiguous physical memory need to be
+        // allocated, which, on low-RAM devices, can trigger high CPU usage for moving memory
+        // around to create contiguous space for the video decoder. This can cause an increase in
+        // startup time for playback.
+        ActivityManager activityManager = mContext.getSystemService(ActivityManager.class);
+        long firstFrameRenderedTimeoutSeconds = activityManager.isLowRamDevice() ? 3 : 1;
+
         mMediaCodecPlayer.play();
         sleepUntil(() ->
                 mMediaCodecPlayer.getCurrentPosition() > CodecState.UNINITIALIZED_TIMESTAMP
                 && mMediaCodecPlayer.getTimestamp() != null
                 && mMediaCodecPlayer.getTimestamp().framePosition > 0,
-                Duration.ofSeconds(1));
+                Duration.ofSeconds(firstFrameRenderedTimeoutSeconds));
         assertNotEquals("onFrameRendered was not called",
                 mMediaCodecPlayer.getVideoTimeUs(), CodecState.UNINITIALIZED_TIMESTAMP);
         assertNotEquals("Audio timestamp is null", mMediaCodecPlayer.getTimestamp(), null);
@@ -3344,8 +3358,6 @@ public class DecoderTest extends MediaTestBase {
         final long durationMs = mMediaCodecPlayer.getDuration();
         final long timeOutMs = System.currentTimeMillis() + durationMs + 5 * 1000; // add 5 sec
         while (!mMediaCodecPlayer.isEnded()) {
-            // Log.d(TAG, "currentPosition: " + mMediaCodecPlayer.getCurrentPosition()
-            //         + "  duration: " + mMediaCodecPlayer.getDuration());
             assertTrue("Tunneled video playback timeout exceeded",
                     timeOutMs > System.currentTimeMillis());
             Thread.sleep(SLEEP_TIME_MS);
@@ -3519,6 +3531,9 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodec#PARAMETER_KEY_TUNNEL_PEEK"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOnHevc() throws Exception {
+        // Requires vendor support of the TUNNEL_PEEK feature
+        Assume.assumeTrue("First API level is not Android 12 or later.",
+                WAS_LAUNCHED_ON_S_OR_LATER);
         testTunneledVideoPeekOn(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv", 25);
     }
@@ -3530,6 +3545,9 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodec#PARAMETER_KEY_TUNNEL_PEEK"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOnAvc() throws Exception {
+        // Requires vendor support of the TUNNEL_PEEK feature
+        Assume.assumeTrue("First API level is not Android 12 or later.",
+                WAS_LAUNCHED_ON_S_OR_LATER);
         testTunneledVideoPeekOn(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4", 25);
     }
@@ -3541,11 +3559,13 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodec#PARAMETER_KEY_TUNNEL_PEEK"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOnVp9() throws Exception {
+        // Requires vendor support of the TUNNEL_PEEK feature
+        Assume.assumeTrue("First API level is not Android 12 or later.",
+                WAS_LAUNCHED_ON_S_OR_LATER);
         testTunneledVideoPeekOn(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm",
                 30);
     }
-
 
     /**
      * Test that peek off doesn't render the first frame until turned on in tunneled mode.
@@ -3612,6 +3632,9 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodec#PARAMETER_KEY_TUNNEL_PEEK"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOffHevc() throws Exception {
+        // Requires vendor support of the TUNNEL_PEEK feature
+        Assume.assumeTrue("First API level is not Android 12 or later.",
+                WAS_LAUNCHED_ON_S_OR_LATER);
         testTunneledVideoPeekOff(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv", 25);
     }
@@ -3623,6 +3646,9 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodec#PARAMETER_KEY_TUNNEL_PEEK"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOffAvc() throws Exception {
+        // Requires vendor support of the TUNNEL_PEEK feature
+        Assume.assumeTrue("First API level is not Android 12 or later.",
+                WAS_LAUNCHED_ON_S_OR_LATER);
         testTunneledVideoPeekOff(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4", 25);
     }
@@ -3634,6 +3660,9 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodec#PARAMETER_KEY_TUNNEL_PEEK"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoPeekOffVp9() throws Exception {
+        // Requires vendor support of the TUNNEL_PEEK feature
+        Assume.assumeTrue("First API level is not Android 12 or later.",
+                WAS_LAUNCHED_ON_S_OR_LATER);
         testTunneledVideoPeekOff(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm",
                 30);
@@ -3676,7 +3705,7 @@ public class DecoderTest extends MediaTestBase {
 
         // After 100 ms of playback, simulate a PTS gap of 100 ms
         Thread.sleep(100);
-        mMediaCodecPlayer.setAudioTrackOffsetMs(100);
+        mMediaCodecPlayer.setAudioTrackOffsetNs(100L * 1000000);
 
         // Verify that at some point in time in the future, the framePosition stopped advancing.
         // This should happen when the PTS gap is encountered - silence is rendered to fill the
@@ -3696,9 +3725,6 @@ public class DecoderTest extends MediaTestBase {
 
         // Allow the playback to advance past the PTS gap and back to normal operation
         Thread.sleep(500);
-
-        // Simulate the end of playback by pretending that we have no more audio data
-        mMediaCodecPlayer.stopDrainingAudioOutputBuffers(true);
 
         // Sleep till framePosition stabilizes, i.e. playback is complete
         {
@@ -3813,13 +3839,9 @@ public class DecoderTest extends MediaTestBase {
         Thread.sleep(200);
         mMediaCodecPlayer.stopDrainingAudioOutputBuffers(false);
 
-        // After 200 ms, simulate the end of playback by pretending that we have no more audio data
-        Thread.sleep(200);
-        mMediaCodecPlayer.stopDrainingAudioOutputBuffers(true);
-
         // Sleep till framePosition stabilizes, i.e. playback is complete
         {
-            long endOfPlayackTimeoutMs = 3000;
+            long endOfPlayackTimeoutMs = 20000;
             long startTimeMs = System.currentTimeMillis();
             AudioTimestamp previousTimestamp;
             do {
@@ -4223,7 +4245,7 @@ public class DecoderTest extends MediaTestBase {
 
         // Resume audio playback with a negative offset, in order to simulate a desynchronisation.
         // TODO(b/202710709): Use timestamp relative to last played video frame before pause
-        mMediaCodecPlayer.setAudioTrackOffsetMs(-100);
+        mMediaCodecPlayer.setAudioTrackOffsetNs(-100L * 1000000);
         mMediaCodecPlayer.stopDrainingAudioOutputBuffers(false);
 
         // Wait until audio playback resumes
