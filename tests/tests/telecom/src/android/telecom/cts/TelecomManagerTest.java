@@ -151,7 +151,7 @@ public class TelecomManagerTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testIsInEmergencyCall_ongoingEmergencyCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
