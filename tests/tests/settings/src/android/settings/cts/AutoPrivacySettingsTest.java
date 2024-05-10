@@ -109,6 +109,9 @@ public class AutoPrivacySettingsTest {
     @CddTest(requirement = "9.8.2/A-2-3")
     @Test
     public void testPrivacyCameraSettings() throws Exception {
+        assumeFalse(
+                "Skipping test: Enabling/Disabling Camera is not supported in AAOS",
+                SettingsTestUtils.isAutomotive());
         PackageManager pm = mContext.getPackageManager();
         if (!pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
             // Skip this test if the system does not have a camera.
