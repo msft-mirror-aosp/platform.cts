@@ -37,6 +37,8 @@ import android.app.appsearch.testutil.functions.ActivityCreationSynchronizer;
 import android.app.appsearch.testutil.functions.TestAppFunctionServiceLifecycleReceiver;
 import android.content.Context;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -66,6 +68,9 @@ public class AppFunctionManagerCtsTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TARGET_PACKAGE = "com.android.cts.appsearch";
     private static final long SHORT_TIMEOUT_SECOND = 1;
