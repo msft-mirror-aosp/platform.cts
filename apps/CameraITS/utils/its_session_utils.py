@@ -124,8 +124,8 @@ _USE_CASE_CROPPED_RAW = 6
 _EXTRA_TIMEOUT_FACTOR = 10
 _COPY_SCENE_DELAY_SEC = 1
 _DST_SCENE_DIR = '/sdcard/Download/'
-_BIT_HLG10 =  0x01  # bit 1 for feature mask
-_BIT_STABILIZATION =  0x02 # bit 2 for feature mask
+_BIT_HLG10 = 0x01  # bit 1 for feature mask
+_BIT_STABILIZATION = 0x02  # bit 2 for feature mask
 
 
 def validate_tablet(tablet_name, brightness, device_id):
@@ -428,6 +428,7 @@ class ItsSession(object):
       if self._hidden_physical_id not in physical_ids:
         raise AssertionError(f'{self._hidden_physical_id} is not a hidden '
                              f'sub-camera of {self._camera_id}')
+      logging.debug('Overriding cam %s props', self._hidden_physical_id)
       props = self.get_camera_properties_by_id(self._hidden_physical_id)
       self.props = props
     return props
