@@ -863,6 +863,7 @@ def main():
               '-c',
               f'{new_yml_file_name}'
           ]
+        return_string = ''
         for num_try in range(NUM_TRIES):
           # Handle manual lighting control redirected stdout in test
           if (test in _LIGHTING_CONTROL_TESTS and
