@@ -392,10 +392,6 @@
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.NoWeakEscrowTokenPermissionTest#testRegisterWeakEscrowTokenRemovedListener" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.NoWeakEscrowTokenPermissionTest#testRemoveWeakEscrowToken" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.NoWeakEscrowTokenPermissionTest#testUnregisterWeakEscrowTokenRemovedListener" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.PictureInPictureActionsTest#testNumPictureInPictureActions" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.PictureInPictureParamsBuilderTest#testBuildParams" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.PictureInPictureParamsBuilderTest#testBuilderCopyCtor" />
-    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.PictureInPictureParamsBuilderTest#testBuilderDefaultCtor" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testActivityInitialCallerShareIdentity_defaultIdentityNotShared_identityNotAvailableToActivity" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testActivityInitialCallerShareIdentity_explicitIdentityNotShared_identityNotAvailableToActivity" />
     <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testActivityInitialCallerShareIdentity_explicitIdentityShared_identityAvailableToActivity" />
