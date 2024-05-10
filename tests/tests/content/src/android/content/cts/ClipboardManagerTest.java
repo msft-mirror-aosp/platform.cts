@@ -37,12 +37,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.Until;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -56,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 //@AppModeFull // TODO(Instant) Should clip board data be visible?
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ClipboardManagerTest {
     private final Context mContext = InstrumentationRegistry.getTargetContext();
     private ClipboardManager mClipboardManager;
@@ -67,6 +69,10 @@ public class ClipboardManagerTest {
         mClipboardManager = mContext.getSystemService(ClipboardManager.class);
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mUiDevice.wakeUp();
+
+        // Clear any dialogs and launch an activity as focus is needed to access clipboard.
+        mUiDevice.pressHome();
+        mUiDevice.pressBack();
         launchActivity(MockActivity.class);
     }
 

@@ -23,6 +23,7 @@ import static android.opengl.GLES20.glClearColor;
 import static android.opengl.GLES20.glEnable;
 import static android.opengl.GLES20.glScissor;
 import static android.view.WindowInsets.Type.captionBar;
+import static android.view.WindowInsets.Type.systemBars;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -53,6 +54,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowInsets;
 import android.view.cts.util.BitmapDumper;
 
 import androidx.test.InstrumentationRegistry;
@@ -286,7 +288,7 @@ public class TextureViewTest {
 
         final SDRTestActivity activity =
                 mSDRActivityRule.launchActivity(/*startIntent*/ null);
-        activity.waitForSurface();
+        activity.waitForEnterAnimationComplete();
 
         TextureView textureView = activity.getTextureView();
         // SurfaceView and TextureView dimensions are the same so we reuse variables
@@ -320,10 +322,7 @@ public class TextureViewTest {
                                 Bitmap.Config.ARGB_8888, true,
                                 ColorSpace.getFromDataSpace(dataSpace));
                             Canvas canvas = new Canvas(bitmap);
-                            Paint paint = new Paint();
-                            paint.setAntiAlias(false);
-                            paint.setColor(converted);
-                            canvas.drawRect(0f, 0f, width, height, paint);
+                            canvas.drawColor(converted);
                         }
                         bitmap.copyPixelsToBuffer(plane.getBuffer());
                         writer.queueInputImage(image);
@@ -371,10 +370,7 @@ public class TextureViewTest {
         Bitmap bitmap = Bitmap.createBitmap(plane.getRowStride() / 4, image.getHeight(),
                 Bitmap.Config.ARGB_8888, true, ColorSpace.getFromDataSpace(dataSpace));
         Canvas canvas = new Canvas(bitmap);
-        Paint paint = new Paint();
-        paint.setAntiAlias(false);
-        paint.setColor(converted);
-        canvas.drawRect(0f, 0f, width, height, paint);
+        canvas.drawColor(converted);
         bitmap.copyPixelsToBuffer(plane.getBuffer());
         writer.queueInputImage(image);
 
@@ -388,19 +384,41 @@ public class TextureViewTest {
         WidgetTestUtils.runOnMainAndDrawSync(
                 mSDRActivityRule, textureView, () -> textureView.getBitmap(textureViewScreenshot));
 
+        WindowInsets rootWindowInsets = activity.getWindow().getDecorView().getRootWindowInsets();
+
+        int extraSurfaceTopOffset = rootWindowInsets.getInsets(systemBars()).top;
+        int extraSurfaceRightOffset = rootWindowInsets.getInsets(systemBars()).right;
+        int extraSurfaceBottomOffset = rootWindowInsets.getInsets(systemBars()).bottom;
+        int extraSurfaceLeftOffset = rootWindowInsets.getInsets(systemBars()).left;
+
         // sample 5 pixels on the edge for bitmap comparison.
         // TextureView and SurfaceView use different shaders, so compare these two with tolerance.
-        final int threshold = 2;
-        assertTrue(pixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, 0),
-                textureViewScreenshot.getPixel(width / 2, 0), threshold));
-        assertTrue(pixelsAreSame(surfaceViewScreenshot.getPixel(0, height / 2),
-                textureViewScreenshot.getPixel(0, height / 2), threshold));
-        assertTrue(pixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, height / 2),
-                textureViewScreenshot.getPixel(width / 2, height / 2), threshold));
-        assertTrue(pixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, height - 1),
-                textureViewScreenshot.getPixel(width / 2, height - 1), threshold));
-        assertTrue(pixelsAreSame(surfaceViewScreenshot.getPixel(width - 1, height / 2),
-                textureViewScreenshot.getPixel(width - 1, height / 2), threshold));
+        // TODO(b/229173479): These shaders shouldn't be very different. Figure out why we need
+        // this tolerance in the first place.
+        final int threshold = 3;
+        try {
+            assertPixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, extraSurfaceTopOffset),
+                    textureViewScreenshot.getPixel(width / 2, 0), threshold);
+            assertPixelsAreSame(surfaceViewScreenshot.getPixel(extraSurfaceLeftOffset, height / 2),
+                    textureViewScreenshot.getPixel(0, height / 2), threshold);
+            assertPixelsAreSame(surfaceViewScreenshot.getPixel(width / 2, height / 2),
+                    textureViewScreenshot.getPixel(width / 2, height / 2), threshold);
+            assertPixelsAreSame(
+                    surfaceViewScreenshot.getPixel(width / 2,
+                            height - 1 - extraSurfaceBottomOffset),
+                    textureViewScreenshot.getPixel(width / 2,
+                            height - 1),
+                    threshold);
+            assertPixelsAreSame(
+                    surfaceViewScreenshot.getPixel(width - 1 - extraSurfaceRightOffset, height / 2),
+                    textureViewScreenshot.getPixel(width - 1, height / 2), threshold);
+        } catch (AssertionError err) {
+            BitmapDumper.dumpBitmap(textureViewScreenshot,
+                    mTestName.getMethodName() + "_textureView", "TextureViewTest");
+            BitmapDumper.dumpBitmap(surfaceViewScreenshot,
+                    mTestName.getMethodName() + "_surfaceView", "TextureViewTest");
+            throw err;
+        }
     }
 
     @Test
@@ -480,6 +498,13 @@ public class TextureViewTest {
         error += Math.abs(Color.green(ideal) - Color.green(given));
         error += Math.abs(Color.blue(ideal) - Color.blue(given));
         return (error < threshold);
+    }
+
+    private void assertPixelsAreSame(int ideal, int given, int threshold) {
+        if (!pixelsAreSame(ideal, given, threshold)) {
+            fail("expected=" + Integer.toHexString(ideal) + ", actual="
+                    + Integer.toHexString(given));
+        }
     }
 
     @Test

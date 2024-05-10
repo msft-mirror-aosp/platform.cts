@@ -27,7 +27,8 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
  *
  * <p>This is used by {@code DevicePolicyManager#setDefaultSmsApplication(ComponentName, String)}.
  */
-@EnterprisePolicy(dpc = APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
+@EnterprisePolicy(dpc = APPLIED_BY_DEVICE_OWNER
+        | APPLIES_TO_OWN_USER
         | CANNOT_BE_APPLIED_BY_ROLE_HOLDER)
 public final class DefaultSmsApplication {
 }

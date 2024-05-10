@@ -18,12 +18,17 @@ package android.view.accessibility.cts;
 
 import static android.accessibility.cts.common.InstrumentedAccessibilityService.TIMEOUT_SERVICE_ENABLE;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+
+import android.Manifest;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityService;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
@@ -32,25 +37,31 @@ import android.app.Instrumentation;
 import android.app.Service;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.os.Handler;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.view.InputEvent;
+import android.view.MotionEvent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityManager.AccessibilityServicesStateChangeListener;
 import android.view.accessibility.AccessibilityManager.AccessibilityStateChangeListener;
 import android.view.accessibility.AccessibilityManager.AudioDescriptionRequestedChangeListener;
 import android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener;
+import android.view.accessibility.Flags;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
-
-import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SettingsStateChangerRule;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
+import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,6 +70,9 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -93,13 +107,13 @@ public class AccessibilityManagerTest extends StsExtraBusinessLogicTestCase {
             InstrumentationRegistry.getInstrumentation();
 
     private static final String SPEAKING_ACCESSIBLITY_SERVICE_NAME =
-        "android.view.accessibility.cts.SpeakingAccessibilityService";
+            "android.view.accessibility.cts.SpeakingAccessibilityService";
 
     private static final String VIBRATING_ACCESSIBLITY_SERVICE_NAME =
-        "android.view.accessibility.cts.VibratingAccessibilityService";
+            "android.view.accessibility.cts.VibratingAccessibilityService";
 
     private static final String MULTIPLE_FEEDBACK_TYPES_ACCESSIBILITY_SERVICE_NAME =
-        "android.view.accessibility.cts.SpeakingAndVibratingAccessibilityService";
+            "android.view.accessibility.cts.SpeakingAndVibratingAccessibilityService";
 
     private static final String NO_FEEDBACK_ACCESSIBILITY_SERVICE_NAME =
             "android.view.accessibility.cts.NoFeedbackAccessibilityService";
@@ -117,6 +131,9 @@ public class AccessibilityManagerTest extends StsExtraBusinessLogicTestCase {
                     sInstrumentation.getContext(),
                     ENABLED_ACCESSIBILITY_AUDIO_DESCRIPTION_BY_DEFAULT,
                     "0");
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public final RuleChain mRuleChain = RuleChain
@@ -203,10 +220,36 @@ public class AccessibilityManagerTest extends StsExtraBusinessLogicTestCase {
         assertFalse(mAccessibilityManager.removeAccessibilityServicesStateChangeListener(listener));
     }
 
+    @AsbSecurityTest(cveBugId = {309426390})
+    @Test
+    public void testInjectInputEventToInputFilter_throwsWithoutInjectEventsPermission()
+            throws Exception {
+        // Ensure the test itself doesn't have INJECT_EVENTS permission before
+        // calling the method that requires it and expecting failure.
+        assertThat(sInstrumentation.getContext().checkSelfPermission(
+                Manifest.permission.INJECT_EVENTS)).isEqualTo(PackageManager.PERMISSION_DENIED);
+
+        // Use reflection to directly invoke IAccessibilityManager#injectInputEventToInputFilter.
+        final AccessibilityManager accessibilityManager = (AccessibilityManager)
+                sInstrumentation.getContext().getSystemService(Service.ACCESSIBILITY_SERVICE);
+        final Field serviceField = AccessibilityManager.class.getDeclaredField("mService");
+        serviceField.setAccessible(true);
+        final Method injectInputEventToInputFilter =
+                Class.forName("android.view.accessibility.IAccessibilityManager")
+                        .getDeclaredMethod("injectInputEventToInputFilter", InputEvent.class);
+
+        final InvocationTargetException exception = assertThrows(InvocationTargetException.class,
+                () -> injectInputEventToInputFilter.invoke(
+                        serviceField.get(accessibilityManager),
+                        MotionEvent.obtain(0, 0, 0, 0, 0, 0)));
+        assertThat(exception).hasCauseThat().isInstanceOf(SecurityException.class);
+        assertThat(exception).hasCauseThat().hasMessageThat().contains("INJECT_EVENTS");
+    }
+
     @Test
     public void testGetInstalledAccessibilityServicesList() throws Exception {
         List<AccessibilityServiceInfo> installedServices =
-            mAccessibilityManager.getInstalledAccessibilityServiceList();
+                mAccessibilityManager.getInstalledAccessibilityServiceList();
         assertFalse("There must be at least one installed service.", installedServices.isEmpty());
         boolean speakingServiceInstalled = false;
         boolean vibratingServiceInstalled = false;
@@ -232,8 +275,8 @@ public class AccessibilityManagerTest extends StsExtraBusinessLogicTestCase {
         mSpeakingAccessibilityServiceRule.enableService();
         mVibratingAccessibilityServiceRule.enableService();
         List<AccessibilityServiceInfo> enabledServices =
-            mAccessibilityManager.getEnabledAccessibilityServiceList(
-                    AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
+                mAccessibilityManager.getEnabledAccessibilityServiceList(
+                        AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
         boolean speakingServiceEnabled = false;
         boolean vibratingServiceEnabled = false;
         final int serviceCount = enabledServices.size();
@@ -278,8 +321,8 @@ public class AccessibilityManagerTest extends StsExtraBusinessLogicTestCase {
         mSpeakingAccessibilityServiceRule.enableService();
         mVibratingAccessibilityServiceRule.enableService();
         List<AccessibilityServiceInfo> enabledServices =
-            mAccessibilityManager.getEnabledAccessibilityServiceList(
-                    AccessibilityServiceInfo.FEEDBACK_SPOKEN);
+                mAccessibilityManager.getEnabledAccessibilityServiceList(
+                        AccessibilityServiceInfo.FEEDBACK_SPOKEN);
         assertSame("There should be only one enabled speaking service.", 1, enabledServices.size());
         final int serviceCount = enabledServices.size();
         for (int i = 0; i < serviceCount; i++) {
@@ -616,6 +659,15 @@ public class AccessibilityManagerTest extends StsExtraBusinessLogicTestCase {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FLASH_NOTIFICATION_SYSTEM_API)
+    public void testStartAndStopFlashNotificationSequence() throws Exception {
+        assertTrue("Start flash notification sequence failed.",
+                mAccessibilityManager.startFlashNotificationSequence(mTargetContext, 1));
+        assertTrue("Stop flash notification sequence failed.",
+                mAccessibilityManager.stopFlashNotificationSequence(mTargetContext));
+    }
+
     private void checkServiceEnabled(Object waitObject, AccessibilityManager manager,
             AtomicBoolean serviceEnabled, String serviceName) {
         synchronized (waitObject) {
@@ -633,7 +685,7 @@ public class AccessibilityManagerTest extends StsExtraBusinessLogicTestCase {
 
     private void waitForAtomicBooleanBecomes(AtomicBoolean atomicBoolean,
             boolean expectedValue, Object waitObject, String condition) {
-        long timeoutTime = System.currentTimeMillis() + TIMEOUT_SERVICE_ENABLE;
+        long timeoutTime = TIMEOUT_SERVICE_ENABLE;
         TestUtils.waitOn(waitObject, () -> atomicBoolean.get() == expectedValue, timeoutTime,
                 condition);
     }

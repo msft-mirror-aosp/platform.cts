@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_enterprise",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -25,7 +26,7 @@ java_test_host {
         "cts-tradefed",
         "tradefed",
         "guava",
-        "truth-prebuilt",
+        "truth",
     ],
     // tag this module as a cts test artifact
     test_suites: [
@@ -33,10 +34,111 @@ java_test_host {
         "cts",
         "general-tests",
         "mts-permission",
+        "mcts-permission",
     ],
     static_libs: [
         "cts-statsd-atom-host-test-utils",
     ],
     java_resource_dirs: ["res"],
-    data: [":current-api-xml"],
+    data: [
+        ":cts-current-api-gz",
+        ":CtsCertInstallerApp",
+        ":CtsContactDirectoryProvider",
+        ":CtsCorpOwnedManagedProfile",
+        ":CtsCorpOwnedManagedProfile2",
+        ":CtsCrossProfileEnabledApp",
+        ":CtsCrossProfileUserEnabledApp",
+        ":CtsDelegateApp",
+        ":CtsDeviceAdminApp23",
+        ":CtsDeviceAdminApp24",
+        ":CtsDeviceAdminApp29",
+        ":CtsDeviceAdminService2",
+        ":CtsDeviceAdminService4",
+        ":CtsDeviceAdminServiceB",
+        ":CtsDeviceAndProfileOwnerApp",
+        ":CtsDeviceAndProfileOwnerApp23",
+        ":CtsDeviceAndProfileOwnerApp25",
+        ":CtsDeviceAndProfileOwnerApp30",
+        ":CtsDeviceOwnerApp",
+        ":CtsDeviceAdminService1",
+        ":CtsDeviceAdminService2",
+        ":CtsDeviceAdminService3",
+        ":CtsDevicePolicyAssistApp",
+        ":CtsDevicePolicyAutofillApp",
+        ":CtsEmptyTestApp",
+        ":CtsHasLauncherActivityApp",
+        ":CtsIntentReceiverApp",
+        ":CtsIntentSenderApp",
+        ":CtsLauncherAppsTests",
+        ":CtsLauncherAppsTestsSupport",
+        ":CtsManagedProfileApp",
+        ":CtsMeteredDataTestApp",
+        ":CtsNoLauncherActivityApp",
+        ":CtsNoPermissionApp",
+        ":CtsNotificationSenderApp",
+        ":CtsPackageInstallerApp",
+        ":CtsPermissionApp",
+        ":CtsProfileOwnerApp",
+        ":CtsSimplePreMApp",
+        ":CtsTransferOwnerIncomingApp",
+        ":CtsTransferOwnerOutgoingApp",
+        ":CtsVpnFirewallApp",
+        ":CtsVpnFirewallAppApi23",
+        ":CtsVpnFirewallAppApi24",
+        ":CtsVpnFirewallAppNotAlwaysOn",
+        ":CtsWidgetProviderApp",
+        ":CtsWifiConfigCreator",
+        ":SharingApp1",
+        ":SharingApp2",
+        ":SharedUidApp1",
+        ":SharedUidApp2",
+        ":SimpleSmsApp",
+        ":TestApp1",
+        ":TestApp2",
+        ":TestApp3",
+        ":TestApp4",
+        ":TestIme",
+    ],
+    per_testcase_directory: true,
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_Permissions",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["com.android.cts.devicepolicy.annotations.PermissionsTest"],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_Permissions_NoFlakes",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["com.android.cts.devicepolicy.annotations.PermissionsTest"],
+    exclude_annotations: ["android.platform.test.annotations.FlakyTest"],
+}
+
+// Currently, there are no tests marked flaky or large in CtsDevicePolicyManagerTestCases
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_NoFlakes_NoLarge",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: [
+        "android.platform.test.annotations.FlakyTest",
+        "android.platform.test.annotations.LargeTest",
+    ],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_LockSettings_NoFlakes",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["com.android.cts.devicepolicy.annotations.LockSettingsTest"],
+    exclude_annotations: ["android.platform.test.annotations.FlakyTest"],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_ParentProfileApiDisabled",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["com.android.cts.devicepolicy.ManagedProfileTest#testParentProfileApiDisabled"],
 }

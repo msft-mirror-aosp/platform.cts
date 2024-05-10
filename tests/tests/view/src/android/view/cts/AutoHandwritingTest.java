@@ -36,16 +36,8 @@ import org.junit.runner.RunWith;
 public class AutoHandwritingTest {
 
     @Rule
-    public ActivityTestRule<AutoHandwritingActivity> mActivityRule =
-            new ActivityTestRule<>(AutoHandwritingActivity.class);
-
-    @Test
-    public void autoHandwriting_defaultValueIsTrue() {
-        Activity activity = mActivityRule.getActivity();
-        View view = activity.findViewById(R.id.auto_handwriting_default);
-
-        assertTrue(view.isAutoHandwritingEnabled());
-    }
+    public ActivityTestRule<HandwritingActivity> mActivityRule =
+            new ActivityTestRule<>(HandwritingActivity.class);
 
     @Test
     public void autoHandwriting_setToTrueInXml() {
@@ -80,6 +72,14 @@ public class AutoHandwritingTest {
         assertFalse(view.isAutoHandwritingEnabled());
 
         view.setAutoHandwritingEnabled(true);
+        assertTrue(view.isAutoHandwritingEnabled());
+    }
+
+    @Test
+    public void autoHandwriting_textView_defaultValueIsTrue() {
+        Activity activity = mActivityRule.getActivity();
+        View view = activity.findViewById(R.id.default_textview);
+
         assertTrue(view.isAutoHandwritingEnabled());
     }
 }

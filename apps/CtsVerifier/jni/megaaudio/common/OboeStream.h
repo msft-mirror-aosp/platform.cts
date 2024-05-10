@@ -31,7 +31,17 @@ public:
     virtual Result startStream() override;
     virtual Result stopStream() override;
 
+    // Oboe-specific
+    oboe::StreamState getState() const;
+
+    int getLastErrorCallbackResult();
+
     StreamBase::Result getTimeStamp(oboe::FrameTimestamp* timeStamp);
+
+    int32_t getRoutedDeviceId();
+
+    int32_t getSharingMode();
+    int32_t getChannelCount();
 
 protected:
     OboeStream(int32_t subtype) : mSubtype(subtype), mStreamStarted(false) {}

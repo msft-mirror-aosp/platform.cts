@@ -25,6 +25,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.view.InputDevice
 import android.view.MotionEvent
+import android.view.MotionEvent.ACTION_CANCEL
 import android.view.MotionEvent.ACTION_DOWN
 import android.view.MotionEvent.ACTION_MOVE
 import android.view.View
@@ -33,15 +34,17 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.concurrent.thread
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.concurrent.thread
 
 private const val OVERLAY_ACTIVITY_FOCUSED = "android.input.cts.action.OVERLAY_ACTIVITY_FOCUSED"
+private val ACTIVITY_FOCUS_LOST_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(10)
 
 private fun getViewCenterOnScreen(v: View): Pair<Float, Float> {
     val location = IntArray(2)
@@ -118,7 +121,8 @@ class IncompleteMotionTest {
                     val handler = Handler(looper)
                     val receiver = OverlayFocusedBroadcastReceiver()
                     val intentFilter = IntentFilter(OVERLAY_ACTIVITY_FOCUSED)
-                    activity.registerReceiver(receiver, intentFilter, null, handler)
+                    activity.registerReceiver(receiver, intentFilter, null, handler,
+                                          Context.RECEIVER_EXPORTED)
 
                     // Now send hasFocus=false event to the app by launching a new focusable window
                     startOverlayActivity()
@@ -140,7 +144,13 @@ class IncompleteMotionTest {
             }
             sendMoveAndFocus.join()
         }
-        PollingCheck.waitFor { !activity.hasWindowFocus() }
+        // The default PollingCheck is 3 seconds, but this one is monitoring multiple operations
+        // that will take 1 second at the fastest; if the system is running tasks in the background,
+        // this would potentially cause timeouts at this point.
+        PollingCheck.waitFor(
+            ACTIVITY_FOCUS_LOST_TIMEOUT_MILLIS,
+            { !activity.hasWindowFocus() }
+        )
         // If the platform implementation has a bug, it would consume both MOVE and FOCUS events,
         // but will only call 'finish' for the focus event.
         // The MOVE event would not be propagated to the app, because the Choreographer
@@ -148,6 +158,8 @@ class IncompleteMotionTest {
         // If we wait too long here, we will cause ANR (if the platform has a bug).
         // If the MOVE event is received, however, we can stop the test.
         PollingCheck.waitFor { activity.receivedMove() }
+        // Finish the gesture. No dangling injected pointers should remain
+        sendEvent(downTime, ACTION_CANCEL, x, y, true /*sync*/)
         // Before finishing the test, check that no exceptions occurred while running the
         // instructions in the 'sendMoveAndFocus' thread.
         resultFuture.get()

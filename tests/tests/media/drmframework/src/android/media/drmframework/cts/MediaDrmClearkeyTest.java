@@ -29,10 +29,11 @@ import android.media.cts.MediaCodecClearKeyPlayer;
 import android.media.cts.MediaCodecPlayerTestBase;
 import android.media.cts.MediaStubActivity;
 import android.media.cts.TestUtils.Monitor;
-import android.media.cts.Utils;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Looper;
+import android.os.SystemProperties;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.util.Base64;
 import android.util.Log;
@@ -42,12 +43,15 @@ import androidx.annotation.NonNull;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
+import org.junit.Test;
 
+import java.io.File;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +64,7 @@ import java.util.Vector;
 /**
  * Tests of MediaPlayer streaming capabilities.
  */
+@AppModeFull(reason = "Instant apps cannot access the SD card")
 public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActivity> {
 
     private static final String TAG = MediaDrmClearkeyTest.class.getSimpleName();
@@ -92,15 +97,19 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
 
     // Error message
     private static final String ERR_MSG_CRYPTO_SCHEME_NOT_SUPPORTED = "Crypto scheme is not supported";
-
-    private static final String CENC_AUDIO_PATH = "/clear/h264/llama/llama_aac_audio.mp4";
-    private static final String CENC_VIDEO_PATH = "/clearkey/llama_h264_main_720p_8000.mp4";
-    private static final Uri WEBM_URL = Uri.parse(
-            "android.resource://android.media.drmframework.cts/" + R.raw.video_320x240_webm_vp8_800kbps_30fps_vorbis_stereo_128kbps_44100hz_crypt);
-    private static final Uri MPEG2TS_SCRAMBLED_URL = Uri.parse(
-            "android.resource://android.media.drmframework.cts/" + R.raw.segment000001_scrambled);
-    private static final Uri MPEG2TS_CLEAR_URL = Uri.parse(
-            "android.resource://android.media.drmframework.cts/" + R.raw.segment000001);
+    private static final String MEDIA_DIR = WorkDir.getMediaDirString();
+    private static final Uri CENC_AUDIO_URL =
+            Uri.fromFile(new File(MEDIA_DIR + "llama_aac_audio.mp4"));
+    private static final Uri CENC_VIDEO_URL =
+            Uri.fromFile(new File(MEDIA_DIR + "llama_h264_main_720p_8000.mp4"));
+    private static final Uri WEBM_URL =
+            Uri.fromFile(new File(MEDIA_DIR
+                    + "video_320x240_webm_vp8_800kbps_30fps_vorbis_stereo_128kbps_44100hz_crypt"
+                    + ".webm"));
+    private static final Uri MPEG2TS_SCRAMBLED_URL =
+            Uri.fromFile(new File(MEDIA_DIR + "segment000001_scrambled.ts"));
+    private static final Uri MPEG2TS_CLEAR_URL =
+            Uri.fromFile(new File(MEDIA_DIR + "segment000001.ts"));
 
     private static final UUID COMMON_PSSH_SCHEME_UUID =
             new UUID(0x1077efecc0b24d02L, 0xace33c1e52e2fb4bL);
@@ -119,6 +128,13 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     private boolean mLostStateReceived;
 
     private static boolean sIsAtLeastS = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S);
+    private static final boolean VNDK_IS_AT_LEAST_U =
+            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+
+    private static final boolean FIRST_RELEASE_IS_AT_LEAST_U =
+            SystemProperties.getInt("ro.product.first_api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
     public MediaDrmClearkeyTest() {
         super(MediaStubActivity.class);
@@ -489,13 +505,12 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
                 CLEARKEY_SCHEME_UUID, MediaDrm.KEY_TYPE_OFFLINE);
         mSessionId = openSession(drm);
 
-        Uri videoUrl = Uri.parse(Utils.getMediaPath() + CENC_VIDEO_PATH);
         if (false == playbackPreCheck(MIME_VIDEO_AVC,
-                new String[] { CodecCapabilities.FEATURE_SecurePlayback }, videoUrl,
+                new String[] { CodecCapabilities.FEATURE_SecurePlayback }, CENC_VIDEO_URL,
                 VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC)) {
             // retry with unsecure codec
             if (false == playbackPreCheck(MIME_VIDEO_AVC,
-                    new String[0], videoUrl,
+                    new String[0], CENC_VIDEO_URL,
                     VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC)) {
                 Log.e(TAG, "Failed playback precheck");
                 return;
@@ -507,9 +522,8 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
                 mSessionId, false /*scrambled */,
                 mContext);
 
-        Uri audioUrl = Uri.parse(Utils.getMediaPath() + CENC_AUDIO_PATH);
-        mMediaCodecPlayer.setAudioDataSource(audioUrl, null, false);
-        mMediaCodecPlayer.setVideoDataSource(videoUrl, null, true);
+        mMediaCodecPlayer.setAudioDataSource(CENC_AUDIO_URL, null, false);
+        mMediaCodecPlayer.setVideoDataSource(CENC_VIDEO_URL, null, true);
         mMediaCodecPlayer.start();
         if (!mMediaCodecPlayer.prepare()) {
             Log.i(TAG, "Media Player could not be prepared.");
@@ -594,10 +608,8 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
                 getSurfaces(),
                 mSessionId, false,
                 mContext);
-        mMediaCodecPlayer.setAudioDataSource(
-                Uri.parse(Utils.getMediaPath() + CENC_AUDIO_PATH), null, false);
-        mMediaCodecPlayer.setVideoDataSource(
-                Uri.parse(Utils.getMediaPath() + CENC_VIDEO_PATH), null, true);
+        mMediaCodecPlayer.setAudioDataSource(CENC_AUDIO_URL, null, false);
+        mMediaCodecPlayer.setVideoDataSource(CENC_VIDEO_URL, null, true);
         mMediaCodecPlayer.start();
         if (!mMediaCodecPlayer.prepare()) {
             Log.i(TAG, "Media Player could not be prepared.");
@@ -643,10 +655,8 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
                 getSurfaces(),
                 mSessionId, false,
                 mContext);
-        mMediaCodecPlayer.setAudioDataSource(
-                Uri.parse(Utils.getMediaPath() + CENC_AUDIO_PATH), null, false);
-        mMediaCodecPlayer.setVideoDataSource(
-                Uri.parse(Utils.getMediaPath() + CENC_VIDEO_PATH), null, true);
+        mMediaCodecPlayer.setAudioDataSource(CENC_AUDIO_URL, null, false);
+        mMediaCodecPlayer.setVideoDataSource(CENC_VIDEO_URL, null, true);
         mMediaCodecPlayer.start();
         if (!mMediaCodecPlayer.prepare()) {
             Log.i(TAG, "Media Player could not be prepared.");
@@ -728,14 +738,14 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
         String[] codecFeatures = determineCodecFeatures(MIME_VIDEO_AVC,
             VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC);
         testClearKeyPlayback(
-            COMMON_PSSH_SCHEME_UUID,
-            // using secure codec even though it is clear key DRM
-            MIME_VIDEO_AVC, codecFeatures,
-            "cenc", new byte[][] { CLEAR_KEY_CENC },
-            Uri.parse(Utils.getMediaPath() + CENC_AUDIO_PATH), false  /* audioEncrypted */,
-            Uri.parse(Utils.getMediaPath() + CENC_VIDEO_PATH), true /* videoEncrypted */,
-            VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC, false /* scrambled */,
-            MediaDrm.KEY_TYPE_STREAMING);
+                COMMON_PSSH_SCHEME_UUID,
+                // using secure codec even though it is clear key DRM
+                MIME_VIDEO_AVC, codecFeatures,
+                "cenc", new byte[][]{CLEAR_KEY_CENC},
+                CENC_AUDIO_URL, false  /* audioEncrypted */,
+                CENC_VIDEO_URL, true /* videoEncrypted */,
+                VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC, false /* scrambled */,
+                MediaDrm.KEY_TYPE_STREAMING);
     }
 
     @Presubmit
@@ -743,14 +753,14 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
         String[] codecFeatures = determineCodecFeatures(MIME_VIDEO_AVC,
             VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC);
         testClearKeyPlayback(
-            CLEARKEY_SCHEME_UUID,
-            // using secure codec even though it is clear key DRM
-            MIME_VIDEO_AVC, codecFeatures,
-            "cenc", new byte[][] { CLEAR_KEY_CENC },
-            Uri.parse(Utils.getMediaPath() + CENC_AUDIO_PATH), false /* audioEncrypted */ ,
-            Uri.parse(Utils.getMediaPath() + CENC_VIDEO_PATH), true /* videoEncrypted */,
-            VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC, false /* scrambled */,
-            MediaDrm.KEY_TYPE_STREAMING);
+                CLEARKEY_SCHEME_UUID,
+                // using secure codec even though it is clear key DRM
+                MIME_VIDEO_AVC, codecFeatures,
+                "cenc", new byte[][]{CLEAR_KEY_CENC},
+                CENC_AUDIO_URL, false /* audioEncrypted */,
+                CENC_VIDEO_URL, true /* videoEncrypted */,
+                VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC, false /* scrambled */,
+                MediaDrm.KEY_TYPE_STREAMING);
     }
 
     @Presubmit
@@ -761,22 +771,22 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
                 CLEARKEY_SCHEME_UUID,
                 // using secure codec even though it is clear key DRM
                 MIME_VIDEO_AVC, codecFeatures,
-                "cenc", new byte[][] { CLEAR_KEY_CENC },
-                Uri.parse(Utils.getMediaPath() + CENC_AUDIO_PATH), false /* audioEncrypted */ ,
-                Uri.parse(Utils.getMediaPath() + CENC_VIDEO_PATH), true /* videoEncrypted */,
+                "cenc", new byte[][]{CLEAR_KEY_CENC},
+                CENC_AUDIO_URL, false /* audioEncrypted */,
+                CENC_VIDEO_URL, true /* videoEncrypted */,
                 VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC, false /* scrambled */,
                 MediaDrm.KEY_TYPE_OFFLINE);
     }
 
     public void testClearKeyPlaybackWebm() throws Exception {
         testClearKeyPlayback(
-            CLEARKEY_SCHEME_UUID,
-            MIME_VIDEO_VP8, new String[0],
-            "webm", new byte[][] { CLEAR_KEY_WEBM },
-            WEBM_URL, true /* audioEncrypted */,
-            WEBM_URL, true /* videoEncrypted */,
-            VIDEO_WIDTH_WEBM, VIDEO_HEIGHT_WEBM, false /* scrambled */,
-            MediaDrm.KEY_TYPE_STREAMING);
+                CLEARKEY_SCHEME_UUID,
+                MIME_VIDEO_VP8, new String[0],
+                "webm", new byte[][]{CLEAR_KEY_WEBM},
+                WEBM_URL, true /* audioEncrypted */,
+                WEBM_URL, true /* videoEncrypted */,
+                VIDEO_WIDTH_WEBM, VIDEO_HEIGHT_WEBM, false /* scrambled */,
+                MediaDrm.KEY_TYPE_STREAMING);
     }
 
     public void testClearKeyPlaybackMpeg2ts() throws Exception {
@@ -792,13 +802,13 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
 
     public void testPlaybackMpeg2ts() throws Exception {
         testClearKeyPlayback(
-            CLEARKEY_SCHEME_UUID,
-            MIME_VIDEO_AVC, new String[0],
-            "mpeg2ts", null,
-            MPEG2TS_CLEAR_URL, false /* audioEncrypted */,
-            MPEG2TS_CLEAR_URL, false /* videoEncrypted */,
-            VIDEO_WIDTH_MPEG2TS, VIDEO_HEIGHT_MPEG2TS, false /* scrambled */,
-            MediaDrm.KEY_TYPE_STREAMING);
+                CLEARKEY_SCHEME_UUID,
+                MIME_VIDEO_AVC, new String[0],
+                "mpeg2ts", null,
+                MPEG2TS_CLEAR_URL, false /* audioEncrypted */,
+                MPEG2TS_CLEAR_URL, false /* videoEncrypted */,
+                VIDEO_WIDTH_MPEG2TS, VIDEO_HEIGHT_MPEG2TS, false /* scrambled */,
+                MediaDrm.KEY_TYPE_STREAMING);
     }
 
     private String getStringProperty(final MediaDrm drm,  final String key) {
@@ -1132,10 +1142,8 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
 
             mMediaCodecPlayer = new MediaCodecClearKeyPlayer(
                     getSurfaces(), mSessionId, false, mContext);
-            mMediaCodecPlayer.setAudioDataSource(
-                    Uri.parse(Utils.getMediaPath() + CENC_AUDIO_PATH), null, false);
-            mMediaCodecPlayer.setVideoDataSource(
-                    Uri.parse(Utils.getMediaPath() + CENC_VIDEO_PATH), null, true);
+            mMediaCodecPlayer.setAudioDataSource(CENC_AUDIO_URL, null, false);
+            mMediaCodecPlayer.setVideoDataSource(CENC_VIDEO_URL, null, true);
             mMediaCodecPlayer.start();
             if (!mMediaCodecPlayer.prepare()) {
                 Log.i(TAG, "Media Player could not be prepared.");
@@ -1313,8 +1321,8 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
             if (!preparePlayback(
                     MIME_VIDEO_AVC,
                     new String[0],
-                    Uri.parse(Utils.getMediaPath() + CENC_AUDIO_PATH), false /* audioEncrypted */ ,
-                    Uri.parse(Utils.getMediaPath() + CENC_VIDEO_PATH), true /* videoEncrypted */,
+                    CENC_AUDIO_URL, false /* audioEncrypted */ ,
+                    CENC_VIDEO_URL, true /* videoEncrypted */,
                     VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC, false /* scrambled */,
                     mSessionId, getSurfaces())) {
                 closeSession(drm, mSessionId);
@@ -1378,8 +1386,8 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
             if (!preparePlayback(
                     MIME_VIDEO_AVC,
                     new String[0],
-                    Uri.parse(Utils.getMediaPath() + CENC_AUDIO_PATH), false /* audioEncrypted */ ,
-                    Uri.parse(Utils.getMediaPath() + CENC_VIDEO_PATH), true /* videoEncrypted */,
+                    CENC_AUDIO_URL, false /* audioEncrypted */ ,
+                    CENC_VIDEO_URL, true /* videoEncrypted */,
                     VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC, false /* scrambled */,
                     mSessionId, getSurfaces())) {
                 closeSession(drm, mSessionId);
@@ -1451,8 +1459,8 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
             if (!preparePlayback(
                     MIME_VIDEO_AVC,
                     new String[0],
-                    Uri.parse(Utils.getMediaPath() + CENC_AUDIO_PATH), false /* audioEncrypted */ ,
-                    Uri.parse(Utils.getMediaPath() + CENC_VIDEO_PATH), true /* videoEncrypted */,
+                    CENC_AUDIO_URL, false /* audioEncrypted */ ,
+                    CENC_VIDEO_URL, true /* videoEncrypted */,
                     VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC, false /* scrambled */,
                     mSessionId, getSurfaces())) {
                 closeSession(drm, mSessionId);
@@ -1669,6 +1677,48 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
                 drm.close();
             }
         }
+    }
+
+    /**
+     * The test tries to enforce the behavior described
+     * in {@link android.media.MediaDrm.KeyRequest#getDefaultUrl()}.
+     * It should return an empty string if the default URL is not known.
+     */
+    @Presubmit
+    @ApiTest(apis = {"android.media.MediaDrm.KeyRequest#getDefaultUrl"})
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    public void testGetKeyRequestDefaultUrl()
+            throws UnsupportedSchemeException, NotProvisionedException {
+        if (watchHasNoClearkeySupport() || !FIRST_RELEASE_IS_AT_LEAST_U || !VNDK_IS_AT_LEAST_U) {
+            return;
+        }
+
+        MediaDrm drm = new MediaDrm(CLEARKEY_SCHEME_UUID);
+        byte[] sessionId = openSession(drm);
+
+        try {
+            if (!preparePlayback(
+                    MIME_VIDEO_AVC,
+                    new String[0],
+                    CENC_AUDIO_URL, false /* audioEncrypted */ ,
+                    CENC_VIDEO_URL, true /* videoEncrypted */,
+                    VIDEO_WIDTH_CENC, VIDEO_HEIGHT_CENC, false /* scrambled */,
+                    sessionId, getSurfaces())) {
+                closeSession(drm, sessionId);
+                stopDrm(drm);
+                return;
+            }
+        } catch (Exception e) {
+            throw new Error("Unexpected exception ", e);
+        }
+
+        MediaDrm.KeyRequest drmRequest = drm.getKeyRequest(sessionId, mMediaCodecPlayer.getDrmInitData(), "cenc",
+                MediaDrm.KEY_TYPE_STREAMING,
+                null);
+        String defaultUrl = drmRequest.getDefaultUrl();
+        Log.i(TAG, "Default url is [" + defaultUrl + "].");
+        assertEquals("Default url of key request should be empty", "", defaultUrl);
+        drm.close();
     }
 
     private void testIntegerProperties(MediaDrm drm, String testKey)

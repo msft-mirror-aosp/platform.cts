@@ -56,16 +56,33 @@ except:
 echo "$CV2_VER" | grep -q -e "^3.*" -e "^4.*" || \
     echo ">> Require python opencv version greater than 3 or 4. Got $CV2_VER" >&2
 
+COLOUR_VER=$(python -c "
+try:
+    import colour
+    print(colour.__version__)
+except:
+    print(\"N/A\")
+")
+
+echo "$COLOUR_VER" | grep -q -e "^0.4.*$" || \
+    echo ">> Require python colour-science version 0.4.*, Got $COLOUR_VER" >&2
+
 export PYTHONPATH="$PWD/utils:$PYTHONPATH"
 export PYTHONPATH="$PWD/tests:$PYTHONPATH"
 
-for M in sensor_fusion_utils camera_properties_utils capture_request_utils opencv_processing_utils image_processing_utils its_session_utils target_exposure_utils image_fov_utils
+
+
+for M in sensor_fusion_utils capture_request_utils opencv_processing_utils image_processing_utils its_session_utils image_fov_utils zoom_capture_utils
 do
-    python "utils/$M.py" 2>&1 | grep -q "OK" || \
+    python "utils/${M}_tests.py" 2>&1 | grep -q "OK" || \
+        echo ">> Unit test for $M failed" >&2
+done
+
+for M in run_all_unit_tests
+do
+    python "tools/$M.py" 2>&1 | grep -q "OK" || \
         echo ">> Unit test for $M failed" >&2
 done
 
 echo -e "\n*****Please execute below adb command on your dut before running the tests*****\n"
 echo -e "adb -s <device_id> shell am compat enable ALLOW_TEST_API_ACCESS com.android.cts.verifier\n\n"
-
-alias gpylint='gpylint --rcfile=$CAMERA_ITS_TOP"/build/scripts/gpylint_rcfile"'

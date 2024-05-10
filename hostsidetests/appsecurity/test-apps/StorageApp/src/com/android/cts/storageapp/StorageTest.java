@@ -44,11 +44,12 @@ import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
 import android.os.storage.StorageManager;
 import android.provider.Settings;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObjectNotFoundException;
-import android.support.test.uiautomator.UiScrollable;
-import android.support.test.uiautomator.UiSelector;
 import android.test.InstrumentationTestCase;
+
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiScrollable;
+import androidx.test.uiautomator.UiSelector;
 
 import java.io.File;
 import java.io.IOException;
@@ -117,16 +118,14 @@ public class StorageTest extends InstrumentationTestCase {
     }
 
     private void clearSpaceGeneric(UiDevice device) throws UiObjectNotFoundException {
-        int i = device.findObjects(android.support.test.uiautomator.By.scrollable(true)).size();
-        for (int j = 0; j < i; j++) {
-            UiScrollable localObject = new UiScrollable(new UiSelector().scrollable(true).instance(j));
-            ((UiScrollable) localObject).setMaxSearchSwipes(10);
-            try {
-                 ((UiScrollable) localObject).scrollIntoView(
-                   new UiSelector().textContains("internal storage"));
-            } catch (UiObjectNotFoundException localUiObjectNotFoundException) {
-                // Scrolling can fail if the UI is not scrollable
-            }
+        UiScrollable localObject = new UiScrollable(new UiSelector().scrollable(true));
+        assertNotNull("Cannot find scrollable object.", localObject);
+        ((UiScrollable) localObject).setMaxSearchSwipes(10);
+        try {
+            ((UiScrollable) localObject).scrollIntoView(
+                    new UiSelector().textContains("internal storage"));
+        } catch (UiObjectNotFoundException localUiObjectNotFoundException) {
+            // Scrolling can fail if the UI is not scrollable
         }
         device.findObject(new UiSelector().textContains("internal storage")).click();
         device.waitForIdle();
@@ -134,7 +133,7 @@ public class StorageTest extends InstrumentationTestCase {
         device.findObject(new UiSelector().textContains("Clear")).click();
         device.waitForIdle();
 
-        device.findObject(new UiSelector().text("DELETE")).click();
+        device.findObject(new UiSelector().textMatches("(?i)Delete")).click();
     }
 
     private void clearSpaceWatch(UiDevice device) throws UiObjectNotFoundException {
@@ -160,20 +159,21 @@ public class StorageTest extends InstrumentationTestCase {
     private void clearSpaceTv(UiDevice device) throws UiObjectNotFoundException {
         device.findObject(new UiSelector().textContains("Clear")).click();
         device.waitForIdle();
-        device.findObject(new UiSelector().text("OK")).click();
+        device.findObject(new UiSelector().textContains("OK")).click();
     }
 
     private void clearSpaceCar(UiDevice device) throws UiObjectNotFoundException {
         String storageString = "internal storage";
-        int i = device.findObjects(android.support.test.uiautomator.By.scrollable(true)).size();
+        int i = device.findObjects(androidx.test.uiautomator.By.scrollable(true)).size();
         for (int j = 0; j < i; j++) {
-            UiScrollable localObject = new UiScrollable(new UiSelector().scrollable(true).instance(j));
+            UiScrollable localObject = new UiScrollable(
+                    new UiSelector().scrollable(true).instance(j));
             localObject.setMaxSearchSwipes(10);
             try {
-                 boolean found = localObject.scrollTextIntoView(storageString);
-                 if (found) {
-                     break;
-                 }
+                boolean found = localObject.scrollTextIntoView(storageString);
+                if (found) {
+                    break;
+                }
             } catch (UiObjectNotFoundException localUiObjectNotFoundException) {
                 // Scrolling can fail if the UI is not scrollable
             }

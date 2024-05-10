@@ -1,7 +1,7 @@
 # animation & tranistion
 # Bug template url: https://b.corp.google.com/issues/new?component=316275&template=1018192 = per-file *Transition*, SplashscreenTests.java
 # foldables
-# Bug template url: https://b.corp.google.com/issues/new?component=943781&template=1502790 = per-file *WindowContext*, *WindowMetrics*
+# Bug template url: https://b.corp.google.com/issues/new?component=316125&template=1018199 = per-file *WindowContext*, *WindowMetrics*
 # insets & cutout
 # Bug template url: https://b.corp.google.com/issues/new?component=339570&template=1037597 = per-file *Inset*, *Cutout*, *RoundedCorner*, ForceRelayoutTest.java
 # shell
@@ -21,14 +21,15 @@
 # freeform
 # Bug template url: https://b.corp.google.com/issues/new?component=929241&template=1490914 = per-file *Freeform*
 # input
-# Bug template url: https://b.corp.google.com/issues/new?component=136048&template=115201 = per-file *Input*, *Touch*
+# Bug template url: https://b.corp.google.com/issues/new?component=136048&template=115201 = per-file *Input*
 # Ime
 # Bug template url: https://b.corp.google.com/issues/new?component=34867&template=195938 = per-file *Ime*
+# activity embedding
+# Bug template url: https://b.corp.google.com/issues/new?component=1168918&template=1692371 = per-file *TaskFragment*, SplitActivityLifecycleTest
 # others
 # Bug template url: https://b.corp.google.com/issues/new?component=316125&template=1018199
 include platform/frameworks/base:/services/core/java/com/android/server/wm/OWNERS
 
-brufino@google.com
 charlesccchen@google.com
-lumark@google.com
 lus@google.com
+natanieljr@google.com

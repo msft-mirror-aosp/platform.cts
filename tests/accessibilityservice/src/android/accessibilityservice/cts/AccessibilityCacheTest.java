@@ -33,6 +33,7 @@ import android.accessibilityservice.cts.activities.AccessibilityCacheActivity;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.Presubmit;
 import android.text.TextUtils;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
@@ -40,6 +41,8 @@ import android.view.accessibility.AccessibilityWindowInfo;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -54,6 +57,8 @@ import java.util.List;
 
 @AppModeFull
 @RunWith(AndroidJUnit4.class)
+@CddTest(requirements = {"3.10/C-1-1,C-1-2"})
+@Presubmit
 public class AccessibilityCacheTest {
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
@@ -300,6 +305,21 @@ public class AccessibilityCacheTest {
         for (AccessibilityNodeInfo node : allNodesExceptRoot) {
             assertFalse("Node " + node.getContentDescription() + " is in cache",
                     mService.isNodeInCache(node));
+        }
+    }
+
+    @Test
+    public void testUiAutomation_clearCache_cacheInvalidated() {
+        AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
+        List<AccessibilityNodeInfo> allNodes = new ArrayList<>();
+        allNodes.add(root);
+        getNodes(allNodes, root);
+
+        assertTrue(sUiAutomation.clearCache());
+
+        for (AccessibilityNodeInfo node : allNodes) {
+            assertFalse("Node " + node.getContentDescription() + " is in cache",
+                    sUiAutomation.isNodeInCache(node));
         }
     }
 

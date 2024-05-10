@@ -27,8 +27,10 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "platformprotosnano",
-        "truth-prebuilt",
-        "ub-uiautomator",
+        "truth",
+        "androidx.test.uiautomator_uiautomator",
+        "android.os.flags-aconfig-java",
+        "flag-junit",
     ],
     libs: [
         "android.test.runner",

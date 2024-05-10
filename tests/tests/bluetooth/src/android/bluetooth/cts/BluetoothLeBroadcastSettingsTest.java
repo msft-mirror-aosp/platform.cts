@@ -37,7 +37,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CddTest;
+
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,11 +55,13 @@ public class BluetoothLeBroadcastSettingsTest {
 
     private static final String TEST_MAC_ADDRESS = "00:11:22:33:44:55";
     private static final String TEST_BROADCAST_NAME = "TEST";
+    private static final String TEST_INVALID_SHORT_BROADCAST_NAME = "TE";
+    private static final String TEST_INVALID_LONG_BROADCAST_NAME =
+                "TESTWITHLENGTH34TESTWITHLENGTH3434";
     private static final int TEST_QUALITY =
             BluetoothLeBroadcastSubgroupSettings.QUALITY_STANDARD;
 
     private Context mContext;
-    private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
     private boolean mIsBroadcastSourceSupported;
     private boolean mIsBroadcastAssistantSupported;
@@ -64,10 +69,8 @@ public class BluetoothLeBroadcastSettingsTest {
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        mHasBluetooth = TestUtils.hasBluetooth();
-        if (!mHasBluetooth) {
-            return;
-        }
+        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
+
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
@@ -89,31 +92,49 @@ public class BluetoothLeBroadcastSettingsTest {
             assertTrue("Config must be true when profile is supported",
                     isBroadcastSourceEnabledInConfig);
         }
+
+        Assume.assumeTrue(mIsBroadcastAssistantSupported || mIsBroadcastSourceSupported);
     }
 
     @After
     public void tearDown() {
-        if (mHasBluetooth) {
-            mAdapter = null;
-            TestUtils.dropPermissionAsShellUid();
-        }
+        TestUtils.dropPermissionAsShellUid();
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void testCreateBroadcastSettingsFromBuilder() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void createBroadcastSettingsFromBuilder() {
         BluetoothLeAudioContentMetadata publicBroadcastMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
                         .setProgramInfo(TEST_PROGRAM_INFO).build();
         BluetoothLeBroadcastSettings.Builder builder = new BluetoothLeBroadcastSettings.Builder()
                         .setPublicBroadcast(false)
-                        .setBroadcastName(TEST_BROADCAST_NAME)
-                        .setBroadcastCode(null)
                         .setPublicBroadcastMetadata(publicBroadcastMetadata);
         // builder expect at least one subgroup
         assertThrows(IllegalArgumentException.class, builder::build);
+
+        // test invalid code length 0
+        assertThrows(IllegalArgumentException.class, () ->
+                        builder.setBroadcastCode(new byte[0]));
+
+        // test invalid code length 18
+        assertThrows(IllegalArgumentException.class, () ->
+                        builder.setBroadcastCode(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05,
+                                                             0x06, 0x07, 0x08, 0x09, 0x0A,
+                                                             0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+                                                             0x10, 0x11, 0x12}));
+
+        // test invalid name length 2
+        assertThrows(IllegalArgumentException.class, () ->
+                        builder.setBroadcastName(TEST_INVALID_SHORT_BROADCAST_NAME));
+
+        // test invalid name length 34
+        assertThrows(IllegalArgumentException.class, () ->
+                        builder.setBroadcastName(TEST_INVALID_LONG_BROADCAST_NAME));
+
+        builder.setBroadcastCode(null);
+        builder.setBroadcastName(null);
+
         BluetoothLeBroadcastSubgroupSettings[] subgroupSettings =
                 new BluetoothLeBroadcastSubgroupSettings[] {
                     createBroadcastSubgroupSettings()
@@ -123,7 +144,7 @@ public class BluetoothLeBroadcastSettingsTest {
         }
         BluetoothLeBroadcastSettings broadcastSettings = builder.build();
         assertFalse(broadcastSettings.isPublicBroadcast());
-        assertEquals(TEST_BROADCAST_NAME, broadcastSettings.getBroadcastName());
+        assertNull(broadcastSettings.getBroadcastName());
         assertNull(broadcastSettings.getBroadcastCode());
         assertEquals(publicBroadcastMetadata, broadcastSettings.getPublicBroadcastMetadata());
         assertArrayEquals(subgroupSettings,
@@ -134,11 +155,9 @@ public class BluetoothLeBroadcastSettingsTest {
         assertThrows(IllegalArgumentException.class, builder::build);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void testCreateBroadcastSettingsFromCopy() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void createBroadcastSettingsFromCopy() {
         BluetoothLeAudioContentMetadata publicBroadcastMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
                         .setProgramInfo(TEST_PROGRAM_INFO).build();
@@ -170,10 +189,6 @@ public class BluetoothLeBroadcastSettingsTest {
         builder.clearSubgroupSettings();
         // builder expect at least one subgroup
         assertThrows(IllegalArgumentException.class, builder::build);
-    }
-
-    private boolean shouldSkipTest() {
-        return !mHasBluetooth || (!mIsBroadcastSourceSupported && !mIsBroadcastAssistantSupported);
     }
 
     static BluetoothLeBroadcastSubgroupSettings createBroadcastSubgroupSettings() {

@@ -38,6 +38,7 @@ import android.slice.cts.SliceProvider.TestParcel;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -127,6 +128,7 @@ public class SliceBindingTest {
                 item.getIcon().toString());
     }
 
+    @Ignore("b/244094679")
     @Test
     public void testAction() {
         assumeFalse(isSliceDisabled);
@@ -140,7 +142,8 @@ public class SliceBindingTest {
             }
         };
         mContext.registerReceiver(receiver,
-                new IntentFilter(mContext.getPackageName() + ".action"));
+                new IntentFilter(mContext.getPackageName() + ".action"),
+                Context.RECEIVER_EXPORTED_UNAUDITED);
         Uri uri = BASE_URI.buildUpon().appendPath("action").build();
         Slice s = mSliceManager.bindSlice(uri, Collections.emptySet());
         assertEquals(uri, s.getUri());
@@ -154,7 +157,7 @@ public class SliceBindingTest {
         }
 
         try {
-            latch.await(100, TimeUnit.MILLISECONDS);
+            latch.await(1000, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

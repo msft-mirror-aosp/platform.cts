@@ -24,6 +24,7 @@ import android.os.Bundle
 import android.platform.test.annotations.AsbSecurityTest
 import androidx.test.rule.ActivityTestRule
 import androidx.test.runner.AndroidJUnit4
+import com.android.sts.common.util.StsExtraBusinessLogicTestCase
 import org.junit.Before
 import org.junit.Assume.assumeFalse
 
@@ -39,7 +40,7 @@ private const val VALID_ACTION_URI_STRING = "content://$VALID_AUTHORITY$ACTION_B
 private const val SHADY_ACTION_URI_STRING = "content://$SUSPICIOUS_AUTHORITY$ACTION_BLUETOOTH"
 
 @RunWith(AndroidJUnit4::class)
-class SliceProviderTest {
+class SliceProviderTest : StsExtraBusinessLogicTestCase {
 
     @Rule @JvmField var activityTestRule = ActivityTestRule(Launcher::class.java)
 
@@ -50,6 +51,8 @@ class SliceProviderTest {
     private lateinit var contentResolver: ContentResolver
 
     private var isSlicesDisabled: Boolean = false
+
+    constructor() : super()
 
     @Before
     fun setUp() {
@@ -77,7 +80,7 @@ class SliceProviderTest {
         doQuery(shadyActionUri)
     }
 
-    private fun doQuery(actionUri: Uri): Slice {
+    private fun doQuery(actionUri: Uri): Slice? {
         val extras = Bundle().apply {
             putParcelable("slice_uri", actionUri)
             putParcelableArrayList("supported_specs", ArrayList(listOf(
@@ -93,6 +96,6 @@ class SliceProviderTest {
                 null,
                 extras
         )
-        return result.getParcelable(SliceProvider.EXTRA_SLICE)
+        return result?.getParcelable(SliceProvider.EXTRA_SLICE)
     }
 }

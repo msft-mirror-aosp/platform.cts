@@ -26,6 +26,7 @@ import android.uirendering.cts.R
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import androidx.annotation.Nullable
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -81,11 +82,15 @@ class DrawActivity : Activity() {
         }
 
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                View.SYSTEM_UI_FLAG_FULLSCREEN
+                View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
         window.decorView.keepScreenOn = true
         mHandler = RenderSpecHandler()
 
         setContentView(R.layout.test_container)
+        window.attributes.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
         mTestContainer = findViewById(R.id.test_content_wrapper)
     }
 

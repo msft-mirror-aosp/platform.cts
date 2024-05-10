@@ -20,10 +20,13 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.provider.AndroidDeviceConfig.KEY_SYSTEM_GESTURE_EXCLUSION_LIMIT_DP;
 import static android.provider.DeviceConfig.NAMESPACE_ANDROID;
+import static android.provider.Settings.Secure.IMMERSIVE_MODE_CONFIRMATIONS;
 import static android.view.View.SYSTEM_UI_CLEARABLE_FLAGS;
 import static android.view.View.SYSTEM_UI_FLAG_FULLSCREEN;
 import static android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
 import static android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+import static android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+import static android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
 import static android.view.View.SYSTEM_UI_FLAG_VISIBLE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -48,11 +51,8 @@ import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.provider.DeviceConfig;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.BySelector;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
-import android.support.test.uiautomator.Until;
+import android.provider.Settings;
+import android.server.wm.settings.SettingsSession;
 import android.util.ArrayMap;
 import android.util.DisplayMetrics;
 import android.view.Display;
@@ -63,6 +63,11 @@ import android.view.WindowInsets;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
@@ -70,7 +75,9 @@ import com.android.compatibility.common.util.ThrowingRunnable;
 import com.google.common.collect.Lists;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -86,12 +93,14 @@ import java.util.function.Consumer;
 
 @RunWith(AndroidJUnit4.class)
 public class WindowInsetsBehaviorTests {
+    private static SettingsSession<String> sImmersiveModeConfirmationSetting;
     private static final String DEF_SCREENSHOT_BASE_PATH =
             "/sdcard/WindowInsetsBehaviorTests";
     private static final String SETTINGS_PACKAGE_NAME = "com.android.settings";
     private static final String ARGUMENT_KEY_FORCE_ENABLE = "force_enable_gesture_navigation";
     private static final String NAV_BAR_INTERACTION_MODE_RES_NAME = "config_navBarInteractionMode";
     private static final int STEPS = 10;
+    private static final int INTERVAL_CLICKS = 300;
 
     // The minimum value of the system gesture exclusion limit is 200 dp. The value here should be
     // greater than that, so that we can test if the limit can be changed by DeviceConfig or not.
@@ -113,6 +122,21 @@ public class WindowInsetsBehaviorTests {
     private String mGesturePreferenceTitle;
     private TouchHelper mTouchHelper;
     private boolean mConfiguredInSettings;
+
+    @BeforeClass
+    public static void setUpClass() {
+        sImmersiveModeConfirmationSetting = new SettingsSession<>(
+                Settings.Secure.getUriFor(IMMERSIVE_MODE_CONFIRMATIONS),
+                Settings.Secure::getString, Settings.Secure::putString);
+        sImmersiveModeConfirmationSetting.set("confirmed");
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        if (sImmersiveModeConfirmationSetting != null) {
+            sImmersiveModeConfirmationSetting.close();
+        }
+    }
 
     private static String getSettingsString(Resources res, String strResName) {
         int resIdString = res.getIdentifier(strResName, "string", SETTINGS_PACKAGE_NAME);
@@ -405,11 +429,10 @@ public class WindowInsetsBehaviorTests {
         return 2;
     }
 
-    private int clickAllOfHorizontalSamplePoints(Rect viewBoundary, int y,
+    private int clickAllOfHorizontalSamplePoints(Rect viewBoundary, int y, double interval,
             Consumer<Point> callback) {
         final int theLeftestLine = viewBoundary.left + 1;
         final int theRightestLine = viewBoundary.right - 1;
-        final float interval = mDensityPerCm;
 
         int count = 0;
         for (int i = theLeftestLine; i < theRightestLine; i += interval) {
@@ -430,14 +453,20 @@ public class WindowInsetsBehaviorTests {
     }
 
     private int clickAllOfSamplePoints(Rect viewBoundary, Consumer<Point> callback) {
+        if (viewBoundary.isEmpty()) {
+            return 0;
+        }
         final int theToppestLine = viewBoundary.top + 1;
         final int theBottomestLine = viewBoundary.bottom - 1;
-        final float interval = mDensityPerCm;
+        final int width = viewBoundary.width();
+        final int height = viewBoundary.height();
+        final double interval = height / Math.sqrt((double) height / width * INTERVAL_CLICKS);
         int count = 0;
         for (int i = theToppestLine; i < theBottomestLine; i += interval) {
-            count += clickAllOfHorizontalSamplePoints(viewBoundary, i, callback);
+            count += clickAllOfHorizontalSamplePoints(viewBoundary, i, interval, callback);
         }
-        count += clickAllOfHorizontalSamplePoints(viewBoundary, theBottomestLine, callback);
+        count += clickAllOfHorizontalSamplePoints(
+                viewBoundary, theBottomestLine, interval, callback);
 
         return count;
     }
@@ -733,7 +762,8 @@ public class WindowInsetsBehaviorTests {
         final int swipeCount = 2;
         final boolean insideLimit = true;
         testSystemGestureExclusionLimit(swipeCount, insideLimit, SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | SYSTEM_UI_FLAG_FULLSCREEN | SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        | SYSTEM_UI_FLAG_FULLSCREEN | SYSTEM_UI_FLAG_HIDE_NAVIGATION
+        | SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
 
         assertEquals("Swipe must not be canceled.", 0, mActionCancelPoints.size());
         assertEquals("Action up points.", swipeCount, mActionUpPoints.size());
@@ -748,7 +778,8 @@ public class WindowInsetsBehaviorTests {
         final int swipeCount = 2;
         final boolean insideLimit = false;
         testSystemGestureExclusionLimit(swipeCount, insideLimit, SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | SYSTEM_UI_FLAG_FULLSCREEN | SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        | SYSTEM_UI_FLAG_FULLSCREEN | SYSTEM_UI_FLAG_HIDE_NAVIGATION
+        | SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
 
         assertEquals("Swipe must not be canceled.", 0, mActionCancelPoints.size());
         assertEquals("Action up points.", swipeCount, mActionUpPoints.size());

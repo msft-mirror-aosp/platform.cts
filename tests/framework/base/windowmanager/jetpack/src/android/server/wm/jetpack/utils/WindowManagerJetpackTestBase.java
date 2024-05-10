@@ -16,31 +16,42 @@
 
 package android.server.wm.jetpack.utils;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+import static android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE;
+import static android.content.pm.PackageManager.FEATURE_SCREEN_LANDSCAPE;
+import static android.content.pm.PackageManager.FEATURE_SCREEN_PORTRAIT;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
-
+import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityOptions;
+import android.app.ActivityTaskManager;
 import android.app.Application;
 import android.app.Instrumentation;
+import android.app.PictureInPictureParams;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.NestedShellPermission;
 import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
@@ -48,16 +59,19 @@ import androidx.annotation.Nullable;
 import androidx.window.extensions.layout.FoldingFeature;
 import androidx.window.sidecar.SidecarDeviceState;
 
+import com.android.compatibility.common.util.SystemUtil;
+
 import org.junit.After;
 import org.junit.Before;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 /** Base class for all tests in the module. */
-public class WindowManagerJetpackTestBase {
+public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
 
-    public static final String ACTIVITY_ID_LABEL = "ActivityID";
     public static final String EXTRA_EMBED_ACTIVITY = "EmbedActivity";
     public static final String EXTRA_SPLIT_RATIO = "SplitRatio";
 
@@ -76,6 +90,7 @@ public class WindowManagerJetpackTestBase {
         assertNotNull(mContext);
         mApplication = (Application) mContext.getApplicationContext();
         assertNotNull(mApplication);
+        clearLaunchParams();
         // Register activity lifecycle callbacks to know which activities are resumed
         registerActivityLifecycleCallbacks();
     }
@@ -86,24 +101,77 @@ public class WindowManagerJetpackTestBase {
         sVisibleActivities.clear();
     }
 
-    public Activity startActivityNewTask(@NonNull Class activityClass) {
+    protected boolean hasDeviceFeature(final String requiredFeature) {
+        return mContext.getPackageManager().hasSystemFeature(requiredFeature);
+    }
+
+    /** Assume this device supports rotation */
+    protected void assumeSupportsRotation() {
+        assumeTrue(doesDeviceSupportRotation());
+    }
+
+    /**
+     * Rotation support is indicated by explicitly having both landscape and portrait
+     * features or not listing either at all.
+     */
+    protected boolean doesDeviceSupportRotation() {
+        final boolean supportsLandscape = hasDeviceFeature(FEATURE_SCREEN_LANDSCAPE);
+        final boolean supportsPortrait = hasDeviceFeature(FEATURE_SCREEN_PORTRAIT);
+        return (supportsLandscape && supportsPortrait) || (!supportsLandscape && !supportsPortrait);
+    }
+
+    protected boolean supportsPip() {
+        return hasDeviceFeature(FEATURE_PICTURE_IN_PICTURE);
+    }
+
+    public <T extends Activity> T startActivityNewTask(@NonNull Class<T> activityClass) {
         return startActivityNewTask(activityClass, null /* activityId */);
     }
 
-    public Activity startActivityNewTask(@NonNull Class activityClass,
-            @Nullable String activityId) {
-        return startActivityNewTask(mContext, mInstrumentation, activityClass, activityId);
+    public <T extends Activity> TestActivityLauncher<T> launcherForNewActivity(
+            @NonNull Class<T> activityClass, int launchDisplayId) {
+        return launcherForActivityNewTask(activityClass, null /* activityId */,
+                false /* isFullScreen */, launchDisplayId);
     }
 
-    public static Activity startActivityNewTask(@NonNull Context context,
-            @NonNull Instrumentation instrumentation, @NonNull Class activityClass,
+    public <T extends Activity> T startActivityNewTask(@NonNull Class<T> activityClass,
             @Nullable String activityId) {
-        final Intent intent = new Intent(context, activityClass);
-        intent.addFlags(FLAG_ACTIVITY_NEW_TASK);
-        if (activityId != null) {
-            intent.putExtra(ACTIVITY_ID_LABEL, activityId);
+        return launcherForActivityNewTask(activityClass, activityId, false /* isFullScreen */,
+                null /* launchDisplayId */)
+                .launch(mInstrumentation);
+    }
+
+    public <T extends Activity> T startFullScreenActivityNewTask(@NonNull Class<T> activityClass) {
+        return startFullScreenActivityNewTask(activityClass, null /* activityId */);
+    }
+
+    public <T extends  Activity> T startFullScreenActivityNewTask(@NonNull Class<T> activityClass,
+            @Nullable String activityId) {
+        return launcherForActivityNewTask(activityClass, activityId, true/* isFullScreen */,
+                null /* launchDisplayId */)
+                .launch(mInstrumentation);
+    }
+
+    public static void waitForOrFail(String message, BooleanSupplier condition) {
+        Condition.waitFor(new Condition<>(message, condition)
+                .setRetryIntervalMs(500)
+                .setRetryLimit(5)
+                .setOnFailure(unusedResult -> fail("FAILED because unsatisfied: " + message)));
+    }
+
+    private <T extends Activity> TestActivityLauncher<T> launcherForActivityNewTask(
+            @NonNull Class<T> activityClass, @Nullable String activityId, boolean isFullScreen,
+            @Nullable Integer launchDisplayId) {
+        final int windowingMode = isFullScreen ? WINDOWING_MODE_FULLSCREEN :
+                WINDOWING_MODE_UNDEFINED;
+        final TestActivityLauncher launcher = new TestActivityLauncher<>(mContext, activityClass)
+                .addIntentFlag(FLAG_ACTIVITY_NEW_TASK)
+                .setActivityId(activityId)
+                .setWindowingMode(windowingMode);
+        if (launchDisplayId != null) {
+            launcher.setLaunchDisplayId(launchDisplayId);
         }
-        return instrumentation.startActivitySync(intent);
+        return launcher;
     }
 
     /**
@@ -141,7 +209,7 @@ public class WindowManagerJetpackTestBase {
     public static <T extends Activity> void startActivityFromActivity(Activity activityToLaunchFrom,
             Class<T> activityToLaunchClass, String newActivityId) {
         Intent intent = new Intent(activityToLaunchFrom, activityToLaunchClass);
-        intent.putExtra(ACTIVITY_ID_LABEL, newActivityId);
+        intent.putExtra(KEY_ACTIVITY_ID, newActivityId);
         activityToLaunchFrom.startActivity(intent);
     }
 
@@ -154,7 +222,7 @@ public class WindowManagerJetpackTestBase {
         Intent intent = new Intent();
         intent.setClassName(activityToLaunchComponent.getPackageName(),
                 activityToLaunchComponent.getClassName());
-        intent.putExtra(ACTIVITY_ID_LABEL, newActivityId);
+        intent.putExtra(KEY_ACTIVITY_ID, newActivityId);
         intent.putExtras(extras);
         activityToLaunchFrom.startActivity(intent);
     }
@@ -205,9 +273,30 @@ public class WindowManagerJetpackTestBase {
         activity.setRequestedOrientation(orientation == ORIENTATION_PORTRAIT
                 ? SCREEN_ORIENTATION_PORTRAIT : SCREEN_ORIENTATION_LANDSCAPE);
         // Wait for the activity to layout, which will happen after the orientation change
-        assertTrue(activity.waitForLayout());
-        // Check that orientation matches
-        assertEquals(orientation, activity.getResources().getConfiguration().orientation);
+        waitForOrFail("Activity orientation must be updated",
+                () -> activity.getResources().getConfiguration().orientation == orientation);
+    }
+
+    public static void enterPipActivityHandlesConfigChanges(TestActivity activity) {
+        if (activity.isInPictureInPictureMode()) {
+            throw new IllegalStateException("Activity must not be in PiP");
+        }
+        activity.resetOnConfigurationChangeCounter();
+        // Change the orientation
+        PictureInPictureParams params = (new PictureInPictureParams.Builder()).build();
+        activity.enterPictureInPictureMode(params);
+        activity.waitForConfigurationChange();
+    }
+
+    public static void exitPipActivityHandlesConfigChanges(TestActivity activity) {
+        if (!activity.isInPictureInPictureMode()) {
+            throw new IllegalStateException("Activity must be in PiP");
+        }
+        activity.resetOnConfigurationChangeCounter();
+        Intent intent = new Intent(activity, activity.getClass());
+        intent.addFlags(FLAG_ACTIVITY_SINGLE_TOP);
+        activity.startActivity(intent);
+        activity.waitForConfigurationChange();
     }
 
     public static void setActivityOrientationActivityDoesNotHandleOrientationChanges(
@@ -235,6 +324,10 @@ public class WindowManagerJetpackTestBase {
      * display rotates for orientation, then the maximum portrait bounds will be a rotated version
      * of the maximum landscape bounds.
      */
+    // TODO(b/186631239): ActivityManagerTestBase#ignoresOrientationRequests could disable
+    // activity rotation, as a result the display area would remain in the old orientation while
+    // the activity orientation changes. We should check the existence of this request before
+    // running tests that compare orientation values.
     public static boolean doesDisplayRotateForOrientation(@NonNull Rect portraitMaximumBounds,
             @NonNull Rect landscapeMaximumBounds) {
         return !portraitMaximumBounds.equals(landscapeMaximumBounds);
@@ -246,6 +339,13 @@ public class WindowManagerJetpackTestBase {
                 && sidecarDeviceStatePosture == SidecarDeviceState.POSTURE_OPENED)
                 || (extensionDeviceState == FoldingFeature.STATE_HALF_OPENED
                 && sidecarDeviceStatePosture == SidecarDeviceState.POSTURE_HALF_OPENED);
+    }
+
+    private void clearLaunchParams() {
+        final ActivityTaskManager atm = mContext.getSystemService(ActivityTaskManager.class);
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            atm.clearLaunchParamsForPackages(List.of(mContext.getPackageName()));
+        }, Manifest.permission.MANAGE_ACTIVITY_TASKS);
     }
 
     private void registerActivityLifecycleCallbacks() {

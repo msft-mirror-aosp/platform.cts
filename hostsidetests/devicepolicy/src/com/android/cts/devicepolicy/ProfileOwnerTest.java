@@ -27,7 +27,7 @@ import org.junit.Test;
  * Host side tests for profile owner.  Run the CtsProfileOwnerApp device side test.
  */
 @RequiresProfileOwnerSupport
-public class ProfileOwnerTest extends BaseDevicePolicyTest {
+public final class ProfileOwnerTest extends BaseDevicePolicyTest {
     private static final String PROFILE_OWNER_PKG = "com.android.cts.profileowner";
     private static final String PROFILE_OWNER_APK = "CtsProfileOwnerApp.apk";
 
@@ -40,7 +40,7 @@ public class ProfileOwnerTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        mUserId = isHeadlessSystemUserMode() ? getCurrentUser() : getPrimaryUser();
+        mUserId = isHeadlessSystemUserMode() ? getCurrentUser() : getMainUser();
 
 
         installAppAsUser(PROFILE_OWNER_APK, mUserId);
@@ -59,23 +59,8 @@ public class ProfileOwnerTest extends BaseDevicePolicyTest {
     }
 
     @Test
-    public void testAdminActionBookkeeping() throws Exception {
-        executeProfileOwnerTest("AdminActionBookkeepingTest");
-    }
-
-    @Test
-    public void testAppUsageObserver() throws Exception {
-        executeProfileOwnerTest("AppUsageObserverTest");
-    }
-
-    @Test
     public void testDevicePolicySafetyCheckerIntegration_allOperations() throws Exception {
         executeDevicePolicySafetyCheckerIntegrationTest("testAllOperations");
-    }
-
-    @Test
-    public void testDevicePolicySafetyCheckerIntegration_isSafeOperation() throws Exception {
-        executeDevicePolicySafetyCheckerIntegrationTest("testIsSafeOperation");
     }
 
     @Test

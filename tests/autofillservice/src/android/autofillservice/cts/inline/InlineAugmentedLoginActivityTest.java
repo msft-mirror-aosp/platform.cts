@@ -46,6 +46,8 @@ import android.view.autofill.AutofillId;
 import android.view.autofill.AutofillValue;
 import android.widget.EditText;
 
+import androidx.test.filters.FlakyTest;
+
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
@@ -268,6 +270,9 @@ public class InlineAugmentedLoginActivityTest
         mUiBot.assertNoDatasets();
     }
 
+    @FlakyTest(
+            bugId = 292284798,
+            detail = "Meet July-31-23 trunk stable no flaky SLO. Deflake asap")
     @Test
     public void testAugmentedAutoFill_startTypingThenHideInlineSuggestion() throws Exception {
         // Set services
@@ -357,7 +362,7 @@ public class InlineAugmentedLoginActivityTest
     @AppModeFull(reason = "WRITE_SECURE_SETTING permission can't be grant to instant apps")
     public void testSwitchInputMethod_mainServiceDisabled() throws Exception {
         // Set services
-        Helper.disableAutofillService(sContext);
+        Helper.disableAutofillService();
         enableAugmentedService();
 
         // Set expectations

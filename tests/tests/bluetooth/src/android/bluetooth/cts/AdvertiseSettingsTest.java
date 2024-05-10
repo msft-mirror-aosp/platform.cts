@@ -16,19 +16,42 @@
 
 package android.bluetooth.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.AdvertisingSetParameters;
 import android.os.Parcel;
-import android.test.AndroidTestCase;
 import android.test.suitebuilder.annotation.SmallTest;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Test for {@link AdvertiseSettings}.
  */
-public class AdvertiseSettingsTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class AdvertiseSettingsTest {
 
+    @Before
+    public void setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(
+                InstrumentationRegistry.getInstrumentation().getTargetContext()));
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testDefaultSettings() {
+    @Test
+    public void defaultSettings() {
         AdvertiseSettings settings = new AdvertiseSettings.Builder().build();
         assertEquals(AdvertiseSettings.ADVERTISE_MODE_LOW_POWER, settings.getMode());
         assertEquals(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM, settings.getTxPowerLevel());
@@ -36,14 +59,18 @@ public class AdvertiseSettingsTest extends AndroidTestCase {
         assertTrue(settings.isConnectable());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testDescribeContents() {
+    @Test
+    public void describeContents() {
         AdvertiseSettings settings = new AdvertiseSettings.Builder().build();
         assertEquals(0, settings.describeContents());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testReadWriteParcel() {
+    @Test
+    public void readWriteParcel() {
         final int timeoutMillis = 60 * 1000;
         Parcel parcel = Parcel.obtain();
         AdvertiseSettings settings = new AdvertiseSettings.Builder()
@@ -66,8 +93,10 @@ public class AdvertiseSettingsTest extends AndroidTestCase {
         assertEquals(AdvertisingSetParameters.ADDRESS_TYPE_DEFAULT, settings.getOwnAddressType());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
-    public void testIllegalTimeout() {
+    @Test
+    public void illegalTimeout() {
         AdvertiseSettings.Builder builder = new AdvertiseSettings.Builder();
         builder.setTimeout(0).build();
         builder.setTimeout(180 * 1000).build();

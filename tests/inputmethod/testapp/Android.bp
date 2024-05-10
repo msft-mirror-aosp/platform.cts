@@ -13,13 +13,26 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_input_method_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+java_test_helper_library {
+    name: "CtsInputMethodStandaloneTestLib",
+    sdk_version: "test_current",
+    srcs: ["src/**/*.java"],
+    libs: ["junit"],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "compatibility-device-util-axt",
+        "cts-inputmethod-util",
+    ],
 }
 
 android_test_helper_app {
     name: "CtsInputMethodStandaloneTestApp",
     defaults: ["cts_defaults"],
-    sdk_version: "current",
+    sdk_version: "test_current",
     // tag this module as a cts test artifact
     test_suites: [
         "cts",
@@ -30,6 +43,7 @@ android_test_helper_app {
     static_libs: [
         "androidx.annotation_annotation",
         "compatibility-device-util-axt",
+        "cts-inputmethod-util",
     ],
     srcs: [
         "src/**/*.java",

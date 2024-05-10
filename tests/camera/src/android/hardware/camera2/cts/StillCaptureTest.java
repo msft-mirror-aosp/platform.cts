@@ -17,7 +17,6 @@
 package android.hardware.camera2.cts;
 
 import static android.hardware.camera2.cts.CameraTestUtils.*;
-import static android.hardware.camera2.cts.helpers.AssertHelpers.assertArrayContains;
 
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
@@ -29,38 +28,40 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.DngCreator;
-import android.location.Location;
-import android.location.LocationManager;
-import android.media.ImageReader;
-import android.util.Pair;
-import android.util.Size;
 import android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import android.hardware.camera2.cts.CameraTestUtils.SimpleImageReaderListener;
 import android.hardware.camera2.cts.helpers.Camera2Focuser;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2SurfaceViewTestCase;
+import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.MeteringRectangle;
+import android.hardware.camera2.params.OutputConfiguration;
+import android.location.Location;
+import android.location.LocationManager;
 import android.media.Image;
+import android.media.ImageReader;
 import android.os.ConditionVariable;
 import android.util.Log;
+import android.util.Pair;
 import android.util.Range;
 import android.util.Rational;
+import android.util.Size;
 import android.view.Surface;
 
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
+
+import junit.framework.Assert;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-
-import junit.framework.Assert;
-
-import org.junit.runners.Parameterized;
-import org.junit.runner.RunWith;
-import org.junit.Test;
 
 @RunWith(Parameterized.class)
 public class StillCaptureTest extends Camera2SurfaceViewTestCase {
@@ -95,15 +96,16 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testJpegExif() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                Log.i(TAG, "Testing JPEG exif for Camera " + mCameraIdsUnderTest[i]);
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isColorOutputSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                Log.i(TAG, "Testing JPEG exif for Camera " + cameraIdsUnderTest[i]);
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support color outputs, skipping");
                     continue;
                 }
-                openDevice(mCameraIdsUnderTest[i]);
+                openDevice(cameraIdsUnderTest[i]);
                 Size maxJpegSize = mOrderedStillSizes.get(0);
                 stillExifTestByCamera(ImageFormat.JPEG, maxJpegSize);
             } finally {
@@ -118,25 +120,26 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testHeicExif() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                Log.i(TAG, "Testing HEIC exif for Camera " + mCameraIdsUnderTest[i]);
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isColorOutputSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                Log.i(TAG, "Testing HEIC exif for Camera " + cameraIdsUnderTest[i]);
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support color outputs, skipping");
                     continue;
                 }
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isHeicSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isHeicSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support HEIC, skipping");
                     continue;
                 }
 
-                openDevice(mCameraIdsUnderTest[i]);
+                openDevice(cameraIdsUnderTest[i]);
 
                 // Test maximum Heic size capture
                 List<Size> orderedHeicSizes = CameraTestUtils.getSupportedHeicSizes(
-                        mCameraIdsUnderTest[i], mCameraManager, null/*bound*/);
+                        cameraIdsUnderTest[i], mCameraManager, null/*bound*/);
                 Size maxHeicSize = orderedHeicSizes.get(0);
                 stillExifTestByCamera(ImageFormat.HEIC, maxHeicSize);
 
@@ -156,31 +159,120 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testDynamicDepthCapture() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                Log.i(TAG, "Testing dynamic depth for Camera " + mCameraIdsUnderTest[i]);
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isColorOutputSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                Log.i(TAG, "Testing dynamic depth for Camera " + cameraIdsUnderTest[i]);
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support color outputs, skipping");
                     continue;
                 }
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isDepthJpegSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isDepthJpegSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support dynamic depth, skipping");
                     continue;
                 }
 
-                openDevice(mCameraIdsUnderTest[i]);
+                openDevice(cameraIdsUnderTest[i]);
 
                 // Check the maximum supported size.
                 List<Size> orderedDepthJpegSizes = CameraTestUtils.getSortedSizesForFormat(
-                        mCameraIdsUnderTest[i], mCameraManager, ImageFormat.DEPTH_JPEG, null/*bound*/);
+                        cameraIdsUnderTest[i], mCameraManager, ImageFormat.DEPTH_JPEG, null/*bound*/);
                 Size maxDepthJpegSize = orderedDepthJpegSizes.get(0);
                 stillDynamicDepthTestByCamera(ImageFormat.DEPTH_JPEG, maxDepthJpegSize);
             } finally {
                 closeDevice();
                 closeImageReader();
             }
+        }
+    }
+
+    /**
+     * Test Jpeg/R capture along with preview for each camera.
+     */
+    @Test
+    public void testJpegRCapture() throws Exception {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            try {
+                Log.i(TAG, "Testing Jpeg/R for Camera " + cameraIdsUnderTest[i]);
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
+                            " does not support color outputs, skipping");
+                    continue;
+                }
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isJpegRSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
+                            " does not support Jpeg/R, skipping");
+                    continue;
+                }
+
+                openDevice(cameraIdsUnderTest[i]);
+
+                // Check the maximum supported size.
+                List<Size> orderedJpegRSizes = CameraTestUtils.getSortedSizesForFormat(
+                        cameraIdsUnderTest[i], mCameraManager, ImageFormat.JPEG_R, null/*bound*/);
+                Size maxJpegRSize = orderedJpegRSizes.get(0);
+                stillJpegRTestByCamera(ImageFormat.JPEG_R, maxJpegRSize);
+            } finally {
+                closeDevice();
+                closeImageReader();
+            }
+        }
+    }
+
+    /**
+     * Issue a still capture and validate the Jpeg/R output.
+     */
+    private void stillJpegRTestByCamera(int format, Size stillSize) throws Exception {
+        assertTrue(format == ImageFormat.JPEG_R);
+
+        Size maxPreviewSz = mOrderedPreviewSizes.get(0);
+        if (VERBOSE) {
+            Log.v(TAG, "Testing Jpeg/R with size " + stillSize.toString()
+                    + ", preview size " + maxPreviewSz);
+        }
+
+        // prepare capture and start preview.
+        CaptureRequest.Builder previewBuilder =
+                mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+        CaptureRequest.Builder stillBuilder =
+                mCamera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+        SimpleCaptureCallback resultListener = new SimpleCaptureCallback();
+        SimpleImageReaderListener imageListener = new SimpleImageReaderListener();
+
+        updatePreviewSurface(maxPreviewSz);
+        createImageReader(stillSize, format, MAX_READER_IMAGES, imageListener);
+
+        List<OutputConfiguration> outputConfigs = new ArrayList<>();
+        OutputConfiguration previewConfig = new OutputConfiguration(mPreviewSurface);
+        previewConfig.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
+        outputConfigs.add(previewConfig);
+        outputConfigs.add(new OutputConfiguration(mReaderSurface));
+        mSessionListener = new BlockingSessionCallback();
+        mSession = configureCameraSessionWithConfig(mCamera, outputConfigs, mSessionListener,
+                mHandler);
+
+        previewBuilder.addTarget(mPreviewSurface);
+        stillBuilder.addTarget(mReaderSurface);
+
+        // Start preview.
+        mSession.setRepeatingRequest(previewBuilder.build(), resultListener, mHandler);
+
+        // Capture a few Jpeg/R images and check whether they are valid jpegs.
+        for (int i = 0; i < MAX_READER_IMAGES; i++) {
+            CaptureRequest request = stillBuilder.build();
+            mSession.capture(request, resultListener, mHandler);
+            assertNotNull(resultListener.getCaptureResultForRequest(request,
+                    NUM_RESULTS_WAIT_TIMEOUT));
+            Image image = imageListener.getImage(CAPTURE_IMAGE_TIMEOUT_MS);
+            assertNotNull("Unable to acquire next image", image);
+            CameraTestUtils.validateImage(image, stillSize.getWidth(), stillSize.getHeight(),
+                    format, null /*filePath*/);
+
+            // Free image resources
+            image.close();
         }
     }
 
@@ -196,7 +288,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testTakePicture() throws Exception{
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing basic take picture for Camera " + id);
                 if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
@@ -224,7 +316,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testTakePictureZsl() throws Exception{
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing basic ZSL take picture for Camera " + id);
                 if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
@@ -250,18 +342,19 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testBasicRawCapture()  throws Exception {
-       for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
            try {
-               Log.i(TAG, "Testing raw capture for Camera " + mCameraIdsUnderTest[i]);
+               Log.i(TAG, "Testing raw capture for Camera " + cameraIdsUnderTest[i]);
 
-               if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isCapabilitySupported(
+               if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isCapabilitySupported(
                        CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
-                   Log.i(TAG, "RAW capability is not supported in camera " + mCameraIdsUnderTest[i] +
+                   Log.i(TAG, "RAW capability is not supported in camera " + cameraIdsUnderTest[i] +
                            ". Skip the test.");
                    continue;
                }
 
-               openDevice(mCameraIdsUnderTest[i]);
+               openDevice(cameraIdsUnderTest[i]);
                rawCaptureTestByCamera(/*stillRequest*/null);
            } finally {
                closeDevice();
@@ -275,17 +368,18 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testBasicRawZslCapture()  throws Exception {
-       for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
            try {
-               Log.i(TAG, "Testing raw ZSL capture for Camera " + mCameraIdsUnderTest[i]);
+               Log.i(TAG, "Testing raw ZSL capture for Camera " + cameraIdsUnderTest[i]);
 
-               if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isCapabilitySupported(
+               if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isCapabilitySupported(
                        CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
-                   Log.i(TAG, "RAW capability is not supported in camera " + mCameraIdsUnderTest[i] +
+                   Log.i(TAG, "RAW capability is not supported in camera " + cameraIdsUnderTest[i] +
                            ". Skip the test.");
                    continue;
                }
-               openDevice(mCameraIdsUnderTest[i]);
+               openDevice(cameraIdsUnderTest[i]);
                CaptureRequest.Builder stillRequest =
                        mCamera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
                stillRequest.set(CaptureRequest.CONTROL_ENABLE_ZSL, true);
@@ -308,17 +402,18 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testFullRawCapture() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                Log.i(TAG, "Testing raw+JPEG capture for Camera " + mCameraIdsUnderTest[i]);
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isCapabilitySupported(
+                Log.i(TAG, "Testing raw+JPEG capture for Camera " + cameraIdsUnderTest[i]);
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isCapabilitySupported(
                         CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
-                    Log.i(TAG, "RAW capability is not supported in camera " + mCameraIdsUnderTest[i] +
+                    Log.i(TAG, "RAW capability is not supported in camera " + cameraIdsUnderTest[i] +
                             ". Skip the test.");
                     continue;
                 }
 
-                openDevice(mCameraIdsUnderTest[i]);
+                openDevice(cameraIdsUnderTest[i]);
                 fullRawCaptureTestByCamera(/*stillRequest*/null);
             } finally {
                 closeDevice();
@@ -337,16 +432,17 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testFullRawZSLCapture() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                Log.i(TAG, "Testing raw+JPEG ZSL capture for Camera " + mCameraIdsUnderTest[i]);
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isCapabilitySupported(
+                Log.i(TAG, "Testing raw+JPEG ZSL capture for Camera " + cameraIdsUnderTest[i]);
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isCapabilitySupported(
                         CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
-                    Log.i(TAG, "RAW capability is not supported in camera " + mCameraIdsUnderTest[i] +
+                    Log.i(TAG, "RAW capability is not supported in camera " + cameraIdsUnderTest[i] +
                             ". Skip the test.");
                     continue;
                 }
-                openDevice(mCameraIdsUnderTest[i]);
+                openDevice(cameraIdsUnderTest[i]);
                 CaptureRequest.Builder stillRequest =
                         mCamera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
                 stillRequest.set(CaptureRequest.CONTROL_ENABLE_ZSL, true);
@@ -368,7 +464,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testTouchForFocus() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing touch for focus for Camera " + id);
                 StaticMetadata staticInfo = mAllStaticInfo.get(id);
@@ -397,9 +493,9 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      * result validation is covered by {@link #stillExifTestByCamera} test.
      * </p>
      */
-    @Test(timeout=60*60*1000) // timeout = 60 mins for long running tests
+    @Test(timeout=120*60*1000) // timeout = 120 mins for long running tests
     public void testStillPreviewCombination() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Still preview capture combination for Camera " + id);
                 if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
@@ -427,7 +523,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testAeCompensation() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing AE compensation for Camera " + id);
 
@@ -454,7 +550,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testAeRegions() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing AE regions for Camera " + id);
                 openDevice(id);
@@ -480,7 +576,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testAwbRegions() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing AE regions for Camera " + id);
                 openDevice(id);
@@ -506,7 +602,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testAfRegions() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing AF regions for Camera " + id);
                 openDevice(id);
@@ -532,7 +628,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testPreviewPersistence() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing preview persistence for Camera " + id);
                 if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
@@ -550,7 +646,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
 
     @Test
     public void testAePrecaptureTriggerCancelJpegCapture() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing AE precapture cancel for jpeg capture for Camera " + id);
 
@@ -585,7 +681,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testAllocateBitmap() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing bitmap allocations for Camera " + id);
                 if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
@@ -609,7 +705,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testFocalLengths() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 StaticMetadata staticInfo = mAllStaticInfo.get(id);
                 if (staticInfo.isHardwareLevelLegacy()) {
@@ -884,7 +980,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
         mCollector.expectEquals("AWB mode in result and request should be same",
                 previewRequest.get(CaptureRequest.CONTROL_AWB_MODE),
                 result.get(CaptureResult.CONTROL_AWB_MODE));
-        if (canSetAwbRegion) {
+        if (canSetAwbRegion && CameraTestUtils.isStabilizationOff(previewRequest.build())) {
             MeteringRectangle[] resultAwbRegions =
                     getValueNotNull(result, CaptureResult.CONTROL_AWB_REGIONS);
             mCollector.expectEquals("AWB regions in result and request should be same",
@@ -928,7 +1024,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
         mCollector.expectEquals("AE mode in result and request should be same",
                 previewRequest.get(CaptureRequest.CONTROL_AE_MODE),
                 result.get(CaptureResult.CONTROL_AE_MODE));
-        if (canSetAeRegion) {
+        if (canSetAeRegion && CameraTestUtils.isStabilizationOff(previewRequest.build())) {
             MeteringRectangle[] resultAeRegions =
                     getValueNotNull(result, CaptureResult.CONTROL_AE_REGIONS);
 
@@ -950,7 +1046,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
         mCollector.expectEquals("AF mode in result and request should be same",
                 stillRequest.get(CaptureRequest.CONTROL_AF_MODE),
                 result.get(CaptureResult.CONTROL_AF_MODE));
-        if (canSetAfRegion) {
+        if (canSetAfRegion && CameraTestUtils.isStabilizationOff(stillRequest.build())) {
             MeteringRectangle[] resultAfRegions =
                     getValueNotNull(result, CaptureResult.CONTROL_AF_REGIONS);
             mCollector.expectMeteringRegionsAreSimilar(
@@ -1350,6 +1446,12 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
             // Free image resources
             image.close();
         }
+
+        // Check that after clearing JPEG_GPS_LOCATION with null,
+        // the value reflects the null value.
+        stillBuilder.set(CaptureRequest.JPEG_GPS_LOCATION, null);
+        Assert.assertNull("JPEG_GPS_LOCATION value should be null if set to null",
+                stillBuilder.get(CaptureRequest.JPEG_GPS_LOCATION));
     }
 
     /**

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_fwk_telephony",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -55,8 +56,11 @@ android_test {
         "ctstestrunner-axt",
         "hamcrest-library",
         "compatibility-device-util-axt",
-        "truth-prebuilt",
+        "truth",
         "android.telephony.mockmodem",
+        "CtsTelecomUtilLib",
+        "telephony_flags_core_java_lib",
+        "flag-junit",
     ],
     srcs: [
         "src/**/*.java",
@@ -64,13 +68,22 @@ android_test {
         "EmbmsMiddlewareTestApp/**/I*.aidl",
         "LocationAccessingApp/**/*.java",
         "LocationAccessingApp/**/I*.aidl",
+        "MockSatelliteGatewayServiceApp/**/*.java",
+        "MockSatelliteGatewayServiceApp/**/I*.aidl",
+        "MockSatelliteServiceApp/**/*.java",
+        "MockSatelliteServiceApp/**/I*.aidl",
+        "MockPointingUiApp/**/*.java",
         "TestExternalImsServiceApp/**/*.java",
         "TestExternalImsServiceApp/**/I*.aidl",
+        "src/android/telephony/satellite/cts/I*.aidl",
     ],
     aidl: {
         local_include_dirs: [
             "EmbmsMiddlewareTestApp/aidl/",
+            "MockSatelliteGatewayServiceApp/aidl/",
+            "MockSatelliteServiceApp/aidl/",
             "TestExternalImsServiceApp/aidl/",
+            "src/android/telephony/satellite/cts",
         ],
     },
     test_suites: [
@@ -88,6 +101,9 @@ android_test {
         ":TestSmsApp22",
         ":LocationAccessingApp",
         ":LocationAccessingAppSdk28",
+        ":MockSatelliteGatewayServiceApp",
+        ":MockSatelliteServiceApp",
+        ":MockPointingUiApp",
         ":TestFinancialSmsApp",
         ":TestSmsRetrieverApp",
         ":TestSmsApp",
@@ -95,11 +111,4 @@ android_test {
         ":EmbmsMiddlewareCtsTestApp",
     ],
     per_testcase_directory: true,
-}
-
-filegroup {
-    name: "cts-telephony-utils",
-    srcs: [
-        "src/android/telephony/cts/TelephonyUtils.java",
-    ],
 }

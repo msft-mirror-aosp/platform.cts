@@ -42,7 +42,9 @@ import com.android.tradefed.testtype.IRemoteTest;
 import com.android.tradefed.testtype.ITestFilterReceiver;
 import com.android.tradefed.testtype.suite.ITestSuite;
 import com.android.tradefed.testtype.suite.TestSuiteInfo;
+import com.android.tradefed.testtype.suite.ValidateSuiteConfigHelper;
 import com.android.tradefed.util.FileUtil;
+import com.android.tradefed.util.ModuleTestTypeUtil;
 
 import com.google.common.base.Strings;
 
@@ -108,9 +110,17 @@ public class CommonConfigLoadingTest {
         RUNNER_EXCEPTION.add("repackaged.android.test.InstrumentationTestRunner");
         // Used by a UiRendering scenario where an activity is persisted between tests
         RUNNER_EXCEPTION.add("android.uirendering.cts.runner.UiRenderingRunner");
+        // Used by a Widget scenario where an activity is persisted between tests
+        RUNNER_EXCEPTION.add("android.widget.cts.runner.WidgetRunner");
+        // Used by a text scenario where an activity is persisted between tests
+        RUNNER_EXCEPTION.add("android.text.cts.runner.CtsTextRunner");
         // Used to avoid crashing runner on -eng build due to Log.wtf() - b/216648699
         RUNNER_EXCEPTION.add("com.android.server.uwb.CustomTestRunner");
         RUNNER_EXCEPTION.add("com.android.server.wifi.CustomTestRunner");
+        // HealthConnect APK use Hilt for dependency injection. For test setup it needs
+        // to replace the main Application class with Test Application so Hilt can swap
+        // dependencies for testing.
+        RUNNER_EXCEPTION.add("com.android.healthconnect.controller.tests.HiltTestRunner");
     }
 
     /**
@@ -253,6 +263,16 @@ public class CommonConfigLoadingTest {
             }
             // Ensure options have been set
             c.validateOptions();
+
+            // Check that no performance test module is included
+            if (ModuleTestTypeUtil.isPerformanceModule(c)) {
+                throw new ConfigurationException(
+                        String.format("config: %s. Performance test modules are not allowed in xTS",
+                                config.getName()));
+            }
+
+            // Vailidate the module config doesn't contain inclusion tags
+            ValidateSuiteConfigHelper.validateConfigFile(config);
         }
     }
 

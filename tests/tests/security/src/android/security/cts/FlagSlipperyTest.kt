@@ -16,6 +16,8 @@
 
 package android.security.cts
 
+import android.app.ActivityOptions
+import android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN
 import android.graphics.Rect
 import android.os.SystemClock
 import android.platform.test.annotations.AsbSecurityTest
@@ -127,7 +129,10 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
 
     @get:Rule
     val rule = ActivityScenarioRule<SlipperyEnterBottomActivity>(
-            SlipperyEnterBottomActivity::class.java)
+            SlipperyEnterBottomActivity::class.java,
+            ActivityOptions.makeBasic().apply {
+                setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN)
+            }.toBundle())
 
     constructor() : super()
 
@@ -135,7 +140,7 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
     fun setup() {
         scenario = rule.getScenario()
         windowManager = getInstrumentation().getTargetContext().getSystemService<WindowManager>(
-                WindowManager::class.java)
+                WindowManager::class.java)!!
         setDimensionsToQuarterScreen()
 
         waitForWindowFocusOnBottomActivity()
@@ -255,9 +260,9 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
             }
 
             embeddedView.viewTreeObserver.registerFrameCommitCallback(viewDrawnCallback)
-            mVr = SurfaceControlViewHost(it, it.getDisplay(), surfaceView.getHostToken())
+            mVr = SurfaceControlViewHost(it, it.getDisplay()!!, surfaceView.getHostToken())
             mVr.setView(embeddedView, slipperyLayoutParams)
-            surfaceView.setChildSurfacePackage(mVr.getSurfacePackage())
+            surfaceView.setChildSurfacePackage(mVr.getSurfacePackage()!!)
             embeddedView.invalidate()
         }
         embeddedViewDrawn.await()

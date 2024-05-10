@@ -37,7 +37,7 @@ import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
-import android.support.test.uiautomator.UiDevice;
+import android.provider.DeviceConfig;
 import android.util.Log;
 import android.util.LongArray;
 
@@ -47,6 +47,8 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
+import com.android.compatibility.common.util.DeviceConfigStateHelper;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -105,9 +107,10 @@ public class AppStandbyTests {
     private static boolean sOrigAppStandbyEnabled;
     // Test app's alarm history to help predict when a subsequent alarm is going to get deferred.
     private static TestAlarmHistory sAlarmHistory;
+    // Make sure TARE isn't enabled for any of these tests.
+    private static final DeviceConfigStateHelper sTareDeviceConfigStateHelper =
+            new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_TARE);
     private static Context sContext = InstrumentationRegistry.getTargetContext();
-    private static UiDevice sUiDevice = UiDevice.getInstance(
-            InstrumentationRegistry.getInstrumentation());
 
     private ComponentName mAlarmScheduler;
     private AtomicInteger mAlarmCount;
@@ -133,14 +136,14 @@ public class AppStandbyTests {
             // Give system sometime to initialize itself.
             Thread.sleep(100);
         }
+        // These tests are designed for the old quota system.
+        sTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
     }
 
     @Before
     public void setUp() throws Exception {
         mAlarmScheduler = new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER);
         mAlarmCount = new AtomicInteger(0);
-        updateAlarmManagerConstants();
-        setBatteryCharging(false);
 
         // To make sure it doesn't get pinned to working_set on older versions.
         AppOpsUtils.setUidMode(Utils.getPackageUid(TEST_APP_PACKAGE), OPSTR_SCHEDULE_EXACT_ALARM,
@@ -148,7 +151,11 @@ public class AppStandbyTests {
 
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(TestAlarmReceiver.ACTION_REPORT_ALARM_EXPIRED);
-        sContext.registerReceiver(mAlarmStateReceiver, intentFilter);
+        sContext.registerReceiver(mAlarmStateReceiver, intentFilter,
+                Context.RECEIVER_EXPORTED_UNAUDITED);
+
+        setBatteryCharging(false);
+        updateAlarmManagerConstants();
         assumeTrue("App Standby not enabled on device", AppStandbyUtils.isAppStandbyEnabled());
     }
 
@@ -240,17 +247,17 @@ public class AppStandbyTests {
     @Test
     public void testPowerWhitelistedAlarmNotBlocked() throws Exception {
         setTestAppStandbyBucket(APP_BUCKET_TAGS[RARE_INDEX]);
-        setPowerWhitelisted(true);
+        setPowerAllowlisted(true);
         final long triggerTime = SystemClock.elapsedRealtime() + MIN_FUTURITY;
         scheduleAlarm(triggerTime, 0);
         Thread.sleep(MIN_FUTURITY);
         assertTrue("Alarm did not go off for whitelisted app in rare bucket", waitForAlarm());
-        setPowerWhitelisted(false);
+        setPowerAllowlisted(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        setPowerWhitelisted(false);
+        setPowerAllowlisted(false);
         setBatteryCharging(true);
         mConfigHelper.restoreAll();
         final Intent cancelAlarmsIntent = new Intent(TestAlarmScheduler.ACTION_CANCEL_ALL_ALARMS);
@@ -266,20 +273,20 @@ public class AppStandbyTests {
         if (!sOrigAppStandbyEnabled) {
             AppStandbyUtils.setAppStandbyEnabledAtRuntime(sOrigAppStandbyEnabled);
         }
+        sTareDeviceConfigStateHelper.restoreOriginalValues();
     }
 
     private void updateAlarmManagerConstants() {
         mConfigHelper.with("min_futurity", MIN_FUTURITY)
                 .with("app_standby_window", APP_STANDBY_WINDOW)
-                .with("min_window", MIN_WINDOW)
-                .with("exact_alarm_deny_list", TEST_APP_PACKAGE);
+                .with("min_window", MIN_WINDOW);
         for (int i = 0; i < APP_STANDBY_QUOTAS.length; i++) {
             mConfigHelper.with(APP_BUCKET_QUOTA_KEYS[i], APP_STANDBY_QUOTAS[i]);
         }
         mConfigHelper.commitAndAwaitPropagation();
     }
 
-    private void setPowerWhitelisted(boolean whitelist) throws IOException {
+    private void setPowerAllowlisted(boolean whitelist) throws IOException {
         final StringBuffer cmd = new StringBuffer("cmd deviceidle whitelist ");
         cmd.append(whitelist ? "+" : "-");
         cmd.append(TEST_APP_PACKAGE);
@@ -303,7 +310,7 @@ public class AppStandbyTests {
     }
 
     private static String executeAndLog(String cmd) throws IOException {
-        final String output = sUiDevice.executeShellCommand(cmd).trim();
+        final String output = SystemUtil.runShellCommand(cmd).trim();
         Log.d(TAG, "command: [" + cmd + "], output: [" + output + "]");
         return output;
     }

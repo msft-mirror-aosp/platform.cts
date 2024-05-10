@@ -24,8 +24,11 @@ import android.content.Context;
 import android.graphics.Point;
 import android.util.TypedValue;
 import android.view.Display;
+import android.view.InputDevice;
+import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 import android.view.WindowManager;
+import android.view.cts.util.InputDeviceUtils;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
@@ -34,12 +37,16 @@ import androidx.test.runner.AndroidJUnit4;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Set;
+
 /**
  * Test {@link ViewConfiguration}.
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class ViewConfigurationTest {
+    private static Set<Integer> SUPPORTED_AXES_FOR_SCROLL_HAPTICS = Set.of(MotionEvent.AXIS_SCROLL);
+
     @Test
     public void testStaticValues() {
         ViewConfiguration.getScrollBarSize();
@@ -90,6 +97,7 @@ public class ViewConfigurationTest {
         vc.getScaledHorizontalScrollFactor();
         vc.getScaledVerticalScrollFactor();
         vc.getScaledTouchSlop();
+        vc.getScaledHandwritingSlop();
         vc.getScaledWindowTouchSlop();
         vc.hasPermanentMenuKey();
 
@@ -134,6 +142,58 @@ public class ViewConfigurationTest {
     }
 
     @Test
+    public void testFlingThresholds_forInvalidInputDeviceIds() {
+        Context context = InstrumentationRegistry.getTargetContext();
+        ViewConfiguration contextBasedVc = ViewConfiguration.get(context);
+        ViewConfiguration contextLessVc = new ViewConfiguration();
+        for (ViewConfiguration vc : new ViewConfiguration[] {contextBasedVc, contextLessVc}) {
+            InputDeviceUtils.runOnInvalidDeviceIds((deviceId) -> {
+                // Test with some source-axis combinations. Any source-axis combination should
+                // provide the no-fling thresholds, since the device ID is known to be invalid.
+                verifyNoFlingThresholds(
+                        vc, deviceId, InputDevice.SOURCE_TOUCHSCREEN, MotionEvent.AXIS_X);
+                verifyNoFlingThresholds(
+                        vc, deviceId, InputDevice.SOURCE_TOUCHSCREEN, MotionEvent.AXIS_Y);
+                verifyNoFlingThresholds(
+                        vc, deviceId, InputDevice.SOURCE_ROTARY_ENCODER, MotionEvent.AXIS_SCROLL);
+            });
+        }
+    }
+
+    @Test
+    public void testFlingThresholds_forAllAvailableDevices() {
+        Context context = InstrumentationRegistry.getTargetContext();
+        ViewConfiguration contextBasedVc = ViewConfiguration.get(context);
+        ViewConfiguration contextLessVc = new ViewConfiguration();
+        for (ViewConfiguration vc : new ViewConfiguration[] {contextBasedVc, contextLessVc}) {
+            InputDeviceUtils.runOnEveryInputDeviceMotionRange(deviceIdAndMotionRange -> {
+                int deviceId = deviceIdAndMotionRange.first;
+                InputDevice.MotionRange motionRange = deviceIdAndMotionRange.second;
+
+                int axis = motionRange.getAxis();
+                int source = motionRange.getSource();
+
+                int minVel = vc.getScaledMinimumFlingVelocity(deviceId, axis, source);
+                int maxVel = vc.getScaledMaximumFlingVelocity(deviceId, axis, source);
+
+                // These min/max thresholds are thresholds for a valid InputDevice ID, on a
+                // source and axis applicable to the InputDevice represented by the ID. Check
+                // that the provided thresholds are within the valid bounds.
+                verifyFlingThresholdRange(minVel, maxVel);
+            });
+            InputDeviceUtils.runOnEveryValidDeviceId((deviceId) -> {
+                // Test with source-axis combinations that we know are not valid. Since the
+                // source-axis combinations will be invalid, we expect the no-fling thresholds,
+                // despite the fact that we're using a valid InputDevice ID.
+                verifyNoFlingThresholds(
+                        vc, deviceId, InputDevice.SOURCE_ROTARY_ENCODER, MotionEvent.AXIS_X);
+                verifyNoFlingThresholds(
+                        vc, deviceId, InputDevice.SOURCE_TOUCHSCREEN, MotionEvent.AXIS_WHEEL);
+            });
+        }
+    }
+
+    @Test
     public void testGetScaledAmbiguousGestureMultiplier() {
         ViewConfiguration vc = ViewConfiguration.get(InstrumentationRegistry.getTargetContext());
         final float instanceMultiplier = vc.getScaledAmbiguousGestureMultiplier();
@@ -155,5 +215,37 @@ public class ViewConfigurationTest {
 
         // This deprecated value should just be what it's historically hardcoded to be.
         assertEquals(480 * 800 * 4, vc.getMaximumDrawingCacheSize());
+    }
+
+    /** Verifies whether or not the given fling thresholds are within the valid range. */
+    private static void verifyFlingThresholdRange(int minVel, int maxVel) {
+        if (minVel > maxVel) {
+            // The only case where we expect the minimum velocity to exceed the maximum velocity is
+            // for InputDevices that do not support fling, in which case the minimum and maximum
+            // velocties are set to Integer's max and min values, respectively.
+            verifyNoFlingThresholds(minVel, maxVel);
+        } else {
+            // If the minimum velocity is <= the maximum velocity, the velocities should represent
+            // valid thresholds, which should not be negative values (as the thresholds are defined
+            // as absolute values).
+            assertTrue(minVel >= 0);
+            assertTrue(maxVel >= 0);
+        }
+    }
+
+    private static void verifyNoFlingThresholds(
+            ViewConfiguration viewConfiguration, int deviceId, int source, int axis) {
+        verifyNoFlingThresholds(
+            viewConfiguration.getScaledMinimumFlingVelocity(deviceId, axis, source),
+            viewConfiguration.getScaledMaximumFlingVelocity(deviceId, axis, source));
+    }
+
+    /**
+     * Verifies that the given min and max fling velocities represent the values used to suppress
+     * fling.
+     */
+    private static void verifyNoFlingThresholds(int minVel, int maxVel) {
+        assertEquals(Integer.MAX_VALUE, minVel);
+        assertEquals(Integer.MIN_VALUE, maxVel);
     }
 }

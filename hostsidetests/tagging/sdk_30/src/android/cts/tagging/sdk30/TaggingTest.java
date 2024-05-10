@@ -21,12 +21,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-import android.app.Instrumentation.ActivityResult;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.cts.tagging.Utils;
-import android.os.Build;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.InstrumentationRegistry;
@@ -42,6 +40,8 @@ import com.android.compatibility.common.util.DropBoxReceiver;
 
 import android.cts.tagging.ServiceRunnerActivity;
 import static android.cts.tagging.Constants.*;
+
+import java.util.regex.Pattern;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
@@ -91,7 +91,7 @@ public class TaggingTest {
                         mContext,
                         NATIVE_CRASH_TAG,
                         mContext.getPackageName() + ":CrashProcess",
-                        "SEGV_MTEAERR",
+                        Pattern.compile("SEGV_MTE[AS]ERR"),
                         "backtrace:");
         Intent intent = new Intent();
         intent.setClass(mContext, CrashActivity.class);
@@ -99,7 +99,22 @@ public class TaggingTest {
         mContext.startActivity(intent);
 
         assertTrue(receiver.await());
-        assertFalse(Utils.mistaggedKernelUaccessFails());
+    }
+
+    @Test
+    public void testPermissive() throws Exception {
+        final DropBoxReceiver receiver =
+                new DropBoxReceiver(
+                        mContext,
+                        "data_app_native_recoverable_crash",
+                        mContext.getPackageName() + ":CrashProcess",
+                        Pattern.compile("SEGV_MTE[AS]ERR"),
+                        "backtrace:");
+
+        TestActivity activity = mTestActivityRule.launchActivity(null);
+        activity.callActivity(CrashActivity.class);
+        assertFalse(activity.failed());
+        assertTrue(receiver.await());
     }
 
     @Test
@@ -132,7 +147,7 @@ public class TaggingTest {
                         mContext,
                         NATIVE_CRASH_TAG,
                         mContext.getPackageName() + ":CrashMemtagAsync",
-                        "SEGV_MTEAERR",
+                        Pattern.compile("SEGV_MTE[AS]ERR"),
                         "backtrace:");
         Intent intent = new Intent();
         intent.setClass(mContext, CrashMemtagAsyncActivity.class);

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_input_method_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -23,6 +24,7 @@ android_test {
     libs: ["android.test.runner"],
     static_libs: [
         "androidx.test.rules",
+        "compatibility-device-util-axt",
         "hamcrest",
         "hamcrest-library",
         "androidx.test.uiautomator_uiautomator",

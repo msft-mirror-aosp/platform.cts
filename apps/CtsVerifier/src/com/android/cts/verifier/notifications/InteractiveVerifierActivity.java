@@ -18,7 +18,11 @@ package com.android.cts.verifier.notifications;
 
 import static android.provider.Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS;
 import static android.provider.Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME;
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
 
+import android.annotation.DrawableRes;
+import android.annotation.StringRes;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -26,6 +30,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Parcelable;
@@ -42,6 +47,7 @@ import android.widget.TextView;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.TestListActivity;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,6 +62,7 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
     private static final String STATE = "state";
     private static final String STATUS = "status";
     private static final String SCROLLY = "scrolly";
+    private static final String DISPLAY_MODE = "display_mode";
     private static LinkedBlockingQueue<String> sDeletedQueue = new LinkedBlockingQueue<String>();
     protected static final String LISTENER_PATH = "com.android.cts.verifier/" +
             "com.android.cts.verifier.notifications.MockListener";
@@ -120,6 +127,11 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
             return false;
         }
 
+        /** @return the test's status after autostart. */
+        int autoStartStatus() {
+            return READY;
+        }
+
         /** Set status to {@link #READY} to proceed, or {@link #SETUP} to try again. */
         protected void setUp() { status = READY; next(); };
 
@@ -163,6 +175,10 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
         int savedStateIndex = (savedState == null) ? 0 : savedState.getInt(STATE, 0);
         int savedStatus = (savedState == null) ? SETUP : savedState.getInt(STATUS, SETUP);
         int scrollY = (savedState == null) ? 0 : savedState.getInt(SCROLLY, 0);
+        String displayMode = (savedState == null) ? null : savedState.getString(DISPLAY_MODE, null);
+        if (displayMode != null) {
+            TestListActivity.sCurrentDisplayMode = displayMode;
+        }
         Log.i(TAG, "restored state(" + savedStateIndex + "}, status(" + savedStatus + ")");
         mContext = this;
         mRunner = this;
@@ -175,7 +191,22 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
         mHandler = mItemList;
         mTestList = new ArrayList<>();
         mTestList.addAll(createTestItems());
-        for (InteractiveTestCase test: mTestList) {
+
+        if (!mTestList.isEmpty()) {
+            setupTests(savedStateIndex, savedStatus, scrollY);
+            view.findViewById(R.id.pass_button).setEnabled(false);
+        } else {
+            view.findViewById(R.id.empty_text).setVisibility(VISIBLE);
+            view.findViewById(R.id.fail_button).setEnabled(false);
+        }
+
+        setContentView(view);
+        setPassFailButtonClickListeners();
+        setInfoResources(getTitleResource(), getInstructionsResource(), -1);
+    }
+
+    private void setupTests(int savedStateIndex, int savedStatus, int scrollY) {
+        for (InteractiveTestCase test : mTestList) {
             mItemList.addView(test.getView(mItemList));
         }
         mTestOrder = mTestList.iterator();
@@ -184,17 +215,11 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
             mCurrentTest.status = PASS;
             markItem(mCurrentTest);
         }
+
         mCurrentTest = mTestOrder.next();
-
-        mScrollView.post(() -> mScrollView.smoothScrollTo(0, scrollY));
-
         mCurrentTest.status = savedStatus;
 
-        setContentView(view);
-        setPassFailButtonClickListeners();
-        getPassButton().setEnabled(false);
-
-        setInfoResources(getTitleResource(), getInstructionsResource(), -1);
+        mScrollView.post(() -> mScrollView.smoothScrollTo(0, scrollY));
     }
 
     @Override
@@ -204,6 +229,7 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
         final int status = mCurrentTest == null ? SETUP : mCurrentTest.status;
         outState.putInt(STATUS, status);
         outState.putInt(SCROLLY, mScrollView.getScrollY());
+        outState.putString(DISPLAY_MODE, TestListActivity.sCurrentDisplayMode);
         Log.i(TAG, "saved state(" + stateIndex + "), status(" + status + ")");
     }
 
@@ -213,7 +239,7 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
         //To avoid NPE during onResume,before start to iterate next test order
         if (mCurrentTest != null && mCurrentTest.status != SETUP && mCurrentTest.autoStart()) {
             Log.i(TAG, "auto starting: " + mCurrentTest.getClass().getSimpleName());
-            mCurrentTest.status = READY;
+            mCurrentTest.status = mCurrentTest.autoStartStatus();
         }
         next();
     }
@@ -285,14 +311,24 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
         TextView instructions = item.findViewById(R.id.nls_instructions);
         instructions.setText(stringId);
         View button = item.findViewById(R.id.nls_action_button);
-        button.setVisibility(View.GONE);
+        button.setVisibility(GONE);
         return item;
     }
 
-    protected View createPassFailItem(ViewGroup parent, int stringId) {
+    protected View createPassFailItem(ViewGroup parent, @StringRes int textResId) {
+        return createPassFailItem(parent, textResId, Resources.ID_NULL);
+    }
+
+    protected View createPassFailItem(ViewGroup parent, @StringRes int textResId,
+            @DrawableRes int imageResId) {
         View item = mInflater.inflate(R.layout.iva_pass_fail_item, parent, false);
         TextView instructions = item.findViewById(R.id.nls_instructions);
-        instructions.setText(stringId);
+        instructions.setText(textResId);
+        ImageView instructionsImage = item.findViewById(R.id.nls_instructions_image);
+        instructionsImage.setVisibility(imageResId != Resources.ID_NULL ? VISIBLE : GONE);
+        if (imageResId != Resources.ID_NULL) {
+            instructionsImage.setImageResource(imageResId);
+        }
         return item;
     }
 
@@ -301,7 +337,7 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
         TextView instructions = item.findViewById(R.id.nls_instructions);
         instructions.setText(stringId);
         Button button = item.findViewById(R.id.nls_action_button);
-        button.setVisibility(View.VISIBLE);
+        button.setVisibility(VISIBLE);
         button.setText(actionId);
         button.setTag(actionId);
         return item;
@@ -335,7 +371,15 @@ public abstract class InteractiveVerifierActivity extends PassFailButtons.Activi
             case RETEST:
                 Log.i(TAG, "running test for: " + mCurrentTest.getClass().getSimpleName());
                 try {
+                    long startTime = System.currentTimeMillis();
                     mCurrentTest.test();
+                    long elapsedTime = System.currentTimeMillis() - startTime;
+                    Log.d(TAG, "elapsed test time = " + elapsedTime + " millis");
+                    final long kAnrTimeoutSeconds = 5;
+                    if (elapsedTime > (kAnrTimeoutSeconds * 1000)) {
+                        Log.w(TAG, "WARNING - Sleeping for more than " + kAnrTimeoutSeconds
+                                + " seconds in the UI thread might cause an ANR!!");
+                    }
                     if (mCurrentTest.status == RETEST_AFTER_LONG_DELAY) {
                         delay(mCurrentTest.delayTime);
                     } else {

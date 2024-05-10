@@ -18,10 +18,14 @@ package android.view.inputmethod.cts;
 
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+import static android.inputmethodservice.InputMethodService.DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION_VERSION_2;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionAtLeast;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
+import static android.view.inputmethod.cts.util.ConstantsUtils.DISAPPROVE_IME_PACKAGE_NAME;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeInvisible;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
 import static android.view.inputmethod.cts.util.TestUtils.getOnMainSync;
@@ -29,6 +33,7 @@ import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
 import static android.view.inputmethod.cts.util.TestUtils.waitOnMainUntil;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.EventFilterMode.CHECK_EXIT_EVENT_ONLY;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.WindowLayoutInfoParcelable;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
@@ -36,22 +41,28 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEventWithKey
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectNoImeCrash;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.verificationMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.Instrumentation;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Matrix;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.server.wm.DisplayMetricsSession;
 import android.support.test.uiautomator.UiObject2;
 import android.text.TextUtils;
 import android.view.KeyCharacterMap;
@@ -64,6 +75,8 @@ import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputConnectionWrapper;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.TextAppearanceInfo;
+import android.view.inputmethod.cts.disapproveime.DisapproveInputMethodService;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.SimulatedVirtualDisplaySession;
 import android.view.inputmethod.cts.util.TestActivity;
@@ -78,8 +91,12 @@ import android.widget.LinearLayout;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.rule.ServiceTestRule;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.window.extensions.layout.DisplayFeature;
+import androidx.window.extensions.layout.WindowLayoutInfo;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
@@ -87,7 +104,9 @@ import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -95,6 +114,7 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -106,11 +126,14 @@ import java.util.function.Predicate;
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputMethodServiceTest extends EndToEndImeTestBase {
+    private static final String TAG = "InputMethodServiceTest";
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(20);
     private static final long EXPECTED_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
     private static final long ACTIVITY_LAUNCH_INTERVAL = 500;  // msec
 
+    private static final String OTHER_IME_ID = "com.android.cts.spellcheckingime/.SpellCheckingIme";
 
     private static final String ERASE_FONT_SCALE_CMD = "settings delete system font_scale";
     // 1.2 is an arbitrary value.
@@ -118,11 +141,13 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
+    @Rule
+    public final ServiceTestRule mServiceRule = new ServiceTestRule();
 
     private Instrumentation mInstrumentation;
 
     private static Predicate<ImeEvent> backKeyDownMatcher(boolean expectedReturnValue) {
-        return event -> {
+        return withDescription("onKeyDown(KEYCODE_BACK) = " + expectedReturnValue, event -> {
             if (!TextUtils.equals("onKeyDown", event.getEventName())) {
                 return false;
             }
@@ -131,7 +156,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
                 return false;
             }
             return event.getReturnBooleanValue() == expectedReturnValue;
-        };
+        });
     }
 
     @Before
@@ -143,12 +168,14 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
         return TestActivity.startSync(activity -> createLayout(windowFlags, activity));
     }
 
-    private TestActivity createTestActivity(int windowFlags, int displayId) throws Exception {
-        return TestActivity.startSync(displayId, activity -> createLayout(windowFlags, activity));
+    private TestActivity createTestActivity(int windowFlags, int displayId) {
+        return new TestActivity.Starter().withDisplayId(displayId).startSync(
+                activity -> createLayout(windowFlags, activity), TestActivity.class);
     }
 
     private TestActivity createTestActivity2(int windowFlags) {
-        return TestActivity2.startSync(activity -> createLayout(windowFlags, activity));
+        return new TestActivity.Starter().startSync(activity -> createLayout(windowFlags, activity),
+                TestActivity2.class);
     }
 
     private LinearLayout createLayout(final int windowFlags, final Activity activity) {
@@ -180,6 +207,55 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
             assertTrue("InputMethodService.getLayoutInflater().getContext() must be equal to"
                     + " InputMethodService.this",
                     expectCommand(stream, command, TIMEOUT).getReturnBooleanValue());
+        }
+    }
+
+    @Test
+    public void testSwitchInputMethod_verifiesEnabledState() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
+        SystemUtil.runShellCommandOrThrow("ime disable " + OTHER_IME_ID);
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            expectEvent(stream, event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+
+            final ImeCommand cmd = imeSession.callSwitchInputMethod(OTHER_IME_ID);
+            final ImeEvent event = expectCommand(stream, cmd, TIMEOUT);
+            assertTrue("should be exception result, but wasn't" + event,
+                    event.isExceptionReturnValue());
+            // Should be IllegalStateException, but CompletableFuture converts to RuntimeException
+            assertTrue("should be RuntimeException, but wasn't: "
+                            + event.getReturnExceptionValue(),
+                    event.getReturnExceptionValue() instanceof RuntimeException);
+            assertTrue(
+                    "should contain 'not enabled' but didn't: " + event.getReturnExceptionValue(),
+                    event.getReturnExceptionValue().getMessage().contains("not enabled"));
+        }
+    }
+    @Test
+    public void testSwitchInputMethodWithSubtype_verifiesEnabledState() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
+        SystemUtil.runShellCommand("ime disable " + OTHER_IME_ID);
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            expectEvent(stream, event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+
+            final ImeCommand cmd = imeSession.callSwitchInputMethod(OTHER_IME_ID, null);
+            final ImeEvent event = expectCommand(stream, cmd, TIMEOUT);
+            assertTrue("should be exception result, but wasn't" + event,
+                    event.isExceptionReturnValue());
+            // Should be IllegalStateException, but CompletableFuture converts to RuntimeException
+            assertTrue("should be RuntimeException, but wasn't: "
+                            + event.getReturnExceptionValue(),
+                    event.getReturnExceptionValue() instanceof RuntimeException);
+            assertTrue(
+                    "should contain 'not enabled' but didn't: " + event.getReturnExceptionValue(),
+                    event.getReturnExceptionValue().getMessage().contains("not enabled"));
         }
     }
 
@@ -258,6 +334,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @FlakyTest(detail = "slow test")
     public void testRequestShowSelf() throws Exception {
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
@@ -529,7 +606,9 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
                             InputConnection.CURSOR_UPDATE_IMMEDIATE
                             | InputConnection.CURSOR_UPDATE_FILTER_EDITOR_BOUNDS
                             | InputConnection.CURSOR_UPDATE_FILTER_CHARACTER_BOUNDS
-                            | InputConnection.CURSOR_UPDATE_FILTER_INSERTION_MARKER),
+                            | InputConnection.CURSOR_UPDATE_FILTER_INSERTION_MARKER
+                            | InputConnection.CURSOR_UPDATE_FILTER_VISIBLE_LINE_BOUNDS
+                            | InputConnection.CURSOR_UPDATE_FILTER_TEXT_APPEARANCE),
                     TIMEOUT).getReturnBooleanValue());
 
             // Also make sure that requestCursorUpdates() actually gets called only once.
@@ -540,6 +619,8 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
             final CursorAnchorInfo originalCursorAnchorInfo1 = new CursorAnchorInfo.Builder()
                     .setMatrix(new Matrix())
                     .setEditorBoundsInfo(builder.build())
+                    .addVisibleLineBounds(1f, 2f, 3f, 5f)
+                    .setTextAppearanceInfo(new TextAppearanceInfo.Builder().build())
                     .build();
 
             runOnMainSync(() -> editText.getContext().getSystemService(InputMethodManager.class)
@@ -561,13 +642,17 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
             final CursorAnchorInfo originalCursorAnchorInfo2 = new CursorAnchorInfo.Builder()
                     .setMatrix(new Matrix())
                     .setEditorBoundsInfo(builder.build())
+                    .addVisibleLineBounds(1f, 2f, 3f, 4f)
+                    .setTextAppearanceInfo(new TextAppearanceInfo.Builder().build())
                     .build();
             assertTrue(expectCommand(stream,
                     imeSession.callRequestCursorUpdates(
                             InputConnection.CURSOR_UPDATE_IMMEDIATE,
                                     InputConnection.CURSOR_UPDATE_FILTER_EDITOR_BOUNDS
                                     | InputConnection.CURSOR_UPDATE_FILTER_CHARACTER_BOUNDS
-                                    | InputConnection.CURSOR_UPDATE_FILTER_INSERTION_MARKER),
+                                    | InputConnection.CURSOR_UPDATE_FILTER_INSERTION_MARKER
+                                    | InputConnection.CURSOR_UPDATE_FILTER_VISIBLE_LINE_BOUNDS
+                                    | InputConnection.CURSOR_UPDATE_FILTER_TEXT_APPEARANCE),
                     TIMEOUT).getReturnBooleanValue());
 
             // Make sure that requestCursorUpdates() actually gets called only once.
@@ -732,6 +817,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 294840051)
     public void testBatchEdit_commitSpaceThenSetComposingRegion_webView() throws Exception {
         assumeTrue(hasFeatureWebView());
 
@@ -794,6 +880,118 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
         }
     }
 
+    /**
+     * Starts a {@link MockImeSession} and verifies MockIme receives {@link WindowLayoutInfo}
+     * updates. Trigger Configuration changes by modifying the DisplaySession where MockIME window
+     * is located, then verify Bounds from MockIME window and {@link DisplayFeature} from
+     * WindowLayoutInfo updates observe the same changes to the hinge location.
+     * Here we use {@link WindowLayoutInfoParcelable} to pass {@link WindowLayoutInfo} values
+     * between this test process and the MockIME process.
+     */
+    @Ignore("b/264026686")
+    @Test
+    @ApiTest(apis = {
+            "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
+    public void testImeListensToWindowLayoutInfo() throws Exception {
+        assumeTrue(
+                "This test should only be run on devices with extension version that supports IME"
+                        + " as WindowLayoutInfo listener ",
+                isExtensionVersionAtLeast(EXTENSION_VERSION_2));
+
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder().setWindowLayoutInfoCallbackEnabled(true))) {
+
+            final ImeEventStream stream = imeSession.openEventStream();
+            TestActivity activity = createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+
+            assertTrue(expectEvent(stream, verificationMatcher("windowLayoutComponentLoaded"),
+                    CHECK_EXIT_EVENT_ONLY, TIMEOUT).getReturnBooleanValue());
+
+            try (DisplayMetricsSession displaySession = new DisplayMetricsSession(
+                    activity.getDisplay().getDisplayId())) {
+
+                final double displayResizeRatio = 0.8;
+
+                // MockIME has registered addWindowLayoutInfo, it should be emitting the
+                // current location of hinge now.
+                WindowLayoutInfoParcelable windowLayoutInit = verifyReceivedWindowLayout(stream);
+                // Skip the test if the device doesn't support hinges.
+                assertNotNull(windowLayoutInit);
+                assertNotNull(windowLayoutInit.getDisplayFeatures());
+                assumeFalse(windowLayoutInit.getDisplayFeatures().isEmpty());
+
+                final Rect windowLayoutInitBounds = windowLayoutInit.getDisplayFeatures().get(0)
+                        .getBounds();
+
+                expectEvent(stream, event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+                expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+
+                // After IME is shown, get the bounds of IME.
+                final Rect imeBoundsInit = expectCommand(stream,
+                        imeSession.callGetCurrentWindowMetricsBounds(), TIMEOUT)
+                        .getReturnParcelableValue();
+                // Contain first part of the test in a try-block so that the display session
+                // could be restored for the remaining testsuite even if something fails.
+                try {
+                    // Shrink the entire display 20% smaller.
+                    displaySession.changeDisplayMetrics(displayResizeRatio /* sizeRatio */,
+                            1.0 /* densityRatio */);
+
+                    // onConfigurationChanged on WM side triggers a new calculation for
+                    // hinge location.
+                    WindowLayoutInfoParcelable windowLayoutSizeChange = verifyReceivedWindowLayout(
+                            stream);
+
+                    // Expect to receive same number of display features in WindowLayoutInfo.
+                    assertEquals(windowLayoutInit.getDisplayFeatures().size(),
+                            windowLayoutSizeChange.getDisplayFeatures().size());
+
+                    Rect windowLayoutSizeChangeBounds =
+                            windowLayoutSizeChange.getDisplayFeatures().get(
+                                    0).getBounds();
+                    Rect imeBoundsShrunk = expectCommand(stream,
+                            imeSession.callGetCurrentWindowMetricsBounds(), TIMEOUT)
+                            .getReturnParcelableValue();
+
+                    final Boolean widthsChangedInSameRatio =
+                            (windowLayoutInitBounds.width() * displayResizeRatio
+                                    == windowLayoutSizeChangeBounds.width() && (
+                                    imeBoundsInit.width() * displayResizeRatio
+                                            == imeBoundsShrunk.width()));
+                    final Boolean heightsChangedInSameRatio =
+                            (windowLayoutInitBounds.height() * displayResizeRatio
+                                    == windowLayoutSizeChangeBounds.height() && (
+                                    imeBoundsInit.height() * displayResizeRatio
+                                            == imeBoundsShrunk.height()));
+                    // Expect the hinge dimension to shrink in exactly one direction, the actual
+                    // dimension depends on device implementation. Observe hinge dimensions from
+                    // IME configuration bounds and from WindowLayoutInfo.
+                    assertTrue(widthsChangedInSameRatio || heightsChangedInSameRatio);
+                } finally {
+                    // Restore Display to original size.
+                    displaySession.restoreDisplayMetrics();
+                    // Advance stream to ignore unrelated side effect from WM configuration changes.
+                    // TODO(b/257990185): Add filtering in WM Extensions to remove this.
+                    stream.skipAll();
+
+                    WindowLayoutInfoParcelable windowLayoutRestored = verifyReceivedWindowLayout(
+                            stream);
+
+                    assertEquals(windowLayoutInitBounds,
+                            windowLayoutRestored.getDisplayFeatures().get(0).getBounds());
+
+                    final Rect imeBoundsRestored = expectCommand(stream,
+                            imeSession.callGetCurrentWindowMetricsBounds(), TIMEOUT)
+                            .getReturnParcelableValue();
+
+                    assertEquals(imeBoundsRestored, imeBoundsInit);
+                }
+            }
+        }
+    }
+
     /** Verify if {@link InputMethodService#isUiContext()} returns {@code true}. */
     @Test
     public void testIsUiContext() throws Exception {
@@ -833,6 +1031,7 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @FlakyTest(detail = "slow test")
     public void testNoExceptionWhenSwitchingDisplaysWithImeReCreate() throws Exception {
         try (SimulatedVirtualDisplaySession displaySession = SimulatedVirtualDisplaySession.create(
                 mInstrumentation.getContext(), 800, 600, 240, DISPLAY_IME_POLICY_LOCAL);
@@ -868,6 +1067,86 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
         } finally {
             // restore all previous IMEs
             SystemUtil.runShellCommand("ime reset");
+        }
+    }
+
+    @Test
+    public void testImeOverrideSessionInterface_throwLinkageError() {
+        SystemUtil.runCommandAndPrintOnLogcat(TAG, "am compat enable "
+                + DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE + " " + DISAPPROVE_IME_PACKAGE_NAME);
+
+        final Context context = mInstrumentation.getContext();
+        final CountDownLatch serviceCreateLatch = new CountDownLatch(1);
+        final DisapproveInputMethodService.DisapproveImeCallback disapproveImeCallback =
+                hasLinkageError -> {
+                    if (!hasLinkageError) {
+                        fail("Should throw a LinkageError.");
+                    }
+                    serviceCreateLatch.countDown();
+                };
+
+        try {
+            DisapproveInputMethodService.setCallback(disapproveImeCallback);
+            mServiceRule.bindService(new Intent(context, DisapproveInputMethodService.class));
+        } catch (TimeoutException e) {
+            fail("DisapproveInputMethodService binding timeout.");
+        }
+
+        boolean result = false;
+        try {
+            result = serviceCreateLatch.await(EXPECTED_TIMEOUT, TimeUnit.MILLISECONDS);
+            if (!result) {
+                fail("Timeout before receiving the result.");
+            }
+        } catch (InterruptedException ignored) {
+        } finally {
+            SystemUtil.runCommandAndPrintOnLogcat(TAG, "am compat reset "
+                    + DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE + " " + DISAPPROVE_IME_PACKAGE_NAME);
+        }
+    }
+
+    /**
+     * Verifies that requesting to hide the IME caption bar does not lead
+     * to any undesired behaviour (e.g. crashing, hiding the IME when it was visible, etc.).
+     */
+    @Test
+    public void testRequestHideImeCaptionBar() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            expectEvent(stream, event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(false), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+        }
+    }
+
+    /**
+     * Verifies that requesting to hide the IME caption bar and then show it again does not lead
+     * to any undesired behaviour (e.g. crashing, hiding the IME when it was visible, etc.).
+     */
+    @Test
+    public void testRequestHideThenShowImeCaptionBar() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            expectEvent(stream, event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(false), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetImeCaptionBarVisible(true), TIMEOUT);
+            expectImeVisible(TIMEOUT);
         }
     }
 
@@ -1130,5 +1409,14 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
             this.mIsTestingTextView = isTestingTextView;
             return this;
         }
+    }
+
+    private static WindowLayoutInfoParcelable verifyReceivedWindowLayout(ImeEventStream stream)
+            throws TimeoutException {
+        WindowLayoutInfoParcelable received = expectEvent(stream,
+                event -> "getWindowLayoutInfo".equals(event.getEventName()),
+                TIMEOUT).getArguments().getParcelable("WindowLayoutInfo",
+                WindowLayoutInfoParcelable.class);
+        return received;
     }
 }

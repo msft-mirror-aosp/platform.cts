@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -110,4 +111,29 @@ android_test_helper_app {
     min_sdk_version: "22",
     // using 29 (< 30) to allow install an app without application tag
     target_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "CtsContentLongUsesPermissionNameTestApp",
+    defaults: ["cts_defaults"],
+    sdk_version: "current",
+    manifest: "AndroidManifestLongUsesPermissionName.xml",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsContentShellTestApp",
+    defaults: ["cts_defaults"],
+    sdk_version: "current",
+    manifest: "AndroidManifestShell.xml",
+    certificate: "platform",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
 }

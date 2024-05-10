@@ -28,6 +28,7 @@ import android.compat.testing.SharedLibraryInfo;
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.compatibility.common.util.HostInfoStore;
 import com.android.modules.utils.build.testing.DeviceSdkLevel;
+import com.android.tools.smali.dexlib2.iface.ClassDef;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.invoker.TestInformation;
@@ -43,7 +44,6 @@ import com.android.tradefed.util.StreamUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import org.jf.dexlib2.iface.ClassDef;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -108,6 +108,7 @@ public class ClasspathDeviceInfo extends BaseHostJUnit4Test {
                 mLogger.addTestLog(REPORT_FILE_NAME, LogDataType.TEXT, source);
             }
         } catch (Exception e) {
+            CLog.e(e);
             throw new RuntimeException(String.format(
                 "Failed to collect %s: %s", REPORT_NAME, e.getMessage()));
         } finally {

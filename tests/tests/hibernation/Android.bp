@@ -31,11 +31,12 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "testng",
-        "truth-prebuilt",
+        "truth",
         "guava",
         "junit",
         "hamcrest-library",
         "modules-utils-build_system",
+        "safety-center-internal-data",
     ],
     srcs: [
         "src/**/*.kt",

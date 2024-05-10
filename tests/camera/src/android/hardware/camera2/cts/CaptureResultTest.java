@@ -95,7 +95,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testCameraCaptureResultAllKeys() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 openDevice(id);
                 if (mStaticInfo.isColorOutputSupported()) {
@@ -152,7 +152,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
     public void testPartialResult() throws Exception {
         final int NUM_FRAMES_TESTED = 30;
         final int WAIT_FOR_RESULT_TIMOUT_MS = 2000;
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 // Skip the test if partial result is not supported
                 int partialResultCount = mAllStaticInfo.get(id).getPartialResultCount();
@@ -270,7 +270,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testResultTimestamps() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             ImageReader previewReader = null;
             ImageReader jpegReader = null;
 
@@ -604,6 +604,8 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
 
         // Keys only present when corresponding control is on are being
         // verified in its own functional test
+        // Tested in RobustnessTest.java stream use case test.
+        waiverKeys.add(CaptureResult.SCALER_RAW_CROP_REGION);
         // Only present in certain tonemap mode. Test in CaptureRequestTest.
         waiverKeys.add(CaptureResult.TONEMAP_CURVE);
         waiverKeys.add(CaptureResult.TONEMAP_GAMMA);
@@ -619,6 +621,20 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         waiverKeys.add(CaptureResult.STATISTICS_FACES);
         // Only present in reprocessing capture result.
         waiverKeys.add(CaptureResult.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR);
+        // Only present when manual flash control is supported
+        if (!staticInfo.isManualFlashStrengthControlSupported()) {
+            waiverKeys.add(CaptureResult.FLASH_STRENGTH_LEVEL);
+        }
+
+        // Only present on devices capable of reporting intra-frame statistics
+        waiverKeys.add(CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES);
+        // Only present on logical cameras that switch between lenses when going trhough zoom ratios
+        waiverKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION);
+
+        // Only present on devices that support low light boose AE mode
+        if (!staticInfo.isAeModeLowLightBoostSupported()) {
+            waiverKeys.add(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
+        }
 
         // LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID not required if key is not supported.
         if (!staticInfo.isLogicalMultiCamera() ||
@@ -746,6 +762,10 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
             waiverKeys.add(CaptureResult.SCALER_ROTATE_AND_CROP);
         }
 
+        if (!staticInfo.isSettingsOverrideSupported()) {
+            waiverKeys.add(CaptureResult.CONTROL_SETTINGS_OVERRIDE);
+        }
+
         if (staticInfo.isHardwareLevelAtLeastFull()) {
             return waiverKeys;
         }
@@ -776,8 +796,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
             waiverKeys.add(CaptureResult.HOT_PIXEL_MODE);
         }
 
-        if (!staticInfo.isNoiseReductionModeControlSupported()
-                && staticInfo.getAvailableNoiseReductionModesChecked().length == 0) {
+        if (!staticInfo.isNoiseReductionModeControlSupported()) {
             waiverKeys.add(CaptureResult.NOISE_REDUCTION_MODE);
         }
 
@@ -1010,9 +1029,14 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.CONTROL_AF_SCENE_CHANGE);
         resultKeys.add(CaptureResult.CONTROL_EXTENDED_SCENE_MODE);
         resultKeys.add(CaptureResult.CONTROL_ZOOM_RATIO);
+        resultKeys.add(CaptureResult.CONTROL_SETTINGS_OVERRIDE);
+        resultKeys.add(CaptureResult.CONTROL_AUTOFRAMING);
+        resultKeys.add(CaptureResult.CONTROL_AUTOFRAMING_STATE);
+        resultKeys.add(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
         resultKeys.add(CaptureResult.EDGE_MODE);
         resultKeys.add(CaptureResult.FLASH_MODE);
         resultKeys.add(CaptureResult.FLASH_STATE);
+        resultKeys.add(CaptureResult.FLASH_STRENGTH_LEVEL);
         resultKeys.add(CaptureResult.HOT_PIXEL_MODE);
         resultKeys.add(CaptureResult.JPEG_GPS_LOCATION);
         resultKeys.add(CaptureResult.JPEG_ORIENTATION);
@@ -1035,6 +1059,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.REQUEST_PIPELINE_DEPTH);
         resultKeys.add(CaptureResult.SCALER_CROP_REGION);
         resultKeys.add(CaptureResult.SCALER_ROTATE_AND_CROP);
+        resultKeys.add(CaptureResult.SCALER_RAW_CROP_REGION);
         resultKeys.add(CaptureResult.SENSOR_EXPOSURE_TIME);
         resultKeys.add(CaptureResult.SENSOR_FRAME_DURATION);
         resultKeys.add(CaptureResult.SENSOR_SENSITIVITY);
@@ -1059,6 +1084,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.STATISTICS_LENS_SHADING_MAP_MODE);
         resultKeys.add(CaptureResult.STATISTICS_OIS_DATA_MODE);
         resultKeys.add(CaptureResult.STATISTICS_OIS_SAMPLES);
+        resultKeys.add(CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES);
         resultKeys.add(CaptureResult.TONEMAP_CURVE);
         resultKeys.add(CaptureResult.TONEMAP_MODE);
         resultKeys.add(CaptureResult.TONEMAP_GAMMA);
@@ -1066,6 +1092,7 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.BLACK_LEVEL_LOCK);
         resultKeys.add(CaptureResult.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR);
         resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
+        resultKeys.add(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION);
         resultKeys.add(CaptureResult.DISTORTION_CORRECTION_MODE);
 
         return resultKeys;

@@ -16,6 +16,8 @@
 
 package com.android.cts.apicoverage;
 
+import com.android.cts.apicommon.ApiCoverage;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

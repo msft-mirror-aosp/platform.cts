@@ -28,6 +28,7 @@ import static com.android.cts.content.Utils.requestSync;
 import static com.android.cts.content.Utils.withAccount;
 
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -40,18 +41,19 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SyncRequest;
 import android.content.res.Configuration;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
-import android.support.test.uiautomator.UiObjectNotFoundException;
-import android.support.test.uiautomator.UiScrollable;
-import android.support.test.uiautomator.UiSelector;
-import android.support.test.uiautomator.Until;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.Direction;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiScrollable;
+import androidx.test.uiautomator.UiSelector;
+import androidx.test.uiautomator.Until;
 
 import org.junit.After;
 import org.junit.Before;
@@ -106,7 +108,24 @@ public class CtsSyncAccountAccessOtherCertTestCases {
 
         // If running in a test harness the Account Manager never denies access to an account. Hence
         // the permission request will not trigger. b/72114924
-        assumeFalse(ActivityManager.isRunningInTestHarness());
+        assumeFalse(ActivityManager.isRunningInUserTestHarness());
+
+        // We need to ensure there are no other notifications present
+        // so that the search for the permission notification does not fail
+        UiDevice uiDevice = getUiDevice();
+        if (uiDevice.openNotification()) {
+            Thread.sleep(1000);
+            UiObject2 scrollable = uiDevice.findObject(By.scrollable(true));
+            UiObject2 clear;
+            if (scrollable != null) {
+                clear = scrollable.scrollUntil(Direction.DOWN,
+                                        Until.findObject(By.text("Clear all")));
+            } else {
+                clear = uiDevice.findObject(By.text("Clear all"));
+            }
+            assumeNotNull(clear);
+            clear.click();
+        }
 
         try (AutoCloseable ignored = withAccount(activity.getActivity())) {
             AbstractThreadedSyncAdapter adapter = AlwaysSyncableSyncService.getInstance(
@@ -119,7 +138,6 @@ public class CtsSyncAccountAccessOtherCertTestCases {
             verify(adapter, never()).onPerformSync(any(), any(), any(), any(), any());
             Log.i(LOG_TAG, "Did not get onPerformSync");
 
-            UiDevice uiDevice = getUiDevice();
             if (isWatch()) {
                 UiObject2 notification = findPermissionNotificationInStream(uiDevice);
                 notification.click();

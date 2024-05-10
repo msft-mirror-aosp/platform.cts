@@ -41,7 +41,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CddTest;
+
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,6 +73,7 @@ public class ScanFilterTest {
     @Before
     public void setUp() {
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        Assume.assumeTrue(TestUtils.isBleSupported(context));
 
         byte[] scanRecord = new byte[] {
                 0x02, 0x01, 0x1a, // advertising flags
@@ -106,10 +110,9 @@ public class ScanFilterTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testSetNameFilter() {
-        if (mFilterBuilder == null) return;
-
+    public void setNameFilter() {
         ScanFilter filter = mFilterBuilder.setDeviceName(LOCAL_NAME).build();
         assertEquals(LOCAL_NAME, filter.getDeviceName());
         assertTrue("setName filter fails", filter.matches(mScanResult));
@@ -118,10 +121,9 @@ public class ScanFilterTest {
         assertFalse("setName filter fails", filter.matches(mScanResult));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testDeviceAddressFilter() {
-        if (mFilterBuilder == null) return;
-
+    public void deviceAddressFilter() {
         ScanFilter filter = mFilterBuilder.setDeviceAddress(DEVICE_MAC).build();
         assertEquals(DEVICE_MAC, filter.getDeviceAddress());
         assertTrue("device filter fails", filter.matches(mScanResult));
@@ -130,10 +132,9 @@ public class ScanFilterTest {
         assertFalse("device filter fails", filter.matches(mScanResult));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testSetServiceUuidFilter() {
-        if (mFilterBuilder == null) return;
-
+    public void setServiceUuidFilter() {
         ScanFilter filter = mFilterBuilder.setServiceUuid(
                 ParcelUuid.fromString(UUID1)).build();
         assertEquals(UUID1, filter.getServiceUuid().toString());
@@ -153,10 +154,9 @@ public class ScanFilterTest {
         assertTrue("uuid filter fails", filter.matches(mScanResult));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testSetServiceSolicitationUuidFilter() {
-        if (mFilterBuilder == null) return;
-
+    public void setServiceSolicitationUuidFilter() {
         ScanFilter filter = mFilterBuilder.setServiceSolicitationUuid(
                 ParcelUuid.fromString(UUID1)).build();
         assertEquals(UUID1, filter.getServiceSolicitationUuid().toString());
@@ -175,10 +175,9 @@ public class ScanFilterTest {
         assertTrue("uuid filter fails", filter.matches(mScanResult));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testSetServiceDataFilter() {
-        if (mFilterBuilder == null) return;
-
+    public void setServiceDataFilter() {
         byte[] setServiceData = new byte[] {
                 0x50, 0x64 };
         ParcelUuid serviceDataUuid = ParcelUuid.fromString(UUID2);
@@ -208,10 +207,9 @@ public class ScanFilterTest {
         assertFalse("service data filter fails", filter.matches(mScanResult));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testSetManufacturerSpecificData() {
-        if (mFilterBuilder == null) return;
-
+    public void setManufacturerSpecificData() {
         byte[] manufacturerData = new byte[] {
                 0x02, 0x15 };
         int manufacturerId = 0xE0;
@@ -245,9 +243,9 @@ public class ScanFilterTest {
         assertTrue("partial setManufacturerData filter fails", filter.matches(mScanResult));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testSetAdvertisingDataTypeWithData() {
-        if (mFilterBuilder == null) return;
+    public void setAdvertisingDataTypeWithData() {
         byte[] adData = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
         byte[] adDataMask = {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
                 (byte) 0xFF};
@@ -265,10 +263,9 @@ public class ScanFilterTest {
         assertFalse("advertising data filter fails", filter.matches(mScanResult));
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testReadWriteParcel() {
-        if (mFilterBuilder == null) return;
-
+    public void readWriteParcel() {
         ScanFilter filter = mFilterBuilder.build();
         testReadWriteParcelForFilter(filter);
 
@@ -320,18 +317,16 @@ public class ScanFilterTest {
         testReadWriteParcelForFilter(filter);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testDescribeContents() {
+    public void describeContents() {
         final int expected = 0;
         assertEquals(expected, new ScanFilter.Builder().build().describeContents());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testBuilderSetTransportBlockFilter() {
-        if (mFilterBuilder == null) {
-            return;
-        }
-
+    public void builderSetTransportBlockFilter() {
         final int orgId = OrganizationId.BLUETOOTH_SIG;
         final int tdsFlag = 0x2;
         final int tdsFlagMask = 0b11;
@@ -342,7 +337,7 @@ public class ScanFilterTest {
                 .setTdsFlags(tdsFlag, tdsFlagMask)
                 .setTransportData(transportData, transportDataMask).build();
 
-        if (mBluetoothAdapter.isOffloadedTransportDiscoveryDataScanSupported()
+        if (mBluetoothAdapter.getOffloadedTransportDiscoveryDataScanSupported()
                 != FEATURE_SUPPORTED) {
             assertThrows(IllegalArgumentException.class,
                     () -> mFilterBuilder.setTransportBlockFilter(transportBlockFilter));

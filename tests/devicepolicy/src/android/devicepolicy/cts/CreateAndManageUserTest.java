@@ -21,10 +21,10 @@ import static android.provider.Settings.Global.SYS_STORAGE_THRESHOLD_MAX_BYTES;
 import static android.provider.Settings.Global.SYS_STORAGE_THRESHOLD_PERCENTAGE;
 
 import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
-import static com.android.bedstead.remotedpc.RemoteDpc.DPC_COMPONENT_NAME;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.expectThrows;
 
 import android.app.admin.DevicePolicyManager;
@@ -36,10 +36,12 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureCanAddUser;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
+import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
 import com.android.bedstead.harrier.policies.CreateAndManageUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.interactive.annotations.Interactive;
 
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -64,7 +66,8 @@ public final class CreateAndManageUserTest {
     public void createAndManageUser_userExists() {
         try (UserReference user = UserReference.of(sDeviceState.dpc().devicePolicyManager()
                 .createAndManageUser(
-                        DPC_COMPONENT_NAME, USER_NAME, DPC_COMPONENT_NAME, ADMIN_EXTRAS, FLAGS))) {
+                        sDeviceState.dpc().componentName(),
+                        USER_NAME, sDeviceState.dpc().componentName(), ADMIN_EXTRAS, FLAGS))) {
             assertThat(user.exists()).isTrue();
         }
     }
@@ -80,7 +83,8 @@ public final class CreateAndManageUserTest {
             UserManager.UserOperationException e = expectThrows(
                     UserManager.UserOperationException.class,
                     () -> sDeviceState.dpc().devicePolicyManager().createAndManageUser(
-                            DPC_COMPONENT_NAME, USER_NAME, DPC_COMPONENT_NAME, ADMIN_EXTRAS, FLAGS)
+                            sDeviceState.dpc().componentName(),
+                            USER_NAME, sDeviceState.dpc().componentName(), ADMIN_EXTRAS, FLAGS)
             );
 
             assertThat(e.getUserOperationResult()).isEqualTo(USER_OPERATION_ERROR_LOW_STORAGE);
@@ -94,7 +98,8 @@ public final class CreateAndManageUserTest {
     @Test
     public void createAndManageUser_newUserDisclaimerIsNotAcknowledged() {
         try (UserReference user = UserReference.of(sDeviceState.dpc().devicePolicyManager()
-                .createAndManageUser(DPC_COMPONENT_NAME, USER_NAME, DPC_COMPONENT_NAME,
+                .createAndManageUser(sDeviceState.dpc().componentName(),
+                        USER_NAME, sDeviceState.dpc().componentName(),
                         ADMIN_EXTRAS, FLAGS))) {
 
             assertThat(TestApis.devicePolicy().isNewUserDisclaimerAcknowledged(user)).isFalse();
@@ -102,12 +107,24 @@ public final class CreateAndManageUserTest {
     }
 
     @Postsubmit(reason = "new test")
+    @CannotSetPolicyTest(policy = CreateAndManageUser.class, includeNonDeviceAdminStates = false)
+    @Test
+    public void createAndManageUser_notAllowed_throwsException() {
+        assertThrows(SecurityException.class, () -> {
+            sDeviceState.dpc().devicePolicyManager()
+                    .createAndManageUser(sDeviceState.dpc().componentName(),
+                            USER_NAME, sDeviceState.dpc().componentName(),
+                            ADMIN_EXTRAS, FLAGS);
+        });
+    }
+
+    @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = CreateAndManageUser.class)
     @Test
     public void acknowledgeNewUserDisclaimer_newUserDisclaimerIsAcknowledged() {
         try (UserReference user = UserReference.of(sDeviceState.dpc().devicePolicyManager()
-                .createAndManageUser(DPC_COMPONENT_NAME, USER_NAME, DPC_COMPONENT_NAME,
-                        ADMIN_EXTRAS, FLAGS))) {
+                .createAndManageUser(sDeviceState.dpc().componentName(),
+                        USER_NAME, sDeviceState.dpc().componentName(), ADMIN_EXTRAS, FLAGS))) {
 
             try (PermissionContext p =
                          TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
@@ -116,6 +133,27 @@ public final class CreateAndManageUserTest {
             }
 
             assertThat(TestApis.devicePolicy().isNewUserDisclaimerAcknowledged(user)).isTrue();
+        }
+    }
+
+    @Postsubmit(reason = "new test")
+    @CanSetPolicyTest(policy = CreateAndManageUser.class)
+    @Interactive
+    @Test
+    @Ignore // TODO(245232237): Figure out UX expectations
+    public void createAndManageUser_switchToUser_showsDisclaimer() {
+        UserReference instrumented = TestApis.users().instrumented();
+        try (UserReference user = UserReference.of(sDeviceState.dpc().devicePolicyManager()
+                .createAndManageUser(
+                        sDeviceState.dpc().componentName(),
+                        USER_NAME, sDeviceState.dpc().componentName(), ADMIN_EXTRAS, FLAGS))) {
+            user.switchTo();
+
+            // TODO(245232237): Figure out expectations here
+
+            instrumented.switchTo();
+        } finally {
+            instrumented.switchTo();
         }
     }
 }

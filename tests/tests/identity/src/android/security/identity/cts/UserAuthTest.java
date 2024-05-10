@@ -20,10 +20,8 @@ import static android.security.identity.IdentityCredentialStore.CIPHERSUITE_ECDH
 
 import android.security.identity.AccessControlProfile;
 import android.security.identity.AccessControlProfileId;
-import android.security.identity.AlreadyPersonalizedException;
 import android.security.identity.PersonalizationData;
 import android.security.identity.IdentityCredential;
-import android.security.identity.IdentityCredentialException;
 import android.security.identity.IdentityCredentialStore;
 import android.security.identity.WritableIdentityCredential;
 import android.security.identity.ResultData;
@@ -36,6 +34,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.os.SystemClock;
+import android.server.wm.LockScreenSession;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -45,53 +44,12 @@ import android.server.wm.ActivityManagerTestBase;
 
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.Map;
-
-import co.nstant.in.cbor.CborBuilder;
-import co.nstant.in.cbor.CborEncoder;
-import co.nstant.in.cbor.CborException;
-
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableEntryException;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
-
-import android.security.keystore.KeyGenParameterSpec;
-import android.security.keystore.KeyProperties;
-import android.security.keystore.UserNotAuthenticatedException;
-
 
 public class UserAuthTest {
     private static final String TAG = "UserAuthTest";
@@ -101,7 +59,7 @@ public class UserAuthTest {
         private LockScreenSession mLockCredential;
 
         public DeviceLockSession() throws Exception {
-            mLockCredential = new LockScreenSession();
+            mLockCredential = new LockScreenSession(mInstrumentation, mWmState);
             mLockCredential.setLockCredential();
         }
 
@@ -139,53 +97,11 @@ public class UserAuthTest {
         }
     }
 
-    private boolean checkAuthBoundKey(String alias) {
-        // Unfortunately there are no APIs to tell if a key needs user authentication to work so
-        // we check if the key is available by simply trying to encrypt some data.
-        try {
-            KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
-            ks.load(null);
-            KeyStore.Entry entry = ks.getEntry(alias, null);
-            SecretKey secretKey = ((KeyStore.SecretKeyEntry) entry).getSecretKey();
-
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-            byte[] clearText = {0x01, 0x02};
-            byte[] cipherText = cipher.doFinal(clearText);
-            return true;
-        } catch (UserNotAuthenticatedException e) {
-            return false;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed!", e);
-        }
-    }
-
-    void createAuthBoundKey(String alias, int timeoutSeconds) {
-        try {
-            KeyGenerator kg = KeyGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
-            KeyGenParameterSpec.Builder builder =
-                    new KeyGenParameterSpec.Builder(
-                        alias,
-                        KeyProperties.PURPOSE_ENCRYPT| KeyProperties.PURPOSE_DECRYPT)
-                            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                            .setUserAuthenticationRequired(true)
-                            .setUserAuthenticationValidityDurationSeconds(timeoutSeconds)
-                            .setKeySize(128);
-            kg.init(builder.build());
-            kg.generateKey();
-        } catch (InvalidAlgorithmParameterException
-                | NoSuchAlgorithmException
-                | NoSuchProviderException e) {
-            throw new RuntimeException("Error creating auth-bound key", e);
-        }
-    }
-
     @Test
     public void testUserAuth() throws Exception {
-        String alias = "authbound";
+        assumeTrue("Device doesn't support lock screen", TestUtil.isLockScreenSupported());
 
+        String alias = "authbound";
         try (DeviceLockSession dl = new DeviceLockSession()) {
             Context appContext = InstrumentationRegistry.getTargetContext();
             KeyguardManager keyguardManager = (KeyguardManager)appContext

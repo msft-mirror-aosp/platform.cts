@@ -19,14 +19,15 @@
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="all_foldable_states" />
+    <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsAppWidgetLauncher1.apk" />
         <option name="test-file-name" value="CtsAppWidgetLauncher2.apk" />
         <option name="test-file-name" value="CtsAppWidgetLauncher3.apk" />
         <option name="test-file-name" value="CtsAppWidgetTestCases.apk" />
+        <option name="test-file-name" value="CtsAppWidgetTestCasesBalApp.apk" />
     </target_preparer>
-
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/widgetprovider/" />
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts/widgetprovider"/>

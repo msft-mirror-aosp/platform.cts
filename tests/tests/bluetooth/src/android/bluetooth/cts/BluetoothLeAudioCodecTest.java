@@ -16,11 +16,24 @@
 
 package android.bluetooth.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import android.bluetooth.BluetoothLeAudioCodecConfig;
 import android.os.Parcel;
-import android.test.AndroidTestCase;
 
-public class BluetoothLeAudioCodecTest extends AndroidTestCase {
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public class BluetoothLeAudioCodecTest {
     private int[] mCodecTypeArray = new int[] {
         BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3,
         BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_INVALID,
@@ -61,7 +74,15 @@ public class BluetoothLeAudioCodecTest extends AndroidTestCase {
         BluetoothLeAudioCodecConfig.FRAME_DURATION_10000
     };
 
-    public void testGetCodecNameAndType() {
+    @Before
+    public void setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(
+                InstrumentationRegistry.getInstrumentation().getContext()));
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getCodecNameAndType() {
         try {
             for (int codecIdx = 0; codecIdx < mCodecTypeArray.length; codecIdx++) {
                 int codecType = mCodecTypeArray[codecIdx];
@@ -85,7 +106,9 @@ public class BluetoothLeAudioCodecTest extends AndroidTestCase {
         }
     }
 
-    public void testGetCodecPriority() {
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getCodecPriority() {
         for (int priorityIdx = 0; priorityIdx < mCodecPriorityArray.length; priorityIdx++) {
             int codecPriority = mCodecPriorityArray[priorityIdx];
 
@@ -98,7 +121,9 @@ public class BluetoothLeAudioCodecTest extends AndroidTestCase {
         }
     }
 
-    public void testGetSampleRate() {
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getSampleRate() {
         for (int sampleRateIdx = 0; sampleRateIdx < mSampleRateArray.length; sampleRateIdx++) {
             int sampleRate = mSampleRateArray[sampleRateIdx];
 
@@ -111,7 +136,9 @@ public class BluetoothLeAudioCodecTest extends AndroidTestCase {
         }
     }
 
-    public void testGetBitsPerSample() {
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getBitsPerSample() {
         for (int bitsPerSampleIdx = 0; bitsPerSampleIdx < mBitsPerSampleArray.length;
                 bitsPerSampleIdx++) {
             int bitsPerSample = mBitsPerSampleArray[bitsPerSampleIdx];
@@ -125,7 +152,9 @@ public class BluetoothLeAudioCodecTest extends AndroidTestCase {
         }
     }
 
-    public void testGetChannelCount() {
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getChannelCount() {
         for (int channelCountIdx = 0; channelCountIdx < mChannelCountArray.length;
                 channelCountIdx++) {
             int channelCount = mChannelCountArray[channelCountIdx];
@@ -139,7 +168,9 @@ public class BluetoothLeAudioCodecTest extends AndroidTestCase {
         }
     }
 
-    public void testGetFrameDuration() {
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getFrameDuration() {
         for (int frameDurationIdx = 0; frameDurationIdx < mFrameDurationArray.length;
                 frameDurationIdx++) {
             int frameDuration = mFrameDurationArray[frameDurationIdx];
@@ -153,7 +184,9 @@ public class BluetoothLeAudioCodecTest extends AndroidTestCase {
         }
     }
 
-    public void testGetOctetsPerFrame() {
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getOctetsPerFrame() {
         final int octetsPerFrame = 100;
         BluetoothLeAudioCodecConfig leAudioCodecConfig =
                 new BluetoothLeAudioCodecConfig.Builder()
@@ -163,7 +196,9 @@ public class BluetoothLeAudioCodecTest extends AndroidTestCase {
         assertEquals(octetsPerFrame, leAudioCodecConfig.getOctetsPerFrame());
     }
 
-    public void testGetMinOctetsPerFrame() {
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getMinOctetsPerFrame() {
         final int minOctetsPerFrame = 100;
         BluetoothLeAudioCodecConfig leAudioCodecConfig =
                 new BluetoothLeAudioCodecConfig.Builder()
@@ -173,7 +208,9 @@ public class BluetoothLeAudioCodecTest extends AndroidTestCase {
         assertEquals(minOctetsPerFrame, leAudioCodecConfig.getMinOctetsPerFrame());
     }
 
-    public void testGetMaxOctetsPerFrame() {
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void getMaxOctetsPerFrame() {
         final int maxOctetsPerFrame = 100;
         BluetoothLeAudioCodecConfig leAudioCodecConfig =
                 new BluetoothLeAudioCodecConfig.Builder()
@@ -183,13 +220,17 @@ public class BluetoothLeAudioCodecTest extends AndroidTestCase {
         assertEquals(maxOctetsPerFrame, leAudioCodecConfig.getMaxOctetsPerFrame());
     }
 
-    public void testDescribeContents() {
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void describeContents() {
         BluetoothLeAudioCodecConfig leAudioCodecConfig =
             new BluetoothLeAudioCodecConfig.Builder().build();
         assertEquals(0, leAudioCodecConfig.describeContents());
     }
 
-    public void testReadWriteParcel() {
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void readWriteParcel() {
         final int octetsPerFrame = 100;
         Parcel parcel = Parcel.obtain();
         BluetoothLeAudioCodecConfig leAudioCodecConfig = new BluetoothLeAudioCodecConfig.Builder()
@@ -220,7 +261,9 @@ public class BluetoothLeAudioCodecTest extends AndroidTestCase {
         assertEquals(octetsPerFrame, leAudioCodecConfigFromParcel.getOctetsPerFrame());
     }
 
-    public void testBuilderWithExistingObject() {
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void builderWithExistingObject() {
         final int octetsPerFrame = 100;
         final int minOctectsPerFrame = 50;
         final int maxOctectsPerFrame = 150;

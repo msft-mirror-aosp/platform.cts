@@ -18,6 +18,7 @@ package android.mediapc.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
+import static android.mediapc.cts.common.CodecMetrics.getMetrics;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -34,12 +35,14 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
+import android.mediapc.cts.common.CodecMetrics;
 import android.os.Build;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Assert;
 
@@ -57,6 +60,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 class CodecAsyncHandler extends MediaCodec.Callback {
     private static final String LOG_TAG = CodecAsyncHandler.class.getSimpleName();
@@ -185,6 +190,7 @@ abstract class CodecTestBase {
     private static final String LOG_TAG = CodecTestBase.class.getSimpleName();
     static final boolean ENABLE_LOGS = false;
     static final int PER_TEST_TIMEOUT_LARGE_TEST_MS = 300000;
+    static final int PER_TEST_TIMEOUT_SMALL_TEST_MS = 60000;
     static final int SELECT_ALL = 0; // Select all codecs
     static final int SELECT_HARDWARE = 1; // Select Hardware codecs only
     static final int SELECT_SOFTWARE = 2; // Select Software codecs only
@@ -194,6 +200,13 @@ abstract class CodecTestBase {
     static final long Q_DEQ_TIMEOUT_US = 5000; // block at most 5ms while looking for io buffers
     static final int RETRY_LIMIT = 100; // max poll counter before test aborts and returns error
     static final String mInpPrefix = WorkDir.getMediaDirString();
+    public static final MediaCodecList MCL_ALL = new MediaCodecList(MediaCodecList.ALL_CODECS);
+    public static final String CODEC_FILTER_KEY = "codec-filter";
+    public static final String CODEC_PREFIX_KEY = "codec-prefix";
+    public static final String MEDIA_TYPE_PREFIX_KEY = "media-type-prefix";
+    public static Pattern codecFilter;
+    public static String codecPrefix;
+    public static String mediaTypePrefix;
 
     CodecAsyncHandler mAsyncHandle;
     boolean mIsCodecInAsyncMode;
@@ -202,6 +215,8 @@ abstract class CodecTestBase {
     boolean mSignalEOSWithLastFrame;
     int mInputCount;
     int mOutputCount;
+    double mFrameDrops;
+    long mLastPresentationTimeUs = -1;
     long mPrevOutputPts;
     boolean mSignalledOutFormatChanged;
     MediaFormat mOutFormat;
@@ -210,9 +225,71 @@ abstract class CodecTestBase {
     MediaCodec mCodec;
     Surface mSurface;
 
+    static {
+        android.os.Bundle args = InstrumentationRegistry.getArguments();
+        codecPrefix = args.getString(CODEC_PREFIX_KEY);
+        mediaTypePrefix = args.getString(MEDIA_TYPE_PREFIX_KEY);
+        String codecFilterStr = args.getString(CODEC_FILTER_KEY);
+        if (codecFilterStr != null) {
+            codecFilter = Pattern.compile(codecFilterStr);
+        }
+    }
+
     abstract void enqueueInput(int bufferIndex) throws IOException;
 
-    abstract void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info);
+    // Callback for each time the output count changes.
+    // This can be used to measure codec performance.
+    Consumer<Integer> mOutputCountListener;
+
+    // must not be called during doWork
+    void setOutputCountListener(Consumer<Integer> listener) {
+        mOutputCountListener = listener;
+    }
+
+    /**
+     * Called to handle a dequeued output buffer.
+     *
+     * We account for EOS and the number of full output frames.
+     */
+    protected void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {
+        if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+            mSawOutputEOS = true;
+        }
+
+        long expectedFrameDurationUs = 1000000 / 30;
+        long presentationTimeUs = info.presentationTimeUs;
+        if (mLastPresentationTimeUs != -1) {
+            if (presentationTimeUs > mLastPresentationTimeUs + expectedFrameDurationUs) {
+                mFrameDrops++;
+            }
+        }
+        mLastPresentationTimeUs = presentationTimeUs;
+
+        int outputCount = mOutputCount;
+        // handle output count prior to releasing the buffer as that can take time
+        if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+            mOutputCount++;
+            if (mOutputCountListener != null) {
+                mOutputCountListener.accept(mOutputCount);
+            }
+        }
+        releaseOutput(outputCount, bufferIndex, info);
+    }
+
+    /**
+     * Called to handle releasing an output buffer.
+     */
+    abstract void releaseOutput(int bufferIndex, MediaCodec.BufferInfo info);
+
+    /**
+     * Called to handle releasing an output buffer.
+     *
+     * @param outputCount total count of full output frames prior to
+     *                    this point (not including this buffer).
+     */
+    protected void releaseOutput(int outputCount, int bufferIndex, MediaCodec.BufferInfo info) {
+        releaseOutput(bufferIndex, info);
+    }
 
     void configureCodec(MediaFormat format, boolean isAsync, boolean signalEOSWithLastFrame,
             boolean isEncoder) throws Exception {
@@ -237,6 +314,8 @@ abstract class CodecTestBase {
         mSignalEOSWithLastFrame = signalEOSWithLastFrame;
         mInputCount = 0;
         mOutputCount = 0;
+        mFrameDrops = 0;
+        mLastPresentationTimeUs = -1;
         mPrevOutputPts = Long.MIN_VALUE;
         mSignalledOutFormatChanged = false;
     }
@@ -430,6 +509,39 @@ abstract class CodecTestBase {
         }
         return listOfMimes;
     }
+
+    /**
+     * Returns MediaCodecInfo for the given codec name
+     */
+    public static MediaCodecInfo getCodecInfo(String codecName) {
+        for (MediaCodecInfo info : MCL_ALL.getCodecInfos()) {
+            if (info.getName().equals(codecName)) {
+                return info;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Checks if the codec supports all the given formats
+     */
+    public static boolean areFormatsSupported(String codecName, ArrayList<MediaFormat> formats) {
+        boolean isSupported = true;
+        MediaCodecInfo info = getCodecInfo(codecName);
+        if (info == null) {
+            return false;
+        }
+        for (MediaFormat format : formats) {
+            String mediaType = format.getString(MediaFormat.KEY_MIME);
+            MediaCodecInfo.CodecCapabilities codecCapabilities =
+                    info.getCapabilitiesForType(mediaType);
+            if (!codecCapabilities.isFormatSupported(format)) {
+                Log.d(LOG_TAG, "Codec: " + codecName + " doesn't support format: " + format);
+                return false;
+            }
+        }
+        return true;
+    }
 }
 
 class CodecDecoderTestBase extends CodecTestBase {
@@ -513,8 +625,25 @@ class CodecDecoderTestBase extends CodecTestBase {
                     isEncoder ? MediaCodec.CONFIGURE_FLAG_ENCODE : 0);
 
             Map<UUID, byte[]> psshInfo = mExtractor.getPsshInfo();
-            assertNotNull("Extractor is missing pssh info", psshInfo);
-            byte[] emeInitData = psshInfo.get(WIDEVINE_UUID);
+            byte[] emeInitData = null;
+
+            // TODO(b/230682028) Remove the following once webm extractor returns PSSH info for VP9
+            if (psshInfo == null && mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+                if (format.getInteger(MediaFormat.KEY_HEIGHT) == 1080) {
+                    emeInitData = new byte[]{8, 1, 18, 1, 51, 26, 13, 119, 105, 100, 101, 118,
+                            105, 110, 101, 95, 116, 101, 115, 116, 34, 10, 50, 48, 49, 53,
+                            95, 116, 101, 97, 114, 115, 42, 2, 72, 68};
+                } else if (format.getInteger(MediaFormat.KEY_HEIGHT) == 2160) {
+                    emeInitData = new byte[]{8, 1, 18, 1, 56, 26, 13, 119, 105, 100, 101, 118,
+                            105, 110, 101, 95, 116, 101, 115, 116, 34, 10, 50, 48, 49, 53,
+                            95, 116, 101, 97, 114, 115, 42, 4, 85, 72, 68, 49};
+                } else {
+                    fail("unable to get pssh info for the given resolution in vp9");
+                }
+            } else {
+                assertNotNull("Extractor is missing pssh info", psshInfo);
+                emeInitData = psshInfo.get(WIDEVINE_UUID);
+            }
             assertNotNull("Extractor pssh info is missing data for scheme: " + WIDEVINE_UUID,
                     emeInitData);
             KeyRequester requester =
@@ -592,13 +721,7 @@ class CodecDecoderTestBase extends CodecTestBase {
         }
     }
 
-    void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {
-        if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-            mSawOutputEOS = true;
-        }
-        if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
-            mOutputCount++;
-        }
+    void releaseOutput(int bufferIndex, MediaCodec.BufferInfo info) {
         mCodec.releaseOutputBuffer(bufferIndex, false);
     }
 }
@@ -784,13 +907,7 @@ class CodecEncoderTestBase extends CodecTestBase {
         }
     }
 
-    void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {
-        if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-            mSawOutputEOS = true;
-        }
-        if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
-            mOutputCount++;
-        }
+    void releaseOutput(int bufferIndex, MediaCodec.BufferInfo info) {
         mCodec.releaseOutputBuffer(bufferIndex, false);
     }
 }
@@ -799,7 +916,7 @@ class CodecEncoderTestBase extends CodecTestBase {
  * The following class decodes the given testFile using decoder created by the given decoderName
  * in surface mode(uses PersistentInputSurface) and returns the achieved fps for decoding.
  */
-class Decode extends CodecDecoderTestBase implements Callable<Double> {
+class Decode extends CodecDecoderTestBase implements Callable<CodecMetrics> {
     private static final String LOG_TAG = Decode.class.getSimpleName();
 
     final String mDecoderName;
@@ -809,6 +926,9 @@ class Decode extends CodecDecoderTestBase implements Callable<Double> {
             String.format("%s?video_id=%s&provider=%s", WIDEVINE_LICENSE_SERVER_URL,
                     "GTS_HW_SECURE_ALL", PROVIDER);
     final boolean mIsAsync;
+    private int mInitialFramesToIgnoreCount = 1;
+    private long mStartTimeMillis = 0;
+    private long mEndTimeMillis = 0;
 
     Decode(String mime, String testFile, String decoderName, boolean isAsync) {
         this(mime, testFile,decoderName, isAsync, false);
@@ -822,8 +942,29 @@ class Decode extends CodecDecoderTestBase implements Callable<Double> {
         mSecureMode = secureMode;
     }
 
-    public Double doDecode() throws Exception {
+    public void setInitialFramesToIgnoreCount(int count) {
+        mInitialFramesToIgnoreCount = count;
+    }
+
+    // measure throughput at the output port
+    private void onOutputCountListener(int count) {
+        // keep the timestamp of the last output frame
+        mEndTimeMillis = System.currentTimeMillis();
+
+        // don't count the time for the initial frames that are ignored
+        if (count == mInitialFramesToIgnoreCount) {
+            mStartTimeMillis = mEndTimeMillis;
+        }
+    }
+
+    public CodecMetrics doDecode() throws Exception {
         MediaFormat format = setUpSource(mTestFile);
+        ArrayList<MediaFormat> formats = new ArrayList<>();
+        formats.add(format);
+        // If the decoder doesn't support the formats, then return 0 to indicate that decode failed
+        if (!areFormatsSupported(mDecoderName, formats)) {
+            return getMetrics(0.0, 0.0);
+        }
         mCodec = MediaCodec.createByCodecName(mDecoderName);
         mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
         configureCodec(format, mIsAsync, false, false, mServerURL);
@@ -833,13 +974,16 @@ class Decode extends CodecDecoderTestBase implements Callable<Double> {
         } catch (Exception e) {
             Log.e(LOG_TAG, "Stopping the test because codec.start() failed.", e);
             mCodec.release();
-            return (Double) 0.0;
+            return getMetrics(0.0, 0.0);
         }
-        long start = System.currentTimeMillis();
+
+        // capture timestamps at receipt of output buffers
+        setOutputCountListener(i -> onOutputCountListener(i));
+
         doWork(Integer.MAX_VALUE);
         queueEOS();
         waitForAllOutputs();
-        long end = System.currentTimeMillis();
+
         mCodec.stop();
         mCodec.release();
         mExtractor.release();
@@ -849,15 +993,22 @@ class Decode extends CodecDecoderTestBase implements Callable<Double> {
         if (mDrm != null) {
             mDrm.close();
         }
-        double fps = mOutputCount / ((end - start) / 1000.0);
+        double fps = (mOutputCount - mInitialFramesToIgnoreCount) /
+                ((mEndTimeMillis - mStartTimeMillis) / 1000.0);
         Log.d(LOG_TAG, "Decode Mime: " + mMime + " Decoder: " + mDecoderName +
                 " Achieved fps: " + fps);
-        return fps;
+        return getMetrics(fps, mFrameDrops / 30);
     }
 
     @Override
-    public Double call() throws Exception {
-        return doDecode();
+    public CodecMetrics call() throws Exception {
+        try {
+            return doDecode();
+        } catch (Exception e) {
+            Log.d(LOG_TAG, "Decode Mime: " + mMime + " Decoder: " + mDecoderName
+                    + " Failed due to: " + e);
+            return getMetrics(-1.0, 0.0);
+        }
     }
 }
 
@@ -873,13 +1024,7 @@ class DecodeToSurface extends Decode {
         mSurface = surface;
     }
 
-    void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {
-        if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-            mSawOutputEOS = true;
-        }
-        if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
-            mOutputCount++;
-        }
+    void releaseOutput(int bufferIndex, MediaCodec.BufferInfo info) {
         mCodec.releaseOutputBuffer(bufferIndex, true);
     }
 }
@@ -888,23 +1033,41 @@ class DecodeToSurface extends Decode {
  * The following class encodes a YUV video file to a given mimeType using encoder created by the
  * given encoderName and configuring to 30fps format.
  */
-class Encode extends CodecEncoderTestBase implements Callable<Double> {
+class Encode extends CodecEncoderTestBase implements Callable<CodecMetrics> {
     private static final String LOG_TAG = Encode.class.getSimpleName();
 
     private final String mEncoderName;
     private final boolean mIsAsync;
     private final int mBitrate;
 
+    private int mInitialFramesToIgnoreCount = 1;
+    private long mStartTimeMillis = 0;
+    private long mEndTimeMillis = 0;
+
     Encode(String mime, String encoderName, boolean isAsync, int height, int width, int frameRate,
             int bitrate) {
         super(mime);
         mEncoderName = encoderName;
         mIsAsync = isAsync;
-        mSurface = MediaCodec.createPersistentInputSurface();
         mFrameRate = frameRate;
         mBitrate = bitrate;
         mHeight = height;
         mWidth = width;
+    }
+
+    public void setInitialFramesToIgnoreCount(int count) {
+        mInitialFramesToIgnoreCount = count;
+    }
+
+    // measure throughput at the output port
+    private void onOutputCountListener(int count) {
+        // keep the timestamp of the last output frame
+        mEndTimeMillis = System.currentTimeMillis();
+
+        // don't count the time for the initial frames that are ignored
+        if (count == mInitialFramesToIgnoreCount) {
+            mStartTimeMillis = mEndTimeMillis;
+        }
     }
 
     private MediaFormat setUpFormat() {
@@ -922,7 +1085,7 @@ class Encode extends CodecEncoderTestBase implements Callable<Double> {
     }
 
 
-    public Double doEncode() throws Exception {
+    public CodecMetrics doEncode() throws Exception {
         MediaFormat format = setUpFormat();
         mWidth = format.getInteger(MediaFormat.KEY_WIDTH);
         mHeight = format.getInteger(MediaFormat.KEY_HEIGHT);
@@ -930,21 +1093,25 @@ class Encode extends CodecEncoderTestBase implements Callable<Double> {
         mCodec = MediaCodec.createByCodecName(mEncoderName);
         configureCodec(format, mIsAsync, false, true);
         mCodec.start();
-        long start = System.currentTimeMillis();
+
+        // capture timestamps at receipt of output buffers
+        setOutputCountListener(i -> onOutputCountListener(i));
+
         doWork(Integer.MAX_VALUE);
         queueEOS();
         waitForAllOutputs();
-        long end = System.currentTimeMillis();
+
         mCodec.stop();
         mCodec.release();
-        double fps = mOutputCount / ((end - start) / 1000.0);
+        double fps = (mOutputCount - mInitialFramesToIgnoreCount) /
+                ((mEndTimeMillis - mStartTimeMillis) / 1000.0);
         Log.d(LOG_TAG, "Encode Mime: " + mMime + " Encoder: " + mEncoderName +
                 " Achieved fps: " + fps);
-        return fps;
+        return getMetrics(fps, mFrameDrops / 30);
     }
 
     @Override
-    public Double call() throws Exception {
+    public CodecMetrics call() throws Exception {
         return doEncode();
     }
 }

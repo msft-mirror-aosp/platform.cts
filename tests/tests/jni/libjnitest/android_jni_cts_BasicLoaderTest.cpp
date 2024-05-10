@@ -27,6 +27,7 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/user.h>
 #include <unistd.h>
 
 #include <string>
@@ -46,13 +47,15 @@ static bool run_test(std::string* error_msg) {
   void* taxicab_number = dlsym(handle, "dlopen_testlib_taxicab_number");
   if (taxicab_number == nullptr) {
     *error_msg = dlerror();
+    dlclose(handle);
     return false;
   }
 
   dlclose(handle);
 
-  uintptr_t page_start = reinterpret_cast<uintptr_t>(taxicab_number) & ~(PAGE_SIZE - 1);
-  if (mprotect(reinterpret_cast<void*>(page_start), PAGE_SIZE, PROT_NONE) == 0) {
+  static const size_t kPageSize = getpagesize();
+  uintptr_t page_start = reinterpret_cast<uintptr_t>(taxicab_number) & ~(kPageSize - 1);
+  if (mprotect(reinterpret_cast<void*>(page_start), kPageSize, PROT_NONE) == 0) {
     *error_msg = std::string("The library \"") +
                  kTestLibName +
                  "\" has not been unloaded on dlclose()";

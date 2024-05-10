@@ -36,33 +36,49 @@ import static org.mockito.Mockito.verify;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.ColorSpace;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraCharacteristics.Key;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraExtensionCharacteristics;
 import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
+import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
 import android.hardware.camera2.params.BlackLevelPattern;
+import android.hardware.camera2.params.ColorSpaceProfiles;
 import android.hardware.camera2.params.ColorSpaceTransform;
 import android.hardware.camera2.params.DeviceStateSensorOrientationMap;
 import android.hardware.camera2.params.DynamicRangeProfiles;
+import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.RecommendedStreamConfigurationMap;
+import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.hardware.cts.helpers.CameraUtils;
-import android.mediapc.cts.common.Requirement;
-import android.mediapc.cts.common.RequiredMeasurement;
-import android.mediapc.cts.common.RequirementConstants;
-import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.media.CamcorderProfile;
+import android.media.Image;
 import android.media.ImageReader;
+import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.PerformanceClassEvaluator.CameraExtensionRequirement;
+import android.mediapc.cts.common.PerformanceClassEvaluator.DynamicRangeTenBitsRequirement;
+import android.mediapc.cts.common.PerformanceClassEvaluator.FaceDetectionRequirement;
+import android.mediapc.cts.common.RequiredMeasurement;
+import android.mediapc.cts.common.Requirement;
+import android.mediapc.cts.common.RequirementConstants;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.Pair;
@@ -76,9 +92,21 @@ import android.view.Surface;
 import android.view.WindowManager;
 import android.view.WindowMetrics;
 
+import androidx.camera.core.CameraSelector;
+import androidx.camera.extensions.ExtensionMode;
+import androidx.camera.extensions.ExtensionsManager;
+import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.internal.camera.flags.Flags;
+
+import com.google.common.util.concurrent.ListenableFuture;
+
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
+import static org.mockito.Mockito.*;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -90,11 +118,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 /**
  * Extended tests for static camera characteristics.
@@ -131,6 +164,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     private static final int MAX_NUM_IMAGES = 5;
     private static final long PREVIEW_RUN_MS = 500;
     private static final long FRAME_DURATION_30FPS_NSEC = (long) 1e9 / 30;
+    private static final long WAIT_TIMEOUT_IN_MS = 10_000;
+    private static final int CONFIGURE_TIMEOUT = 5000; // ms
+    private static final int CAPTURE_TIMEOUT = 1500; // ms
 
     private static final long MIN_UHR_SENSOR_RESOLUTION = 24000000;
     /*
@@ -161,6 +197,12 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING;
     private static final int CONSTRAINED_HIGH_SPEED =
             CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO;
+    private static final int DYNAMIC_RANGE_TEN_BIT =
+            CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT;
+    private static final int FACE_DETECTION_MODE_SIMPLE =
+            CameraCharacteristics.STATISTICS_FACE_DETECT_MODE_SIMPLE;
+    private static final int FACE_DETECTION_MODE_FULL =
+            CameraCharacteristics.STATISTICS_FACE_DETECT_MODE_FULL;
     private static final int MONOCHROME =
             CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MONOCHROME;
     private static final int HIGH_SPEED_FPS_LOWER_MIN = 30;
@@ -170,12 +212,17 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     public final ActivityTestRule<EmptyActivity> mActivityRule = new ActivityTestRule<>(
             EmptyActivity.class, false, false);
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
         mCharacteristics = new ArrayList<>();
-        for (int i = 0; i < mAllCameraIds.length; i++) {
-            mCharacteristics.add(mAllStaticInfo.get(mAllCameraIds[i]).getCharacteristics());
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            mCharacteristics.add(mAllStaticInfo.get(allCameraIds[i]).getCharacteristics());
         }
     }
 
@@ -192,12 +239,13 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     @Test
     public void testAvailableStreamConfigs() throws Exception {
         boolean firstBackFacingCamera = true;
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             CameraCharacteristics c = mCharacteristics.get(i);
             StreamConfigurationMap config =
                     c.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             assertNotNull(String.format("No stream configuration map found for: ID %s",
-                    mAllCameraIds[i]), config);
+                    allCameraIds[i]), config);
             int[] outputFormats = config.getOutputFormats();
 
             int[] actualCapabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
@@ -206,26 +254,26 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
 
             // Check required formats exist (JPEG, and YUV_420_888).
             if (!arrayContains(actualCapabilities, BC)) {
-                Log.i(TAG, "Camera " + mAllCameraIds[i] +
+                Log.i(TAG, "Camera " + allCameraIds[i] +
                     ": BACKWARD_COMPATIBLE capability not supported, skipping test");
                 continue;
             }
 
             boolean isMonochromeWithY8 = arrayContains(actualCapabilities, MONOCHROME)
                     && arrayContains(outputFormats, ImageFormat.Y8);
-            boolean isHiddenPhysicalCamera = !arrayContains(mCameraIdsUnderTest, mAllCameraIds[i]);
+            boolean isHiddenPhysicalCamera = !arrayContains(getCameraIdsUnderTest(), allCameraIds[i]);
             boolean supportHeic = arrayContains(outputFormats, ImageFormat.HEIC);
 
             assertArrayContains(
                     String.format("No valid YUV_420_888 preview formats found for: ID %s",
-                            mAllCameraIds[i]), outputFormats, ImageFormat.YUV_420_888);
+                            allCameraIds[i]), outputFormats, ImageFormat.YUV_420_888);
             if (isMonochromeWithY8) {
                 assertArrayContains(
                         String.format("No valid Y8 preview formats found for: ID %s",
-                                mAllCameraIds[i]), outputFormats, ImageFormat.Y8);
+                                allCameraIds[i]), outputFormats, ImageFormat.Y8);
             }
             assertArrayContains(String.format("No JPEG image format for: ID %s",
-                    mAllCameraIds[i]), outputFormats, ImageFormat.JPEG);
+                    allCameraIds[i]), outputFormats, ImageFormat.JPEG);
 
             Size[] yuvSizes = config.getOutputSizes(ImageFormat.YUV_420_888);
             Size[] y8Sizes = config.getOutputSizes(ImageFormat.Y8);
@@ -235,11 +283,11 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
 
             CameraTestUtils.assertArrayNotEmpty(yuvSizes,
                     String.format("No sizes for preview format %x for: ID %s",
-                            ImageFormat.YUV_420_888, mAllCameraIds[i]));
+                            ImageFormat.YUV_420_888, allCameraIds[i]));
             if (isMonochromeWithY8) {
                 CameraTestUtils.assertArrayNotEmpty(y8Sizes,
                     String.format("No sizes for preview format %x for: ID %s",
-                            ImageFormat.Y8, mAllCameraIds[i]));
+                            ImageFormat.Y8, allCameraIds[i]));
             }
 
             Rect activeRect = CameraTestUtils.getValueNotNull(
@@ -251,7 +299,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             int activeArrayWidth = activeRect.width();
             long sensorResolution = pixelArraySize.getHeight() * pixelArraySize.getWidth() ;
             Integer lensFacing = c.get(CameraCharacteristics.LENS_FACING);
-            assertNotNull("Can't get lens facing info for camera id: " + mAllCameraIds[i],
+            assertNotNull("Can't get lens facing info for camera id: " + allCameraIds[i],
                     lensFacing);
 
             // Check that the sensor sizes are atleast what the CDD specifies
@@ -280,51 +328,60 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     activeArrayHeight >= FULLHD.getHeight()) {
                 assertArrayContainsAnyOf(String.format(
                         "Required FULLHD size not found for format %x for: ID %s",
-                        ImageFormat.JPEG, mAllCameraIds[i]), jpegSizes,
+                        ImageFormat.JPEG, allCameraIds[i]), jpegSizes,
                         new Size[] {FULLHD, FULLHD_ALT});
                 if (supportHeic) {
                     assertArrayContainsAnyOf(String.format(
                             "Required FULLHD size not found for format %x for: ID %s",
-                            ImageFormat.HEIC, mAllCameraIds[i]), heicSizes,
+                            ImageFormat.HEIC, allCameraIds[i]), heicSizes,
                             new Size[] {FULLHD, FULLHD_ALT});
                 }
             }
 
-            if (activeArrayWidth >= HD.getWidth() &&
-                    activeArrayHeight >= HD.getHeight()) {
-                assertArrayContains(String.format(
-                        "Required HD size not found for format %x for: ID %s",
-                        ImageFormat.JPEG, mAllCameraIds[i]), jpegSizes, HD);
-                if (supportHeic) {
+            boolean isPrimaryRear = CameraTestUtils.isPrimaryRearFacingCamera(
+                    mCameraManager, allCameraIds[i]);
+            boolean isPrimaryFront = CameraTestUtils.isPrimaryFrontFacingCamera(
+                    mCameraManager, allCameraIds[i]);
+            boolean isPrimaryCamera = isPrimaryFront || isPrimaryRear;
+            // Skip check for < 1080p JPEG sizes for media performance class level >= 31
+            // since SDK 31 requires a minimum size of 1080p for JPEG
+            if (Build.VERSION.MEDIA_PERFORMANCE_CLASS < Build.VERSION_CODES.S
+                    || !isPrimaryCamera) {
+                if (activeArrayWidth >= HD.getWidth()
+                        && activeArrayHeight >= HD.getHeight()) {
                     assertArrayContains(String.format(
                             "Required HD size not found for format %x for: ID %s",
-                            ImageFormat.HEIC, mAllCameraIds[i]), heicSizes, HD);
+                            ImageFormat.JPEG, allCameraIds[i]), jpegSizes, HD);
+                    if (supportHeic) {
+                        assertArrayContains(String.format(
+                                "Required HD size not found for format %x for: ID %s",
+                                ImageFormat.HEIC, allCameraIds[i]), heicSizes, HD);
+                    }
                 }
-            }
 
-            if (activeArrayWidth >= VGA.getWidth() &&
-                    activeArrayHeight >= VGA.getHeight()) {
-                assertArrayContains(String.format(
-                        "Required VGA size not found for format %x for: ID %s",
-                        ImageFormat.JPEG, mAllCameraIds[i]), jpegSizes, VGA);
-                if (supportHeic) {
+                if (activeArrayWidth >= VGA.getWidth()
+                        && activeArrayHeight >= VGA.getHeight()) {
                     assertArrayContains(String.format(
                             "Required VGA size not found for format %x for: ID %s",
-                            ImageFormat.HEIC, mAllCameraIds[i]), heicSizes, VGA);
+                            ImageFormat.JPEG, allCameraIds[i]), jpegSizes, VGA);
+                    if (supportHeic) {
+                        assertArrayContains(String.format(
+                                "Required VGA size not found for format %x for: ID %s",
+                                ImageFormat.HEIC, allCameraIds[i]), heicSizes, VGA);
+                    }
                 }
-            }
 
-            if (activeArrayWidth >= QVGA.getWidth() &&
-                    activeArrayHeight >= QVGA.getHeight()) {
-                assertArrayContains(String.format(
-                        "Required QVGA size not found for format %x for: ID %s",
-                        ImageFormat.JPEG, mAllCameraIds[i]), jpegSizes, QVGA);
-                if (supportHeic) {
+                if (activeArrayWidth >= QVGA.getWidth()
+                        && activeArrayHeight >= QVGA.getHeight()) {
                     assertArrayContains(String.format(
                             "Required QVGA size not found for format %x for: ID %s",
-                            ImageFormat.HEIC, mAllCameraIds[i]), heicSizes, QVGA);
+                            ImageFormat.JPEG, allCameraIds[i]), jpegSizes, QVGA);
+                    if (supportHeic) {
+                        assertArrayContains(String.format(
+                                "Required QVGA size not found for format %x for: ID %s",
+                                ImageFormat.HEIC, allCameraIds[i]), heicSizes, QVGA);
+                    }
                 }
-
             }
 
             ArrayList<Size> jpegSizesList = new ArrayList<>(Arrays.asList(jpegSizes));
@@ -338,7 +395,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 // For hidden physical camera, since we don't require CamcorderProfile to be
                 // available, use FULLHD 30 as maximum video size as well.
                 List<Size> videoSizes = CameraTestUtils.getSupportedVideoSizes(
-                        mAllCameraIds[i], mCameraManager, FULLHD);
+                        allCameraIds[i], mCameraManager, FULLHD);
                 for (Size sz : videoSizes) {
                     long minFrameDuration = config.getOutputMinFrameDuration(
                             android.media.MediaRecorder.class, sz);
@@ -349,14 +406,14 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     }
                 }
             } else {
-                int cameraId = Integer.valueOf(mAllCameraIds[i]);
+                int cameraId = Integer.valueOf(allCameraIds[i]);
                 CamcorderProfile maxVideoProfile = CamcorderProfile.get(
                         cameraId, CamcorderProfile.QUALITY_HIGH);
                 maxVideoSize = new Size(
                         maxVideoProfile.videoFrameWidth, maxVideoProfile.videoFrameHeight);
             }
             if (maxVideoSize == null) {
-                fail("Camera " + mAllCameraIds[i] + " does not support any 30fps video output");
+                fail("Camera " + allCameraIds[i] + " does not support any 30fps video output");
             }
 
             // Handle FullHD special case first
@@ -425,6 +482,134 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                         fail("Size " + s + " not found in PRIVATE format");
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Check JPEG size overrides for devices claiming S Performance class requirement via
+     * Version.MEDIA_PERFORMANCE_CLASS
+     */
+    @Test
+    public void testSPerfClassJpegSizes() throws Exception {
+        final boolean isAtLeastSPerfClass =
+                (Build.VERSION.MEDIA_PERFORMANCE_CLASS >= Build.VERSION_CODES.S);
+        if (!isAtLeastSPerfClass) {
+            return;
+        }
+
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            testSPerfClassJpegSizesByCamera(cameraIdsUnderTest[i]);
+        }
+    }
+
+    // Verify primary camera devices's supported JPEG sizes are at least 1080p.
+    private void testSPerfClassJpegSizesByCamera(String cameraId) throws Exception {
+        boolean isPrimaryRear = CameraTestUtils.isPrimaryRearFacingCamera(
+                mCameraManager, cameraId);
+        boolean isPrimaryFront = CameraTestUtils.isPrimaryFrontFacingCamera(
+                mCameraManager, cameraId);
+        if (!isPrimaryRear && !isPrimaryFront) {
+            return;
+        }
+
+        CameraCharacteristics c = mCameraManager.getCameraCharacteristics(cameraId);
+        StaticMetadata staticInfo =
+                new StaticMetadata(c, StaticMetadata.CheckLevel.ASSERT, mCollector);
+
+        Size[] jpegSizes = staticInfo.getJpegOutputSizesChecked();
+        assertTrue("Primary cameras must support JPEG formats",
+                jpegSizes != null && jpegSizes.length > 0);
+        int minEuclidDistSquare = Integer.MAX_VALUE;
+        Size closestJpegSizeToVga = VGA;
+        for (Size jpegSize : jpegSizes) {
+            mCollector.expectTrue(
+                    "Primary camera's JPEG size must be at least 1080p, but is "
+                    + jpegSize, jpegSize.getWidth() * jpegSize.getHeight()
+                        >= FULLHD.getWidth() * FULLHD.getHeight());
+            int widthDist = jpegSize.getWidth() - VGA.getWidth();
+            int heightDist = jpegSize.getHeight() - VGA.getHeight();
+            int euclidDistSquare = widthDist * widthDist + heightDist * heightDist;
+            if (euclidDistSquare < minEuclidDistSquare) {
+                closestJpegSizeToVga = jpegSize;
+                minEuclidDistSquare = euclidDistSquare;
+            }
+        }
+
+        CameraDevice camera = null;
+        ImageReader jpegTarget = null;
+        Image image = null;
+        try {
+            camera = CameraTestUtils.openCamera(mCameraManager, cameraId,
+                    /*listener*/null, mHandler);
+
+            List<OutputConfiguration> outputConfigs = new ArrayList<>();
+            CameraTestUtils.SimpleImageReaderListener imageListener =
+                    new CameraTestUtils.SimpleImageReaderListener();
+            jpegTarget = CameraTestUtils.makeImageReader(VGA,
+                    ImageFormat.JPEG, 1 /*maxNumImages*/, imageListener, mHandler);
+            Surface jpegSurface = jpegTarget.getSurface();
+            outputConfigs.add(new OutputConfiguration(jpegSurface));
+
+            // isSessionConfigurationSupported will return true for JPEG sizes smaller
+            // than 1080P, due to framework rouding up to closest supported size.
+            CameraTestUtils.SessionConfigSupport sessionConfigSupport =
+                    CameraTestUtils.isSessionConfigSupported(
+                            camera, mHandler, outputConfigs, /*inputConfig*/ null,
+                            SessionConfiguration.SESSION_REGULAR, true/*defaultSupport*/);
+            mCollector.expectTrue("isSessionConfiguration fails with error",
+                    !sessionConfigSupport.error);
+            mCollector.expectTrue("isSessionConfiguration returns false for JPEG < 1080p",
+                    sessionConfigSupport.configSupported);
+
+            // Session creation for JPEG sizes smaller than 1080p will succeed, and the
+            // result JPEG image dimension is rounded up to closest supported size.
+            CaptureRequest.Builder request =
+                    camera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            request.addTarget(jpegSurface);
+
+            CameraCaptureSession.StateCallback sessionListener =
+                    mock(CameraCaptureSession.StateCallback.class);
+            CameraCaptureSession session = CameraTestUtils.configureCameraSessionWithConfig(
+                    camera, outputConfigs, sessionListener, mHandler);
+
+            verify(sessionListener, timeout(CONFIGURE_TIMEOUT).atLeastOnce())
+                    .onConfigured(any(CameraCaptureSession.class));
+            verify(sessionListener, timeout(CONFIGURE_TIMEOUT).atLeastOnce())
+                    .onReady(any(CameraCaptureSession.class));
+            verify(sessionListener, never()).onConfigureFailed(any(CameraCaptureSession.class));
+            verify(sessionListener, never()).onActive(any(CameraCaptureSession.class));
+            verify(sessionListener, never()).onClosed(any(CameraCaptureSession.class));
+
+            CameraCaptureSession.CaptureCallback captureListener =
+                    mock(CameraCaptureSession.CaptureCallback.class);
+            session.capture(request.build(), captureListener, mHandler);
+
+            verify(captureListener, timeout(CAPTURE_TIMEOUT).atLeastOnce())
+                    .onCaptureCompleted(any(CameraCaptureSession.class),
+                            any(CaptureRequest.class), any(TotalCaptureResult.class));
+            verify(captureListener, never()).onCaptureFailed(any(CameraCaptureSession.class),
+                    any(CaptureRequest.class), any(CaptureFailure.class));
+
+            image = imageListener.getImage(CAPTURE_TIMEOUT);
+            assertNotNull("Image must be valid", image);
+            assertEquals("Image format isn't JPEG", image.getFormat(), ImageFormat.JPEG);
+
+            byte[] data = CameraTestUtils.getDataFromImage(image);
+            assertTrue("Invalid image data", data != null && data.length > 0);
+
+            CameraTestUtils.validateJpegData(data, closestJpegSizeToVga.getWidth(),
+                    closestJpegSizeToVga.getHeight(), null /*filePath*/);
+        } finally {
+            if (camera != null) {
+                camera.close();
+            }
+            if (jpegTarget != null) {
+                jpegTarget.close();
+            }
+            if (image != null) {
+                image.close();
             }
         }
     }
@@ -822,14 +1007,15 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
 
     @Test
     public void testRecommendedStreamConfigurations() throws Exception {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             CameraCharacteristics c = mCharacteristics.get(i);
             int[] actualCapabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
             assertNotNull("android.request.availableCapabilities must never be null",
                     actualCapabilities);
 
             if (!arrayContains(actualCapabilities, BC)) {
-                Log.i(TAG, "Camera " + mAllCameraIds[i] +
+                Log.i(TAG, "Camera " + allCameraIds[i] +
                         ": BACKWARD_COMPATIBLE capability not supported, skipping test");
                 continue;
             }
@@ -879,47 +1065,47 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             if ((previewConfig == null) && (videoRecordingConfig == null) &&
                     (videoSnapshotConfig == null) && (snapshotConfig == null) &&
                     (rawConfig == null) && (zslConfig == null) && (lowLatencyConfig == null)) {
-                Log.i(TAG, "Camera " + mAllCameraIds[i] +
+                Log.i(TAG, "Camera " + allCameraIds[i] +
                         " doesn't support recommended configurations, skipping test");
                 continue;
             }
 
             assertNotNull(String.format("Mandatory recommended preview configuration map not " +
-                    "found for: ID %s", mAllCameraIds[i]), previewConfig);
-            verifyRecommendedPreviewConfiguration(mAllCameraIds[i], c, previewConfig);
+                    "found for: ID %s", allCameraIds[i]), previewConfig);
+            verifyRecommendedPreviewConfiguration(allCameraIds[i], c, previewConfig);
 
             assertNotNull(String.format("Mandatory recommended video recording configuration map " +
-                    "not found for: ID %s", mAllCameraIds[i]), videoRecordingConfig);
-            verifyRecommendedVideoConfiguration(mAllCameraIds[i], c, videoRecordingConfig);
+                    "not found for: ID %s", allCameraIds[i]), videoRecordingConfig);
+            verifyRecommendedVideoConfiguration(allCameraIds[i], c, videoRecordingConfig);
 
             assertNotNull(String.format("Mandatory recommended video snapshot configuration map " +
-                    "not found for: ID %s", mAllCameraIds[i]), videoSnapshotConfig);
-            verifyRecommendedVideoSnapshotConfiguration(mAllCameraIds[i], c, videoSnapshotConfig,
+                    "not found for: ID %s", allCameraIds[i]), videoSnapshotConfig);
+            verifyRecommendedVideoSnapshotConfiguration(allCameraIds[i], c, videoSnapshotConfig,
                     videoRecordingConfig);
 
             assertNotNull(String.format("Mandatory recommended snapshot configuration map not " +
-                    "found for: ID %s", mAllCameraIds[i]), snapshotConfig);
-            verifyRecommendedSnapshotConfiguration(mAllCameraIds[i], c, snapshotConfig);
+                    "found for: ID %s", allCameraIds[i]), snapshotConfig);
+            verifyRecommendedSnapshotConfiguration(allCameraIds[i], c, snapshotConfig);
 
             if (arrayContains(actualCapabilities, RAW)) {
                 assertNotNull(String.format("Mandatory recommended raw configuration map not " +
-                        "found for: ID %s", mAllCameraIds[i]), rawConfig);
-                verifyRecommendedRawConfiguration(mAllCameraIds[i], c, rawConfig);
+                        "found for: ID %s", allCameraIds[i]), rawConfig);
+                verifyRecommendedRawConfiguration(allCameraIds[i], c, rawConfig);
             }
 
             if (arrayContains(actualCapabilities, OPAQUE_REPROCESS) ||
                     arrayContains(actualCapabilities, YUV_REPROCESS)) {
                 assertNotNull(String.format("Mandatory recommended ZSL configuration map not " +
-                        "found for: ID %s", mAllCameraIds[i]), zslConfig);
-                verifyRecommendedZSLConfiguration(mAllCameraIds[i], c, zslConfig);
+                        "found for: ID %s", allCameraIds[i]), zslConfig);
+                verifyRecommendedZSLConfiguration(allCameraIds[i], c, zslConfig);
             }
 
             if (lowLatencyConfig != null) {
-                verifyRecommendedLowLatencyConfiguration(mAllCameraIds[i], c, lowLatencyConfig);
+                verifyRecommendedLowLatencyConfiguration(allCameraIds[i], c, lowLatencyConfig);
             }
 
             if (dynamic10BitOutputConfig != null) {
-                verifyCommonRecommendedConfiguration(mAllCameraIds[i], c, dynamic10BitOutputConfig,
+                verifyCommonRecommendedConfiguration(allCameraIds[i], c, dynamic10BitOutputConfig,
                         /*checkNoInput*/ true, /*checkNoHighRes*/ false,
                         /*checkNoHighSpeed*/ false, /*checkNoPrivate*/ false,
                         /*checkNoDepth*/ true);
@@ -931,13 +1117,14 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Test {@link CameraCharacteristics#getKeys}
      */
     @Test
-    public void testKeys() {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+    public void testKeys() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             CameraCharacteristics c = mCharacteristics.get(i);
-            mCollector.setCameraId(mAllCameraIds[i]);
+            mCollector.setCameraId(allCameraIds[i]);
 
             if (VERBOSE) {
-                Log.v(TAG, "testKeys - testing characteristics for camera " + mAllCameraIds[i]);
+                Log.v(TAG, "testKeys - testing characteristics for camera " + allCameraIds[i]);
             }
 
             List<CameraCharacteristics.Key<?>> allKeys = c.getKeys();
@@ -979,6 +1166,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AE_COMPENSATION_STEP                    , OPT      ,   BC                   );
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AE_LOCK_AVAILABLE                       , OPT      ,   BC                   );
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES                      , OPT      ,   BC                   );
+                expectKeyAvailable(c, CameraCharacteristics.CONTROL_AUTOFRAMING_AVAILABLE                   , LIMITED  ,   NONE                 );
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AVAILABLE_EFFECTS                       , OPT      ,   BC                   );
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AVAILABLE_SCENE_MODES                   , OPT      ,   BC                   );
                 expectKeyAvailable(c, CameraCharacteristics.CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES     , OPT      ,   BC                   );
@@ -1062,7 +1250,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             StreamConfigurationMap config =
                     c.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             assertNotNull(String.format("No stream configuration map found for: ID %s",
-                    mAllCameraIds[i]), config);
+                    allCameraIds[i]), config);
             if (config.isOutputSupportedFor(ImageFormat.RAW_SENSOR) ||
                     config.isOutputSupportedFor(ImageFormat.RAW10)  ||
                     config.isOutputSupportedFor(ImageFormat.RAW12)  ||
@@ -1100,15 +1288,16 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Test values for static metadata used by the RAW capability.
      */
     @Test
-    public void testStaticRawCharacteristics() {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+    public void testStaticRawCharacteristics() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             CameraCharacteristics c = mCharacteristics.get(i);
             int[] actualCapabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
             assertNotNull("android.request.availableCapabilities must never be null",
                     actualCapabilities);
             if (!arrayContains(actualCapabilities,
                     CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW)) {
-                Log.i(TAG, "RAW capability is not supported in camera " + mAllCameraIds[i] +
+                Log.i(TAG, "RAW capability is not supported in camera " + allCameraIds[i] +
                         ". Skip the test.");
                 continue;
             }
@@ -1228,7 +1417,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testStaticBurstCharacteristics() throws Exception {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             CameraCharacteristics c = mCharacteristics.get(i);
             int[] actualCapabilities = CameraTestUtils.getValueNotNull(
                     c, CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
@@ -1248,7 +1438,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             StreamConfigurationMap config =
                     c.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             assertNotNull(String.format("No stream configuration map found for: ID %s",
-                    mAllCameraIds[i]), config);
+                    allCameraIds[i]), config);
             Rect activeRect = CameraTestUtils.getValueNotNull(
                     c, CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
             Size sensorSize = new Size(activeRect.width(), activeRect.height());
@@ -1269,7 +1459,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             }
 
             Size maxJpegSize = CameraTestUtils.getMaxSize(CameraTestUtils.getSupportedSizeForFormat(
-                    ImageFormat.JPEG, mAllCameraIds[i], mCameraManager));
+                    ImageFormat.JPEG, allCameraIds[i], mCameraManager));
 
             boolean haveMaxYuv = maxYuvSize != null ?
                 (maxJpegSize.getWidth() <= maxYuvSize.getWidth() &&
@@ -1323,7 +1513,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             // it's not quite per-frame
 
             Integer maxSyncLatencyValue = c.get(CameraCharacteristics.SYNC_MAX_LATENCY);
-            assertNotNull(String.format("No sync latency declared for ID %s", mAllCameraIds[i]),
+            assertNotNull(String.format("No sync latency declared for ID %s", allCameraIds[i]),
                     maxSyncLatencyValue);
 
             int maxSyncLatency = maxSyncLatencyValue;
@@ -1337,50 +1527,50 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 assertTrue(
                         String.format("BURST-capable camera device %s does not have maximum YUV " +
                                 "size that is at least max JPEG size",
-                                mAllCameraIds[i]),
+                                allCameraIds[i]),
                         haveMaxYuv);
                 assertTrue(
                         String.format("BURST-capable camera device %s max-resolution " +
                                 "YUV frame rate is too slow" +
                                 "(%d ns min frame duration reported, less than %d ns expected)",
-                                mAllCameraIds[i], maxYuvRate, MIN_MAXSIZE_DURATION_BOUND_NS),
+                                allCameraIds[i], maxYuvRate, MIN_MAXSIZE_DURATION_BOUND_NS),
                         haveMaxYuvRate);
                 assertTrue(
                         String.format("BURST-capable camera device %s >= 8MP YUV output " +
                                 "frame rate is too slow" +
                                 "(%d ns min frame duration reported, less than %d ns expected)",
-                                mAllCameraIds[i], maxYuvRate, MIN_8MP_DURATION_BOUND_NS),
+                                allCameraIds[i], maxYuvRate, MIN_8MP_DURATION_BOUND_NS),
                         haveFastYuvRate);
                 assertTrue(
                         String.format("BURST-capable camera device %s does not list an AE target " +
                                 " FPS range with min FPS >= %f, for full-AUTO bursts",
-                                mAllCameraIds[i], minYuvFps),
+                                allCameraIds[i], minYuvFps),
                         haveFastAeTargetFps);
                 assertTrue(
                         String.format("BURST-capable camera device %s YUV sync latency is too long" +
                                 "(%d frames reported, [0, %d] frames expected)",
-                                mAllCameraIds[i], maxSyncLatency, MAX_LATENCY_BOUND),
+                                allCameraIds[i], maxSyncLatency, MAX_LATENCY_BOUND),
                         haveFastSyncLatency);
                 assertTrue(
                         String.format("BURST-capable camera device %s max YUV size %s should be" +
                                 "close to active array size %s or cropped active array size %s",
-                                mAllCameraIds[i], maxYuvSize.toString(), sensorSize.toString(),
+                                allCameraIds[i], maxYuvSize.toString(), sensorSize.toString(),
                                 maxYuvMatchSensorPair.second.toString()),
                         maxYuvMatchSensorPair.first.booleanValue());
                 assertTrue(
                         String.format("BURST-capable camera device %s does not support AE lock",
-                                mAllCameraIds[i]),
+                                allCameraIds[i]),
                         haveAeLock);
                 assertTrue(
                         String.format("BURST-capable camera device %s does not support AWB lock",
-                                mAllCameraIds[i]),
+                                allCameraIds[i]),
                         haveAwbLock);
             } else {
                 assertTrue("Must have null slow YUV size array when no BURST_CAPTURE capability!",
                         slowYuvSizes == null);
                 assertTrue(
                         String.format("Camera device %s has all the requirements for BURST" +
-                                " capability but does not report it!", mAllCameraIds[i]),
+                                " capability but does not report it!", allCameraIds[i]),
                         !(haveMaxYuv && haveMaxYuvRate && haveFastYuvRate && haveFastAeTargetFps &&
                                 haveFastSyncLatency && maxYuvMatchSensorPair.first.booleanValue() &&
                                 haveAeLock && haveAwbLock));
@@ -1392,9 +1582,10 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Check reprocessing capabilities.
      */
     @Test
-    public void testReprocessingCharacteristics() {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
-            Log.i(TAG, "testReprocessingCharacteristics: Testing camera ID " + mAllCameraIds[i]);
+    public void testReprocessingCharacteristics() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "testReprocessingCharacteristics: Testing camera ID " + allCameraIds[i]);
 
             CameraCharacteristics c = mCharacteristics.get(i);
             int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
@@ -1521,10 +1712,11 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Check ultra high resolution sensor characteristics.
      */
     @Test
-    public void testUltraHighResolutionSensorCharacteristics() {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+    public void testUltraHighResolutionSensorCharacteristics() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             CameraCharacteristics c = mCharacteristics.get(i);
-            String cameraId = mAllCameraIds[i];
+            String cameraId = allCameraIds[i];
             int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
             assertNotNull("android.request.availableCapabilities must never be null",
                     capabilities);
@@ -1534,19 +1726,49 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             boolean supportsRemosaic = arrayContains(capabilities,
                     CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_REMOSAIC_REPROCESSING);
 
-            if (!isUltraHighResolutionSensor) {
-                Log.i(TAG, "Camera id " + cameraId + " not ultra high resolution. Skipping " +
-                        "testUltraHighResolutionSensorCharacteristics");
+            List<CaptureRequest.Key<?>> requestKeys = c.getAvailableCaptureRequestKeys();
+            boolean doesSupportSensorPixelMode =
+                    requestKeys.contains(CaptureRequest.SENSOR_PIXEL_MODE);
+
+            if (!isUltraHighResolutionSensor && !doesSupportSensorPixelMode) {
+                Log.i(TAG, "Camera id " + cameraId + " not ultra high resolution / doesn't" +
+                      " support sensor pixel mode. Skipping " +
+                      "testUltraHighResolutionSensorCharacteristics");
                 continue;
             }
-            assertArrayContains(
-                    String.format("Ultra high resolution sensor, camera id %s" +
-                    " must also have the RAW capability", cameraId), capabilities,
-                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW);
+
+            // Test conditions applicable to both ULTRA_HIGH_RESOLUTION_SENSOR devices and those
+            // which support SENSOR_PIXEL_MODE.
             StreamConfigurationMap configs =
                     c.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP_MAXIMUM_RESOLUTION);
             assertNotNull("Maximum resolution stream configuration map must not be null for ultra" +
                     " high resolution sensor camera " + cameraId, configs);
+
+            int[] outputFormats = configs.getOutputFormats();
+            boolean supportsRawOutput =
+                    arrayContains(outputFormats, ImageFormat.RAW_SENSOR) ||
+                    arrayContains(outputFormats, ImageFormat.RAW10) ||
+                    arrayContains(outputFormats, ImageFormat.RAW_PRIVATE) ||
+                    arrayContains(outputFormats, ImageFormat.RAW12);
+
+            if (supportsRawOutput) {
+                Size binningFactor = c.get(CameraCharacteristics.SENSOR_INFO_BINNING_FACTOR);
+                assertTrue("SENSOR_INFO_BINNING_FACTOR must be advertised by a sensor that " +
+                        " supports ULTRA_HIGH_RESOLUTION_SENSOR / SENSOR_PIXEL_MODE with "
+                        + " RAW outputs - camera id: " +
+                        cameraId, binningFactor != null);
+            }
+
+            if (!isUltraHighResolutionSensor) {
+                continue;
+            }
+
+            // These conditions apply to ULTRA_HIGH_RESOLUTION_SENSOR devices.
+            assertArrayContains(
+                    String.format("Ultra high resolution sensor, camera id %s" +
+                    " must also have the RAW capability", cameraId), capabilities,
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW);
+
             Size uhrPixelArraySize = CameraTestUtils.getValueNotNull(
                 c, CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE_MAXIMUM_RESOLUTION);
             long uhrSensorSize = uhrPixelArraySize.getHeight() * uhrPixelArraySize.getWidth();
@@ -1555,7 +1777,6 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     MIN_UHR_SENSOR_RESOLUTION + " pixels, is " + uhrSensorSize + ", for camera id "
                     + cameraId, uhrSensorSize >= MIN_UHR_SENSOR_RESOLUTION);
 
-            int[] outputFormats = configs.getOutputFormats();
             assertArrayContains(String.format("No max res JPEG image format for ultra high" +
                   " resolution sensor: ID %s", cameraId), outputFormats, ImageFormat.JPEG);
             assertArrayContains(String.format("No max res YUV_420_88 image format for ultra high" +
@@ -1621,9 +1842,10 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Check depth output capability
      */
     @Test
-    public void testDepthOutputCharacteristics() {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
-            Log.i(TAG, "testDepthOutputCharacteristics: Testing camera ID " + mAllCameraIds[i]);
+    public void testDepthOutputCharacteristics() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "testDepthOutputCharacteristics: Testing camera ID " + allCameraIds[i]);
 
             CameraCharacteristics c = mCharacteristics.get(i);
             int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
@@ -1821,9 +2043,10 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      */
     @CddTest(requirement="7.5/C-2-1")
     @Test
-    public void test10BitOutputCharacteristics() {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
-            Log.i(TAG, "test10BitOutputCharacteristics: Testing camera ID " + mAllCameraIds[i]);
+    public void test10BitOutputCharacteristics() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "test10BitOutputCharacteristics: Testing camera ID " + allCameraIds[i]);
 
             CameraCharacteristics c = mCharacteristics.get(i);
             int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
@@ -1903,8 +2126,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         boolean frontFacing10bitSupport = false;
         boolean device10bitSupport = false;
 
-        for (int i = 0; i < mAllCameraIds.length; i++) {
-            Log.i(TAG, "test10BitDeviceSupport: Testing camera ID " + mAllCameraIds[i]);
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "test10BitDeviceSupport: Testing camera ID " + allCameraIds[i]);
 
             CameraCharacteristics c = mCharacteristics.get(i);
             int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
@@ -1918,10 +2142,10 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 device10bitSupport = true;
             }
 
-            if (CameraTestUtils.isPrimaryRearFacingCamera(mCameraManager, mAllCameraIds[i])) {
+            if (CameraTestUtils.isPrimaryRearFacingCamera(mCameraManager, allCameraIds[i])) {
                 rearFacing10bitSupport = true;
             } else if (CameraTestUtils.isPrimaryFrontFacingCamera(mCameraManager,
-                    mAllCameraIds[i])) {
+                    allCameraIds[i])) {
                 frontFacing10bitSupport = true;
             }
         }
@@ -1938,12 +2162,13 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      */
     @CddTest(requirement="7.5/C-2-3")
     @Test
-    public void test10BitLogicalDeviceSupport() {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
-            Log.i(TAG, "test10BitLogicalDeviceSupport: Testing camera ID " + mAllCameraIds[i]);
+    public void test10BitLogicalDeviceSupport() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "test10BitLogicalDeviceSupport: Testing camera ID " + allCameraIds[i]);
 
             CameraCharacteristics c = mCharacteristics.get(i);
-            StaticMetadata staticMetadata = mAllStaticInfo.get(mAllCameraIds[i]);
+            StaticMetadata staticMetadata = mAllStaticInfo.get(allCameraIds[i]);
             boolean supports10BitOutput = staticMetadata.isCapabilitySupported(
                     CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT);
             if (!supports10BitOutput) {
@@ -1964,17 +2189,272 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                         boolean physical10bitOutput =
                                 physicalMeta.isCapabilitySupported(CameraCharacteristics.
                                         REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT);
-                        assertTrue("The logical camera: " + mAllCameraIds[i] +
+                        assertTrue("The logical camera: " + allCameraIds[i] +
                                 " 10-bit support must match with all publicly accessible color " +
                                 "capable physical devices: " + physicalId + " !",
                                 physical10bitOutput);
 
                         Set<Long> physicalProfiles =
                                 physicalMeta.getAvailableDynamicRangeProfilesChecked();
-                        assertTrue("The logical camera: " + mAllCameraIds[i] +
+                        assertTrue("The logical camera: " + allCameraIds[i] +
                                 " dynamic range profiles must match with all publicly accessible " +
                                 "and color capable physical devices: " + physicalId + " !",
                                 physicalProfiles.equals(logicalProfiles));
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.hardware.camera2.params.ColorSpaceProfiles#getProfileMap"})
+    public void testColorSpaceProfileMap() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "testColorSpaceProfileMap Testing camera ID " + allCameraIds[i]);
+
+            CameraCharacteristics c = mCharacteristics.get(i);
+            int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            assertNotNull("android.request.availableCapabilities must never be null",
+                    capabilities);
+            boolean supportsColorSpaceProfiles = arrayContains(capabilities,
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES);
+            if (!supportsColorSpaceProfiles) {
+                continue;
+            }
+
+            ColorSpaceProfiles colorSpaceProfiles = c.get(
+                    CameraCharacteristics.REQUEST_AVAILABLE_COLOR_SPACE_PROFILES);
+            mCollector.expectNotNull("Color space profiles must always be present if the "
+                    + "capability is reported!", colorSpaceProfiles);
+
+            Map<ColorSpace.Named, Map<Integer, Set<Long>>> profileMap =
+                    colorSpaceProfiles.getProfileMap();
+
+            Set<ColorSpace.Named> colorSpaces = profileMap.keySet();
+            mCollector.expectNotNull("profileMap.keySet() is null!", colorSpaces);
+            mCollector.expectTrue("profileMap.keySet() is empty!", !colorSpaces.isEmpty());
+            for (ColorSpace.Named colorSpace : colorSpaces) {
+                Set<Integer> imageFormats = profileMap.get(colorSpace).keySet();
+                mCollector.expectNotNull("profileMap.get(" + colorSpace + ").keySet() is null!",
+                        imageFormats);
+                mCollector.expectTrue("profileMap.get(" + colorSpace + ").keySet() is empty!",
+                        !imageFormats.isEmpty());
+                for (int imageFormat : imageFormats) {
+                    Set<Long> dynamicRangeProfiles = profileMap.get(colorSpace).get(imageFormat);
+                    mCollector.expectNotNull("profileMap.get(" + colorSpace + ").get("
+                            + imageFormat + ") is null!", dynamicRangeProfiles);
+                }
+            }
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpaces",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpacesForDynamicRange",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedImageFormatsForColorSpace",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedDynamicRangeProfiles"})
+    public void test8BitColorSpaceOutputCharacteristics() throws Exception {
+        final Set<ColorSpace.Named> sdrColorSpaces = new ArraySet<>();
+        sdrColorSpaces.add(ColorSpace.Named.SRGB);
+        sdrColorSpaces.add(ColorSpace.Named.DISPLAY_P3);
+
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "test8BitColorSpaceOutputCharacteristics: Testing camera ID "
+                    + allCameraIds[i]);
+
+            CameraCharacteristics c = mCharacteristics.get(i);
+            int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            assertNotNull("android.request.availableCapabilities must never be null",
+                    capabilities);
+            boolean supportsColorSpaceProfiles = arrayContains(capabilities,
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES);
+            if (!supportsColorSpaceProfiles) {
+                continue;
+            }
+
+            ColorSpaceProfiles colorSpaceProfiles = c.get(
+                    CameraCharacteristics.REQUEST_AVAILABLE_COLOR_SPACE_PROFILES);
+            mCollector.expectNotNull("Color space profiles must always be present if the "
+                    + "capability is reported!", colorSpaceProfiles);
+
+            Set<ColorSpace.Named> supportedColorSpacesStandard =
+                    colorSpaceProfiles.getSupportedColorSpacesForDynamicRange(
+                            ImageFormat.UNKNOWN, DynamicRangeProfiles.STANDARD);
+            mCollector.expectTrue("8-bit color spaces not present!",
+                    !supportedColorSpacesStandard.isEmpty());
+
+            for (ColorSpace.Named colorSpace : supportedColorSpacesStandard) {
+                mCollector.expectTrue("ColorSpace " + colorSpace.ordinal() + " is not in the set"
+                        + " of supported color spaces", sdrColorSpaces.contains(colorSpace));
+            }
+
+            Set<ColorSpace.Named> supportedColorSpaces = colorSpaceProfiles.getSupportedColorSpaces(
+                    ImageFormat.UNKNOWN);
+            for (ColorSpace.Named colorSpace : supportedColorSpacesStandard) {
+                mCollector.expectTrue("Standard color space " + colorSpace + " not present in "
+                        + "getSupportedColorSpaces!", supportedColorSpaces.contains(colorSpace));
+            }
+
+            for (ColorSpace.Named colorSpace : supportedColorSpaces) {
+                Set<Integer> imageFormats =
+                        colorSpaceProfiles.getSupportedImageFormatsForColorSpace(colorSpace);
+                mCollector.expectTrue("getSupportedImageFormatsForColorSpace returns an empty set "
+                        + "for a supported color space!", !imageFormats.isEmpty());
+
+                for (int imageFormat : imageFormats) {
+                    Set<Long> dynamicRangeProfiles =
+                            colorSpaceProfiles.getSupportedDynamicRangeProfiles(
+                                    colorSpace, imageFormat);
+                    mCollector.expectTrue("getSupportedDynamicRangeProfiles returns an empty set "
+                            + "for a supported color space and image format!",
+                            !dynamicRangeProfiles.isEmpty());
+                }
+            }
+
+            for (ColorSpace.Named colorSpace : supportedColorSpacesStandard) {
+                Set<Integer> imageFormats =
+                        colorSpaceProfiles.getSupportedImageFormatsForColorSpace(colorSpace);
+                mCollector.expectTrue("getSupportedImageFormatsForColorSpace returns an empty set "
+                        + "for a supported color space!", !imageFormats.isEmpty());
+
+                for (int imageFormat : imageFormats) {
+                    Set<Long> dynamicRangeProfiles =
+                            colorSpaceProfiles.getSupportedDynamicRangeProfiles(
+                                    colorSpace, imageFormat);
+                    mCollector.expectTrue("getSupportedDynamicRangeProfiles returns an empty set "
+                            + "for a supported color space and image format!",
+                            !dynamicRangeProfiles.isEmpty());
+                    mCollector.expectTrue("getSupportedDynamicRangeProfiles missing STANDARD for "
+                            + "color space " + colorSpace + " and image format " + imageFormat,
+                            dynamicRangeProfiles.contains(DynamicRangeProfiles.STANDARD));
+                }
+            }
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpaces",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedColorSpacesForDynamicRange",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedImageFormatsForColorSpace",
+            "android.hardware.camera2.params.ColorSpaceProfiles#getSupportedDynamicRangeProfiles"})
+    public void test10BitColorSpaceOutputCharacteristics() throws Exception {
+        final Set<ColorSpace.Named> sdrColorSpaces = new ArraySet<>();
+        sdrColorSpaces.add(ColorSpace.Named.SRGB);
+        sdrColorSpaces.add(ColorSpace.Named.DISPLAY_P3);
+
+        final Set<ColorSpace.Named> hdrColorSpaces = new ArraySet<>();
+        hdrColorSpaces.add(ColorSpace.Named.SRGB);
+        hdrColorSpaces.add(ColorSpace.Named.DISPLAY_P3);
+        hdrColorSpaces.add(ColorSpace.Named.BT2020_HLG);
+
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "test10BitColorSpaceOutputCharacteristics: Testing camera ID "
+                    + allCameraIds[i]);
+
+            CameraCharacteristics c = mCharacteristics.get(i);
+            int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            assertNotNull("android.request.availableCapabilities must never be null",
+                    capabilities);
+            boolean supportsColorSpaceProfiles = arrayContains(capabilities,
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES);
+            if (!supportsColorSpaceProfiles) {
+                Log.i(TAG, "Camera " + allCameraIds[i]
+                        + " does not support color space profiles.");
+                continue;
+            }
+
+            ColorSpaceProfiles colorSpaceProfiles = c.get(
+                    CameraCharacteristics.REQUEST_AVAILABLE_COLOR_SPACE_PROFILES);
+            mCollector.expectNotNull("Color space profiles must always be present if the "
+                    + "capability is reported!", colorSpaceProfiles);
+
+            boolean supports10BitOutput = arrayContains(capabilities,
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT);
+            Set<ColorSpace.Named> supportedColorSpaces = null;
+            int[] imageFormats = { ImageFormat.YCBCR_P010, ImageFormat.UNKNOWN };
+            if (!supports10BitOutput) {
+                Log.i(TAG, "Camera " + allCameraIds[i]
+                        + " does not support dynamic range profiles.");
+                for (int imageFormat : imageFormats) {
+                    supportedColorSpaces = colorSpaceProfiles.getSupportedColorSpaces(imageFormat);
+                    for (ColorSpace.Named colorSpace : supportedColorSpaces) {
+                        Set<Long> compatibleDynamicRangeProfiles =
+                                colorSpaceProfiles.getSupportedDynamicRangeProfiles(colorSpace,
+                                        imageFormat);
+                        if (!compatibleDynamicRangeProfiles.isEmpty()) {
+                            Long[] arrDynamicRangeProfiles =
+                                    compatibleDynamicRangeProfiles.toArray(new Long[0]);
+                            mCollector.expectTrue("getSupportedDynamicRangeProfiles should return a"
+                                    + " set containing only STANDARD!",
+                                    arrDynamicRangeProfiles.length == 1);
+                            mCollector.expectTrue("getSupportedDynamicRangeProfiles should return a"
+                                    + " set containing only STANDARD!",
+                                    arrDynamicRangeProfiles[0] == DynamicRangeProfiles.STANDARD);
+                        }
+
+                        for (Long dynamicRangeProfile = DynamicRangeProfiles.STANDARD;
+                                dynamicRangeProfile < DynamicRangeProfiles.PUBLIC_MAX;
+                                dynamicRangeProfile <<= 1) {
+                            Set<ColorSpace.Named> compatibleColorSpaces =
+                                    colorSpaceProfiles.getSupportedColorSpacesForDynamicRange(
+                                            imageFormat, dynamicRangeProfile);
+                            if (dynamicRangeProfile == DynamicRangeProfiles.STANDARD) {
+                                mCollector.expectTrue("getSupportedColorSpacesForDynamicRange "
+                                        + "should return a set containing STANDARD for a supported"
+                                        + "color space and image format!",
+                                        compatibleColorSpaces.contains(colorSpace));
+                                mCollector.expectTrue("ColorSpace " + colorSpace.ordinal() + " is "
+                                        + "not in the set of supported color spaces for STANDARD",
+                                        sdrColorSpaces.contains(colorSpace));
+                            } else {
+                                mCollector.expectTrue("getSupportedColorSpacesForDynamicRange "
+                                        + "should return an empty set for HDR!",
+                                        compatibleColorSpaces.isEmpty());
+                                mCollector.expectTrue("ColorSpace " + colorSpace.ordinal() + " is "
+                                        + "not in the set of supported color spaces for HDR",
+                                        hdrColorSpaces.contains(colorSpace));
+                            }
+                        }
+                    }
+                }
+            } else {
+                for (int imageFormat : imageFormats) {
+                    supportedColorSpaces = colorSpaceProfiles.getSupportedColorSpaces(
+                            imageFormat);
+                    DynamicRangeProfiles dynamicRangeProfiles = c.get(
+                            CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES);
+                    mCollector.expectNotNull("Dynamic range profile must always be present in case "
+                            + "of 10-bit capable devices!", dynamicRangeProfiles);
+                    Set<Long> supportedDynamicRangeProfiles =
+                            dynamicRangeProfiles.getSupportedProfiles();
+                    mCollector.expectTrue("Dynamic range profiles not present!",
+                            !supportedDynamicRangeProfiles.isEmpty());
+
+                    for (ColorSpace.Named colorSpace : supportedColorSpaces) {
+                        Set<Long> compatibleDynamicRangeProfiles =
+                                colorSpaceProfiles.getSupportedDynamicRangeProfiles(colorSpace,
+                                        imageFormat);
+
+                        for (Long dynamicRangeProfile : compatibleDynamicRangeProfiles) {
+                            mCollector.expectTrue("Compatible dynamic range profile not reported in"
+                                    + " DynamicRangeProfiles!",
+                                    supportedDynamicRangeProfiles.contains(dynamicRangeProfile));
+
+                            if (dynamicRangeProfile == DynamicRangeProfiles.STANDARD) {
+                                mCollector.expectTrue("ColorSpace " + colorSpace.ordinal() + " is "
+                                        + "not in the set of supported color spaces for STANDARD",
+                                        sdrColorSpaces.contains(colorSpace));
+                            } else {
+                                mCollector.expectTrue("ColorSpace " + colorSpace.ordinal() + " is "
+                                        + "not in the set of supported color spaces for HDR",
+                                        hdrColorSpaces.contains(colorSpace));
+                            }
+                        }
                     }
                 }
             }
@@ -2119,13 +2599,14 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testStreamConfigurationMap() throws Exception {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
-            Log.i(TAG, "testStreamConfigurationMap: Testing camera ID " + mAllCameraIds[i]);
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "testStreamConfigurationMap: Testing camera ID " + allCameraIds[i]);
             CameraCharacteristics c = mCharacteristics.get(i);
             StreamConfigurationMap config =
                     c.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             assertNotNull(String.format("No stream configuration map found for: ID %s",
-                            mAllCameraIds[i]), config);
+                            allCameraIds[i]), config);
 
             int[] actualCapabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
             assertNotNull("android.request.availableCapabilities must never be null",
@@ -2138,8 +2619,6 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     config.isOutputSupportedFor(android.media.MediaRecorder.class));
                 assertTrue("MediaCodec must be supported",
                     config.isOutputSupportedFor(android.media.MediaCodec.class));
-                assertTrue("Allocation must be supported",
-                    config.isOutputSupportedFor(android.renderscript.Allocation.class));
                 assertTrue("SurfaceHolder must be supported",
                     config.isOutputSupportedFor(android.view.SurfaceHolder.class));
                 assertTrue("SurfaceTexture must be supported",
@@ -2186,7 +2665,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     if (VERBOSE) {
                         Log.v(TAG,
                                 String.format("Testing camera %s, format %d, size %s",
-                                        mAllCameraIds[i], format, size.toString()));
+                                        allCameraIds[i], format, size.toString()));
                     }
 
                     long stallDuration = config.getOutputStallDuration(format, size);
@@ -2280,7 +2759,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 Surface surf = new Surface(st);
 
                 Size[] opaqueSizes = CameraTestUtils.getSupportedSizeForClass(SurfaceTexture.class,
-                        mAllCameraIds[i], mCameraManager);
+                        allCameraIds[i], mCameraManager);
                 assertTrue("Opaque format has no sizes listed",
                         opaqueSizes.length > 0);
                 for (Size size : opaqueSizes) {
@@ -2325,7 +2804,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testConstrainedHighSpeedCapability() throws Exception {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             CameraCharacteristics c = mCharacteristics.get(i);
             int[] capabilities = CameraTestUtils.getValueNotNull(
                     c, CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
@@ -2337,7 +2817,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 List<Size> highSpeedSizes = Arrays.asList(config.getHighSpeedVideoSizes());
                 assertTrue("High speed sizes shouldn't be empty", highSpeedSizes.size() > 0);
                 Size[] allSizes = CameraTestUtils.getSupportedSizeForFormat(ImageFormat.PRIVATE,
-                        mAllCameraIds[i], mCameraManager);
+                        allCameraIds[i], mCameraManager);
                 assertTrue("Normal size for PRIVATE format shouldn't be null or empty",
                         allSizes != null && allSizes.length > 0);
                 for (Size size: highSpeedSizes) {
@@ -2390,7 +2870,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 // should be advertise by the camera.
                 for (int quality = CamcorderProfile.QUALITY_HIGH_SPEED_480P;
                         quality <= CamcorderProfile.QUALITY_HIGH_SPEED_2160P; quality++) {
-                    int cameraId = Integer.valueOf(mAllCameraIds[i]);
+                    int cameraId = Integer.valueOf(allCameraIds[i]);
                     if (CamcorderProfile.hasProfile(cameraId, quality)) {
                         CamcorderProfile profile = CamcorderProfile.get(cameraId, quality);
                         Size camcorderProfileSize =
@@ -2418,8 +2898,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Correctness check of optical black regions.
      */
     @Test
-    public void testOpticalBlackRegions() {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+    public void testOpticalBlackRegions() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             CameraCharacteristics c = mCharacteristics.get(i);
             List<CaptureResult.Key<?>> resultKeys = c.getAvailableCaptureResultKeys();
             boolean hasDynamicBlackLevel =
@@ -2453,7 +2934,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
 
                 // Range check.
                 for (Rect region : regions) {
-                    mCollector.expectTrue("Camera " + mAllCameraIds[i] + ": optical black region" +
+                    mCollector.expectTrue("Camera " + allCameraIds[i] + ": optical black region" +
                             " shouldn't be empty!", !region.isEmpty());
                     mCollector.expectGreaterOrEqual("Optical black region left", 0/*expected*/,
                             region.left/*actual*/);
@@ -2485,7 +2966,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     }
                 }
             } else {
-                Log.i(TAG, "Camera " + mAllCameraIds[i] + " doesn't support optical black regions,"
+                Log.i(TAG, "Camera " + allCameraIds[i] + " doesn't support optical black regions,"
                         + " skip the region test");
             }
         }
@@ -2496,7 +2977,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testLogicalCameraCharacteristics() throws Exception {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             CameraCharacteristics c = mCharacteristics.get(i);
             int[] capabilities = CameraTestUtils.getValueNotNull(
                     c, CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
@@ -2519,8 +3001,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     assertNotNull("Physical camera id shouldn't be null", physicalCameraId);
                     assertTrue(
                             String.format("Physical camera id %s shouldn't be the same as logical"
-                                    + " camera id %s", physicalCameraId, mAllCameraIds[i]),
-                            physicalCameraId != mAllCameraIds[i]);
+                                    + " camera id %s", physicalCameraId, allCameraIds[i]),
+                            physicalCameraId != allCameraIds[i]);
 
                     //validation for depth static metadata of physical cameras
                     CameraCharacteristics pc =
@@ -2568,12 +3050,45 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     }
 
     /**
+     * Check manual flash control capability
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MANUAL_FLASH_STRENGTH_CONTROL)
+    public void testManualFlashStrengthControlCharacteristics() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "testManualFlashStrengthControlCharacteristics: Testing camera ID "
+                    + allCameraIds[i]);
+            CameraCharacteristics c = mCharacteristics.get(i);
+            if (!arrayContains(getCameraIdsUnderTest(), allCameraIds[i])) {
+                // Skip hidden physical cameras
+                continue;
+            }
+            int singleDefaultLevel =
+                    c.get(CameraCharacteristics.FLASH_SINGLE_STRENGTH_DEFAULT_LEVEL);
+            assertTrue("singleDefaultLevel must be >=1", singleDefaultLevel >= 1);
+            int singleMaxLevel = c.get(CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL);
+            assertTrue("singleMaxLevel must be >=1", singleMaxLevel >= 1);
+            int torchDefaultLevel = c.get(CameraCharacteristics.FLASH_TORCH_STRENGTH_DEFAULT_LEVEL);
+            assertTrue("torchDefaultLevel must be >=1", torchDefaultLevel >= 1);
+            int torchMaxLevel = c.get(CameraCharacteristics.FLASH_TORCH_STRENGTH_MAX_LEVEL);
+            assertTrue("torchMaxLevel must be >=1", torchMaxLevel >= 1);
+            // Verify that the default level is not greater than the max level.
+            assertTrue("singleDefaultLevel cannot be greater than singleMaxLevel",
+                    singleDefaultLevel <= singleMaxLevel);
+            assertTrue("torchDefaultLevel cannot be greater than torchMaxLevel",
+                    torchDefaultLevel <= torchMaxLevel);
+        }
+    }
+
+    /**
      * Check monochrome camera capability
      */
     @Test
-    public void testMonochromeCharacteristics() {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
-            Log.i(TAG, "testMonochromeCharacteristics: Testing camera ID " + mAllCameraIds[i]);
+    public void testMonochromeCharacteristics() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "testMonochromeCharacteristics: Testing camera ID " + allCameraIds[i]);
 
             CameraCharacteristics c = mCharacteristics.get(i);
             int[] capabilities = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
@@ -2652,13 +3167,14 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * least.
      */
     @Test
-    public void testRotateAndCropCharacteristics() {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
-            Log.i(TAG, "testRotateAndCropCharacteristics: Testing camera ID " + mAllCameraIds[i]);
+    public void testRotateAndCropCharacteristics() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "testRotateAndCropCharacteristics: Testing camera ID " + allCameraIds[i]);
 
             CameraCharacteristics c = mCharacteristics.get(i);
 
-            if (!arrayContains(mCameraIdsUnderTest, mAllCameraIds[i])) {
+            if (!arrayContains(getCameraIdsUnderTest(), allCameraIds[i])) {
                 // Skip hidden physical cameras
                 continue;
             }
@@ -2699,10 +3215,11 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Verify that all device state modes return valid orientations.
      */
     @Test
-    public void testDeviceStateSensorOrientationMapCharacteristics() {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+    public void testDeviceStateSensorOrientationMapCharacteristics() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             Log.i(TAG, "testDeviceStateOrientationMapCharacteristics: Testing camera ID " +
-                    mAllCameraIds[i]);
+                    allCameraIds[i]);
 
             CameraCharacteristics c = mCharacteristics.get(i);
             DeviceStateSensorOrientationMap orientationMap = c.get(
@@ -2786,7 +3303,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     @AppModeFull(reason = "DeviceStateManager is not accessible to instant apps")
     @CddTest(requirement = "7.5.5/C-1-1")
     @Test
-    public void testCameraOrientationAlignedWithDevice() {
+    public void testCameraOrientationAlignedWithDevice() throws Exception {
+        assumeFalse("Skip test: CDD 7.5.5/C-1-1 does not apply to automotive",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
         if (CameraUtils.isDeviceFoldable(mContext)) {
             // CDD 7.5.5/C-1-1 does not apply to devices with folding displays as the display aspect
             // ratios might change with the device's folding state.
@@ -2823,7 +3342,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         }
         boolean isDevicePortrait = widthPixels < heightPixels;
 
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             CameraCharacteristics c = mCharacteristics.get(i);
             // Camera size
             Size pixelArraySize = c.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE);
@@ -2848,7 +3368,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     adjustedSensorSize.getWidth() < adjustedSensorSize.getHeight();
 
             // device and camera orientation should either be both portrait, or both landscape
-            assertEquals("Camera " + mAllCameraIds[i] + "'s long dimension must "
+            assertEquals("Camera " + allCameraIds[i] + "'s long dimension must "
                     + "align with screen's long dimension", isDevicePortrait, isCameraPortrait);
         }
     }
@@ -2894,30 +3414,72 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
          */
         public static PrimaryCameraHwLevelReq createPrimaryCameraHwLevelReq() {
             RequiredMeasurement<Integer> rearCameraHwlLevel = RequiredMeasurement
-                .<Integer>builder()
-                .setId(RequirementConstants.REAR_CAMERA_HWL_LEVEL)
-                .setPredicate(CAM_HW_LEVEL_GTE)
-                .addRequiredValue(Build.VERSION_CODES.R,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                .addRequiredValue(Build.VERSION_CODES.S,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                .addRequiredValue(Build.VERSION_CODES.TIRAMISU,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                .build();
+                    .<Integer>builder()
+                    .setId(RequirementConstants.REAR_CAMERA_HWL_LEVEL)
+                    .setPredicate(CAM_HW_LEVEL_GTE)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.R,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.S,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.TIRAMISU,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
+                    .build();
             RequiredMeasurement<Integer> frontCameraHwlLevel = RequiredMeasurement
-                .<Integer>builder()
-                .setId(RequirementConstants.FRONT_CAMERA_HWL_LEVEL)
-                .setPredicate(CAM_HW_LEVEL_GTE)
-                .addRequiredValue(Build.VERSION_CODES.R,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
-                .addRequiredValue(Build.VERSION_CODES.S,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                .addRequiredValue(Build.VERSION_CODES.TIRAMISU,
-                        CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                .build();
+                    .<Integer>builder()
+                    .setId(RequirementConstants.FRONT_CAMERA_HWL_LEVEL)
+                    .setPredicate(CAM_HW_LEVEL_GTE)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.R,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.S,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.TIRAMISU,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
+                    .addRequiredValue(
+                            Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
+                    .build();
             return new PrimaryCameraHwLevelReq(RequirementConstants.R7_5__H_1_3,
                     rearCameraHwlLevel, frontCameraHwlLevel);
         }
+    }
+
+    /**
+     * Check the CameraX Night extension requirement
+     */
+    private ExtensionsManager getCameraXExtensionManager() throws Exception {
+        // Obtain an instance of a process camera provider
+        final ListenableFuture<ProcessCameraProvider> cameraProviderFuture =
+                ProcessCameraProvider.getInstance(mContext);
+        ProcessCameraProvider cameraProvider = null;
+        try {
+            cameraProvider = cameraProviderFuture.get(WAIT_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new AssertionError("Provider future failed to complete", e);
+        }
+        assertNotNull("CameraProviderManager isn't available", cameraProvider);
+
+        // Obtain an instance of the extension manager
+        final ListenableFuture<ExtensionsManager> extensionsManagerFuture =
+                ExtensionsManager.getInstanceAsync(mContext, cameraProvider);
+        ExtensionsManager extensionsManager = null;
+        try {
+            extensionsManager = extensionsManagerFuture.get(
+                    WAIT_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new AssertionError("ExtensionManager future failed to complete", e);
+        }
+        assertNotNull("ExtensionManager isn't available", extensionsManager);
+
+        return extensionsManager;
     }
 
     /**
@@ -2939,11 +3501,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             "2.2.7.2/7.5/H-1-13",
             "2.2.7.2/7.5/H-1-14"})
     public void testCameraPerfClassCharacteristics() throws Exception {
-        if (mAdoptShellPerm) {
-            // Skip test for system camera. Performance class is only applicable for public camera
-            // ids.
-            return;
-        }
+        assumeFalse("Media performance class tests not applicable if shell permission is adopted",
+                mAdoptShellPerm);
+
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.PrimaryCameraRequirement primaryRearReq =
                 pce.addPrimaryRearCameraReq();
@@ -2970,8 +3530,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
 
         String primaryRearId = null;
         String primaryFrontId = null;
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
-            String cameraId = mCameraIdsUnderTest[i];
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            String cameraId = cameraIdsUnderTest[i];
             boolean isPrimaryRear = CameraTestUtils.isPrimaryRearFacingCamera(
                     mCameraManager, cameraId);
             boolean isPrimaryFront = CameraTestUtils.isPrimaryFrontFacingCamera(
@@ -3077,22 +3638,18 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             }
 
             // H-1-12
-            boolean previewStab = staticInfo.isPreviewStabilizationSupported();
             if (isPrimaryRear) {
+                boolean previewStab = staticInfo.isPreviewStabilizationSupported();
                 previewStabilizationReq.setRearPreviewStabilizationSupported(previewStab);
-            } else {
-                previewStabilizationReq.setFrontPreviewStabilizationSupported(previewStab);
             }
 
             // H-1-13
-            int facing = staticInfo.getLensFacingChecked();
-            int numOfPhysicalRgbCameras = getNumberOfRgbPhysicalCameras(facing);
-            boolean logicalMultiCameraReqMet =
-                    (numOfPhysicalRgbCameras <= 1) || staticInfo.isLogicalMultiCamera();
             if (isPrimaryRear) {
+                int facing = staticInfo.getLensFacingChecked();
+                int numOfPhysicalRgbCameras = getNumberOfRgbPhysicalCameras(facing);
+                boolean logicalMultiCameraReqMet =
+                        (numOfPhysicalRgbCameras <= 1) || staticInfo.isLogicalMultiCamera();
                 logicalMultiCameraReq.setRearLogicalMultiCameraReqMet(logicalMultiCameraReqMet);
-            } else {
-                logicalMultiCameraReq.setFrontLogicalMultiCameraReqMet(logicalMultiCameraReqMet);
             }
 
             // H-1-14
@@ -3128,8 +3685,6 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             timestampSourceReq.setFrontCameraTimestampSource(
                     CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN);
             ultrawideZoomRatioReq.setFrontUltraWideZoomRatioReqMet(false);
-            previewStabilizationReq.setFrontPreviewStabilizationSupported(false);
-            logicalMultiCameraReq.setFrontLogicalMultiCameraReqMet(false);
             streamUseCaseReq.setFrontStreamUseCaseSupported(false);
         }
 
@@ -3146,9 +3701,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Get the number of physical RGB camera devices facing the same direction as the
      * primary camera id
      */
-    private int getNumberOfRgbPhysicalCameras(int facing) {
+    private int getNumberOfRgbPhysicalCameras(int facing) throws Exception {
         int numOfRgbPhysicalCameras = 0;
-        for (String id : mAllCameraIds) {
+        for (String id : getAllCameraIds()) {
             StaticMetadata staticInfo = mAllStaticInfo.get(id);
             if (staticInfo.getLensFacingChecked() != facing) {
                 continue;
@@ -3171,12 +3726,13 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Get the ratio of FOV between the primary camera and the maximium FOV of all color cameras
      * of the same facing.
      */
-    private double getPrimaryToMaxFovRatio(String primaryCameraId, StaticMetadata staticInfo) {
+    private double getPrimaryToMaxFovRatio(String primaryCameraId, StaticMetadata staticInfo)
+                throws Exception {
         int facing = staticInfo.getLensFacingChecked();
         double fovForPrimaryCamera = getCameraFov(staticInfo);
 
         double largestFov = fovForPrimaryCamera;
-        for (String id : mAllCameraIds) {
+        for (String id : getAllCameraIds()) {
             if (primaryCameraId.equals(id)) {
                 continue;
             }
@@ -3211,9 +3767,9 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      * Whether there is a camera with UNDEFINED lens pose reference with the same facing.
      */
     private boolean hasUndefinedPoseReferenceWithSameFacing(String cameraId,
-            StaticMetadata staticInfo) {
+            StaticMetadata staticInfo) throws Exception {
         int facing = staticInfo.getLensFacingChecked();
-        for (String id : mAllCameraIds) {
+        for (String id : getAllCameraIds()) {
             if (cameraId.equals(id)) {
                 continue;
             }
@@ -3229,6 +3785,141 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             }
         }
         return false;
+    }
+
+    /**
+     * Check camera characteristics for Android 14 Performance class requirements
+     * as specified in CDD camera section 7.5
+     */
+    @Test
+    @AppModeFull(reason = "Media Performance class test not applicable to instant apps")
+    @CddTest(requirements = {
+            "2.2.7.2/7.5/H-1-16",
+            "2.2.7.2/7.5/H-1-17"})
+    public void testCameraUPerfClassCharacteristics() throws Exception {
+        assumeFalse("Media performance class tests not applicable if shell permission is adopted",
+                mAdoptShellPerm);
+
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        DynamicRangeTenBitsRequirement dynamicRangeTenBitsReq = pce.addR7_5__H_1_16();
+        FaceDetectionRequirement faceDetectionReq = pce.addR7_5__H_1_17();
+
+        String primaryRearId = CameraTestUtils.getPrimaryRearCamera(mCameraManager,
+                getCameraIdsUnderTest());
+        String primaryFrontId = CameraTestUtils.getPrimaryFrontCamera(mCameraManager,
+                getCameraIdsUnderTest());
+
+        // H-1-16
+        verifyDynamicRangeTenBits(primaryRearId,
+                DynamicRangeTenBitsRequirement.PRIMARY_REAR_CAMERA, dynamicRangeTenBitsReq);
+        verifyDynamicRangeTenBits(primaryFrontId,
+                DynamicRangeTenBitsRequirement.PRIMARY_FRONT_CAMERA, dynamicRangeTenBitsReq);
+
+        // H-1-17
+        verifyFaceDetection(primaryRearId,
+                FaceDetectionRequirement.PRIMARY_REAR_CAMERA, faceDetectionReq);
+        verifyFaceDetection(primaryFrontId,
+                FaceDetectionRequirement.PRIMARY_FRONT_CAMERA, faceDetectionReq);
+
+        pce.submitAndCheck();
+    }
+
+    /**
+     * Check camera extension characteristics for Android 14 Performance class requirements
+     * as specified in CDD camera section 7.5
+     */
+    @Test
+    @AppModeFull(reason = "Media Performance class test not applicable to instant apps")
+    @CddTest(requirements = {
+            "2.2.7.2/7.5/H-1-15"})
+    public void testCameraUPerfClassExtensionCharacteristics() throws Exception {
+        assumeFalse("Media performance class tests not applicable if shell permission is adopted",
+                mAdoptShellPerm);
+
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        CameraExtensionRequirement cameraExtensionReq = pce.addR7_5__H_1_15();
+
+        String primaryRearId = CameraTestUtils.getPrimaryRearCamera(mCameraManager,
+                getCameraIdsUnderTest());
+        String primaryFrontId = CameraTestUtils.getPrimaryFrontCamera(mCameraManager,
+                getCameraIdsUnderTest());
+
+        verifyExtensionForCamera(primaryRearId, CameraExtensionRequirement.PRIMARY_REAR_CAMERA,
+                cameraExtensionReq);
+        verifyExtensionForCamera(primaryFrontId, CameraExtensionRequirement.PRIMARY_FRONT_CAMERA,
+                cameraExtensionReq);
+
+        pce.submitAndCheck();
+    }
+
+    /**
+     * Verify camera2 and CameraX extension requirements for a camera id
+     */
+    private void verifyExtensionForCamera(String cameraId, int facing,
+            PerformanceClassEvaluator.CameraExtensionRequirement req) throws Exception {
+        if (cameraId == null) {
+            req.setCamera2NightExtensionSupported(facing, false);
+            req.setCameraXNightExtensionSupported(facing, false);
+            return;
+        }
+
+        ExtensionsManager extensionsManager = getCameraXExtensionManager();
+        CameraExtensionCharacteristics extensionChars =
+                mCameraManager.getCameraExtensionCharacteristics(cameraId);
+        StaticMetadata staticInfo = mAllStaticInfo.get(cameraId);
+
+        List<Integer> supportedExtensions = extensionChars.getSupportedExtensions();
+        boolean nightExtensionSupported = supportedExtensions.contains(
+                CameraExtensionCharacteristics.EXTENSION_NIGHT);
+        req.setCamera2NightExtensionSupported(facing, nightExtensionSupported);
+
+        CameraSelector selector;
+        if (facing == CameraExtensionRequirement.PRIMARY_REAR_CAMERA) {
+            selector = CameraSelector.DEFAULT_BACK_CAMERA;
+        } else if (facing == CameraExtensionRequirement.PRIMARY_FRONT_CAMERA) {
+            selector = CameraSelector.DEFAULT_FRONT_CAMERA;
+        } else {
+            return;
+        }
+        req.setCameraXNightExtensionSupported(facing,
+                extensionsManager.isExtensionAvailable(
+                        selector, ExtensionMode.NIGHT));
+    }
+
+    /**
+     * Verify dynamic range ten bits requirement for a camera id
+     */
+    private void verifyDynamicRangeTenBits(String cameraId, int facing,
+            PerformanceClassEvaluator.DynamicRangeTenBitsRequirement req) throws Exception {
+        if (cameraId == null) {
+            req.setDynamicRangeTenBitsSupported(facing, false);
+            return;
+        }
+
+        StaticMetadata staticInfo = mAllStaticInfo.get(cameraId);
+        boolean dynamicRangeTenBitsSupported =
+                staticInfo.isCapabilitySupported(DYNAMIC_RANGE_TEN_BIT);
+
+        req.setDynamicRangeTenBitsSupported(facing, dynamicRangeTenBitsSupported);
+    }
+
+    /**
+     * Verify face detection requirements for a camera id
+     */
+    private void verifyFaceDetection(String cameraId, int facing, FaceDetectionRequirement req) {
+        if (cameraId == null) {
+            req.setFaceDetectionSupported(facing, false);
+            return;
+        }
+
+        StaticMetadata staticInfo = mAllStaticInfo.get(cameraId);
+        int[] availableFaceDetectionModes = staticInfo.getAvailableFaceDetectModesChecked();
+        assertNotNull(availableFaceDetectionModes);
+        int[] supportedFaceDetectionModes = {FACE_DETECTION_MODE_SIMPLE, FACE_DETECTION_MODE_FULL};
+        boolean faceDetectionSupported = arrayContainsAnyOf(availableFaceDetectionModes,
+                supportedFaceDetectionModes);
+
+        req.setFaceDetectionSupported(facing, faceDetectionSupported);
     }
 
     /**
@@ -3283,7 +3974,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testAutomotiveCameraCharacteristics() throws Exception {
-        for (int i = 0; i < mAllCameraIds.length; i++) {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
             CameraCharacteristics c = mCharacteristics.get(i);
 
             Integer location = c.get(CameraCharacteristics.AUTOMOTIVE_LOCATION);
@@ -3301,7 +3993,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             assertTrue("android.lens.poseTranslation and android.lens.poseRotation must exist " +
                     "together or not at all",
                     (translation != null) == (rotation != null));
-            if (translation == null && rotation != null) {
+            if (translation == null && rotation == null) {
                 // Cameras without android.lens.poseTranslation and anroid.lens.poseRotation are
                 // exempt from this test case.
                 continue;
@@ -3354,6 +4046,174 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                         "outside of the cabin",
                         angle <= Math.PI * 3 / 4);
             }
+        }
+    }
+
+    private void testLandscapeToPortraitSensorOrientation(String cameraId) throws Exception {
+        CameraCharacteristics characteristics =
+                mCameraManager.getCameraCharacteristics(cameraId, false);
+        CameraCharacteristics characteristicsOverride =
+                mCameraManager.getCameraCharacteristics(cameraId, true);
+        int sensorOrientation = characteristics.get(
+                CameraCharacteristics.SENSOR_ORIENTATION);
+        int sensorOrientationOverride = characteristicsOverride.get(
+                CameraCharacteristics.SENSOR_ORIENTATION);
+
+        if (sensorOrientation == 0 || sensorOrientation == 180) {
+            int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+            if (facing == CameraMetadata.LENS_FACING_FRONT) {
+                assertEquals("SENSOR_ORIENTATION should be rotated 90 degrees"
+                        + " counter-clockwise for front-facing cameras.",
+                        (360 + sensorOrientation - 90) % 360, sensorOrientationOverride);
+            } else if (facing == CameraMetadata.LENS_FACING_BACK) {
+                assertEquals("SENSOR_ORIENTATION should be rotated 90 degrees clockwise"
+                        + " for back-facing cameras.",
+                        (360 + sensorOrientation + 90) % 360, sensorOrientationOverride);
+            } else {
+                assertEquals("SENSOR_ORIENTATION should be unchanged for external cameras.",
+                        sensorOrientation, sensorOrientationOverride);
+            }
+        } else {
+            assertEquals("SENSOR_ORIENTATION should be unchanged for non-landscape "
+                    + "sensors.", sensorOrientation, sensorOrientationOverride);
+        }
+    }
+
+    /**
+     * Test that the landscape to portrait override modifies SENSOR_ORIENTATION as expected.
+     * All cameras with SENSOR_ORIENTATION 0 or 180 should have SENSOR_ORIENTATION 90 or 270
+     * when the override is turned on. Cameras not accessible via openCamera ("constituent
+     * cameras") should not update their SENSOR_ORIENTATION values.
+     */
+    @Test
+    public void testLandscapeToPortraitOverride() throws Exception {
+        String[] cameraIdArr = mCameraManager.getCameraIdListNoLazy();
+        ArrayList<String> cameraIdList = new ArrayList<>(Arrays.asList(cameraIdArr));
+        for (String cameraId : getCameraIdsUnderTest()) {
+            Log.i(TAG, "testLandscapeToPortraitOverride: Testing camera ID " + cameraId);
+            StaticMetadata staticMetadata = mAllStaticInfo.get(cameraId);
+
+            testLandscapeToPortraitSensorOrientation(cameraId);
+
+            if (staticMetadata.isLogicalMultiCamera()) {
+                Log.i(TAG, "Camera " + cameraId + " is a logical multi-camera.");
+
+                CameraCharacteristics characteristics =
+                        mCameraManager.getCameraCharacteristics(cameraId, false);
+
+                Set<String> physicalCameraIds = characteristics.getPhysicalCameraIds();
+                for (String physicalId : physicalCameraIds) {
+                    if (!cameraIdList.contains(physicalId)) {
+                        Log.i(TAG, "Testing constituent camera id: " + physicalId);
+
+                        CameraCharacteristics physicalCharacteristics =
+                                mCameraManager.getCameraCharacteristics(physicalId, false);
+                        CameraCharacteristics physicalCharacteristicsOverride =
+                                mCameraManager.getCameraCharacteristics(physicalId, true);
+                        int physicalSensorOrientation = physicalCharacteristics.get(
+                                CameraCharacteristics.SENSOR_ORIENTATION);
+                        int physicalSensorOrientationOverride = physicalCharacteristicsOverride.get(
+                                CameraCharacteristics.SENSOR_ORIENTATION);
+
+                        // Check that physical camera orientations have NOT been overridden.
+                        assertEquals("SENSOR_ORIENTATION should be unchanged for constituent "
+                                + "physical cameras.", physicalSensorOrientation,
+                                physicalSensorOrientationOverride);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Validate that the rear/world facing cameras in automotive devices are oriented so that the
+     * long dimension of the camera aligns with the X-Y plane of Android automotive sensor axes.
+     */
+    @CddTest(requirements = "7.5/A-1-1")
+    @Test
+    public void testAutomotiveCameraOrientation() throws Exception {
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            CameraCharacteristics c = mCharacteristics.get(i);
+            int facing = c.get(CameraCharacteristics.LENS_FACING);
+            if (facing == CameraMetadata.LENS_FACING_BACK) {
+                // Camera size
+                Size pixelArraySize = c.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE);
+                // Camera orientation
+                int sensorOrientation = c.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                // For square sensor, test is guaranteed to pass.
+                if (pixelArraySize.getWidth() == pixelArraySize.getHeight()) {
+                    continue;
+                }
+                // Camera size adjusted for device native orientation.
+                Size adjustedSensorSize;
+                if (sensorOrientation == 90 || sensorOrientation == 270) {
+                    adjustedSensorSize = new Size(
+                            pixelArraySize.getHeight(), pixelArraySize.getWidth());
+                } else {
+                    adjustedSensorSize = pixelArraySize;
+                }
+                boolean isCameraLandscape =
+                        adjustedSensorSize.getWidth() > adjustedSensorSize.getHeight();
+                // Automotive camera orientation should be landscape for rear/world facing camera.
+                assertTrue("Automotive camera "  + allCameraIds[i] + " which is rear/world facing"
+                        + " must align with the X-Y plane of Android automotive sensor axes",
+                        isCameraLandscape);
+            }
+        }
+    }
+
+    /**
+     * Validate the operating luminance range for low light boost. If the luminance range is
+     * defined then the AE mode CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY must also
+     * be present in the list of available AE modes.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_AE_MODE_LOW_LIGHT_BOOST)
+    public void testLowLightBoostLuminanceRange() throws Exception {
+        String[] allCameraIds = getAllCameraIds();
+        for (int i = 0; i < allCameraIds.length; i++) {
+            Log.i(TAG, "testLowLightBoostLuminanceRange: Testing camera ID " + allCameraIds[i]);
+            CameraCharacteristics c = mCharacteristics.get(i);
+
+            // Check for the presence of AE mode low light boost
+            int[] availableAeModes = c.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES);
+            if (availableAeModes == null) {
+                Log.i(TAG, "Camera id " + allCameraIds[i] + " does not have AE modes. "
+                        + "Skipping testLowLightBoostLuminanceRange");
+                continue;
+            }
+
+            assertNotNull("CONTROL_AE_AVAILABLE_MODES must be present", availableAeModes);
+            boolean containsAeModeLowLightBoost = false;
+            for (int aeMode : availableAeModes) {
+                if (aeMode
+                        == CameraMetadata.CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY) {
+                    containsAeModeLowLightBoost = true;
+                    break;
+                }
+            }
+
+            Range<Float> lowLightBoostLuminanceRange =
+                    c.get(CameraCharacteristics.CONTROL_LOW_LIGHT_BOOST_INFO_LUMINANCE_RANGE);
+
+            // The AE mode low light boost can only be available if the luminance range is also
+            // defined
+            if (lowLightBoostLuminanceRange == null) {
+                assertFalse("AE mode ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY can only be present "
+                        + "if LOW_LIGHT_BOOST_INFO_LUMINANCE_RANGE is also defined",
+                        containsAeModeLowLightBoost);
+                continue;
+            }
+            assertTrue("AE mode ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY must be present if "
+                    + "LOW_LIGHT_BOOST_INFO_LUMINANCE_RANGE is also defined",
+                    containsAeModeLowLightBoost);
+
+            float luminanceRangeLower = lowLightBoostLuminanceRange.getLower();
+            assertTrue("Luminance range lower bound is in the range [0.1, 1]",
+                    luminanceRangeLower >= 0.1f && luminanceRangeLower <= 1f);
         }
     }
 

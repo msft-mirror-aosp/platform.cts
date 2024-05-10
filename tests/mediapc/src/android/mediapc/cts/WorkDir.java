@@ -16,31 +16,14 @@
 
 package android.mediapc.cts;
 
-import android.os.Environment;
+import android.mediav2.common.cts.WorkDirBase;
 
-import androidx.test.platform.app.InstrumentationRegistry;
-
-import org.junit.Assert;
-
-import java.io.File;
-
-class WorkDir {
-    private static final String MEDIA_PATH_INSTR_ARG_KEY = "media-path";
-    static private final File getTopDir() {
-        Assert.assertEquals(Environment.getExternalStorageState(), Environment.MEDIA_MOUNTED);
-        return Environment.getExternalStorageDirectory();
-    }
-    static private final String getTopDirString() {
-        return (getTopDir().getAbsolutePath() + File.separator);
-    }
+/**
+ * Return the primary shared/external storage directory used by the tests
+ * Note: Path returned includes File.separator() at the end.
+ */
+class WorkDir extends WorkDirBase {
     static final String getMediaDirString() {
-        android.os.Bundle bundle = InstrumentationRegistry.getArguments();
-        String mediaDirString = bundle.getString(MEDIA_PATH_INSTR_ARG_KEY);
-        if (mediaDirString != null) {
-            // user has specified the mediaDirString via instrumentation-arg
-            return mediaDirString + ((mediaDirString.endsWith("/")) ? "" : "/");
-        } else {
-            return (getTopDirString() + "test/CtsMediaPerformanceClassTestCases-2.1/");
-        }
+        return getMediaDirString("CtsMediaPerformanceClassTestCases-3.0");
     }
 }

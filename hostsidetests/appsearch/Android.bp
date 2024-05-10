@@ -29,7 +29,7 @@ java_test_host {
         "tools-common-prebuilt",
         "cts-tradefed",
         "tradefed",
-        "truth-prebuilt",
+        "truth",
     ],
     test_suites: [
         "cts",
@@ -47,7 +47,7 @@ android_test_helper_app {
     name: "CtsAppSearchHostTestHelperA",
     defaults: ["cts_defaults"],
     static_libs: [
-        "AppSearchTestUtils",
+        "CtsAppSearchTestUtils",
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "compatibility-device-util-axt",
@@ -57,7 +57,6 @@ android_test_helper_app {
         "test-apps/AppSearchHostTestHelperA/src/**/*.java",
     ],
     test_suites: [
-        "cts",
         "general-tests",
         "mts-appsearch",
     ],
@@ -71,7 +70,7 @@ android_test_helper_app {
     name: "CtsAppSearchHostTestHelperB",
     defaults: ["cts_defaults"],
     static_libs: [
-        "AppSearchTestUtils",
+        "CtsAppSearchTestUtils",
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "compatibility-device-util-axt",
@@ -81,7 +80,6 @@ android_test_helper_app {
         "test-apps/AppSearchHostTestHelperB/src/**/*.java",
     ],
     test_suites: [
-        "cts",
         "general-tests",
         "mts-appsearch",
     ],

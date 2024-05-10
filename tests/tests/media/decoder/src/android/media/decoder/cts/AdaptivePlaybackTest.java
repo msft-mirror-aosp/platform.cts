@@ -17,6 +17,7 @@
 package android.media.decoder.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -277,7 +278,7 @@ public class AdaptivePlaybackTest extends MediaTestBase {
         return argsList;
     }
 
-    @Parameterized.Parameters(name = "{index}({0})")
+    @Parameterized.Parameters(name = "{index}_{0}")
     public static Collection<Object[]> input() {
         final List<Object> exhaustiveArgsList = Arrays.asList(new Object[]{
                 H264(), HEVC(), VP8(), VP9(), AV1(), Mpeg2(), Mpeg4(), H263()
@@ -900,6 +901,8 @@ public class AdaptivePlaybackTest extends MediaTestBase {
         private final static String TAG = "AdaptiveDecoder";
         final long kTimeOutUs = 5000;
         final long kCSDTimeOutUs = 1000000;
+        // Sufficiently large number of frames to expect actual render on surface
+        static final int RENDERED_FRAMES_THRESHOLD  = 32;
         MediaCodec mCodec;
         ByteBuffer[] mInputBuffers;
         ByteBuffer[] mOutputBuffers;
@@ -920,6 +923,7 @@ public class AdaptivePlaybackTest extends MediaTestBase {
         // Save the timestamps of the first frame of each sequence.
         // Note: this is the only time output format change could happen.
         ArrayList<Long> mFirstQueueTimestamps;
+        Object mRenderLock = new Object();
 
         public Decoder(String codecName) {
             MediaCodec codec = null;
@@ -952,7 +956,10 @@ public class AdaptivePlaybackTest extends MediaTestBase {
             }
             assert nanoTime > mLastRenderNanoTime;
             mLastRenderNanoTime = nanoTime;
-            ++mFramesNotifiedRendered;
+            synchronized (mRenderLock) {
+                ++mFramesNotifiedRendered;
+                mRenderLock.notifyAll();
+            }
             assert nanoTime > System.nanoTime() - NSECS_IN_1SEC;
         }
 
@@ -1006,13 +1013,27 @@ public class AdaptivePlaybackTest extends MediaTestBase {
 
         public void stop() {
             Log.i(TAG, "stop");
-            mCodec.stop();
-            // if we have queued 32 frames or more, at least one should have been notified
-            // to have rendered.
-            if (mRenderedTimeStamps.size() > 32 && mFramesNotifiedRendered == 0) {
-                fail("rendered " + mRenderedTimeStamps.size() +
-                        " frames, but none have been notified.");
+            if (mRenderedTimeStamps.size() > RENDERED_FRAMES_THRESHOLD) {
+                synchronized (mRenderLock) {
+                    long untilMs = System.currentTimeMillis() + 1000;
+                    while (mFramesNotifiedRendered == 0) {
+                        long nowMs = System.currentTimeMillis();
+                        if (nowMs >= untilMs) {
+                            break;
+                        }
+                        try {
+                            mRenderLock.wait(untilMs - nowMs);
+                        } catch (InterruptedException e) {
+                            break;
+                        }
+                    }
+                    Log.i(TAG, "waited for " + (System.currentTimeMillis() + 1000 - untilMs)
+                            + "ms for rendering");
+                }
+                assertFalse("rendered " + mRenderedTimeStamps.size()
+                        + " frames, but none have been notified.", mFramesNotifiedRendered == 0);
             }
+            mCodec.stop();
         }
 
         public void flush() {
@@ -1425,42 +1446,44 @@ class Media {
 
         Log.i(TAG, "format=" + media.getFormat());
         ArrayList<ByteBuffer> csds = new ArrayList<ByteBuffer>();
+        int csdSize = 0;
         for (String tag: new String[] { "csd-0", "csd-1" }) {
             if (media.getFormat().containsKey(tag)) {
                 ByteBuffer csd = media.getFormat().getByteBuffer(tag);
                 Log.i(TAG, tag + "=" + AdaptivePlaybackTest.byteBufferToString(csd, 0, 16));
                 csds.add(csd);
+                csdSize += csd.capacity();
             }
         }
-
+        int ix = 0;
+        if (csdSize > 0) {
+            ByteBuffer csdBuf = ByteBuffer.allocate(csdSize);
+            for (ByteBuffer csd: csds) {
+                csd.clear();
+                csdBuf.put(csd);
+                csd.clear();
+                Log.i(TAG, "csd[" + csd.capacity() + "]");
+            }
+            Log.i(TAG, "frame-" + ix + "[" + csdSize + "]");
+            csds.clear();
+            media.mFrames[ix++] = new Frame(0, MediaCodec.BUFFER_FLAG_CODEC_CONFIG, csdBuf);
+        }
         int maxInputSize = 0;
         ByteBuffer readBuf = ByteBuffer.allocate(2000000);
-        for (int ix = 0; ix < numFrames; ix++) {
+        while (ix < numFrames) {
             int sampleSize = extractor.readSampleData(readBuf, 0 /* offset */);
 
             if (sampleSize < 0) {
                 throw new IllegalArgumentException("media is too short at " + ix + " frames");
             } else {
                 readBuf.position(0).limit(sampleSize);
-                for (ByteBuffer csd: csds) {
-                    sampleSize += csd.capacity();
-                }
-
                 if (maxInputSize < sampleSize) {
                     maxInputSize = sampleSize;
                 }
 
                 ByteBuffer buf = ByteBuffer.allocate(sampleSize);
-                for (ByteBuffer csd: csds) {
-                    csd.clear();
-                    buf.put(csd);
-                    csd.clear();
-                    Log.i(TAG, "csd[" + csd.capacity() + "]");
-                }
-                Log.i(TAG, "frame-" + ix + "[" + sampleSize + "]");
-                csds.clear();
                 buf.put(readBuf);
-                media.mFrames[ix] = new Frame(
+                media.mFrames[ix++] = new Frame(
                     extractor.getSampleTime(),
                     extractor.getSampleFlags(),
                     buf);

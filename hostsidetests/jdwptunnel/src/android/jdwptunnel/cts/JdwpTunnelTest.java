@@ -16,7 +16,6 @@
 
 package android.jdwptunnel.cts;
 
-import com.android.tradefed.util.RunUtil;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -25,12 +24,15 @@ import static org.junit.Assert.fail;
 
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.AbiUtils;
+import com.android.tradefed.util.RunUtil;
 
 import com.sun.jdi.Bootstrap;
 import com.sun.jdi.ReferenceType;
+import com.sun.jdi.ThreadReference;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.VirtualMachineManager;
 import com.sun.jdi.connect.AttachingConnector;
@@ -69,13 +71,13 @@ import java.util.Map;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class JdwpTunnelTest extends BaseHostJUnit4Test {
     private static final String DEBUGGABLE_TEST_APP_PACKAGE_NAME =
-      "android.jdwptunnel.sampleapp.debuggable";
+            "android.jdwptunnel.sampleapp.debuggable";
     private static final String DEBUGGABLE_TEST_APP_ACTIVITY_CLASS_NAME =
-      "DebuggableSampleDeviceActivity";
+            "DebuggableSampleDeviceActivity";
     private static final String PROFILEABLE_TEST_APP_PACKAGE_NAME =
-      "android.jdwptunnel.sampleapp.profileable";
+            "android.jdwptunnel.sampleapp.profileable";
     private static final String PROFILEABLE_TEST_APP_ACTIVITY_CLASS_NAME =
-      "ProfileableSampleDeviceActivity";
+            "ProfileableSampleDeviceActivity";
     private static final String DDMS_TEST_APP_PACKAGE_NAME = "android.jdwptunnel.sampleapp.ddms";
     private static final String DDMS_TEST_APP_ACTIVITY_CLASS_NAME = "DdmsSampleDeviceActivity";
 
@@ -99,11 +101,11 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
     private VirtualMachine getDebuggerConnection(String port) throws Exception {
         VirtualMachineManager vmm = Bootstrap.virtualMachineManager();
         AttachingConnector conn =
-                vmm.attachingConnectors().stream()
+                vmm.attachingConnectors()
+                        .stream()
                         .filter((x) -> x.transport().name().equals("dt_socket"))
                         .findFirst()
-                        .orElseThrow(
-                                () -> new Error("Could not find dt_socket connector!"));
+                        .orElseThrow(() -> new Error("Could not find dt_socket connector!"));
         Map<String, Connector.Argument> params = conn.defaultArguments();
         params.get("port").setValue(port);
         params.get("hostname").setValue("localhost");
@@ -128,20 +130,29 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
     }
 
     private String startupForwarding(String packageName, String shortClassName, boolean debug)
-          throws Exception {
+            throws Exception {
+        return startupForwarding(packageName, shortClassName, debug, false);
+    }
+
+    private String startupForwarding(String packageName, String shortClassName, boolean debug,
+            boolean startSuspended) throws Exception {
         moveToHomeScreen();
-        mDevice.executeShellCommand(
-            "cmd activity start-activity "
-                + (debug ? "-D" : "")
-                + " -W -n "
-                + packageName
-                + "/."
-                + shortClassName);
+        new Thread(() -> {
+            try {
+                String cmd = "cmd activity start-activity " + (debug ? "-D" : "")
+                        + (startSuspended ? " --suspend" : "") + " -W -n " + packageName + "/."
+                        + shortClassName;
+                CLog.i(cmd);
+                mDevice.executeShellCommand(cmd);
+            } catch (DeviceNotAvailableException e) {
+                CLog.i("Failed to start activity for package: " + packageName, e);
+            }
+        }).start();
+
         // Don't keep trying after a minute.
         final Instant deadline = Instant.now().plusSeconds(60);
         String pid = "";
-        while ((pid = mDevice.executeShellCommand(
-                    "pidof " + packageName).trim()).equals("")) {
+        while ((pid = mDevice.executeShellCommand("pidof " + packageName).trim()).equals("")) {
             if (Instant.now().isAfter(deadline)) {
                 fail("Unable to find PID of " + packageName + " process!");
             }
@@ -154,7 +165,13 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
     }
 
     private VirtualMachine startupTest(String packageName, String shortClassName) throws Exception {
-      return getDebuggerConnection(startupForwarding(packageName, shortClassName, true));
+        return getDebuggerConnection(startupForwarding(packageName, shortClassName, true, false));
+    }
+
+    private VirtualMachine startupTest(String packageName, String shortClassName, boolean debug,
+            boolean startSuspended) throws Exception {
+        return getDebuggerConnection(
+                startupForwarding(packageName, shortClassName, debug, startSuspended));
     }
 
     /**
@@ -166,7 +183,7 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
      * TODO: We should expand this to more functions.
      */
     private void testAttachDebugger(String packageName, String shortClassName)
-      throws DeviceNotAvailableException, Exception {
+            throws DeviceNotAvailableException, Exception {
         String fullClassName = packageName + "." + shortClassName;
 
         VirtualMachine vm = startupTest(packageName, shortClassName);
@@ -178,8 +195,7 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
             final Instant deadline = Instant.now().plusSeconds(120);
             // Check the test-activity class is not already loaded.
             assertTrue(shortClassName + " is not yet loaded!",
-                    vm.allClasses().stream()
-                            .noneMatch(x -> x.name().equals(fullClassName)));
+                    vm.allClasses().stream().noneMatch(x -> x.name().equals(fullClassName)));
 
             // Wait for the class to load.
             ClassPrepareRequest cpr = erm.createClassPrepareRequest();
@@ -192,11 +208,13 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
                 if (Instant.now().isAfter(deadline)) {
                     fail(fullClassName + " did not load within timeout!");
                 }
-                activityType = vm.eventQueue().remove().stream()
-                        .filter(e -> cpr == e.request())
-                        .findFirst()
-                        .map(e -> ((ClassPrepareEvent) e).referenceType())
-                        .orElse(null);
+                activityType = vm.eventQueue()
+                                       .remove()
+                                       .stream()
+                                       .filter(e -> cpr == e.request())
+                                       .findFirst()
+                                       .map(e -> ((ClassPrepareEvent) e).referenceType())
+                                       .orElse(null);
             }
             cpr.disable();
             // Set a breakpoint on the onCreate method at the first line.
@@ -229,8 +247,8 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testAttachDebuggerToDebuggableApp() throws DeviceNotAvailableException, Exception {
-        testAttachDebugger(DEBUGGABLE_TEST_APP_PACKAGE_NAME,
-                           DEBUGGABLE_TEST_APP_ACTIVITY_CLASS_NAME);
+        testAttachDebugger(
+                DEBUGGABLE_TEST_APP_PACKAGE_NAME, DEBUGGABLE_TEST_APP_ACTIVITY_CLASS_NAME);
     }
 
     /**
@@ -243,8 +261,8 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
     public void testAttachDebuggerToProfileableApp() throws DeviceNotAvailableException, Exception {
         java.io.IOException thrownException = null;
         try {
-            testAttachDebugger(PROFILEABLE_TEST_APP_PACKAGE_NAME,
-                               PROFILEABLE_TEST_APP_ACTIVITY_CLASS_NAME);
+            testAttachDebugger(
+                    PROFILEABLE_TEST_APP_PACKAGE_NAME, PROFILEABLE_TEST_APP_ACTIVITY_CLASS_NAME);
         } catch (java.io.IOException e) {
             thrownException = e;
         }
@@ -263,13 +281,17 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
             // when it calls the "attach" method from class AttachingConnector or its subclass.
             // In other words, the callstack is expected to look like
             //
-            // at jdk.jdi/com.sun.tools.jdi.SocketAttachingConnector.attach(SocketAttachingConnector.java:83)
-            // at android.jdwptunnel.cts.JdwpTunnelTest.getDebuggerConnection(JdwpTunnelTest.java:96)
+            // at
+            // jdk.jdi/com.sun.tools.jdi.SocketAttachingConnector.attach
+            // (SocketAttachingConnector.java:83)
+            // at
+            // android.jdwptunnel.cts.JdwpTunnelTest.getDebuggerConnection
+            // (JdwpTunnelTest.java:96)
             boolean thrownByGetDebuggerConnection = false;
             StackTraceElement[] stack = thrownException.getStackTrace();
             for (int i = 0; i < stack.length; i++) {
-                if (stack[i].getClassName().equals("android.jdwptunnel.cts.JdwpTunnelTest") &&
-                    stack[i].getMethodName().equals("getDebuggerConnection")) {
+                if (stack[i].getClassName().equals("android.jdwptunnel.cts.JdwpTunnelTest")
+                        && stack[i].getMethodName().equals("getDebuggerConnection")) {
                     thrownByGetDebuggerConnection = true;
                     assertTrue(i > 0);
                     assertEquals("attach", stack[i - 1].getMethodName());
@@ -298,8 +320,8 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
         String deviceArch = getDeviceBaseArch();
         Assume.assumeTrue(testingArch.equals(deviceArch));
 
-        String port =
-            startupForwarding(DDMS_TEST_APP_PACKAGE_NAME, DDMS_TEST_APP_ACTIVITY_CLASS_NAME, false);
+        String port = startupForwarding(
+                DDMS_TEST_APP_PACKAGE_NAME, DDMS_TEST_APP_ACTIVITY_CLASS_NAME, false);
         Socket sock = new Socket("localhost", Integer.decode(port).intValue());
         OutputStream os = sock.getOutputStream();
         // Let the test spin a bit. Try to lose any race with the app.
@@ -321,5 +343,60 @@ public class JdwpTunnelTest extends BaseHostJUnit4Test {
         is.skip(4);
         // Data sent big-endian so first byte has sign bit.
         assertTrue((is.read() & 0x80) == 0x80);
+    }
+
+    private boolean testThreadSuspensionState(VirtualMachine vm, boolean expected) {
+        for (ThreadReference tr : vm.allThreads()) {
+            boolean isSuspended = tr.isSuspended();
+            if (isSuspended != expected) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String dumpThreads(VirtualMachine vm) {
+        StringBuilder result = new StringBuilder();
+        for (ThreadReference tr : vm.allThreads()) {
+            result.append("Thread: '");
+            result.append(tr.name());
+            result.append("' isSuspended=");
+            result.append(tr.isSuspended());
+            result.append("\n");
+        }
+        return result.toString();
+    }
+
+    private void assertThreadSuspensionState(VirtualMachine vm, boolean expected)
+            throws InterruptedException {
+        // If the debugger connects too fast, the VM may not have had time to hit the
+        // suspension point. We try several times to remedy to this problem.
+        for (int i = 0; i < 4; i++) {
+            if (testThreadSuspensionState(vm, expected)) {
+                return;
+            }
+            Thread.sleep(1000);
+        }
+        fail("Threads are in unexpected state (expected=" + expected + ")\n" + dumpThreads(vm));
+    }
+
+    // App can be started "suspended" which means all its threads will be suspended shorty after
+    // zygote specializes.
+    @Test
+    public void testSuspendStartup() throws DeviceNotAvailableException, Exception {
+
+        VirtualMachine vm = startupTest(DEBUGGABLE_TEST_APP_PACKAGE_NAME,
+                DEBUGGABLE_TEST_APP_ACTIVITY_CLASS_NAME, true, true);
+
+        try {
+            // The VM was started in suspended mode.
+            assertThreadSuspensionState(vm, true);
+
+            // Let's go!
+            vm.resume();
+            assertThreadSuspensionState(vm, false);
+        } finally {
+            vm.dispose();
+        }
     }
 }

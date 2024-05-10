@@ -16,17 +16,28 @@
 
 package android.media.audio.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.media.audiofx.AudioEffect;
-import android.media.AudioFormat;
-import android.media.AudioManager;
 import android.media.audiofx.Equalizer;
-import android.media.cts.NonMediaMainlineTest;
-import android.media.cts.PostProcTestBase;
 import android.os.Looper;
-import android.test.AndroidTestCase;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
-@NonMediaMainlineTest
+import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.NonMainlineTest;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@NonMainlineTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+@RunWith(AndroidJUnit4.class)
 public class EqualizerTest extends PostProcTestBase {
 
     private String TAG = "EqualizerTest";
@@ -51,6 +62,7 @@ public class EqualizerTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 0.0: test constructor and release
+    @Test
     public void test0_0ConstructorAndRelease() throws Exception {
         Equalizer eq = null;
         try {
@@ -77,6 +89,7 @@ public class EqualizerTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 1.0: test setBandLevel() and getBandLevel()
+    @Test
     public void test1_0BandLevel() throws Exception {
         getEqualizer(getSessionId());
         try {
@@ -106,6 +119,7 @@ public class EqualizerTest extends PostProcTestBase {
     }
 
     //Test case 1.1: test band frequency
+    @Test
     public void test1_1BandFrequency() throws Exception {
         getEqualizer(getSessionId());
         try {
@@ -131,6 +145,7 @@ public class EqualizerTest extends PostProcTestBase {
     }
 
     //Test case 1.2: test presets
+    @Test
     public void test1_2Presets() throws Exception {
         getEqualizer(getSessionId());
         try {
@@ -156,6 +171,7 @@ public class EqualizerTest extends PostProcTestBase {
     }
 
     //Test case 1.3: test properties
+    @Test
     public void test1_3Properties() throws Exception {
         getEqualizer(getSessionId());
         try {
@@ -187,6 +203,7 @@ public class EqualizerTest extends PostProcTestBase {
     }
 
     //Test case 1.4: test setBandLevel() throws exception after release
+    @Test
     public void test1_4SetBandLevelAfterRelease() throws Exception {
         getEqualizer(getSessionId());
         mEqualizer.release();
@@ -204,6 +221,7 @@ public class EqualizerTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 2.0: test setEnabled() and getEnabled() in valid state
+    @Test
     public void test2_0SetEnabledGetEnabled() throws Exception {
         getEqualizer(getSessionId());
         try {
@@ -220,6 +238,7 @@ public class EqualizerTest extends PostProcTestBase {
     }
 
     //Test case 2.1: test setEnabled() throws exception after release
+    @Test
     public void test2_1SetEnabledAfterRelease() throws Exception {
         getEqualizer(getSessionId());
         mEqualizer.release();
@@ -237,6 +256,7 @@ public class EqualizerTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 3.0: test control status listener
+    @Test
     public void test3_0ControlStatusListener() throws Exception {
         synchronized(mLock) {
             mHasControl = true;
@@ -259,6 +279,7 @@ public class EqualizerTest extends PostProcTestBase {
     }
 
     //Test case 3.1: test enable status listener
+    @Test
     public void test3_1EnableStatusListener() throws Exception {
         synchronized(mLock) {
             mInitialized = false;
@@ -283,6 +304,7 @@ public class EqualizerTest extends PostProcTestBase {
     }
 
     //Test case 3.2: test parameter changed listener
+    @Test
     public void test3_2ParameterChangedListener() throws Exception {
         synchronized(mLock) {
             mInitialized = false;

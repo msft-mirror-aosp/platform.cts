@@ -56,9 +56,9 @@ public class CodecDecoderTestBase extends CodecTestBase {
     protected boolean mSkipChecksumVerification;
 
     protected final ArrayList<ByteBuffer> mCsdBuffers;
-    private int mCurrCsdIdx;
+    protected int mCurrCsdIdx;
 
-    private final ByteBuffer mFlatBuffer = ByteBuffer.allocate(4 * Integer.BYTES);
+    protected final ByteBuffer mFlatBuffer = ByteBuffer.allocate(4 * Integer.BYTES);
 
     protected MediaExtractor mExtractor;
 
@@ -83,6 +83,33 @@ public class CodecDecoderTestBase extends CodecTestBase {
         }
     }
 
+    public static int getMaxSampleSizeForMediaType(String fileName, String mediaType)
+            throws IOException {
+        Preconditions.assertTestFileExists(fileName);
+        int maxSampleSize = 0;
+        MediaExtractor extractor = new MediaExtractor();
+        extractor.setDataSource(fileName);
+        for (int trackID = 0; trackID < extractor.getTrackCount(); trackID++) {
+            MediaFormat format = extractor.getTrackFormat(trackID);
+            if (mediaType.equalsIgnoreCase(format.getString(MediaFormat.KEY_MIME))) {
+                extractor.selectTrack(trackID);
+                if (format.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) {
+                    maxSampleSize = format.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+                } else {
+                    int size;
+                    while ((size = (int) extractor.getSampleSize()) != -1) {
+                        maxSampleSize = Math.max(maxSampleSize, size);
+                        extractor.advance();
+                    }
+                }
+                extractor.release();
+                return maxSampleSize;
+            }
+        }
+        fail("No track with mediaType: " + mediaType + " found in file: " + fileName + "\n");
+        return maxSampleSize;
+    }
+
     protected MediaFormat setUpSource(String srcFile) throws IOException {
         Preconditions.assertTestFileExists(srcFile);
         mExtractor = new MediaExtractor();
@@ -90,12 +117,21 @@ public class CodecDecoderTestBase extends CodecTestBase {
         for (int trackID = 0; trackID < mExtractor.getTrackCount(); trackID++) {
             MediaFormat format = mExtractor.getTrackFormat(trackID);
             if (mMediaType.equalsIgnoreCase(format.getString(MediaFormat.KEY_MIME))) {
+                // This is required for some mlaw and alaw test vectors where access unit size is
+                // exceeding default max input size
+                if (mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_G711_ALAW)
+                        || mMediaType.equalsIgnoreCase(MediaFormat.MIMETYPE_AUDIO_G711_MLAW)) {
+                    format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE,
+                            getMaxSampleSizeForMediaType(srcFile, mMediaType));
+                }
                 mExtractor.selectTrack(trackID);
                 if (mIsVideo) {
                     ArrayList<MediaFormat> formatList = new ArrayList<>();
                     formatList.add(format);
-                    boolean selectHBD = doesAnyFormatHaveHDRProfile(mMediaType, formatList)
-                            || srcFile.contains("10bit");
+                    boolean selectHBD = doesAnyFormatHaveHDRProfile(mMediaType, formatList);
+                    if (!selectHBD && srcFile.contains("10bit")) {
+                        selectHBD = true;
+                    }
                     format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                             getColorFormat(mCodecName, mMediaType, mSurface != null, selectHBD));
                     if (selectHBD && (format.getInteger(MediaFormat.KEY_COLOR_FORMAT)
@@ -144,7 +180,7 @@ public class CodecDecoderTestBase extends CodecTestBase {
         return format.containsKey("csd-0");
     }
 
-    void flattenBufferInfo(MediaCodec.BufferInfo info, boolean isAudio) {
+    protected void flattenBufferInfo(MediaCodec.BufferInfo info, boolean isAudio) {
         if (isAudio) {
             mFlatBuffer.putInt(info.size);
         }
@@ -225,7 +261,7 @@ public class CodecDecoderTestBase extends CodecTestBase {
             flattenBufferInfo(info, mIsAudio);
             mOutputBuff.checksum(mFlatBuffer, mFlatBuffer.limit());
             if (mIsAudio) {
-                mOutputBuff.checksum(buf, info.size);
+                mOutputBuff.checksum(buf, info);
                 mOutputBuff.saveToMemory(buf, info);
             } else {
                 // tests both getOutputImage and getOutputBuffer. Can do time division
@@ -312,7 +348,7 @@ public class CodecDecoderTestBase extends CodecTestBase {
         }
     }
 
-    void validateTestState() {
+    protected void validateTestState() {
         super.validateTestState();
         if (!mOutputBuff.isPtsStrictlyIncreasing(mPrevOutputPts)) {
             fail("Output timestamps are not strictly increasing \n" + mTestConfig + mTestEnv
@@ -328,13 +364,14 @@ public class CodecDecoderTestBase extends CodecTestBase {
         }
     }
 
-    public void decodeToMemory(String file, String decoder, long pts, int mode, int frameLimit)
+    public void decodeToMemory(String file, String decoder, OutputManager outputBuff, long pts,
+            int mode, int frameLimit, boolean isAsync, boolean signalledEos)
             throws IOException, InterruptedException {
         mSaveToMem = true;
-        mOutputBuff = new OutputManager();
+        mOutputBuff = outputBuff;
         mCodec = MediaCodec.createByCodecName(decoder);
         MediaFormat format = setUpSource(file);
-        configureCodec(format, false, true, false);
+        configureCodec(format, isAsync, signalledEos, false);
         mCodec.start();
         mExtractor.seekTo(pts, mode);
         doWork(frameLimit);
@@ -344,6 +381,16 @@ public class CodecDecoderTestBase extends CodecTestBase {
         mCodec.release();
         mExtractor.release();
         mSaveToMem = false;
+    }
+
+    public void decodeToMemory(String file, String decoder, OutputManager outputBuff, long pts,
+            int mode, int frameLimit) throws IOException, InterruptedException {
+        decodeToMemory(file, decoder, outputBuff, pts, mode, frameLimit, false, true);
+    }
+
+    public void decodeToMemory(String file, String decoder, long pts, int mode, int frameLimit)
+            throws IOException, InterruptedException {
+        decodeToMemory(file, decoder, new OutputManager(), pts, mode, frameLimit);
     }
 
     public void decodeToMemory(ByteBuffer buffer, ArrayList<MediaCodec.BufferInfo> list,

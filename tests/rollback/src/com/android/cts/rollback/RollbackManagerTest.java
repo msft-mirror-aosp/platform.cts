@@ -25,9 +25,13 @@ import static org.junit.Assert.fail;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.pm.Flags;
 import android.content.pm.PackageManager;
 import android.content.rollback.RollbackInfo;
 import android.content.rollback.RollbackManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 
 import androidx.test.InstrumentationRegistry;
@@ -43,6 +47,7 @@ import com.android.cts.rollback.lib.RollbackUtils;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -61,6 +66,10 @@ public class RollbackManagerTest {
     private static final int ROLLBACK_DATA_POLICY_WIPE = 1;
 
     private static final String PROPERTY_ENABLE_ROLLBACK_TIMEOUT_MILLIS = "enable_rollback_timeout";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /**
      * Adopts common permissions needed to test rollbacks and uninstalls the
@@ -668,7 +677,7 @@ public class RollbackManagerTest {
      */
     @Test
     public void testRollbackExpiresAfterLifetime() throws Exception {
-        long expirationTime = TimeUnit.SECONDS.toMillis(30);
+        long expirationTime = TimeUnit.SECONDS.toMillis(6);
         DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK_BOOT,
                 RollbackManager.PROPERTY_ROLLBACK_LIFETIME_MILLIS,
                 Long.toString(expirationTime), false /* makeDefault*/);
@@ -682,8 +691,8 @@ public class RollbackManagerTest {
             Thread.sleep(expirationTime / 2);
             assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNotNull();
 
-            // Check that the data has expired after the expiration time (with a buffer of 1 second)
-            Thread.sleep(expirationTime / 2 + TimeUnit.SECONDS.toMillis(1));
+            // Check that the data has expired after the expiration time (with a buffer of 3 second)
+            Thread.sleep(expirationTime / 2 + TimeUnit.SECONDS.toMillis(3));
             assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNull();
         } finally {
             // Restore default config values
@@ -691,6 +700,35 @@ public class RollbackManagerTest {
                     RollbackManager.PROPERTY_ROLLBACK_LIFETIME_MILLIS,
                     null, false /* makeDefault*/);
         }
+    }
+
+    /**
+     * Test the scheduling aspect of rollback expiration via setRollbackLifetimeMillis.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ROLLBACK_LIFETIME)
+    public void testRollbackExpiresAfterRollbackLifetime() throws Exception {
+        long expirationTimeA = TimeUnit.SECONDS.toMillis(6);
+        Install.single(TestApp.A1).commit();
+        Install.single(TestApp.A2).setEnableRollback()
+                .setRollbackLifetimeMillis(expirationTimeA).commit();
+        RollbackUtils.waitForAvailableRollback(TestApp.A);
+
+        long expirationTimeB = TimeUnit.SECONDS.toMillis(40);
+        Install.single(TestApp.B1).commit();
+        Install.single(TestApp.B2).setEnableRollback()
+                .setRollbackLifetimeMillis(expirationTimeB).commit();
+        RollbackUtils.waitForAvailableRollback(TestApp.B);
+
+        // Give it a little more time, but still not long enough to expire
+        Thread.sleep(expirationTimeA / 2);
+        assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNotNull();
+        assertThat(RollbackUtils.getAvailableRollback(TestApp.B)).isNotNull();
+
+        // Check that the data has expired after the expiration time (with a buffer of 3 seconds)
+        Thread.sleep(expirationTimeA / 2 + TimeUnit.SECONDS.toMillis(3));
+        assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNull();
+        assertThat(RollbackUtils.getAvailableRollback(TestApp.B)).isNotNull();
     }
 
     /**
@@ -719,12 +757,43 @@ public class RollbackManagerTest {
     }
 
     /**
+     * Test that available rollbacks should expire correctly when set via
+     * setRollbackLifetimeMillis and not affected by device config value
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ROLLBACK_LIFETIME)
+    public void testRollbackExpiresWhenLifetimeStays() throws Exception {
+        long expirationTime = TimeUnit.SECONDS.toMillis(6);
+        Install.single(TestApp.A1).commit();
+        Install.single(TestApp.A2).setEnableRollback()
+                .setRollbackLifetimeMillis(expirationTime).commit();
+        RollbackUtils.waitForAvailableRollback(TestApp.A);
+
+        DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK_BOOT,
+                RollbackManager.PROPERTY_ROLLBACK_LIFETIME_MILLIS,
+                Long.toString(0), false /* makeDefault*/);
+
+        try {
+            Thread.sleep(expirationTime / 2);
+            assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNotNull();
+            // The rollback now should expire
+            Thread.sleep(expirationTime / 2 + TimeUnit.SECONDS.toMillis(3));
+            assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNull();
+        } finally {
+            // Restore default config values
+            DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK_BOOT,
+                    RollbackManager.PROPERTY_ROLLBACK_LIFETIME_MILLIS,
+                    null, false /* makeDefault*/);
+        }
+    }
+
+    /**
      * Test that changing time on device does not affect the duration of time that we keep
      * rollback available
      */
     @Test
     public void testTimeChangeDoesNotAffectLifetime() throws Exception {
-        long expirationTime = TimeUnit.SECONDS.toMillis(30);
+        long expirationTime = TimeUnit.SECONDS.toMillis(6);
         DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ROLLBACK_BOOT,
                 RollbackManager.PROPERTY_ROLLBACK_LIFETIME_MILLIS,
                 Long.toString(expirationTime), false /* makeDefault*/);
@@ -742,7 +811,7 @@ public class RollbackManagerTest {
                 Thread.sleep(expirationTime / 2);
                 assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNotNull();
                 // The rollback now should expire
-                Thread.sleep(expirationTime / 2 + TimeUnit.SECONDS.toMillis(1));
+                Thread.sleep(expirationTime / 2 + TimeUnit.SECONDS.toMillis(3));
                 assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNull();
             } finally {
                 RollbackUtils.forwardTimeBy(-expirationTime);
@@ -753,5 +822,59 @@ public class RollbackManagerTest {
                     RollbackManager.PROPERTY_ROLLBACK_LIFETIME_MILLIS,
                     null, false /* makeDefault*/);
         }
+    }
+
+    /**
+     * Test that changing time on device does not affect the duration of time that we keep
+     * rollback available which is set by setRollbackLifetimeMillis
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ROLLBACK_LIFETIME)
+    public void testTimeChangeDoesNotAffectLifetimeMillis() throws Exception {
+        long expirationTime = TimeUnit.SECONDS.toMillis(6);
+
+        Install.single(TestApp.A1).commit();
+        Install.single(TestApp.A2).setEnableRollback()
+                .setRollbackLifetimeMillis(expirationTime).commit();
+        RollbackUtils.waitForAvailableRollback(TestApp.A);
+        RollbackUtils.forwardTimeBy(expirationTime);
+
+        try {
+            // The rollback should be still available after forwarding time
+            assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNotNull();
+            // The rollback shouldn't expire when half of the expiration time elapses
+            Thread.sleep(expirationTime / 2);
+            assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNotNull();
+            // The rollback now should expire
+            Thread.sleep(expirationTime / 2 + TimeUnit.SECONDS.toMillis(3));
+            assertThat(RollbackUtils.getAvailableRollback(TestApp.A)).isNull();
+        } finally {
+            RollbackUtils.forwardTimeBy(-expirationTime);
+        }
+
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RECOVERABILITY_DETECTION)
+    public void testImpactLevelInRollback() throws Exception {
+        Install.single(TestApp.A1).commit();
+        Install.single(TestApp.A2).setEnableRollback().setRollbackImpactLevel(1).commit();
+        RollbackUtils.waitForAvailableRollback(TestApp.A);
+        RollbackInfo rollback = RollbackUtils.getAvailableRollback(TestApp.A);
+
+        assertThat(rollback).isNotNull();
+        assertThat(rollback.getRollbackImpactLevel()).isEqualTo(1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RECOVERABILITY_DETECTION)
+    public void testImpactLevelInRollbackDefault() throws Exception {
+        Install.single(TestApp.A1).commit();
+        Install.single(TestApp.A2).setEnableRollback().commit();
+        RollbackUtils.waitForAvailableRollback(TestApp.A);
+        RollbackInfo rollback = RollbackUtils.getAvailableRollback(TestApp.A);
+
+        assertThat(rollback).isNotNull();
+        assertThat(rollback.getRollbackImpactLevel()).isEqualTo(0);
     }
 }

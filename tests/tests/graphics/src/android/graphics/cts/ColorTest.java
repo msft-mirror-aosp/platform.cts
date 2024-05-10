@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.util.ArraySet;
 import android.util.Log;
 import android.util.TypedValue;
 
@@ -33,8 +34,10 @@ import org.junit.runner.RunWith;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
@@ -44,7 +47,7 @@ public class ColorTest {
 
     @Test
     public void resourceColor() {
-        int colors [][] = {
+        int[][] colors = {
                 { 0xff000000, android.R.color.background_dark  },
                 { 0xffffffff, android.R.color.background_light },
                 { 0xff000000, android.R.color.black },
@@ -75,7 +78,7 @@ public class ColorTest {
                 { 0xff000000, android.R.color.widget_edittext_dark },
         };
 
-        int systemColors[] = {
+        int[] systemColors = {
                 android.R.color.system_neutral1_0,
                 android.R.color.system_neutral1_10,
                 android.R.color.system_neutral1_50,
@@ -143,6 +146,109 @@ public class ColorTest {
                 android.R.color.system_accent3_1000,
         };
 
+        int[] materialSystemColors = {
+                android.R.color.system_primary_container_light,
+                android.R.color.system_on_primary_container_light,
+                android.R.color.system_primary_light,
+                android.R.color.system_on_primary_light,
+                android.R.color.system_secondary_container_light,
+                android.R.color.system_on_secondary_container_light,
+                android.R.color.system_secondary_light,
+                android.R.color.system_on_secondary_light,
+                android.R.color.system_tertiary_container_light,
+                android.R.color.system_on_tertiary_container_light,
+                android.R.color.system_tertiary_light,
+                android.R.color.system_on_tertiary_light,
+                android.R.color.system_background_light,
+                android.R.color.system_on_background_light,
+                android.R.color.system_surface_light,
+                android.R.color.system_on_surface_light,
+                android.R.color.system_surface_container_low_light,
+                android.R.color.system_surface_container_lowest_light,
+                android.R.color.system_surface_container_light,
+                android.R.color.system_surface_container_high_light,
+                android.R.color.system_surface_container_highest_light,
+                android.R.color.system_surface_bright_light,
+                android.R.color.system_surface_dim_light,
+                android.R.color.system_surface_variant_light,
+                android.R.color.system_on_surface_variant_light,
+                android.R.color.system_outline_light,
+                android.R.color.system_outline_variant_light,
+                android.R.color.system_error_light,
+                android.R.color.system_on_error_light,
+                android.R.color.system_error_container_light,
+                android.R.color.system_on_error_container_light,
+                android.R.color.system_primary_fixed,
+                android.R.color.system_primary_fixed_dim,
+                android.R.color.system_on_primary_fixed,
+                android.R.color.system_on_primary_fixed_variant,
+                android.R.color.system_secondary_fixed,
+                android.R.color.system_secondary_fixed_dim,
+                android.R.color.system_on_secondary_fixed,
+                android.R.color.system_on_secondary_fixed_variant,
+                android.R.color.system_tertiary_fixed,
+                android.R.color.system_tertiary_fixed_dim,
+                android.R.color.system_on_tertiary_fixed,
+                android.R.color.system_on_tertiary_fixed_variant,
+                android.R.color.system_control_activated_light,
+                android.R.color.system_control_normal_light,
+                android.R.color.system_control_highlight_light,
+                android.R.color.system_text_primary_inverse_light,
+                android.R.color.system_text_secondary_and_tertiary_inverse_light,
+                android.R.color.system_text_primary_inverse_disable_only_light,
+                android.R.color.system_text_secondary_and_tertiary_inverse_disabled_light,
+                android.R.color.system_text_hint_inverse_light,
+                android.R.color.system_palette_key_color_primary_light,
+                android.R.color.system_palette_key_color_secondary_light,
+                android.R.color.system_palette_key_color_tertiary_light,
+                android.R.color.system_palette_key_color_neutral_light,
+                android.R.color.system_palette_key_color_neutral_variant_light,
+                android.R.color.system_primary_container_dark,
+                android.R.color.system_on_primary_container_dark,
+                android.R.color.system_primary_dark,
+                android.R.color.system_on_primary_dark,
+                android.R.color.system_secondary_container_dark,
+                android.R.color.system_on_secondary_container_dark,
+                android.R.color.system_secondary_dark,
+                android.R.color.system_on_secondary_dark,
+                android.R.color.system_tertiary_container_dark,
+                android.R.color.system_on_tertiary_container_dark,
+                android.R.color.system_tertiary_dark,
+                android.R.color.system_on_tertiary_dark,
+                android.R.color.system_background_dark,
+                android.R.color.system_on_background_dark,
+                android.R.color.system_surface_dark,
+                android.R.color.system_on_surface_dark,
+                android.R.color.system_surface_container_low_dark,
+                android.R.color.system_surface_container_lowest_dark,
+                android.R.color.system_surface_container_dark,
+                android.R.color.system_surface_container_high_dark,
+                android.R.color.system_surface_container_highest_dark,
+                android.R.color.system_surface_bright_dark,
+                android.R.color.system_surface_dim_dark,
+                android.R.color.system_surface_variant_dark,
+                android.R.color.system_on_surface_variant_dark,
+                android.R.color.system_outline_dark,
+                android.R.color.system_outline_variant_dark,
+                android.R.color.system_error_dark,
+                android.R.color.system_on_error_dark,
+                android.R.color.system_error_container_dark,
+                android.R.color.system_on_error_container_dark,
+                android.R.color.system_control_activated_dark,
+                android.R.color.system_control_normal_dark,
+                android.R.color.system_control_highlight_dark,
+                android.R.color.system_text_primary_inverse_dark,
+                android.R.color.system_text_secondary_and_tertiary_inverse_dark,
+                android.R.color.system_text_primary_inverse_disable_only_dark,
+                android.R.color.system_text_secondary_and_tertiary_inverse_disabled_dark,
+                android.R.color.system_text_hint_inverse_dark,
+                android.R.color.system_palette_key_color_primary_dark,
+                android.R.color.system_palette_key_color_secondary_dark,
+                android.R.color.system_palette_key_color_tertiary_dark,
+                android.R.color.system_palette_key_color_neutral_dark,
+                android.R.color.system_palette_key_color_neutral_variant_dark
+        };
+
         List<Integer> expectedColorStateLists = Arrays.asList(
                 android.R.color.primary_text_dark,
                 android.R.color.primary_text_dark_nodisable,
@@ -194,20 +300,39 @@ public class ColorTest {
         // System-API colors are used to allow updateable platform components to use the same colors
         // as the system. The actual value of the color does not matter. Hence only enforce that
         // 'colors' contains all the public colors and ignore System-api colors.
-        int numPublicApiColors = 0;
+        ArrayList<String> missingColors = new ArrayList<>();
+        ArrayList<Integer> requiredPublicApiColorResIds = new ArrayList<>();
+        requiredPublicApiColorResIds.addAll(Arrays.stream(colors).map(pair -> pair[1]).toList());
+        requiredPublicApiColorResIds.addAll(Arrays.stream(systemColors).boxed().toList());
+        requiredPublicApiColorResIds.addAll(Arrays.stream(materialSystemColors).boxed().toList());
+
+        Set<Integer> availablePublicApiColorResIds = new ArraySet<>();
         for (Field declaredColor : android.R.color.class.getDeclaredFields()) {
             if (Arrays.stream(declaredColor.getDeclaredAnnotations()).anyMatch(
                     (Annotation a) -> a.toString().contains("SystemApi"))) {
                 Log.i(LOG_TAG, declaredColor.getName() + " is SystemApi");
-            } else {
-                numPublicApiColors++;
+                continue;
+            }
+            Integer colorValue = -1;
+            try {
+                colorValue = (Integer) declaredColor.get(null);
+            } catch (IllegalAccessException ignored) { }
+            if (colorValue != -1) {
+                availablePublicApiColorResIds.add(colorValue);
             }
         }
 
-        assertEquals("Test no longer in sync with colors in android.R.color",
-                colors.length + systemColors.length, numPublicApiColors);
-    }
+        for (Integer requiredColorResId : requiredPublicApiColorResIds) {
+            if (!availablePublicApiColorResIds.contains(requiredColorResId)) {
+                missingColors.add(resources.getResourceName(requiredColorResId));
+            }
+        }
 
+        assertTrue(
+                "android.R.color misses required color resources. Declared in list,but not "
+                        + "installed : "
+                        + missingColors, missingColors.isEmpty());
+    }
     @Test
     public void testAlpha() {
         assertEquals(0xff, Color.alpha(Color.RED));
@@ -234,7 +359,7 @@ public class ColorTest {
         assertEquals(0xff, Color.green(Color.GREEN));
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = RuntimeException.class)
     public void testHSVToColorArrayTooShort() {
         // abnormal case: hsv length less than 3
         float[] hsv = new float[2];
@@ -255,7 +380,7 @@ public class ColorTest {
         assertEquals(Color.RED, Color.HSVToColor(0xff, hsv));
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testParseColorStringOfInvalidLength() {
         // abnormal case: colorString starts with '#' but length is neither 7 nor 9
         Color.parseColor("#ff00ff0");
@@ -279,7 +404,7 @@ public class ColorTest {
         assertEquals(Color.MAGENTA, Color.parseColor("magenta"));
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testParseColorUnsupportedFormat() {
         // abnormal case: colorString doesn't start with '#' and is unknown color
         Color.parseColor("hello");
@@ -299,7 +424,7 @@ public class ColorTest {
         assertEquals(Color.YELLOW, Color.rgb(1.0f, 1.0f, 0.0f));
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = RuntimeException.class)
     public void testRGBToHSVArrayTooShort() {
         // abnormal case: hsv length less than 3
         float[] hsv = new float[2];

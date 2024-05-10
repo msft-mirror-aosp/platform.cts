@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -27,10 +28,11 @@ android_test {
     static_libs: [
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
-	    "androidx.test.ext.junit",
+        "androidx.test.ext.junit",
         "hamcrest-library",
-	    "CtsAppEnumerationTestLib",
-	    "cts-install-lib",
+        "CtsAppEnumerationTestLib",
+        "cts-install-lib",
+        "Harrier",
     ],
 
     srcs: ["src/**/*.java"],
@@ -73,6 +75,7 @@ android_test {
         ":CtsAppEnumerationWildcardShareActivitySource",
         ":CtsAppEnumerationShareActivityTarget",
         ":CtsAppEnumerationStub",
+        ":CtsAppEnumerationStubSharedUser",
         ":CtsAppEnumerationQueriesServiceViaAction",
         ":CtsAppEnumerationSharedUidSource",
         ":CtsAppEnumerationQueriesNothingReceivesPermissionProtectedUri",
@@ -83,6 +86,10 @@ android_test {
         ":CtsAppEnumerationAppWidgetProviderSharedUidTarget",
         ":CtsAppEnumerationQueriesPackage",
         ":CtsAppEnumerationForceQueryable",
+        ":CtsMockSpellChecker",
+        ":CtsInputMethod1",
+        ":CtsNoRestartBase",
+        ":CtsNoRestartFeature",
     ],
     per_testcase_directory: true,
 }

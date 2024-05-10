@@ -19,6 +19,8 @@ package {
 java_defaults {
     name: "compatibility-device-util-axt-default",
     sdk_version: "test_current",
+    min_sdk_version: "21",
+    dxflags: ["--multi-dex"],
 
     srcs: [
         "src/**/*.java",
@@ -32,8 +34,12 @@ java_defaults {
         "androidx.test.ext.junit",
         "ub-uiautomator",
         "androidx.annotation_annotation",
-        "truth-prebuilt",
+        "androidx.test.uiautomator_uiautomator",
+        "error_prone_annotations",
+        "truth",
         "modules-utils-build_system",
+        "android.os.flags-aconfig-java",
+        "flag-junit",
     ],
 
     libs: [

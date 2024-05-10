@@ -79,9 +79,9 @@ public abstract class BaseDefaultPermissionGrantPolicyTest extends BusinessLogic
             SparseArray<UidState> pregrantUidStates) throws Exception;
 
     /**
-     * Return the names of all the runtime permissions to check for violations.
+     * Return the names of all the runtime permissions that should be checked for violations.
      */
-    public abstract Set<String> getRuntimePermissionNames(List<PackageInfo> packageInfos);
+    public abstract Set<String> getEnforcedRuntimePermissionNames(List<PackageInfo> packageInfos);
 
     /**
      * Return the names of all the packages whose permissions can always be granted as fixed.
@@ -99,12 +99,13 @@ public abstract class BaseDefaultPermissionGrantPolicyTest extends BusinessLogic
 
     public void testDefaultGrantsWithRemoteExceptions(boolean preGrantsOnly) throws Exception {
         List<PackageInfo> allPackages = getAllPackages();
-        Set<String> runtimePermNames = getRuntimePermissionNames(allPackages);
+        Set<String> runtimePermNames = getEnforcedRuntimePermissionNames(allPackages);
         ArrayMap<String, PackageInfo> packagesToVerify =
                 getMsdkTargetingPackagesUsingRuntimePerms(allPackages, runtimePermNames);
 
         // Ignore CTS infrastructure
         packagesToVerify.remove("android.tradefed.contentprovider");
+        packagesToVerify.remove("androidx.test.services");
 
         SparseArray<UidState> pregrantUidStates = new SparseArray<>();
 
@@ -115,8 +116,9 @@ public abstract class BaseDefaultPermissionGrantPolicyTest extends BusinessLogic
             addSplitFromNonDangerousPermissions(packagesToVerify, pregrantUidStates);
         }
 
-        if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)
-                || ApiLevelUtil.codenameStartsWith("T")) {
+        if ((ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)
+                || ApiLevelUtil.codenameStartsWith("T"))
+                && runtimePermNames.contains(Manifest.permission.POST_NOTIFICATIONS)) {
             addImplicitlyGrantedPermission(Manifest.permission.POST_NOTIFICATIONS,
                     Build.VERSION_CODES.TIRAMISU, packagesToVerify, pregrantUidStates);
         }
@@ -344,11 +346,13 @@ public abstract class BaseDefaultPermissionGrantPolicyTest extends BusinessLogic
             return;
         }
         if (!packageInfo.applicationInfo.isSystemApp()) {
-            if (isCnBuild() && exception.hasNonBrandSha256()) {
-                // Due to CN app removability requirement, allow non-system app pregrant exceptions,
-                // as long as they specify a hash (b/121209050)
+            if (exception.hasNonBrandSha256()) {
+                // Due to CN app removability requirement (b/121209050) and EU DMA requirement
+                // (b/248964397), allow non-system app pregrant exceptions as long as they specify a
+                // hash.
             } else {
-                Log.w(LOG_TAG, "Cannot pregrant permissions to non-system package:" + packageName);
+                Log.w(LOG_TAG, "Cannot pregrant permissions to non-system package without cert"
+                        + " digest: " + packageName);
                 return;
             }
         }

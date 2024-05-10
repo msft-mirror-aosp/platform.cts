@@ -49,6 +49,7 @@ public final class HdmiCecRoutingControlTest extends BaseHdmiCecCtsTest {
     public RuleChain ruleChain =
             RuleChain.outerRule(CecRules.requiresCec(this))
                     .around(CecRules.requiresLeanback(this))
+                    .around(CecRules.requiresPhysicalDevice(this))
                     .around(
                             CecRules.requiresDeviceType(
                                     this, HdmiCecConstants.CEC_DEVICE_TYPE_PLAYBACK_DEVICE))
@@ -171,6 +172,8 @@ public final class HdmiCecRoutingControlTest extends BaseHdmiCecCtsTest {
             // Now make the TV the active source
             hdmiCecClient.sendCecMessage(LogicalAddress.TV, LogicalAddress.BROADCAST,
                     CecOperand.ACTIVE_SOURCE, CecMessage.formatParams("0000"));
+            TimeUnit.SECONDS.sleep(
+                    HdmiCecConstants.TIMEOUT_UI_AND_STANDBY_AFTER_ACTIVE_SOURCE_LOST_SECONDS);
             assertDeviceWakefulness(HdmiCecConstants.WAKEFULNESS_ASLEEP);
         } finally {
             /* Wake up the device */
@@ -196,6 +199,8 @@ public final class HdmiCecRoutingControlTest extends BaseHdmiCecCtsTest {
             // Now make the TV the active source
             hdmiCecClient.sendCecMessage(LogicalAddress.TV, LogicalAddress.BROADCAST,
                     CecOperand.ACTIVE_SOURCE, CecMessage.formatParams("0000"));
+            TimeUnit.SECONDS.sleep(
+                    HdmiCecConstants.TIMEOUT_UI_AND_STANDBY_AFTER_ACTIVE_SOURCE_LOST_SECONDS);
             assertDeviceWakefulness(HdmiCecConstants.WAKEFULNESS_AWAKE);
         } finally {
             /* Wake up the device */

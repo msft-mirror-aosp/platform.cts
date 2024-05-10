@@ -21,6 +21,9 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.Nullable;
 
@@ -30,10 +33,17 @@ import androidx.annotation.Nullable;
  */
 public class SettingsProvider extends ContentProvider {
 
+    public static final String SET_INLINE_SUGGESTION_EXTRAS_COMMAND = "setInlineSuggestionsExtras";
+    private static final String TAG = "SettingsProvider";
     static final String AUTHORITY = "com.android.cts.mockime.provider";
+
+    static final String SET_ADDITIONAL_SUBTYPES_COMMAND = "setAdditionalSubtypes";
+    static final String SET_ADDITIONAL_SUBTYPES_KEY = "subtypes";
 
     @Nullable
     private static ImeSettings sSettings = null;
+    @Nullable
+    private static Bundle sInlineSuggestionsExtras;
 
     @Override
     public boolean onCreate() {
@@ -68,6 +78,7 @@ public class SettingsProvider extends ContentProvider {
 
     @Override
     public Bundle call(String authority, String method, String arg, Bundle extras) {
+        Log.i(TAG, String.format("SettingsProvider.call(): instance=%s, method=%s", this, method));
         if ("write".equals(method)) {
             sSettings = null;
             final String callingPackageName = getCallingPackage();
@@ -75,13 +86,32 @@ public class SettingsProvider extends ContentProvider {
                 throw new SecurityException("Failed to obtain the calling package name.");
             }
             sSettings = new ImeSettings(callingPackageName, extras);
+        } else if (SET_ADDITIONAL_SUBTYPES_COMMAND.equals(method)) {
+            InputMethodSubtype[] additionalSubtypes = extras.getParcelableArray(
+                    SET_ADDITIONAL_SUBTYPES_KEY, InputMethodSubtype.class);
+            if (additionalSubtypes == null) {
+                // IMM#setAdditionalInputMethodSubtypes() doesn't accept null array.
+                additionalSubtypes = new InputMethodSubtype[0];
+            }
+            getContext().getSystemService(InputMethodManager.class)
+                    .setAdditionalInputMethodSubtypes(MockIme.getImeId(), additionalSubtypes);
         } else if ("delete".equals(method)) {
+            if (sSettings != null) {
+                sSettings.close();
+            }
             sSettings = null;
+            sInlineSuggestionsExtras = null;
+        } else if (SET_INLINE_SUGGESTION_EXTRAS_COMMAND.equals(method)) {
+            sInlineSuggestionsExtras = extras;
         }
         return Bundle.EMPTY;
     }
 
     static ImeSettings getSettings() {
         return sSettings;
+    }
+
+    static Bundle getInlineSuggestionsExtras() {
+        return sInlineSuggestionsExtras;
     }
 }

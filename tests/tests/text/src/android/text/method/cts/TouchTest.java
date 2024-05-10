@@ -22,27 +22,31 @@ import static org.junit.Assert.assertTrue;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.os.SystemClock;
+import android.platform.test.annotations.FlakyTest;
 import android.text.Layout;
 import android.text.SpannableString;
 import android.text.TextPaint;
 import android.text.method.Touch;
-import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.annotation.UiThreadTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+@FlakyTest
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public class TouchTest {
@@ -68,6 +72,7 @@ public class TouchTest {
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mActivity = mActivityRule.getActivity();
+        WindowUtil.waitForFocus(mActivity);
         mTextView = new TextViewNoIme(mActivity);
         mTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         mTextView.setEllipsize(null);
@@ -115,19 +120,19 @@ public class TouchTest {
     @Test
     public void testOnTouchEvent() throws Throwable {
         // Create a string that is wider than the screen.
-        DisplayMetrics metrics = mActivity.getResources().getDisplayMetrics();
-        int screenWidth = metrics.widthPixels;
+        int rootViewWidth = mActivity.getWindow().getDecorView().getWidth();
+        int touchSlop = ViewConfiguration.get(mActivity).getScaledTouchSlop();
         TextPaint paint = mTextView.getPaint();
         String text = LONG_TEXT;
         int textWidth = Math.round(paint.measureText(text));
-        while (textWidth < screenWidth) {
+        while (textWidth < rootViewWidth + touchSlop) {
             text += LONG_TEXT;
             textWidth = Math.round(paint.measureText(text));
         }
 
         // Drag the difference between the text width and the screen width.
-        int dragAmount = Math.min(screenWidth, textWidth - screenWidth);
-        assertTrue(dragAmount > 0);
+        int dragAmount = Math.min(rootViewWidth, textWidth - rootViewWidth);
+        assertTrue(dragAmount > touchSlop);
         final String finalText = text;
         final SpannableString spannable = new SpannableString(finalText);
         mActivityRule.runOnUiThread(() -> {

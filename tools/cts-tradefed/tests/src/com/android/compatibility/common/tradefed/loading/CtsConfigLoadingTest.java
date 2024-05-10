@@ -60,6 +60,7 @@ public class CtsConfigLoadingTest {
                     Arrays.asList(
                             // modifications to the list below must be reviewed
                             "abuse",
+                            "adservices",
                             "art",
                             "auth",
                             "auto",
@@ -85,6 +86,8 @@ public class CtsConfigLoadingTest {
                             "mocking",
                             "networking",
                             "neuralnetworks",
+                            "packagemanager",
+                            "permissions",
                             "print",
                             "renderscript",
                             "security",
@@ -111,7 +114,6 @@ public class CtsConfigLoadingTest {
                             "CtsClassLoaderFactoryPathClassLoaderTestCases.config",
                             "CtsSampleHostTestCases.config",
                             "CtsHardwareTestCases.config",
-                            "CtsMonkeyTestCases.config",
                             "CtsAndroidAppTestCases.config",
                             "CtsClassLoaderFactoryInMemoryDexClassLoaderTestCases.config",
                             "CtsAppComponentFactoryTestCases.config",

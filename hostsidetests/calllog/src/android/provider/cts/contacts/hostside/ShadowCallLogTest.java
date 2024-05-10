@@ -26,6 +26,7 @@ import com.android.ddmlib.Log;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -75,7 +76,7 @@ public class ShadowCallLogTest extends BaseHostJUnit4Test {
             setupDevicePassword();
 
             // Give enough time for vold to update keys
-            Thread.sleep(15000);
+            RunUtil.getDefault().sleep(15000);
 
             Log.i(TAG, "Rebooting device");
             // Reboot system into known state with keys ejected
@@ -104,7 +105,6 @@ public class ShadowCallLogTest extends BaseHostJUnit4Test {
     private void setupDevicePassword() throws Exception {
         Log.i(TAG, "running device password setup");
         ITestDevice device = getDevice();
-        device.executeShellCommand("settings put global require_password_to_decrypt 0");
         device.executeShellCommand("locksettings set-disabled false");
         device.executeShellCommand("locksettings set-pin 12345");
     }
@@ -114,7 +114,6 @@ public class ShadowCallLogTest extends BaseHostJUnit4Test {
         ITestDevice device = getDevice();
         device.executeShellCommand("locksettings clear --old 12345");
         device.executeShellCommand("locksettings set-disabled true");
-        device.executeShellCommand("settings delete global require_password_to_decrypt");
     }
 
     public static void waitForBootCompleted(ITestDevice device) throws Exception {
@@ -123,11 +122,11 @@ public class ShadowCallLogTest extends BaseHostJUnit4Test {
                 Log.d(TAG, "Yay, system is ready!");
                 // or is it really ready?
                 // guard against potential USB mode switch weirdness at boot
-                Thread.sleep(10 * 1000);
+                RunUtil.getDefault().sleep(10 * 1000);
                 return;
             }
             Log.d(TAG, "Waiting for system ready...");
-            Thread.sleep(1000);
+            RunUtil.getDefault().sleep(1000);
         }
         throw new AssertionError("System failed to become ready!");
     }

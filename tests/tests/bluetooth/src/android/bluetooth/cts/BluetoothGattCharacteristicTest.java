@@ -16,27 +16,53 @@
 
 package android.bluetooth.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.test.AndroidTestCase;
+import android.bluetooth.BluetoothGattService;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.UUID;
 
-public class BluetoothGattCharacteristicTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class BluetoothGattCharacteristicTest {
     private final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
     private BluetoothGattCharacteristic mBluetoothGattCharacteristic;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
+        Assume.assumeTrue(TestUtils.isBleSupported(
+                InstrumentationRegistry.getInstrumentation().getTargetContext()));
+
         mBluetoothGattCharacteristic = new BluetoothGattCharacteristic(TEST_UUID, 0x0A, 0x11);
     }
 
-    @Override
-    public void tearDown() throws Exception {
-        mBluetoothGattCharacteristic = null;
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @Test
+    public void getInstanceId() {
+        assertEquals(mBluetoothGattCharacteristic.getInstanceId(), 0);
     }
 
-    public void test_getInstanceId() {
-        assertEquals(mBluetoothGattCharacteristic.getInstanceId(), 0);
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @Test
+    public void getService() {
+        // Service is null after initialization with public constructor
+        assertNull(mBluetoothGattCharacteristic.getService());
+        BluetoothGattService service = new BluetoothGattService(TEST_UUID,
+                BluetoothGattService.SERVICE_TYPE_PRIMARY);
+
+        service.addCharacteristic(mBluetoothGattCharacteristic);
+
+        assertEquals(mBluetoothGattCharacteristic.getService(), service);
     }
 }

@@ -17,7 +17,7 @@
 ## script to install cts video test files manually
 
 adbOptions=" "
-resLabel=CtsVideoCodecTestCases-1.2
+resLabel=CtsVideoCodecTestCases-2.1
 srcDir="/tmp/$resLabel"
 tgtDir="/sdcard/test"
 usage="Usage: $0 [-h] [-s serial]"
@@ -37,7 +37,7 @@ fi
 
 ## download resources if not already done
 if [ ! -f "/tmp/$resLabel.zip" ]; then
-  wget "https://storage.googleapis.com/android_media/cts/tests/videocodec/$resLabel.zip" -O /tmp/$resLabel.zip
+  wget "https://dl.google.com/android/xts/cts/tests/videocodec/$resLabel.zip" -O /tmp/$resLabel.zip
 fi
 unzip -qo "/tmp/$resLabel" -d $srcDir
 

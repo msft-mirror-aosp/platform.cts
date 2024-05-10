@@ -56,6 +56,7 @@ import android.text.InputType;
 import android.view.ViewGroup;
 import android.view.autofill.AutofillManager;
 
+import androidx.test.filters.FlakyTest;
 import androidx.test.uiautomator.UiObject2;
 
 import org.junit.Ignore;
@@ -130,7 +131,7 @@ public class VirtualContainerActivityTest
         autofillTest(false);
     }
 
-    @Presubmit
+    @FlakyTest(bugId = 276895614)
     @Test
     public void testAutofill_appContext() throws Exception {
         mActivity.mCustomView.setAutofillManager(mActivity.getApplicationContext());

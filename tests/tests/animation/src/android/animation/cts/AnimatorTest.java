@@ -26,15 +26,16 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.app.Instrumentation;
 import android.os.SystemClock;
-import android.platform.test.annotations.FlakyTest;
 import android.view.animation.AccelerateInterpolator;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.annotation.UiThreadTest;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,6 +49,7 @@ public class AnimatorTest {
     private AnimationActivity mActivity;
     private Animator mAnimator;
     private long mDuration = 1000;
+    private float mDurationScale = 1f;
 
     @Rule
     public ActivityTestRule<AnimationActivity> mActivityRule =
@@ -55,9 +57,16 @@ public class AnimatorTest {
 
     @Before
     public void setup() {
+        mDurationScale = ValueAnimator.getDurationScale();
+        ValueAnimator.setDurationScale(1f);
         InstrumentationRegistry.getInstrumentation().setInTouchMode(false);
         mActivity = mActivityRule.getActivity();
         mAnimator = mActivity.createAnimatorWithDuration(mDuration);
+    }
+
+    @After
+    public void teardown() {
+        ValueAnimator.setDurationScale(mDurationScale);
     }
 
     @Test

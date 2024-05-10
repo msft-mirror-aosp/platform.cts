@@ -23,6 +23,10 @@ import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
 
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 /**
@@ -63,12 +67,23 @@ public final class ShellCommand {
         @Nullable
         private byte[] mStdInBytes = null;
         @Nullable
+        private Duration mTimeout = null;
+        @Nullable
         private boolean mAllowEmptyOutput = false;
         @Nullable
         private Function<String, Boolean> mOutputSuccessChecker = null;
+        private boolean mShouldRunAsRoot = false;
 
         private Builder(String command) {
             commandBuilder = new StringBuilder(command);
+        }
+
+        /**
+         * Run command as root by adding {@code su root} as prefix.
+         */
+        public Builder asRoot(boolean shouldRunAsRoot) {
+            mShouldRunAsRoot = shouldRunAsRoot;
+            return this;
         }
 
         /**
@@ -90,6 +105,14 @@ public final class ShellCommand {
         public Builder addOperand(Object value) {
             // TODO: Deal with spaces/etc.
             commandBuilder.append(" ").append(value);
+            return this;
+        }
+
+        /**
+         * Add a timeout to the execution of the command.
+         */
+        public Builder withTimeout(Duration timeout) {
+            mTimeout = timeout;
             return this;
         }
 
@@ -128,6 +151,10 @@ public final class ShellCommand {
          * Build the full command including all options and operands.
          */
         public String build() {
+            if (mShouldRunAsRoot) {
+                return commandBuilder.insert(0, "su root ").toString();
+            }
+
             return commandBuilder.toString();
         }
 
@@ -145,6 +172,42 @@ public final class ShellCommand {
 
         /** See {@link ShellCommandUtils#executeCommand(java.lang.String)}. */
         public String execute() throws AdbException {
+            if (mTimeout == null) {
+                return executeSync();
+            }
+
+            AtomicReference<AdbException> adbException = new AtomicReference<>(null);
+            AtomicReference<String> result = new AtomicReference<>(null);
+
+            CountDownLatch latch = new CountDownLatch(1);
+
+            Thread thread = new Thread(() -> {
+                try {
+                    result.set(executeSync());
+                } catch (AdbException e) {
+                    adbException.set(e);
+                } finally {
+                    latch.countDown();
+                }
+            });
+            thread.start();
+
+            try {
+                if (!latch.await(mTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
+                    throw new AdbException("Command could not run in " + mTimeout, build(), "");
+                }
+            } catch (InterruptedException e) {
+                throw new AdbException("Interrupted while executing command", build(), "", e);
+            }
+
+            if (adbException.get() != null) {
+                throw adbException.get();
+            }
+
+            return result.get();
+        }
+
+        private String executeSync() throws AdbException {
             if (mOutputSuccessChecker != null) {
                 return ShellCommandUtils.executeCommandAndValidateOutput(
                         build(),

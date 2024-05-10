@@ -28,11 +28,13 @@ import static com.android.cts.appdataisolation.common.FileUtils.assertDirIsAcces
 import static com.android.cts.appdataisolation.common.FileUtils.assertDirIsNotAccessible;
 import static com.android.cts.appdataisolation.common.FileUtils.assertFileDoesNotExist;
 import static com.android.cts.appdataisolation.common.FileUtils.assertFileExists;
+import static com.android.cts.appdataisolation.common.FileUtils.deleteFile;
 import static com.android.cts.appdataisolation.common.FileUtils.touchFile;
 import static com.android.cts.appdataisolation.common.UserUtils.getCurrentUserId;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static android.view.Display.DEFAULT_DISPLAY;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -44,12 +46,13 @@ import android.content.pm.ApplicationInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.os.SystemProperties;
-import android.support.test.uiautomator.UiDevice;
 import android.view.KeyEvent;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.cts.appdataisolation.common.FileUtils;
@@ -68,6 +71,7 @@ import java.util.concurrent.TimeUnit;
 public class AppATests {
 
     private static final long BIND_SERVICE_TIMEOUT_MS = 5000;
+    private static final int MAX_VOLD_QUERY_RETRIES = 20;
 
     private Context mContext;
     private UiDevice mDevice;
@@ -75,6 +79,13 @@ public class AppATests {
     private String mDePath;
     private String mExternalDataPath;
     private String mObbPath;
+
+    // Sending the unlock keycode events to DEFAULT_DISPLAY
+    private String testUnlockDeviceCommand_1 = "input -d "+ DEFAULT_DISPLAY +" keyevent "+KeyEvent.KEYCODE_1;
+    private String testUnlockDeviceCommand_2 = "input -d "+ DEFAULT_DISPLAY +" keyevent "+KeyEvent.KEYCODE_2;
+    private String testUnlockDeviceCommand_3 = "input -d "+ DEFAULT_DISPLAY +" keyevent "+KeyEvent.KEYCODE_3;
+    private String testUnlockDeviceCommand_4 = "input -d "+ DEFAULT_DISPLAY +" keyevent "+KeyEvent.KEYCODE_4;
+    private String testUnlockDeviceCommand_enter = "input -d "+ DEFAULT_DISPLAY +" keyevent "+KeyEvent.KEYCODE_ENTER;
 
     private volatile CountDownLatch mServiceConnectedLatch;
     private IIsolatedService mService;
@@ -103,7 +114,7 @@ public class AppATests {
     private void setUpExternalStoragePaths() {
         File externalFilesDir = mContext.getExternalFilesDir("");
         if (externalFilesDir != null) {
-            mExternalDataPath = mContext.getExternalFilesDir("").getAbsolutePath();
+            mExternalDataPath = externalFilesDir.getAbsolutePath();
         }
         File obbDir = mContext.getObbDir();
         if (obbDir != null) {
@@ -137,6 +148,15 @@ public class AppATests {
 
         assertFileExists(mExternalDataPath, EXTERNAL_DATA_FILE_NAME);
         assertFileExists(mObbPath, OBB_FILE_NAME);
+    }
+
+    @Test
+    public void testDeleteExternalDirs() throws Exception {
+        deleteFile(mExternalDataPath, EXTERNAL_DATA_FILE_NAME);
+        deleteFile(mObbPath, OBB_FILE_NAME);
+
+        assertFileDoesNotExist(mExternalDataPath, EXTERNAL_DATA_FILE_NAME);
+        assertFileDoesNotExist(mObbPath, OBB_FILE_NAME);
     }
 
     @Test
@@ -206,12 +226,15 @@ public class AppATests {
         mDevice.waitForIdle();
         mDevice.pressMenu();
         mDevice.waitForIdle();
-        mDevice.pressKeyCode(KeyEvent.KEYCODE_1);
-        mDevice.pressKeyCode(KeyEvent.KEYCODE_2);
-        mDevice.pressKeyCode(KeyEvent.KEYCODE_3);
-        mDevice.pressKeyCode(KeyEvent.KEYCODE_4);
+        mDevice.executeShellCommand(testUnlockDeviceCommand_1);
         mDevice.waitForIdle();
-        mDevice.pressEnter();
+        mDevice.executeShellCommand(testUnlockDeviceCommand_2);
+        mDevice.waitForIdle();
+        mDevice.executeShellCommand(testUnlockDeviceCommand_3);
+        mDevice.waitForIdle();
+        mDevice.executeShellCommand(testUnlockDeviceCommand_4);
+        mDevice.waitForIdle();
+        mDevice.executeShellCommand(testUnlockDeviceCommand_enter);
         mDevice.waitForIdle();
         mDevice.pressHome();
         mDevice.waitForIdle();
@@ -252,7 +275,16 @@ public class AppATests {
         assertTrue("User not unlocked", unlocked.await(1, TimeUnit.MINUTES));
         assertTrue("No locked boot complete", bootCompleted.await(2, TimeUnit.MINUTES));
 
-        setUpExternalStoragePaths();
+        // TODO(b/302586971): Remove this when the vold resets are resolved.
+        // vold can reset on an HSUM configuration during the user unlock flow; wait until valid
+        // values are returned for the external and obb directories before continuing with the test.
+        int numRetries = 0;
+        do {
+            numRetries++;
+            SystemClock.sleep(3000);
+            setUpExternalStoragePaths();
+        } while ((mExternalDataPath == null || mObbPath == null)
+                && numRetries <= MAX_VOLD_QUERY_RETRIES);
 
         // The test app process should be still running, make sure CE DE now is available
         testAppACeDataExists();

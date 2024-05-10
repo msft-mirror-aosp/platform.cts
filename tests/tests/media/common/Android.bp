@@ -109,6 +109,7 @@ android_library {
         "compatibility-device-util-axt",
         "junit",
         "platform-test-annotations",
+        "ctsmediav2common",
     ],
     platform_apis: true,
     libs: [

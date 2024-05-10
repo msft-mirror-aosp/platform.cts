@@ -22,16 +22,18 @@ import static org.testng.Assert.expectThrows;
 import android.audio.policy.configuration.V7_0.AudioUsage;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
-import android.media.cts.NonMediaMainlineTest;
 import android.os.Parcel;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import com.android.compatibility.common.util.CtsAndroidTestCase;
+import com.android.compatibility.common.util.NonMainlineTest;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-@NonMediaMainlineTest
+@NonMainlineTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AudioAttributesTest extends CtsAndroidTestCase {
 
     // -----------------------------------------------------------------

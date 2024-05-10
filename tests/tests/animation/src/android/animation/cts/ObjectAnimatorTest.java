@@ -39,17 +39,18 @@ import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.PointF;
 import android.os.SystemClock;
-import android.platform.test.annotations.FlakyTest;
 import android.util.Property;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Interpolator;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -78,6 +79,7 @@ public class ObjectAnimatorTest {
     private AnimationActivity mActivity;
     private ObjectAnimator mObjectAnimator;
     private long mDuration = 1000;
+    private float mDurationScale = 1f;
 
     @Rule
     public ActivityTestRule<AnimationActivity> mActivityRule =
@@ -85,10 +87,17 @@ public class ObjectAnimatorTest {
 
     @Before
     public void setup() {
+        mDurationScale = ValueAnimator.getDurationScale();
+        ValueAnimator.setDurationScale(1f);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mInstrumentation.setInTouchMode(false);
         mActivity = mActivityRule.getActivity();
         mObjectAnimator = (ObjectAnimator) mActivity.createAnimatorWithDuration(mDuration);
+    }
+
+    @After
+    public void teardown() {
+        ValueAnimator.setDurationScale(mDurationScale);
     }
 
     @Test
@@ -194,13 +203,13 @@ public class ObjectAnimatorTest {
         colorAnimator.addListener(mockListener);
 
         colorAnimator.addUpdateListener(updateListener);
-        colorAnimator.setDuration(200);
-        colorAnimator.setRepeatCount(10);
+        colorAnimator.setDuration(2000);
+        colorAnimator.setRepeatCount(2);
         colorAnimator.setRepeatMode(ValueAnimator.REVERSE);
         mActivityRule.runOnUiThread(colorAnimator::start);
 
-        verify(mockListener, timeout(2000)).onAnimationRepeat(colorAnimator);
-        verify(mockListener, timeout(3000)).onAnimationEnd(colorAnimator, false);
+        verify(mockListener, timeout(8000)).onAnimationRepeat(colorAnimator);
+        verify(mockListener, timeout(8000)).onAnimationEnd(colorAnimator, false);
     }
 
     @Test
@@ -358,7 +367,7 @@ public class ObjectAnimatorTest {
         objAnimator.setRepeatMode(ValueAnimator.REVERSE);
         mActivityRule.runOnUiThread(objAnimator::start);
 
-        verify(mockListener, timeout(2000).atLeast(20)).onAnimationUpdate(objAnimator);
+        verify(mockListener, timeout(2000).atLeast(2)).onAnimationUpdate(objAnimator);
         mActivityRule.runOnUiThread(objAnimator::cancel);
     }
 

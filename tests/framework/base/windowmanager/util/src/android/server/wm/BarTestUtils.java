@@ -30,7 +30,6 @@ import android.content.res.Configuration;
 import android.graphics.Insets;
 import android.util.Log;
 import android.view.WindowInsets;
-import android.view.WindowMetrics;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
@@ -47,20 +46,6 @@ public final class BarTestUtils {
     private BarTestUtils() {
     }
 
-    public static void assumeStatusBarContainsCutout(ActivityTestRule<?> rule) {
-        final boolean[] statusBarContainsCutout = {false};
-        getInstrumentation().runOnMainSync(() -> {
-            final WindowMetrics metrics =
-                    rule.getActivity().getWindowManager().getCurrentWindowMetrics();
-            final WindowInsets windowInsets = metrics.getWindowInsets();
-            final Insets insetsCutout = windowInsets.getInsets(WindowInsets.Type.displayCutout());
-            final Insets insetsStatusBar = windowInsets.getInsets(WindowInsets.Type.statusBars());
-            final Insets min = Insets.min(insetsCutout, insetsStatusBar);
-            statusBarContainsCutout[0] = !Insets.NONE.equals(min);
-        });
-        assumeTrue(statusBarContainsCutout[0]);
-    }
-
     public static void assumeHasColoredStatusBar(ActivityTestRule<?> rule) {
         assumeHasColoredBars();
         assumeHasStatusBar(rule);
@@ -69,8 +54,9 @@ public final class BarTestUtils {
     public static void assumeHasStatusBar(ActivityTestRule<?> rule) {
         assumeFalse("No status bar when running in VR", isRunningInVr());
 
-        assumeTrue("Top stable inset is non-positive, no status bar.",
-                getInsets(rule).getStableInsetTop() > 0);
+        Insets statusBar = getInsets(rule).getInsetsIgnoringVisibility(
+                WindowInsets.Type.statusBars());
+        assumeFalse("There must be status bar insets.", statusBar.equals(Insets.NONE));
     }
 
     public static void assumeHasColoredNavigationBar(ActivityTestRule<?> rule) {

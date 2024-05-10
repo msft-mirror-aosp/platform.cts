@@ -15,11 +15,13 @@
  */
 
 #include <jni.h>
-#include <string.h>
 #include <sys/auxv.h>
+#include <sys/syscall.h>
+#include <sys/system_properties.h>
 #include <sys/utsname.h>
+#include <sys/hwprobe.h>
 
-#include <string>
+#include "android-base/macros.h"
 
 jboolean android_cts_CpuFeatures_isArmCpu(JNIEnv* env, jobject thiz)
 {
@@ -73,16 +75,25 @@ jint android_cts_CpuFeatures_getHwCaps(JNIEnv*, jobject)
 
 jboolean android_cts_CpuFeatures_isNativeBridgedCpu(JNIEnv* env, jobject thiz)
 {
-#if defined(__arm__) || defined(__aarch64__)
-  // If the test is compiled for arm use uname() to check if host CPU is x86.
-  struct utsname uname_data;
-  uname(&uname_data);
-  std::string machine = uname_data.machine;
-  // Matches all of i386, i686 and x86_64.
-  return machine.find("86") != std::string::npos;
+#if defined(__BIONIC__)
+  return __system_property_find("ro.dalvik.vm.isa." ABI_STRING) != nullptr;
 #else
+
   return false;
+
 #endif
+}
+
+jboolean android_cts_CpuFeatures_isRiscv64MisalignedFast(JNIEnv* env, jobject thiz) {
+#if defined(__riscv)
+  // https://github.com/torvalds/linux/blob/master/arch/riscv/include/uapi/asm/hwprobe.h
+  riscv_hwprobe probes[] = {{.key = RISCV_HWPROBE_KEY_CPUPERF_0}};
+  __riscv_hwprobe(probes, 1, 0, nullptr, 0);
+  if ((probes[0].value & RISCV_HWPROBE_MISALIGNED_MASK) == RISCV_HWPROBE_MISALIGNED_FAST) {
+    return true;
+  }
+#endif
+  return false;
 }
 
 static JNINativeMethod gMethods[] = {
@@ -98,6 +109,8 @@ static JNINativeMethod gMethods[] = {
             (void *) android_cts_CpuFeatures_isX86_64Cpu  },
     {  "getHwCaps", "()I",
             (void *) android_cts_CpuFeatures_getHwCaps  },
+    {  "isRiscv64MisalignedFast", "()Z",
+            (void *) android_cts_CpuFeatures_isRiscv64MisalignedFast },
     {  "isNativeBridgedCpu", "()Z",
             (void *) android_cts_CpuFeatures_isNativeBridgedCpu  },
 };

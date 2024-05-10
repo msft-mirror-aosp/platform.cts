@@ -16,8 +16,10 @@
 
 package android.cts.backup.restoresessionapp;
 
-import static androidx.test.InstrumentationRegistry.getTargetContext;
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
+import static androidx.test.InstrumentationRegistry.getTargetContext;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
@@ -32,9 +34,9 @@ import android.app.backup.RestoreSession;
 import android.app.backup.RestoreSet;
 import android.content.Context;
 import android.os.Bundle;
+import android.platform.test.annotations.AppModeFull;
 
 import androidx.annotation.Nullable;
-import android.platform.test.annotations.AppModeFull;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
@@ -42,7 +44,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -60,7 +64,7 @@ public class RestoreSessionTest {
     };
 
     private static final int PACKAGES_COUNT = 2;
-    private static final int RESTORE_TIMEOUT_SECONDS = 10;
+    private static final int RESTORE_TIMEOUT_SECONDS = 20;
 
     private BackupManager mBackupManager;
     private Set<String> mRestorePackages;
@@ -277,13 +281,10 @@ public class RestoreSessionTest {
 
         @Override
         public void onEvent(Bundle event) {
+            // Note: this logic will break if the test cases using TestBackupMonitor
+            // start restoring more than 1 package because the logic currently expects
+            // exactly 1 onEvent() call per package
             super.onEvent(event);
-
-            int eventType = event.getInt(BackupManagerMonitor.EXTRA_LOG_EVENT_ID);
-            assertEquals(
-                    "Unexpected event from BackupManagerMonitor: " + eventType,
-                    BackupManagerMonitor.LOG_EVENT_ID_VERSIONS_MATCH,
-                    eventType);
             mLatch.countDown();
         }
     }

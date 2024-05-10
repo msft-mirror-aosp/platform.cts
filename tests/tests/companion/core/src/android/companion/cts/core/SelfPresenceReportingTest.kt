@@ -17,24 +17,25 @@
 package android.companion.cts.core
 
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
+import android.companion.CompanionDeviceService.DEVICE_EVENT_SELF_MANAGED_APPEARED
+import android.companion.CompanionDeviceService.DEVICE_EVENT_SELF_MANAGED_DISAPPEARED
+import android.companion.Flags
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_B
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.PrimaryCompanionService
-import android.companion.cts.common.Repeat
-import android.companion.cts.common.RepeatRule
+import android.companion.cts.common.assertInvalidCompanionDeviceServicesNotBound
+import android.companion.cts.common.assertOnlyPrimaryCompanionDeviceServiceNotified
 import android.companion.cts.common.assertValidCompanionDeviceServicesBind
 import android.companion.cts.common.assertValidCompanionDeviceServicesRemainBound
 import android.companion.cts.common.assertValidCompanionDeviceServicesUnbind
-import android.companion.cts.common.assertInvalidCompanionDeviceServicesNotBound
-import android.companion.cts.common.assertOnlyPrimaryCompanionDeviceServiceNotified
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.test.assertContentEquals
-import kotlin.test.assertFailsWith
 
 /**
  * Tests CDM APIs for notifying the presence of status of the companion devices for self-managed
@@ -50,8 +51,6 @@ import kotlin.test.assertFailsWith
 @AppModeFull(reason = "CompanionDeviceManager APIs are not available to the instant apps.")
 @RunWith(AndroidJUnit4::class)
 class SelfPresenceReportingTest : CoreTestBase() {
-    @get:Rule
-    val repeatRule = RepeatRule()
 
     @Test
     fun test_selfReporting_singleDevice_multipleServices() =
@@ -69,12 +68,23 @@ class SelfPresenceReportingTest : CoreTestBase() {
 
         // Assert both valid CompanionDeviceServices stay bound
         assertValidCompanionDeviceServicesRemainBound()
+        if (Flags.devicePresence()) {
+            assertEquals(
+                    expected = DEVICE_EVENT_SELF_MANAGED_APPEARED,
+                    actual = PrimaryCompanionService.getCurrentState()
+            )
+        }
 
         cdm.notifyDeviceDisappeared(associationId)
 
         // Assert only the primary CompanionDeviceService is notified of device disappearance
         assertOnlyPrimaryCompanionDeviceServiceNotified(associationId, appeared = false)
-
+        if (Flags.devicePresence()) {
+            assertEquals(
+                    expected = DEVICE_EVENT_SELF_MANAGED_DISAPPEARED,
+                    actual = PrimaryCompanionService.getCurrentState()
+            )
+        }
         // Assert both services are unbound now
         assertValidCompanionDeviceServicesUnbind()
     }
@@ -154,13 +164,15 @@ class SelfPresenceReportingTest : CoreTestBase() {
     }
 
     @Test
-    @Repeat(10)
     fun test_notifyAppears_from_onAssociationCreated() {
         // Create a self-managed association and call notifyDeviceAppeared() right from the
         // Callback.onAssociationCreated()
         val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A) {
             cdm.notifyDeviceAppeared(it.id)
         }
+
+        // Avoid race condition where onDeviceDisappeared() is sometimes processed first
+        PrimaryCompanionService.waitAssociationToAppear(associationId)
 
         // Make sure CDM binds both CompanionDeviceServices.
         assertValidCompanionDeviceServicesBind()

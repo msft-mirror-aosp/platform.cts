@@ -19,30 +19,44 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
+import android.content.Context;
 import android.sysprop.BluetoothProperties;
-import android.test.AndroidTestCase;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 
-public class BluetoothConfigTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public class BluetoothConfigTest {
     private static final String TAG = MethodHandles.lookup().lookupClass().getSimpleName();
 
+    private Context mContext;
     private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
     private UiAutomation mUiAutomation;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
         mHasBluetooth = TestUtils.hasBluetooth();
         if (!mHasBluetooth) return;
@@ -50,14 +64,13 @@ public class BluetoothConfigTest extends AndroidTestCase {
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        BluetoothManager manager = getContext().getSystemService(BluetoothManager.class);
+        BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
         mAdapter = manager.getAdapter();
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
-        super.tearDown();
         if (!mHasBluetooth) return;
 
         mAdapter = null;
@@ -68,7 +81,8 @@ public class BluetoothConfigTest extends AndroidTestCase {
         final boolean isEnabled = TestUtils.isProfileEnabled(profile);
         final boolean isSupported = supportedProfiles.contains(profile);
 
-        if (isEnabled == isSupported) {
+        // isEnabled => isSupported
+        if (!isEnabled || isSupported) {
             return 0;
         }
         Log.e(TAG, "Profile config does not match for profile: "
@@ -78,10 +92,10 @@ public class BluetoothConfigTest extends AndroidTestCase {
         return 1;
     }
 
-    public void testProfileEnabledValueInList() {
-        if (!mHasBluetooth) {
-            return;
-        }
+    @Test
+    public void profileEnabledValueInList() {
+        assumeTrue(mHasBluetooth);
+
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         final List<Integer> pList = mAdapter.getSupportedProfiles();
         int wrong_config_in_list = checkIsProfileEnabledInList(BluetoothProfile.A2DP, pList)
@@ -115,7 +129,8 @@ public class BluetoothConfigTest extends AndroidTestCase {
         final boolean isEnabled = TestUtils.isProfileEnabled(profile);
         final boolean isSupported = BluetoothStatusCodes.FEATURE_SUPPORTED == adapterSupport;
 
-        if (isEnabled == isSupported) {
+        // isEnabled => isSupported
+        if (!isEnabled || isSupported) {
             return 0;
         }
         Log.e(TAG, "Profile config does not match for profile: "
@@ -125,10 +140,10 @@ public class BluetoothConfigTest extends AndroidTestCase {
         return 1;
     }
 
-    public void testProfileEnabledValue() {
-        if (!mHasBluetooth) {
-            return;
-        }
+    @Test
+    public void profileEnabledValue() {
+        assumeTrue(mHasBluetooth);
+
         int wrong_config =
             checkIsProfileEnabled(BluetoothProfile.LE_AUDIO,
                     mAdapter.isLeAudioSupported())
@@ -141,10 +156,9 @@ public class BluetoothConfigTest extends AndroidTestCase {
                 0, wrong_config);
     }
 
-    public void testBleCDDRequirement() {
-        if (!mHasBluetooth) {
-            return;
-        }
+    @Test
+    public void bleCDDRequirement() {
+        assumeTrue(mHasBluetooth);
 
         // If device implementations return true for isLeAudioSupported():
         // [C-7-5] MUST enable simultaneously:

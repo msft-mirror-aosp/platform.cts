@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_input_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -25,12 +26,29 @@ android_test {
         "general-tests",
     ],
     compile_multilib: "both",
-    srcs: ["src/**/*.kt"],
+
+    kotlincflags: [
+        "-Werror",
+    ],
+
+    srcs: [
+        "src/**/*.kt",
+        "InputInjectionApp/src/com/android/test/inputinjection/IInputInjectionTestCallbacks.aidl",
+    ],
+    resource_dirs: ["res"],
     static_libs: [
         "androidx.test.core",
         "androidx.test.ext.junit",
+        "com.android.hardware.input-aconfig-java",
         "compatibility-device-util-axt",
         "cts-input-lib",
+        "cts-wm-util",
+        "flag-junit",
+        "kotlin-test",
     ],
     sdk_version: "test_current",
+    data: [
+        ":InputInjectionApp",
+    ],
+    per_testcase_directory: true,
 }

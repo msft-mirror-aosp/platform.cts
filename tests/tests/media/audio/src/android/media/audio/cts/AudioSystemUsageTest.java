@@ -30,10 +30,12 @@ import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.HwAudioSource;
 import android.media.MediaRecorder;
-import android.media.cts.NonMediaMainlineTest;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +44,8 @@ import org.junit.runner.RunWith;
 /*
  * Tests SystemUsage behavior in non-system app without the MODIFY_AUDIO_ROUTING permission
  */
-@NonMediaMainlineTest
+@NonMainlineTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioSystemUsageTest {
     private static final AudioAttributes SYSTEM_USAGE_AUDIO_ATTRIBUTES =

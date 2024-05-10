@@ -16,19 +16,28 @@
 
 package android.media.audio.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.media.audiofx.AudioEffect;
-import android.media.AudioFormat;
-import android.media.AudioManager;
 import android.media.audiofx.EnvironmentalReverb;
-import android.media.cts.NonMediaMainlineTest;
-import android.media.cts.PostProcTestBase;
 import android.os.Looper;
 import android.platform.test.annotations.AppModeFull;
-import android.test.AndroidTestCase;
 import android.util.Log;
 
-@NonMediaMainlineTest
+import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.NonMainlineTest;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@NonMainlineTest
 @AppModeFull(reason = "Fails in instant mode")
+@RunWith(AndroidJUnit4.class)
 public class EnvReverbTest extends PostProcTestBase {
 
     private String TAG = "EnvReverbTest";
@@ -41,6 +50,7 @@ public class EnvReverbTest extends PostProcTestBase {
     private EnvironmentalReverb mReverb2 = null;
     private ListenerThread mEffectListenerLooper = null;
 
+
     //-----------------------------------------------------------------
     // ENVIRONMENTAL REVERB TESTS:
     //----------------------------------
@@ -50,6 +60,7 @@ public class EnvReverbTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 0.0: test constructor and release
+    @Test
     public void test0_0ConstructorAndRelease() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;
@@ -79,6 +90,7 @@ public class EnvReverbTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 1.0: test room level and room HF level
+    @Test
     public void test1_0Room() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;
@@ -113,6 +125,7 @@ public class EnvReverbTest extends PostProcTestBase {
     }
 
     //Test case 1.1: test decay time and ratio
+    @Test
     public void test1_1Decay() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;
@@ -147,6 +160,7 @@ public class EnvReverbTest extends PostProcTestBase {
 
 
     //Test case 1.2: test reverb level and delay
+    @Test
     public void test1_2Reverb() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;
@@ -183,6 +197,7 @@ public class EnvReverbTest extends PostProcTestBase {
     }
 
     //Test case 1.3: test early reflections level and delay
+    @Test
     public void test1_3Reflections() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;
@@ -224,6 +239,7 @@ public class EnvReverbTest extends PostProcTestBase {
     }
 
     //Test case 1.4: test diffusion and density
+    @Test
     public void test1_4DiffusionAndDensity() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;
@@ -258,6 +274,7 @@ public class EnvReverbTest extends PostProcTestBase {
     }
 
     //Test case 1.5: test properties
+    @Test
     public void test1_5Properties() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;
@@ -290,6 +307,7 @@ public class EnvReverbTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 2.0: test setEnabled() and getEnabled() in valid state
+    @Test
     public void test2_0SetEnabledGetEnabled() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;
@@ -308,6 +326,7 @@ public class EnvReverbTest extends PostProcTestBase {
     }
 
     //Test case 2.1: test setEnabled() throws exception after release
+    @Test
     public void test2_1SetEnabledAfterRelease() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;
@@ -329,6 +348,7 @@ public class EnvReverbTest extends PostProcTestBase {
     //----------------------------------
 
     //Test case 3.0: test control status listener
+    @Test
     public void test3_0ControlStatusListener() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;
@@ -354,6 +374,7 @@ public class EnvReverbTest extends PostProcTestBase {
     }
 
     //Test case 3.1: test enable status listener
+    @Test
     public void test3_1EnableStatusListener() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;
@@ -381,6 +402,7 @@ public class EnvReverbTest extends PostProcTestBase {
     }
 
     //Test case 3.2: test parameter changed listener
+    @Test
     public void test3_2ParameterChangedListener() throws Exception {
         if (!isEnvReverbAvailable()) {
             return;

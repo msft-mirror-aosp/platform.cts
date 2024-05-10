@@ -22,6 +22,8 @@ import android.autofillservice.cts.commontests.AutoFillServiceTestCase;
 import android.autofillservice.cts.testcore.AutofillActivityTestRule;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 
+import androidx.test.filters.FlakyTest;
+
 import org.junit.Test;
 
 /**
@@ -43,6 +45,7 @@ public class AttachedContextActivityTest
         };
     }
 
+    @FlakyTest(bugId = 277287435)
     @Test
     public void testAutofill() throws Exception {
         // Prepare

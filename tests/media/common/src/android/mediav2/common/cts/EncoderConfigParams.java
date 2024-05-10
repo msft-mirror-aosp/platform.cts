@@ -27,6 +27,9 @@ import android.media.MediaFormat;
 
 import androidx.annotation.NonNull;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Class to hold encoder configuration settings.
  */
@@ -55,6 +58,9 @@ public class EncoderConfigParams {
     public final int mChannelCount;
     public final int mCompressionLevel;
     public final int mPcmEncoding;
+
+    // features list
+    public final Map<String, Boolean> mFeatures;
 
     // common params
     public final int mProfile;
@@ -177,6 +183,15 @@ public class EncoderConfigParams {
             } else {
                 mInputBitDepth = 8;
             }
+            if (mProfile == -1) {
+                if ((mColorFormat == COLOR_FormatSurface && mInputBitDepth == 10) || (mColorFormat
+                        == COLOR_FormatYUVP010)) {
+                    throw new IllegalArgumentException("If color format is configured to "
+                            + "COLOR_FormatSurface and bitdepth is set to 10 or color format is "
+                            + "configured to COLOR_FormatYUVP010 then profile needs to be"
+                            + " configured");
+                }
+            }
             mRange = cfg.mRange;
             mStandard = cfg.mStandard;
             mTransfer = cfg.mTransfer;
@@ -187,6 +202,7 @@ public class EncoderConfigParams {
             mCompressionLevel = 5;
             mPcmEncoding = AudioFormat.ENCODING_INVALID;
         }
+        mFeatures = cfg.mFeatures;
         mBuilder = cfg;
     }
 
@@ -226,6 +242,9 @@ public class EncoderConfigParams {
             if (mRange >= 0) mFormat.setInteger(MediaFormat.KEY_COLOR_RANGE, mRange);
             if (mStandard >= 0) mFormat.setInteger(MediaFormat.KEY_COLOR_STANDARD, mStandard);
             if (mTransfer >= 0) mFormat.setInteger(MediaFormat.KEY_COLOR_TRANSFER, mTransfer);
+        }
+        for (Map.Entry<String, Boolean> entry : mFeatures.entrySet()) {
+            mFormat.setFeatureEnabled(entry.getKey(), entry.getValue());
         }
         return new MediaFormat(mFormat);
     }
@@ -291,6 +310,13 @@ public class EncoderConfigParams {
             if (mStandard >= 0) mMsg.append(String.format("color standard : %d, ", mStandard));
             if (mTransfer >= 0) mMsg.append(String.format("color transfer : %d, ", mTransfer));
         }
+        if (!mFeatures.isEmpty()) {
+            mMsg.append(String.format("features : { "));
+            for (Map.Entry<String, Boolean> entry : mFeatures.entrySet()) {
+                mMsg.append(String.format(entry.getKey() + " : " + entry.getValue() + ", "));
+            }
+            mMsg.append(String.format("}"));
+        }
         mMsg.append("\n");
         return mMsg.toString();
     }
@@ -317,6 +343,9 @@ public class EncoderConfigParams {
         public int mChannelCount = 1;
         public int mCompressionLevel = 5;
         public int mPcmEncoding = AudioFormat.ENCODING_PCM_16BIT;
+
+        // feature list
+        public Map<String, Boolean> mFeatures = new HashMap<>();
 
         // common params
         public int mProfile = -1;
@@ -408,11 +437,24 @@ public class EncoderConfigParams {
 
         public Builder setProfile(int profile) {
             this.mProfile = profile;
+            // encoder profile requires also level to be set prior to Android U,
+            // but this can be a default/unknown value. Setting this to 1 as all
+            // codecs use a value of 1 for lowest level.
+            if (mLevel < 0) {
+                mLevel = 1;
+            }
             return this;
         }
 
         public Builder setBitRate(int bitRate) {
             this.mBitRate = bitRate;
+            return this;
+        }
+
+        public Builder setFeature(String feature, boolean enable) {
+            if (feature != null) {
+                this.mFeatures.put(feature, enable);
+            }
             return this;
         }
 
@@ -422,7 +464,14 @@ public class EncoderConfigParams {
 
         @NonNull
         public Builder clone() throws CloneNotSupportedException {
-            return (Builder) super.clone();
+            Builder builder = (Builder) super.clone();
+            builder.mFeatures.clear();
+            for (Map.Entry<String, Boolean> entry : mFeatures.entrySet()) {
+                String feature = entry.getKey();
+                boolean enable = entry.getValue();
+                builder.mFeatures.put(feature, enable);
+            }
+            return builder;
         }
     }
 }

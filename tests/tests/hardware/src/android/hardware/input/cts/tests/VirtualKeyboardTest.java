@@ -16,9 +16,20 @@
 
 package android.hardware.input.cts.tests;
 
+import static android.Manifest.permission.CREATE_VIRTUAL_DEVICE;
+import static android.Manifest.permission.INJECT_EVENTS;
+import static android.view.Display.DEFAULT_DISPLAY;
+
+import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertThrows;
+
+import android.hardware.display.VirtualDisplay;
 import android.hardware.input.VirtualKeyEvent;
 import android.hardware.input.VirtualKeyboard;
-import android.view.InputDevice;
+import android.hardware.input.cts.virtualcreators.VirtualDisplayCreator;
+import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
+import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator;
 import android.view.KeyEvent;
 
 import androidx.test.filters.SmallTest;
@@ -38,8 +49,7 @@ public class VirtualKeyboardTest extends VirtualDeviceTestCase {
 
     @Override
     void onSetUpVirtualInputDevice() {
-        mVirtualKeyboard = mVirtualDevice.createVirtualKeyboard(mVirtualDisplay, DEVICE_NAME,
-                /* vendorId= */ 1, /* productId= */ 1);
+        mVirtualKeyboard = createVirtualKeyboard(mVirtualDisplay.getDisplay().getDisplayId());
     }
 
     @Override
@@ -51,33 +61,103 @@ public class VirtualKeyboardTest extends VirtualDeviceTestCase {
 
     @Test
     public void sendKeyEvent() {
-        mVirtualKeyboard.sendKeyEvent(new VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_A)
-                .setAction(VirtualKeyEvent.ACTION_DOWN).build());
-        mVirtualKeyboard.sendKeyEvent(new VirtualKeyEvent.Builder()
-                .setKeyCode(KeyEvent.KEYCODE_A)
-                .setAction(VirtualKeyEvent.ACTION_UP).build());
-        verifyEvents(Arrays.asList(new KeyEvent(
-                        /* downTime= */ 0,
-                        /* eventTime= */ 0,
-                        KeyEvent.ACTION_DOWN,
-                        KeyEvent.KEYCODE_A,
-                        /* repeat= */ 0,
-                        /* metaState= */ 0,
-                        /* deviceId= */ 0,
-                        /* scancode= */ 0,
-                        /* flags= */ 0,
-                        /* source= */ InputDevice.SOURCE_KEYBOARD),
-                new KeyEvent(
-                        /* downTime= */ 0,
-                        /* eventTime= */ 0,
-                        KeyEvent.ACTION_UP,
-                        KeyEvent.KEYCODE_A,
-                        /* repeat= */ 0,
-                        /* metaState= */ 0,
-                        /* deviceId= */ 0,
-                        /* scancode= */ 0,
-                        /* flags= */ 0,
-                        /* source= */ InputDevice.SOURCE_KEYBOARD)));
+        mVirtualKeyboard.sendKeyEvent(
+                new VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_A)
+                        .setAction(VirtualKeyEvent.ACTION_DOWN)
+                        .build());
+        mVirtualKeyboard.sendKeyEvent(
+                new VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_A)
+                        .setAction(VirtualKeyEvent.ACTION_UP)
+                        .build());
+        verifyEvents(
+                Arrays.asList(VirtualInputEventCreator.createKeyboardEvent(KeyEvent.ACTION_DOWN,
+                                KeyEvent.KEYCODE_A),
+                        VirtualInputEventCreator.createKeyboardEvent(KeyEvent.ACTION_UP,
+                                KeyEvent.KEYCODE_A)));
+    }
+
+    @Test
+    public void sendKeyEvent_withoutCreateVirtualDevicePermission_throwsException() {
+        try (DropShellPermissionsTemporarily drop = new DropShellPermissionsTemporarily()) {
+            assertThrows(SecurityException.class,
+                    () -> mVirtualKeyboard.sendKeyEvent(
+                            new VirtualKeyEvent.Builder()
+                                    .setKeyCode(KeyEvent.KEYCODE_A)
+                                    .setAction(VirtualKeyEvent.ACTION_DOWN)
+                                    .build()));
+        }
+    }
+
+    @Test
+    public void keyEvent_nullEvent_throwsNpe() {
+        assertThrows(NullPointerException.class, () -> mVirtualKeyboard.sendKeyEvent(null));
+    }
+
+    @Test
+    public void rejectsUnsupportedKeyCodes() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mVirtualKeyboard.sendKeyEvent(
+                                new VirtualKeyEvent.Builder()
+                                        .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
+                                        .setAction(VirtualKeyEvent.ACTION_DOWN)
+                                        .build()));
+    }
+
+    @Test
+    public void close_multipleCallsSucceed() {
+        mVirtualKeyboard.close();
+        mVirtualKeyboard.close();
+        mVirtualKeyboard.close();
+    }
+
+    @Test
+    public void createVirtualKeyboard_nullArguments_throwsException() {
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.createVirtualKeyboard(null));
+    }
+
+    @Test
+    public void createVirtualKeyboard_duplicateName_throwsException() {
+        assertThrows(IllegalArgumentException.class,
+                () -> createVirtualKeyboard(mVirtualDisplay.getDisplay().getDisplayId()));
+    }
+
+    @Test
+    public void createVirtualKeyboard_defaultDisplay_throwsException() {
+        assertThrows(SecurityException.class, () -> createVirtualKeyboard(DEFAULT_DISPLAY));
+    }
+
+    @Test
+    public void createVirtualKeyboard_unownedDisplay_throwsException() {
+        VirtualDisplay unownedDisplay = VirtualDisplayCreator.createUnownedVirtualDisplay();
+        assertThrows(SecurityException.class,
+                () -> createVirtualKeyboard(unownedDisplay.getDisplay().getDisplayId()));
+        unownedDisplay.release();
+    }
+
+    @Test
+    public void createVirtualKeyboard_defaultDisplay_injectEvents_succeeds() {
+        mVirtualKeyboard.close();
+        runWithPermission(
+                () -> assertThat(createVirtualKeyboard(DEFAULT_DISPLAY)).isNotNull(),
+                INJECT_EVENTS, CREATE_VIRTUAL_DEVICE);
+    }
+
+    @Test
+    public void createVirtualKeyboard_unownedVirtualDisplay_injectEvents_succeeds() {
+        mVirtualKeyboard.close();
+        VirtualDisplay unownedDisplay = VirtualDisplayCreator.createUnownedVirtualDisplay();
+        runWithPermission(
+                () -> assertThat(createVirtualKeyboard(unownedDisplay.getDisplay().getDisplayId()))
+                        .isNotNull(),
+                INJECT_EVENTS, CREATE_VIRTUAL_DEVICE);
+    }
+
+    private VirtualKeyboard createVirtualKeyboard(int displayId) {
+        return VirtualInputDeviceCreator.createKeyboard(mVirtualDevice, DEVICE_NAME, displayId);
     }
 }

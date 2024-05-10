@@ -42,6 +42,8 @@ import androidx.test.filters.LargeTest;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.apache.http.Header;
@@ -490,6 +492,7 @@ public class ExtractorTest {
      * Tests setDataSource(...) Api by observing the extractor behavior after its successful
      * instantiation using a media stream.
      */
+    @ApiTest(apis = {"android.media.MediaExtractor#setDataSource", "AMediaExtractor_setDataSource"})
     @SmallTest
     public static class SetDataSourceTest {
         @Rule
@@ -696,7 +699,7 @@ public class ExtractorTest {
         private void checkExtractorOkForUrlDS(Map<String, String> headers) throws Exception {
             MediaExtractor testExtractor = new MediaExtractor();
             testExtractor.setDataSource(mInpMediaUrl, headers);
-            HttpRequest req = mWebServer.getLastRequest(RES_STRING);
+            HttpRequest req = mWebServer.getLastAssetRequest(RES_STRING);
             if (headers != null) {
                 for (String key : headers.keySet()) {
                     String value = headers.get(key);
@@ -1052,6 +1055,7 @@ public class ExtractorTest {
          * elementary stream is the same for all. The streams of a mediaType are extracted and
          * compared with each other for similarity.
          */
+        @CddTest(requirements = {"5.1.3", "5.1.8"})
         @LargeTest
         @Test
         public void testExtract() throws IOException {
@@ -1095,6 +1099,10 @@ public class ExtractorTest {
          * Tests seek functionality, verifies if we seek to most accurate point for a given
          * choice of timestamp and mode.
          */
+        @ApiTest(apis = {"android.media.MediaExtractor#seekTo",
+                "android.media.MediaExtractor#SEEK_TO_CLOSEST_SYNC",
+                "android.media.MediaExtractor#SEEK_TO_NEXT_SYNC",
+                "android.media.MediaExtractor#SEEK_TO_PREVIOUS_SYNC"})
         @LargeTest
         @Test
         @Ignore("TODO(b/146420831)")
@@ -1127,6 +1135,10 @@ public class ExtractorTest {
         /**
          * Tests if we get the same content each time after a call to seekto;
          */
+        @ApiTest(apis = {"android.media.MediaExtractor#seekTo",
+                "android.media.MediaExtractor#SEEK_TO_CLOSEST_SYNC",
+                "android.media.MediaExtractor#SEEK_TO_NEXT_SYNC",
+                "android.media.MediaExtractor#SEEK_TO_PREVIOUS_SYNC"})
         @LargeTest
         @Test
         public void testSeekFlakiness() throws IOException {
@@ -1158,6 +1170,10 @@ public class ExtractorTest {
          * Test if seekTo(0) yields the same content as if we had just opened the file and started
          * reading.
          */
+        @ApiTest(apis = {"android.media.MediaExtractor#seekTo",
+                "android.media.MediaExtractor#SEEK_TO_CLOSEST_SYNC",
+                "android.media.MediaExtractor#SEEK_TO_NEXT_SYNC",
+                "android.media.MediaExtractor#SEEK_TO_PREVIOUS_SYNC"})
         @SmallTest
         @Test
         public void testSeekToZero() throws IOException {
@@ -1226,6 +1242,7 @@ public class ExtractorTest {
             assertTrue(testName.getMethodName() + " failed for Mediatype: " + mMediaType, isOk);
         }
 
+        @ApiTest(apis = {"android.media.MediaExtractor#getMetrics"})
         @SmallTest
         @Test
         public void testMetrics() throws IOException {
@@ -1244,6 +1261,7 @@ public class ExtractorTest {
             }
         }
 
+        @CddTest(requirements = {"5.1.3", "5.1.8"})
         @LargeTest
         @Test
         public void testExtractNative() {
@@ -1270,6 +1288,8 @@ public class ExtractorTest {
             assertTrue(testName.getMethodName() + " failed for Mediatype: " + mMediaType, isOk);
         }
 
+        @ApiTest(apis = {"AMediaExtractor_seekTo", "AMEDIAEXTRACTOR_SEEK_CLOSEST_SYNC",
+                "AMEDIAEXTRACTOR_SEEK_NEXT_SYNC", "AMEDIAEXTRACTOR_SEEK_PREVIOUS_SYNC"})
         @LargeTest
         @Test
         @Ignore("TODO(b/146420831)")
@@ -1290,6 +1310,8 @@ public class ExtractorTest {
             assertTrue(testName.getMethodName() + " failed for Mediatype: " + mMediaType, isOk);
         }
 
+        @ApiTest(apis = {"AMediaExtractor_seekTo", "AMEDIAEXTRACTOR_SEEK_CLOSEST_SYNC",
+                "AMEDIAEXTRACTOR_SEEK_NEXT_SYNC", "AMEDIAEXTRACTOR_SEEK_PREVIOUS_SYNC"})
         @LargeTest
         @Test
         public void testSeekFlakinessNative() throws IOException {
@@ -1308,6 +1330,8 @@ public class ExtractorTest {
             assertTrue(testName.getMethodName() + " failed for Mediatype: " + mMediaType, isOk);
         }
 
+        @ApiTest(apis = {"AMediaExtractor_seekTo", "AMEDIAEXTRACTOR_SEEK_CLOSEST_SYNC",
+                "AMEDIAEXTRACTOR_SEEK_NEXT_SYNC", "AMEDIAEXTRACTOR_SEEK_PREVIOUS_SYNC"})
         @SmallTest
         @Test
         public void testSeekToZeroNative() throws IOException {
@@ -1329,6 +1353,7 @@ public class ExtractorTest {
             assertTrue(testName.getMethodName() + " failed for Mediatype: " + mMediaType, isOk);
         }
 
+        @ApiTest(apis = "AMediaExtractor_getFileFormat")
         @SmallTest
         @Test
         public void testFileFormatNative() {
@@ -1372,6 +1397,7 @@ public class ExtractorTest {
             });
         }
 
+        @CddTest(requirements = {"5.1.3"})
         @LargeTest
         @Test
         public void testExtractDecodeAndValidate() throws IOException, InterruptedException {
@@ -1452,8 +1478,8 @@ public class ExtractorTest {
                 // profile and level constraints as per sec 2.3.2 of cdd
                 /* TODO(b/159582475)
                 exhaustiveArgsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_MPEG2, new String[]{
-                        "bbb_1920x1080_mpeg2_main_high.mp4",
-                        "bbb_1920x1080_mpeg2_main_high.mkv"},
+                        "bbb_1920x1080_30fps_mpeg2_main_high.mp4",
+                        "bbb_1920x1080_30fps_mpeg2_main_high.mkv"},
                         MediaCodecInfo.CodecProfileLevel.MPEG2ProfileMain,
                         MediaCodecInfo.CodecProfileLevel.MPEG2LevelHL, 1920, 1080});*/
             }
@@ -1522,19 +1548,21 @@ public class ExtractorTest {
 
             if (hasDecoder(MediaFormat.MIMETYPE_VIDEO_VP9)) {
                 // profile and level constraints as per sec 2.3.2 of cdd
-                /* TODO(b/159582475)
                 exhaustiveArgsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_VP9, new String[]{
                         "bbb_1920x1080_vp9_main_l41.webm",
                         "bbb_1920x1080_vp9_main_l41.mkv"},
                         MediaCodecInfo.CodecProfileLevel.VP9Profile0,
-                        MediaCodecInfo.CodecProfileLevel.VP9Level41, 1920, 1080});*/
+                        MediaCodecInfo.CodecProfileLevel.VP9Level41, 1920, 1080});
                 // profile/level constraints for vp9 as per sec 5.3.6 of cdd
-                /* TODO(b/159582475)
                 exhaustiveArgsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_VP9, new String[]{
                         "bbb_1920x1080_vp9_main_l40.webm",
                         "bbb_1920x1080_vp9_main_l40.mkv"},
                         MediaCodecInfo.CodecProfileLevel.VP9Profile0,
-                        MediaCodecInfo.CodecProfileLevel.VP9Level4, 1920, 1080});*/
+                        MediaCodecInfo.CodecProfileLevel.VP9Level4, 1920, 1080});
+                exhaustiveArgsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_VP9, new String[]{
+                        "color_bands_176x176_vp9_10bit_fr.webm"},
+                        MediaCodecInfo.CodecProfileLevel.VP9Profile2,
+                        MediaCodecInfo.CodecProfileLevel.VP9Level4, 176, 176});
             }
 
             if (hasDecoder(MediaFormat.MIMETYPE_VIDEO_H263)) {
@@ -1613,6 +1641,7 @@ public class ExtractorTest {
             return exhaustiveArgsList;
         }
 
+        @ApiTest(apis = {"android.media.MediaExtractor#getTrackFormat"})
         @Test
         public void validateKeyValuePairs() throws IOException {
             for (String file : mInpFiles) {
@@ -1641,6 +1670,15 @@ public class ExtractorTest {
                     if (format.containsKey(MediaFormat.KEY_PROFILE)) {
                         int profile = format.getInteger(MediaFormat.KEY_PROFILE, -1);
                         assertEquals("mismatched KEY_PROFILE in file " + file, mProfile, profile);
+                    }
+                } else if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+                    int profile = format.getInteger(MediaFormat.KEY_PROFILE, -1);
+                    assertEquals("mismatched KEY_PROFILE in file " + file, mProfile, profile);
+                    int level = format.getInteger(MediaFormat.KEY_LEVEL, -1);
+                    // The level information cannot be parsed from uncompressed frame header, so
+                    // verify the level information only if it is present.
+                    if (level != -1) {
+                        assertEquals("mismatched KEY_LEVEL in file " + file, mLevel, level);
                     }
                 } else {
                     int profile = format.getInteger(MediaFormat.KEY_PROFILE, -1);
@@ -1758,6 +1796,7 @@ public class ExtractorTest {
             return exhaustiveArgsList;
         }
 
+        @ApiTest(apis = {"android.media.MediaExtractor#getSampleTime"})
         @LargeTest
         @Test
         public void testPresentationTimeStampsMatch() throws IOException {

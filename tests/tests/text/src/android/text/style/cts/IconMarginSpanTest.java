@@ -29,8 +29,8 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.style.IconMarginSpan;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,6 +49,13 @@ public class IconMarginSpanTest {
         new IconMarginSpan(BITMAP_80X120);
         new IconMarginSpan(BITMAP_80X120, 1);
         new IconMarginSpan(null, -1);
+    }
+
+    @Test
+    public void testConstructAndGet() {
+        IconMarginSpan span = new IconMarginSpan(BITMAP_80X120, 32);
+        assertEquals(BITMAP_80X120, span.getBitmap());
+        assertEquals(32, span.getPadding());
     }
 
     @Test

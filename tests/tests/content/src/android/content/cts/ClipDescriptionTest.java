@@ -27,9 +27,9 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.Until;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.text.SpannableString;
 import android.text.style.UnderlineSpan;
 import android.view.textclassifier.TextClassifier;
@@ -39,10 +39,14 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.annotation.UiThreadTest;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.Until;
 
 import com.google.common.collect.Range;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,7 +59,10 @@ import java.util.Calendar;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 //@AppModeFull // TODO(Instant) Should clip board data be visible?
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ClipDescriptionTest {
+    @Rule public final RavenwoodRule mRavenwood = new RavenwoodRule();
+
     private UiDevice mUiDevice;
     private Context mContext;
 
@@ -64,14 +71,21 @@ public class ClipDescriptionTest {
 
     @Before
     public void setUp() throws Exception {
+        if (mRavenwood.isUnderRavenwood()) return;
+
         mContext = InstrumentationRegistry.getTargetContext();
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mUiDevice.wakeUp();
+
+        // Clear any dialogs and launch an activity as focus is needed to access clipboard.
+        mUiDevice.pressHome();
+        mUiDevice.pressBack();
         launchActivity(MockActivity.class);
     }
 
     @UiThreadTest
     @Test
+    @IgnoreUnderRavenwood(blockedBy = ClipboardManager.class)
     public void testGetTimestamp() {
         final ClipboardManager clipboardManager = (ClipboardManager)
                 InstrumentationRegistry.getTargetContext().getSystemService(
@@ -90,6 +104,7 @@ public class ClipDescriptionTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = ClipboardManager.class)
     public void testIsStyledText() {
         ClipDescription clipDescription = new ClipDescription(
                 "label", new String[] { ClipDescription.MIMETYPE_TEXT_PLAIN });
@@ -116,6 +131,7 @@ public class ClipDescriptionTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = ClipboardManager.class)
     public void testNotStyledText() {
         ClipDescription clipDescription = new ClipDescription(
                 "label", new String[] { ClipDescription.MIMETYPE_TEXT_PLAIN });
@@ -153,6 +169,7 @@ public class ClipDescriptionTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = ClipboardManager.class)
     public void testClassificationNotPerformedForVeryLongText() {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < 100; i++) {
@@ -173,6 +190,7 @@ public class ClipDescriptionTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = ClipboardManager.class)
     public void testClassificationConfidenceValuesAreValid() throws InterruptedException {
         ClipData clipData = ClipData.newPlainText(
                 "label", "Hi Sam, try www.android.com on 05/04/2021 then visit "

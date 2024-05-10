@@ -84,9 +84,10 @@ public class BurstCaptureTest extends Camera2SurfaceViewTestCase {
 
     private void testBurst(int fmt, int burstSize, boolean checkFrameRate, boolean testStillBokeh)
             throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                String id = mCameraIdsUnderTest[i];
+                String id = cameraIdsUnderTest[i];
 
                 StaticMetadata staticInfo = mAllStaticInfo.get(id);
                 if (!staticInfo.isColorOutputSupported()) {
@@ -269,8 +270,10 @@ public class BurstCaptureTest extends Camera2SurfaceViewTestCase {
 
         // Wait for first result with locking
         resultListener.drain();
+        // Add 1 extra frame to wait due to earlier repeating request could introduce
+        // 1 more frame delay.
         CaptureResult lockedResult =
-                resultListener.getCaptureResultForRequest(lockedRequest, maxPipelineDepth);
+                resultListener.getCaptureResultForRequest(lockedRequest, maxPipelineDepth + 1);
 
         int pipelineDepth = lockedResult.get(CaptureResult.REQUEST_PIPELINE_DEPTH);
 

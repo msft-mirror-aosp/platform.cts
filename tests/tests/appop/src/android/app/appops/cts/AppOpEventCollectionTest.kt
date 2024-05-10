@@ -38,12 +38,12 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import androidx.test.uiautomator.UiDevice
 import com.google.common.truth.Truth.assertThat
+import java.lang.Thread.sleep
+import java.util.concurrent.atomic.AtomicLong
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import java.lang.Thread.sleep
-import java.util.concurrent.atomic.AtomicLong
 
 private const val BACKGROUND_PACKAGE = "android.app.appops.cts.appinbackground"
 private const val SHELL_PACKAGE_NAME = "com.android.shell"
@@ -51,7 +51,7 @@ private const val SHELL_PACKAGE_NAME = "com.android.shell"
 class AppOpEventCollectionTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
-    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)
+    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
 
     private val myUid = Process.myUid()
     private val shellUid = UserHandle.getUid(Process.myUserHandle().identifier,
@@ -289,7 +289,7 @@ class AppOpEventCollectionTest {
         // Using the shell identity causes a trusted proxy note
         runWithShellPermissionIdentity {
             context.createAttributionContext(firstTag)
-                .getSystemService(AppOpsManager::class.java)
+                .getSystemService(AppOpsManager::class.java)!!
                 .noteProxyOp(OPSTR_WIFI_SCAN, otherPkg, otherUid, null, null)
         }
 
@@ -298,7 +298,7 @@ class AppOpEventCollectionTest {
 
         // untrusted proxy note
         context.createAttributionContext(secondTag)
-            .getSystemService(AppOpsManager::class.java)
+            .getSystemService(AppOpsManager::class.java)!!
             .noteProxyOp(OPSTR_WIFI_SCAN, otherPkg, otherUid, null, null)
 
         val opEntry = getOpEntry(otherUid, otherPkg, OPSTR_WIFI_SCAN)!!
@@ -364,7 +364,9 @@ class AppOpEventCollectionTest {
                 .getLastProxyInfo(OP_FLAGS_ALL)).isNull()
         }
 
-        firstAttrManager.finishProxyOp(OPSTR_WIFI_SCAN, otherUid, otherPkg, null)
+        runWithShellPermissionIdentity {
+            firstAttrManager.finishProxyOp(OPSTR_WIFI_SCAN, otherUid, otherPkg, null)
+        }
         sleep(1)
         val afterTrusted = System.currentTimeMillis()
 
@@ -443,10 +445,9 @@ class AppOpEventCollectionTest {
             val start = firstAttrManager.startProxyOpNoThrow(OPSTR_WIFI_SCAN, otherUid, otherPkg,
                     null, null)
             sleep(1)
+            firstAttrManager.finishProxyOp(OPSTR_WIFI_SCAN, otherUid, otherPkg, null)
+            sleep(1)
         }
-
-        firstAttrManager.finishProxyOp(OPSTR_WIFI_SCAN, otherUid, otherPkg, null)
-        sleep(1)
 
         // Untrusted proxy op
         val secondAttrManager = context.createAttributionContext(secondTag)!!

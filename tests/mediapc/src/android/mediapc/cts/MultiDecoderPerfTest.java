@@ -16,7 +16,12 @@
 
 package android.mediapc.cts;
 
+import static android.mediapc.cts.CodecTestBase.codecFilter;
+import static android.mediapc.cts.CodecTestBase.codecPrefix;
+import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
+
 import android.media.MediaFormat;
+import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Utils;
 import android.util.Pair;
@@ -36,9 +41,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * The following test class validates the maximum number of concurrent decode sessions that it can
@@ -63,12 +65,19 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
     // Returns the params list with the mime and corresponding hardware decoders in
     // both sync and async modes.
     // Parameters {0}_{1}_{2} -- Mime_DecoderName_isAsync
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{2})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
     public static Collection<Object[]> inputParams() {
         final List<Object[]> argsList = new ArrayList<>();
         for (String mime : mMimeList) {
+            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+                continue;
+            }
             ArrayList<String> listOfDecoders = getHardwareCodecsForMime(mime, false, true);
             for (String decoder : listOfDecoders) {
+                if ((codecPrefix != null && !decoder.startsWith(codecPrefix))
+                        || (codecFilter != null && !codecFilter.matcher(decoder).matches())) {
+                    continue;
+                }
                 for (boolean isAsync : boolStates) {
                     argsList.add(new Object[]{mime, decoder, isAsync});
                 }
@@ -115,6 +124,45 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
         }
     }
 
+    /**
+     * This test validates that the decoder can support at least 6 SDR non-secure concurrent
+     * instances with 3 sessions at 1080p 30 fps and 3 sessions at 4k 30fps / 2 SDR secure
+     * concurrent instances at 4k 30 fps. Also ensures that all the concurrent sessions succeed
+     * in decoding with meeting the expected frame rate.
+     */
+    @LargeTest
+    @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    @CddTest(requirements = {
+            "2.2.7.1/5.1/H-1-1",
+            "2.2.7.1/5.1/H-1-2",
+            "2.2.7.1/5.1/H-1-9",})
+    public void test4k() throws Exception {
+        Assume.assumeTrue(Utils.isUPerfClass() || !Utils.isPerfClass());
+
+        if (isSecureSupportedCodec(mDecoderName, mMime)) {
+            testCodec(m2160pPc14WidevineTestFiles, 2160, 3840,
+                    REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
+        } else {
+            testCodec(m2160pPc14TestFiles, 2160, 3840, REQUIRED_MIN_CONCURRENT_INSTANCES);
+        }
+    }
+
+    /**
+     * This test validates that the decoder can support at least 2 HDR secure concurrent instances
+     * at 4k 30 fps. Also ensures that all the concurrent sessions succeed in decoding with
+     * meeting the expected frame rate.
+     */
+    @LargeTest
+    @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    @CddTest(requirements = {"2.2.7.1/5.1/H-1-9"})
+    public void test4kHbd() throws Exception {
+        Assume.assumeTrue(Utils.isUPerfClass() || !Utils.isPerfClass());
+        Assume.assumeTrue("Skipping regular performance tests for non-secure codecs",
+                isSecureSupportedCodec(mDecoderName, mMime));
+        testCodec(m2160pPc1410bitWidevineTestFiles, 2160, 3840,
+                REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
+    }
+
     private void testCodec(Map<String, String> testFiles, int height, int width,
             int requiredMinInstances) throws Exception {
         mTestFile = testFiles.get(mMime);
@@ -122,32 +170,53 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
         ArrayList<Pair<String, String>> mimeDecoderPairs = new ArrayList<>();
         mimeDecoderPairs.add(Pair.create(mMime, mDecoderName));
         boolean isSecure = isSecureSupportedCodec(mDecoderName, mMime);
-        int maxInstances =
-                checkAndGetMaxSupportedInstancesForCodecCombinations(height, width,
-                        mimeDecoderPairs, requiredMinInstances);
+        int maxInstances = checkAndGetMaxSupportedInstancesForCodecCombinations(height, width,
+                mimeDecoderPairs, false, requiredMinInstances);
         double achievedFrameRate = 0.0;
+        double frameDropsPerSec = 0.0;
         boolean meetsPreconditions = isSecure ? meetsSecureDecodePreconditions() : true;
 
         if (meetsPreconditions && maxInstances >= requiredMinInstances) {
-            ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
             List<Decode> testList = new ArrayList<>();
-            for (int i = 0; i < maxInstances; i++) {
-                testList.add(new Decode(mMime, mTestFile, mDecoderName, mIsAsync, isSecure));
+            if (height > 1080 && !isSecure) {
+                int halfMaxInstances = maxInstances / 2;
+                String testFile1080p = m1080pTestFiles.get(mMime);
+                for (int i = 0; i < halfMaxInstances; i++) {
+                    testList.add(
+                            new Decode(mMime, testFile1080p, mDecoderName, mIsAsync, isSecure));
+                    testList.add(new Decode(mMime, mTestFile, mDecoderName, mIsAsync, isSecure));
+                }
+            } else {
+                for (int i = 0; i < maxInstances; i++) {
+                    testList.add(new Decode(mMime, mTestFile, mDecoderName, mIsAsync, isSecure));
+                }
             }
-            List<Future<Double>> resultList = pool.invokeAll(testList);
-            for (Future<Double> result : resultList) {
-                achievedFrameRate += result.get();
-            }
+            CodecMetrics result = invokeWithThread(maxInstances, testList);
+            achievedFrameRate = result.fps();
+            frameDropsPerSec = result.fdps();
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         if (isSecure) {
-            PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_9 = pce.addR5_1__H_1_9();
-            r5_1__H_1_9.setConcurrentFps(achievedFrameRate);
+            PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_9;
+            if(height > 1080){
+                r5_1__H_1_9 = pce.addR5_1__H_1_9_4k();
+                r5_1__H_1_9.setConcurrentFps(achievedFrameRate);
+                r5_1__H_1_9.setFrameDropsPerSecond(frameDropsPerSec);
+            } else {
+                r5_1__H_1_9 = pce.addR5_1__H_1_9_1080p();
+                r5_1__H_1_9.setConcurrentFps(achievedFrameRate);
+            }
         } else {
             PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_1;
             PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_2;
-            if (height >= 1080) {
+            if (height > 1080) {
+                r5_1__H_1_1 = pce.addR5_1__H_1_1_4k();
+                r5_1__H_1_2 = pce.addR5_1__H_1_2_4k();
+                r5_1__H_1_1.setConcurrentInstances(maxInstances);
+                r5_1__H_1_2.setConcurrentFps(achievedFrameRate);
+                r5_1__H_1_2.setFrameDropsPerSecond(frameDropsPerSec);
+            } else if (height == 1080) {
                 r5_1__H_1_1 = pce.addR5_1__H_1_1_1080p();
                 r5_1__H_1_2 = pce.addR5_1__H_1_2_1080p();
                 r5_1__H_1_1.setConcurrentInstances(maxInstances);

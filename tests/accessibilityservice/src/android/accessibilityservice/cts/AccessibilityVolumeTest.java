@@ -29,6 +29,8 @@ import android.platform.test.annotations.Presubmit;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.CddTest;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,6 +41,8 @@ import org.junit.runner.RunWith;
  * Verify that accessibility services can control the accessibility volume.
  */
 @RunWith(AndroidJUnit4.class)
+@CddTest(requirements = {"3.10/C-1-1,C-1-2"})
+@Presubmit
 public class AccessibilityVolumeTest {
     Instrumentation mInstrumentation;
     AudioManager mAudioManager;
@@ -46,6 +50,7 @@ public class AccessibilityVolumeTest {
     boolean mSingleVolume;
     // If a11y volume is stuck at a single value, don't run the tests
     boolean mFixedA11yVolume;
+    boolean mIsPlatformAutomotive;
 
     private InstrumentedAccessibilityServiceTestRule<InstrumentedAccessibilityService>
             mServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
@@ -69,6 +74,8 @@ public class AccessibilityVolumeTest {
         mSingleVolume = (pm != null) && (pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                 || pm.hasSystemFeature(PackageManager.FEATURE_TELEVISION))
                 || mAudioManager.isVolumeFixed();
+        mIsPlatformAutomotive = (pm != null)
+                && (pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
         final int MIN = mAudioManager.getStreamMinVolume(AudioManager.STREAM_ACCESSIBILITY);
         final int MAX = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_ACCESSIBILITY);
         mFixedA11yVolume = (MIN == MAX);
@@ -92,7 +99,10 @@ public class AccessibilityVolumeTest {
     @Test
     @AppModeFull
     public void testChangeAccessibilityVolume_inAccessibilityService_shouldWork() {
-        if (mSingleVolume || mFixedA11yVolume) {
+        // TODO(b/233287010): Fix voice interaction and a11y concurrency in audio policy service
+        // Automotive product would prevent setting a given UID as accessibility service
+        // thus AudioService would not allow changing accessibility volume.
+        if (mSingleVolume || mFixedA11yVolume || mIsPlatformAutomotive) {
             return;
         }
         final int startingVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_ACCESSIBILITY);

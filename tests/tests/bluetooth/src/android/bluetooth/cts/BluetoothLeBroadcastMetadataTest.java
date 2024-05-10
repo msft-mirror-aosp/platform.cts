@@ -36,15 +36,22 @@ import android.bluetooth.BluetoothLeBroadcastSubgroup;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -57,6 +64,7 @@ public class BluetoothLeBroadcastMetadataTest {
     private static final int TEST_PA_SYNC_INTERVAL = 100;
     private static final int TEST_PRESENTATION_DELAY_MS = 345;
     private static final int TEST_AUDIO_QUALITY_STANDARD = 0x1 << 0;
+    private static final int TEST_RSSI_DBM = -40;
     private static final String TEST_BROADCAST_NAME = "TEST";
 
     private static final int TEST_CODEC_ID = 42;
@@ -68,7 +76,7 @@ public class BluetoothLeBroadcastMetadataTest {
 
     // For BluetoothLeAudioCodecConfigMetadata
     private static final long TEST_AUDIO_LOCATION_FRONT_LEFT = 0x01;
-    private static final int TEST_SAMPLE_RATE_44100 = 0x01 << 7;
+    private static final int TEST_SAMPLE_RATE_44100 = 0x01 << 6;
     private static final int TEST_FRAME_DURATION_10000 = 0x01 << 1;
     private static final int TEST_OCTETS_PER_FRAME = 100;
 
@@ -78,21 +86,21 @@ public class BluetoothLeBroadcastMetadataTest {
     private static final String TEST_LANGUAGE = "deu";
 
     private Context mContext;
-    private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
     private boolean mIsBroadcastSourceSupported;
     private boolean mIsBroadcastAssistantSupported;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        if (!ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
-            return;
-        }
-        mHasBluetooth = TestUtils.hasBluetooth();
-        if (!mHasBluetooth) {
-            return;
-        }
+
+        Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
+        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
+
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
@@ -114,21 +122,18 @@ public class BluetoothLeBroadcastMetadataTest {
             assertTrue("Config must be true when profile is supported",
                     isBroadcastSourceEnabledInConfig);
         }
+
+        Assume.assumeTrue(mIsBroadcastAssistantSupported || mIsBroadcastSourceSupported);
     }
 
     @After
     public void tearDown() {
-        if (mHasBluetooth) {
-            mAdapter = null;
-            TestUtils.dropPermissionAsShellUid();
-        }
+        TestUtils.dropPermissionAsShellUid();
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2", "7.4.3/C-9-1"})
     @Test
-    public void testCreateMetadataFromBuilder() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void createMetadataFromBuilder() {
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_MAC_ADDRESS, BluetoothDevice.ADDRESS_TYPE_RANDOM);
         BluetoothLeAudioContentMetadata publicBroadcastMetadata =
@@ -174,11 +179,9 @@ public class BluetoothLeBroadcastMetadataTest {
         assertThrows(IllegalArgumentException.class, builder::build);
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2", "7.4.3/C-9-1"})
     @Test
-    public void testCreateMetadataFromCopy() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void createMetadataFromCopy() {
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_MAC_ADDRESS, BluetoothDevice.ADDRESS_TYPE_RANDOM);
         BluetoothLeAudioContentMetadata publicBroadcastMetadata =
@@ -227,8 +230,35 @@ public class BluetoothLeBroadcastMetadataTest {
         assertThrows(IllegalArgumentException.class, builder::build);
     }
 
-    private boolean shouldSkipTest() {
-        return !mHasBluetooth || (!mIsBroadcastSourceSupported && !mIsBroadcastAssistantSupported);
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_MONITOR_SOURCE_SYNC_STATUS)
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2", "7.4.3/C-9-1"})
+    @Test
+    public void createMetadataFromBuilderAndCheckRssi() {
+        final int testRssiInvalidMin = -128;
+        final int testRssiInvalidMax = 128;
+        BluetoothDevice testDevice =
+                mAdapter.getRemoteLeDevice(TEST_MAC_ADDRESS, BluetoothDevice.ADDRESS_TYPE_RANDOM);
+        BluetoothLeBroadcastMetadata.Builder builder = new BluetoothLeBroadcastMetadata.Builder()
+                        .setSourceDevice(testDevice, BluetoothDevice.ADDRESS_TYPE_RANDOM);
+        BluetoothLeBroadcastSubgroup[] subgroups = new BluetoothLeBroadcastSubgroup[] {
+                createBroadcastSubgroup()
+        };
+        for (BluetoothLeBroadcastSubgroup subgroup : subgroups) {
+            builder.addSubgroup(subgroup);
+        }
+        // validate RSSI is unknown if not set
+        BluetoothLeBroadcastMetadata metadata = builder.build();
+        assertEquals(BluetoothLeBroadcastMetadata.RSSI_UNKNOWN, metadata.getRssi());
+
+        // builder expect rssi is in range [-127, 127]
+        assertThrows(IllegalArgumentException.class, () ->
+                        builder.setRssi(testRssiInvalidMin));
+        assertThrows(IllegalArgumentException.class, () ->
+                        builder.setRssi(testRssiInvalidMax));
+
+        builder.setRssi(TEST_RSSI_DBM);
+        metadata = builder.build();
+        assertEquals(TEST_RSSI_DBM, metadata.getRssi());
     }
 
     static BluetoothLeBroadcastSubgroup createBroadcastSubgroup() {

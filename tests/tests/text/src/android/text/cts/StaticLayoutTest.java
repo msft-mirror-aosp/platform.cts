@@ -56,9 +56,9 @@ import android.text.style.ReplacementSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TextAppearanceSpan;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -292,6 +292,9 @@ public class StaticLayoutTest {
         final int heightWithoutLineSpacing = comparisonLayout.getLineBottom(1)
                 - comparisonLayout.getLineTop(1);
         assertTrue(heightWithLineSpacing > heightWithoutLineSpacing);
+        assertEquals(heightWithoutLineSpacing,
+                comparisonLayout.getLineBottom(0, /* includeLineSpacing= */ false)
+                        - comparisonLayout.getLineTop(0));
 
         final String text = "a\n";
         // build the layout to be tested
@@ -301,6 +304,9 @@ public class StaticLayoutTest {
         final StaticLayout layout = builder.build();
 
         assertEquals(comparisonLayout.getLineCount(), layout.getLineCount());
+        assertEquals(heightWithoutLineSpacing,
+                layout.getLineBottom(0, /* includeLineSpacing= */ false)
+                        - layout.getLineTop(0));
         assertEquals(heightWithLineSpacing, layout.getLineBottom(0) - layout.getLineTop(0));
         assertEquals(heightWithoutLineSpacing, layout.getLineBottom(1) - layout.getLineTop(1));
     }

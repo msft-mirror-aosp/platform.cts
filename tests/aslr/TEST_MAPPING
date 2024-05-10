@@ -3,5 +3,10 @@
     {
       "name": "CtsAslrMallocTestCases"
     }
+  ],
+  "kernel-presubmit": [
+    {
+      "name": "CtsAslrMallocTestCases"
+    }
   ]
 }

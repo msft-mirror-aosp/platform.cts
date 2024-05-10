@@ -25,7 +25,12 @@ import android.bluetooth.le.PeriodicAdvertisingParameters;
 import android.os.Parcel;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -36,8 +41,15 @@ public class PeriodicAdvertisingParametersTest {
     private static final int INTERVAL_MIN = 80;
     private static final int INTERVAL_MAX = 65519;
 
+    @Before
+    public void setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(
+                InstrumentationRegistry.getInstrumentation().getContext()));
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testCreateFromParcel() {
+    public void createFromParcel() {
         final Parcel parcel = Parcel.obtain();
         try {
             PeriodicAdvertisingParameters params =
@@ -52,22 +64,25 @@ public class PeriodicAdvertisingParametersTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testDefaultParameters() {
+    public void defaultParameters() {
         PeriodicAdvertisingParameters params = new PeriodicAdvertisingParameters.Builder().build();
         assertFalse(params.getIncludeTxPower());
         assertEquals(INTERVAL_MAX, params.getInterval());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testIncludeTxPower() {
+    public void includeTxPower() {
         PeriodicAdvertisingParameters params =
                 new PeriodicAdvertisingParameters.Builder().setIncludeTxPower(true).build();
         assertTrue(params.getIncludeTxPower());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testIntervalWithInvalidValues() {
+    public void intervalWithInvalidValues() {
         int[] invalidValues = { INTERVAL_MIN - 1, INTERVAL_MAX + 1 };
         for (int i = 0; i < invalidValues.length; i++) {
             try {
@@ -79,15 +94,17 @@ public class PeriodicAdvertisingParametersTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testInterval() {
+    public void interval() {
         PeriodicAdvertisingParameters params =
                 new PeriodicAdvertisingParameters.Builder().setInterval(INTERVAL_MIN).build();
         assertEquals(INTERVAL_MIN, params.getInterval());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testDescribeContents() {
+    public void describeContents() {
         PeriodicAdvertisingParameters params = new PeriodicAdvertisingParameters.Builder().build();
         assertEquals(0, params.describeContents());
     }

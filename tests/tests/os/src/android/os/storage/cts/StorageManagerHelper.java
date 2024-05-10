@@ -16,6 +16,8 @@
 
 package android.os.storage.cts;
 
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
@@ -30,10 +32,14 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 final class StorageManagerHelper {
+
+    private static final long POLLING_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(20);
+    private static final long POLLING_SLEEP_MILLIS = 100;
 
     /**
      * Creates a virtual disk that simulates SDCard on a device. It is
@@ -94,11 +100,11 @@ final class StorageManagerHelper {
     private static void pollForCondition(Supplier<Boolean> condition, String errorMessage)
             throws Exception {
         Thread.sleep(2000);
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < POLLING_TIMEOUT_MILLIS / POLLING_SLEEP_MILLIS; i++) {
             if (condition.get()) {
                 return;
             }
-            Thread.sleep(100);
+            Thread.sleep(POLLING_SLEEP_MILLIS);
         }
         throw new TimeoutException(errorMessage);
     }
@@ -121,6 +127,23 @@ final class StorageManagerHelper {
             }
         }
         return null;
+    }
+
+    public static boolean isAdoptableStorageSupported(Context context) throws Exception {
+        return hasAdoptableStorageFeature(context) || hasAdoptableStorageFstab();
+    }
+
+    private static boolean hasAdoptableStorageFstab() throws Exception {
+        List<String> hasAdoptable = executeShellCommand("sm has-adoptable");
+        if (hasAdoptable.isEmpty()) {
+            return false;
+        }
+        return Boolean.parseBoolean(hasAdoptable.get(0).trim());
+    }
+
+    private static boolean hasAdoptableStorageFeature(Context context) throws Exception {
+        return context.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_ADOPTABLE_STORAGE);
     }
 
     private static List<String> executeShellCommand(String command) throws Exception {

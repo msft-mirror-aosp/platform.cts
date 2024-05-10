@@ -16,6 +16,8 @@
 
 package android.content.res.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.content.Context;
 import android.content.cts.R;
 import android.content.cts.util.XmlUtils;
@@ -35,6 +37,7 @@ import android.graphics.drawable.ColorStateListDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.LocaleList;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
@@ -51,14 +54,17 @@ import org.xmlpull.v1.XmlPullParserException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
+import java.util.stream.IntStream;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ResourcesTest extends AndroidTestCase {
-    private static final String CONFIG_VARYING = "configVarying";
+    private static final String STRING = "string";
     private static final String SIMPLE = "simple";
-    private static final String CONFIG_VARYING_SIMPLE = "configVarying/simple";
+    private static final String STRING_SIMPLE = "string/simple";
     private static final String PACKAGE_NAME = "android.content.cts";
     private static final String COM_ANDROID_CTS_STUB_IDENTIFIER =
-                "android.content.cts:configVarying/simple";
+                "android.content.cts:string/simple";
+    public static final float FONT_SCALING_TOLERANCE = 0.05f;
     private Resources mResources;
 
     @Override
@@ -296,6 +302,128 @@ public class ResourcesTest extends AndroidTestCase {
         cfg.setLocales(null);
         res.updateConfiguration(cfg, null);
         assertEquals(LocaleList.getDefault(), res.getConfiguration().getLocales());
+    }
+
+    public void testUpdateConfiguration_fontScaleIs1DoesNotUseAdaptiveFontScalingDeriveDimension() {
+        Resources res = createNewResources();
+        final DisplayMetrics metrics1x = res.getDisplayMetrics();
+
+        assertThat(metrics1x.scaledDensity).isEqualTo(metrics1x.density);
+        // Verify all font sizes are not scaled
+        IntStream.range(5, 20)
+                .asDoubleStream()
+                .forEach(
+                        pxDouble -> {
+                            float px = (float) pxDouble;
+                            // DP and SP should be same at font scale factor 1.0
+                            float dpExpected = pxToDp(px, metrics1x);
+                            float spActual = pxToSp(px, metrics1x);
+                            assertThat(spActual).isWithin(FONT_SCALING_TOLERANCE).of(dpExpected);
+                        });
+        assertThat(pxToSp(30f, metrics1x))
+                .isWithin(FONT_SCALING_TOLERANCE)
+                .of(pxToDp(30f, metrics1x));
+        assertThat(pxToSp(100f, metrics1x))
+                .isWithin(FONT_SCALING_TOLERANCE)
+                .of(pxToDp(100f, metrics1x));
+    }
+
+    public void testUpdateConfiguration_fontScaleIs1DoesNotUseAdaptiveFontScalingApplyDimension() {
+        Resources res = createNewResources();
+        final DisplayMetrics metrics1x = res.getDisplayMetrics();
+
+        assertThat(metrics1x.scaledDensity).isEqualTo(metrics1x.density);
+        // Verify all font sizes are not scaled
+        IntStream.range(5, 20)
+                .asDoubleStream()
+                .forEach(
+                        spDouble -> {
+                            float sp = (float) spDouble;
+                            // DP and SP should be same at font scale factor 1.0
+                            float pxExpected = dpToPx(sp, metrics1x);
+                            float pxActual = spToPx(sp, metrics1x);
+                            assertThat(pxActual).isWithin(FONT_SCALING_TOLERANCE).of(pxExpected);
+                        });
+        assertThat(spToPx(30f, metrics1x))
+                .isWithin(FONT_SCALING_TOLERANCE)
+                .of(dpToPx(30f, metrics1x));
+        assertThat(spToPx(100f, metrics1x))
+                .isWithin(FONT_SCALING_TOLERANCE)
+                .of(dpToPx(100f, metrics1x));
+    }
+
+    public void testTypedValue_convertPixelsToDimensionAlias() {
+        Resources res = createNewResources();
+        final DisplayMetrics metrics = res.getDisplayMetrics();
+
+        IntStream.range(5, 20)
+                .asDoubleStream()
+                .forEach(
+                        spDouble -> {
+                            float sp = (float) spDouble;
+                            assertThat(TypedValue.convertDimensionToPixels(
+                                        TypedValue.COMPLEX_UNIT_SP,
+                                        sp,
+                                        metrics))
+                                    .isWithin(FONT_SCALING_TOLERANCE)
+                                    .of(TypedValue.applyDimension(
+                                        TypedValue.COMPLEX_UNIT_SP,
+                                        sp,
+                                        metrics));
+                        });
+
+        IntStream.range(5, 20)
+                .asDoubleStream()
+                .forEach(
+                        dpDouble -> {
+                            float dp = (float) dpDouble;
+                            assertThat(TypedValue.convertDimensionToPixels(
+                                        TypedValue.COMPLEX_UNIT_DIP,
+                                        dp,
+                                        metrics))
+                                    .isWithin(FONT_SCALING_TOLERANCE)
+                                    .of(TypedValue.applyDimension(
+                                        TypedValue.COMPLEX_UNIT_DIP,
+                                        dp,
+                                        metrics));
+                        });
+    }
+
+    public void testTypedValue_convertDimensionToPixelsAlias() {
+        Resources res = createNewResources();
+        final DisplayMetrics metrics = res.getDisplayMetrics();
+
+        IntStream.range(5, 20)
+                .asDoubleStream()
+                .forEach(
+                        spDouble -> {
+                            float sp = (float) spDouble;
+                            assertThat(TypedValue.convertPixelsToDimension(
+                                        TypedValue.COMPLEX_UNIT_SP,
+                                        sp,
+                                        metrics))
+                                    .isWithin(FONT_SCALING_TOLERANCE)
+                                    .of(TypedValue.deriveDimension(
+                                        TypedValue.COMPLEX_UNIT_SP,
+                                        sp,
+                                        metrics));
+                        });
+
+        IntStream.range(5, 20)
+                .asDoubleStream()
+                .forEach(
+                        dpDouble -> {
+                            float dp = (float) dpDouble;
+                            assertThat(TypedValue.convertPixelsToDimension(
+                                        TypedValue.COMPLEX_UNIT_DIP,
+                                        dp,
+                                        metrics))
+                                    .isWithin(FONT_SCALING_TOLERANCE)
+                                    .of(TypedValue.deriveDimension(
+                                        TypedValue.COMPLEX_UNIT_DIP,
+                                        dp,
+                                        metrics));
+                        });
     }
 
     public void testGetDimensionPixelSize() {
@@ -620,13 +748,13 @@ public class ResourcesTest extends AndroidTestCase {
     public void testGetIdentifier() {
 
         int resid = mResources.getIdentifier(COM_ANDROID_CTS_STUB_IDENTIFIER, null, null);
-        assertEquals(R.configVarying.simple, resid);
+        assertEquals(R.string.simple, resid);
 
-        resid = mResources.getIdentifier(CONFIG_VARYING_SIMPLE, null, PACKAGE_NAME);
-        assertEquals(R.configVarying.simple, resid);
+        resid = mResources.getIdentifier(STRING_SIMPLE, null, PACKAGE_NAME);
+        assertEquals(R.string.simple, resid);
 
-        resid = mResources.getIdentifier(SIMPLE, CONFIG_VARYING, PACKAGE_NAME);
-        assertEquals(R.configVarying.simple, resid);
+        resid = mResources.getIdentifier(SIMPLE, STRING, PACKAGE_NAME);
+        assertEquals(R.string.simple, resid);
     }
 
     public void testGetIntArray() {
@@ -698,18 +826,18 @@ public class ResourcesTest extends AndroidTestCase {
     }
 
     public void testGetResourceEntryName() {
-        assertEquals(SIMPLE, mResources.getResourceEntryName(R.configVarying.simple));
+        assertEquals(SIMPLE, mResources.getResourceEntryName(R.string.simple));
     }
 
     public void testGetResourceName() {
-        final String fullName = mResources.getResourceName(R.configVarying.simple);
+        final String fullName = mResources.getResourceName(R.string.simple);
         assertEquals(COM_ANDROID_CTS_STUB_IDENTIFIER, fullName);
 
-        final String packageName = mResources.getResourcePackageName(R.configVarying.simple);
+        final String packageName = mResources.getResourcePackageName(R.string.simple);
         assertEquals(PACKAGE_NAME, packageName);
 
-        final String typeName = mResources.getResourceTypeName(R.configVarying.simple);
-        assertEquals(CONFIG_VARYING, typeName);
+        final String typeName = mResources.getResourceTypeName(R.string.simple);
+        assertEquals(STRING, typeName);
     }
 
     public void testGetStringWithIntParam() {
@@ -1065,5 +1193,21 @@ public class ResourcesTest extends AndroidTestCase {
         t2.applyStyle(2, false);
         assertFalse(t1.equals(t2));
         assertFalse(t1.hashCode() == t2.hashCode());
+    }
+
+    private static float spToPx(float sp, DisplayMetrics metrics) {
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, metrics);
+    }
+
+    private static float dpToPx(float dp, DisplayMetrics metrics) {
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, metrics);
+    }
+
+    private static float pxToSp(float px, DisplayMetrics metrics) {
+        return TypedValue.deriveDimension(TypedValue.COMPLEX_UNIT_SP, px, metrics);
+    }
+
+    private static float pxToDp(float px, DisplayMetrics metrics) {
+        return TypedValue.deriveDimension(TypedValue.COMPLEX_UNIT_DIP, px, metrics);
     }
 }

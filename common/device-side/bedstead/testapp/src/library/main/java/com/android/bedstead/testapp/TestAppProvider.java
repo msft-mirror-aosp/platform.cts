@@ -18,14 +18,20 @@ package com.android.bedstead.testapp;
 
 import android.content.Context;
 import android.content.IntentFilter;
+import android.os.Bundle;
 import android.util.Log;
 
 import com.android.bedstead.nene.TestApis;
+import com.android.queryable.annotations.Query;
 import com.android.queryable.info.ActivityInfo;
+import com.android.queryable.info.ReceiverInfo;
 import com.android.queryable.info.ServiceInfo;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,9 +43,8 @@ public final class TestAppProvider {
 
     // Must be instrumentation context to access resources
     private static final Context sContext = TestApis.context().instrumentationContext();
-
     private boolean mTestAppsInitialised = false;
-    private final Set<TestAppDetails> mTestApps = new HashSet<>();
+    private final List<TestAppDetails> mTestApps = new ArrayList<>();
     private Set<TestAppDetails> mTestAppsSnapshot = null;
 
     public TestAppProvider() {
@@ -51,6 +56,11 @@ public final class TestAppProvider {
         return new TestAppQueryBuilder(this);
     }
 
+    /** Create a query for a {@link TestApp} starting with a {@link Query}. */
+    public TestAppQueryBuilder query(Query query) {
+        return query().applyAnnotation(query);
+    }
+
     /** Get any {@link TestApp}. */
     public TestApp any() {
         TestApp testApp = query().get();
@@ -58,13 +68,12 @@ public final class TestAppProvider {
         return testApp;
     }
 
-    Set<TestAppDetails> testApps() {
+    List<TestAppDetails> testApps() {
         return mTestApps;
     }
 
     /** Save the state of the provider, to be reset by {@link #restore()}. */
     public void snapshot() {
-        mTestAppsSnapshot = new HashSet<>(mTestApps);
         mTestAppsSnapshot = new HashSet<>(mTestApps);
     }
 
@@ -93,6 +102,8 @@ public final class TestAppProvider {
             for (int i = 0; i < index.getAppsCount(); i++) {
                 loadApk(index.getApps(i));
             }
+            Collections.sort(mTestApps,
+                    Comparator.comparing((testAppDetails) -> testAppDetails.mApp.getPackageName()));
         } catch (IOException e) {
             throw new RuntimeException("Error loading testapp index", e);
         }
@@ -101,6 +112,7 @@ public final class TestAppProvider {
     private void loadApk(TestappProtos.AndroidApp app) {
         TestAppDetails details = new TestAppDetails();
         details.mApp = app;
+
         details.mResourceIdentifier = sContext.getResources().getIdentifier(
                 "raw/" + getApkNameWithoutSuffix(app.getApkName()),
                 /* defType= */ null, sContext.getPackageName());
@@ -135,6 +147,14 @@ public final class TestAppProvider {
                     .build());
         }
 
+        for (int i = 0; i < app.getReceiversCount(); i++) {
+            TestappProtos.Receiver receiverEntry = app.getReceivers(i);
+            details.mReceivers.add(ReceiverInfo.builder()
+                    .name(receiverEntry.getName())
+                    .metadata(metadataSetFromProtoList(receiverEntry.getMetadataList()))
+                    .build());
+        }
+
         mTestApps.add(details);
     }
 
@@ -161,6 +181,19 @@ public final class TestAppProvider {
         }
 
         return filter;
+    }
+
+    private Set<Bundle> metadataSetFromProtoList(
+            List<TestappProtos.Metadata> list) {
+        Set<Bundle> metadataSet = new HashSet<>();
+
+        for (TestappProtos.Metadata metadata : list) {
+            Bundle metadataBundle = new Bundle();
+            metadataBundle.putString(metadata.getName(), metadata.getValue());
+            metadataSet.add(metadataBundle);
+        }
+
+        return metadataSet;
     }
 
     private String getApkNameWithoutSuffix(String apkName) {

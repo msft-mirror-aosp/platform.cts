@@ -17,14 +17,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.car.cts">
     <uses-feature android:name="android.hardware.type.automotive" />
-    <uses-permission android:name="android.car.permission.CAR_ENERGY" />
-    <uses-permission android:name="android.car.permission.CAR_ENERGY_PORTS" />
-    <uses-permission android:name="android.car.permission.CAR_EXTERIOR_ENVIRONMENT" />
-    <uses-permission android:name="android.car.permission.CAR_INFO" />
-    <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
-    <uses-permission android:name="android.car.permission.CAR_SPEED" />
-    <uses-permission android:name="android.car.permission.CONTROL_CAR_DISPLAY_UNITS" />
-    <uses-permission android:name="android.car.permission.READ_CAR_DISPLAY_UNITS" />
     <uses-permission android:name="android.car.permission.READ_CAR_POWER_POLICY" />
     <uses-permission android:name="android.car.permission.USE_CAR_TELEMETRY_SERVICE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
@@ -34,8 +26,15 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS" />
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
     <!-- Allow query of any normal app on the device -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <!-- For CarRemoteAccessManagerTest -->
+    <uses-permission android:name="android.car.permission.USE_REMOTE_ACCESS" />
+    <!-- For CarInputTest -->
+    <uses-permission android:name="android.car.permission.CAR_CONTROL_AUDIO_VOLUME" />
+    <!-- For CarProjectionManagerTest -->
+    <uses-permission android:name="android.car.permission.CAR_PROJECTION" />
 
     <application>
         <uses-library android:name="android.test.runner" />
@@ -45,6 +44,39 @@
         <activity android:name=".drivingstate.NonDistractionOptimizedActivity">
             <meta-data android:name="distractionOptimized" android:value="false"/>
         </activity>
+        <activity android:name=".CarDisplayInputLockTest$TestActivity" />
+        <activity android:name=".CarInputTest$TestActivity" />
+        <activity android:name="android.car.app.cts.CarActivityManagerTest$TestActivity"
+            android:allowEmbedded="true" />
+        <activity android:name="android.car.app.cts.CarActivityManagerTest$BlankActivity"/>
+
+        <activity android:name="android.car.app.cts.CarTaskViewControllerTest$TestActivity"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+            android:launchMode="singleInstance">
+            <meta-data android:name="distractionOptimized" android:value="true"/>
+        </activity>
+        <activity android:name="android.car.app.cts.CarTaskViewControllerTest$EmbeddedTestActivity1"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+            android:launchMode="singleInstance">
+            <meta-data android:name="distractionOptimized" android:value="true"/>
+        </activity>
+        <activity android:name="android.car.app.cts.CarTaskViewControllerTest$EmbeddedTestActivity2"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+            android:launchMode="singleInstance">
+            <meta-data android:name="distractionOptimized" android:value="true"/>
+        </activity>
+        <activity android:name="android.car.cluster.cts.ClusterHomeManagerTest$TestActivity"/>
+
+        <service android:name=".CarOccupantConnectionManagerTest$TestReceiverService"
+                 android:permission="android.car.permission.BIND_RECEIVER_SERVICE"
+                 android:exported="true">
+            <intent-filter>
+                <action android:name="android.car.intent.action.RECEIVER_SERVICE" />
+            </intent-filter>
+        </service>
 
         <!-- Setting the car target version to TIRAMISU_1 to allow tests checking car target version
              to pass, e.g.
@@ -56,8 +88,5 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:targetPackage="android.car.cts"
                      android:label="CTS tests for Automotive">
-        <meta-data android:name="listener"
-            android:value="com.android.cts.runner.CtsTestRunListener" />
     </instrumentation>
 </manifest>
-

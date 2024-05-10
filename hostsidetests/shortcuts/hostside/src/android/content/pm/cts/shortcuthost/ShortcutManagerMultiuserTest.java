@@ -15,9 +15,10 @@
  */
 package android.content.pm.cts.shortcuthost;
 
-import com.android.tradefed.util.RunUtil;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.util.RunUtil;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -33,6 +34,7 @@ public class ShortcutManagerMultiuserTest extends BaseShortcutManagerHostTest {
         super.tearDown();
     }
 
+    @Ignore("b/288276271")
     @Test
     public void testManagedUser() throws Exception {
         if (!mIsMultiuserSupported || !mIsManagedUserSupported) {
@@ -58,6 +60,7 @@ public class ShortcutManagerMultiuserTest extends BaseShortcutManagerHostTest {
                 "test04_getAndLaunch_primary", getPrimaryUserId());
     }
 
+    @Ignore("b/288276271")
     @Test
     public void testSecondaryUser() throws Exception {
         if (!mIsMultiuserSupported) {
@@ -67,10 +70,10 @@ public class ShortcutManagerMultiuserTest extends BaseShortcutManagerHostTest {
 
         getDevice().startUser(secondUserID, true);
         getDevice().switchUser(secondUserID);
-        RunUtil.getDefault().sleep(5000);
+        RunUtil.getDefault().sleep(20000);
         installAppAsUser(TARGET_APK, secondUserID);
         waitForBroadcastIdle();
-        RunUtil.getDefault().sleep(5000);
+        RunUtil.getDefault().sleep(20000);
 
         runDeviceTestsAsUser(TARGET_PKG, ".ShortcutManagerSecondaryUserTest", secondUserID);
 

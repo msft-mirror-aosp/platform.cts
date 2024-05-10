@@ -30,11 +30,10 @@ import android.car.Car;
 import android.car.CarAppFocusManager;
 import android.content.Context;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Assert;
@@ -48,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Test relies on other server to connect to.")
-public class CarAppFocusManagerTest extends CarApiTestBase {
+public final class CarAppFocusManagerTest extends AbstractCarTestCase {
     private static final String TAG = CarAppFocusManagerTest.class.getSimpleName();
 
     private static final long NO_EVENT_WAIT_TIME_MS = 50;
@@ -59,7 +58,6 @@ public class CarAppFocusManagerTest extends CarApiTestBase {
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
         mManager = (CarAppFocusManager) getCar().getCarManager(Car.APP_FOCUS_SERVICE);
         assertNotNull(mManager);
 

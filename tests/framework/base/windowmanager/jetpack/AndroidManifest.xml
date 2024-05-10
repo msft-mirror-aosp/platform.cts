@@ -19,6 +19,8 @@
           package="android.server.wm.jetpack"
           android:targetSandboxVersion="2">
 
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+
     <application android:label="CtsWindowManagerJetpackTestCases">
         <uses-library android:name="android.test.runner" />
         <uses-library android:name="androidx.window.extensions"
@@ -27,10 +29,31 @@
                       android:required="false" />
         <activity android:name="android.server.wm.jetpack.utils.TestActivity" />
         <activity android:name="android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity"
+                  android:supportsPictureInPicture="true"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"
+        />
+        <activity android:name="android.server.wm.jetpack.utils.TestLetterboxPortraitActivity"
+                  android:supportsPictureInPicture="true"
+                  android:screenOrientation="portrait"
+        />
+        <activity android:name="android.server.wm.jetpack.utils.TestLetterboxLandscapeActivity"
+                  android:supportsPictureInPicture="true"
+                  android:screenOrientation="landscape"
+        />
+        <activity android:name="android.server.wm.jetpack.utils.TestLetterboxPortraitSlimActivity"
+                  android:screenOrientation="portrait"
+                  android:resizeableActivity="false"
+                  android:minAspectRatio="3"
+        />
+        <activity android:name="android.server.wm.jetpack.utils.TestLetterboxLandscapeSlimActivity"
+                  android:supportsPictureInPicture="true"
+                  android:screenOrientation="landscape"
+                  android:resizeableActivity="false"
+                  android:minAspectRatio="3"
         />
         <activity android:name="android.server.wm.jetpack.utils.TestGetWindowLayoutInfoActivity" />
         <activity android:name="android.server.wm.jetpack.utils.TestActivityWithId"
+                  android:supportsPictureInPicture="true"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"
                   android:exported="true"
         />
@@ -47,10 +70,23 @@
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"
                   android:exported="true"
         />
+        <activity android:name="android.server.wm.jetpack.utils.TestRearDisplayShowWhenLockedActivity"
+                  android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"
+                  android:exported="true"
+        />
+        <activity android:name="android.server.wm.jetpack.utils.TestRearDisplayCrashingActivity"
+                  android:process=":Rear_display_crash_process"
+                  android:exported="true"
+        />
         <!-- The provider properties must match the shared one defined in the util module. -->
-        <provider android:name="android.server.wm.lifecycle.EventLog"
+        <provider android:name="android.server.wm.activity.lifecycle.EventLog"
                   android:authorities="android.server.wm.jetpack.logprovider"
                   android:exported="true"/>
+
+        <!-- ActivityEmbedding Property -->
+        <property
+            android:name="android.window.PROPERTY_ACTIVITY_EMBEDDING_ALLOW_SYSTEM_OVERRIDE"
+            android:value="true" />
     </application>
 
     <!--  self-instrumenting test package. -->

@@ -17,10 +17,10 @@ package android.app.cts
 
 import android.R
 import android.app.stubs.shared.NotificationHostActivity
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.test.AndroidTestCase
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -32,12 +32,21 @@ import androidx.annotation.IdRes
 import androidx.annotation.StringRes
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
+import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Before
 import kotlin.reflect.KClass
 
-open class NotificationTemplateTestBase : AndroidTestCase() {
+open class NotificationTemplateTestBase {
 
     // Used to give time to visually inspect or attach a debugger before the checkViews block
     protected var waitBeforeCheckingViews: Long = 0
+    protected var context: Context =
+            InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+    @Before
+    public fun baseSetUp() {
+        CtsAppTestUtils.turnScreenOn(InstrumentationRegistry.getInstrumentation(), context)
+    }
 
     protected fun checkIconView(views: RemoteViews, iconCheck: (ImageView) -> Unit) {
         checkViews(views) {
@@ -81,7 +90,7 @@ open class NotificationTemplateTestBase : AndroidTestCase() {
             }
 
     protected fun makeCustomContent(): RemoteViews {
-        val customContent = RemoteViews(mContext.packageName, R.layout.simple_list_item_1)
+        val customContent = RemoteViews(context.packageName, R.layout.simple_list_item_1)
         val textId = getAndroidRId("text1")
         customContent.setTextViewText(textId, "Example Text")
         return customContent
@@ -125,6 +134,12 @@ open class NotificationTemplateTestBase : AndroidTestCase() {
     protected fun NotificationHostActivity.requireViewWithText(text: String): TextView =
             findViewWithText(text) ?: throw RuntimeException("Unable to find view with text: $text")
 
+    protected fun NotificationHostActivity.requireViewWithTextContaining(
+        substring: String
+    ): TextView =
+        findViewWithTextContaining(substring)
+            ?: throw RuntimeException("Unable to find view with text containing: $substring")
+
     protected fun NotificationHostActivity.findViewWithText(text: String): TextView? {
         val views: MutableList<TextView> = ArrayList()
         collectViews(notificationRoot, TextView::class, views) { it.text?.toString() == text }
@@ -135,8 +150,22 @@ open class NotificationTemplateTestBase : AndroidTestCase() {
         }
     }
 
+    protected fun NotificationHostActivity.findViewWithTextContaining(
+        substring: String
+    ): TextView? {
+        val views: MutableList<TextView> = ArrayList()
+        collectViews(notificationRoot, TextView::class, views) {
+            (it.text?.toString() ?: "").contains(substring)
+        }
+        when (views.size) {
+            0 -> return null
+            1 -> return views[0]
+            else -> throw RuntimeException("Found multiple views with text containing: $substring")
+        }
+    }
+
     private fun getAndroidRes(resType: String, resName: String): Int =
-            mContext.resources.getIdentifier(resName, resType, "android")
+            context.resources.getIdentifier(resName, resType, "android")
 
     @IdRes
     protected fun getAndroidRId(idName: String): Int = getAndroidRes("id", idName)
@@ -148,5 +177,5 @@ open class NotificationTemplateTestBase : AndroidTestCase() {
     protected fun getAndroidRBool(boolName: String): Int = getAndroidRes("bool", boolName)
 
     @DimenRes
-    protected fun getAndroidRDimen(dimenName: String) : Int = getAndroidRes("dimen", dimenName)
+    protected fun getAndroidRDimen(dimenName: String): Int = getAndroidRes("dimen", dimenName)
 }

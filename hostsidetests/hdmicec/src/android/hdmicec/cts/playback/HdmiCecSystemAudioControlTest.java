@@ -18,6 +18,8 @@ package android.hdmicec.cts.playback;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.hdmicec.cts.BaseHdmiCecCtsTest;
 import android.hdmicec.cts.CecMessage;
 import android.hdmicec.cts.CecOperand;
@@ -44,9 +46,11 @@ public final class HdmiCecSystemAudioControlTest extends BaseHdmiCecCtsTest {
     public RuleChain ruleChain =
             RuleChain.outerRule(CecRules.requiresCec(this))
                     .around(CecRules.requiresLeanback(this))
-                    .around(
-                            CecRules.requiresDeviceType(
+                    .around(CecRules.requiresPhysicalDevice(this))
+                    .around(CecRules.requiresDeviceType(
                                     this, HdmiCecConstants.CEC_DEVICE_TYPE_PLAYBACK_DEVICE))
+                    .around(CecRules.skipDeviceType(
+                                    this, HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM))
                     .around(hdmiCecClient);
 
     /**
@@ -59,6 +63,8 @@ public final class HdmiCecSystemAudioControlTest extends BaseHdmiCecCtsTest {
     public void cect_hf4_10_5_RemoteControlCommandsWithSystemAudioControlProperty()
             throws Exception {
         setCec20();
+        // The DUT won't send <User Control Pressed> messages if this condition is not met.
+        assumeTrue(isPlayingStreamMusicOnHdmiOut());
 
         ITestDevice device = getDevice();
         String volumeControlEnabled =
@@ -70,14 +76,20 @@ public final class HdmiCecSystemAudioControlTest extends BaseHdmiCecCtsTest {
                     device,
                     HdmiCecConstants.SETTING_VOLUME_CONTROL_ENABLED,
                     HdmiCecConstants.VOLUME_CONTROL_ENABLED);
+            waitForCondition(() -> isHdmiCecVolumeControlEnabled(device),
+                        "Could not enable hdmi cec volume control");
 
             // Broadcast <Set System Audio Mode> ["off"].
             broadcastSystemAudioModeMessage(false);
+            waitForCondition(() -> !isSystemAudioActivated(device),
+                        "Could not <Set System Audio Mode> [off]");
             // All remote control commands should forward to the TV.
             sendVolumeUpCommandAndCheckForUcp(LogicalAddress.TV);
 
             // Broadcast <Set System Audio Mode> ["on"].
             broadcastSystemAudioModeMessage(true);
+            waitForCondition(() -> isSystemAudioActivated(device),
+                        "Could not <Set System Audio Mode> [on]");
             // All remote control commands should forward to the audio rendering device.
             sendVolumeUpCommandAndCheckForUcp(LogicalAddress.AUDIO_SYSTEM);
         } finally {
@@ -100,5 +112,17 @@ public final class HdmiCecSystemAudioControlTest extends BaseHdmiCecCtsTest {
                 hdmiCecClient.checkExpectedOutput(toDevice, CecOperand.USER_CONTROL_PRESSED);
         assertThat(CecMessage.getParams(message)).isEqualTo(HdmiCecConstants.CEC_KEYCODE_VOLUME_UP);
         hdmiCecClient.checkExpectedOutput(toDevice, CecOperand.USER_CONTROL_RELEASED);
+    }
+
+    private boolean isSystemAudioActivated(ITestDevice device) throws Exception {
+        return device.executeShellCommand(
+                "dumpsys hdmi_control | grep mSystemAudioActivated:")
+                .replace("mSystemAudioActivated:", "").trim().equals("true");
+    }
+
+    private boolean isHdmiCecVolumeControlEnabled(ITestDevice device) throws Exception {
+        return device.executeShellCommand(
+                "dumpsys hdmi_control | grep mHdmiCecVolumeControlEnabled:")
+                .replace("mHdmiCecVolumeControlEnabled:", "").trim().equals("1");
     }
 }

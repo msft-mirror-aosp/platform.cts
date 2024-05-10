@@ -18,6 +18,7 @@
     android:targetSandboxVersion="2">
 
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <application>
         <uses-library android:name="android.test.runner" />
     </application>
@@ -26,8 +27,6 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:targetPackage="android.dreams.cts"
                      android:label="CTS tests for the android.service.dreams package">
-        <meta-data android:name="listener"
-            android:value="com.android.cts.runner.CtsTestRunListener" />
     </instrumentation>
 
 </manifest>

@@ -65,10 +65,11 @@ android_test {
         "junit",
         "junit-params",
         "testng",
-        "truth-prebuilt",
+        "truth",
         "mockito-target-minus-junit4",
         "androidx.heifwriter_heifwriter",
         "CtsCameraUtils",
+        "aconfig_mediacodec_flags_java_lib",
     ],
     jni_libs: [
         "libctscodecutils_jni",

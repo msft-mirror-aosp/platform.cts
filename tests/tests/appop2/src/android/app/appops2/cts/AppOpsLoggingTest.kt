@@ -48,7 +48,7 @@ private const val TEST_ATTRIBUTION_TAG = "testAttribution"
 @AppModeFull(reason = "Test relies on other app to connect to. Instant apps can't see other apps")
 class AppOpsLoggingTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
-    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)
+    private val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
 
     // Collected note-op calls inside of this process
     private val noted = mutableListOf<Pair<SyncNotedAppOp, Array<StackTraceElement>>>()
@@ -117,10 +117,11 @@ class AppOpsLoggingTest {
                             FLAG_ACTIVITY_CLEAR_TASK or FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(activityIntent)
                 }
-            }, IntentFilter(installAction))
+            }, IntentFilter(installAction), Context.RECEIVER_EXPORTED)
 
             // Commit session (should trigger installAction receiver)
-            session.commit(PendingIntent.getBroadcast(context, 0, Intent(installAction),
+            session.commit(PendingIntent.getBroadcast(context, 0,
+                    Intent(installAction).setPackage(context.packageName),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE).intentSender)
 
             eventually {

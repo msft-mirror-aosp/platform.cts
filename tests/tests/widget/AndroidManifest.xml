@@ -54,6 +54,14 @@
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST" />
             </intent-filter>
         </activity>
+        <activity android:name="android.widget.cts.TextViewMouseInteractionActivity"
+             android:label="TextViewMouseInteractionActivity"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
+            </intent-filter>
+        </activity>
 
         <activity android:name="android.widget.cts.AbsoluteLayoutCtsActivity"
              android:label="AbsoluteLayoutCtsActivity"
@@ -359,6 +367,7 @@
         <activity android:name="android.widget.cts.ListPopupWindowCtsActivity"
              android:label="ListPopupWindowCtsActivity"
              android:windowSoftInputMode="stateAlwaysHidden"
+             android:theme="@style/Theme_NoSwipeDismiss"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -397,6 +406,28 @@
 
         <activity android:name="android.widget.cts.TextViewCtsActivity"
                   android:label="TextViewCtsActivity"
+                  android:screenOrientation="locked"
+                  android:exported="true"
+                  android:windowSoftInputMode="stateAlwaysHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
+            </intent-filter>
+        </activity>
+
+        <activity android:name="android.widget.cts.TextViewFontScalingTest$TextViewFontScalingActivity"
+                  android:label="TextViewFontScalingActivity"
+                  android:screenOrientation="locked"
+                  android:exported="true"
+                  android:windowSoftInputMode="stateAlwaysHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
+            </intent-filter>
+        </activity>
+
+        <activity android:name="android.widget.cts.TextViewHandwritingCtsActivity"
+                  android:label="TextViewHandwritingCtsActivity"
                   android:screenOrientation="locked"
                   android:exported="true"
                   android:windowSoftInputMode="stateAlwaysHidden">
@@ -702,22 +733,11 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="android.widget.cts.BackInvokedOnWidgetsActivity"
-                  android:label="BackInvokedOnWidgetsActivity"
-                  android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-
     </application>
 
-    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-         android:targetPackage="android.widget.cts"
-         android:label="CTS tests of android.widget">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
+    <instrumentation android:name="android.widget.cts.runner.WidgetRunner"
+                     android:targetPackage="android.widget.cts"
+                     android:label="CTS tests of android.widget">
     </instrumentation>
 
 </manifest>

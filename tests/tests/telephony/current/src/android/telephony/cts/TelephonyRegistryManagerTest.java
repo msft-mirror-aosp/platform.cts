@@ -9,13 +9,22 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.telephony.CallAttributes;
+import android.telephony.CallState;
 import android.telephony.PhoneStateListener;
+import android.telephony.PreciseCallState;
 import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.TelephonyManager.CarrierPrivilegesCallback;
 import android.telephony.TelephonyRegistryManager;
+import android.telephony.ims.ImsCallProfile;
 import android.text.TextUtils;
 import android.util.Pair;
 
@@ -24,10 +33,13 @@ import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -39,13 +51,17 @@ public class TelephonyRegistryManagerTest {
     private TelephonyRegistryManager mTelephonyRegistryMgr;
     private static final long TIMEOUT_MILLIS = 1000;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() throws Exception {
         assumeTrue(InstrumentationRegistry.getContext().getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
 
         mTelephonyRegistryMgr = (TelephonyRegistryManager) InstrumentationRegistry.getContext()
-            .getSystemService(Context.TELEPHONY_REGISTRY_SERVICE);
+                .getSystemService(Context.TELEPHONY_REGISTRY_SERVICE);
     }
 
     /**
@@ -246,6 +262,7 @@ public class TelephonyRegistryManagerTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_NOTIFY_DATA_ACTIVITY_CHANGED_WITH_SLOT)
     public void testNotifyDataActivityChanged() throws Exception {
         Context context = InstrumentationRegistry.getContext();
 
@@ -264,6 +281,35 @@ public class TelephonyRegistryManagerTest {
         int testValue = TelephonyManager.DATA_ACTIVITY_DORMANT;
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
                 (trm) -> trm.notifyDataActivityChanged(
+                        SubscriptionManager.getDefaultSubscriptionId(),
+                        testValue));
+
+        int result = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        assertEquals(testValue, result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_DATA_ACTIVITY_CHANGED_WITH_SLOT)
+    public void testNotifyDataActivityChangedWithSlot() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+
+        LinkedBlockingQueue<Integer> queue = new LinkedBlockingQueue<>(1);
+        PhoneStateListener psl = new PhoneStateListener(context.getMainExecutor()) {
+            @Override
+            public void onDataActivity(int activity) {
+                queue.offer(activity);
+            }
+        };
+        TelephonyManager tm = context.getSystemService(TelephonyManager.class);
+        tm.listen(psl, PhoneStateListener.LISTEN_DATA_ACTIVITY);
+        // clear the initial result from registering the listener.
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        int testValue = TelephonyManager.DATA_ACTIVITY_DORMANT;
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                (trm) -> trm.notifyDataActivityChanged(
+                        SubscriptionManager.getSlotIndex(
+                                SubscriptionManager.getDefaultSubscriptionId()),
                         SubscriptionManager.getDefaultSubscriptionId(),
                         testValue));
 
@@ -409,6 +455,216 @@ public class TelephonyRegistryManagerTest {
         public void onCarrierServiceChanged(@Nullable String carrierServicePackageName,
                 int carrierServiceUid) {
             mCarrierServiceQueue.offer(new Pair<>(carrierServicePackageName, carrierServiceUid));
+        }
+    }
+
+
+    @Test
+    public void testNotifyPreciseCallStateWithImsCall() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+
+        LinkedBlockingQueue<List<CallState>> queue = new LinkedBlockingQueue<>(1);
+        TestTelephonyCallback testCb = new TestTelephonyCallback(queue);
+
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), testCb));
+        // clear the initial result from registering the listener.
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        int[] dummyCallStates = {PreciseCallState.PRECISE_CALL_STATE_INCOMING,
+                PreciseCallState.PRECISE_CALL_STATE_ACTIVE,
+                PreciseCallState.PRECISE_CALL_STATE_IDLE};
+        String[] dummyImsCallIds = {"1", "0", "-1"};
+        int[] dummyImsServiceTypes = {ImsCallProfile.SERVICE_TYPE_NORMAL,
+                ImsCallProfile.SERVICE_TYPE_NORMAL,
+                ImsCallProfile.SERVICE_TYPE_NONE};
+        int[] dummyImsCallTypes = {ImsCallProfile.CALL_TYPE_VT,
+                ImsCallProfile.CALL_TYPE_VOICE,
+                ImsCallProfile.CALL_TYPE_NONE};
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                (trm) -> trm.notifyPreciseCallState(
+                        SubscriptionManager.getSlotIndex(
+                                SubscriptionManager.getDefaultSubscriptionId()),
+                        SubscriptionManager.getDefaultSubscriptionId(),
+                        dummyCallStates, dummyImsCallIds, dummyImsServiceTypes, dummyImsCallTypes));
+
+        List<CallState> testCallStatesResult = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        assertNotNull("Timed out waiting for phone state change", testCallStatesResult);
+        assertEquals(2, testCallStatesResult.size());
+        assertEquals(PreciseCallState.PRECISE_CALL_STATE_ACTIVE,
+                testCallStatesResult.get(0).getCallState());
+        assertEquals(PreciseCallState.PRECISE_CALL_STATE_INCOMING,
+                testCallStatesResult.get(1).getCallState());
+        assertEquals("0",
+                testCallStatesResult.get(0).getImsCallSessionId());
+        assertEquals("1",
+                testCallStatesResult.get(1).getImsCallSessionId());
+        assertEquals(ImsCallProfile.CALL_TYPE_VOICE,
+                testCallStatesResult.get(0).getImsCallType());
+        assertEquals(ImsCallProfile.CALL_TYPE_VT,
+                testCallStatesResult.get(1).getImsCallType());
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.unregisterTelephonyCallback(testCb));
+    }
+
+    @Test
+    public void testNotifyPreciseCallStateWithCsCall() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+
+        LinkedBlockingQueue<List<CallState>> queue = new LinkedBlockingQueue<>(1);
+        TestTelephonyCallback testCb = new TestTelephonyCallback(queue);
+
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), testCb));
+        // clear the initial result from registering the listener.
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        int[] dummyCallStates = {PreciseCallState.PRECISE_CALL_STATE_INCOMING,
+                PreciseCallState.PRECISE_CALL_STATE_ACTIVE,
+                PreciseCallState.PRECISE_CALL_STATE_IDLE};
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                (trm) -> trm.notifyPreciseCallState(
+                        SubscriptionManager.getSlotIndex(
+                                SubscriptionManager.getDefaultSubscriptionId()),
+                        SubscriptionManager.getDefaultSubscriptionId(),
+                        dummyCallStates, null, null, null));
+
+        List<CallState> testCallStatesResult = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        assertNotNull("Timed out waiting for phone state change", testCallStatesResult);
+        assertEquals(2, testCallStatesResult.size());
+        assertEquals(PreciseCallState.PRECISE_CALL_STATE_ACTIVE,
+                testCallStatesResult.get(0).getCallState());
+        assertEquals(PreciseCallState.PRECISE_CALL_STATE_INCOMING,
+                testCallStatesResult.get(1).getCallState());
+        assertNull(testCallStatesResult.get(0).getImsCallSessionId());
+        assertNull(testCallStatesResult.get(1).getImsCallSessionId());
+        assertEquals(ImsCallProfile.SERVICE_TYPE_NONE,
+                testCallStatesResult.get(0).getImsCallServiceType());
+        assertEquals(ImsCallProfile.SERVICE_TYPE_NONE,
+                testCallStatesResult.get(1).getImsCallServiceType());
+        assertEquals(ImsCallProfile.CALL_TYPE_NONE,
+                testCallStatesResult.get(0).getImsCallType());
+        assertEquals(ImsCallProfile.CALL_TYPE_NONE,
+                testCallStatesResult.get(1).getImsCallType());
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.unregisterTelephonyCallback(testCb));
+    }
+
+    @Test
+    public void testNotifyPreciseCallStateLegacyCallback() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+
+        LinkedBlockingQueue<CallAttributes> queue = new LinkedBlockingQueue<>(1);
+        TestTelephonyCallbackLegacy testCb = new TestTelephonyCallbackLegacy(queue);
+
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), testCb));
+        // clear the initial result from registering the listener.
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        int[] dummyCallStates = {PreciseCallState.PRECISE_CALL_STATE_INCOMING,
+                PreciseCallState.PRECISE_CALL_STATE_HOLDING,
+                PreciseCallState.PRECISE_CALL_STATE_IDLE};
+        String[] dummyImsCallIds = {"1", "0", "-1"};
+        int[] dummyImsServiceTypes = {ImsCallProfile.SERVICE_TYPE_NORMAL,
+                ImsCallProfile.SERVICE_TYPE_NORMAL,
+                ImsCallProfile.SERVICE_TYPE_NONE};
+        int[] dummyImsCallTypes = {ImsCallProfile.CALL_TYPE_VT,
+                ImsCallProfile.CALL_TYPE_VOICE,
+                ImsCallProfile.CALL_TYPE_NONE};
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                (trm) -> trm.notifyPreciseCallState(
+                        SubscriptionManager.getSlotIndex(
+                                SubscriptionManager.getDefaultSubscriptionId()),
+                        SubscriptionManager.getDefaultSubscriptionId(),
+                        dummyCallStates, dummyImsCallIds, dummyImsServiceTypes, dummyImsCallTypes));
+
+        CallAttributes testCallAttributesResult = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        assertNotNull("Timed out waiting for phone state change", testCallAttributesResult);
+
+        assertEquals(PreciseCallState.PRECISE_CALL_STATE_HOLDING,
+                testCallAttributesResult.getPreciseCallState().getForegroundCallState());
+        assertEquals(PreciseCallState.PRECISE_CALL_STATE_IDLE,
+                testCallAttributesResult.getPreciseCallState().getBackgroundCallState());
+        assertEquals(PreciseCallState.PRECISE_CALL_STATE_INCOMING,
+                testCallAttributesResult.getPreciseCallState().getRingingCallState());
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.unregisterTelephonyCallback(testCb));
+    }
+
+    @Test
+    public void testNotifyPreciseCallStatePhoneStateListener() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+
+        LinkedBlockingQueue<CallAttributes> queue = new LinkedBlockingQueue<>(1);
+        PhoneStateListener psl = new PhoneStateListener(context.getMainExecutor()) {
+            @Override
+            public void onCallAttributesChanged(CallAttributes ca) {
+                queue.offer(ca);
+            }
+        };
+
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.listen(psl, PhoneStateListener.LISTEN_CALL_ATTRIBUTES_CHANGED));
+        // clear the initial result from registering the listener.
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        int[] dummyCallStates = {PreciseCallState.PRECISE_CALL_STATE_IDLE,
+                PreciseCallState.PRECISE_CALL_STATE_ACTIVE,
+                PreciseCallState.PRECISE_CALL_STATE_HOLDING};
+        String[] dummyImsCallIds = {"-1", "0", "1"};
+        int[] dummyImsServiceTypes = {ImsCallProfile.SERVICE_TYPE_NONE,
+                ImsCallProfile.SERVICE_TYPE_NORMAL,
+                ImsCallProfile.SERVICE_TYPE_NORMAL};
+        int[] dummyImsCallTypes = {ImsCallProfile.CALL_TYPE_NONE,
+                ImsCallProfile.CALL_TYPE_VOICE,
+                ImsCallProfile.CALL_TYPE_VT};
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                (trm) -> trm.notifyPreciseCallState(
+                        SubscriptionManager.getSlotIndex(
+                                SubscriptionManager.getDefaultSubscriptionId()),
+                        SubscriptionManager.getDefaultSubscriptionId(),
+                        dummyCallStates, dummyImsCallIds, dummyImsServiceTypes, dummyImsCallTypes));
+
+        CallAttributes testCallAttributesResult = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        assertNotNull("Timed out waiting for phone state change", testCallAttributesResult);
+
+        assertEquals(PreciseCallState.PRECISE_CALL_STATE_ACTIVE,
+                testCallAttributesResult.getPreciseCallState().getForegroundCallState());
+        assertEquals(PreciseCallState.PRECISE_CALL_STATE_HOLDING,
+                testCallAttributesResult.getPreciseCallState().getBackgroundCallState());
+        assertEquals(PreciseCallState.PRECISE_CALL_STATE_IDLE,
+                testCallAttributesResult.getPreciseCallState().getRingingCallState());
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.listen(psl, PhoneStateListener.LISTEN_NONE));
+    }
+
+    private class TestTelephonyCallback extends TelephonyCallback
+            implements TelephonyCallback.CallAttributesListener {
+        LinkedBlockingQueue<List<CallState>> mTestCallStatesQueue;
+        TestTelephonyCallback(LinkedBlockingQueue<List<CallState>> queue) {
+            mTestCallStatesQueue = queue;
+        }
+        @Override
+        public void onCallStatesChanged(@NonNull List<CallState> callStateList) {
+            mTestCallStatesQueue.offer(callStateList);
+        }
+    }
+
+    private class TestTelephonyCallbackLegacy extends TelephonyCallback
+            implements TelephonyCallback.CallAttributesListener {
+        LinkedBlockingQueue<CallAttributes> mTestCallAttributes;
+        TestTelephonyCallbackLegacy(LinkedBlockingQueue<CallAttributes> queue) {
+            mTestCallAttributes = queue;
+        }
+        @Override
+        public void onCallAttributesChanged(@NonNull CallAttributes callAttributes) {
+            mTestCallAttributes.offer(callAttributes);
         }
     }
 }

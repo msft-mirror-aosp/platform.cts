@@ -44,6 +44,8 @@ public class PropertyUtil {
     private static final String CAMERAX_EXTENSIONS_ENABLED = "ro.camerax.extensions.enabled";
     private static final String MANUFACTURER_PROPERTY = "ro.product.manufacturer";
     private static final String TAG_DEV_KEYS = "dev-keys";
+    private static final String TAG_TEST_KEYS = "test-keys";
+    private static final String VENDOR_API_LEVEL = "ro.vendor.api_level";
     private static final String VNDK_VERSION = "ro.vndk.version";
 
     public static final String GOOGLE_SETTINGS_QUERY =
@@ -62,12 +64,12 @@ public class PropertyUtil {
 
     /** Returns whether this build is built with dev-keys */
     public static boolean isDevKeysBuild() {
-        for (String tag : Build.TAGS.split(",")) {
-            if (TAG_DEV_KEYS.equals(tag.trim())) {
-                return true;
-            }
-        }
-        return false;
+        return isBuildWithKeyType(TAG_DEV_KEYS);
+    }
+
+    /** Returns whether this build is built with test-keys */
+    public static boolean isTestKeysBuild() {
+        return isBuildWithKeyType(TAG_TEST_KEYS);
     }
 
     /**
@@ -90,11 +92,16 @@ public class PropertyUtil {
 
     /**
      * Return the API level that the VSR requirement must be fulfilled. It reads
-     * ro.product.first_api_level and ro.board.first_api_level to find the minimum required VSR
-     * api_level for the DUT.
+     * ro.vendor.api_level. If not provided for old devices, read ro.product.first_api_level,
+     * ro.board.api_level and ro.board.first_api_level to find the minimum required VSR api level of
+     * the DUT.
      */
     public static int getVsrApiLevel() {
-        // Api level properties of the board. The order of the properties must be kept.
+        int vendorApiLevel = getPropertyInt(VENDOR_API_LEVEL);
+        if (vendorApiLevel != INT_VALUE_IF_UNSET) {
+            return vendorApiLevel;
+        }
+        // Fallback to api level calculation for old devices.
         String[] boardApiLevelProps = {BOARD_API_LEVEL, BOARD_FIRST_API_LEVEL};
         for (String apiLevelProp : boardApiLevelProps) {
             int apiLevel = getPropertyInt(apiLevelProp);
@@ -296,5 +303,20 @@ public class PropertyUtil {
                 scanner.close();
             }
         }
+    }
+
+    /**
+     * Checks if the current build uses a specific type of key.
+     *
+     * @param keyType The type of key to check for (e.g., "dev-keys", "test-keys")
+     * @return true if the build uses the specified key type, false otherwise
+    */
+    private static boolean isBuildWithKeyType(String keyType) {
+        for (String tag : Build.TAGS.split(",")) {
+            if (keyType.equals(tag.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

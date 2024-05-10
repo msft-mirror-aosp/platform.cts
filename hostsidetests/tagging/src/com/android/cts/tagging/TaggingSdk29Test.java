@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableSet;
 
 public class TaggingSdk29Test extends TaggingBaseTest {
     protected static final String TEST_APK = "CtsHostsideTaggingSdk29App.apk";
-    protected static final String TEST_PKG = "android.cts.tagging.sdk29";
+    protected static final String TEST_PKG = "android.cts.tagging";
 
     @Override
     protected void setUp() throws Exception {

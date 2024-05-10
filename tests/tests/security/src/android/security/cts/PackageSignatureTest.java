@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,7 +45,7 @@ public class PackageSignatureTest extends AndroidTestCase {
 
     @RestrictedBuildTest
     public void testPackageSignatures() throws Exception {
-        Set<String> badPackages = new HashSet<String>();
+        Set<String> badPackages = new TreeSet<>();
         Set<Signature> wellKnownSignatures = getWellKnownSignatures();
 
         PackageManager packageManager = mContext.getPackageManager();
@@ -77,11 +78,12 @@ public class PackageSignatureTest extends AndroidTestCase {
      * .bin files when adding entries to this list.
      */
     private Set<Signature> getWellKnownSignatures() throws NotFoundException, IOException {
-        Set<Signature> wellKnownSignatures = new HashSet<Signature>();
+        Set<Signature> wellKnownSignatures = new HashSet<>();
         wellKnownSignatures.add(getSignature(R.raw.sig_media));
         wellKnownSignatures.add(getSignature(R.raw.sig_platform));
         wellKnownSignatures.add(getSignature(R.raw.sig_shared));
         wellKnownSignatures.add(getSignature(R.raw.sig_testkey));
+        wellKnownSignatures.add(getSignature(R.raw.sig_debug));
         wellKnownSignatures.add(getSignature(R.raw.sig_devkeys));
         wellKnownSignatures.add(getSignature(R.raw.sig_networkstack));
         wellKnownSignatures.add(getSignature(R.raw.sig_devkeys_media));
@@ -102,10 +104,87 @@ public class PackageSignatureTest extends AndroidTestCase {
         wellKnownSignatures.add(getSignature(R.raw.sig_com_google_android_runtime_debug));
         wellKnownSignatures.add(getSignature(R.raw.sig_com_google_android_runtime_release));
         wellKnownSignatures.add(getSignature(R.raw.sig_com_google_android_tzdata3));
-        // The following keys are not not used by modules on the latest Android release, but it
+        // The following keys are not used by modules on the latest Android release, but it
         // won't negatively affect tests to include their signatures here too.
         wellKnownSignatures.add(getSignature(R.raw.sig_com_google_android_tzdata));
         wellKnownSignatures.add(getSignature(R.raw.sig_com_google_android_tzdata2));
+        wellKnownSignatures.add(getSignature(R.raw.sig_android_telephony_cts_testkey));
+        wellKnownSignatures.add(getSignature(R.raw.sig_build_bazel_examples_apex_minimal));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cert));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_adbd));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_adservices));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_adservices_api));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_appsearch));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_art));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_bluetooth));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_btservices));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_car_framework));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_cellbroadcast));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_compos));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_connectivity_resources));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_extservices));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_geotz));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_hardware_core_permissions));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_hardware_power));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_hardware_sensors));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_hardware_thermal));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_hardware_usb));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_hardware_vibrator));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_hardware_wifi));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_hotspot2_osulogin));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_i18n));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_ipsec));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_mediaprovider));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_neuralnetworks));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_os_statsd));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_permission));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_rkpd));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_runtime));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_safetycenter_resources));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_sdkext));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_uwb));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_uwb_resources));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_vibrator_drv2624));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_vibrator_sunfish));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_virt));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_vndk));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_wifi));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_wifi_dialog));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_android_wifi_resources));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_google_cf_apex));
+        wellKnownSignatures.add(getSignature(R.raw.sig_com_google_emulated_camera_provider_hal));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_appsearch_helper_cert_a));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_appsearch_helper_cert_b));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_appsearch_hosttest_helper_cert_a));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_appsearch_hosttest_helper_cert_b));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_blob_helper_cert));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_blob_helper_cert2));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_keyset_test_a));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_keyset_test_b));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_keyset_test_c));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_keyset_test_ec_a));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_net_app));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_testkey1));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_testkey2));
+        wellKnownSignatures.add(getSignature(R.raw.sig_cts_uicc_2021));
+        wellKnownSignatures.add(getSignature(R.raw.sig_ec_p256));
+        wellKnownSignatures.add(getSignature(R.raw.sig_ec_p256_2));
+        wellKnownSignatures.add(getSignature(R.raw.sig_ec_p256_3));
+        wellKnownSignatures.add(getSignature(R.raw.sig_ec_p256_4));
+        wellKnownSignatures.add(getSignature(R.raw.sig_ec_p256_5));
+        wellKnownSignatures.add(getSignature(R.raw.sig_keyset_A));
+        wellKnownSignatures.add(getSignature(R.raw.sig_keyset_B));
+        wellKnownSignatures.add(getSignature(R.raw.sig_rro_remounted_test_a));
+        wellKnownSignatures.add(getSignature(R.raw.sig_rsa_2048));
+        wellKnownSignatures.add(getSignature(R.raw.sig_sdk_sandbox));
+        wellKnownSignatures.add(getSignature(R.raw.sig_security_cts_test_cert));
+        wellKnownSignatures.add(getSignature(R.raw.sig_shell_as_test_app_key));
+        wellKnownSignatures.add(getSignature(R.raw.sig_test_cert_1));
+        wellKnownSignatures.add(getSignature(R.raw.sig_test_cert_2));
+        wellKnownSignatures.add(getSignature(R.raw.sig_test_cert_3));
+        wellKnownSignatures.add(getSignature(R.raw.sig_test_cert_4));
+        wellKnownSignatures.add(getSignature(R.raw.sig_testcert));
+        wellKnownSignatures.add(getSignature(R.raw.sig_unit_test));
         return wellKnownSignatures;
     }
 
@@ -127,6 +206,7 @@ public class PackageSignatureTest extends AndroidTestCase {
             // Test utilities used by Tradefed harness
             "com.android.tradefed.utils.wifi",
             "android.tradefed.contentprovider",
+            "androidx.test.services",
 
             // Game used for CTS testing...
             "com.replica.replicaisland",
@@ -139,6 +219,8 @@ public class PackageSignatureTest extends AndroidTestCase {
             "android.core.tests.libcore.package.org",
             "android.core.tests.libcore.package.sun",
             "android.core.tests.libcore.package.tests",
+            "com.android.cts.RemoteDPC",
+            "com.android.testutils.connectivitychecker",
 
             // Test package to verify upgrades to privileged applications
             "com.android.cts.priv.ctsshim",

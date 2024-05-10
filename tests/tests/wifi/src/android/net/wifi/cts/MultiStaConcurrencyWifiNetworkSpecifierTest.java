@@ -24,7 +24,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkRequest;
@@ -76,6 +75,8 @@ public class MultiStaConcurrencyWifiNetworkSpecifierTest extends WifiJUnit4TestB
     private static boolean sWasScanThrottleEnabled;
     private static boolean sWasWifiEnabled;
 
+    private static boolean sShouldRunTest = false;
+
     private Context mContext;
     private WifiManager mWifiManager;
     private ConnectivityManager mConnectivityManager;
@@ -100,7 +101,10 @@ public class MultiStaConcurrencyWifiNetworkSpecifierTest extends WifiJUnit4TestB
 
         WifiManager wifiManager = context.getSystemService(WifiManager.class);
         assertThat(wifiManager).isNotNull();
-
+        if (!wifiManager.isStaConcurrencyForLocalOnlyConnectionsSupported()) {
+            return;
+        }
+        sShouldRunTest = true;
         // turn on verbose logging for tests
         sWasVerboseLoggingEnabled = ShellIdentityUtils.invokeWithShellPermissions(
                 () -> wifiManager.isVerboseLoggingEnabled());
@@ -123,6 +127,9 @@ public class MultiStaConcurrencyWifiNetworkSpecifierTest extends WifiJUnit4TestB
 
     @AfterClass
     public static void tearDownClass() throws Exception {
+        if (!sShouldRunTest) {
+            return;
+        }
         Context context = InstrumentationRegistry.getInstrumentation().getContext();
         if (!WifiFeature.isWifiSupported(context)) return;
 
@@ -139,18 +146,12 @@ public class MultiStaConcurrencyWifiNetworkSpecifierTest extends WifiJUnit4TestB
 
     @Before
     public void setUp() throws Exception {
+        assumeTrue(sShouldRunTest);
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mWifiManager = mContext.getSystemService(WifiManager.class);
         mConnectivityManager = mContext.getSystemService(ConnectivityManager.class);
         mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mTestHelper = new TestHelper(mContext, mUiDevice);
-
-        // skip the test if WiFi is not supported
-        assumeTrue(WifiFeature.isWifiSupported(mContext));
-        // skip the test if location is not supported
-        assumeTrue(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION));
-        // skip if multi STA not supported.
-        assumeTrue(mWifiManager.isStaConcurrencyForLocalOnlyConnectionsSupported());
 
         assertWithMessage("Please enable location for this test!")
                 .that(mContext.getSystemService(LocationManager.class).isLocationEnabled())
@@ -169,7 +170,7 @@ public class MultiStaConcurrencyWifiNetworkSpecifierTest extends WifiJUnit4TestB
         List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.getPrivilegedConfiguredNetworks());
         List<WifiConfiguration> matchingNetworksWithBssid =
-                TestHelper.findMatchingSavedNetworksWithBssid(mWifiManager, savedNetworks);
+                TestHelper.findMatchingSavedNetworksWithBssid(mWifiManager, savedNetworks, 2);
         assertWithMessage("Need at least 2 saved network bssids in range")
                 .that(matchingNetworksWithBssid.size()).isAtLeast(2);
         // Pick any 2 bssid for test.
@@ -200,13 +201,19 @@ public class MultiStaConcurrencyWifiNetworkSpecifierTest extends WifiJUnit4TestB
 
     @After
     public void tearDown() throws Exception {
+        if (!sShouldRunTest) {
+            return;
+        }
+
         // Re-enable networks.
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> {
-                    for (WifiConfiguration savedNetwork : mWifiManager.getConfiguredNetworks()) {
+                    for (WifiConfiguration savedNetwork :
+                            mWifiManager.getConfiguredNetworks()) {
                         mWifiManager.enableNetwork(savedNetwork.networkId, false);
                     }
                 });
+
         // Release the requests after the test.
         if (mNetworkCallback != null) {
             mConnectivityManager.unregisterNetworkCallback(mNetworkCallback);
@@ -214,6 +221,7 @@ public class MultiStaConcurrencyWifiNetworkSpecifierTest extends WifiJUnit4TestB
         if (mNrNetworkCallback != null) {
             mConnectivityManager.unregisterNetworkCallback(mNrNetworkCallback);
         }
+
         // Clear any existing app state after each test.
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.removeAppState(myUid(), mContext.getPackageName()));

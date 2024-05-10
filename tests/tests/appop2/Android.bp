@@ -13,11 +13,16 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_permissions",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test {
     name: "CtsAppOps2TestCases",
+    defaults: [
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
 
     srcs: ["src/**/*.kt"],
 
@@ -26,13 +31,14 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "platform-test-annotations",
-        "truth-prebuilt",
+        "truth",
     ],
 
     test_suites: [
         "cts",
-        "vts10",
         "general-tests",
+        "mts-permission",
+        "vts10",
     ],
     data: [
         ":CtsAppToBlame1",

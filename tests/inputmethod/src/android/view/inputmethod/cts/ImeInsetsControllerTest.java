@@ -29,6 +29,7 @@ import static org.junit.Assert.assertFalse;
 import android.app.WindowConfiguration;
 import android.os.Process;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Pair;
 import android.view.View;
 import android.view.Window;
@@ -60,6 +61,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ImeInsetsControllerTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
@@ -73,20 +75,20 @@ public class ImeInsetsControllerTest extends EndToEndImeTestBase {
         final AtomicReference<Window> windowRef = new AtomicReference<>();
         new TestActivity.Starter().withWindowingMode(
                 WindowConfiguration.WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
-            final LinearLayout layout = new LinearLayout(activity);
-            layout.setOrientation(LinearLayout.VERTICAL);
+                    final LinearLayout layout = new LinearLayout(activity);
+                    layout.setOrientation(LinearLayout.VERTICAL);
 
-            final EditText editText = new EditText(activity);
-            editText.setPrivateImeOptions(TEST_MARKER);
-            editText.setHint("editText");
-            editText.requestFocus();
-            editTextRef.set(editText);
+                    final EditText editText = new EditText(activity);
+                    editText.setPrivateImeOptions(TEST_MARKER);
+                    editText.setHint("editText");
+                    editText.requestFocus();
+                    editTextRef.set(editText);
 
-            windowRef.set(activity.getWindow());
+                    windowRef.set(activity.getWindow());
 
-            layout.addView(editText);
-            return layout;
-        });
+                    layout.addView(editText);
+                    return layout;
+                }, TestActivity.class);
         return new Pair<>(editTextRef.get(), windowRef.get());
     }
 

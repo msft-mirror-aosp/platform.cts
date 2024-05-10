@@ -24,7 +24,10 @@ import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.helpers.StaticMetadata.CheckLevel;
 import android.util.Log;
+import android.os.Build;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeFull;
+import com.android.compatibility.common.util.PropertyUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -63,7 +66,7 @@ public class FlashlightTest extends Camera2AndroidTestCase {
         // flash tests.
         mFlashCameraIdList = new ArrayList<String>();
         mNoFlashCameraIdList = new ArrayList<String>();
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             StaticMetadata info =
                     new StaticMetadata(mCameraManager.getCameraCharacteristics(id),
                                        CheckLevel.ASSERT, /*collector*/ null);
@@ -281,12 +284,13 @@ public class FlashlightTest extends Camera2AndroidTestCase {
     }
 
     @Test
+    @AppModeFull(reason = "PropertyUtil methods don't work for instant apps")
     public void testCameraDeviceOpenAfterTorchOn() throws Exception {
         if (mFlashCameraIdList.size() == 0)
             return;
 
         for (String id : mFlashCameraIdList) {
-            for (String idToOpen : mCameraIdsUnderTest) {
+            for (String idToOpen : getCameraIdsUnderTest()) {
                 resetTorchModeStatus(id);
 
                 CameraManager.TorchCallback torchListener =
@@ -295,44 +299,64 @@ public class FlashlightTest extends Camera2AndroidTestCase {
                 // this will trigger OFF for each id in mFlashCameraIdList
                 mCameraManager.registerTorchCallback(torchListener, mHandler);
 
+                verify(torchListener, timeout(TORCH_TIMEOUT_MS).times(1)).
+                        onTorchModeChanged(id, /*enabled*/false);
+
                 // this will trigger ON for id
                 mCameraManager.setTorchMode(id, true);
                 SystemClock.sleep(TORCH_DURATION_MS);
 
-                // if id == idToOpen, this will trigger UNAVAILABLE and may trigger OFF.
+                verify(torchListener, timeout(TORCH_TIMEOUT_MS).times(1)).
+                        onTorchModeChanged(id, true);
+
+                // if id == idToOpen, this will trigger UNAVAILABLE.
                 // this may trigger UNAVAILABLE for any other id in mFlashCameraIdList
                 openDevice(idToOpen);
 
-                // if id == idToOpen, this will trigger OFF.
-                // this may trigger OFF for any other id in mFlashCameraIdList.
-                closeDevice(idToOpen);
+                try {
+                    if (PropertyUtil.getVendorApiLevel() > Build.VERSION_CODES.TIRAMISU) {
+                        // Opening a camera device shouldn't result in
+                        // onTorchModeChanged() being called. The number of
+                        // invocations should remain at 1 for both ON and OFF.
+                        verify(torchListener, timeout(TORCH_TIMEOUT_MS).times(1)).
+                                onTorchModeChanged(id, false);
+                        verify(torchListener, after(TORCH_TIMEOUT_MS).times(1)).
+                                onTorchModeChanged(id, true);
+                    }
 
-                // this may trigger OFF for id if not received previously.
-                mCameraManager.setTorchMode(id, false);
+                    // if id == idToOpen, this will trigger OFF.
+                    // this may trigger OFF for any other id in mFlashCameraIdList.
+                    closeDevice(idToOpen);
 
-                verify(torchListener, timeout(TORCH_TIMEOUT_MS).times(1)).
-                        onTorchModeChanged(id, true);
-                verify(torchListener, timeout(TORCH_TIMEOUT_MS).times(1)).
-                        onTorchModeChanged(anyString(), eq(true));
+                    // this may trigger OFF for id if not received previously.
+                    mCameraManager.setTorchMode(id, false);
 
-                verify(torchListener, timeout(TORCH_TIMEOUT_MS).atLeast(2)).
-                        onTorchModeChanged(id, false);
-                verify(torchListener, atMost(3)).onTorchModeChanged(id, false);
-
-                verify(torchListener, timeout(TORCH_TIMEOUT_MS).
-                        atLeast(mFlashCameraIdList.size())).
-                        onTorchModeChanged(anyString(), eq(false));
-                verify(torchListener, atMost(mFlashCameraIdList.size() * 2 + 1)).
-                        onTorchModeChanged(anyString(), eq(false));
-
-                if (hasFlash(idToOpen)) {
                     verify(torchListener, timeout(TORCH_TIMEOUT_MS).times(1)).
-                            onTorchModeUnavailable(idToOpen);
-                }
-                verify(torchListener, atMost(mFlashCameraIdList.size())).
-                            onTorchModeUnavailable(anyString());
+                            onTorchModeChanged(id, true);
+                    verify(torchListener, timeout(TORCH_TIMEOUT_MS).times(1)).
+                            onTorchModeChanged(anyString(), eq(true));
 
-                mCameraManager.unregisterTorchCallback(torchListener);
+                    verify(torchListener, timeout(TORCH_TIMEOUT_MS).atLeast(2)).
+                            onTorchModeChanged(id, false);
+                    verify(torchListener, atMost(3)).onTorchModeChanged(id, false);
+
+                    verify(torchListener, timeout(TORCH_TIMEOUT_MS).
+                            atLeast(mFlashCameraIdList.size())).
+                            onTorchModeChanged(anyString(), eq(false));
+                    verify(torchListener, atMost(mFlashCameraIdList.size() * 2 + 1)).
+                            onTorchModeChanged(anyString(), eq(false));
+
+                    if (hasFlash(idToOpen)) {
+                        verify(torchListener, timeout(TORCH_TIMEOUT_MS).times(1)).
+                                onTorchModeUnavailable(idToOpen);
+                    }
+                    verify(torchListener, atMost(mFlashCameraIdList.size())).
+                                onTorchModeUnavailable(anyString());
+
+                    mCameraManager.unregisterTorchCallback(torchListener);
+                } finally {
+                    closeDevice(idToOpen);
+                }
             }
         }
     }
@@ -341,12 +365,13 @@ public class FlashlightTest extends Camera2AndroidTestCase {
     public void testTorchModeExceptions() throws Exception {
         // cameraIdsToTestTorch = all available camera ID + non-existing camera id +
         //                        non-existing numeric camera id + null
-        String[] cameraIdsToTestTorch = new String[mCameraIdsUnderTest.length + 3];
-        System.arraycopy(mCameraIdsUnderTest, 0, cameraIdsToTestTorch, 0, mCameraIdsUnderTest.length);
-        cameraIdsToTestTorch[mCameraIdsUnderTest.length] = generateNonexistingCameraId();
-        cameraIdsToTestTorch[mCameraIdsUnderTest.length + 1] = generateNonexistingNumericCameraId();
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        String[] cameraIdsToTestTorch = new String[cameraIdsUnderTest.length + 3];
+        System.arraycopy(cameraIdsUnderTest, 0, cameraIdsToTestTorch, 0, cameraIdsUnderTest.length);
+        cameraIdsToTestTorch[cameraIdsUnderTest.length] = generateNonexistingCameraId();
+        cameraIdsToTestTorch[cameraIdsUnderTest.length + 1] = generateNonexistingNumericCameraId();
 
-        for (String idToOpen : mCameraIdsUnderTest) {
+        for (String idToOpen : cameraIdsUnderTest) {
             openDevice(idToOpen);
             try {
                 for (String id : cameraIdsToTestTorch) {
@@ -400,10 +425,11 @@ public class FlashlightTest extends Camera2AndroidTestCase {
         mCameraManager.unregisterTorchCallback(torchListener);
     }
 
-    private String generateNonexistingCameraId() {
+    private String generateNonexistingCameraId() throws Exception {
         String nonExisting = "none_existing_camera";
-        for (String id : mCameraIdsUnderTest) {
-            if (Arrays.asList(mCameraIdsUnderTest).contains(nonExisting)) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (String id : cameraIdsUnderTest) {
+            if (Arrays.asList(cameraIdsUnderTest).contains(nonExisting)) {
                 nonExisting += id;
             } else {
                 break;
@@ -414,8 +440,8 @@ public class FlashlightTest extends Camera2AndroidTestCase {
 
     // return a non-existing and non-negative numeric camera id.
     private String generateNonexistingNumericCameraId() throws Exception {
-        // We don't rely on mCameraIdsUnderTest to generate a non existing camera id since
-        // mCameraIdsUnderTest doesn't give us an accurate reflection of which camera ids actually
+        // We don't rely on getCameraIdsUnderTest() to generate a non existing camera id since
+        // it doesn't give us an accurate reflection of which camera ids actually
         // exist. It just tells us the ones we're testing right now.
         String[] allCameraIds = mCameraManager.getCameraIdListNoLazy();
         int[] numericCameraIds = new int[allCameraIds.length];

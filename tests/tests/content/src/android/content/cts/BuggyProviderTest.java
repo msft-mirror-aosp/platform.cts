@@ -18,7 +18,9 @@ package android.content.cts;
 
 import android.app.ActivityManager;
 import android.content.ContentResolver;
+import android.os.RemoteCallback;
 import android.os.UserHandle;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 
 /**
@@ -26,13 +28,15 @@ import android.test.AndroidTestCase;
  *
  * see @{@link MockBuggyProvider}
  */
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BuggyProviderTest extends AndroidTestCase {
 
     public void testGetTypeDoesntCrashSystem() {
         // ensure the system doesn't crash when a provider takes too long to respond
         try {
-            ActivityManager.getService().getProviderMimeType(
-                    MockBuggyProvider.CONTENT_URI, UserHandle.USER_CURRENT);
+            ActivityManager.getService().getMimeTypeFilterAsync(
+                    MockBuggyProvider.CONTENT_URI, UserHandle.USER_CURRENT,
+                    new RemoteCallback(result -> {}));
         } catch (Exception e) {
             fail("Unexpected exception while fetching type: " + e.getMessage());
         }

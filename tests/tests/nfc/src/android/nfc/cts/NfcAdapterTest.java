@@ -1,17 +1,20 @@
 package android.nfc.cts;
 
+import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
+
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doNothing;
 
 import android.app.Activity;
 import android.app.PendingIntent;
-import android.content.ComponentName;
+import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -20,26 +23,39 @@ import android.nfc.*;
 import android.nfc.tech.*;
 import android.os.Bundle;
 import android.os.RemoteException;
-import androidx.test.core.app.ApplicationProvider;
-import androidx.test.InstrumentationRegistry;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 
+import androidx.test.InstrumentationRegistry;
+import androidx.test.core.app.ApplicationProvider;
+
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.internal.util.reflection.FieldReader;
 import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.ArrayList;
-import java.util.concurrent.Executor;
-import java.util.HashMap;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(JUnit4.class)
 public class NfcAdapterTest {
     @Mock private INfcAdapter mService;
+    private INfcAdapter mSavedService;
     private Context mContext;
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private boolean supportsHardware() {
         final PackageManager pm = mContext.getPackageManager();
@@ -47,10 +63,26 @@ public class NfcAdapterTest {
     }
 
     @Before
-    public void setUp() {
+    public void setUp() throws NoSuchFieldException {
         MockitoAnnotations.initMocks(this);
         mContext = InstrumentationRegistry.getContext();
         assumeTrue(supportsHardware());
+        // Backup the original service. It is being overridden
+        // when creating a mocked adapter.
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        mSavedService = (INfcAdapter) (
+            new FieldReader(adapter, adapter.getClass().getDeclaredField("sService")).read());
+    }
+
+    @After
+    public void tearDown() throws NoSuchFieldException {
+        if (!supportsHardware()) return;
+        // Restore the original service.
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        if (adapter != null) {
+            FieldSetter.setField(adapter,
+                    adapter.getClass().getDeclaredField("sService"), mSavedService);
+        }
     }
 
     @Test
@@ -147,6 +179,14 @@ public class NfcAdapterTest {
     }
 
     @Test
+    public void testEnableReaderOption() throws NoSuchFieldException, RemoteException {
+        NfcAdapter adapter = createMockedInstance();
+        when(mService.enableReaderOption(anyBoolean())).thenReturn(true);
+        boolean result = adapter.enableReaderOption(true);
+        Assert.assertTrue(result);
+    }
+
+    @Test
     public void testEnableSecureNfc() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = createMockedInstance();
         when(mService.setNfcSecure(anyBoolean())).thenReturn(true);
@@ -198,6 +238,32 @@ public class NfcAdapterTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_READER_OPTION)
+    public void testIsReaderOptionEnabled() throws NoSuchFieldException, RemoteException {
+        NfcAdapter adapter = createMockedInstance();
+        when(mService.isReaderOptionEnabled()).thenReturn(true);
+        boolean result = adapter.isReaderOptionEnabled();
+        Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_READER_OPTION)
+    public void testIsReaderOptionSupported() throws NoSuchFieldException, RemoteException {
+        NfcAdapter adapter = createMockedInstance();
+        when(mService.isReaderOptionSupported()).thenReturn(true);
+        boolean result = adapter.isReaderOptionSupported();
+        Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_MAINLINE)
+    public void testAdapterState() throws NoSuchFieldException, RemoteException {
+        NfcAdapter adapter = createMockedInstance();
+        when(mService.getState()).thenReturn(NfcAdapter.STATE_ON);
+        Assert.assertEquals(adapter.getAdapterState(), NfcAdapter.STATE_ON);
+    }
+
+    @Test
     public void testIsSecureNfcEnabled() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = createMockedInstance();
         when(mService.isNfcSecureEnabled()).thenReturn(true);
@@ -218,6 +284,184 @@ public class NfcAdapterTest {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         boolean result = adapter.removeNfcUnlockHandler(new CtsNfcUnlockHandler());
         Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_SET_DISCOVERY_TECH)
+    public void testResetDiscoveryTechnology() {
+        try {
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            Activity activity = createAndResumeActivity();
+            adapter.resetDiscoveryTechnology(activity);
+        } catch (Exception e) {
+            throw new IllegalStateException("Unexpected Exception: " + e);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_SET_DISCOVERY_TECH)
+    public void testSetDiscoveryTechnology() {
+        try {
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            Activity activity = createAndResumeActivity();
+            adapter.setDiscoveryTechnology(activity,
+                    NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_NFC_B
+                    | NfcAdapter.FLAG_READER_NFC_F,
+                    NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_A | NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_B
+                    | NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_F);
+            adapter.resetDiscoveryTechnology(activity);
+            adapter.setDiscoveryTechnology(activity, NfcAdapter.FLAG_READER_DISABLE,
+                    NfcAdapter.FLAG_LISTEN_KEEP);
+            adapter.resetDiscoveryTechnology(activity);
+        } catch (Exception e) {
+            throw new IllegalStateException("Unexpected Exception: " + e);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_MAINLINE)
+    public void testSetReaderMode() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        // Verify the API does not crash or throw any exceptions.
+        adapter.setReaderMode(true);
+        adapter.setReaderMode(false);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testIsObserveModeSupported() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        boolean result = adapter.isObserveModeSupported();
+        Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testAllowTransaction() {
+        try {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation().adoptShellPermissionIdentity(WRITE_SECURE_SETTINGS);
+            Settings.Secure.putString(mContext.getContentResolver(),
+                    "nfc_payment_default_component",
+                    "android.nfc.cts/android.nfc.cts.CtsMyHostApduService");
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            boolean result = adapter.allowTransaction();
+            Assert.assertTrue(result);
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testDisallowTransaction() {
+        try {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation().adoptShellPermissionIdentity(WRITE_SECURE_SETTINGS);
+            Settings.Secure.putString(mContext.getContentResolver(),
+                    "nfc_payment_default_component",
+                    "android.nfc.cts/android.nfc.cts.CtsMyHostApduService");
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            boolean result = adapter.disallowTransaction();
+            Assert.assertTrue(result);
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_VENDOR_CMD)
+    public void testSendVendorCmd() throws InterruptedException {
+        CountDownLatch rspCountDownLatch = new CountDownLatch(1);
+        CountDownLatch ntfCountDownLatch = new CountDownLatch(1);
+        NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(mContext);
+        Assert.assertNotNull(nfcAdapter);
+        NfcVendorNciCallback cb =
+                new NfcVendorNciCallback(rspCountDownLatch, ntfCountDownLatch);
+        try {
+            nfcAdapter.registerNfcVendorNciCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+
+            // Send random payload with a vendor gid.
+            byte[] payload = new byte[100];
+            new Random().nextBytes(payload);
+            int gid = 0xF;
+            int oid = 0xC;
+            nfcAdapter.sendVendorNciMessage(NfcAdapter.MESSAGE_TYPE_COMMAND, gid, oid, payload);
+
+            // Wait for response.
+            assertThat(rspCountDownLatch.await(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(cb.gid).isEqualTo(gid);
+            assertThat(cb.oid).isEqualTo(oid);
+            assertThat(cb.payload).isNotEmpty();
+        } finally {
+            nfcAdapter.unregisterNfcVendorNciCallback(cb);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
+    public void testOemExtension() throws InterruptedException {
+        CountDownLatch tagDetectedCountDownLatch = new CountDownLatch(1);
+        NfcAdapter nfcAdapter = NfcAdapter.getDefaultAdapter(mContext);
+        NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
+        Assert.assertNotNull(nfcAdapter);
+        NfcOemExtensionCallback cb =
+                new NfcOemExtensionCallback(tagDetectedCountDownLatch);
+        try {
+            nfcOemExtension.registerCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+
+            // TODO: Fix these tests as we add more functionality to this API surface.
+            nfcOemExtension.clearPreference();
+        } finally {
+            nfcOemExtension.unregisterCallback(cb);
+        }
+    }
+
+    private class NfcOemExtensionCallback implements NfcOemExtension.Callback {
+        private final CountDownLatch mTagDetectedCountDownLatch;
+
+        NfcOemExtensionCallback(CountDownLatch countDownLatch) {
+            mTagDetectedCountDownLatch = countDownLatch;
+        }
+
+        @Override
+        public void onTagConnected(boolean connected, Tag tag) {
+            mTagDetectedCountDownLatch.countDown();
+        }
+    }
+
+    private class NfcVendorNciCallback implements NfcAdapter.NfcVendorNciCallback {
+        private final CountDownLatch mRspCountDownLatch;
+        private final CountDownLatch mNtfCountDownLatch;
+
+        public int gid;
+        public int oid;
+        public byte[] payload;
+
+        NfcVendorNciCallback(CountDownLatch rspCountDownLatch, CountDownLatch ntfCountDownLatch) {
+            mRspCountDownLatch = rspCountDownLatch;
+            mNtfCountDownLatch = ntfCountDownLatch;
+        }
+
+        @Override
+        public void onVendorNciResponse(int gid, int oid, byte[] payload) {
+            this.gid = gid;
+            this.oid = oid;
+            this.payload = payload;
+            mRspCountDownLatch.countDown();
+        }
+
+        @Override
+        public void onVendorNciNotification(int gid, int oid, byte[] payload) {
+            this.gid = gid;
+            this.oid = oid;
+            this.payload = payload;
+            mNtfCountDownLatch.countDown();
+        }
     }
 
     private class CtsReaderCallback implements NfcAdapter.ReaderCallback {

@@ -17,8 +17,11 @@
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
-
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.PMTEST"/>
+                <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
             </intent-filter>
         </activity>
 
@@ -27,6 +30,21 @@
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             tools:node="remove" />
+
+        <provider android:name=".TestContentProvider"
+                  android:authorities="com.example.helloworld.testcontentprovider"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.helloworld.provider"/>
+            </intent-filter>
+        </provider>
+
+        <service android:name=".TestService"
+                 android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.helloworld.service"/>
+            </intent-filter>
+        </service>
 
     </application>
 

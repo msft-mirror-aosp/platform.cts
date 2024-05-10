@@ -20,11 +20,14 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 import android.os.Bundle;
 import android.os.PersistableBundle;
+import android.os.RemoteCallback;
+import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.window.extensions.layout.WindowLayoutInfo;
 
 import java.lang.annotation.Retention;
 
@@ -40,6 +43,7 @@ public class ImeSettings {
     private final String mEventCallbackActionName;
 
     private static final String EVENT_CALLBACK_INTENT_ACTION_KEY = "eventCallbackActionName";
+    private static final String CHANNEL_KEY = "channel";
     private static final String DATA_KEY = "data";
 
     private static final String BACKGROUND_COLOR_KEY = "BackgroundColor";
@@ -60,6 +64,8 @@ public class ImeSettings {
             "InlineSuggestionViewContentDesc";
     private static final String STRICT_MODE_ENABLED = "StrictModeEnabled";
     private static final String VERIFY_CONTEXT_APIS_IN_ON_CREATE = "VerifyContextApisInOnCreate";
+    private static final String WINDOW_LAYOUT_INFO_CALLBACK_ENABLED =
+            "WindowLayoutInfoCallbackEnabled";
 
     /**
      * Simulate the manifest flag enableOnBackInvokedCallback being true for the IME.
@@ -68,7 +74,7 @@ public class ImeSettings {
 
     @NonNull
     private final PersistableBundle mBundle;
-
+    private final SessionChannel mChannel;
 
     @Retention(SOURCE)
     @IntDef(value = {
@@ -107,11 +113,16 @@ public class ImeSettings {
         mClientPackageName = clientPackageName;
         mEventCallbackActionName = bundle.getString(EVENT_CALLBACK_INTENT_ACTION_KEY);
         mBundle = bundle.getParcelable(DATA_KEY);
+        mChannel = new SessionChannel(bundle.getParcelable(CHANNEL_KEY, RemoteCallback.class));
     }
 
     @Nullable
     String getEventCallbackActionName() {
         return mEventCallbackActionName;
+    }
+
+    SessionChannel getChannel() {
+        return mChannel;
     }
 
     @NonNull
@@ -187,15 +198,26 @@ public class ImeSettings {
         return mBundle.getBoolean(VERIFY_CONTEXT_APIS_IN_ON_CREATE, false);
     }
 
+    public boolean isWindowLayoutInfoCallbackEnabled() {
+        return mBundle.getBoolean(WINDOW_LAYOUT_INFO_CALLBACK_ENABLED, false);
+    }
+
     public boolean isOnBackCallbackEnabled() {
         return mBundle.getBoolean(ON_BACK_CALLBACK_ENABLED, false);
     }
 
+    public void close() {
+        if (mChannel != null) {
+            mChannel.close();
+        }
+    }
+
     static Bundle serializeToBundle(@NonNull String eventCallbackActionName,
-            @Nullable Builder builder) {
+            @Nullable Builder builder, @NonNull RemoteCallback channel) {
         final Bundle result = new Bundle();
         result.putString(EVENT_CALLBACK_INTENT_ACTION_KEY, eventCallbackActionName);
         result.putParcelable(DATA_KEY, builder != null ? builder.mBundle : PersistableBundle.EMPTY);
+        result.putParcelable(CHANNEL_KEY, channel);
         return result;
     }
 
@@ -204,6 +226,23 @@ public class ImeSettings {
      */
     public static final class Builder {
         private final PersistableBundle mBundle = new PersistableBundle();
+
+        @Nullable
+        InputMethodSubtype[] mAdditionalSubtypes;
+
+        /**
+         * Specifies additional {@link InputMethodSubtype}s to be set before launching
+         * {@link MockIme} by using
+         * {@link android.view.inputmethod.InputMethodManager#setAdditionalInputMethodSubtypes(
+         * String, InputMethodSubtype[])}.
+         *
+         * @param subtypes An array of {@link InputMethodSubtype}.
+         * @return this {@link Builder} object
+         */
+        public Builder setAdditionalSubtypes(InputMethodSubtype... subtypes) {
+            mAdditionalSubtypes = subtypes;
+            return this;
+        }
 
         /**
          * Controls how MockIme reacts to
@@ -370,6 +409,14 @@ public class ImeSettings {
          */
         public Builder setVerifyUiContextApisInOnCreate(boolean enabled) {
             mBundle.putBoolean(VERIFY_CONTEXT_APIS_IN_ON_CREATE, enabled);
+            return this;
+        }
+
+        /**
+         * Sets whether to enable {@link WindowLayoutInfo} callbacks for {@link MockIme}.
+         */
+        public Builder setWindowLayoutInfoCallbackEnabled(boolean enabled) {
+            mBundle.putBoolean(WINDOW_LAYOUT_INFO_CALLBACK_ENABLED, enabled);
             return this;
         }
 

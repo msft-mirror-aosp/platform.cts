@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_xr_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -20,7 +21,6 @@ android_test_helper_app {
     name: "CtsVirtualDeviceStreamedTestApp",
     srcs: [
         "src/**/*.java",
-        "//cts/tests/tests/virtualdevice:CtsVirtualDevicesTestAidl",
     ],
     static_libs: [
         "CtsVirtualDeviceCommonLib",

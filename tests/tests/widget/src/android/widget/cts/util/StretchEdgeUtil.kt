@@ -27,7 +27,10 @@ import android.view.View
 import android.widget.EdgeEffect
 import androidx.test.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
+import com.android.compatibility.common.util.UserHelper
 import com.android.compatibility.common.util.WidgetTestUtils
+
+private val userHelper: UserHelper = UserHelper()
 
 /**
  * Flings [view] from the center by ([deltaX], [deltaY]) pixels over 16 milliseconds.
@@ -183,6 +186,13 @@ open class NoReleaseEdgeEffect(context: Context) : EdgeEffect(context) {
 
     var onReleaseCalled = false
 
+    var onPullDistanceCalled = false
+
+    override fun onPullDistance(deltaDistance: Float, displacement: Float): Float {
+        onPullDistanceCalled = true
+        return super.onPullDistance(deltaDistance, displacement)
+    }
+
     override fun onRelease() {
         onReleaseCalled = true
         if (!pauseRelease) {
@@ -301,6 +311,7 @@ private fun injectEvent(
 ) {
     val eventUp = MotionEvent.obtain(
             downTime, eventTime, action, xOnScreen.toFloat(), yOnScreen.toFloat(), 1)
+    userHelper.injectDisplayIdIfNeeded(eventUp)
     eventUp.source = InputDevice.SOURCE_TOUCHSCREEN
     uiAutomation.injectInputEvent(eventUp, true)
     eventUp.recycle()

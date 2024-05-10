@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_machine_learning",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -24,7 +25,15 @@ android_test_helper_app {
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
     ],
-    srcs: ["src/**/*.java"],
+    aidl: {
+        local_include_dirs: [
+            "aidl",
+        ],
+    },
+    srcs: [
+        "src/**/*.java",
+        "aidl/android/voiceinteraction/service/*.aidl",
+    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

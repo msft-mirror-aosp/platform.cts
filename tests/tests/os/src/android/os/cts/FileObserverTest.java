@@ -129,6 +129,11 @@ public class FileObserverTest extends AndroidTestCase {
      *
      * On emulated storage, there may be additional operations related to case insensitivity, so
      * we just check that the expected ones are present.
+     *
+     * On internal storage, there may also be additional operations - the art runtime creates a
+     * folder called 'oat_primary' in the cache folder, for instance. So it is best just to
+     * always check that the expected ones are present, since we cannot stop other components
+     * from performing extra actions.
      */
     public void helpTestFileObserver(File dir, boolean isEmulated) throws Exception {
         MockFileObserver fileObserver = null;
@@ -153,10 +158,7 @@ public class FileObserverTest extends AndroidTestCase {
             // should not get any event
             expected = new int[] {UNDEFINED};
             moveEvents = waitForEvent(fileObserver);
-            if (isEmulated)
-                assertEventsContains(testFile, expected, moveEvents);
-            else
-                assertEventsEquals(testFile, expected, moveEvents);
+            assertEventsContains(testFile, expected, moveEvents);
         } finally {
             fileObserver.stopWatching();
             if (out != null)
@@ -192,11 +194,7 @@ public class FileObserverTest extends AndroidTestCase {
                     FileObserver.MOVE_SELF,
             };
             moveEvents = waitForEvent(movedFileObserver);
-            if (isEmulated) {
-                assertEventsContains(testFile, expected, moveEvents);
-            } else {
-                assertEventsEquals(testFile, expected, moveEvents);
-            }
+            assertEventsContains(testFile, expected, moveEvents);
         } finally {
             movedFileObserver.stopWatching();
         }
@@ -207,24 +205,28 @@ public class FileObserverTest extends AndroidTestCase {
 
     private void verifyTriggeredEventsOnFile(MockFileObserver fileObserver,
             File testFile, boolean isEmulated) throws Exception {
+        // We create, write, close the file
+        // The effects of this vary - create first truncates the existing file,
+        // then opens it, then modifies it, then closes it
+        // Prior to kernel 6.6, this produced a modify/open/modify/close-write
+        // In 6.6, the behavior was changed to combine the two modifies
+        // See:
+        // https://lore.kernel.org/all/CAL=UVf5hZNVUPv4WdLsyMw5X8kP-3=gwU9mymWS_3APTVuSacQ@mail.gmail.com/T/
+        // though unfortunately the reply from the maintainer seems to have been lost
         final FileOutputStream out = new FileOutputStream(testFile);
 
         out.write(FILE_DATA); // modify, open, write, modify
         out.close(); // close_write
 
         final int[] expected = {
-                FileObserver.MODIFY,
                 FileObserver.OPEN,
                 FileObserver.MODIFY,
                 FileObserver.CLOSE_WRITE
         };
 
         final FileEvent[] moveEvents = waitForEvent(fileObserver);
-        if (isEmulated) {
-            assertEventsContains(testFile, expected, moveEvents);
-        } else {
-            assertEventsEquals(testFile, expected, moveEvents);
-        }
+
+        assertEventsContains(testFile, expected, moveEvents);
     }
 
     private void verifyTriggeredEventsOnDir(MockFileObserver fileObserver,
@@ -245,11 +247,7 @@ public class FileObserverTest extends AndroidTestCase {
         };
 
         final FileEvent[] moveEvents = waitForEvent(fileObserver);
-        if (isEmulated) {
-            assertEventsContains(testFile, expected, moveEvents);
-        } else {
-            assertEventsEquals(testFile, expected, moveEvents);
-        }
+        assertEventsContains(testFile, expected, moveEvents);
     }
 
     public void testFileObserver() throws Exception {
@@ -316,21 +314,6 @@ public class FileObserverTest extends AndroidTestCase {
             }
         } finally {
             fileObserver2.stopWatching();
-        }
-    }
-
-    private void assertEventsEquals(
-            File testFile, final int[] expected, final FileEvent[] moveEvents) {
-        List<Integer> expectedEvents = new ArrayList<Integer>();
-        for (int i = 0; i < expected.length; i++) {
-            expectedEvents.add(expected[i]);
-        }
-        List<FileEvent> actualEvents = Arrays.asList(moveEvents);
-        String message = "For test file [" + testFile.getAbsolutePath()
-                + "] expected: " + expectedEvents + " Actual: " + actualEvents;
-        assertEquals(message, expected.length, moveEvents.length);
-        for (int i = 0; i < expected.length; i++) {
-            assertEquals(message, expected[i], moveEvents[i].event);
         }
     }
 

@@ -18,6 +18,10 @@ package android.widget.cts;
 
 import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
 
+import static com.android.text.flags.Flags.FLAG_DEPRECATE_UI_FONTS;
+
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -43,9 +47,12 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.Instrumentation.ActivityMonitor;
+import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -75,6 +82,10 @@ import android.os.Bundle;
 import android.os.LocaleList;
 import android.os.Parcelable;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -128,6 +139,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.CompletionInfo;
@@ -135,6 +147,7 @@ import android.view.inputmethod.CorrectionInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.ExtractedText;
 import android.view.inputmethod.ExtractedTextRequest;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputConnection;
 import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextSelection;
@@ -155,6 +168,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CtsKeyEventUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
@@ -166,8 +180,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.invocation.InvocationOnMock;
 import org.xmlpull.v1.XmlPullParserException;
-
-import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 import java.io.IOException;
 import java.lang.annotation.Retention;
@@ -183,6 +195,8 @@ import java.util.Objects;
 @RunWith(AndroidJUnit4.class)
 public class TextViewTest {
     private Instrumentation mInstrumentation;
+    private CtsTouchUtils mCtsTouchUtils;
+    private CtsKeyEventUtil mCtsKeyEventUtil;
     private Activity mActivity;
     private TextView mTextView;
     private TextView mSecondTextView;
@@ -210,9 +224,15 @@ public class TextViewTest {
     public ActivityTestRule<TextViewCtsActivity> mActivityRule =
             new ActivityTestRule<>(TextViewCtsActivity.class);
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
+        mCtsKeyEventUtil = new CtsKeyEventUtil(mInstrumentation.getTargetContext());
         mActivity = mActivityRule.getActivity();
         PollingCheck.waitFor(TIMEOUT, mActivity::hasWindowFocus);
     }
@@ -473,7 +493,7 @@ public class TextViewTest {
         assertSame(movementMethod, mTextView.getMovementMethod());
         assertEquals(selectionStart, Selection.getSelectionStart(mTextView.getText()));
         assertEquals(selectionEnd, Selection.getSelectionEnd(mTextView.getText()));
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_SHIFT_LEFT,
+        sendKeys(mTextView, KeyEvent.KEYCODE_SHIFT_LEFT,
                 KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_DPAD_UP);
         // the selection has been removed.
         assertEquals(selectionStart, Selection.getSelectionStart(mTextView.getText()));
@@ -490,7 +510,7 @@ public class TextViewTest {
         assertNull(mTextView.getMovementMethod());
         assertEquals(selectionStart, Selection.getSelectionStart(mTextView.getText()));
         assertEquals(selectionEnd, Selection.getSelectionEnd(mTextView.getText()));
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_SHIFT_LEFT,
+        sendKeys(mTextView, KeyEvent.KEYCODE_SHIFT_LEFT,
                 KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_DPAD_UP);
         // the selection will not be changed.
         assertEquals(selectionStart, Selection.getSelectionStart(mTextView.getText()));
@@ -800,7 +820,7 @@ public class TextViewTest {
         // Long click on the text selects all text and shows selection handlers. The view has an
         // attribute layout_width="wrap_content", so clicked location (the center of the view)
         // should be on the text.
-        CtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, textView);
+        mCtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, textView);
 
         // At this point the entire content of our TextView should be selected and highlighted
         // with blue. Now change the highlight to red while the selection is still on.
@@ -873,8 +893,7 @@ public class TextViewTest {
         mTextView.requestFocus();
         assertTrue(mTextView.isFocused());
 
-        assertEquals(-1, mTextView.getSelectionStart());
-        assertEquals(-1, mTextView.getSelectionEnd());
+        assertEquals(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
 
         mTextView.setText(content, BufferType.SPANNABLE);
         mTextView.setSelectAllOnFocus(true);
@@ -895,8 +914,7 @@ public class TextViewTest {
         mTextView.requestFocus();
         assertTrue(mTextView.isFocused());
 
-        assertEquals(0, mTextView.getSelectionStart());
-        assertEquals(0, mTextView.getSelectionEnd());
+        assertEquals(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
 
         mTextView.setText(blank, BufferType.SPANNABLE);
         mTextView.setSelectAllOnFocus(true);
@@ -917,8 +935,7 @@ public class TextViewTest {
         mTextView.requestFocus();
         assertTrue(mTextView.isFocused());
 
-        assertEquals(0, mTextView.getSelectionStart());
-        assertEquals(0, mTextView.getSelectionEnd());
+        assertEquals(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
     }
 
     @UiThreadTest
@@ -1304,6 +1321,7 @@ public class TextViewTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(FLAG_DEPRECATE_UI_FONTS)
     public void testSetElegantLineHeight() throws Throwable {
         mTextView = findTextView(R.id.textview_text);
         assertFalse(mTextView.getPaint().isElegantTextHeight());
@@ -1843,7 +1861,7 @@ public class TextViewTest {
         // Long click on the text selects all text and shows selection handlers. The view has an
         // attribute layout_width="wrap_content", so clicked location (the center of the view)
         // should be on the text.
-        CtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, mTextView);
+        mCtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, mTextView);
 
         mActivityRule.runOnUiThread(() -> Selection.removeSelection((Spannable) mTextView.getText()));
         mInstrumentation.waitForIdleSync();
@@ -1856,7 +1874,7 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Type some text.
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "abc");
+        sendString(mTextView, "abc");
         mActivityRule.runOnUiThread(() -> {
             // Precondition: The cursor is at the end of the text.
             assertEquals(3, mTextView.getSelectionStart());
@@ -1887,8 +1905,8 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Simulate deleting text and undoing it.
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "xyz");
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_DEL,
+        sendString(mTextView, "xyz");
+        sendKeys(mTextView, KeyEvent.KEYCODE_DEL,
                 KeyEvent.KEYCODE_DEL, KeyEvent.KEYCODE_DEL);
         mActivityRule.runOnUiThread(() -> {
             // Precondition: The text was actually deleted.
@@ -2105,8 +2123,8 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Create two undo operations, an insert and a delete.
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "xyz");
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_DEL,
+        sendString(mTextView, "xyz");
+        sendKeys(mTextView, KeyEvent.KEYCODE_DEL,
                 KeyEvent.KEYCODE_DEL, KeyEvent.KEYCODE_DEL);
         mActivityRule.runOnUiThread(() -> {
             // Calling setText() clears both undo operations, so undo doesn't happen.
@@ -2127,7 +2145,7 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Type some text. This creates an undo entry.
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "abc");
+        sendString(mTextView, "abc");
         mActivityRule.runOnUiThread(() -> {
             // Undo the typing to create a redo entry.
             mTextView.onTextContextMenuItem(android.R.id.undo);
@@ -2145,7 +2163,7 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Type some text.
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "abc");
+        sendString(mTextView, "abc");
         mActivityRule.runOnUiThread(() -> {
             // Programmatically append some text.
             mTextView.append("def");
@@ -2167,7 +2185,7 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Type some text.
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "abc");
+        sendString(mTextView, "abc");
         mActivityRule.runOnUiThread(() -> {
             // Directly modify the underlying Editable to insert some text.
             // NOTE: This is a violation of the API of getText() which specifies that the
@@ -2212,7 +2230,7 @@ public class TextViewTest {
         mTextView.addTextChangedListener(new ConvertToSpacesTextWatcher());
 
         // Type some text.
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "abc");
+        sendString(mTextView, "abc");
         mActivityRule.runOnUiThread(() -> {
             // TextWatcher altered the text.
             assertEquals("   ", mTextView.getText().toString());
@@ -2246,7 +2264,7 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Type some text.
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "abc");
+        sendString(mTextView, "abc");
         mActivityRule.runOnUiThread(() -> {
             // Pressing Control-Z triggers undo.
             KeyEvent control = new KeyEvent(0, 0, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_Z, 0,
@@ -2268,7 +2286,7 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Type some text to create an undo operation.
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "abc");
+        sendString(mTextView, "abc");
         mActivityRule.runOnUiThread(() -> {
             // Parcel and unparcel the TextView.
             Parcelable state = mTextView.onSaveInstanceState();
@@ -2277,7 +2295,7 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         // Delete a character to create a new undo operation.
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_DEL);
+        sendKeys(mTextView, KeyEvent.KEYCODE_DEL);
         mActivityRule.runOnUiThread(() -> {
             assertEquals("ab", mTextView.getText().toString());
 
@@ -2303,8 +2321,8 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Type and delete to create two new undo operations.
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "a");
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_DEL);
+        sendString(mTextView, "a");
+        sendKeys(mTextView, KeyEvent.KEYCODE_DEL);
         mActivityRule.runOnUiThread(() -> {
             // Empty the undo stack then parcel and unparcel the TextView. While the undo
             // stack contains no operations it may contain other state.
@@ -2316,8 +2334,8 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         // Create two more undo operations.
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "b");
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_DEL);
+        sendString(mTextView, "b");
+        sendKeys(mTextView, KeyEvent.KEYCODE_DEL);
         mActivityRule.runOnUiThread(() -> {
             // Verify undo still works.
             mTextView.onTextContextMenuItem(android.R.id.undo);
@@ -2356,14 +2374,14 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Type "abc".
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "abc");
+        sendString(mTextView, "abc");
         mActivityRule.runOnUiThread(() -> {
             // Select "bc"
             Selection.setSelection((Spannable) mTextView.getText(), 1, 3);
         });
         mInstrumentation.waitForIdleSync();
         // Copy "bc"
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_COPY);
+        sendKeys(mTextView, KeyEvent.KEYCODE_COPY);
 
         mActivityRule.runOnUiThread(() -> {
             // Set cursor between 'b' and 'c'.
@@ -2371,7 +2389,7 @@ public class TextViewTest {
         });
         mInstrumentation.waitForIdleSync();
         // Paste "bc"
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_PASTE);
+        sendKeys(mTextView, KeyEvent.KEYCODE_PASTE);
         assertEquals("abbcc", mTextView.getText().toString());
 
         mActivityRule.runOnUiThread(() -> {
@@ -2406,12 +2424,36 @@ public class TextViewTest {
     }
 
     @Test
+    public void testCopyAndPaste_byKey_reversed() throws Throwable {
+        initTextViewForTypingOnUiThread();
+
+        // Type "abc".
+        sendString(mTextView, "abc");
+        mActivityRule.runOnUiThread(() -> {
+            // Select "abc"
+            Selection.setSelection((Spannable) mTextView.getText(), 3, 0);
+        });
+        mInstrumentation.waitForIdleSync();
+        // Copy "abc"
+        sendKeys(mTextView, KeyEvent.KEYCODE_COPY);
+
+        mActivityRule.runOnUiThread(() -> {
+            // Set cursor between 'b' and 'c'.
+            Selection.setSelection((Spannable) mTextView.getText(), 2, 2);
+        });
+        mInstrumentation.waitForIdleSync();
+        // Paste "abc"
+        sendKeys(mTextView, KeyEvent.KEYCODE_PASTE);
+        assertEquals("ababcc", mTextView.getText().toString());
+    }
+
+    @Test
     public void testCopyAndPaste_byCtrlInsert() throws Throwable {
         // Test copy-and-paste by Ctrl-Insert and Shift-Insert.
         initTextViewForTypingOnUiThread();
 
         // Type "abc"
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "abc");
+        sendString(mTextView, "abc");
         mActivityRule.runOnUiThread(() -> {
             // Select "bc"
             Selection.setSelection((Spannable) mTextView.getText(), 1, 3);
@@ -2419,7 +2461,7 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         // Copy "bc"
-        CtsKeyEventUtil.sendKeyWhileHoldingModifier(mInstrumentation, mTextView,
+        mCtsKeyEventUtil.sendKeyWhileHoldingModifier(mInstrumentation, mTextView,
                 KeyEvent.KEYCODE_INSERT, KeyEvent.KEYCODE_CTRL_LEFT);
         mActivityRule.runOnUiThread(() -> {
             // Set cursor between 'b' and 'c'
@@ -2428,7 +2470,7 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         // Paste "bc"
-        CtsKeyEventUtil.sendKeyWhileHoldingModifier(mInstrumentation, mTextView,
+        mCtsKeyEventUtil.sendKeyWhileHoldingModifier(mInstrumentation, mTextView,
                 KeyEvent.KEYCODE_INSERT, KeyEvent.KEYCODE_SHIFT_LEFT);
         assertEquals("abbcc", mTextView.getText().toString());
     }
@@ -2461,14 +2503,14 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Type "abc".
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "abc");
+        sendString(mTextView, "abc");
         mActivityRule.runOnUiThread(() -> {
             // Select "bc"
             Selection.setSelection((Spannable) mTextView.getText(), 1, 3);
         });
         mInstrumentation.waitForIdleSync();
         // Cut "bc"
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_CUT);
+        sendKeys(mTextView, KeyEvent.KEYCODE_CUT);
 
         mActivityRule.runOnUiThread(() -> {
             assertEquals("a", mTextView.getText().toString());
@@ -2477,7 +2519,7 @@ public class TextViewTest {
         });
         mInstrumentation.waitForIdleSync();
         // Paste "bc"
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_PASTE);
+        sendKeys(mTextView, KeyEvent.KEYCODE_PASTE);
         assertEquals("bca", mTextView.getText().toString());
 
         mActivityRule.runOnUiThread(() -> {
@@ -2509,7 +2551,7 @@ public class TextViewTest {
         initTextViewForTypingOnUiThread();
 
         // Type "abc".
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "abc");
+        sendString(mTextView, "abc");
         mActivityRule.runOnUiThread(() -> {
             // Select "bc"
             Selection.setSelection((Spannable) mTextView.getText(), 1, 3);
@@ -2517,7 +2559,7 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         // Cut "bc"
-        CtsKeyEventUtil.sendKeyWhileHoldingModifier(mInstrumentation, mTextView,
+        mCtsKeyEventUtil.sendKeyWhileHoldingModifier(mInstrumentation, mTextView,
                 KeyEvent.KEYCODE_FORWARD_DEL, KeyEvent.KEYCODE_SHIFT_LEFT);
         mActivityRule.runOnUiThread(() -> {
             assertEquals("a", mTextView.getText().toString());
@@ -2527,7 +2569,7 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         // Paste "bc"
-        CtsKeyEventUtil.sendKeyWhileHoldingModifier(mInstrumentation, mTextView,
+        mCtsKeyEventUtil.sendKeyWhileHoldingModifier(mInstrumentation, mTextView,
                 KeyEvent.KEYCODE_INSERT, KeyEvent.KEYCODE_SHIFT_LEFT);
         assertEquals("bca", mTextView.getText().toString());
     }
@@ -2778,7 +2820,7 @@ public class TextViewTest {
 
         assertEquals(errorText, mTextView.getError().toString());
 
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "a");
+        sendString(mTextView, "a");
         // a key event that will not change the TextView's text
         assertEquals("", mTextView.getText().toString());
         // The icon and error message will not be reset to null
@@ -2792,7 +2834,7 @@ public class TextViewTest {
         });
         mInstrumentation.waitForIdleSync();
 
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "1");
+        sendString(mTextView, "1");
         // a key event cause changes to the TextView's text
         assertEquals("1", mTextView.getText().toString());
         // the error message and icon will be cleared.
@@ -2817,13 +2859,13 @@ public class TextViewTest {
 
         assertSame(expected, mTextView.getFilters());
 
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "a");
+        sendString(mTextView, "a");
         // the text is capitalized by InputFilter.AllCaps
         assertEquals("A", mTextView.getText().toString());
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "b");
+        sendString(mTextView, "b");
         // the text is capitalized by InputFilter.AllCaps
         assertEquals("AB", mTextView.getText().toString());
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "c");
+        sendString(mTextView, "c");
         // 'C' could not be accepted, because there is a length filter.
         assertEquals("AB", mTextView.getText().toString());
 
@@ -3019,11 +3061,11 @@ public class TextViewTest {
     public void testPressKey() throws Throwable {
         initTextViewForTypingOnUiThread();
 
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "a");
+        sendString(mTextView, "a");
         assertEquals("a", mTextView.getText().toString());
-        CtsKeyEventUtil.sendString(mInstrumentation, mTextView, "b");
+        sendString(mTextView, "b");
         assertEquals("ab", mTextView.getText().toString());
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, KeyEvent.KEYCODE_DEL);
+        sendKeys(mTextView, KeyEvent.KEYCODE_DEL);
         assertEquals("a", mTextView.getText().toString());
     }
 
@@ -3043,7 +3085,7 @@ public class TextViewTest {
         assertTrue(mTextView.isFocused());
 
         // Pure-keyboard arrows should not cause focus to leave the textfield
-        CtsKeyEventUtil.sendKeyDownUp(mInstrumentation, mTextView, KeyEvent.KEYCODE_DPAD_UP);
+        mCtsKeyEventUtil.sendKeyDownUp(mInstrumentation, mTextView, KeyEvent.KEYCODE_DPAD_UP);
         mInstrumentation.waitForIdleSync();
         assertTrue(mTextView.isFocused());
 
@@ -3058,7 +3100,7 @@ public class TextViewTest {
         assertTrue(mTextView.isFocused());
 
         // Tab should
-        CtsKeyEventUtil.sendKeyDownUp(mInstrumentation, mTextView, KeyEvent.KEYCODE_TAB);
+        mCtsKeyEventUtil.sendKeyDownUp(mInstrumentation, mTextView, KeyEvent.KEYCODE_TAB);
         mInstrumentation.waitForIdleSync();
         assertFalse(mTextView.isFocused());
     }
@@ -3067,10 +3109,10 @@ public class TextViewTest {
             int source) {
         KeyEvent event = new KeyEvent(KeyEvent.ACTION_DOWN, key);
         event.setSource(source);
-        CtsKeyEventUtil.sendKey(instrumentation, targetView, event);
+        mCtsKeyEventUtil.sendKey(instrumentation, targetView, event);
         event = new KeyEvent(KeyEvent.ACTION_UP, key);
         event.setSource(source);
-        CtsKeyEventUtil.sendKey(instrumentation, targetView, event);
+        mCtsKeyEventUtil.sendKey(instrumentation, targetView, event);
     }
 
     @Test
@@ -3880,6 +3922,8 @@ public class TextViewTest {
             mTextView.setText(threeLines);
             mTextView.setTextSize(8f);
             mTextView.setLines(2);
+            mTextView.setTypeface(Typeface.createFromAsset(
+                    mTextView.getContext().getAssets(), "fonts/all_one_em_font.ttf"));
         });
         mInstrumentation.waitForIdleSync();
 
@@ -3946,6 +3990,8 @@ public class TextViewTest {
             mTextView.setText(threeLines);
             mTextView.setTextSize(8f);
             mTextView.setLines(2);
+            mTextView.setTypeface(Typeface.createFromAsset(
+                    mTextView.getContext().getAssets(), "fonts/all_one_em_font.ttf"));
         });
         mInstrumentation.waitForIdleSync();
 
@@ -4072,7 +4118,7 @@ public class TextViewTest {
         assertSame(PasswordTransformationMethod.getInstance(),
                 mTextView.getTransformationMethod());
 
-        CtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, "H E 2*L O");
+        mCtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, "H E 2*L O");
         mActivityRule.runOnUiThread(() -> mTextView.append(" "));
         mInstrumentation.waitForIdleSync();
 
@@ -4358,7 +4404,7 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         // Trigger insertion.
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
 
         final boolean[] mDrawn = new boolean[3];
         mActivityRule.runOnUiThread(() -> {
@@ -4384,7 +4430,7 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         // Trigger selection.
-        CtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, mTextView);
+        mCtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, mTextView);
 
         final boolean[] mDrawn = new boolean[3];
         mActivityRule.runOnUiThread(() -> {
@@ -5001,9 +5047,78 @@ public class TextViewTest {
     }
 
     @UiThreadTest
+    @Test
+    public void testSetLineHeightInUnits() {
+
+        mTextView = new TextView(mActivity);
+        mTextView.setText("This is some random text");
+
+        // The line height of RobotoFont is (1900 + 500) / 2048 em.
+        // Not to accidentally divide the line height into half, use the small text size.
+        mTextView.setTextSize(10f);
+
+        final float lineSpacingExtra = 50;
+        final float lineSpacingMultiplier = 0.2f;
+        mTextView.setLineSpacing(lineSpacingExtra, lineSpacingMultiplier);
+
+        mTextView.setLineHeight(TypedValue.COMPLEX_UNIT_PX, 200);
+        assertEquals(200, mTextView.getLineHeight());
+        assertNotEquals(lineSpacingExtra, mTextView.getLineSpacingExtra(), 0);
+        assertNotEquals(lineSpacingMultiplier, mTextView.getLineSpacingMultiplier(), 0);
+
+        mTextView.setLineHeight(TypedValue.COMPLEX_UNIT_SP, 200);
+        assertEquals(
+                TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_SP,
+                        200f,
+                        mActivity.getResources().getDisplayMetrics()
+                ),
+                mTextView.getLineHeight(),
+                /* delta=*/ 0.5f
+        );
+        assertNotEquals(lineSpacingExtra, mTextView.getLineSpacingExtra(), 0);
+        assertNotEquals(lineSpacingMultiplier, mTextView.getLineSpacingMultiplier(), 0);
+
+        mTextView.setLineHeight(TypedValue.COMPLEX_UNIT_DIP, 200);
+        assertEquals(
+                TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP,
+                        200f,
+                        mActivity.getResources().getDisplayMetrics()
+                ),
+                mTextView.getLineHeight(),
+                /* delta=*/ 0.5f
+        );
+        assertNotEquals(lineSpacingExtra, mTextView.getLineSpacingExtra(), 0);
+        assertNotEquals(lineSpacingMultiplier, mTextView.getLineSpacingMultiplier(), 0);
+
+        mTextView.setLineSpacing(lineSpacingExtra, lineSpacingMultiplier);
+        assertEquals(lineSpacingExtra, mTextView.getLineSpacingExtra(), 0);
+        assertEquals(lineSpacingMultiplier, mTextView.getLineSpacingMultiplier(), 0);
+    }
+
+    @UiThreadTest
     @Test(expected = IllegalArgumentException.class)
     public void testSetLineHeight_negative() {
         new TextView(mActivity).setLineHeight(-1);
+    }
+
+    @UiThreadTest
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetLineHeight_negativeSp() {
+        new TextView(mActivity).setLineHeight(TypedValue.COMPLEX_UNIT_SP, -1f);
+    }
+
+    @UiThreadTest
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetLineHeight_negativeDp() {
+        new TextView(mActivity).setLineHeight(TypedValue.COMPLEX_UNIT_DIP, -1f);
+    }
+
+    @UiThreadTest
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetLineHeight_negativePx() {
+        new TextView(mActivity).setLineHeight(TypedValue.COMPLEX_UNIT_PX, -1f);
     }
 
     @UiThreadTest
@@ -5574,6 +5689,75 @@ public class TextViewTest {
 
     @UiThreadTest
     @Test
+    public void isAutoHandwritingEnabled_default_returnsTrue() {
+        mTextView = new TextView(mActivity);
+        mTextView.setText(null, BufferType.EDITABLE);
+        mTextView.setInputType(InputType.TYPE_CLASS_TEXT);
+
+        assertTrue(mTextView.isAutoHandwritingEnabled());
+    }
+
+    @UiThreadTest
+    @Test
+    public void isAutoHandwritingEnabled_password_returnsFalse() {
+        mTextView = new TextView(mActivity);
+        mTextView.setText(null, BufferType.EDITABLE);
+        mTextView.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+
+        assertFalse(mTextView.isAutoHandwritingEnabled());
+    }
+
+    @UiThreadTest
+    @Test
+    public void isAutoHandwritingEnabled_visiblePassword_returnsFalse() {
+        mTextView = new TextView(mActivity);
+        mTextView.setText(null, BufferType.EDITABLE);
+        mTextView.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+
+        assertFalse(mTextView.isAutoHandwritingEnabled());
+    }
+
+    /**
+     * Verify that TextView returns default {@code true} for
+     * {@link EditorInfo#isStylusHandwritingEnabled}.
+     */
+    @ApiTest(apis = {"android.view.inputmethod.EditorInfo#isStylusHandwritingEnabled"})
+    @UiThreadTest
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EDITORINFO_HANDWRITING_ENABLED)
+    public void isStylusHandwritingEnabled_default_returnsTrue() {
+        mTextView = new TextView(mActivity);
+        mTextView.setText(null, BufferType.EDITABLE);
+        mTextView.setInputType(InputType.TYPE_CLASS_TEXT);
+        mTextView.requestFocus();
+        EditorInfo editorInfo = new EditorInfo();
+        mTextView.onCreateInputConnection(editorInfo);
+        assertTrue(editorInfo.isStylusHandwritingEnabled());
+    }
+
+    /**
+     * Verify that TextView returns {@code false} for {@link EditorInfo#isStylusHandwritingEnabled}
+     * when {@link TextView#isAutoHandwritingEnabled()} is {@code false}.
+     */
+    @ApiTest(apis = {"android.view.inputmethod.EditorInfo#isStylusHandwritingEnabled"})
+    @UiThreadTest
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EDITORINFO_HANDWRITING_ENABLED)
+    public void isStylusHandwritingEnabled_autoHandwritingDisabled_returnsFalse() {
+        mTextView = new TextView(mActivity);
+        mTextView.setText(null, BufferType.EDITABLE);
+        mTextView.setInputType(InputType.TYPE_CLASS_TEXT);
+        mTextView.setAutoHandwritingEnabled(false);
+        mTextView.requestFocus();
+        EditorInfo editorInfo = new EditorInfo();
+        mTextView.onCreateInputConnection(editorInfo);
+        assertFalse(editorInfo.isStylusHandwritingEnabled());
+    }
+
+    @UiThreadTest
+    @Test
     public void testVerifyDrawable() {
         mTextView = new MockTextView(mActivity);
 
@@ -5894,7 +6078,7 @@ public class TextViewTest {
     @Test
     public void testCancelLongPress() {
         mTextView = findTextView(R.id.textview_text);
-        CtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, mTextView);
+        mCtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, mTextView);
         mTextView.cancelLongPress();
     }
 
@@ -5963,7 +6147,7 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         // Tap the view to show InsertPointController.
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
         // bad workaround for waiting onStartInputView of LeanbackIme.apk done
         try {
             Thread.sleep(1000);
@@ -7149,14 +7333,14 @@ public class TextViewTest {
         assertFalse(mTextView.isInTouchMode());
 
         // First tap on the view triggers onClick() but does not focus the TextView.
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
         SystemClock.sleep(safeDoubleTapTimeout);
         assertTrue(mTextView.isInTouchMode());
         assertFalse(mTextView.isFocused());
         verify(mockOnClickListener, times(1)).onClick(mTextView);
         reset(mockOnClickListener);
         // So does the second tap.
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
         SystemClock.sleep(safeDoubleTapTimeout);
         assertTrue(mTextView.isInTouchMode());
         assertFalse(mTextView.isFocused());
@@ -7171,14 +7355,14 @@ public class TextViewTest {
 
         // First tap on the view focuses the TextView but does not trigger onClick().
         reset(mockOnClickListener);
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
         SystemClock.sleep(safeDoubleTapTimeout);
         assertTrue(mTextView.isInTouchMode());
         assertTrue(mTextView.isFocused());
         verify(mockOnClickListener, never()).onClick(mTextView);
         reset(mockOnClickListener);
         // The second tap triggers onClick() and keeps the focus.
-        CtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
         SystemClock.sleep(safeDoubleTapTimeout);
         assertTrue(mTextView.isInTouchMode());
         assertTrue(mTextView.isFocused());
@@ -7266,7 +7450,7 @@ public class TextViewTest {
     @Test
     public void testClickableSpanOnClickSingleTapInside() throws Throwable {
         ClickableSpanTestDetails spanDetails = prepareAndRetrieveClickableSpanDetails();
-        CtsTouchUtils.emulateTapOnView(mInstrumentation, mActivityRule, mTextView,
+        mCtsTouchUtils.emulateTapOnView(mInstrumentation, mActivityRule, mTextView,
                 spanDetails.mXPosInside, spanDetails.mYPosInside);
         verify(spanDetails.mClickableSpan, times(1)).onClick(mTextView);
     }
@@ -7274,7 +7458,7 @@ public class TextViewTest {
     @Test
     public void testClickableSpanOnClickDoubleTapInside() throws Throwable {
         ClickableSpanTestDetails spanDetails = prepareAndRetrieveClickableSpanDetails();
-        CtsTouchUtils.emulateDoubleTapOnView(mInstrumentation, mActivityRule, mTextView,
+        mCtsTouchUtils.emulateDoubleTapOnView(mInstrumentation, mActivityRule, mTextView,
                 spanDetails.mXPosInside, spanDetails.mYPosInside);
         verify(spanDetails.mClickableSpan, times(2)).onClick(mTextView);
     }
@@ -7282,9 +7466,69 @@ public class TextViewTest {
     @Test
     public void testClickableSpanOnClickSingleTapOutside() throws Throwable {
         ClickableSpanTestDetails spanDetails = prepareAndRetrieveClickableSpanDetails();
-        CtsTouchUtils.emulateTapOnView(mInstrumentation, mActivityRule, mTextView,
+        mCtsTouchUtils.emulateTapOnView(mInstrumentation, mActivityRule, mTextView,
                 spanDetails.mXPosOutside, spanDetails.mYPosOutside);
         verify(spanDetails.mClickableSpan, never()).onClick(mTextView);
+    }
+
+    @Test
+    public void testSendAccessibilityContentChangeTypeErrorAndInvalid() throws Throwable {
+        initTextViewForTypingOnUiThread();
+        final long idleTimeoutMillis = 2000;
+        final long globalTimeoutMillis = 4000;
+        UiAutomation uiAutomation = mInstrumentation.getUiAutomation();
+        uiAutomation.waitForIdle(idleTimeoutMillis, globalTimeoutMillis);
+        uiAutomation.executeAndWaitForEvent(
+                () -> mInstrumentation.runOnMainSync(
+                        () -> mTextView.setError("error", null)),
+                event -> isExpectedChangeType(event,
+                        AccessibilityEvent.CONTENT_CHANGE_TYPE_ERROR
+                                | AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_INVALID),
+                TIMEOUT);
+    }
+
+    @Test
+    public void testAccessibilityActionNextGranularityLineOverText() throws Exception {
+        UiAutomation uiAutomation = mInstrumentation.getUiAutomation();
+        TextView textView = findTextView(R.id.textview_text);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT,
+                LayoutParams.WRAP_CONTENT);
+        mInstrumentation.runOnMainSync(() -> {
+            // Ensure we fall into case where the layout will be nulled in
+            // TextView#checkForRelayout when making sure the text is iterable for accessibility in
+            // TextView#ensureIterableTextForAccessibilitySelectable.
+            textView.setLayoutParams(params);
+            textView.setMinWidth(0);
+            textView.setMinWidth(Integer.MAX_VALUE);
+            textView.setText(mActivity.getResources().getString(R.id.textview_text_two_lines));
+        });
+
+        assertThat(textView.getText() instanceof Spannable).isFalse();
+
+        final AccessibilityNodeInfo text = uiAutomation
+                .getRootInActiveWindow().findAccessibilityNodeInfosByText(
+                        mActivity.getResources().getString(R.id.textview_text_two_lines)).get(0);
+
+        final int granularities = text.getMovementGranularities();
+        assertThat(
+                (granularities & AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE) != 0).isTrue();
+
+        final Bundle arguments = new Bundle();
+        arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT,
+                AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE);
+        // Move to the next line and wait for an event.
+        AccessibilityEvent firstExpected = uiAutomation
+                .executeAndWaitForEvent(() -> text.performAction(
+                        AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY,
+                        arguments), event -> (event.getEventType()
+                        == AccessibilityEvent.TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY
+                        && event.getAction()
+                        == AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY
+                        && event.getMovementGranularity()
+                        == AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE), TIMEOUT);
+
+        // Make sure we got the expected event.
+        assertNotNull(firstExpected);
     }
 
     @Test
@@ -7298,7 +7542,7 @@ public class TextViewTest {
                 viewOnScreenXY[1] + spanDetails.mYPosOutside));
         swipeCoordinates.put(1, new Point(viewOnScreenXY[0] + spanDetails.mXPosOutside + 50,
                 viewOnScreenXY[1] + spanDetails.mYPosOutside + 50));
-        CtsTouchUtils.emulateDragGesture(mInstrumentation, mActivityRule, swipeCoordinates);
+        mCtsTouchUtils.emulateDragGesture(mInstrumentation, mActivityRule, swipeCoordinates);
         verify(spanDetails.mClickableSpan, never()).onClick(mTextView);
     }
 
@@ -7425,6 +7669,27 @@ public class TextViewTest {
                 info.isLongClickable());
         assertTrue("info should have ACTION_LONG_CLICK",
                 actionList.contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_LONG_CLICK));
+    }
+
+    @ApiTest(apis = {"android.view.View#setAccessibilityDataSensitive",
+            "android.view.accessibility.AccessibilityEvent#setAccessibilityDataSensitive"})
+    @UiThreadTest
+    @Test
+    public void testOnPopulateA11yEvent_checksAccessibilityDataSensitiveBeforePopulating() {
+        mTextView = findTextView(R.id.textview_text);
+        mTextView.setAccessibilityDataSensitive(View.ACCESSIBILITY_DATA_SENSITIVE_YES);
+
+        final AccessibilityEvent eventAds = new AccessibilityEvent();
+        eventAds.setAccessibilityDataSensitive(true);
+        mTextView.onPopulateAccessibilityEventInternal(eventAds);
+        assertFalse("event should have populated text when ADS is true on both event & view",
+                eventAds.getText().isEmpty());
+
+        final AccessibilityEvent eventNotAds = new AccessibilityEvent();
+        eventNotAds.setAccessibilityDataSensitive(false);
+        mTextView.onPopulateAccessibilityEventInternal(eventNotAds);
+        assertTrue("event should not populate text when view ADS=true but event ADS=false",
+                eventNotAds.getText().isEmpty());
     }
 
     @Test
@@ -8379,7 +8644,7 @@ public class TextViewTest {
         int offsetX = end.x - start.x;
 
         // Perform drag selection.
-        CtsTouchUtils.emulateLongPressAndDragGesture(
+        mCtsTouchUtils.emulateLongPressAndDragGesture(
                 mInstrumentation, mActivityRule, startX, startY, offsetX, 0 /* offsetY */);
 
         // No smart selection on drag selection.
@@ -9009,6 +9274,10 @@ public class TextViewTest {
         assertEquals(measuredWidth, textView.getMeasuredWidth());
     }
 
+    private static boolean isExpectedChangeType(AccessibilityEvent event, int changeType) {
+        return (event.getContentChangeTypes() & changeType) == changeType;
+    }
+
     private void initializeTextForSmartSelection(CharSequence text) throws Throwable {
         assertTrue(text.length() >= SMARTSELECT_END);
         mActivityRule.runOnUiThread(() -> {
@@ -9023,12 +9292,12 @@ public class TextViewTest {
     }
 
     private void emulateClickOnView(View view, int offsetX, int offsetY) {
-        CtsTouchUtils.emulateTapOnView(mInstrumentation, mActivityRule, view, offsetX, offsetY);
+        mCtsTouchUtils.emulateTapOnView(mInstrumentation, mActivityRule, view, offsetX, offsetY);
         SystemClock.sleep(CLICK_TIMEOUT);
     }
 
     private void emulateLongPressOnView(View view, int offsetX, int offsetY) {
-        CtsTouchUtils.emulateLongPressOnView(mInstrumentation, mActivityRule, view,
+        mCtsTouchUtils.emulateLongPressOnView(mInstrumentation, mActivityRule, view,
                 offsetX, offsetY);
         // TODO: Ideally, we shouldn't have to wait for a click timeout after a long-press but it
         // seems like we have a minor bug (call it inconvenience) in TextView that requires this.
@@ -9258,6 +9527,14 @@ public class TextViewTest {
     private void setLineSpacing(final float add, final float mult) throws Throwable {
         mActivityRule.runOnUiThread(() -> mTextView.setLineSpacing(add, mult));
         mInstrumentation.waitForIdleSync();
+    }
+
+    private void sendKeys(View targetView, int...keys) {
+        mCtsKeyEventUtil.sendKeys(mInstrumentation, mTextView, keys);
+    }
+
+    private void sendString(View targetView, String text) {
+        mCtsKeyEventUtil.sendString(mInstrumentation, targetView, text);
     }
 
     /**

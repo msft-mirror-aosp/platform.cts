@@ -37,13 +37,14 @@ import org.junit.runner.RunWith;
 @RequiresDevice
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Test relies on other server to connect to.")
-public class CarUxRestrictionsManagerTest extends CarApiTestBase {
+public final class CarUxRestrictionsManagerTest extends AbstractCarTestCase {
+
+    private static final String TAG = CarUxRestrictionsManagerTest.class.getSimpleName();
+
     private CarUxRestrictionsManager mManager;
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
-
         mManager = (CarUxRestrictionsManager)
                 getCar().getCarManager(Car.CAR_UX_RESTRICTION_SERVICE);
         assertNotNull(mManager);

@@ -23,18 +23,21 @@ import android.icu.util.ULocale;
 import android.media.AudioFormat;
 import android.media.AudioMetadata;
 import android.media.AudioMetadataMap;
-import android.media.AudioMetadataReadMap;
 import android.media.AudioPresentation;
-import android.media.cts.NonMediaMainlineTest;
-import android.util.Log;
+import android.platform.test.annotations.AppModeSdkSandbox;
+
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.NonMainlineTest;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-@NonMediaMainlineTest
+@NonMainlineTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioMetadataTest {
 

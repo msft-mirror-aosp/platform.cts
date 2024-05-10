@@ -36,6 +36,9 @@ import androidx.test.core.app.ApplicationProvider;
 
 import java.util.regex.Pattern;
 
+/**
+ * @deprecated , Use {@link UiAutomatorUtils2}, which uses latest androidx automator classes.
+ */
 public class UiAutomatorUtils {
     private UiAutomatorUtils() {}
 
@@ -45,13 +48,21 @@ public class UiAutomatorUtils {
     private static final double DEFAULT_SWIPE_DEADZONE_PCT_TV       = 0.1f;
     private static final double DEFAULT_SWIPE_DEADZONE_PCT_ALL      = 0.25f;
     /**
-     * On Wear, some cts tests like CtsPermission3TestCases that run on
+     * On Wear, some cts tests like CtsPermissionUiTestCases that run on
      * low performance device. Keep 0.05 to have better matching.
      */
     private static final double DEFAULT_SWIPE_DEADZONE_PCT_WEAR     = 0.05f;
+    /**
+     * On handheld landscape device(non-large screen), set default swipe deadzone
+     * percentage 0.1 to have better matching.
+     */
+    private static final double DEFAULT_SWIPE_DEADZONE_PCT_HANDHELD_LAND = 0.1f;
 
     /** Minimum view height accepted (before needing to scroll more). */
     private static final float MIN_VIEW_HEIGHT_DP = 8;
+
+    /** Minimum size in dp for large screen */
+    private static final float LARGE_SCREEN_MIN_DPS = 600;
 
     private static Pattern sCollapsingToolbarResPattern =
             Pattern.compile(".*:id/collapsing_toolbar");
@@ -84,11 +95,24 @@ public class UiAutomatorUtils {
                 ApplicationProvider.getApplicationContext().getResources().getDisplayMetrics()));
     }
 
+    private static boolean isHandheldLandscapeDev() {
+        if (getUiDevice().getDisplayWidth() > getUiDevice().getDisplayHeight()) {
+            int smallestWidth = Math.min(getUiDevice().getDisplaySizeDp().x,
+                    getUiDevice().getDisplaySizeDp().y);
+
+            return smallestWidth < LARGE_SCREEN_MIN_DPS;
+        }
+
+        return false;
+    }
+
     private static double getSwipeDeadZonePct() {
         if (FeatureUtil.isTV()) {
             return DEFAULT_SWIPE_DEADZONE_PCT_TV;
         } else if (FeatureUtil.isWatch()) {
             return DEFAULT_SWIPE_DEADZONE_PCT_WEAR;
+        } else if (isHandheldLandscapeDev()) {
+            return DEFAULT_SWIPE_DEADZONE_PCT_HANDHELD_LAND;
         } else {
             return DEFAULT_SWIPE_DEADZONE_PCT_ALL;
         }

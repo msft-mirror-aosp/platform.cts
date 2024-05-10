@@ -46,7 +46,7 @@ def define_raw_stats_fmt(props):
           'gridHeight': aah // _IMG_STATS_GRID}
 
 
-class RawSensitivityBurstTest(its_base_test.ItsBaseTest):
+class RawBurstSensitivityTest(its_base_test.ItsBaseTest):
   """Captures a set of RAW images with increasing sensitivity & measures noise.
 
   Sensitivity range (gain) is determined from camera properties and limited to
@@ -62,8 +62,7 @@ class RawSensitivityBurstTest(its_base_test.ItsBaseTest):
   sensitivity.
   """
 
-  def test_raw_sensitivity_burst(self):
-    logging.debug('Starting %s', _NAME)
+  def test_raw_burst_sensitivity(self):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
         camera_id=self.camera_id,
@@ -76,10 +75,12 @@ class RawSensitivityBurstTest(its_base_test.ItsBaseTest):
           camera_properties_utils.read_3a(props) and
           camera_properties_utils.per_frame_control(props) and
           not camera_properties_utils.mono_camera(props))
+      name_with_log_path = os.path.join(self.log_path, _NAME)
 
-      # Load chart for scene (chart_distance=0 for no chart scaling)
+      # Load chart for scene
       its_session_utils.load_scene(
-          cam, props, self.scene, self.tablet, chart_distance=0)
+          cam, props, self.scene, self.tablet,
+          its_session_utils.CHART_DISTANCE_NO_SCALING)
 
       # Find sensitivity range and create capture requests
       sens_min, _ = props['android.sensor.info.sensitivityRange']
@@ -126,11 +127,13 @@ class RawSensitivityBurstTest(its_base_test.ItsBaseTest):
       pylab.ylabel('Image Center Patch Variance')
       pylab.title(_NAME)
       matplotlib.pyplot.savefig(
-          '%s_variances.png' % os.path.join(self.log_path, _NAME))
+          f'{name_with_log_path}_variances.png')
 
-      # Asserts that each shot is noisier than previous
+      # Assert each shot is noisier than previous and save img on FAIL
       for i in x[0:-1]:
         if variances[i] >= variances[i+1] / _VAR_THRESH:
+          image_processing_utils.capture_scene_image(
+              cam, props, name_with_log_path)
           raise AssertionError(
               f'variances [i]: {variances[i] :.5f}, [i+1]: '
               f'{variances[i+1]:.5f}, THRESH: {_VAR_THRESH}')

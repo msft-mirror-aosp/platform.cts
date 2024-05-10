@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_fwk_telephony",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -23,16 +24,15 @@ android_test {
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "androidx.test.ext.junit",
-
-                "androidx.heifwriter_heifwriter",
-                "androidx.test.core",
-                "compatibility-device-util-axt",
-                "junit",
-                "platform-test-annotations",
+        "androidx.heifwriter_heifwriter",
+        "androidx.test.core",
+        "compatibility-device-util-axt",
+        "junit",
+        "platform-test-annotations",
+        "telephony-cts-utils",
     ],
     srcs: [
-      "src/**/*.java",
-      ":cts-telephony-utils"
+        "src/**/*.java",
     ],
     sdk_version: "test_current",
     // Tag this module as a cts test artifact

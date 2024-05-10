@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -30,6 +31,14 @@ java_test_host {
         "tradefed",
         "compatibility-host-util",
         "cts-host-utils",
+    ],
+    data: [
+        ":CtsExtractNativeLibsAppFalse32",
+        ":CtsExtractNativeLibsAppFalse64",
+        ":CtsExtractNativeLibsAppFalseBoth",
+        ":CtsExtractNativeLibsAppTrue32",
+        ":CtsExtractNativeLibsAppTrue64",
+        ":CtsExtractNativeLibsAppTrueBoth",
     ],
     java_resource_dirs: ["res"],
 }

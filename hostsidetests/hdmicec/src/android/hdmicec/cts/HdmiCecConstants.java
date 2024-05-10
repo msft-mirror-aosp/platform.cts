@@ -24,10 +24,13 @@ public final class HdmiCecConstants {
 
     private HdmiCecConstants() {}
 
+    /** @deprecated not used anymore **/
+    @Deprecated
     public static final String PHYSICAL_ADDRESS_NAME = "cec-phy-addr";
     public static final int REBOOT_TIMEOUT = 60000;
     public static final int TIMEOUT_CEC_REINIT_SECONDS = 5;
     public static final int TIMEOUT_SAFETY_MS = 500;
+    public static final long TIMEOUT_UI_AND_STANDBY_AFTER_ACTIVE_SOURCE_LOST_SECONDS = 35;
 
     public static final int INVALID_VENDOR_ID = 0xFFFFFF;
 
@@ -36,6 +39,7 @@ public final class HdmiCecConstants {
     public static final int DEVICE_WAIT_TIME_MS = 5000;
     public static final int MAX_SLEEP_TIME_SECONDS = 8;
     public static final int SLEEP_TIMESTEP_SECONDS = 1;
+    public static final int SLEEP_TIME_DELAY_SECONDS = 2;
     public static final int DEFAULT_PHYSICAL_ADDRESS = 0x1000;
     public static final int TV_PHYSICAL_ADDRESS = 0x0000;
     public static final int PHYSICAL_ADDRESS_LENGTH = 4; /* Num nibbles in CEC message */
@@ -141,9 +145,10 @@ public final class HdmiCecConstants {
     public static final String HDMI_CEC_FEATURE = "feature:android.hardware.hdmi.cec";
     public static final String LEANBACK_FEATURE = "feature:android.software.leanback";
 
-    // CEC Device property list
+    // Device property list used in CTS
     public static final String HDMI_DEVICE_TYPE_PROPERTY = "ro.hdmi.device_type";
     public static final String PROPERTY_ARC_SUPPORT = "persist.sys.hdmi.property_arc_support";
+    public static final String PROPERTY_BUILD_FINGERPRINT = "ro.system.build.fingerprint";
 
     /*
      * The default name of local directory into which the port to device mapping files are stored.
@@ -153,15 +158,18 @@ public final class HdmiCecConstants {
 
     // CEC Settings
     public static final String SETTING_VOLUME_CONTROL_ENABLED = "volume_control_enabled";
+    public static final String SETTING_SOUNDBAR_MODE_ENABLED = "soundbar_mode";
 
     // CEC Settings Values
     public static final String VOLUME_CONTROL_ENABLED = "1";
     public static final String VOLUME_CONTROL_DISABLED = "0";
-
+    public static final String SOUNDBAR_MODE_ENABLED = "1";
+    public static final String SOUNDBAR_MODE_DISABLED = "0";
     // Power Control Modes for source devices
     public static final String POWER_CONTROL_MODE_BROADCAST = "broadcast";
     public static final String POWER_CONTROL_MODE_NONE = "none";
     public static final String POWER_CONTROL_MODE_TV = "to_tv";
+    public static final String POWER_CONTROL_MODE_TV_AND_AUDIO_SYSTEM = "to_tv_and_audio_system";
 
     // Power State Change on Active Source Lost Settings values
     public static final String POWER_STATE_CHANGE_ON_ACTIVE_SOURCE_LOST_NONE = "none";

@@ -166,6 +166,8 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
     @Test
     public void testDatasetAuthResponseWhileAutofilledAppIsLifecycled() throws Exception {
         assumeTrue("Rotation is supported", Helper.isRotationSupported(mContext));
+        assumeTrue("Device state is not REAR_DISPLAY",
+                !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.REAR_DISPLAY));
         final ActivityManager activityManager = (ActivityManager) getContext()
                 .getSystemService(Context.ACTIVITY_SERVICE);
         assumeFalse(activityManager.isLowRamDevice());
@@ -542,10 +544,9 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
         // It works fine for portrait but for the platforms that the default orientation
         // is landscape, e.g. automotive. Depending on the height of the IME, the ID_LOGIN
         // button may not be visible.
-        // In order to avoid that,
-        // generate back key event to hide IME before pressing ID_LOGIN button.
-        mUiBot.pressBack();
 
+        // In order to avoid that, scroll until the ID_LOGIN button appears.
+        mUiBot.scrollToTextObject(ID_LOGIN);
         mUiBot.selectByRelativeId(ID_LOGIN);
         mUiBot.assertSaveShowing(SAVE_DATA_TYPE_USERNAME);
 

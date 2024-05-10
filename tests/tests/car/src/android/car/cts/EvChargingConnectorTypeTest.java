@@ -18,7 +18,6 @@ package android.car.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.car.VehiclePropertyIds;
 import android.car.cts.utils.VehiclePropertyUtils;
 import android.car.hardware.property.EvChargingConnectorType;
 
@@ -26,8 +25,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-
-public class EvChargingConnectorTypeTest {
+public class EvChargingConnectorTypeTest extends AbstractCarLessTestCase {
 
     /**
      * Test for {@link EvChargingConnectorType#toString()}

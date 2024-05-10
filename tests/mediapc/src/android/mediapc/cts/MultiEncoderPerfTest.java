@@ -16,7 +16,12 @@
 
 package android.mediapc.cts;
 
+import static android.mediapc.cts.CodecTestBase.codecFilter;
+import static android.mediapc.cts.CodecTestBase.codecPrefix;
+import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
+
 import android.media.MediaFormat;
+import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Utils;
 import android.util.Pair;
@@ -35,9 +40,6 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * The following test class validates the maximum number of concurrent encode sessions that it can
@@ -63,12 +65,19 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
     // Returns the params list with the mime and their hardware encoders in
     // both sync and async modes.
     // Parameters {0}_{2}_{3} -- Mime_EncoderName_isAsync
-    @Parameterized.Parameters(name = "{index}({0}_{1}_{2})")
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
     public static Collection<Object[]> inputParams() {
         final List<Object[]> argsList = new ArrayList<>();
         for (String mime : mMimeList) {
+            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+                continue;
+            }
             ArrayList<String> listOfEncoders = getHardwareCodecsForMime(mime, true);
             for (String encoder : listOfEncoders) {
+                if ((codecPrefix != null && !encoder.startsWith(codecPrefix))
+                        || (codecFilter != null && !codecFilter.matcher(encoder).matches())) {
+                    continue;
+                }
                 for (boolean isAsync : boolStates) {
                     argsList.add(new Object[]{mime, encoder, isAsync});
                 }
@@ -104,29 +113,67 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
         testCodec(1080, 1920, 10000000, REQUIRED_MIN_CONCURRENT_INSTANCES);
     }
 
+    /**
+     * This test validates that the encoder can support at least 6 concurrent encoder instances
+     * with 4 sessions at 1080p 30 fps and 2 sessions at 4k 30 fps. Also ensures that all the
+     * concurrent sessions succeed in encoding.
+     */
+    @LargeTest
+    @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    @CddTest(requirements = {"2.2.7.1/5.1/H-1-3", "2.2.7.1/5.1/H-1-4"})
+    public void test4k() throws Exception {
+        Assume.assumeTrue(Utils.isUPerfClass() || !Utils.isPerfClass());
+        testCodec(2160, 3840, 30000000, REQUIRED_MIN_CONCURRENT_INSTANCES);
+    }
+
     private void testCodec(int height, int width, int bitrate, int requiredMinInstances)
             throws Exception {
         ArrayList<Pair<String, String>> mimeEncoderPairs = new ArrayList<>();
         mimeEncoderPairs.add(Pair.create(mMime, mEncoderName));
         int maxInstances = checkAndGetMaxSupportedInstancesForCodecCombinations(height, width,
-                mimeEncoderPairs, requiredMinInstances);
+                mimeEncoderPairs, true, requiredMinInstances);
         double achievedFrameRate = 0.0;
+        double frameDropsPerSec = 0.0;
+        boolean hasAV1 = mMime.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
         if (maxInstances >= requiredMinInstances) {
-            ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
             List<Encode> testList = new ArrayList<>();
-            for (int i = 0; i < maxInstances; i++) {
-                testList.add(new Encode(mMime, mEncoderName, mIsAsync, height, width, 30, bitrate));
+            if (height > 1080) {
+                int instances4k = maxInstances / 3;
+                int instances1080p = maxInstances - instances4k;
+                for (int i = 0; i < instances4k; i++) {
+                    if (hasAV1) {
+                        testList.add(new Encode(mMime, mEncoderName, mIsAsync, 1080, 1920, 30,
+                                10000000));
+                    } else {
+                        testList.add(new Encode(mMime, mEncoderName, mIsAsync, height, width, 30,
+                                bitrate));
+                    }
+                }
+                for (int i = 0; i < instances1080p; i++) {
+                    testList.add(
+                            new Encode(mMime, mEncoderName, mIsAsync, 1080, 1920, 30, 10000000));
+                }
+            } else {
+                for (int i = 0; i < maxInstances; i++) {
+                    testList.add(
+                            new Encode(mMime, mEncoderName, mIsAsync, height, width, 30, bitrate));
+                }
             }
-            List<Future<Double>> resultList = pool.invokeAll(testList);
-            for (Future<Double> result : resultList) {
-                achievedFrameRate += result.get();
-            }
+            CodecMetrics result = invokeWithThread(maxInstances, testList);
+            achievedFrameRate = result.fps();
+            frameDropsPerSec = result.fdps();
         }
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_3;
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_4;
         // Achieved frame rate is not compared as this test runs in byte buffer mode.
-        if (height >= 1080) {
+        if (height > 1080) {
+            r5_1__H_1_3 = pce.addR5_1__H_1_3_4k();
+            r5_1__H_1_4 = pce.addR5_1__H_1_4_4k();
+            r5_1__H_1_3.setConcurrentInstances(maxInstances);
+            r5_1__H_1_4.setConcurrentFps(achievedFrameRate);
+            r5_1__H_1_4.setFrameDropsPerSecond(frameDropsPerSec);
+        } else if (height == 1080) {
             r5_1__H_1_3 = pce.addR5_1__H_1_3_1080p();
             r5_1__H_1_4 = pce.addR5_1__H_1_4_1080p();
             r5_1__H_1_3.setConcurrentInstances(maxInstances);

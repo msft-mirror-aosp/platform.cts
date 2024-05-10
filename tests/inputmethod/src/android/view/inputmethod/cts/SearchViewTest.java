@@ -26,6 +26,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 
 import android.os.Process;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.InputType;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,11 +45,11 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,6 +59,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class SearchViewTest extends EndToEndImeTestBase {
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
@@ -129,7 +131,7 @@ public class SearchViewTest extends EndToEndImeTestBase {
             final SearchView searchView = launchTestActivity(false /* requestFocus */);
 
             // Emulate tap event on SearchView
-            CtsTouchUtils.emulateTapOnViewCenter(
+            mCtsTouchUtils.emulateTapOnViewCenter(
                     InstrumentationRegistry.getInstrumentation(), null, searchView);
 
             // Expect input to bind since EditText is focused.
@@ -180,6 +182,7 @@ public class SearchViewTest extends EndToEndImeTestBase {
 
     @Test
     public void testShowImeWhenSearchViewFocusInListView() throws Exception {
+        Assume.assumeFalse(isPreventImeStartup());
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
@@ -189,7 +192,7 @@ public class SearchViewTest extends EndToEndImeTestBase {
             final SearchView searchView = launchTestActivityWithListView(true /* requestFocus */);
 
             // Emulate tap event on SearchView
-            CtsTouchUtils.emulateTapOnViewCenter(
+            mCtsTouchUtils.emulateTapOnViewCenter(
                     InstrumentationRegistry.getInstrumentation(), null, searchView);
 
             // Expect input to bind since EditText is focused.

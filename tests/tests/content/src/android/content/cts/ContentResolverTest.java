@@ -42,6 +42,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 import android.util.Log;
 
@@ -69,6 +70,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ContentResolverTest extends AndroidTestCase {
     private static final String TAG = "ContentResolverTest";
 
@@ -94,6 +96,12 @@ public class ContentResolverTest extends AndroidTestCase {
             + REMOTE_AUTHORITY + "/crash/");
     private static final Uri REMOTE_HANG_URI = Uri.parse("content://"
             + REMOTE_AUTHORITY + "/hang/");
+
+    private static final String RESTRICTED_AUTHORITY = "restrictedctstest";
+    private static final Uri RESTRICTED_TABLE1_URI =
+            Uri.parse("content://" + RESTRICTED_AUTHORITY + "/testtable1/");
+    private static final Uri RESTRICTED_TABLE1_ITEM_URI =
+            Uri.parse("content://" + RESTRICTED_AUTHORITY + "/testtable1/1");
 
     private static final Account ACCOUNT = new Account("cts", "cts");
 
@@ -292,6 +300,14 @@ public class ContentResolverTest extends AndroidTestCase {
         } catch (NullPointerException e) {
             //expected.
         }
+    }
+
+    @AppModeFull
+    public void testGetTypeAnonymous() {
+        String type1 = mContentResolver.getType(RESTRICTED_TABLE1_URI);
+        assertTrue(type1.startsWith(ContentResolver.CURSOR_DIR_BASE_TYPE, 0));
+        String type2 = mContentResolver.getType(RESTRICTED_TABLE1_ITEM_URI);
+        assertNull(type2);
     }
 
     public void testUnstableGetType() {

@@ -45,6 +45,27 @@ public final class FeatureUtil {
     }
 
     /**
+     * Checks whether the device supports customizing the lock screen message
+     */
+    public static boolean isCustomizeLockScreenMessageSupported(Context context) {
+        return !isWatch(context);
+    }
+
+    /**
+     * Checks whether the device supports password
+     */
+    public static boolean isPasswordSupported(Context context) {
+        return !isWatch(context);
+    }
+
+    /**
+     * Checks whether the device supports high password complexity
+     */
+    public static boolean isHighPasswordComplexitySupported(Context context) {
+        return !isWatch(context);
+    }
+
+    /**
      * Checks whether the device supports Easter egg / game
      */
     public static boolean isFunSupported(Context context) {
@@ -71,6 +92,41 @@ public final class FeatureUtil {
     public static boolean isConfigVpnSupported(Context context) {
         return !isWatchOrAutomotive(context);
     }
+    /**
+     * Checks if Disabling Keyguard is supported.
+     */
+    public static boolean isDisableKeyguardSupported(Context context) {
+        return !isWatch(context);
+    }
+
+    /**
+     * Checks if Lock Task is supported.
+     */
+    public static boolean isLockTaskSupported(Context context) {
+        return !isWatch(context) && !isTelevision(context);
+    }
+
+    /**
+     * Checks if Status Bar is supported.
+     */
+    public static boolean isStatusBarSupported(Context context) {
+        return !isWatch(context) && !isTelevision(context);
+    }
+
+    /**
+     * Checks if Data Roaming is supported.
+     */
+    public static boolean isDataRoamingSupported(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) && !isWatch(context);
+    }
+
+    /**
+     * Checks if Swipe To Unlock is supported.
+     */
+    public static boolean isSwipeToUnlockSupported(Context context) {
+        return !isAutomotive(context);
+    }
 
     /**
      * Checks whether the device supports installing from unknown sources
@@ -90,25 +146,51 @@ public final class FeatureUtil {
      * Checks whether the device supports file transfer.
      */
     public static boolean isUsbFileTransferSupported(Context context) {
-        return !isWatchOrAutomotive(context);
+        return !isWatchOrAutomotive(context) && !isTelevision(context);
+    }
+
+    /**
+     * Checks whether back touch is supported on the window.
+     */
+    public static boolean isBackTouchesSupported(Context context) {
+        return !isWatchOrAutomotiveOrTv(context);
     }
 
     /**
      * Checks whether the device is watch .
      */
-    private static boolean isWatch(Context context) {
+    public static boolean isWatch(Context context) {
         PackageManager pm = context.getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 
     /**
+     * Checks whether the device is a TV
+     */
+    public static boolean isTelevision(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+    }
+
+    /**
      * Checks whether the device is watch or automotive
      */
-    public static boolean isWatchOrAutomotive(Context context) {
+    private static boolean isWatchOrAutomotive(Context context) {
         PackageManager pm = context.getPackageManager();
         return pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
                 || pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
+
+    /**
+     * Checks whether the device is watch, automotive or TV
+     */
+    public static boolean isWatchOrAutomotiveOrTv(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                || pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY);
+    }
+
 
     /**
      * Checks whether the device is automotive
@@ -122,7 +204,16 @@ public final class FeatureUtil {
      * Checks whether the device supports managed secondary users.
      */
     public static boolean supportManagedSecondaryUsers(Context context) {
-        return (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MANAGED_USERS)
+        PackageManager pm = context.getPackageManager();
+
+        // TODO(b/283140235): Remove this check once splitscreen_multitasking device supports
+        //  FEATURE_MANAGED_USERS
+        if (pm.hasSystemFeature(PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING)
+                && isAutomotive(context)) {
+            return false;
+        }
+
+        return (pm.hasSystemFeature(PackageManager.FEATURE_MANAGED_USERS)
                 || UserManager.isHeadlessSystemUserMode()) && UserManager.supportsMultipleUsers();
     }
 
@@ -131,5 +222,13 @@ public final class FeatureUtil {
      */
     public static boolean isKeyguardShownWhenUserDoesntHaveCredentials(Context context) {
         return !isAutomotive(context) && !isWatch(context);
+    }
+
+    /**
+     * Checks whether the device supports camera.
+     */
+    public static boolean supportCameraFeature(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY);
     }
 }

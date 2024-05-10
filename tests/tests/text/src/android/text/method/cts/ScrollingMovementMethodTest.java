@@ -41,11 +41,11 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.TextView;
 import android.widget.TextView.BufferType;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.annotation.UiThreadTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.WidgetTestUtils;
 
@@ -53,6 +53,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.Collections;
 
 /**
  * Test {@link ScrollingMovementMethod}. The class is an implementation of interface
@@ -108,8 +110,25 @@ public class ScrollingMovementMethodTest {
     @Test
     public void testOnTouchEventHorizontalMotion() throws Throwable {
         final ScrollingMovementMethod method = new ScrollingMovementMethod();
+	//Calculate the length of textview "hello world" on current platform.
         runActionOnUiThread(() -> {
             mTextView.setText("hello world", BufferType.SPANNABLE);
+            mTextView.setSingleLine();
+            mSpannable = (Spannable) mTextView.getText();
+            final int tmpWidth = WidgetTestUtils.convertDipToPixels(mActivity, LITTLE_SPACE);
+            mActivity.setContentView(mTextView,
+                    new LayoutParams(tmpWidth, LayoutParams.WRAP_CONTENT));
+        });
+
+        final float tmpRightMost = mTextView.getLayout().getLineRight(0) - mTextView.getWidth()
+                + mTextView.getTotalPaddingLeft() + mTextView.getTotalPaddingRight();
+        //extend "hello world" to make sure it's longer than mScaledTouchSlop
+        int count = mScaledTouchSlop /(int) tmpRightMost + 1;
+        String s = String.join("", Collections.nCopies(count, "hello world"));
+
+        //Calculate rightMost based on the extended string.
+        runActionOnUiThread(() -> {
+            mTextView.setText(s, BufferType.SPANNABLE);
             mTextView.setSingleLine();
             mSpannable = (Spannable) mTextView.getText();
             final int width = WidgetTestUtils.convertDipToPixels(mActivity, LITTLE_SPACE);
@@ -117,11 +136,9 @@ public class ScrollingMovementMethodTest {
                     new LayoutParams(width, LayoutParams.WRAP_CONTENT));
         });
         assertNotNull(mTextView.getLayout());
-
         final float rightMost = mTextView.getLayout().getLineRight(0) - mTextView.getWidth()
                 + mTextView.getTotalPaddingLeft() + mTextView.getTotalPaddingRight();
         final int leftMost = mTextView.getScrollX();
-
         final long now = SystemClock.uptimeMillis();
         assertTrue(getActionResult(new ActionRunnerWithResult() {
             public void run() {

@@ -26,7 +26,7 @@
     </target_preparer>
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.MediaPreparer">
         <option name="push-all" value="true" />
-        <option name="media-folder-name" value="CtsVideoCodecTestCases-1.2" />
+        <option name="media-folder-name" value="CtsVideoCodecTestCases-2.1" />
         <option name="dynamic-config-module" value="CtsVideoCodecTestCases" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -35,5 +35,7 @@
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.videocodec.cts" />
+        <!-- Timeout individual tests only after 30m (rather than 10m default) for slow devices. -->
+        <option name="test-timeout" value="1800000" />
     </test>
 </configuration>

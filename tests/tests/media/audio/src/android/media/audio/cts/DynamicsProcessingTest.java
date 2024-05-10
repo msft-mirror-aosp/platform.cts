@@ -16,13 +16,12 @@
 
 package android.media.audio.cts;
 
-import android.media.audio.cts.R;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
-import android.media.AudioFormat;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
-import android.media.audiofx.AudioEffect;
 import android.media.audiofx.DynamicsProcessing;
 import android.media.audiofx.DynamicsProcessing.BandBase;
 import android.media.audiofx.DynamicsProcessing.BandStage;
@@ -32,11 +31,17 @@ import android.media.audiofx.DynamicsProcessing.EqBand;
 import android.media.audiofx.DynamicsProcessing.Limiter;
 import android.media.audiofx.DynamicsProcessing.Mbc;
 import android.media.audiofx.DynamicsProcessing.MbcBand;
-import android.media.cts.PostProcTestBase;
 import android.platform.test.annotations.AppModeFull;
-import android.test.AndroidTestCase;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+@RunWith(AndroidJUnit4.class)
 public class DynamicsProcessingTest extends PostProcTestBase {
 
     private static final String TAG = "DynamicsProcessingTest";
@@ -72,6 +77,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
 
     // Test case 0.0: test constructor and release
     @AppModeFull(reason = "Fails for instant but not enough to block the release")
+    @Test
     public void test0_0ConstructorAndRelease() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -90,6 +96,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test0_1ConstructorWithConfigAndRelease() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -105,6 +112,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
     // 1 - create with parameters
     // ----------------------------------
 
+    @Test
     public void test1_0ParametersEngine() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -132,6 +140,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test1_1ParametersChannel() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -152,6 +161,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test1_2ParametersPreEq() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -172,6 +182,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test1_3ParametersMbc() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -191,6 +202,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test1_4ParametersPostEq() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -210,6 +222,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test1_5ParametersLimiter() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -227,6 +240,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test1_6Channel_perStage() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -324,6 +338,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
 
     }
 
+    @Test
     public void test1_7Channel_perBand() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -392,6 +407,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test1_8Channel_setAllChannelsTo() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -448,6 +464,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test1_9Channel_setChannelTo() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -521,6 +538,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
     // 2 - config builder tests
     // ----------------------------------
 
+    @Test
     public void test2_0ConfigBasic() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -544,9 +562,10 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         assertEquals("isLimiterInUse is different", DEFAULT_LIMITER_IN_USE,
                 config.isLimiterInUse());
         assertEquals("getPreferredFrameDuration is different", DEFAULT_FRAME_DURATION,
-                config.getPreferredFrameDuration());
+                config.getPreferredFrameDuration(), EPSILON);
     }
 
+    @Test
     public void test2_1ConfigChannel() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -636,6 +655,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test2_2ConfigChannel_perStage() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -725,6 +745,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test2_3ConfigChannel_perBand() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -781,6 +802,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test2_4Channel_perStage() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -844,6 +866,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
 
     }
 
+    @Test
     public void test2_5Channel_perBand() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -887,6 +910,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
                 TEST_GAIN2, channel.getPostEqBand(TEST_BAND_INDEX).getGain(), EPSILON);
     }
 
+    @Test
     public void test2_6Eq() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -936,6 +960,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test2_7Mbc() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -1034,6 +1059,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test2_8Limiter() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -1097,6 +1123,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
                 newPostGain, limiter.getPostGain(), EPSILON);
     }
 
+    @Test
     public void test2_9BandStage() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -1116,6 +1143,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         assertEquals("bandStage enabled is different", !enabled, bandStage.isEnabled());
     }
 
+    @Test
     public void test2_10Stage() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -1134,6 +1162,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         assertEquals("stage enabled is different", !enabled, stage.isEnabled());
     }
 
+    @Test
     public void test2_11BandBase() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -1157,6 +1186,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
                 newFrequency, bandBase.getCutoffFrequency(), EPSILON);
     }
 
+    @Test
     public void test2_12Channel() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -1193,6 +1223,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
     // 3 - Builder
     // ----------------------------------
 
+    @Test
     public void test3_0Builder_stagesAllChannels() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -1246,6 +1277,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test3_1Builder_stagesByChannelIndex() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -1316,6 +1348,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test3_2Builder_setAllChannelsTo() throws Exception {
         if (!hasAudioOutput()) {
             return;
@@ -1372,6 +1405,7 @@ public class DynamicsProcessingTest extends PostProcTestBase {
         }
     }
 
+    @Test
     public void test3_3Builder_setChannelTo() throws Exception {
         if (!hasAudioOutput()) {
             return;

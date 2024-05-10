@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsAndroidAppTestCases",
+    team: "trendy_team_platform_security",
     defaults: ["cts_defaults"],
     platform_apis: true,
     libs: [
@@ -38,4 +39,5 @@ android_test {
         "cts",
         "general-tests",
     ],
+    data: [":CtsTestShareIdentityApp"],
 }

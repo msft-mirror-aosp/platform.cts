@@ -19,6 +19,9 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
+import static android.bluetooth.le.ChannelSoundingParams.CS_SECURITY_LEVEL_TWO;
+import static android.bluetooth.le.ChannelSoundingParams.LOCATION_TYPE_OUTDOOR;
+import static android.bluetooth.le.ChannelSoundingParams.SIGHT_TYPE_LINE_OF_SIGHT;
 import static android.bluetooth.le.DistanceMeasurementMethod.DISTANCE_MEASUREMENT_METHOD_RSSI;
 import static android.bluetooth.le.DistanceMeasurementParams.REPORT_FREQUENCY_HIGH;
 import static android.bluetooth.le.DistanceMeasurementParams.REPORT_FREQUENCY_LOW;
@@ -29,64 +32,62 @@ import static org.junit.Assert.fail;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.le.ChannelSoundingParams;
 import android.bluetooth.le.DistanceMeasurementParams;
 import android.content.Context;
 import android.os.Build;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class DistanceMeasurementParamsTest {
     private Context mContext;
-    private boolean mHasBluetooth;
     private BluetoothAdapter mAdapter;
-    private boolean mIsDistanceMeasurementSupported;
     private BluetoothDevice mDevice;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        if (!ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
-            return;
-        }
-        mHasBluetooth = TestUtils.hasBluetooth();
-        if (!mHasBluetooth) {
-            return;
-        }
+        Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
+        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
+
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-        mIsDistanceMeasurementSupported =
-                mAdapter.isDistanceMeasurementSupported() == FEATURE_SUPPORTED;
+        Assume.assumeTrue(mAdapter.isDistanceMeasurementSupported() == FEATURE_SUPPORTED);
+
         mDevice = mAdapter.getRemoteDevice("11:22:33:44:55:66");
     }
 
     @After
     public void tearDown() {
-        if (!mHasBluetooth) {
-            return;
-        }
-        if (mAdapter != null) {
-            assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
-        }
         TestUtils.dropPermissionAsShellUid();
         mAdapter = null;
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testCreateFromParcel() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void createFromParcel() {
         final Parcel parcel = Parcel.obtain();
         try {
             DistanceMeasurementParams params = new DistanceMeasurementParams
@@ -101,56 +102,80 @@ public class DistanceMeasurementParamsTest {
         }
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testDefaultParameters() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void defaultParameters() {
         DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice).build();
-        assertEquals(DistanceMeasurementParams.getDefaultDuration(), params.getDuration());
+        assertEquals(DistanceMeasurementParams.getDefaultDurationSeconds(),
+                params.getDurationSeconds());
         assertEquals(REPORT_FREQUENCY_LOW, params.getFrequency());
-        assertEquals(DISTANCE_MEASUREMENT_METHOD_RSSI, params.getMethod());
+        assertEquals(DISTANCE_MEASUREMENT_METHOD_RSSI, params.getMethodId());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testSetGetDevice() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void setGetDevice() {
         DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice).build();
         assertEquals(mDevice, params.getDevice());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testSetGetDuration() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void setGetDurationSeconds() {
         DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setDuration(120).build();
-        assertEquals(120, params.getDuration());
+                .setDurationSeconds(120).build();
+        assertEquals(120, params.getDurationSeconds());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testSetGetFrequency() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void setGetFrequency() {
         DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
                 .setFrequency(REPORT_FREQUENCY_HIGH).build();
         assertEquals(REPORT_FREQUENCY_HIGH, params.getFrequency());
     }
 
+    @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void testSetGetMethod() {
-        if (shouldSkipTest()) {
-            return;
-        }
+    public void setGetMethodId() {
         DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
-                .setMethod(DISTANCE_MEASUREMENT_METHOD_RSSI).build();
-        assertEquals(DISTANCE_MEASUREMENT_METHOD_RSSI, params.getMethod());
+                .setMethodId(DISTANCE_MEASUREMENT_METHOD_RSSI).build();
+        assertEquals(DISTANCE_MEASUREMENT_METHOD_RSSI, params.getMethodId());
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void setGetChannelSoundingParams() {
+        ChannelSoundingParams csParams =
+                new ChannelSoundingParams.Builder().setSightType(SIGHT_TYPE_LINE_OF_SIGHT).build();
+        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
+                .setChannelSoundingParams(csParams).build();
+        assertEquals(csParams, params.getChannelSoundingParams());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void readWriteParcelForCs() {
+        Parcel parcel = Parcel.obtain();
+        ChannelSoundingParams csParams = new ChannelSoundingParams.Builder()
+                .setSightType(SIGHT_TYPE_LINE_OF_SIGHT)
+                .setLocationType(LOCATION_TYPE_OUTDOOR)
+                .setCsSecurityLevel(CS_SECURITY_LEVEL_TWO)
+                .build();
+        DistanceMeasurementParams params = new DistanceMeasurementParams.Builder(mDevice)
+                .setChannelSoundingParams(csParams)
+                .build();
+        params.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        DistanceMeasurementParams paramsFromParcel =
+                DistanceMeasurementParams.CREATOR.createFromParcel(parcel);
+        ChannelSoundingParams csParamsFromParcel = paramsFromParcel.getChannelSoundingParams();
+        assertEquals(csParams.getSightType(), csParamsFromParcel.getSightType());
+        assertEquals(csParams.getLocationType(), csParamsFromParcel.getLocationType());
+        assertEquals(csParams.getCsSecurityLevel(), csParamsFromParcel.getCsSecurityLevel());
+    }
 
     private void assertParamsEquals(DistanceMeasurementParams p, DistanceMeasurementParams other) {
         if (p == null && other == null) {
@@ -162,12 +187,8 @@ public class DistanceMeasurementParamsTest {
         }
 
         assertEquals(p.getDevice(), other.getDevice());
-        assertEquals(p.getDuration(), other.getDuration());
+        assertEquals(p.getDurationSeconds(), other.getDurationSeconds());
         assertEquals(p.getFrequency(), other.getFrequency());
-        assertEquals(p.getMethod(), other.getMethod());
-    }
-
-    private boolean shouldSkipTest() {
-        return !mHasBluetooth || !mIsDistanceMeasurementSupported;
+        assertEquals(p.getMethodId(), other.getMethodId());
     }
 }

@@ -17,6 +17,7 @@
 package com.android.cts.verifier.managedprovisioning;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -30,6 +31,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -105,9 +107,16 @@ public class Utils {
 
     private static NotificationManager getNotificationManager(Context context) {
         if (UserManager.isHeadlessSystemUserMode()) {
-            Log.d(TAG, "getNotificationManager(): using context for current user");
-            context = context.createContextAsUser(UserHandle.CURRENT, /* flags= */ 0);
+            int currentUserId = ActivityManager.getCurrentUser();
+            int contextUserId = context.getUser().getIdentifier();
+            if (currentUserId != contextUserId) {
+                Log.d(TAG, "getNotificationManager(): using context for current user ("
+                        + currentUserId + ") instead of user " + contextUserId
+                        + " on headless system user mode");
+                context = context.createContextAsUser(UserHandle.of(currentUserId), /* flags= */ 0);
+            }
         }
+        Log.d(TAG, "Returning NotificationManager for context of user " + context.getUserId());
         return context.getSystemService(NotificationManager.class);
     }
 
@@ -154,6 +163,34 @@ public class Utils {
                 .show();
     }
 
+
+    /**
+     * Depending on form factor, the location of enterprise info page is different.
+     * The helper function opening settings can cause confusion, hence differentiating location
+     * it opens based on type of device.
+     *
+     * @param context The calling context
+     */
+    static Intent getManagedSettingsIntent(Context context) {
+        if (isWatch(context)) {
+            return new Intent(Settings.ACTION_SETTINGS);
+        } else {
+            return new Intent(Settings.ACTION_SECURITY_SETTINGS);
+        }
+    }
+
+    /**
+     * Depending on form factor, device may not have room to show more than an icon
+     * for the enterprise managed cases.
+     * Returning an indicator, so the tests can be adjusted.
+     *
+     * @param context The calling context
+     */
+    static boolean isLockScreenManagedOrgNameSupported(Context context) {
+        return !isWatch(context);
+    }
+
+
     static boolean isLockscreenSupported(Context context) {
         return context.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_SECURE_LOCK_SCREEN);
@@ -162,5 +199,9 @@ public class Utils {
     static boolean isTV(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                 || context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEVISION);
+    }
+
+    static boolean isWatch(Context context) {
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 }

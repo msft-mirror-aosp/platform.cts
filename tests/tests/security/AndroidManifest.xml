@@ -18,6 +18,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
      package="android.security.cts">
 
+    <permission-tree android:name="com.android.cts"/>
+
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
     <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES"/>
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
@@ -25,15 +27,19 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>
-
+    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR"/>
 
     <!-- For FileIntegrityManager -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+
+     <!-- CVE-2023-21143 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application android:usesCleartextTraffic="true">
         <uses-library android:name="android.test.runner"/>
@@ -197,7 +203,14 @@
             android:grantUriPermissions="true"
             android:process=":badprovider" />
 
-        <activity android:name="android.security.cts.CVE_2022_20143.PocActivity"
+        <activity android:name="android.security.cts.AutomaticZenRuleTests.PocActivity"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.app.action.AUTOMATIC_ZEN_RULE"/>
+            </intent-filter>
+        </activity>
+
+        <activity android:name="android.security.cts.AutomaticZenRuleTests.SecondPocActivity"
                   android:exported="true">
             <intent-filter>
                 <action android:name="android.app.action.AUTOMATIC_ZEN_RULE"/>
@@ -216,6 +229,12 @@
 
         <activity android:name="android.security.cts.ActivityManagerTest$ActivityOptionsActivity" />
         <activity android:name="android.security.cts.ActivityManagerTest$BaseActivity" />
+        <activity android:name="android.security.cts.ActivityManagerTest$WaitEnterAnimActivity" />
+
+        <activity android:name="android.security.cts.PackageInstallerTest$BackgroundLaunchActivity"
+            android:exported="true" />
+        <service android:name="android.security.cts.TestForegroundService"
+            android:exported="true" />
 
         <provider android:name="android.security.cts.CVE_2022_20358.PocContentProvider"
             android:authorities="android.security.cts.CVE_2022_20358.provider"
@@ -232,13 +251,73 @@
                 android:resource="@xml/syncadapter" />
         </service>
 
+        <service
+            android:name="android.security.cts.CVE_2022_20129.PocService"
+            android:exported="true"
+            android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.ConnectionService"/>
+            </intent-filter>
+        </service>
+
+        <activity android:name="android.security.cts.CVE_2023_20953.PocActivity"
+            android:exported="true" />
+
+        <activity android:name="android.security.cts.CVE_2021_0642.PocActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.telephony.action.CONFIGURE_VOICEMAIL" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="CVE_2021_0642_ACTION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name="android.security.cts.CVE_2021_0642.SecondActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="CVE_2021_0642_ACTION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name="android.security.cts.CVE_2023_20916.PocActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name="android.security.cts.CVE_2021_0600.PocActivity" />
+
+        <receiver android:name="android.security.cts.CVE_2021_0600.PocDeviceAdminReceiver"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_cve_2021_0600" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <service android:name="android.security.cts.AttributionSourceService"
+            android:enabled="true"
+            android:exported="true"
+            android:label="AttributionSourceService"
+            android:process=":attributionSourceServiceProcess">
+        </service>
+
+        <activity android:name="android.security.cts.CVE_2022_20429.PocActivity" />
+
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.security.cts"
          android:label="CTS tests of android.security.cts">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.security.cts"

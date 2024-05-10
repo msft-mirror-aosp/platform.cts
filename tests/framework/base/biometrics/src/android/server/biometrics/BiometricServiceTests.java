@@ -27,6 +27,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.server.biometrics.nano.BiometricsProto;
 
 import org.junit.Test;
@@ -41,6 +43,7 @@ import java.util.List;
 public class BiometricServiceTests extends BiometricTestBase {
     private static final String TAG = "BiometricTests/Service";
 
+    @CddTest(requirements = {"7.3.10/C-3-5"})
     @Test
     public void testAuthenticatorIdsInvalidated() throws Exception {
         // On devices with multiple strong sensors, adding enrollments to one strong sensor
@@ -90,6 +93,12 @@ public class BiometricServiceTests extends BiometricTestBase {
             // the above sensor should be invalidated.
             for (Integer id : strongSensors) {
                 if (id != sensorId) {
+                    List<Integer> aidlSensorIds = Utils.getAidlFingerprintSensorIds();
+                    if (!aidlSensorIds.contains(sensorId) || !aidlSensorIds.contains(id)) {
+                        Log.w(TAG, "HIDL sensor does not support InvalidateAuthenticatorId");
+                        continue;
+                    }
+
                     final BiometricTestSession session = mBiometricManager.createTestSession(id);
                     biometricSessions.add(session);
                     Log.d(TAG, "Sensor " + id + " should request invalidation");
@@ -107,6 +116,10 @@ public class BiometricServiceTests extends BiometricTestBase {
         }
     }
 
+    @CddTest(requirements = {"7.3.10/C-1-3"})
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testLockoutResetRequestedAfterCredentialUnlock() throws Exception {
         // ResetLockout only really needs to be applied when enrollments exist. Furthermore, some
@@ -155,6 +168,10 @@ public class BiometricServiceTests extends BiometricTestBase {
         }
     }
 
+    @CddTest(requirements = {"7.3.10/C-1-3,C-7-2"})
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testLockoutResetRequestedAfterBiometricUnlock_whenStrong() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -197,7 +214,7 @@ public class BiometricServiceTests extends BiometricTestBase {
             throws Exception {
         Log.d(TAG, "testLockoutResetRequestedAfterBiometricUnlock_whenStrong_forSensor: "
                 + sensorId);
-        final int userId = 0;
+        final int userId = Utils.getUserId();
 
         BiometricServiceState state = getCurrentState();
         final List<Integer> eligibleSensorsToReset = new ArrayList<>();
@@ -248,6 +265,10 @@ public class BiometricServiceTests extends BiometricTestBase {
         }
     }
 
+    @CddTest(requirements = {"7.3.10/C-1-3,C-7-2"})
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testLockoutResetNotRequestedAfterBiometricUnlock_whenNotStrong() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -286,7 +307,7 @@ public class BiometricServiceTests extends BiometricTestBase {
             int sensorId, @NonNull BiometricTestSession session) throws Exception {
         Log.d(TAG, "testLockoutResetNotRequestedAfterBiometricUnlock_whenNotStrong_forSensor: "
                 + sensorId);
-        final int userId = 0;
+        final int userId = Utils.getUserId();
 
         // Explicitly clear the log so that we can check the exact number of resetLockout operations
         // below.

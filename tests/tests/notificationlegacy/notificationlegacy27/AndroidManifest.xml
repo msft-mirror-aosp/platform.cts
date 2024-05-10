@@ -23,7 +23,7 @@
     <application>
         <uses-library android:name="android.test.runner" />
 
-        <service android:name="android.app.notification.legacy.cts.TestNotificationListener"
+        <service android:name="android.app.stubs.shared.TestNotificationListener"
                  android:exported="true"
                  android:label="TestNotificationListener"
                  android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
@@ -63,7 +63,5 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:targetPackage="android.app.notification.legacy.cts"
                      android:label="CTS tests for notification behavior (API 27)">
-        <meta-data android:name="listener"
-                   android:value="com.android.cts.runner.CtsTestRunListener" />
     </instrumentation>
 </manifest>

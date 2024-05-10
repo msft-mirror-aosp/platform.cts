@@ -18,19 +18,18 @@ package android.server.wm.jetpack;
 
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
-import static android.server.wm.jetpack.utils.SidecarUtil.assertEqualWindowLayoutInfo;
-import static android.server.wm.jetpack.utils.SidecarUtil.assumeHasDisplayFeatures;
-import static android.server.wm.jetpack.utils.SidecarUtil.assumeSidecarSupportedDevice;
-import static android.server.wm.jetpack.utils.SidecarUtil.getSidecarInterface;
-
+import static android.server.wm.jetpack.extensions.util.SidecarUtil.assertEqualWindowLayoutInfo;
+import static android.server.wm.jetpack.extensions.util.SidecarUtil.assumeHasDisplayFeatures;
+import static android.server.wm.jetpack.extensions.util.SidecarUtil.assumeSidecarSupportedDevice;
+import static android.server.wm.jetpack.extensions.util.SidecarUtil.getSidecarInterface;
 import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.graphics.Rect;
 import android.os.IBinder;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.SetRequestedOrientationRule;
 import android.server.wm.jetpack.utils.SidecarCallbackCounter;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
@@ -38,7 +37,6 @@ import android.server.wm.jetpack.utils.TestGetWindowLayoutInfoActivity;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.window.sidecar.SidecarDeviceState;
 import androidx.window.sidecar.SidecarDisplayFeature;
@@ -49,6 +47,7 @@ import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -69,12 +68,18 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
     private SidecarInterface mSidecarInterface;
     private IBinder mWindowToken;
 
+    // To disable special handling which prevents setRequestedOrientation from changing the screen
+    // rotation for large screen devices.
+    @ClassRule
+    public static final SetRequestedOrientationRule sSetRequestedOrientationRule =
+            new SetRequestedOrientationRule();
+
     @Before
     @Override
     public void setUp() {
         super.setUp();
         assumeSidecarSupportedDevice(mContext);
-        mActivity = (TestActivity) startActivityNewTask(TestActivity.class);
+        mActivity = startFullScreenActivityNewTask(TestActivity.class, null);
         mSidecarInterface = getSidecarInterface(mActivity);
         assertThat(mSidecarInterface).isNotNull();
         mWindowToken = getActivityWindowToken(mActivity);
@@ -84,7 +89,6 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
     /**
      * Test adding and removing a sidecar interface window layout change listener.
      */
-    @FlakyTest(bugId = 206697963)
     @Test
     public void testSidecarInterface_onWindowLayoutChangeListener() {
         // Set activity to portrait
@@ -94,8 +98,7 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
         // Create the sidecar callback. onWindowLayoutChanged should only be called twice in this
         // test, not the third time when the orientation will change because the listener will be
         // removed.
-        SidecarCallbackCounter sidecarCallback = new SidecarCallbackCounter(mWindowToken,
-                2 /* expectedCallbackCount */);
+        SidecarCallbackCounter sidecarCallback = new SidecarCallbackCounter(mWindowToken);
         mSidecarInterface.setSidecarCallback(sidecarCallback);
 
         // Add window layout listener for mWindowToken - onWindowLayoutChanged should be called
@@ -105,6 +108,14 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
         setActivityOrientationActivityDoesNotHandleOrientationChanges(mActivity,
                 ORIENTATION_LANDSCAPE);
 
+        // Check that the callback is called at least twice
+        // The callback could be called more than twice because there may have additional
+        // configuration changes on some device configurations.
+        assertTrue("Callback should be called twice", sidecarCallback.getCallbackCount() >= 2);
+
+        // Reset the callback count
+        sidecarCallback.resetCallbackCount();
+
         // Remove the listener
         mSidecarInterface.onWindowLayoutChangeListenerRemoved(mWindowToken);
 
@@ -112,8 +123,8 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
         setActivityOrientationActivityDoesNotHandleOrientationChanges(mActivity,
                 ORIENTATION_PORTRAIT);
 
-        // Check that the countdown is zero
-        sidecarCallback.assertZeroCount();
+        // Check that the callback should not be called
+        assertEquals("Callback should not be called", 0, sidecarCallback.getCallbackCount());
     }
 
     @Test
@@ -174,8 +185,7 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
 
         // The value is verified inside TestGetWindowLayoutInfoActivity
         TestGetWindowLayoutInfoActivity.resetResumeCounter();
-        TestGetWindowLayoutInfoActivity testGetWindowLayoutInfoActivity
-                = (TestGetWindowLayoutInfoActivity) startActivityNewTask(
+        TestGetWindowLayoutInfoActivity testGetWindowLayoutInfoActivity = startActivityNewTask(
                         TestGetWindowLayoutInfoActivity.class);
 
         // Make sure the activity has gone through all states.
@@ -187,8 +197,7 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
     public void testGetWindowLayoutInfo_configChanged_windowLayoutUpdates() {
         assumeHasDisplayFeatures(mSidecarInterface, mWindowToken);
 
-        TestConfigChangeHandlingActivity configHandlingActivity
-                = (TestConfigChangeHandlingActivity) startActivityNewTask(
+        TestConfigChangeHandlingActivity configHandlingActivity = startActivityNewTask(
                 TestConfigChangeHandlingActivity.class);
         SidecarInterface sidecar = getSidecarInterface(configHandlingActivity);
         assertThat(sidecar).isNotNull();

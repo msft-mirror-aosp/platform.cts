@@ -13,12 +13,13 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_fwk_wifi_hal",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 java_defaults {
     name: "CtsWifiLastStableSdkDefaults",
-    target_sdk_version: "33",
+    target_sdk_version: "34",
     min_sdk_version: "30",
 }
 
@@ -45,7 +46,10 @@ android_test {
         "junit",
         "junit-params",
         "net-utils-framework-common",
-        "truth-prebuilt",
+        "truth",
+        "android.wifi.mockwifi",
+        "wifi_aconfig_flags_lib",
+        "flag-junit",
     ],
 
     test_suites: [

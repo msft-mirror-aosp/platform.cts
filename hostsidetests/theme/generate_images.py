@@ -46,11 +46,13 @@ CTS_THEME_dict = {
     320: "xhdpi",
     340: "340dpi",
     360: "360dpi",
+    390: "390dpi",
     400: "400dpi",
     420: "420dpi",
     440: "440dpi",
     450: "450dpi",
     480: "xxhdpi",
+    520: "520dpi",
     560: "560dpi",
     600: "600dpi",
     640: "xxxhdpi",
@@ -216,7 +218,7 @@ def main(argv):
         sys.exit(1)
 
     theme_apk = os.path.join(os.environ['ANDROID_HOST_OUT'],
-                             'cts/android-cts/testcases/CtsThemeDeviceApp.apk')
+                             'cts/android-cts/testcases/CtsThemeHostTestCases/CtsThemeDeviceApp.apk')
     if not os.path.isfile(theme_apk):
         print('Couldn\'t find test APK. Did you run make cts?')
         sys.exit(1)

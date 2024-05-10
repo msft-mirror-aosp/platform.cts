@@ -23,7 +23,6 @@ import static android.autofillservice.cts.testcore.CannedFillResponse.NO_RESPONS
 import static android.autofillservice.cts.testcore.Helper.ID_PASSWORD;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Helper.UNUSED_AUTOFILL_VALUE;
-import static android.autofillservice.cts.testcore.Helper.getContext;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_NAME;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_PASSWORD;
 
@@ -33,6 +32,7 @@ import android.autofillservice.cts.activities.AuthenticationActivity;
 import android.autofillservice.cts.commontests.AbstractLoginActivityTestCase;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.CannedFillResponse.CannedDataset;
+import android.autofillservice.cts.testcore.DeviceUtils;
 import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.InlineUiBot;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
@@ -40,9 +40,10 @@ import android.autofillservice.cts.testcore.InstrumentedAutoFillService.SaveRequ
 import android.autofillservice.cts.testcore.UiBot;
 import android.content.IntentSender;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.Presubmit;
 import android.view.inputmethod.InlineSuggestionsRequest;
+
+import androidx.test.filters.FlakyTest;
 
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -66,7 +67,7 @@ public class InlineAuthenticationTest extends AbstractLoginActivityTestCase {
 
     @Override
     protected void enableService() {
-        Helper.enableAutofillService(getContext(), SERVICE_NAME);
+        Helper.enableAutofillService(SERVICE_NAME);
     }
 
     @Override
@@ -125,6 +126,9 @@ public class InlineAuthenticationTest extends AbstractLoginActivityTestCase {
         dropDownUiBot.assertDatasets("Dataset");
     }
 
+    @FlakyTest(
+            bugId = 291803739,
+            detail = "Autofill behavior is flaky. See bug, try to resolve asap")
     @Presubmit
     @Test
     public void testFillResponseAuth() throws Exception {
@@ -160,13 +164,14 @@ public class InlineAuthenticationTest extends AbstractLoginActivityTestCase {
         AuthenticationActivity.setResultCode(RESULT_OK);
         // Select the dataset to start authentication
         mUiBot.selectDataset("Tap to auth!");
-        mUiBot.waitForIdle();
+        mUiBot.waitForIdleSync();
         // Authentication done, show real dataset
-        mUiBot.assertDatasets("Dataset");
+        DeviceUtils.Dataset.assertShowsInline();
+        mUiBot.waitForIdleSync();
 
         // Select the dataset and check the result is autofilled.
         mUiBot.selectDataset("Dataset");
-        mUiBot.waitForIdle();
+        mUiBot.waitForIdleSync();
         mUiBot.assertNoDatasets();
         mActivity.assertAutoFilled();
     }

@@ -21,13 +21,14 @@ import static android.telecom.cts.TestUtils.InvokeCounter;
 import static android.telecom.cts.TestUtils.TEST_PHONE_ACCOUNT_HANDLE;
 import static android.telecom.cts.TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_CALLBACK;
 import static android.telecom.cts.TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
+import static android.telephony.AccessNetworkConstants.TRANSPORT_TYPE_WWAN;
+import static android.telephony.NetworkRegistrationInfo.DOMAIN_CS;
 
 import android.graphics.SurfaceTexture;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Parcel;
 import android.telecom.Call;
 import android.telecom.Conference;
 import android.telecom.Connection;
@@ -40,6 +41,8 @@ import android.telecom.RemoteConnection.VideoProvider;
 import android.telecom.StatusHints;
 import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
+import android.telephony.NetworkRegistrationInfo;
+import android.telephony.ServiceState;
 import android.view.Surface;
 
 import java.util.ArrayList;
@@ -61,7 +64,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     RemoteConnection mRemoteConnectionObject;
 
     public void testRemoteConnectionOutgoingCall() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         addRemoteConnectionOutgoingCall();
@@ -98,7 +101,8 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionOutgoingEmergencyCall() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(
+                getInstrumentation().getContext())) {
             return;
         }
         addRemoteConnectionOutgoingEmergencyCall();
@@ -115,7 +119,17 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
         assertRemoteConnectionState(mRemoteConnectionObject, Connection.STATE_ACTIVE);
         assertConnectionState(mRemoteConnection, Connection.STATE_ACTIVE);
 
-        assertNotNull(mRemoteConnection.getExtras().get(Connection.EXTRA_LAST_KNOWN_CELL_IDENTITY));
+        ServiceState serviceState = mTelephonyManager.getServiceState();
+        if (serviceState != null) {
+            NetworkRegistrationInfo nri = serviceState.getNetworkRegistrationInfo(DOMAIN_CS,
+                    TRANSPORT_TYPE_WWAN);
+            if (nri != null && nri.isRegistered()) {
+                // Check LAST_KNOWN_CELL_IDENTITY only if device has voice service
+                assertNotNull(mRemoteConnection.getExtras()
+                        .get(Connection.EXTRA_LAST_KNOWN_CELL_IDENTITY));
+            }
+        }
+
         call.disconnect();
         assertCallState(call, Call.STATE_DISCONNECTED);
         assertConnectionState(mConnection, Connection.STATE_DISCONNECTED);
@@ -124,7 +138,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionIncomingCallAccept() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         addRemoteConnectionIncomingCall();
@@ -145,7 +159,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionIncomingCallReject() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         addRemoteConnectionIncomingCall();
@@ -166,7 +180,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteIncomingConference() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         try {
@@ -210,7 +224,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteOutgoingConference() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         try {
@@ -257,7 +271,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionDTMFTone() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         addRemoteConnectionIncomingCall();
@@ -283,7 +297,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_StateChange() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -309,7 +323,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_RingbackRequest() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -335,7 +349,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_ConnectionCapabilities() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -364,7 +378,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_ConnectionProperties() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -394,7 +408,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_PostDialWait() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -422,7 +436,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_PostDialChar() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -449,7 +463,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_VoipAudio() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -475,7 +489,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_StatusHints() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -502,7 +516,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_AddressChange() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -531,7 +545,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_CallerDisplayName() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -560,7 +574,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_VideoState() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -586,7 +600,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_ConferenceableConnections() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -626,7 +640,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_VideoProvider() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -654,7 +668,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_Extras() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -687,7 +701,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
      * {@link Connection#sendConnectionEvent(String, Bundle)} notification.
      */
     public void testRemoteConnectionCallbacks_ConnectionEvent() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -717,7 +731,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_Disconnect() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -750,7 +764,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
      * {@link Connection#onPullExternalCall()}.
      */
     public void testRemoteConnectionCallbacks_PullExternalCall() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -767,7 +781,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
      * to {@link Connection#onAddConferenceParticipants(List)}.
      */
     public void testAddConferenceParticipants() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -781,7 +795,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionCallbacks_Destroy() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -806,7 +820,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideoCallbacks_SessionModify() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -849,7 +863,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideoCallbacks_SessionEvent() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -878,7 +892,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideoCallbacks_PeerDimensions() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -910,7 +924,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideoCallbacks_CallDataUsage() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -941,7 +955,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideoCallbacks_CameraCapabilities() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -973,7 +987,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideoCallbacks_VideoQuality() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -1003,7 +1017,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideo_RequestCallDataUsage() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -1038,7 +1052,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideo_RequestCameraCapabilities() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -1076,7 +1090,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideo_SendSessionModifyRequest() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -1117,7 +1131,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideo_SendSessionModifyResponse() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -1163,7 +1177,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideo_SetCamera() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -1203,7 +1217,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideo_SetDeviceOrientation() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -1226,7 +1240,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideo_SetDisplaySurface() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -1249,7 +1263,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideo_SetPauseImage() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -1272,7 +1286,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideo_SetPreviewSurface() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -1295,7 +1309,7 @@ public class RemoteConnectionTest extends BaseRemoteTelecomTest {
     }
 
     public void testRemoteConnectionVideo_SetZoom() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 

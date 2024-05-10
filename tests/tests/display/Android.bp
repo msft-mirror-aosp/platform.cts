@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_display_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -27,8 +28,13 @@ android_test {
     },
     srcs: ["src/**/*.java"],
     static_libs: [
-    "androidx.test.rules",
-    "compatibility-device-util-axt",
+        "android.hardware.flags-aconfig-java",
+        "androidx.test.core",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "flag-junit",
+        "CtsSurfaceValidatorLib",
+        "android.companion.virtual.flags-aconfig-java",
     ],
     libs: ["android.test.base"],
     // Tag this module as a cts test artifact
@@ -38,4 +44,6 @@ android_test {
         "sts",
     ],
     sdk_version: "test_current",
+    data: [":CtsAppTestStubs"],
+    per_testcase_directory: true,
 }

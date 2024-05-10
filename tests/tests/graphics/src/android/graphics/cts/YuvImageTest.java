@@ -16,6 +16,7 @@
 package android.graphics.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -24,21 +25,30 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorSpace;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.media.ExifInterface;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BitmapUtils;
+import com.android.graphics.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 @SmallTest
@@ -58,7 +68,9 @@ public class YuvImageTest {
 
     private static final String TAG = "YuvImageTest";
 
-    private static final int[] FORMATS = { ImageFormat.NV21, ImageFormat.YUY2 };
+    private static final int[] FORMATS = { ImageFormat.NV21, ImageFormat.YUY2,
+                                           ImageFormat.YCBCR_P010, ImageFormat.YUV_420_888 };
+    private static final int[] JPEG_FORMATS = { ImageFormat.NV21, ImageFormat.YUY2 };
 
     private static final int WIDTH = 256;
     private static final int HEIGHT = 128;
@@ -112,10 +124,21 @@ public class YuvImageTest {
         for (int i = 0; i < FORMATS.length; ++i) {
             int[] expected = null;
             int[] actual = null;
-            if (FORMATS[i] == ImageFormat.NV21) {
-                expected = new int[]{width, width};
-            } else if (FORMATS[i] == ImageFormat.YUY2) {
-                expected = new int[]{width * 2};
+            switch (FORMATS[i]) {
+                case ImageFormat.NV21:
+                    expected = new int[]{width, width};
+                    break;
+                case ImageFormat.YCBCR_P010:
+                    expected = new int[]{width * 2, width * 2};
+                    break;
+                case ImageFormat.YUV_420_888:
+                    expected = new int[]{width, (width + 1) / 2, (width + 1) / 2};
+                    break;
+                case ImageFormat.YUY2:
+                    expected = new int[]{width * 2};
+                    break;
+                default:
+                    // We shouldn't hit here.
             }
 
             try {
@@ -127,6 +150,14 @@ public class YuvImageTest {
                 Log.e(TAG, "unexpected exception", e);
                 fail("unexpected exception");
             }
+        }
+
+        // abnormal case: pass a null ColorSpace, should throw IllegalArgumentException
+        try{
+            image = new YuvImage(yuv, FORMATS[0], width, height, null, null);
+            fail("not catching hdr empty");
+        } catch (IllegalArgumentException e){
+            // expected
         }
     }
 
@@ -154,11 +185,11 @@ public class YuvImageTest {
 
         // test various cases by varing
         // <ImageFormat, Bitmap, HasPaddings, Rect>
-        for (int i = 0; i < FORMATS.length; ++i) {
+        for (int i = 0; i < JPEG_FORMATS.length; ++i) {
             for (int j = 0; j < mTestBitmaps.length; ++j) {
                 for (int k = 0; k < PADDINGS.length; ++k) {
-                    YuvImage image = generateYuvImage(FORMATS[i],
-                        mTestBitmaps[j], PADDINGS[k]);
+                    YuvImage image = generateYuvImage(JPEG_FORMATS[i],
+                        mTestBitmaps[j], PADDINGS[k], null);
                     for (int l = 0; l < RECTS.length; ++l) {
 
                         // test compressing the same rect in
@@ -183,9 +214,21 @@ public class YuvImageTest {
     @Test
     public void testGetHeight() {
         generateTestBitmaps(WIDTH, HEIGHT);
-        YuvImage image = generateYuvImage(ImageFormat.YUY2, mTestBitmaps[0], 0);
+        YuvImage image = generateYuvImage(ImageFormat.YUY2, mTestBitmaps[0], 0, null);
         assertEquals(mTestBitmaps[0].getHeight(), image.getHeight());
         assertEquals(mTestBitmaps[0].getWidth(), image.getWidth());
+    }
+
+    @Test
+    public void testGetColorSpace() {
+        generateTestBitmaps(WIDTH, HEIGHT);
+        ColorSpace defaultColorSpace = ColorSpace.get(ColorSpace.Named.SRGB);
+        ColorSpace expectedColorSpace = ColorSpace.get(ColorSpace.Named.BT709);
+        YuvImage imageSRGB = generateYuvImage(ImageFormat.YUY2, mTestBitmaps[0], 0, null);
+        YuvImage imageBT709 = generateYuvImage(
+                ImageFormat.YUY2, mTestBitmaps[0], 0, expectedColorSpace);
+        assertEquals(defaultColorSpace, imageSRGB.getColorSpace());
+        assertEquals(expectedColorSpace, imageBT709.getColorSpace());
     }
 
     @Test
@@ -207,8 +250,235 @@ public class YuvImageTest {
     @Test
     public void testGetYuvFormat() {
         generateTestBitmaps(WIDTH, HEIGHT);
-        YuvImage image = generateYuvImage(ImageFormat.YUY2, mTestBitmaps[0], 0);
+        YuvImage image = generateYuvImage(ImageFormat.YUY2, mTestBitmaps[0], 0, null);
         assertEquals(ImageFormat.YUY2, image.getYuvFormat());
+    }
+
+    @Test
+    public void testCompressYuvToJpegRWithBadInputs() {
+        String hdrInput = Utils.obtainPath(R.raw.raw_p010_image, 0);
+        String sdrInput = Utils.obtainPath(R.raw.raw_yuv420_image, 0);
+
+        final int width = 1280;
+        final int height = 720;
+
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+        try {
+            byte[] emptyData = new byte[0];
+            byte[] hdrData = Files.readAllBytes(Paths.get(hdrInput));
+            byte[] sdrData = Files.readAllBytes(Paths.get(sdrInput));
+
+            YuvImage emptyHdr = new YuvImage(
+                    emptyData, ImageFormat.YCBCR_P010, width, height, null);
+            YuvImage emptySdr = new YuvImage(
+                    emptyData, ImageFormat.YUV_420_888, width, height, null);
+            YuvImage supportedHdr = new YuvImage(
+                    hdrData, ImageFormat.YCBCR_P010, width, height, null);
+            YuvImage supportedSdr = new YuvImage(
+                    sdrData, ImageFormat.YUV_420_888, width, height, null);
+            YuvImage unsupportedHdr = new YuvImage(
+                    hdrData, ImageFormat.YUV_420_888, width, height, null);
+            YuvImage unsupportedSdr = new YuvImage(
+                    sdrData, ImageFormat.NV21, width, height, null);
+            YuvImage sdrWithDifferentRes = new YuvImage(
+                    sdrData, ImageFormat.YUV_420_888, 720, 480, null);
+            YuvImage hdrWithNotSupportedColorSpace = new YuvImage(
+                    hdrData, ImageFormat.YCBCR_P010, 720, 480, null,
+                    ColorSpace.get(ColorSpace.Named.CIE_LAB));
+            YuvImage sdrWithNotSupportedColorSpace = new YuvImage(
+                    sdrData, ImageFormat.YUV_420_888, 720, 480, null,
+                    ColorSpace.get(ColorSpace.Named.BT709));
+
+            // abnormal case: hdr is empty
+            try{
+                emptyHdr.compressToJpegR(supportedSdr, 90, stream);
+                fail("not catching hdr empty");
+            } catch (IllegalArgumentException e){
+                // expected
+            }
+
+            // abnormal case: sdr is empty
+            try{
+                supportedHdr.compressToJpegR(emptySdr, 90, stream);
+                fail("not catching sdr empty");
+            } catch (IllegalArgumentException e){
+                // expected
+            }
+
+            // abnormal case: sdr is unsupported color format
+            try{
+                supportedHdr.compressToJpegR(unsupportedSdr, 90, stream);
+                fail("not catching sdr is unsupported color format");
+            } catch (IllegalArgumentException e){
+                // expected
+            }
+
+            // abnormal case: sdr is null
+            try{
+                supportedHdr.compressToJpegR(null, 90, stream);
+                fail("not catching sdr is null");
+            } catch (IllegalArgumentException e){
+                // expected
+            }
+
+            // abnormal case: quality < 0
+            try{
+                supportedHdr.compressToJpegR(supportedSdr, -1, stream);
+                fail("not catching illegal compression quality");
+            } catch (IllegalArgumentException e){
+                // expected
+            }
+
+            // abnormal case: quality > 100
+            try{
+                supportedHdr.compressToJpegR(supportedSdr, 101, stream);
+                fail("not catching illegal compression quality");
+            } catch (IllegalArgumentException e){
+                // expected
+            }
+
+            // abnormal case: stream is null
+            try{
+                supportedHdr.compressToJpegR(supportedSdr, 90, null);
+                fail("not catching null stream");
+            } catch (IllegalArgumentException e){
+                // expected
+            }
+
+            // abnormal case: resolution mismatch
+            try{
+                supportedHdr.compressToJpegR(sdrWithDifferentRes, 90, stream);
+                fail("not catching resolution mismatch");
+            } catch (IllegalArgumentException e){
+                // expected
+            }
+
+            // abnormal case: not supported color space
+            try{
+                supportedHdr.compressToJpegR(sdrWithNotSupportedColorSpace, 90, stream);
+                fail("not catching resolution mismatch");
+            } catch (IllegalArgumentException e){
+                // expected
+            }
+            try{
+                hdrWithNotSupportedColorSpace.compressToJpegR(supportedSdr, 90, stream);
+                fail("not catching resolution mismatch");
+            } catch (IllegalArgumentException e){
+                // expected
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "unexpected exception", e);
+            fail("unexpected exception");
+        }
+    }
+
+    @Test
+    public void testCompressYuvToJpegR() {
+        String hdrInput = Utils.obtainPath(R.raw.raw_p010_image, 0);
+        String sdrInput = Utils.obtainPath(R.raw.raw_yuv420_image, 0);
+
+        final int width = 1280;
+        final int height = 720;
+
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+        try {
+            byte[] hdrData = Files.readAllBytes(Paths.get(hdrInput));
+            byte[] sdrData = Files.readAllBytes(Paths.get(sdrInput));
+
+            YuvImage hdrImage = new YuvImage(hdrData, ImageFormat.YCBCR_P010,
+                                             width, height, null,
+                                             ColorSpace.get(ColorSpace.Named.BT2020_HLG));
+            YuvImage sdrImage = new YuvImage(sdrData, ImageFormat.YUV_420_888,
+                                             width, height, null);
+
+            assertTrue("Fail in JPEG/R compression.",
+                    hdrImage.compressToJpegR(sdrImage, 90, stream));
+            byte[] jpegRData = stream.toByteArray();
+            Bitmap decoded = BitmapFactory.decodeByteArray(jpegRData, 0, jpegRData.length);
+            assertNotNull(decoded);
+        } catch (Exception e) {
+            Log.e(TAG, "unexpected exception", e);
+            fail("unexpected exception");
+        }
+    }
+
+    @ApiTest(apis = {"android.graphics.YuvImage#compressToJpegR"})
+    @RequiresFlagsEnabled(Flags.FLAG_YUV_IMAGE_COMPRESS_TO_ULTRA_HDR)
+    @Test
+    public void testCompressYuvToJpegRWithExif() {
+        String hdrInput = Utils.obtainPath(R.raw.raw_p010_image, 0);
+        String sdrInput = Utils.obtainPath(R.raw.raw_yuv420_image, 0);
+        String exifInput = Utils.obtainPath(R.raw.sample_exif, 0);
+
+        final int width = 1280;
+        final int height = 720;
+
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+        try {
+            byte[] hdrData = Files.readAllBytes(Paths.get(hdrInput));
+            byte[] sdrData = Files.readAllBytes(Paths.get(sdrInput));
+            byte[] exifData = Files.readAllBytes(Paths.get(exifInput));
+
+            YuvImage hdrImage = new YuvImage(hdrData, ImageFormat.YCBCR_P010,
+                width, height, null,
+                ColorSpace.get(ColorSpace.Named.BT2020_HLG));
+            YuvImage sdrImage = new YuvImage(sdrData, ImageFormat.YUV_420_888,
+                width, height, null);
+
+            assertTrue("Fail in JPEG/R compression.",
+                    hdrImage.compressToJpegR(sdrImage, 90, stream, exifData));
+            byte[] jpegRData = stream.toByteArray();
+            Bitmap decoded = BitmapFactory.decodeByteArray(jpegRData, 0, jpegRData.length);
+            assertNotNull(decoded);
+
+            ExifInterface exifInterface = new ExifInterface(
+                    new ByteArrayInputStream(stream.toByteArray()));
+            assertEquals(exifInterface.getAttribute(ExifInterface.TAG_IMAGE_WIDTH),
+                    String.valueOf(width));
+            assertEquals(exifInterface.getAttribute(ExifInterface.TAG_IMAGE_LENGTH),
+                    String.valueOf(height));
+            assertEquals(exifInterface.getAttribute(ExifInterface.TAG_DATETIME),
+                    "2022:11:22 23:05:32");
+            assertEquals(exifInterface.getAttribute(ExifInterface.TAG_MAKE),
+                    "Google");
+            assertEquals(exifInterface.getAttribute(ExifInterface.TAG_MODEL),
+                    "Cuttlefish GMS x86_64");
+        } catch (Exception e) {
+            Log.e(TAG, "unexpected exception", e);
+            fail("unexpected exception");
+        }
+    }
+
+    @Test
+    public void testCompressYuvToJpegRWithStrides() throws Exception {
+        String hdrInput = Utils.obtainPath(R.raw.raw_p010_image, 0);
+        String sdrInput = Utils.obtainPath(R.raw.raw_yuv420_image, 0);
+
+        final int stride = 1280;
+        final int padding = 20;
+        final int width = stride - padding;
+        final int height = 720;
+
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+        byte[] hdrData = Files.readAllBytes(Paths.get(hdrInput));
+        byte[] sdrData = Files.readAllBytes(Paths.get(sdrInput));
+
+        YuvImage hdrImage = new YuvImage(hdrData, ImageFormat.YCBCR_P010,
+                width, height, new int[] {stride * 2, stride * 2},
+                ColorSpace.get(ColorSpace.Named.BT2020_HLG));
+        YuvImage sdrImage = new YuvImage(sdrData, ImageFormat.YUV_420_888,
+                width, height, new int[] {stride, stride / 2, stride / 2});
+
+        assertTrue("Fail in JPEG/R compression.",
+                hdrImage.compressToJpegR(sdrImage, 90, stream));
+        byte[] jpegRData = stream.toByteArray();
+        Bitmap decoded = BitmapFactory.decodeByteArray(jpegRData, 0, jpegRData.length);
+        assertNotNull(decoded);
+        assertEquals(decoded.getWidth(), width);
     }
 
     private void generateTestBitmaps(int width, int height) {
@@ -224,7 +494,10 @@ public class YuvImageTest {
 
     // Generate YuvImage based on the content in bitmap. If paddings > 0, the
     // strides of YuvImage are calculated by adding paddings to bitmap.getWidth().
-    private YuvImage generateYuvImage(int format, Bitmap bitmap, int paddings) {
+    // If colorSpace is null, this method will return a YuvImage with the default
+    // ColorSpace (SRGB). Otherwise, it will return a YuvImage with configured ColorSpace.
+    private YuvImage generateYuvImage(int format, Bitmap bitmap, int paddings,
+                ColorSpace colorSpace) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
 
@@ -241,8 +514,12 @@ public class YuvImageTest {
         } else if (format == ImageFormat.YUY2) {
            strides = new int[] {stride * 2};
         }
-        image = new YuvImage(yuv, format, width, height, strides);
 
+        if (colorSpace != null) {
+            image = new YuvImage(yuv, format, width, height, strides, colorSpace);
+        } else {
+            image = new YuvImage(yuv, format, width, height, strides);
+        }
         return image;
     }
 
@@ -289,7 +566,7 @@ public class YuvImageTest {
             byte[] jpegData = stream.toByteArray();
             result = BitmapFactory.decodeByteArray(jpegData, 0,
                     jpegData.length);
-        } catch(Exception e){
+        } catch (Exception e){
             Log.e(TAG, "unexpected exception", e);
             fail("unexpected exception");
         }
@@ -358,7 +635,7 @@ public class YuvImageTest {
             Rect rect = new Rect(0, 0, WIDTH, HEIGHT);
             image.compressToJpeg(rect, 101, stream);
             fail("not catching illegal compression quality");
-        } catch(IllegalArgumentException e){
+        } catch (IllegalArgumentException e){
             // expected
         }
 
@@ -367,7 +644,7 @@ public class YuvImageTest {
             Rect rect = new Rect(0, 0, WIDTH, HEIGHT);
             image.compressToJpeg(rect, -1, stream);
             fail("not catching illegal compression quality");
-        } catch(IllegalArgumentException e){
+        } catch (IllegalArgumentException e){
             // expected
         }
 
@@ -376,7 +653,7 @@ public class YuvImageTest {
             Rect rect = new Rect(0, 0, WIDTH, HEIGHT);
             image.compressToJpeg(rect, 80, null);
             fail("not catching null stream");
-        } catch(IllegalArgumentException e){
+        } catch (IllegalArgumentException e){
             // expected
         }
 
@@ -385,7 +662,18 @@ public class YuvImageTest {
             Rect rect = new Rect(10, 0, WIDTH, HEIGHT + 5);
             image.compressToJpeg(rect, 80, stream);
             fail("not catching illegal rectangular region");
-        } catch(IllegalArgumentException e){
+        } catch (IllegalArgumentException e){
+            // expected
+        }
+
+        // abnormal case: unsupported color space
+        try {
+            Rect rect = new Rect(0, 0, WIDTH, HEIGHT);
+            YuvImage image2 = new YuvImage(yuv, format, WIDTH, HEIGHT, null,
+                    ColorSpace.get(ColorSpace.Named.BT709));
+            image2.compressToJpeg(rect, 80, stream);
+            fail("not catching illegal color Space");
+        } catch (IllegalArgumentException e){
             // expected
         }
     }

@@ -25,12 +25,16 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.app.PendingIntent;
 import android.autofillservice.cts.R;
 import android.autofillservice.cts.activities.AbstractAutoFillActivity;
 import android.autofillservice.cts.activities.AugmentedAuthActivity;
 import android.autofillservice.cts.activities.AuthenticationActivity;
 import android.autofillservice.cts.activities.LoginActivity;
+import android.autofillservice.cts.activities.LoginImportantForCredentialManagerActivity;
+import android.autofillservice.cts.activities.LoginMixedImportantForCredentialManagerActivity;
 import android.autofillservice.cts.activities.PreSimpleSaveActivity;
 import android.autofillservice.cts.activities.SimpleSaveActivity;
 import android.autofillservice.cts.testcore.AutofillActivityTestRule;
@@ -49,6 +53,7 @@ import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.service.autofill.InlinePresentation;
 import android.util.Log;
+import android.view.autofill.AutofillFeatureFlags;
 import android.view.autofill.AutofillManager;
 import android.widget.RemoteViews;
 
@@ -132,6 +137,22 @@ public final class AutoFillServiceTestCase {
 
         @Override
         protected TestRule getMainTestRule() {
+            // Don't try to set orientation when device is in half-opened state
+            // The assumeFalse line in @Before would skip the half-opened tests.
+            if(!Helper.isDeviceInState(sContext, Helper.DeviceStateEnum.HALF_FOLDED)) {
+                try {
+                    // Set orientation as portrait before auto-launch an activity,
+                    // otherwise some tests might fail due to elements not fitting
+                    // in, IME orientation, etc...
+                    // Many tests will hold Activity in afterActivityLaunched() by
+                    // overriding ActivityRule. If rotating after the activity has
+                    // started, these tests will keep the old activity. All actions
+                    // on the wrong activity did not happen as expected.
+                    getDropdownUiBot().setScreenOrientation(UiBot.PORTRAIT);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
             return getActivityRule();
         }
 
@@ -212,6 +233,30 @@ public final class AutoFillServiceTestCase {
             mUiBot.assertShownByRelativeId(Helper.ID_USERNAME_LABEL);
             return LoginActivity.getCurrentActivity();
         }
+
+        protected LoginImportantForCredentialManagerActivity
+                    startLoginImportantForCredentialManagerActivity(boolean useAutofillHint)
+                throws Exception {
+            final Intent intent =
+                    new Intent(mContext, LoginImportantForCredentialManagerActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .putExtra("useAutofillHint", useAutofillHint);
+            mContext.startActivity(intent);
+            mUiBot.assertShownByRelativeId(Helper.ID_USERNAME_LABEL);
+            return LoginImportantForCredentialManagerActivity.getCurrentActivity();
+        }
+
+        protected LoginMixedImportantForCredentialManagerActivity
+                startLoginMixedImportantForCredentialManagerActivity(boolean useAutofillHInt)
+                throws Exception {
+            final Intent intent =
+                    new Intent(mContext, LoginMixedImportantForCredentialManagerActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .putExtra("useAutofillHint", useAutofillHInt);
+            mContext.startActivity(intent);
+            mUiBot.assertShownByRelativeId(Helper.ID_USERNAME_LABEL);
+            return LoginMixedImportantForCredentialManagerActivity.getCurrentActivity();
+        }
     }
 
     @RunWith(AndroidJUnit4.class)
@@ -244,9 +289,6 @@ public final class AutoFillServiceTestCase {
                 new ImeSettings.Builder().setInlineSuggestionsEnabled(true)
                         .setInlineSuggestionViewContentDesc(InlineUiBot.SUGGESTION_STRIP_DESC));
 
-        protected static final RequiredFeatureRule sRequiredFeatureRule =
-                new RequiredFeatureRule(PackageManager.FEATURE_AUTOFILL);
-
         private final AutofillTestWatcher mTestWatcher = new AutofillTestWatcher();
 
         private final RetryRule mRetryRule =
@@ -268,6 +310,16 @@ public final class AutoFillServiceTestCase {
                     return sReplier.getExceptions();
                 });
 
+        /**
+         * Disable animation for UiAutomator because animation will cause the UiAutomator
+         * got a wrong position and then tests failed due to click on the wrong position.
+         *
+         * This is annotated as @ClassRule instead of @Rule, to save time of disabling and
+         * re-enabling animation for each test method.
+         */
+        @ClassRule
+        public static DisableAnimationRule sDisableAnimationRule = new DisableAnimationRule();
+
         @Rule
         public final RuleChain mLookAllTheseRules = RuleChain
                 //
@@ -277,10 +329,6 @@ public final class AutoFillServiceTestCase {
                 // mTestWatcher should always be one the first rules, as it defines the name of the
                 // test being ran and finishes dangling activities at the end
                 .around(mTestWatcher)
-                //
-                // Disable animation for UiAutomator because animation will cause the UiAutomator
-                // got a wrong position and then tests failed due to click on the wrong position.
-                .around(new DisableAnimationRule())
                 //
                 // sMockImeSessionRule make sure MockImeSession.create() is used to launch mock IME
                 .around(sMockImeSessionRule)
@@ -296,18 +344,63 @@ public final class AutoFillServiceTestCase {
                 //
                 // Augmented Autofill should be disabled by default
                 .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
-                        AutofillManager.DEVICE_CONFIG_AUTOFILL_SMART_SUGGESTION_SUPPORTED_MODES,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_SMART_SUGGESTION_SUPPORTED_MODES,
                         Integer.toString(getSmartSuggestionMode())))
                 //
                 // Fill Dialog should be disabled by default
                 .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
-                        AutofillManager.DEVICE_CONFIG_AUTOFILL_DIALOG_ENABLED,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_DIALOG_ENABLED,
                         Boolean.toString(false)))
                 //
                 // Hints list of Fill Dialog should be empty by default
                 .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
                         DEVICE_CONFIG_AUTOFILL_DIALOG_HINTS,
                         ""))
+
+                //
+                // CredentialManager-Autofill integration enabled by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_CREDENTIAL_MANAGER_ENABLED,
+                        Boolean.toString(true)))
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_CREDENTIAL_MANAGER_IGNORE_VIEWS,
+                        Boolean.toString(true)))
+
+                //
+                // PCC Detection should be off by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_PCC_CLASSIFICATION_ENABLED,
+                        Boolean.toString(false)))
+
+                //
+                // PCC Detection Hints should be empty by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        AutofillFeatureFlags.DEVICE_CONFIG_AUTOFILL_PCC_FEATURE_PROVIDER_HINTS,
+                        ""))
+
+
+                //
+                // AFAA should be off by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                            AutofillFeatureFlags.
+                                DEVICE_CONFIG_TRIGGER_FILL_REQUEST_ON_UNIMPORTANT_VIEW,
+                            Boolean.toString(false)))
+
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                            "trigger_fill_request_on_filtered_important_views",
+                            Boolean.toString(false)))
+
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                            "include_all_autofill_type_not_none_views_in_assist_structure",
+                            Boolean.toString(false)))
+
+
+                //
+                // Max input size to provide autofill suggestion should be 3
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                            "max_input_length_for_autofill",
+                            Integer.toString(3)))
+
                 //
                 // Finally, let subclasses add their own rules (like ActivityTestRule)
                 .around(getMainTestRule());
@@ -316,6 +409,10 @@ public final class AutoFillServiceTestCase {
         protected final Context mContext = sContext;
         protected final String mPackageName;
         protected final UiBot mUiBot;
+
+        protected static final RuleChain sRequiredFeaturesRule = RuleChain
+                .outerRule(new RequiredFeatureRule(PackageManager.FEATURE_AUTOFILL))
+                .around(new RequiredFeatureRule(PackageManager.FEATURE_INPUT_METHODS));
 
         public BaseTestCase() {
             mPackageName = mContext.getPackageName();
@@ -374,7 +471,7 @@ public final class AutoFillServiceTestCase {
          */
         @NonNull
         protected TestRule getRequiredFeaturesRule() {
-            return sRequiredFeatureRule;
+            return sRequiredFeaturesRule;
         }
 
         /**
@@ -412,12 +509,14 @@ public final class AutoFillServiceTestCase {
             // Collapse notifications.
             runShellCommand("cmd statusbar collapse");
 
+            assumeFalse("Device is half-folded",
+                    Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.HALF_FOLDED));
+
+            assumeFalse("Device is TV", Helper.isTv(mContext));
+
             // Set orientation as portrait, otherwise some tests might fail due to elements not
             // fitting in, IME orientation, etc...
             mUiBot.setScreenOrientation(UiBot.PORTRAIT);
-
-            // Wait until device is idle to avoid flakiness
-            mUiBot.waitForIdle();
 
             // Clear Clipboard
             // TODO(b/117768051): remove try/catch once fixed
@@ -453,14 +552,14 @@ public final class AutoFillServiceTestCase {
          * Enables the {@link InstrumentedAutoFillService} for autofill for the current user.
          */
         protected void enableService() {
-            Helper.enableAutofillService(getContext(), SERVICE_NAME);
+            Helper.enableAutofillService(SERVICE_NAME);
         }
 
         /**
          * Disables the {@link InstrumentedAutoFillService} for autofill for the current user.
          */
         protected void disableService() {
-            Helper.disableAutofillService(getContext());
+            Helper.disableAutofillService();
         }
 
         /**
