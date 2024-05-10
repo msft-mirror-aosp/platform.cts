@@ -209,8 +209,10 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
                 break
 
               # If a superset of features are already tested, skip.
+              # pylint: disable=line-too-long
               is_stabilized = (
-                  stabilize == camera_properties_utils.STABILIZATION_MODE_PREVIEW)
+                  stabilize == camera_properties_utils.STABILIZATION_MODE_PREVIEW
+              )
               skip_test = its_session_utils.check_and_update_features_tested(
                   features_tested, hlg10, is_stabilized)
               if skip_test:
