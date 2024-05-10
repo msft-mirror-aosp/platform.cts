@@ -32,6 +32,8 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.Manifest;
+import android.app.AppGlobals;
 import android.app.Instrumentation;
 import android.app.PendingIntent;
 import android.app.compat.CompatChanges;
@@ -46,6 +48,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Process;
 import android.os.StrictMode;
 import android.os.strictmode.UnsafeIntentLaunchViolation;
 import android.platform.test.annotations.AppModeFull;
@@ -108,6 +111,38 @@ public class SaferIntentTest {
     private static final String RESOLUTION_TEST_ACTION_NAME =
             "android.intent.action.RESOLUTION_TEST";
 
+    static class WaitReceiver extends BroadcastReceiver {
+        private CountDownLatch mLatch = new CountDownLatch(1);
+
+        void reset() {
+            mLatch = new CountDownLatch(1);
+        }
+
+        boolean waitOnReceive() throws InterruptedException {
+            SystemUtil.waitForBroadcasts();
+            return mLatch.await(5, TimeUnit.SECONDS);
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            mLatch.countDown();
+        }
+    }
+
+    static class IntentRetriever extends WaitReceiver {
+        Intent mIntent;
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            mIntent = intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
+            super.onReceive(context, intent);
+        }
+    }
+
+    enum LaunchType {
+        ACTIVITY, SERVICE, BROADCAST
+    }
+
     @Before
     public void setup() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -116,15 +151,24 @@ public class SaferIntentTest {
         mRegisteredReceiverList = new ArrayList<>();
         mViolations = new LinkedBlockingQueue<>();
         StrictMode.setViolationLogger(mViolations::offer);
+
+        // Bring test app out of the stopped state so that it can receive broadcasts
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                AppGlobals.getPackageManager().setPackageStoppedState(
+                        RESOLUTION_TEST_PKG_NAME, false, Process.myUserHandle().getIdentifier()),
+                Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE
+        );
+        // Exempt test app so we can start its services
+        SystemUtil.runShellCommand("cmd deviceidle whitelist +" + RESOLUTION_TEST_PKG_NAME);
     }
 
     @After
     public void tearDown() throws Exception {
         SystemUtil.runWithShellPermissionIdentity(() ->
-                        CompatChanges.removePackageOverrides(mContext.getPackageName(),
-                                Set.of(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID,
-                                        IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID,
-                                        BLOCK_NULL_ACTION_INTENTS)),
+                CompatChanges.removePackageOverrides(mContext.getPackageName(),
+                        Set.of(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID,
+                                IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID,
+                                BLOCK_NULL_ACTION_INTENTS)),
                 OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
         for (BroadcastReceiver receiver : mRegisteredReceiverList) {
             mContext.unregisterReceiver(receiver);
@@ -194,18 +238,12 @@ public class SaferIntentTest {
     public void testBroadcastInternalExportedRuntimeReceiver()
             throws InterruptedException {
         setCompatOverride(IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID, true);
-        var latch = new CountDownLatch(1);
-        var receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                latch.countDown();
-            }
-        };
+        var receiver = new WaitReceiver();
         var filter = new IntentFilter(EXPORTED_ACTION);
         mContext.registerReceiver(receiver, filter, RECEIVER_EXPORTED);
         mRegisteredReceiverList.add(receiver);
         mContext.sendBroadcast(new Intent(EXPORTED_ACTION));
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(receiver.waitOnReceive());
     }
 
     @Test
@@ -214,42 +252,36 @@ public class SaferIntentTest {
         setCompatOverride(IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID, false);
         enableStrictMode();
 
-        var receiver = new BroadcastReceiver() {
-            private CountDownLatch mLatch;
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                mLatch.countDown();
-            }
-        };
+        var receiver = new WaitReceiver();
         var filter = new IntentFilter(NON_EXPORTED_ACTION);
         mContext.registerReceiver(receiver, filter, RECEIVER_NOT_EXPORTED);
         mRegisteredReceiverList.add(receiver);
         var intent = new Intent(NON_EXPORTED_ACTION);
 
-        receiver.mLatch = new CountDownLatch(1);
+        receiver.reset();
         mContext.sendBroadcast(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(receiver.waitOnReceive());
         // Strict mode should still catch the unsafe usage
         assertViolation(true);
 
         // Enable the feature
         setCompatOverride(IMPLICIT_INTENTS_ONLY_MATCH_EXPORTED_COMPONENTS_CHANGEID, true);
-        receiver.mLatch = new CountDownLatch(1);
+        receiver.reset();
         mContext.sendBroadcast(intent);
-        assertFalse(receiver.mLatch.await(5, TimeUnit.SECONDS));
+        assertFalse(receiver.waitOnReceive());
         assertViolation(true);
 
         // Switching to explicit should work properly
         intent.setPackage(mContext.getPackageName());
-        receiver.mLatch = new CountDownLatch(1);
+        receiver.reset();
         mContext.sendBroadcast(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(receiver.waitOnReceive());
         assertViolation(false);
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
-    public void testEnforceIntentToMatchIntentFilter() {
+    public void testQueryEnforceIntentFilterMatch() {
         setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, true);
 
         final var emptyFlags = PackageManager.ResolveInfoFlags.of(0);
@@ -266,10 +298,10 @@ public class SaferIntentTest {
         // Package intents with matching intent filter
         intent.setAction(RESOLUTION_TEST_ACTION_NAME);
         results = mPackageManager.queryIntentActivities(intent, emptyFlags);
-        assertEquals(2 /* TestPmActivity and TestPmActivityWithDefault */, results.size());
+        assertEquals(2 /* TestPmActivity and TestPmActivityWithSelector */, results.size());
         // MATCH_DEFAULT_ONLY will change the result
         results = mPackageManager.queryIntentActivities(intent, activityFlags);
-        assertEquals(1 /* TestPmActivityWithDefault */, results.size());
+        assertEquals(1 /* TestPmActivity */, results.size());
         results = mPackageManager.queryIntentServices(intent, emptyFlags);
         assertEquals(1, results.size());
         results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
@@ -407,39 +439,40 @@ public class SaferIntentTest {
         assertEquals(0, results.size());
         results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
         assertEquals(0, results.size());
-
-        /* Pending Intent tests */
-
-        var authority = RESOLUTION_TEST_PKG_NAME + ".provider";
-        Bundle b = mContext.getContentResolver().call(authority, "", null, null);
-        assertNotNull(b);
-        PendingIntent pi = b.getParcelable("pendingIntent", PendingIntent.class);
-        assertNotNull(pi);
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(GET_INTENT_SENDER_INTENT);
-        try {
-            intent = pi.getIntent();
-            // It should be a non-matching intent, which cannot be resolved in our package
-            results = mPackageManager.queryBroadcastReceivers(intent, emptyFlags);
-            assertEquals(0, results.size());
-            // However, querying on behalf of the pending intent creator should work properly
-            results = pi.queryIntentComponents(0);
-            assertEquals(1, results.size());
-        } finally {
-            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
-        }
-
-        intent = new Intent();
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.setComponent(
-                new ComponentName("android", "com.android.internal.app.ResolverActivity"));
-        try {
-            mContext.startActivity(intent);
-        } catch (ActivityNotFoundException ignore) {
-        }
     }
 
     @Test
-    public void testLegacyIntentFilterMatching() {
+    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
+    public void testQueryEnforcePendingIntentFilterMatch() {
+        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, true);
+
+        // Non-matching intent cannot be resolved in our package
+        var intent = new Intent(NON_EXISTENT_ACTION_NAME)
+                .setClassName(RESOLUTION_TEST_PKG_NAME, RECEIVER_NAME);
+        List<ResolveInfo> results = mPackageManager.queryBroadcastReceivers(intent, 0);
+        assertEquals(0, results.size());
+
+        // Send this intent over to the owner to create PI
+        Bundle extras = new Bundle();
+        extras.putParcelable(Intent.EXTRA_INTENT, intent);
+        var authority = RESOLUTION_TEST_PKG_NAME + ".provider";
+        Bundle b = mContext.getContentResolver().call(authority, "", null, extras);
+        assertNotNull(b);
+        PendingIntent pi = b.getParcelable(Intent.EXTRA_INTENT, PendingIntent.class);
+        assertNotNull(pi);
+
+        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(GET_INTENT_SENDER_INTENT);
+        try {
+            // Querying on behalf of the PI creator should work properly
+            results = pi.queryIntentComponents(0);
+        } finally {
+            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
+        assertEquals(1, results.size());
+    }
+
+    @Test
+    public void testQueryLegacyIntentFilterMatch() {
         setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, false);
 
         final var emptyFlags = PackageManager.ResolveInfoFlags.of(0);
@@ -485,7 +518,7 @@ public class SaferIntentTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_BLOCK_NULL_ACTION_INTENTS)
-    public void testNullActionMatching() {
+    public void testQueryNullActionMatch() {
         final var activityFlags = PackageManager.ResolveInfoFlags.of(
                 PackageManager.MATCH_DEFAULT_ONLY);
         final var emptyFlags = PackageManager.ResolveInfoFlags.of(0);
@@ -518,21 +551,183 @@ public class SaferIntentTest {
         assertTrue(results.isEmpty());
     }
 
+    private void testComponentMismatch(LaunchType type) throws InterruptedException {
+        final var retriever = new IntentRetriever();
+        final var filter = new IntentFilter(ACTION_RECEIVING_INTENT);
+        mContext.registerReceiver(retriever, filter, Context.RECEIVER_EXPORTED);
+        mRegisteredReceiverList.add(retriever);
+        enableStrictMode();
+
+        // Set up intent with non matching action
+        final var compIntent = new Intent(NON_EXISTENT_ACTION_NAME);
+        switch (type) {
+            case ACTIVITY -> compIntent
+                    .setClassName(RESOLUTION_TEST_PKG_NAME, ACTIVITY_NAME)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            case SERVICE -> compIntent.setClassName(RESOLUTION_TEST_PKG_NAME, SERVICE_NAME);
+            case BROADCAST -> compIntent.setClassName(RESOLUTION_TEST_PKG_NAME, RECEIVER_NAME);
+        }
+
+        // Intent should be blocked
+        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, true);
+        retriever.reset();
+        switch (type) {
+            case ACTIVITY -> assertThrows(
+                    ActivityNotFoundException.class,
+                    () -> mContext.startActivity(compIntent));
+            case SERVICE -> mContext.startService(compIntent);
+            case BROADCAST -> mContext.sendBroadcast(compIntent);
+        }
+        assertFalse(retriever.waitOnReceive());
+        assertViolation(true);
+        Thread.sleep(500);
+
+        // Intent should not be blocked, but still marked as non-matching
+        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, false);
+        retriever.reset();
+        switch (type) {
+            case ACTIVITY -> mContext.startActivity(compIntent);
+            case SERVICE -> mContext.startService(compIntent);
+            case BROADCAST -> mContext.sendBroadcast(compIntent);
+        }
+        assertTrue(retriever.waitOnReceive());
+        assertTrue(retriever.mIntent.isMismatchingFilter());
+        assertViolation(true);
+        Thread.sleep(500);
+
+        // Set up intent with matching action
+        compIntent.setAction(RESOLUTION_TEST_ACTION_NAME);
+        retriever.reset();
+        switch (type) {
+            case ACTIVITY -> mContext.startActivity(compIntent);
+            case SERVICE -> mContext.startService(compIntent);
+            case BROADCAST -> mContext.sendBroadcast(compIntent);
+        }
+        assertTrue(retriever.waitOnReceive());
+        assertFalse(retriever.mIntent.isMismatchingFilter());
+        assertViolation(false);
+        Thread.sleep(500);
+
+        // Package intents should always match
+        var packageIntent = new Intent(RESOLUTION_TEST_ACTION_NAME)
+                .setPackage(RESOLUTION_TEST_PKG_NAME);
+        if (type.equals(LaunchType.ACTIVITY)) {
+            packageIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
+
+        retriever.reset();
+        switch (type) {
+            case ACTIVITY -> mContext.startActivity(packageIntent);
+            case SERVICE -> mContext.startService(packageIntent);
+            case BROADCAST -> mContext.sendBroadcast(packageIntent);
+        }
+        assertTrue(retriever.waitOnReceive());
+        assertFalse(retriever.mIntent.isMismatchingFilter());
+        Thread.sleep(500);
+
+        // Test whether the flag is cleared when matching
+        packageIntent.addExtendedFlags(Intent.EXTENDED_FLAG_FILTER_MISMATCH);
+
+        retriever.reset();
+        switch (type) {
+            case ACTIVITY -> mContext.startActivity(packageIntent);
+            case SERVICE -> mContext.startService(packageIntent);
+            case BROADCAST -> mContext.sendBroadcast(packageIntent);
+        }
+        assertTrue(retriever.waitOnReceive());
+        assertFalse(retriever.mIntent.isMismatchingFilter());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
+    public void testActivityIntentMismatch() throws InterruptedException {
+        testComponentMismatch(LaunchType.ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
+    public void testServiceIntentMismatch() throws InterruptedException {
+        testComponentMismatch(LaunchType.SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
+    public void testBroadcastIntentMismatch() throws InterruptedException {
+        testComponentMismatch(LaunchType.BROADCAST);
+    }
+
+    private void testComponentNullActionMatch(Intent intent, LaunchType type)
+            throws InterruptedException {
+        final var receiver = new WaitReceiver();
+        final var filter = new IntentFilter(ACTION_RECEIVING_INTENT);
+        mContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
+        mRegisteredReceiverList.add(receiver);
+        enableStrictMode();
+
+        // Test legacy behavior
+        setCompatOverride(BLOCK_NULL_ACTION_INTENTS, false);
+        receiver.reset();
+        switch (type) {
+            case ACTIVITY -> mContext.startActivity(intent);
+            case SERVICE -> mContext.startService(intent);
+            case BROADCAST -> mContext.sendBroadcast(intent);
+        }
+        assertTrue(receiver.waitOnReceive());
+        assertViolation(true);
+
+        // Test new behavior
+        setCompatOverride(BLOCK_NULL_ACTION_INTENTS, true);
+        receiver.reset();
+        switch (type) {
+            case ACTIVITY -> assertThrows(
+                    ActivityNotFoundException.class,
+                    () -> mContext.startActivity(intent));
+            case SERVICE -> mContext.startService(intent);
+            case BROADCAST -> mContext.sendBroadcast(intent);
+        }
+        assertFalse(receiver.waitOnReceive());
+        assertViolation(true);
+    }
+
     @Test
     @RequiresFlagsEnabled(FLAG_BLOCK_NULL_ACTION_INTENTS)
-    public void testRegisterReceiverNullActionMatching() throws InterruptedException {
-        final var receiver = new BroadcastReceiver() {
-            private CountDownLatch mLatch;
+    public void testActivityNullAction() throws InterruptedException {
+        final var intent = new Intent()
+                .setPackage(RESOLUTION_TEST_PKG_NAME)
+                .setData(Uri.parse("https://www.google.com"))
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        testComponentNullActionMatch(intent, LaunchType.ACTIVITY);
+    }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_BLOCK_NULL_ACTION_INTENTS)
+    public void testServiceNullAction() throws InterruptedException {
+        final var intent = new Intent().setPackage(RESOLUTION_TEST_PKG_NAME);
+        testComponentNullActionMatch(intent, LaunchType.SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_BLOCK_NULL_ACTION_INTENTS)
+    public void testStaticBroadcastNullAction() throws InterruptedException {
+        var intent = new Intent().setPackage(RESOLUTION_TEST_PKG_NAME);
+        testComponentNullActionMatch(intent, LaunchType.BROADCAST);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_BLOCK_NULL_ACTION_INTENTS)
+    public void testRuntimeBroadcastNullAction() throws InterruptedException {
+        final var targetReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                mLatch.countDown();
+                var broadcast = new Intent(ACTION_RECEIVING_INTENT)
+                        .setPackage(mContext.getPackageName());
+                context.sendBroadcast(broadcast);
             }
         };
         final var filter = new IntentFilter("action");
         filter.addDataScheme("https");
-        mContext.registerReceiver(receiver, filter, RECEIVER_NOT_EXPORTED);
-        mRegisteredReceiverList.add(receiver);
+        mContext.registerReceiver(targetReceiver, filter, RECEIVER_NOT_EXPORTED);
+        mRegisteredReceiverList.add(targetReceiver);
 
         // Create an intent with null action
         final var intent = new Intent()
@@ -540,168 +735,6 @@ public class SaferIntentTest {
                 .setData(Uri.parse("https://www.google.com"))
                 .addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY);
 
-        // Test legacy behavior
-        setCompatOverride(BLOCK_NULL_ACTION_INTENTS, false);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.sendBroadcast(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-
-        // Test new behavior
-        setCompatOverride(BLOCK_NULL_ACTION_INTENTS, true);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.sendBroadcast(intent);
-        assertFalse(receiver.mLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    private static class IntentRetriever extends BroadcastReceiver {
-        private CountDownLatch mLatch;
-        private Intent mIntent;
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            mIntent = intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
-            mLatch.countDown();
-        }
-    }
-
-    private IntentRetriever setupMismatchFlagTest() {
-        // Explicitly disable the enforcement to test non-matching intents
-        setCompatOverride(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID, false);
-
-        final var receiver = new IntentRetriever();
-        final var filter = new IntentFilter(ACTION_RECEIVING_INTENT);
-        mContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
-        mRegisteredReceiverList.add(receiver);
-        return receiver;
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
-    public void testActivityIntentMismatchFlag() throws InterruptedException {
-        final var receiver = setupMismatchFlagTest();
-
-        // Set up base intent with non matching action
-        var intent = new Intent(NON_EXISTENT_ACTION_NAME)
-                .setClassName(RESOLUTION_TEST_PKG_NAME, ACTIVITY_NAME)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startActivity(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(receiver.mIntent.isMismatchingFilter());
-        Thread.sleep(500);
-
-        // Set up base intent with matching action
-        intent.setAction(RESOLUTION_TEST_ACTION_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startActivity(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-        Thread.sleep(500);
-
-        // Package intents should always match
-        intent = new Intent(RESOLUTION_TEST_ACTION_NAME)
-                .setPackage(RESOLUTION_TEST_PKG_NAME)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startActivity(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-        Thread.sleep(500);
-
-        // Test whether the flag is cleared when matching
-        intent.addExtendedFlags(Intent.EXTENDED_FLAG_FILTER_MISMATCH);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startActivity(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
-    public void testServiceIntentMismatchFlag() throws InterruptedException {
-        final var receiver = setupMismatchFlagTest();
-
-        // Exempt target app so we can start its services
-        SystemUtil.runShellCommand("cmd deviceidle whitelist +" + RESOLUTION_TEST_PKG_NAME);
-
-        // Set up base intent with non matching action
-        var intent = new Intent(NON_EXISTENT_ACTION_NAME)
-                .setClassName(RESOLUTION_TEST_PKG_NAME, SERVICE_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startService(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(receiver.mIntent.isMismatchingFilter());
-
-        // Set up base intent with matching action
-        intent.setAction(RESOLUTION_TEST_ACTION_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startService(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-
-        // Package intents should always match
-        intent = new Intent(RESOLUTION_TEST_ACTION_NAME)
-                .setPackage(RESOLUTION_TEST_PKG_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startService(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-
-        // Test whether the flag is cleared when matching
-        intent.addExtendedFlags(Intent.EXTENDED_FLAG_FILTER_MISMATCH);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startService(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
-    public void testBroadcastIntentMismatchFlag() throws InterruptedException {
-        final var receiver = setupMismatchFlagTest();
-
-        // Set up base intent with non matching action
-        var intent = new Intent(NON_EXISTENT_ACTION_NAME)
-                .setClassName(RESOLUTION_TEST_PKG_NAME, RECEIVER_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.sendBroadcast(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(receiver.mIntent.isMismatchingFilter());
-
-        // Set up base intent with matching action
-        intent.setAction(RESOLUTION_TEST_ACTION_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.sendBroadcast(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-
-        // Package intents should always match
-        intent = new Intent(RESOLUTION_TEST_ACTION_NAME)
-                .setPackage(RESOLUTION_TEST_PKG_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.sendBroadcast(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-
-        // Test whether the flag is cleared when matching
-        intent.addExtendedFlags(Intent.EXTENDED_FLAG_FILTER_MISMATCH);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.sendBroadcast(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
+        testComponentNullActionMatch(intent, LaunchType.BROADCAST);
     }
 }

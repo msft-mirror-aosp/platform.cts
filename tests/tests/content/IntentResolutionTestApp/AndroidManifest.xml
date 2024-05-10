@@ -26,17 +26,22 @@
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.RESOLUTION_TEST"/>
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SELECTORTEST"/>
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.RESOLUTION_TEST2"/>
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="https" />
+            </intent-filter>
         </activity>
-        <activity-alias android:name="android.content.pm.cts.TestPmActivityWithDefault"
+        <activity-alias android:name="android.content.pm.cts.TestPmActivityWithSelector"
             android:targetActivity="android.content.pm.cts.TestPmActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.RESOLUTION_TEST"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SELECTORTEST"/>
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity-alias>
