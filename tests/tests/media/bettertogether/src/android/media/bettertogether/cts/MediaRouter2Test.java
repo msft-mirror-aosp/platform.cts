@@ -148,6 +148,12 @@ public class MediaRouter2Test {
 
         mRouter2 = MediaRouter2.getInstance(mContext);
         MediaRouter2TestActivity.startActivity(mContext);
+
+        if (isAutomotive()) {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        }
     }
 
     private void setUpStubProvider() {
@@ -177,6 +183,8 @@ public class MediaRouter2Test {
 
     @After
     public void tearDown() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity();
         mRouter2.unregisterRouteCallback(mRouterDummyCallback);
         // Clearing RouteListingPreference.
         mRouter2.setRouteListingPreference(null);
@@ -1717,5 +1725,9 @@ public class MediaRouter2Test {
             result.add(route.getOriginalId());
         }
         return result;
+    }
+
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }

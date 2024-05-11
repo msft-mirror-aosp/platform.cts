@@ -118,7 +118,7 @@ public class ExternalCallTest extends BaseTelecomTestWithMockServices {
      * CAPABILITY_CAN_PLACE_CALL capability is removed.
      */
     public void testPullCallCapabilityRemovedInEmergencyCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
@@ -140,7 +140,7 @@ public class ExternalCallTest extends BaseTelecomTestWithMockServices {
      * ongoing emergency call, the request is not completed.
      */
     public void testTryToPullCallWhileInEmergencyCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
@@ -166,7 +166,7 @@ public class ExternalCallTest extends BaseTelecomTestWithMockServices {
      * test to check external call and pull external call with call and connection states check
      */
     public void testExternalCallAndPullCall() throws Exception {
-        if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 

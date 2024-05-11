@@ -13,7 +13,7 @@
      limitations under the License.
 -->
 <device-admin xmlns:android="http://schemas.android.com/apk/res/android" android:visible="false">
-     <headless-system-user headless-device-owner-mode="single_user" device-owner-mode="single_user" />
+     <headless-system-user device-owner-mode="single_user" />
      <uses-policies>
           <watch-login />
           <reset-password />

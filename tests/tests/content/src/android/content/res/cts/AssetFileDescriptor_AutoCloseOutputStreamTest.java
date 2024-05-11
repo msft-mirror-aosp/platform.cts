@@ -15,17 +15,30 @@
  */
 package android.content.res.cts;
 
+import static junit.framework.TestCase.assertEquals;
+
+import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class AssetFileDescriptor_AutoCloseOutputStreamTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class AssetFileDescriptor_AutoCloseOutputStreamTest {
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
 
     private static final String FILE_NAME = "testAssertFileDescriptorAutoCloseOutputStream";
     private static final int FILE_LENGTH = 100;
@@ -36,9 +49,8 @@ public class AssetFileDescriptor_AutoCloseOutputStreamTest extends AndroidTestCa
 
     private AssetFileDescriptor mAssetFileDes;
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         // As {@link AssetFileDescripter#createOutputStream()}
         // and {@link AssetFileDescripter#createInputStream()} doc,
         // the input and output stream will be auto closed when the AssetFileDescriptor closed.
@@ -53,6 +65,7 @@ public class AssetFileDescriptor_AutoCloseOutputStreamTest extends AndroidTestCa
      * Test AutoCloseOutputStream life circle.
      * 1. Write file data into test file.
      */
+    @Test
     public void testAutoCloseOutputStream() throws IOException {
         File file = new File(getContext().getFilesDir(), FILE_NAME);
         file.createNewFile();

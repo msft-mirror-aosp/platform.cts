@@ -52,10 +52,14 @@ CIRCLE_COLOR_ATOL = 0.05  # circle color fill tolerance
 CIRCLE_LOCATION_VARIATION_RTOL = 0.05  # tolerance to remove similar circles
 
 CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
+CV2_BLACK = (0, 0, 0)
+CV2_BLUE = (0, 0, 255)
 CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
 CV2_RED_NORM = tuple(numpy.array(CV2_RED) / 255)
 CV2_GREEN = (0, 255, 0)
 CV2_GREEN_NORM = tuple(numpy.array(CV2_GREEN) / 255)
+CV2_WHITE = (255, 255, 255)
+CV2_YELLOW = (255, 255, 0)
 CV2_THRESHOLD_BLOCK_SIZE = 11
 CV2_THRESHOLD_CONSTANT = 2
 
@@ -1096,8 +1100,26 @@ def get_chart_boundary_from_aruco_markers(
   bottom_right = tuple(map(int, outer_rect_coordinates[2]))
   bottom_left = tuple(map(int, outer_rect_coordinates[3]))
 
-  cv2.rectangle(input_img, top_left, bottom_right,
-                CV2_RED, CV2_LINE_THICKNESS)
+  # Outline metering rectangles with corresponding colors
+  rect_w = round((bottom_right[0] - top_left[0])/NUM_AE_AWB_REGIONS)
+  top_x, top_y = top_left[0], top_left[1]
+  bottom_x, bottom_y = bottom_left[0], bottom_left[1]
+  cv2.rectangle(
+      input_img,
+      (top_x, top_y), (bottom_x + rect_w, bottom_y),
+      CV2_BLUE, CV2_LINE_THICKNESS)
+  cv2.rectangle(
+      input_img,
+      (top_x + rect_w, top_y), (bottom_x + rect_w * 2, bottom_y),
+      CV2_WHITE, CV2_LINE_THICKNESS)
+  cv2.rectangle(
+      input_img,
+      (top_x + rect_w * 2, top_y), (bottom_x + rect_w * 3, bottom_y),
+      CV2_BLACK, CV2_LINE_THICKNESS)
+  cv2.rectangle(
+      input_img,
+      (top_x + rect_w * 3, top_y), bottom_right,
+      CV2_YELLOW, CV2_LINE_THICKNESS)
   image_processing_utils.write_image(input_img/255, output_img_path)
   logging.debug('ArUco marker top_left: %s', top_left)
   logging.debug('ArUco marker bottom_right: %s', bottom_right)

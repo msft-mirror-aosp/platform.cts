@@ -23,14 +23,19 @@ import android.app.appsearch.functions.ExecuteAppFunctionRequest;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import com.android.appsearch.flags.Flags;
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)
 public class ExecuteAppFunctionRequestCtsTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @ApiTest(apis = {
             "android.app.appsearch.functions.ExecuteAppFunctionRequest.Builder#Builder",

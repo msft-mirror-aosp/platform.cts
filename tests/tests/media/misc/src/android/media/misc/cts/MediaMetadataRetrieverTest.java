@@ -1242,17 +1242,15 @@ public class MediaMetadataRetrieverTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
     public void testGetImageAtIndexAvifWithCrop() throws Exception {
-        // sample_1960x1120_crop_20_20_1920_1080.avif is a 1960x1120 AVIF image with the crop window
-        // set to left: 20 top: 20 crop width: 1920 crop height: 1080. The cropped image should
+        // sample_720x480_crop_20_20_680_440.avif is a 720x480 AVIF image with the crop window
+        // set to left: 20 top: 20 crop width: 680 crop height: 440. The cropped image should
         // contain the same pixels as other sample AVIF images. So in order to verify the cropping,
         // it is sufficient to pass checkColor to true to testGetImage.  If the cropping was
         // incorrect, then checking of color bars will fail. The expected width and height should be
         // that of the cropped image.
-        if (!MediaUtils.canDecodeVideo(MediaFormat.MIMETYPE_VIDEO_AV1, 1960, 1120, 30)) {
-            MediaUtils.skipTest("No AV1 codec for 1960x1120");
-            return;
-        }
-        testGetImage("sample_1960x1120_crop_20_20_1920_1080.avif", 1920, 1080, "image/avif",
+        assumeTrue("No AV1 codec for 720x480",
+                MediaUtils.canDecodeVideo(MediaFormat.MIMETYPE_VIDEO_AV1, 720, 480, 30));
+        testGetImage("sample_720x480_crop_20_20_680_440.avif", 680, 440, "image/avif",
                 0 /*rotation*/, 1 /*imageCount*/, 0 /*primary*/, false /*useGrid*/,
                 true /*checkColor*/);
     }

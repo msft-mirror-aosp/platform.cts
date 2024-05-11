@@ -22,14 +22,10 @@ import android.content.AttributionSource
 import android.content.Context
 import android.content.ContextParams
 import android.content.pm.PackageManager
-import android.os.Binder
 import android.os.Process
 import android.os.UserHandle
 import android.permission.PermissionManager
-import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
-import android.platform.test.annotations.RequiresFlagsDisabled
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.CalendarContract
 import android.provider.ContactsContract
@@ -91,21 +87,7 @@ class RenouncedPermissionsTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    @RequiresFlagsEnabled(Flags.FLAG_ATTRIBUTION_SOURCE_CONSTRUCTOR)
-    fun testCannotRequestRenouncePermissions_attributionSourceConstructorEnabled() {
-        val renouncedPermissions = arrayOf(Manifest.permission.READ_CONTACTS)
-        val attributionSource = AttributionSource(Process.myUid(),
-                Process.myPid(), context.packageName, /*attributionTag*/ null,
-                /*token*/ Binder(), renouncedPermissions, /*next*/ null)
-        val activity = createActivityWithAttributionSource(attributionSource)
-
-        // Requesting renounced permissions throws
-        activity.requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), 1)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    @RequiresFlagsDisabled(Flags.FLAG_ATTRIBUTION_SOURCE_CONSTRUCTOR)
-    fun testCannotRequestRenouncePermissions_attributionSourceConstructorDisabled() {
+    fun testCannotRequestRenouncePermissions() {
         val renouncedPermissions = arrayOf(Manifest.permission.READ_CONTACTS)
         val attributionSource = AttributionSource(
                 Process.myUid(), context.packageName, null,

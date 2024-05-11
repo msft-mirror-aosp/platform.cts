@@ -16,6 +16,8 @@
 
 package android.media.router.cts.proxyroutingapp;
 
+import static android.media.RoutingSessionInfo.TRANSFER_REASON_APP;
+import static android.media.RoutingSessionInfo.TRANSFER_REASON_SYSTEM_REQUEST;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
 
@@ -41,7 +43,6 @@ import android.media.RoutingSessionInfo;
 import android.media.cts.app.common.PlaceholderSelfScanMediaRoute2ProviderService;
 import android.media.cts.app.common.ScreenOnActivity;
 import android.os.ConditionVariable;
-import android.os.UserHandle;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -59,7 +60,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -338,45 +338,79 @@ public class MediaRouter2DeviceTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
 
-        // Generates random package name to avoid collisions with existing routing session info.
-        String randomPackageName = UUID.randomUUID().toString();
-        CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
+        CountDownLatch localControllerUpdateLatch = new CountDownLatch(1);
+        MediaRouter2.ControllerCallback localControllerCallback =
+                new MediaRouter2.ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(MediaRouter2.RoutingController controller) {
+                        RoutingSessionInfo systemSessionInfo = controller.getRoutingSessionInfo();
 
+                        if (controller.wasTransferInitiatedBySelf()
+                                && systemSessionInfo.getTransferReason() == TRANSFER_REASON_APP) {
+                            localControllerUpdateLatch.countDown();
+                        }
+                    }
+                };
+
+        CountDownLatch proxyControllerUpdateLatch = new CountDownLatch(1);
+        MediaRouter2.ControllerCallback proxyControllerCallback =
+                new MediaRouter2.ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(MediaRouter2.RoutingController controller) {
+                        RoutingSessionInfo systemSessionInfo = controller.getRoutingSessionInfo();
+
+                        if (controller.wasTransferInitiatedBySelf()
+                                && systemSessionInfo.getTransferReason()
+                                        == RoutingSessionInfo.TRANSFER_REASON_SYSTEM_REQUEST) {
+                            proxyControllerUpdateLatch.countDown();
+                        }
+                    }
+                };
+        MediaRouter2 localRouter = MediaRouter2.getInstance(mContext);
+        // The route callback is necessary for the local router to be registered in the routing
+        // service. If there's no callback, the transfer request is ignored due to absence of a
+        // router record.
         MediaRouter2.RouteCallback routeCallback = new MediaRouter2.RouteCallback() {};
-        MediaRouter2.ControllerCallback controllerCallback = new MediaRouter2.ControllerCallback() {
-            @Override
-            public void onControllerUpdated(MediaRouter2.RoutingController controller) {
-                RoutingSessionInfo systemSessionInfo = controller.getRoutingSessionInfo();
+        localRouter.registerRouteCallback(mExecutor, routeCallback, RouteDiscoveryPreference.EMPTY);
 
-                if (systemSessionInfo.getTransferReason()
-                        == RoutingSessionInfo.TRANSFER_REASON_SYSTEM_REQUEST) {
-                    onControllerUpdatedLatch.countDown();
-                }
-            }
-        };
+        localRouter.registerControllerCallback(mExecutor, localControllerCallback);
+        MediaRouter2.RoutingController localSystemController = localRouter.getSystemController();
 
-        MediaRouter2 router2 = MediaRouter2.getInstance(mContext);
-        // Required to register LocalRouter within the system server.
-        router2.registerRouteCallback(mExecutor, routeCallback, RouteDiscoveryPreference.EMPTY);
-
-        MediaRouter2 proxyRouter2 = MediaRouter2.getInstance(mContext, mContext.getPackageName());
-        proxyRouter2.registerControllerCallback(mExecutor, controllerCallback);
-
-        MediaRouter2.RoutingController controller = proxyRouter2.getSystemController();
-        List<MediaRoute2Info> systemRoutes = controller.getSelectedRoutes();
-        assertThat(systemRoutes).isNotEmpty();
-        MediaRoute2Info route = systemRoutes.get(0);
-
-        proxyRouter2.transfer(controller,
-                route,
-                UserHandle.SYSTEM,
-                randomPackageName);
+        MediaRouter2 proxyRouter = MediaRouter2.getInstance(mContext, mContext.getPackageName());
+        proxyRouter.registerControllerCallback(mExecutor, proxyControllerCallback);
+        MediaRouter2.RoutingController proxySystemController = proxyRouter.getSystemController();
 
         try {
-            assertThat(onControllerUpdatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            localRouter.transferTo(localSystemController.getSelectedRoutes().get(0));
+            // We cannot assert this await because we don't know that the previous state was (the
+            // event could be swallowed because the transfer didn't introduce any routing session
+            // changes).
+            localControllerUpdateLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            assertThat(localSystemController.wasTransferInitiatedBySelf()).isTrue();
+            assertThat(localSystemController.getRoutingSessionInfo().getTransferReason())
+                    .isEqualTo(TRANSFER_REASON_APP);
+
+            while (proxySystemController.getSelectedRoutes().isEmpty()) {
+                // TODO b/339583417 - Remove this busy wait once we fix the underlying bug in proxy
+                // routers.
+                Thread.sleep(/* millis= */ 500);
+            }
+            proxyRouter.transfer(
+                    proxySystemController, proxySystemController.getSelectedRoutes().get(0));
+            // Now we can assert that the controller is called because we know we are coming from an
+            // app transfer (triggered by the local router).
+            assertThat(proxyControllerUpdateLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .isTrue();
+            assertThat(proxySystemController.wasTransferInitiatedBySelf()).isTrue();
+            assertThat(proxySystemController.getRoutingSessionInfo().getTransferReason())
+                    .isEqualTo(TRANSFER_REASON_SYSTEM_REQUEST);
+
+            assertThat(proxyControllerUpdateLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .isTrue();
         } finally {
-            router2.unregisterRouteCallback(routeCallback);
-            proxyRouter2.unregisterControllerCallback(controllerCallback);
+            localRouter.unregisterRouteCallback(routeCallback);
+            localRouter.unregisterControllerCallback(localControllerCallback);
+            proxyRouter.unregisterControllerCallback(proxyControllerCallback);
         }
     }
 

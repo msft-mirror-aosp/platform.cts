@@ -78,7 +78,7 @@ class AttributionSourceTest {
     @Test
     @ApiTest(apis = ["android.content.AttributionSource.Builder#setNextAttributionSource"])
     @Throws(Exception::class)
-    @RequiresFlagsEnabled(Flags.FLAG_ATTRIBUTION_SOURCE_CONSTRUCTOR)
+    @RequiresFlagsEnabled(Flags.FLAG_SET_NEXT_ATTRIBUTION_SOURCE)
     fun testSetNextAttributionSourceWithNull() {
         assertFailsWith(Exception::class, "setNextAttributionSource should throw on null") {
             val nullBuilder = AttributionSource.Builder(Process.myUid())

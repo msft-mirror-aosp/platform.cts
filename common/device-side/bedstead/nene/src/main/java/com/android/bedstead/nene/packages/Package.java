@@ -16,7 +16,6 @@
 
 package com.android.bedstead.nene.packages;
 
-import static android.content.pm.ApplicationInfo.FLAG_STOPPED;
 import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
 import static android.content.pm.PackageManager.GET_PERMISSIONS;
 import static android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES;
@@ -747,17 +746,13 @@ public final class Package {
 
             int previousPid = shouldCheckPreviousProcess ? runningProcess().pid() : -1;
 
-            Integer unused = Poll.forValue("Application flag", () -> {
+            Poll.forValue("Application flag", () -> {
                 userActivityManager.forceStopPackage(mPackageName);
-
-                return userPackageManager.getPackageInfo(mPackageName,
-                            PackageManager.GET_META_DATA)
-                            .applicationInfo.flags;
-            }).toMeet(flag -> !shouldCheckPreviousProcess || (flag & FLAG_STOPPED) == FLAG_STOPPED
-                            ||  previousPid != runningProcess().pid())
-                    .errorOnFail("Expected application flags to contain FLAG_STOPPED ("
-                            + FLAG_STOPPED + ")")
-                    .await();
+                return userPackageManager.isPackageStopped(mPackageName);
+            }).toMeet(packageStopped -> !shouldCheckPreviousProcess || packageStopped
+                    || previousPid != runningProcess().pid())
+            .errorOnFail("Expected application to become stopped")
+            .await();
         }
     }
 
@@ -769,6 +764,31 @@ public final class Package {
     @Experimental
     public void forceStop() {
         forceStop(TestApis.users().instrumented());
+    }
+
+    /**
+     * Returns whether the package is in stopped state.
+     *
+     * <p>See {@link PackageManager#isPackageStopped(String)}
+     */
+    @Experimental
+    public boolean isStopped(UserReference user) {
+        PackageManager pm = TestApis.context().androidContextAsUser(user).getPackageManager();
+        try {
+            return pm.isPackageStopped(mPackageName);
+        } catch (PackageManager.NameNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * Returns whether the package is in stopped state.
+     *
+     * <p>See {@link PackageManager#isPackageStopped(String)}
+     */
+    @Experimental
+    public boolean isStopped() {
+        return isStopped(TestApis.users().instrumented());
     }
 
     /**

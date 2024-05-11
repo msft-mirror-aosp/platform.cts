@@ -226,7 +226,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessingFromCallScreeningAllowPlaceEmergencyCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
@@ -271,7 +271,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessingFromIncomingActivePlaceEmergencyCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
@@ -379,7 +379,7 @@ public class BackgroundCallAudioTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAudioProcessOutgoingActiveEmergencyCallPlaced() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);

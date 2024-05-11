@@ -385,6 +385,7 @@ class DeviceOwnerTest {
 
     @RequireFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN)
     @EnsureHasDeviceOwner
+    @RequireRunOnSystemUser
     @Test
     fun clearDeviceOwnerApp_escrowTokenExists_success() {
         skipTestIfEscrowDisabled {

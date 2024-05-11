@@ -38,6 +38,11 @@ public class BootReceiver extends BroadcastReceiver {
             Intent receiptAck = new Intent(ACTION_BOOT_COMPLETED_RECEIVED);
             receiptAck.putExtra(EXTRA_BOOT_COMPLETED_ACTION, action);
             context.sendBroadcast(receiptAck);
+        } else if (BootCompletedFgs.ACTION_FAKE_BOOT_COMPLETED.equals(action)) {
+            final Intent fgsIntent = new Intent();
+            fgsIntent.setClass(context, BootCompletedFgs.class);
+            fgsIntent.putExtras(intent);
+            context.startForegroundService(fgsIntent);
         }
     }
 }

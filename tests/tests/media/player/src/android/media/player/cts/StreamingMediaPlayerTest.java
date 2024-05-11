@@ -60,7 +60,6 @@ public class StreamingMediaPlayerTest extends MediaPlayerTestBase {
     private static final String TAG = "StreamingMediaPlayerTest";
     static final String mInpPrefix = WorkDir.getMediaDirString() + "assets/";
 
-    private static final String MODULE_NAME = "CtsMediaPlayerTestCases";
     private static final int HLS_PLAYBACK_TIME_MS = 20 * 1000;
     private CtsTestServer mServer;
 

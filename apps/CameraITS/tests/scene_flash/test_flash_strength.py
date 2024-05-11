@@ -43,7 +43,7 @@ _TEST_NAME = os.path.splitext(os.path.basename(__file__))[0]
 _CAPTURE_INTENT_STILL_CAPTURE = 2
 _MAX_FLASH_STRENGTH = 'android.flash.singleStrengthMaxLevel'
 _MAX_TORCH_STRENGTH = 'android.flash.torchStrengthMaxLevel'
-_BRIGHTNESS_MEAN_TOL = 5  # Tolerance for brightness mean
+_BRIGHTNESS_MEAN_ATOL = 5  # Tolerance for brightness mean
 _STRENGTH_STEPS = 3  # Steps of flash strengths to be tested
 
 
@@ -146,19 +146,19 @@ def _compare_means(formats_means, ae_mode, flash_strengths):
             f'{flash_strengths[mean+1]} mean: '
             f'{formats_means[mean+1]}. '
             f'{flash_strengths[mean+1]} should be brighter than '
-            f'{flash_strengths[mean]}'
+            f'{flash_strengths[mean]}. '
         )
         failure_messages.append(msg)
   else:
     for mean in range(1, len(formats_means)-1):
       diff = abs(formats_means[mean] - formats_means[mean+1])
-      if diff > _BRIGHTNESS_MEAN_TOL:
+      if diff > _BRIGHTNESS_MEAN_ATOL:
         msg = (
             f'Capture with AE_CONTROL_MODE ON_AUTO_FLASH. '
             f'{flash_strengths[mean]} mean: {formats_means[mean]}, '
             f'{flash_strengths[mean+1]} mean: '
             f'{formats_means[mean+1]}. '
-            f'Diff: {diff}; TOL: {_BRIGHTNESS_MEAN_TOL}'
+            f'Diff: {diff}; ATOL: {_BRIGHTNESS_MEAN_ATOL}. '
         )
         failure_messages.append(msg)
   return failure_messages
