@@ -15,8 +15,48 @@
   ~ limitations under the License.
   -->
 <configuration description="Excluded MCTS tests from main CTS runs">
-    <!-- Exclude the MctsAppSecurityHostTestCases -->
-    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases" />
+    <!-- Exclude tests in MctsTextClassifierTestCases that are not related to TextClassifierService mainline. -->
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.ConversationActionsTest" />
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.ConversationActionTest" />
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.SelectionEventTest" />
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.TextClassificationContextTest" />
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.TextClassificationManagerTest" />
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.TextClassificationSessionIdTest" />
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.TextClassificationTest" />
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.TextClassifierEventTest" />
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.TextLanguageTest" />
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.TextLinksTest" />
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.TextSelectionTest" />
+    <option name="compatibility:exclude-filter" value="MctsTextClassifierTestCases android.view.textclassifier.cts.TextViewIntegrationTest" />
+
+    <!-- Exclude tests in MctsAppSecurityHostTestCases that are not testing mainline modules-->
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.AccessSerialNumberTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.AdoptableHostTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.AppOpsTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.ApplicationVisibilityTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.AuthBoundKeyTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.BaseAppSecurityTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.CorruptApkTests" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.DeviceIdentifierTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.DirectBootHostTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.EphemeralTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.ExternalStorageHostTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.InstantAppUserTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.InstantCookieHostTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.IsolatedSplitsTests" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.MajorVersionTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.OverlayHostTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.PackageResolutionHostTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.PackageVisibilityTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.PrivilegedUpdateTests" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.SharedUserIdTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.SplitTests" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.StorageHostTest" />
+    <option name="compatibility:exclude-filter" value="MctsAppSecurityHostTestCases android.appsecurity.cts.UseEmbeddedDexTest" />
 
     <!-- Exclude tests in CtsTextClassifierTestCases that are related to TextClassifierService mainline. -->
     <option name="compatibility:exclude-filter" value="CtsTextClassifierTestCases android.view.textclassifier.cts.TextClassifierPolicyTest" />
