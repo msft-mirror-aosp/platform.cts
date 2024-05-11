@@ -161,7 +161,7 @@ class UinputTouchDevice(
 
     private fun associateWith(display: Display) {
         runWithShellPermissionIdentity(
-                { inputManager.addUniqueIdAssociation(port, display.uniqueId!!) },
+                { inputManager.addUniqueIdAssociationByPort(port, display.uniqueId!!) },
                 "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
         )
         waitForDeviceUpdatesUntil {
@@ -210,7 +210,7 @@ class UinputTouchDevice(
 
     override fun close() {
         runWithShellPermissionIdentity(
-                { inputManager.removeUniqueIdAssociation(port) },
+                { inputManager.removeUniqueIdAssociationByPort(port) },
                 "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
         )
         uinputDevice.close()
