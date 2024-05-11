@@ -295,8 +295,12 @@ fun openUnusedAppsNotification() {
     val notifSelector = By.textContains("unused app")
     if (hasFeatureWatch()) {
         val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        expandNotificationsWatch(UiAutomatorUtils.getUiDevice())
-        waitFindObject(uiAutomation, notifSelector).click()
+        val clickRunnable = object : Runnable {
+            override fun run () {
+                waitFindObject(uiAutomation, notifSelector).click()
+            }
+        }
+        expandAndClickNotificationWatch(UiAutomatorUtils.getUiDevice(), clickRunnable)
         // In wear os, notification has one additional button to open it
         waitFindObject(uiAutomation, By.textContains("Open")).click()
     } else {
@@ -341,12 +345,27 @@ fun hasFeatureAutomotive(): Boolean {
         PackageManager.FEATURE_AUTOMOTIVE)
 }
 
-private fun expandNotificationsWatch(uiDevice: UiDevice) {
+private fun expandAndClickNotificationWatch(uiDevice: UiDevice, clickRunnable: Runnable) {
     with(uiDevice) {
         wakeUp()
-        // Swipe up from bottom to reveal notifications
         val x = displayWidth / 2
+        // Swipe up from bottom to reveal notifications
         swipe(x, displayHeight, x, 0, 1)
+        try {
+            clickRunnable.run()
+            return
+        } catch (e: Exception) {
+            // TODO(b/338772456) we catch the exception here since som watches have their
+            // notifications tray on the horizontal swipe. Find a way to find a solution that does
+            // not require vertical/horizontal swipe retries.
+        }
+        // Upwards swipe did not find notifications. Undo the upwards swipe, and try sideways.
+        swipe(x, 0, x, displayHeight, 5)
+        val y = displayHeight / 2
+        swipe(0, y, displayWidth, y, 5)
+
+        clickRunnable.run()
+
     }
 }
 
