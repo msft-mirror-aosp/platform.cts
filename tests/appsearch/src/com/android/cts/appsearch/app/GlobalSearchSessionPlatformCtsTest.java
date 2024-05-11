@@ -24,8 +24,8 @@ import static android.app.appsearch.testutil.AppSearchTestUtils.checkIsBatchResu
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.annotation.NonNull;
 import android.app.appsearch.AppSearchBatchResult;
+import android.app.appsearch.AppSearchManager;
 import android.app.appsearch.AppSearchSchema;
 import android.app.appsearch.AppSearchSchema.PropertyConfig;
 import android.app.appsearch.AppSearchSchema.StringPropertyConfig;
@@ -46,6 +46,8 @@ import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.observer.DocumentChangeInfo;
 import android.app.appsearch.observer.ObserverSpec;
 import android.app.appsearch.testutil.AppSearchEmail;
+import android.app.appsearch.testutil.AppSearchSessionShimImpl;
+import android.app.appsearch.testutil.GlobalSearchSessionShimImpl;
 import android.app.appsearch.testutil.SystemUtil;
 import android.app.appsearch.testutil.TestObserverCallback;
 import android.app.appsearch.util.DocumentIdUtil;
@@ -58,6 +60,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.SigningInfo;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -72,8 +75,6 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -86,15 +87,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * This class can be extended by tests in platforms like Android Framework and GMSCore which host an
- * AppSearch service but can't be run in non-platform environments like JetPack.
+ * This doesn't extend {@link android.app.appsearch.cts.app.GlobalSearchSessionCtsTestBase} since
+ * these test cases can't be run in a non-platform environment.
  */
-@RunWith(JUnit4.class)
-public abstract class GlobalSearchSessionServiceCtsTestBase {
+@AppModeFull(reason = "Can't bind to helper apps from instant mode")
+public class GlobalSearchSessionPlatformCtsTest {
 
     private static final long TIMEOUT_BIND_SERVICE_SEC = 10;
 
-    private static final String TAG = "GlobalSearchSessionServiceCtsTestBase";
+    private static final String TAG = "GlobalSearchSessionPlatformCtsTest";
 
     private static final String PKG_A = "com.android.cts.appsearch.helper.a";
 
@@ -150,7 +151,10 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Before
     public void setUp() throws Exception {
         mContext = ApplicationProvider.getApplicationContext();
-        mDb = createSearchSessionAsync(DB_NAME);
+        mDb =
+                AppSearchSessionShimImpl.createSearchSessionAsync(
+                                new AppSearchManager.SearchContext.Builder(DB_NAME).build())
+                        .get();
         cleanup();
     }
 
@@ -159,12 +163,6 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Cleanup whatever documents may still exist in these databases.
         cleanup();
     }
-
-    protected abstract AppSearchSessionShim createSearchSessionAsync(
-            @NonNull String dbName) throws Exception;
-
-    protected abstract GlobalSearchSessionShim createGlobalSearchSessionAsync(
-            @NonNull Context context) throws Exception;
 
     private void cleanup() throws Exception {
         mDb.setSchemaAsync(new SetSchemaRequest.Builder().setForceOverride(true).build()).get();
@@ -263,7 +261,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         assertThat(page).hasSize(2);
 
         // Assert PKG_A can see cts
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
                 bindToHelperService(PKG_A);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
@@ -291,13 +289,12 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         assertThat(mContext.getPackageManager().canPackageQuery(PKG_A, PKG_B)).isFalse();
 
         // Index schemas in the B package
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
                 bindToHelperService(PKG_B);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
-            boolean documentVisibilitySetup = commandReceiver.setUpPubliclyVisibleDocuments(
+            commandReceiver.setUpPubliclyVisibleDocuments(
                     ctsPackageName, getCtsPackageSha256Cert(), PKG_B, PKG_B_CERT_SHA256);
-            assertThat(documentVisibilitySetup).isTrue();
 
             // Assert that B sees two documents
             List<String> results = commandReceiver.globalSearch("pineapple");
@@ -385,7 +382,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         assertThat(page).hasSize(2);
 
         // Assert PKG_A can't see the documents
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
                 bindToHelperService(PKG_A);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
@@ -399,9 +396,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         serviceConnection = bindToHelperService(PKG_B);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
-            boolean documentVisibilitySetup = commandReceiver.setUpPubliclyVisibleDocuments(
+            commandReceiver.setUpPubliclyVisibleDocuments(
                     ctsPackageName, invalidCert, PKG_A, invalidCert);
-            assertThat(documentVisibilitySetup).isTrue();
 
             // Assert that B sees two documents
             List<String> bResults = commandReceiver.globalSearch("pineapple");
@@ -618,7 +614,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -648,7 +646,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Has READ_SMS only cannot access the document.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can't get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -663,7 +663,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Has READ_SMS and READ_CALENDAR can access the document.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -678,7 +680,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Has READ_CONTACTS can access the document also.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -693,7 +697,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Has READ_EXTERNAL_STORAGE can access the document.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -709,7 +715,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Test
     public void testAllowPermissions_sameError() throws Exception {
         // Try to get document before we put them, this is not found error.
-        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+        mGlobalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
         AppSearchBatchResult<String, GenericDocument> nonExistentResult = mGlobalSearchSession
                 .getByDocumentIdAsync(PKG_A, "database",
                         new GetByDocumentIdRequest.Builder("namespace")
@@ -724,7 +731,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                 ImmutableSet.of(ImmutableSet.of(SetSchemaRequest.READ_SMS)));
 
         // Try to get document w/o permission, this is unAuthority error.
-        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+        mGlobalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
         AppSearchBatchResult<String, GenericDocument> unAuthResult = mGlobalSearchSession
                 .getByDocumentIdAsync(PKG_A, "database",
                         new GetByDocumentIdRequest.Builder("namespace")
@@ -745,7 +753,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -775,7 +785,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can't get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -798,7 +810,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Can't get the document because we haven't added it yet
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     AppSearchBatchResult<String, GenericDocument> nonExistentResult =
                             mGlobalSearchSession.getByDocumentIdAsync(PKG_A, DB_NAME,
@@ -818,7 +832,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Can't get the document because the document is not globally searchable
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     AppSearchBatchResult<String, GenericDocument> unAuthResult =
                             mGlobalSearchSession.getByDocumentIdAsync(PKG_A, DB_NAME,
@@ -839,7 +855,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
 
         // Can't get the document because we don't have global permissions
-        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+        mGlobalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
 
         AppSearchBatchResult<String, GenericDocument> noGlobalResult = mGlobalSearchSession
                 .getByDocumentIdAsync(PKG_A, DB_NAME,
@@ -873,7 +890,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Can get document with READ_SMS permission.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     // Can get the document "id1".
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -888,7 +907,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Cann't get document with READ_CALENDAR permission.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
 
                     // Can't get the document "id2", even if we are while list package, but we don't
                     // hold required permission.
@@ -910,7 +931,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Cann't get document with READ_SMS permission.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
                     // Can't get the document "id2", even if we hold the required permission but
                     // we are not in the while list packages.
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -939,7 +962,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Can get document with READ_SMS permission.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -954,7 +979,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Cann't get document with READ_CALENDAR permission.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
 
                     // Can't get the document, even if we are while list package, but we don't
                     // hold required permission.
@@ -978,7 +1005,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Cann't get document with READ_SMS permission.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
                     // Can't get the document "id2", even if we hold the required permission but
                     // we are not in the while list packages.
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -1011,7 +1040,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Can get document with READ_SMS permission.
         SystemUtil.runWithShellPermissionIdentity(
                     () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
 
                     // Can get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -1026,7 +1057,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Cann't get document with READ_CALENDAR permission.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
 
                     // Can't get the document "id2", even if we are while list package, but we don't
                     // hold required permission.
@@ -1049,7 +1082,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Cann't get document with READ_SMS permission.
         SystemUtil.runWithShellPermissionIdentity(
                     () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
                     // Can't get the document "id2", even if we hold the required permission but
                     // we are not in the while list packages.
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -1072,7 +1107,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Cann't get document with READ_SMS permission.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
                     // Can't get the document "id2", even if we hold the required permission but
                     // we are not in the while list packages.
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
@@ -1098,7 +1135,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         // Cann't get document with READ_SMS permission.
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
                             .getByDocumentIdAsync(PKG_A, "database",
@@ -1117,7 +1156,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     SearchResultsShim searchResults =
                             mGlobalSearchSession.search(
@@ -1144,7 +1185,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     SearchResultsShim searchResults =
                             mGlobalSearchSession.search(
@@ -1168,7 +1211,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     SearchResultsShim searchResults =
                             mGlobalSearchSession.search(
@@ -1190,7 +1235,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         indexGloballySearchableDocument(PKG_A, DB_NAME, NAMESPACE_NAME, "id1");
         indexGloballySearchableDocument(PKG_B, DB_NAME, NAMESPACE_NAME, "id1");
 
-        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+        mGlobalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
 
         SearchResultsShim searchResults =
                 mGlobalSearchSession.search(
@@ -1241,7 +1287,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
 
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     SearchSpec nestedSearchSpec = new SearchSpec.Builder()
                             .addFilterPackageNames(PKG_B)
@@ -1290,7 +1338,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
 
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     SearchSpec nestedSearchSpec = new SearchSpec.Builder()
                             .addFilterPackageNames(PKG_A, PKG_B)
@@ -1379,7 +1429,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
 
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
 
                     SearchSpec nestedSearchSpec = new SearchSpec.Builder()
                             .addFilterPackageNames(PKG_A, PKG_B)
@@ -1415,7 +1467,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Test
     public void testGlobalSearch_withJoin_withoutAccess() throws Exception {
 
-        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+        mGlobalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                        .get();
 
         // Insert schema
         mDb.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(AppSearchEmail.SCHEMA).build())
@@ -1436,7 +1490,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                 /*globallySearchable*/true);
 
         // Query the data
-        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+        mGlobalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
 
         SearchSpec nestedSearchSpec = new SearchSpec.Builder()
                 .addFilterPackageNames(PKG_A, PKG_B)
@@ -1565,7 +1620,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(
+                                    mContext).get();
 
                     // 2. The schema for PKG_A should be retrievable, but PKG_B should not be.
                     GetSchemaResponse response =
@@ -1587,7 +1644,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
         SystemUtil.runWithShellPermissionIdentity(
                 () -> {
-                    mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(
+                                    mContext).get();
 
                     // 2. The schema for both PKG_A and PKG_B should be retrievable.
                     GetSchemaResponse response =
@@ -1636,7 +1695,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                 .get();
 
         SystemUtil.runWithShellPermissionIdentity(() -> {
-            mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+            mGlobalSearchSession =
+                    GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
             mGlobalSearchSession
                     .reportSystemUsageAsync(
                             new ReportSystemUsageRequest.Builder(
@@ -1661,7 +1721,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         }, READ_GLOBAL_APP_SEARCH_DATA);
 
         // Query the data
-        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+        mGlobalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
 
         // Sort by app usage count: id1 should win
         try (SearchResultsShim results = mDb.search(
@@ -1722,7 +1783,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         TestObserverCallback observer = new TestObserverCallback();
 
         // Set up schema
-        mGlobalSearchSession = createGlobalSearchSessionAsync(mContext);
+        mGlobalSearchSession =
+                GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext).get();
         mDb.setSchemaAsync(new SetSchemaRequest.Builder()
                 .addSchemas(AppSearchEmail.SCHEMA).build()).get();
 
@@ -1801,7 +1863,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     }
 
     private List<String> getSchemaAsPackage(String pkg) throws Exception {
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
@@ -1812,7 +1874,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     }
 
     private void assertPackageCannotAccess(String pkg) throws Exception {
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
@@ -1825,7 +1887,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     private void assertPackageCanAccess(GenericDocument expectedDocument, String pkg)
             throws Exception {
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
@@ -1851,7 +1913,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                     new ArrayList<>(allRequiredPermissions));
             permissionBundles.add(permissionBundle);
         }
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
@@ -1891,7 +1953,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
             publicAclBundle.putByteArray("sha256Cert", publicAclPackage.getSha256Certificate());
         }
 
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
@@ -1904,7 +1966,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
 
     private void indexNotGloballySearchableDocument(
             String pkg, String databaseName, String namespace, String id) throws Exception {
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
@@ -1920,7 +1982,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
             boolean globallySearchable)
             throws Exception {
 
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
@@ -1933,7 +1995,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     }
 
     private void clearData(String pkg, String databaseName) throws Exception {
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
@@ -1943,16 +2005,16 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         }
     }
 
-    private GlobalSearchSessionServiceCtsTestBase.TestServiceConnection bindToHelperService(
+    private GlobalSearchSessionPlatformCtsTest.TestServiceConnection bindToHelperService(
             String pkg) {
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
-                new GlobalSearchSessionServiceCtsTestBase.TestServiceConnection(mContext);
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
+                new GlobalSearchSessionPlatformCtsTest.TestServiceConnection(mContext);
         Intent intent = new Intent().setComponent(new ComponentName(pkg, HELPER_SERVICE));
         mContext.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         return serviceConnection;
     }
 
-    private static class TestServiceConnection implements ServiceConnection {
+    private class TestServiceConnection implements ServiceConnection {
         private final Context mContext;
         private final BlockingQueue<IBinder> mBlockingQueue = new LinkedBlockingQueue<>();
         private ICommandReceiver mCommandReceiver;
