@@ -39,6 +39,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -57,9 +58,13 @@ public class AutoPrivacySettingsTest {
     // For the camera privacy setting test
     private static final String CAMERA = "Camera";
 
+    private static final String CAMERA_ACCESS = "Camera access";
+    private static final String INFOTAINMENT_APPS = "Infotainment apps";
     private static final String USE_CAMERA = "Use camera";
-    private static final String[] EXPECTED_CAMERA_ENABLED_SETTINGS = {
+    private static final String[] EXPECTED_CAMERA_ENABLED_ITEMS_V1 = {
             USE_CAMERA, "Recently accessed", "Manage camera permissions"};
+    private static final String[] EXPECTED_CAMERA_ENABLED_ITEMS_V2 = {
+            CAMERA_ACCESS, "Recently accessed", "Manage camera permissions"};
 
     // To support dual panes in AAOS S
     private static final int MAX_NUM_SCROLLABLES = 2;
@@ -109,6 +114,9 @@ public class AutoPrivacySettingsTest {
     @CddTest(requirement = "9.8.2/A-2-3")
     @Test
     public void testPrivacyCameraSettings() throws Exception {
+        assumeFalse(
+                "Skipping test: Enabling/Disabling Camera is not supported in AAOS",
+                SettingsTestUtils.isAutomotive());
         PackageManager pm = mContext.getPackageManager();
         if (!pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
             // Skip this test if the system does not have a camera.
@@ -130,10 +138,19 @@ public class AutoPrivacySettingsTest {
 
         // verify state when camera is enabled
         disableCameraMicPrivacy();
-        for (String setting : EXPECTED_CAMERA_ENABLED_SETTINGS) {
-            assertScrollToAndFind(setting);
+        if (SdkLevel.isAtLeastV()) {
+            for (String item : EXPECTED_CAMERA_ENABLED_ITEMS_V2) {
+                assertScrollToAndFind(item);
+            }
+            UiObject2 camAccessObj = scrollToText(CAMERA_ACCESS);
+            camAccessObj.click();
+            mDevice.waitForIdle();
+            assertScrollToAndFind(INFOTAINMENT_APPS);
+        } else {
+            for (String item : EXPECTED_CAMERA_ENABLED_ITEMS_V1) {
+                assertScrollToAndFind(item);
+            }
         }
-
         goHome();
     }
 

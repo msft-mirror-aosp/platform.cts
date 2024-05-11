@@ -26,6 +26,8 @@ TEST_SUITES_DEFAULT = [
 ]
 
 MCTS_TEST_SUITES_DEFAULT = [
+    "cts",
+    "general-tests",
     "mcts-documentsui",
     "mcts-mainline-infra",
     "mcts-mediaprovider",
