@@ -108,7 +108,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
           stabilization_modes):
         stabilization_params.append(
             camera_properties_utils.STABILIZATION_MODE_PREVIEW)
-      stabilization_modes.append(camera_properties_utils.STABILIZATION_MODE_OFF)
+      stabilization_params.append(camera_properties_utils.STABILIZATION_MODE_OFF)
       logging.debug('stabilization modes: %s', stabilization_params)
 
       configs = props['android.scaler.streamConfigurationMap'][
@@ -203,19 +203,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 is_stabilized = True
 
               # If a superset of features are already tested, skip.
-              feature_mask = 0
-              if hlg10: feature_mask |= _BIT_HLG10
-              if is_stabilized: feature_mask |= _BIT_STABILIZATION
-              skip_test = False
-              for tested_feature in features_tested:
-                # Only test a combination if they aren't already a subset
-                # of another tested combination.
-                if (tested_feature | feature_mask) == tested_feature:
-                  skip_test = True
-                  break
+              skip_test = its_session_utils.check_and_update_features_tested(
+                  features_tested, hlg10, is_stabilized)
               if skip_test:
                 continue
-              features_tested.append(feature_mask)
 
               recording_obj = (
                   preview_processing_utils.collect_data_with_surfaces(

@@ -42,6 +42,7 @@ import static org.junit.Assert.assertThrows;
 import android.Manifest;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.media.AudioManager;
 import android.media.MediaRoute2Info;
@@ -147,11 +148,20 @@ public class SystemMediaRouter2Test {
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         // INTERACT_ACROSS_USERS_FULL is necessary for the proxy router in
         // clearTransferReasonAndInitiator.
-        mUiAutomation.adoptShellPermissionIdentity(
-                Manifest.permission.MEDIA_CONTENT_CONTROL,
-                Manifest.permission.MODIFY_AUDIO_ROUTING,
-                Manifest.permission.QUERY_AUDIO_STATE,
-                Manifest.permission.INTERACT_ACROSS_USERS_FULL);
+        if (isAutomotive()) {
+            mUiAutomation.adoptShellPermissionIdentity(
+                    Manifest.permission.MEDIA_CONTENT_CONTROL,
+                    Manifest.permission.MODIFY_AUDIO_ROUTING,
+                    Manifest.permission.QUERY_AUDIO_STATE,
+                    Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+                    Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        } else {
+            mUiAutomation.adoptShellPermissionIdentity(
+                    Manifest.permission.MEDIA_CONTENT_CONTROL,
+                    Manifest.permission.MODIFY_AUDIO_ROUTING,
+                    Manifest.permission.QUERY_AUDIO_STATE,
+                    Manifest.permission.INTERACT_ACROSS_USERS_FULL);
+        }
 
         mExecutor = Executors.newSingleThreadExecutor();
         mAudioManager = (AudioManager) mContext.getSystemService(AUDIO_SERVICE);
@@ -1639,5 +1649,9 @@ public class SystemMediaRouter2Test {
         for (RoutingController controller : controllers) {
             controller.release();
         }
+    }
+
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }

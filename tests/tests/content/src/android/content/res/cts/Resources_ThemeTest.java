@@ -16,6 +16,14 @@
 
 package android.content.res.cts;
 
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertNotSame;
+import static junit.framework.TestCase.assertSame;
+import static junit.framework.TestCase.assertTrue;
+
+import android.content.Context;
 import android.content.cts.R;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
@@ -25,30 +33,38 @@ import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.util.Xml;
 import android.view.View;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParser;
 
 import java.util.Locale;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class Resources_ThemeTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class Resources_ThemeTest {
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
 
     private Resources.Theme mResTheme;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         mResTheme = getContext().getResources().newTheme();
     }
 
     @SmallTest
+    @Test
     public void testSetMethods() {
         // call a native method, and have no way to get the style
         mResTheme.applyStyle(R.raw.testmp3, false);
@@ -60,6 +76,7 @@ public class Resources_ThemeTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testObtainStyledAttributes() {
         final int[] attrs = new int[1];
         attrs[0] = R.raw.testmp3;
@@ -84,6 +101,7 @@ public class Resources_ThemeTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testObtainStyledAttributesWithInlineStringInTheme() {
         mResTheme.applyStyle(R.style.Theme_InlineString, false);
         final TypedArray ta = mResTheme.obtainStyledAttributes(new int[] { R.attr.testString });
@@ -94,6 +112,7 @@ public class Resources_ThemeTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testResolveAttribute() {
         final TypedValue value = new TypedValue();
         getContext().getResources().getValue(R.raw.testmp3, value, true);
@@ -101,6 +120,7 @@ public class Resources_ThemeTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testGetChangingConfigurations() {
         Resources.Theme theme = getContext().getResources().newTheme();
         assertEquals("Initial changing configuration mask is empty",
@@ -123,6 +143,7 @@ public class Resources_ThemeTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testRebase() {
         Resources res = getContext().getResources();
         Configuration config = res.getConfiguration();
@@ -153,6 +174,7 @@ public class Resources_ThemeTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testGetDrawable() {
         final Resources res = getContext().getResources();
         final Theme theme = res.newTheme();
@@ -163,6 +185,7 @@ public class Resources_ThemeTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testGetResources() {
         final Resources res = getContext().getResources();
         final Theme theme = res.newTheme();
@@ -170,6 +193,7 @@ public class Resources_ThemeTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testEmptyDoesNotGetOverriden() {
         final Resources res = getContext().getResources();
         final Theme theme = res.newTheme();

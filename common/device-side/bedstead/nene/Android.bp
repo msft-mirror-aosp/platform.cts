@@ -6,8 +6,6 @@ package {
 java_library_host {
     name: "NeneCommon",
     srcs: [
-        "common/src/main/java/**/*.java",
-        "common/src/main/java/**/*.kt",
         "src/main/java/com/android/bedstead/nene/utils/FailureDumper.kt",
     ],
 }
@@ -15,8 +13,6 @@ java_library_host {
 android_library {
     name: "NeneCommonAndroid",
     srcs: [
-        "common/src/main/java/**/*.java",
-        "common/src/main/java/**/*.kt",
         "src/main/java/com/android/bedstead/nene/types/OptionalBoolean.kt",
     ],
     manifest: "src/main/AndroidManifestInternal.xml",
