@@ -372,7 +372,7 @@ def get_zoom_params(zoom_range, steps):
   # Determine test zoom range
   logging.debug('z_range = %s', str(zoom_range))
   zoom_min, zoom_max = float(zoom_range[0]), float(zoom_range[1])
-  zoom_max = min(zoom_max, ZOOM_MAX_THRESH * zoom_min)
+  zoom_max = min(zoom_max, ZOOM_MAX_THRESH)
   zoom_step_size = (zoom_max-zoom_min) / (steps-1)
   logging.debug('zoomRatioRange = %s z_min = %f z_max = %f z_stepSize = %f',
                 str(zoom_range), zoom_min, zoom_max, zoom_step_size)
