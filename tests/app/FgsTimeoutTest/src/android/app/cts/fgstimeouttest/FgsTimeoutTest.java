@@ -222,10 +222,11 @@ public class FgsTimeoutTest {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
-    @RequiresFlagsDisabled(Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR)
+    @RequiresFlagsDisabled({Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR,
+                            Flags.FLAG_ENABLE_FGS_TIMEOUT_CRASH_BEHAVIOR})
     public void testAnr() throws Exception {
         final int anrExtraTimeout = 5000;
-        updateDeviceConfig("fgs_anr_extra_wait_duration", anrExtraTimeout);
+        updateDeviceConfig("fgs_crash_extra_wait_duration", anrExtraTimeout);
 
         try (AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
                 HELPER_PACKAGE)) {
@@ -242,7 +243,38 @@ public class FgsTimeoutTest {
 
             CallProvider.clearMessageQueue();
         } finally {
-            resetDeviceConfig("fgs_anr_extra_wait_duration");
+            resetDeviceConfig("fgs_crash_extra_wait_duration");
+        }
+    }
+
+    /**
+     * Make sure, if a media_processing fgs doesn't stop, the app crashes.
+     */
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK,
+                           Flags.FLAG_ENABLE_FGS_TIMEOUT_CRASH_BEHAVIOR})
+    @RequiresFlagsDisabled(Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR)
+    public void testCrash() throws Exception {
+        final int anrExtraTimeout = 5000;
+        updateDeviceConfig("fgs_crash_extra_wait_duration", anrExtraTimeout);
+
+        try {
+            // Start the service
+            startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
+            waitForMethodCall(FGS0, "onStartCommand");
+            assertFgsRunning(FGS0);
+
+            // Wait for onTimeout()
+            waitForMethodCall(FGS0, "onTimeout");
+            assertFgsRunning(FGS0);
+
+            // Wait for the crash + some extra
+            SystemClock.sleep(anrExtraTimeout + 1000);
+            assertServiceNotRunning(FGS0);
+
+            CallProvider.clearMessageQueue();
+        } finally {
+            resetDeviceConfig("fgs_crash_extra_wait_duration");
         }
     }
 
@@ -457,7 +489,7 @@ public class FgsTimeoutTest {
     @RequiresFlagsDisabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     public void testNoAnr_whenFlagDisabled() throws Exception {
         final int anrExtraTimeout = 5000;
-        updateDeviceConfig("fgs_anr_extra_wait_duration", anrExtraTimeout);
+        updateDeviceConfig("fgs_crash_extra_wait_duration", anrExtraTimeout);
 
         try (AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
                 HELPER_PACKAGE)) {
@@ -476,7 +508,40 @@ public class FgsTimeoutTest {
 
             CallProvider.ensureNoMoreMessages();
         } finally {
-            resetDeviceConfig("fgs_anr_extra_wait_duration");
+            resetDeviceConfig("fgs_crash_extra_wait_duration");
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK,
+                           Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR})
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_FGS_TIMEOUT_CRASH_BEHAVIOR)
+    public void testNoCrash_whenFlagDisabled() throws Exception {
+        final int anrExtraTimeout = 5000;
+        updateDeviceConfig("fgs_crash_extra_wait_duration", anrExtraTimeout);
+
+        try {
+            // Start the service
+            startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
+            waitForMethodCall(FGS0, "onStartCommand");
+            assertFgsRunning(FGS0);
+
+            // Wait for onTimeout()
+            waitForMethodCall(FGS0, "onTimeout");
+            assertFgsRunning(FGS0);
+
+            // Wait for the crash timeout + some extra - no crash or ANR should occur
+            SystemClock.sleep(anrExtraTimeout + 5000);
+            assertFgsRunning(FGS0);
+
+            // Stop the service
+            sContext.stopService(new Intent().setComponent(FGS0));
+            waitForMethodCall(FGS0, "onDestroy");
+            assertServiceNotRunning(FGS0);
+
+            CallProvider.ensureNoMoreMessages();
+        } finally {
+            resetDeviceConfig("fgs_crash_extra_wait_duration");
         }
     }
 
