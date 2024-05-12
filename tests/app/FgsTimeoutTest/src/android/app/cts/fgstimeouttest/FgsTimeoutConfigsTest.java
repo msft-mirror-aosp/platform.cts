@@ -71,11 +71,11 @@ public class FgsTimeoutConfigsTest {
         final long timeout = SystemClock.uptimeMillis() + timeoutSecond * 1000;
         while (true) {
             final Map<String, Long> keyValues = extractFgsTimeoutSettings(
-                    "fgs_anr_extra_wait_duration",
+                    "fgs_crash_extra_wait_duration",
                     "data_sync_fgs_timeout_duration",
                     "media_processing_fgs_timeout_duration");
             try {
-                assertConfigAtLeast(keyValues, "fgs_anr_extra_wait_duration", 10_000);
+                assertConfigAtLeast(keyValues, "fgs_crash_extra_wait_duration", 10_000);
                 assertConfigAtLeast(keyValues,
                         "data_sync_fgs_timeout_duration", 6 * 60 * 60_000);
                 assertConfigAtLeast(keyValues,
