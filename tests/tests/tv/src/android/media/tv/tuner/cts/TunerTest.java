@@ -1599,14 +1599,14 @@ public class TunerTest {
 
     @Test
     public void testOpenDvrRecorder() throws Exception {
-        DvrRecorder d = mTuner.openDvrRecorder(100, getExecutor(), getRecordListener());
+        DvrRecorder d = mTuner.openDvrRecorder(188, getExecutor(), getRecordListener());
         assertNotNull(d);
         d.close();
     }
 
     @Test
     public void testOpenDvPlayback() throws Exception {
-        DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+        DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
         assertNotNull(d);
         d.close();
     }
@@ -1940,7 +1940,7 @@ public class TunerTest {
         // Create another tuner and share frontend from tunerA
         Tuner tunerB = new Tuner(mContext, null, 500);
         tunerB.shareFrontendFromTuner(tunerA);
-        DvrRecorder d = tunerB.openDvrRecorder(100, getExecutor(), getRecordListener());
+        DvrRecorder d = tunerB.openDvrRecorder(188, getExecutor(), getRecordListener());
         assertNotNull(d);
 
         // Call transferOwner in the wrong configurations and confirm it fails
@@ -2708,7 +2708,7 @@ public class TunerTest {
         assertTrue(token2 == null);
 
         // Use DvrPlayback as data source
-        DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+        DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
         assertNotNull(d);
 
         Settings settings = SectionSettingsWithTableInfo
@@ -2850,7 +2850,7 @@ public class TunerTest {
         assertTrue(token != null);
 
         // Use DvrPlayer as data source
-        DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+        DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
         assertNotNull(d);
 
         assertTrue(mSharedFilterTestServer.verifySharedFilter(token));
@@ -2889,7 +2889,7 @@ public class TunerTest {
 
             f.configure(config);
 
-            DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+            DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
             assertNotNull(d);
             d.configure(getDvrSettings());
 
