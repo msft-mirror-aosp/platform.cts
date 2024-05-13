@@ -163,7 +163,7 @@ public class SyncAdapterEnumerationTests extends AppEnumerationTestsBase {
                 is(true));
     }
 
-    @Test
+    @FlakyTest(bugId = 328849197)
     public void queriesNothingSharedUser_requestSync_canSeeSyncAdapterSharedUserTarget()
             throws Exception {
         assertThat(requestSyncAndAwaitStatus(QUERIES_NOTHING_SHARED_USER,
