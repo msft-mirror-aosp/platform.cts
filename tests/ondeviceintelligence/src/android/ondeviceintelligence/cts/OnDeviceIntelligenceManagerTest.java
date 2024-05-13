@@ -29,6 +29,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -47,6 +48,7 @@ import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.PersistableBundle;
 import android.os.Process;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -901,9 +903,9 @@ public class OnDeviceIntelligenceManagerTest {
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void updateProcessingStateReturnsSuccessfully() throws Exception {
-        // Auto target runs as a different user than 0, so it is not possible to get service
+        // When targets run as a different user than 0, it is not possible to get service
         // instance from user 0 in this test.
-        assumeFalse(isAutomotive(
+        assumeTrue(isSystemUser(
                 getInstrumentation().getContext()));
         getInstrumentation()
                 .getUiAutomation()
@@ -994,9 +996,9 @@ public class OnDeviceIntelligenceManagerTest {
                 intelligenceServiceComponentName);
     }
 
-    private static boolean isAutomotive(Context context) {
-        PackageManager pm = context.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    private static boolean isSystemUser(Context context) {
+        UserManager um = context.getSystemService(UserManager.class);
+        return um != null && um.isSystemUser();
     }
 
     public static void setTestableOnDeviceIntelligenceServiceNames(String[] serviceNames) {
