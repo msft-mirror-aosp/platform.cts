@@ -13,3 +13,5 @@ per-file *KeyEvent* = file:platform/frameworks/base:/INPUT_OWNERS
 per-file *PointerCapture* = file:platform/frameworks/base:/INPUT_OWNERS
 per-file *MotionEvent* = file:platform/frameworks/base:/INPUT_OWNERS
 per-file *VelocityTracker* = file:platform/frameworks/base:/INPUT_OWNERS
+
+per-file *NativeHeapLeakDetector* = file:platform/frameworks/base:/INPUT_OWNERS
