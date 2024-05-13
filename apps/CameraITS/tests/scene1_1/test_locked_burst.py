@@ -102,16 +102,15 @@ class LockedBurstTest(its_base_test.ItsBaseTest):
         spread = max(means) - min_means
         logging.debug('%s patch mean spread %.5f. means = %s',
                       plane, spread, str(means))
-        for j in range(_BURST_LEN):
-          if min_means <= _VALUE_THRESH:
-            raise AssertionError(f'{plane} frame {j} too dark! mean: '
-                                 f'{min_means:.5f}, THRESH: {_VALUE_THRESH}')
-          threshold = _SPREAD_THRESH
-          if camera_properties_utils.manual_sensor(props):
-            threshold = _SPREAD_THRESH_MANUAL_SENSOR
-          if spread >= threshold:
-            raise AssertionError(f'{plane} center patch spread: {spread:.5f}, '
-                                 f'THRESH: {threshold:.2f}')
+        if min_means <= _VALUE_THRESH:
+          raise AssertionError(f'{plane} too dark! mean: '
+                               f'{min_means:.5f}, THRESH: {_VALUE_THRESH}')
+        threshold = _SPREAD_THRESH
+        if camera_properties_utils.manual_sensor(props):
+          threshold = _SPREAD_THRESH_MANUAL_SENSOR
+        if spread >= threshold:
+          raise AssertionError(f'{plane} center patch spread: {spread:.5f}, '
+                               f'THRESH: {threshold:.2f}')
 
 if __name__ == '__main__':
   test_runner.main()
