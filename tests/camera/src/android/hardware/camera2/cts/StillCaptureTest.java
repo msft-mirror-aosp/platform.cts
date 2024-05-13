@@ -1531,9 +1531,16 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
         long minExposureValue = -1;
         long maxExposureValuePreview = -1;
         long maxExposureValueStill = -1;
+        long maxPostRawSensitivity = 100;
+        Range<Integer> postRawSensitivityRange = mStaticInfo.getCharacteristics().get(
+                CameraCharacteristics.CONTROL_POST_RAW_SENSITIVITY_BOOST_RANGE);
+        if (postRawSensitivityRange != null) {
+            maxPostRawSensitivity = postRawSensitivityRange.getUpper();
+        }
+
         if (canReadExposureValueRange) {
             // Minimum exposure settings is mostly static while maximum exposure setting depends on
-            // frame rate range which in term depends on capture request.
+            // frame rate range which in turn depends on capture request.
             minExposureValue = mStaticInfo.getSensitivityMinimumOrDefault() *
                     mStaticInfo.getExposureMinimumOrDefault() / 1000;
             long maxSensitivity = mStaticInfo.getSensitivityMaximumOrDefault();
@@ -1559,12 +1566,14 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
 
             long normalExposureValue = -1;
             if (canVerifyExposureValue) {
-                // get and check if current exposure value is valid
+                // get and check if current exposure value is valid, with maxPostRawSensitivity
+                // in mind.
                 normalExposureValue = getExposureValue(normalResult);
                 mCollector.expectInRange("Exposure setting out of bound", normalExposureValue,
-                        minExposureValue, maxExposureValuePreview);
+                        minExposureValue, maxExposureValuePreview * maxPostRawSensitivity / 100);
 
-                // Only run the test if expectedExposureValue is within valid range
+                // Only run the test if expectedExposureValue is within valid range. Do not
+                // scale the range by maxPostRawSensitivity to avoid clipping.
                 long expectedExposureValue = (long) (normalExposureValue * expectedRatio);
                 if (expectedExposureValue < minExposureValue ||
                     expectedExposureValue > maxExposureValueStill) {
@@ -1606,10 +1615,11 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
                     request, WAIT_FOR_RESULT_TIMEOUT_MS);
 
             if (canVerifyExposureValue) {
-                // Verify the exposure value compensates as requested
+                // Verify the exposure value compensates as requested, with maxPostRawSensitivity
+                // in mind.
                 long compensatedExposureValue = getExposureValue(compensatedResult);
                 mCollector.expectInRange("Exposure setting out of bound", compensatedExposureValue,
-                        minExposureValue, maxExposureValueStill);
+                        minExposureValue, maxExposureValueStill * maxPostRawSensitivity / 100);
                 double observedRatio = (double) compensatedExposureValue / normalExposureValue;
                 double error = observedRatio / expectedRatio;
                 String errorString = String.format(
