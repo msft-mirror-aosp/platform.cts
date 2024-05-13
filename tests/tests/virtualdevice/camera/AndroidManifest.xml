@@ -20,9 +20,11 @@
 
     <application android:debuggable="true">
         <uses-library android:name="android.test.runner" />
-
         <activity
             android:name="android.app.Activity"
+            android:exported="false" />
+        <activity
+            android:name=".util.NativeCameraTestActivity"
             android:exported="false" />
     </application>
 
