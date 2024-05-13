@@ -47,6 +47,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "mcts-art",
         "mts-art",
     ],
     data: [
@@ -54,4 +55,96 @@ android_test {
     ],
     per_testcase_directory: true,
     host_required: ["cts-dalvik-host-test-runner"],
+}
+
+test_module_config {
+    name: "CtsLibcoreOjTestCases_lang_invoke",
+    base: "CtsLibcoreOjTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "test.java.lang.invoke",
+        "org.openjdk.tests.java.lang.invoke",
+    ],
+}
+
+test_module_config {
+    name: "CtsLibcoreOjTestCases_net",
+    base: "CtsLibcoreOjTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["test.java.net"],
+}
+
+test_module_config {
+    name: "CtsLibcoreOjTestCases_awt_font",
+    base: "CtsLibcoreOjTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["test.java.awt.font"],
+}
+
+test_module_config {
+    name: "CtsLibcoreOjTestCases_nio_file_attribute",
+    base: "CtsLibcoreOjTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["test.java.nio.file.attribute"],
+}
+
+test_module_config {
+    name: "CtsLibcoreOjTestCases_security_cert",
+    base: "CtsLibcoreOjTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["test.java.security.cert"],
+}
+
+test_module_config {
+    name: "CtsLibcoreOjTestCases_time",
+    base: "CtsLibcoreOjTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "tck.java.time.serial",
+        "tck.java.time",
+        "test.java.time",
+    ],
+}
+
+test_module_config {
+    name: "CtsLibcoreOjTestCases_time_chrono",
+    base: "CtsLibcoreOjTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "tck.java.time.chrono.serial",
+        "test.java.time.chrono",
+        "tck.java.time.chrono",
+    ],
+}
+
+test_module_config {
+    name: "CtsLibcoreOjTestCases_time_format",
+    base: "CtsLibcoreOjTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "test.java.time.format",
+        "tck.java.time.format",
+    ],
+}
+
+test_module_config {
+    name: "CtsLibcoreOjTestCases_time_temporal",
+    base: "CtsLibcoreOjTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "tck.java.time.temporal",
+        "tck.java.time.temporal.serial",
+        "test.java.time.temporal",
+    ],
+}
+
+test_module_config {
+    name: "CtsLibcoreOjTestCases_time_zone",
+    base: "CtsLibcoreOjTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "test.java.time.zone",
+        "tck.java.time.zone.serial",
+        "tck.java.time.zone",
+    ],
 }
