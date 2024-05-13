@@ -50,6 +50,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ActivityScenario;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -122,6 +123,7 @@ public class CarDisplayInputLockTest extends AbstractCarTestCase {
         }
     }
 
+    @FlakyTest(bugId = 336489418)
     @CddTest(requirements = {"TODO(b/262236403)"})
     @Test
     public void testDisplayInputLockForTwoPassengerDisplaysAtOnce() throws Exception {
