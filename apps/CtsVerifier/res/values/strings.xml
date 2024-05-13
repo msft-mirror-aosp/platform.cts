@@ -5695,7 +5695,9 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_left">Left</string>
     <string name="audio_general_right">Right</string>
     <string name="audio_general_Input">Input</string>
+    <string name="audio_general_inputcolon">Input:</string>
     <string name="audio_general_Output">Output</string>
+    <string name="audio_general_outputcolon">Output:</string>
 
     <string name="audio_general_record">Record</string>
     <string name="audio_general_play">Play</string>
@@ -5942,20 +5944,42 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_multichannel_mixdown_info">
         This test verifies that for High Channel Count Positional Playback (QUAD, 5.1, 7.1, 7.1.4),
         all playback channels are represented in a stereo mix. It does not verify placement
-        in the output field.\n
-        This test requires a 2-channel loopback device such as a 2-channel USB audio interface
+        in the output field.
+        \n\nThis test requires a 2-channel loopback device such as a 2-channel USB audio interface
         correctly configured for audio loopback (see the Audio Loopback Latency test for more
-        information).\n
-        Since this is a new test, at this time the test process need only be executed and the
-        test will be allowed to pass even if incorrect multi-channel playback is noted.
+        information).
+        \n\nSince this is a new test, at this time the test process need only be executed for
+        each required route and the test will be allowed to pass even if incorrect
+        multi-channel playback is noted.
     </string>
     <string name="audio_mixdown_clearresults">Clear Results</string>
+    <string name="audio_mixdown_calibrate">Calibrate Audio</string>
+    <string name="audio_mixdown_devices">Audio Devices</string>
 
     <string name="audio_mixdown_stereo">Stereo</string>
     <string name="audio_mixdown_quad">Quad</string>
     <string name="audio_mixdown_sevendotone">7.1</string>
     <string name="audio_mixdown_fivedotone">5.1</string>
     <string name="audio_mixdown_sevendotonedotfour">7.1.4</string>
+
+    <!-- Mixdown Route Names -->
+    <string name="audio_mixdown_micspeaker">Mic/Speaker</string>
+    <string name="audio_mixdown_analogheadset">Analog Headset</string>
+    <string name="audio_mixdown_usbdevice">USB Device</string>
+    <string name="audio_mixdown_usbheadset">USB Headset</string>
+
+    <!-- Mixdown status strings -->
+    <string name="audio_mixdown_invalidinput">Invalid Input.</string>
+    <string name="audio_mixdown_invalidoutput">Invalid Output.</string>
+    <string name="audio_mixdown_testcanceled">Test Canceled.</string>
+    <string name="audio_mixdown_cantstart">Couldn\'t Start Duplex Audio.</string>
+
+    <string name="audio_mixdown_required">Required</string>
+    <string name="audio_mixdown_completed">Completed</string>
+    <string name="audio_mixdown_not_completed">Not Completed</string>
+
+    <string name="audio_mixdown_req">req</string>
+    <string name="audio_mixdown_done">done</string>
 
     <!-- Channel Position Names -->
     <string name="audio_channel_mask_left">Left</string>
@@ -5970,17 +5994,6 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_channel_mask_topfrontright">Top Front Right</string>
     <string name="audio_channel_mask_topbackleft">Top Back Left</string>
     <string name="audio_channel_mask_topbackright">Top Back Right</string>
-
-    <!-- Mixdown Route Names -->
-    <string name="audio_mixdown_micspeaker">Mic/Speaker</string>
-    <string name="audio_mixdown_analogheadset">Analog Headset</string>
-    <string name="audio_mixdown_usbdevice">USB Device</string>
-    <string name="audio_mixdown_usbheadset">USB Headset</string>
-
-    <!-- Mixdown status strings -->
-    <string name="audio_mixdown_invalidinput">Invalid Input</string>
-    <string name="audio_mixdown_invalidoutput">Invalid Output</string>
-    <string name="audio_mixdown_testcanceled">Test Canceled</string>
 
     <!-- Audio Cold-Start Latency Test -->
     <string name="audio_coldstart_out_latency_test">Audio Cold Start Output Latency Test</string>
