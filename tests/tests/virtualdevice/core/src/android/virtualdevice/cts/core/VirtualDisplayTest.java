@@ -36,6 +36,7 @@ import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.server.wm.Condition;
 import android.view.Display;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -47,6 +48,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.function.BooleanSupplier;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = " cannot be accessed by instant apps")
@@ -449,6 +451,10 @@ public class VirtualDisplayTest {
         virtualDisplay.release();
 
         mRule.assertDisplayDoesNotExist(virtualDisplay.getDisplay().getDisplayId());
+        // TODO(b/317872777): Remove the polling once the callback is synchronous.
+        android.companion.virtual.VirtualDevice virtualDevice = mRule.getVirtualDevice(
+                mVirtualDevice.getDeviceId());
+        waitForCondition("display removal", () -> virtualDevice.getDisplayIds().length == 0);
         assertThat(mVirtualDeviceManager.getDeviceIdForDisplayId(
                 virtualDisplay.getDisplay().getDisplayId()))
                 .isEqualTo(Context.DEVICE_ID_DEFAULT);
@@ -472,5 +478,9 @@ public class VirtualDisplayTest {
         assertThat(display.isValid()).isTrue();
         assertThat(display.getWidth()).isEqualTo(VirtualDeviceRule.DEFAULT_VIRTUAL_DISPLAY_WIDTH);
         assertThat(display.getHeight()).isEqualTo(VirtualDeviceRule.DEFAULT_VIRTUAL_DISPLAY_HEIGHT);
+    }
+
+    private static void waitForCondition(String message, BooleanSupplier waitCondition) {
+        assertThat(Condition.waitFor(message, waitCondition)).isTrue();
     }
 }

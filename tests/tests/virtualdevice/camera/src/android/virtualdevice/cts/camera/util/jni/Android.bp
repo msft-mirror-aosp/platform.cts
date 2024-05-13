@@ -1,4 +1,4 @@
-// Copyright 2023 The Android Open Source Project
+// Copyright 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,37 +13,27 @@
 // limitations under the License.
 
 package {
-    default_team: "trendy_team_xr_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsVirtualDevicesCameraTestCases",
-
-    defaults: ["cts_defaults"],
-
-    libs: [
-        "android.test.runner",
-        "android.test.base",
-    ],
-
-    static_libs: [
-        "CtsVirtualDeviceCommonLib",
-        "junit-params",
-    ],
-
-    jni_libs: ["libvirtualcameratest-jni"],
-
+cc_library {
+    name: "libvirtualcameratest-jni",
     srcs: [
-        "src/**/*.java",
-        ":CameraCtsBitmapUtils",
+        "onload.cc",
+        "android_virtualdevice_cts_camera_util_NativeCameraManager.cc",
     ],
-
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
+    include_dirs: [""],
+    cflags: [
+        "-Wall",
+        "-Werror",
     ],
-
-    per_testcase_directory: true,
+    shared_libs: [
+        "libandroid",
+        "liblog",
+        "libbinder_ndk",
+        "libcamera2ndk",
+        "libsync",
+    ],
+    stl: "c++_static",
+    sdk_version: "current",
 }

@@ -54,6 +54,7 @@ import android.view.Surface;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.os.BuildCompat;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.FeatureUtil;
@@ -142,7 +143,12 @@ public class VirtualDeviceRule implements TestRule {
      * Returns the VirtualDevice object for the given deviceId
      */
     public android.companion.virtual.VirtualDevice getVirtualDevice(int deviceId) {
-        return mVirtualDeviceManager.getVirtualDevice(deviceId);
+        if (BuildCompat.isAtLeastV()) {
+            return mVirtualDeviceManager.getVirtualDevice(deviceId);
+        } else {
+            return mVirtualDeviceManager.getVirtualDevices().stream()
+                    .filter(device -> device.getDeviceId() == deviceId).findFirst().orElse(null);
+        }
     }
 
     /**

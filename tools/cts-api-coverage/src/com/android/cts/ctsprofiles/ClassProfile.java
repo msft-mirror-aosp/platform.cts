@@ -100,6 +100,10 @@ public class ClassProfile {
         return mModule;
     }
 
+    public Map<String, MethodProfile> getMethods() {
+        return mMethods;
+    }
+
     /** Creates a class method. */
     public MethodProfile getOrCreateMethod(
             String methodName, List<String> params) {
