@@ -151,6 +151,7 @@
                   android:exported="true"/>
 
         <activity android:name="android.server.wm.keyguard.KeyguardLockedTests$ShowImeAfterLockscreenActivity"
+                  android:theme="@style/OptOutEdgeToEdge"
                   android:configChanges="keyboard|keyboardHidden|navigation"/>
 
         <activity android:name="android.server.wm.keyguard.KeyguardLockedTests$ShowWhenLockedImeActivity"/>
