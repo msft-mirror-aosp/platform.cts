@@ -29,8 +29,10 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.GridLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -43,9 +45,12 @@ import com.android.interactive.annotations.CacheableStep;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.Nullable;
 
 /**
  * An atomic manual interaction step.
@@ -257,14 +262,16 @@ public abstract class Step<E> {
     /** Adds a button to the interaction prompt. */
     protected void addButton(String title, Runnable onClick) {
         // Push to UI thread to avoid animation issues when adding the button
-        new Handler(Looper.getMainLooper()).post(() -> {
-            Button btn = new Button(TestApis.context().instrumentedContext());
-            btn.setText(title);
-            btn.setOnClickListener(v -> onClick.run());
+        new Handler(Looper.getMainLooper())
+                .post(
+                        () -> {
+                            Button btn = new Button(TestApis.context().instrumentedContext());
+                            btn.setText(title);
+                            btn.setOnClickListener(v -> onClick.run());
 
-            GridLayout layout = mInstructionView.findViewById(R.id.buttons);
-            layout.addView(btn);
-        });
+                            GridLayout layout = mInstructionView.findViewById(R.id.buttons);
+                            layout.addView(btn);
+                        });
     }
 
     /**
@@ -273,20 +280,20 @@ public abstract class Step<E> {
      */
     protected void addSwapButton() {
         // Push to UI thread to avoid animation issues when adding the button
-        new Handler(Looper.getMainLooper()).post(() -> {
-            Button btn = new Button(TestApis.context().instrumentedContext());
-            // up/down arrow
-            btn.setText("\u21F5");
-            btn.setOnClickListener(v -> swap());
+        new Handler(Looper.getMainLooper())
+                .post(
+                        () -> {
+                            Button btn = new Button(TestApis.context().instrumentedContext());
+                            // up/down arrow
+                            btn.setText("\u21F5");
+                            btn.setOnClickListener(v -> swap());
 
-            GridLayout layout = mInstructionView.findViewById(R.id.buttons);
-            layout.addView(btn);
-        });
+                            GridLayout layout = mInstructionView.findViewById(R.id.buttons);
+                            layout.addView(btn);
+                        });
     }
 
-    /**
-     * Adds a small button that allows users to collapse the instructions.
-     */
+    /** Adds a small button that allows users to collapse the instructions. */
     protected void addCollapseInstructionsButton() {
         mCollapseButton = new Button(TestApis.context().instrumentedContext());
         mCollapseButton.setText("\u21F1");
@@ -317,15 +324,48 @@ public abstract class Step<E> {
     /**
      * Shows the prompt with the given instruction.
      *
-     * <p>This should be called before any other methods on this class.
+     * @see #showWithArrayAdapter(String, ArrayAdapter)
      */
     protected void show(String instruction) {
+        showWithListItems(instruction, /* listItems= */ null);
+    }
+
+    /**
+     * Shows the prompt with the given instruction and a list of string items.
+     *
+     * @see #showWithArrayAdapter(String, ArrayAdapter)
+     */
+    protected void showWithListItems(String instruction, @Nullable List<String> listItems) {
+        showWithArrayAdapter(
+                instruction,
+                listItems == null
+                        ? null
+                        : new ArrayAdapter<String>(
+                                TestApis.context().instrumentationContext(),
+                                android.R.layout.simple_list_item_1,
+                                android.R.id.text1,
+                                listItems));
+    }
+
+    /**
+     * Shows the prompt with the given instruction and the {@link ArrayAdapter} to render a list in
+     * the panel.
+     *
+     * <p>This should be called before any other methods on this class.
+     */
+    protected <T> void showWithArrayAdapter(
+            String instruction, @Nullable ArrayAdapter<T> arrayAdapter) {
         mInstructionView =
                 LayoutInflater.from(TestApis.context().instrumentationContext())
                         .inflate(R.layout.instruction, null);
 
         TextView text = mInstructionView.findViewById(R.id.text);
         text.setText(instruction);
+
+        if (arrayAdapter != null) {
+            ListView list = mInstructionView.findViewById(R.id.list);
+            list.setAdapter(arrayAdapter);
+        }
 
         WindowManager.LayoutParams params =
                 new WindowManager.LayoutParams(
