@@ -1388,7 +1388,7 @@
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GenericDocumentCtsTest#testRetrieveTopLevelPropertiesIndex" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GenericDocumentCtsTest#testRetrieveTopLevelPropertiesIndexOutOfRange" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GetByDocumentIdRequestCtsTest#testBuildRequest" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GetByDocumentIdRequestPlatformCtsTest#testSerialization" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GetByDocumentIdRequestServiceCtsTest#testSerialization" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GetSchemaResponseCtsTest#getEmptyVisibility" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GetSchemaResponseCtsTest#getEmptyVisibility_visibilityConfig" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GetSchemaResponseCtsTest#setVisibility" />
@@ -1515,7 +1515,7 @@
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSuggestionResultCtsTest#testBuildDefaultSearchSuggestionResult" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSuggestionResultCtsTest#testBuildSearchSuggestionResult" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSuggestionResultCtsTest#testReBuildSearchSuggestionResult" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSuggestionResultPlatformCtsTest#testSerialization" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSuggestionResultServiceCtsTest#testSerialization" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSuggestionSpecCtsTest#testBuildDefaultSearchSuggestionSpec" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSuggestionSpecCtsTest#testBuildSearchSuggestionSpec" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSuggestionSpecCtsTest#testBuildSearchSuggestionSpec_withPropertyFilter" />
