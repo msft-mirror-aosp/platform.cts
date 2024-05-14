@@ -24,7 +24,7 @@ android_test {
     srcs: [
         "src/**/*.java",
         "helper/**/*.java",
-        ":CtsProviderTestUtils",
+        ":CtsMediaProviderTestUtils",
     ],
     compile_multilib: "both",
     test_suites: [
