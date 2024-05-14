@@ -40,6 +40,7 @@ import javax.net.ssl.X509TrustManager;
 public class CertBlocklistTest extends AndroidTestCase {
 
     private static final int BLOCKLIST_CA = R.raw.test_blocklist_ca;
+    private static final int BLOCKLIST_DIGINOTAR = R.raw.blocklist_diginotar;
     private static final int BLOCKLISTED_CHAIN = R.raw.blocklist_test_chain;
     private static final int BLOCKLIST_FALLBACK_VALID_CA = R.raw.blocklist_test_valid_ca;
     private static final int BLOCKLISTED_VALID_CHAIN = R.raw.blocklist_test_valid_chain;
@@ -49,6 +50,15 @@ public class CertBlocklistTest extends AndroidTestCase {
      */
     public void testBlocklistedCaUntrusted() throws Exception {
         X509Certificate blocklistedCa = loadCertificate(BLOCKLIST_CA);
+        assertUntrusted(new X509Certificate[] {blocklistedCa}, getTrustManager(blocklistedCa));
+    }
+
+    /**
+     * Checks that a known compromised CA certificate is blocked.
+     */
+    public void testBlocklistedDiginotar() throws Exception {
+        // Public Key SHA1 = 410f36363258f30b347d12ce4863e433437806a8
+        X509Certificate blocklistedCa = loadCertificate(BLOCKLIST_DIGINOTAR);
         assertUntrusted(new X509Certificate[] {blocklistedCa}, getTrustManager(blocklistedCa));
     }
 
