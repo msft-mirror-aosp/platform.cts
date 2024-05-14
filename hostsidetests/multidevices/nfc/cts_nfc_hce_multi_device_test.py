@@ -49,8 +49,8 @@ _NFC_TECH_A_POLLING_ON = (0x1 #NfcAdapter.FLAG_READER_NFC_A
                           | 0x80 #NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
                           )
 _NFC_TECH_A_POLLING_OFF = (0x10 #NfcAdapter.FLAG_READER_NFC_BARCODE
-                          | 0x80 #NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
-                          )
+                           | 0x80 #NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
+                           )
 _NFC_TECH_A_LISTEN_ON = 0x1 #NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_A
 _NFC_TECH_F_LISTEN_ON = 0x4 #NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_F
 _NFC_LISTEN_OFF = 0x0 #NfcAdapter.FLAG_LISTEN_DISABLE
@@ -64,9 +64,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.emulator, self.reader = self.register_controller(android_device,
                                                               min_number=2)[:2]
         self.reader.load_snippet('nfc_reader',
-                                 'com.android.cts.nfc.multidevice.reader')
+                                 'com.android.nfc.reader')
         self.emulator.load_snippet('nfc_emulator',
-                                   'com.android.cts.nfc.multidevice.emulator')
+                                   'com.android.nfc.emulator')
 
         self.reader.adb.shell(['svc', 'nfc', 'enable'])
         self.emulator.adb.shell(['svc', 'nfc', 'enable'])
@@ -337,7 +337,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         1. Verifies a successful APDU exchange inside the reader.
         We cannot verify the APDUs in the emulator since we don't have access to the secure element.
         """
-        self.emulator.nfc_emulator.startOffHostEmulatorActivity()
+        self.emulator.nfc_emulator.startOffHostEmulatorActivity(False)
         test_pass_handler = self.reader.nfc_reader.asyncWaitForTestPass('ApduSuccess')
         self.reader.nfc_reader.startOffHostReaderActivity()
         test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
@@ -666,8 +666,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             'ApduSuccess')
         self.reader.nfc_reader.startSingleNonPaymentReaderActivity()
         with asserts.assert_raises(
-            errors.CallbackHandlerTimeoutError,
-            "Transaction completed when listen tech is disabled",
+                errors.CallbackHandlerTimeoutError,
+                "Transaction completed when listen tech is disabled",
         ):
             test_pass_handler.waitAndGet('ApduSuccess', _NFC_TIMEOUT_SEC)
 
