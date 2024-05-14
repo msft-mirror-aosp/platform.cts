@@ -18,6 +18,8 @@ package android.hdmicec.cts.playback;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.hdmicec.cts.BaseHdmiCecCtsTest;
 import android.hdmicec.cts.CecMessage;
 import android.hdmicec.cts.CecOperand;
@@ -161,6 +163,9 @@ public final class HdmiCecRoutingControlTest extends BaseHdmiCecCtsTest {
      */
     @Test
     public void testPowerStateChangeOnActiveSourceLost_standby() throws Exception {
+        assumeFalse("Skip for audio system devices (b/323469502)",
+                hasDeviceType(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
+
         String previousActionOnActiveSourceLost = setPowerStateChangeOnActiveSourceLost(
                 HdmiCecConstants.POWER_STATE_CHANGE_ON_ACTIVE_SOURCE_LOST_STANDBY_NOW);
         try {

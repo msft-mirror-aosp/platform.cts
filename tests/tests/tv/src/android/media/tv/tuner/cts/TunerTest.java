@@ -1599,14 +1599,14 @@ public class TunerTest {
 
     @Test
     public void testOpenDvrRecorder() throws Exception {
-        DvrRecorder d = mTuner.openDvrRecorder(100, getExecutor(), getRecordListener());
+        DvrRecorder d = mTuner.openDvrRecorder(188, getExecutor(), getRecordListener());
         assertNotNull(d);
         d.close();
     }
 
     @Test
     public void testOpenDvPlayback() throws Exception {
-        DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+        DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
         assertNotNull(d);
         d.close();
     }
@@ -1664,17 +1664,17 @@ public class TunerTest {
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
+        FrontendSettings feSettings = createFrontendSettings(info);
 
-        // first apply frontend with mTuner to acquire resource
-        int res = mTuner.applyFrontend(info);
+        // first tune with mTuner to acquire resource
+        int res = mTuner.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
         assertNotNull(mTuner.getFrontendInfo());
 
-        // now apply frontend with a higher priority tuner to have mTuner's resource reclaimed
+        // now tune with a higher priority tuner to have mTuner's resource reclaimed
         Tuner higherPrioTuner = new Tuner(mContext, null, 200);
-        res = higherPrioTuner.applyFrontend(info);
+        res = higherPrioTuner.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
-
         assertNotNull(higherPrioTuner.getFrontendInfo());
 
         higherPrioTuner.close();
@@ -1690,8 +1690,8 @@ public class TunerTest {
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
 
-        // first apply frontend with mTuner to acquire resource
-        int res = mTuner.applyFrontend(info);
+        // first tune with mTuner to acquire resource
+        int res = mTuner.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
         assertNotNull(mTuner.getFrontendInfo());
 
@@ -1751,11 +1751,9 @@ public class TunerTest {
         tunerResourceTestServer = connection.getService();
 
         // CASE1 - normal reclaim
-
-        // first apply frontend with mTuner to acquire resource
-        int res = mTuner.applyFrontend(info);
-        assertEquals(Tuner.RESULT_SUCCESS, res);
-
+        //
+        // first tune with mTuner to acquire resource
+        int res = mTuner.tune(feSettings);
         boolean tunerReclaimed = false;
         assertEquals(Tuner.RESULT_SUCCESS, res);
         assertNotNull(mTuner.getFrontendInfo());
@@ -1831,27 +1829,27 @@ public class TunerTest {
 
     @Test
     public void testShareFrontendFromTuner() throws Exception {
-        List<Integer> ids = mTuner.getFrontendIds();
+        Tuner tuner100 = new Tuner(mContext, null, 100);
+        List<Integer> ids = tuner100.getFrontendIds();
         assumeNotNull(ids);
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
-        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
+        FrontendInfo info = tuner100.getFrontendInfoById(ids.get(targetFrontendId));
         FrontendSettings feSettings = createFrontendSettings(info);
-
         int[] statusTypes = {1};
         boolean exceptionThrown = false;
-
-        Tuner tuner100 = new Tuner(mContext, null, 100);
-        Tuner tuner200 = new Tuner(mContext, null, 200);
-        Tuner tuner300 = new Tuner(mContext, null, 300);
+        int res;
 
         // CASE1: check resource reclaim while sharee's priority < owner's priority
-
-        // apply target frontend only, for case when there are multiple instances in frontend type
-        int res = tuner200.applyFrontend(info);
+        // let tuner100 share from tuner200
+        Tuner tuner200 = new Tuner(mContext, null, 200);
+        res = tuner200.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
-        // let tuner100 share from tuner200
+        info = tuner200.getFrontendInfoById(ids.get(targetFrontendId));
+        res = tuner200.tune(feSettings);
+        assertEquals(Tuner.RESULT_SUCCESS, res);
+
         tuner100.shareFrontendFromTuner(tuner200);
         // call openFilter to trigger ITunerDemux.setFrontendDataSourceById()
         Filter f = tuner100.openFilter(
@@ -1863,6 +1861,7 @@ public class TunerTest {
         TunerTestOnTuneEventListener cb200 = new TunerTestOnTuneEventListener();
 
         // tune again on the owner
+        info = tuner200.getFrontendInfoById(ids.get(1));
         tuner100.setOnTuneEventListener(getExecutor(), cb100);
         tuner200.setOnTuneEventListener(getExecutor(), cb200);
         res = tuner200.tune(feSettings);
@@ -1873,7 +1872,8 @@ public class TunerTest {
         tuner200.clearOnTuneEventListener();
 
         // now let the higher priority tuner steal the resource
-        res = tuner300.applyFrontend(info);
+        Tuner tuner300 = new Tuner(mContext, null, 300);
+        res = tuner300.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
         // confirm owner & sharee's resource gets reclaimed by confirming an exception is thrown
@@ -1900,9 +1900,7 @@ public class TunerTest {
 
         // CASE2: check resource reclaim fail when sharee's priority > new requester
         tuner100 = new Tuner(mContext, null, 100);
-
-        // apply target frontend only, for case when there are multiple instances in frontend type
-        res = tuner100.applyFrontend(info);
+        res = tuner100.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
         tuner300 = new Tuner(mContext, null, 300);
@@ -1912,9 +1910,7 @@ public class TunerTest {
         assertNotNull(f);
 
         tuner200 = new Tuner(mContext, null, 200);
-
-        // apply target frontend only, for case when there are multiple instances in frontend type
-        res = tuner200.applyFrontend(info);
+        res = tuner200.tune(feSettings);
         assertNotEquals(Tuner.RESULT_SUCCESS, res);
 
         // confirm the original tuner is still intact
@@ -1936,17 +1932,15 @@ public class TunerTest {
 
         // SCENARIO 1 - transfer and close the previous owner
 
-        // First create a tuner and applyFrontend() to acquire frontend resource
+        // First create a tuner and tune() to acquire frontend resource
         Tuner tunerA = new Tuner(mContext, null, 100);
-
-        // apply target frontend only, for case when there are multiple instances in frontend type
-        int res = tunerA.applyFrontend(info);
+        int res = tunerA.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
         // Create another tuner and share frontend from tunerA
         Tuner tunerB = new Tuner(mContext, null, 500);
         tunerB.shareFrontendFromTuner(tunerA);
-        DvrRecorder d = tunerB.openDvrRecorder(100, getExecutor(), getRecordListener());
+        DvrRecorder d = tunerB.openDvrRecorder(188, getExecutor(), getRecordListener());
         assertNotNull(d);
 
         // Call transferOwner in the wrong configurations and confirm it fails
@@ -1970,11 +1964,9 @@ public class TunerTest {
 
         // SCENARIO 2 - transfer and closeFrontend and tune on the previous owner
 
-        // First create a tuner and applyFrontend() to acquire frontend resource
+        // First create a tuner and tune() to acquire frontend resource
         tunerA = new Tuner(mContext, null, 200);
-
-        // apply target frontend only, for case when there are multiple instances in frontend type
-        res = tunerA.applyFrontend(info);
+        res = tunerA.tune(feSettings);
         assertEquals(Tuner.RESULT_SUCCESS, res);
 
         // Create another tuner and share frontend from tunerA
@@ -1991,10 +1983,8 @@ public class TunerTest {
         // Confirm tune works without going through Tuner.close() even after transferOwner()
         // The purpose isn't to get tunerB's frontend revoked, but doing so as singletuner
         // based test has wider coverage
-
-        // apply target frontend only, for case when there are multiple instances in frontend type
-        res = tunerA.applyFrontend(info);
-        assertEquals(Tuner.RESULT_SUCCESS, res); // this should reclaim tunerB
+        res = tunerA.tune(feSettings); // this should reclaim tunerB
+        assertEquals(Tuner.RESULT_SUCCESS, res);
 
         // Confirm tuberB is revoked
         assertNull(tunerB.getFrontendInfo());
@@ -2718,7 +2708,7 @@ public class TunerTest {
         assertTrue(token2 == null);
 
         // Use DvrPlayback as data source
-        DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+        DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
         assertNotNull(d);
 
         Settings settings = SectionSettingsWithTableInfo
@@ -2860,7 +2850,7 @@ public class TunerTest {
         assertTrue(token != null);
 
         // Use DvrPlayer as data source
-        DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+        DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
         assertNotNull(d);
 
         assertTrue(mSharedFilterTestServer.verifySharedFilter(token));
@@ -2899,7 +2889,7 @@ public class TunerTest {
 
             f.configure(config);
 
-            DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+            DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
             assertNotNull(d);
             d.configure(getDvrSettings());
 

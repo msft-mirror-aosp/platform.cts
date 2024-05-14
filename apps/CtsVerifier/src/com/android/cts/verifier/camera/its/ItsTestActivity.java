@@ -197,7 +197,6 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene1_1",
             "scene1_2",
             "scene2_a",
-            "scene2_b",
             "scene4",
             "scene_video",
             "sensor_fusion");

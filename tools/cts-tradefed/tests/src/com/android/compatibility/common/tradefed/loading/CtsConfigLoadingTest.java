@@ -96,6 +96,7 @@ public class CtsConfigLoadingTest {
                             "systems",
                             "sysui",
                             "telecom",
+                            "threadnetwork",
                             "tv",
                             "uitoolkit",
                             "uwb",

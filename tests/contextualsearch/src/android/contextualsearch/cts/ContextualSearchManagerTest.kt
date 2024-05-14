@@ -29,7 +29,6 @@ import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.RequiredServiceRule
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.collect.Range
 import com.google.common.truth.Truth
@@ -37,8 +36,8 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -46,20 +45,19 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ContextualSearchManagerTest {
 
-    @get:Rule
-    val mRequiredServiceRule: RequiredServiceRule =
-        RequiredServiceRule(Context.CONTEXTUAL_SEARCH_SERVICE)
-
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
 
-    private var mManager: ContextualSearchManager =
-        context.getSystemService(ContextualSearchManager::class.java)
+    private lateinit var mManager: ContextualSearchManager
 
     private var mWatcher: CtsContextualSearchActivity.Watcher? = null
 
     @Before
     fun setup() {
+        val manager = context.getSystemService(ContextualSearchManager::class.java)
+        Assume.assumeNotNull(manager)
+        mManager = manager
+
         setTemporaryPackage(TEMPORARY_PACKAGE)
         mWatcher = CtsContextualSearchActivity.Watcher()
         CtsContextualSearchActivity.WATCHER = mWatcher

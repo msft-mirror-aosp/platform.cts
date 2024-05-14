@@ -12,6 +12,7 @@
     </style>
     <style name="RootLayoutPadding">
         <item name="android:padding">10dip</item>
+        <item name="android:fitsSystemWindows">true</item>
     </style>
     <style name="OverlayTheme" parent="android:Theme.Dialog">
         <item name="android:windowNoTitle">true</item>

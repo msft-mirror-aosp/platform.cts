@@ -62,7 +62,7 @@ public class SharedFilterTestService extends Service {
                     mTuner, getExecutor(), getFilterCallback());
 
             // Open dvr playback as data source
-            mDvrPlayback = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+            mDvrPlayback = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
 
             return mFilter.acquireSharedFilterToken();
         }

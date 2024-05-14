@@ -4,16 +4,21 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
@@ -21,6 +26,7 @@ import android.nfc.*;
 import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -51,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 public class NfcAdapterTest {
 
     @Mock private INfcAdapter mService;
+    @Mock private DevicePolicyManager mDevicePolicyManager;
     private INfcAdapter mSavedService;
     private Context mContext;
     @Rule
@@ -64,7 +71,7 @@ public class NfcAdapterTest {
     @Before
     public void setUp() throws NoSuchFieldException {
         MockitoAnnotations.initMocks(this);
-        mContext = InstrumentationRegistry.getContext();
+        mContext = spy(new ContextWrapper(InstrumentationRegistry.getContext()));
         assumeTrue(supportsHardware());
         // Backup the original service. It is being overridden
         // when creating a mocked adapter.
@@ -508,6 +515,38 @@ public class NfcAdapterTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_STATE_CHANGE)
+    public void testEnableByDeviceOwner() throws NoSuchFieldException, RemoteException {
+        denyPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS);
+        when(mDevicePolicyManager.getDeviceOwnerUser())
+                .thenReturn(new UserHandle(UserHandle.getCallingUserId()));
+        when(mDevicePolicyManager.getDeviceOwnerComponentOnAnyUser())
+                .thenReturn(ComponentName.createRelative("com.android.nfc", ".AdapterTest"));
+        when(mContext.getSystemService(DevicePolicyManager.class))
+                .thenReturn(mDevicePolicyManager);
+        NfcAdapter adapter = getDefaultAdapter();
+        boolean result = adapter.enable();
+        Assert.assertTrue(result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_STATE_CHANGE)
+    public void testDisableByDeviceOwner() throws NoSuchFieldException, RemoteException {
+        denyPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS);
+        when(mDevicePolicyManager.getDeviceOwnerUser())
+                .thenReturn(new UserHandle(UserHandle.getCallingUserId()));
+        when(mDevicePolicyManager.getDeviceOwnerComponentOnAnyUser())
+                .thenReturn(ComponentName.createRelative("com.android.nfc", ".AdapterTest"));
+        when(mContext.getSystemService(DevicePolicyManager.class))
+                .thenReturn(mDevicePolicyManager);
+        NfcAdapter adapter = getDefaultAdapter();
+        boolean result = adapter.disable();
+        Assert.assertTrue(result);
+        result = adapter.enable();
+        Assert.assertTrue(result);
+    }
+
     private class NfcOemExtensionCallback implements NfcOemExtension.Callback {
         private final CountDownLatch mTagDetectedCountDownLatch;
 
@@ -616,5 +655,12 @@ public class NfcAdapterTest {
 
     private ComponentName setDefaultPaymentService(ComponentName serviceName) {
         return DefaultPaymentProviderTestUtils.setDefaultPaymentService(serviceName, mContext);
+    }
+
+    private void denyPermission(String permission) {
+        when(mContext.checkCallingOrSelfPermission(permission))
+                .thenReturn(PackageManager.PERMISSION_DENIED);
+        doThrow(new SecurityException()).when(mContext)
+                .enforceCallingOrSelfPermission(eq(permission), anyString());
     }
 }

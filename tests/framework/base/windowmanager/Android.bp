@@ -293,6 +293,10 @@ android_test {
     name: "CtsWindowManagerDeviceInput",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
+    kotlincflags: [
+        "-Werror",
+    ],
+
     srcs: [
         ":CtsWindowManagerDeviceInput-src",
         ":CtsVerifierMockVrListenerServiceFiles",

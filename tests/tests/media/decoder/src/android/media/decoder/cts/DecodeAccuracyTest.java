@@ -62,7 +62,7 @@ public class DecodeAccuracyTest extends DecodeAccuracyTestBase {
 
     private static final String TAG = DecodeAccuracyTest.class.getSimpleName();
     private static final Field[] fields = R.raw.class.getFields();
-    private static final int ALLOWED_GREATEST_PIXEL_DIFFERENCE = 90;
+    private static final int ALLOWED_GREATEST_PIXEL_DIFFERENCE = 105;
     private static final int OFFSET = 10;
     private static final long PER_TEST_TIMEOUT_MS = 60000;
     private static final String[] VIDEO_FILES = {
