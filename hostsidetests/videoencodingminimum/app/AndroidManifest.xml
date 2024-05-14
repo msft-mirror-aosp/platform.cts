@@ -37,8 +37,5 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
             android:targetPackage="android.videoencodingmin.app"
             android:label="Video encoding app for android.media" >
-        <meta-data
-            android:name="listener"
-            android:value="com.android.cts.runner.CtsTestRunListener" />
     </instrumentation>
 </manifest>
