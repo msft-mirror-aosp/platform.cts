@@ -1424,40 +1424,40 @@
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionCtsTest#testRegisterObserver_schemaMigration" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionCtsTest#testRemoveObserver" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionCtsTest#testReportSystemUsage_ForbiddenFromNonSystem" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testAllowMultiplePackageAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testAllowPackageAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testAllowPermissionAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testAllowPermissions_sameError" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalGetById_requireAllVisibleToConfig_emptyConfig" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalGetById_requireAllVisibleToConfig_pkgAndPermission" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalGetById_sameErrorMessages" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalGetById_withAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalGetById_withoutAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalGetSchema_globalAccess_multiAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalGetSchema_globalAccess_singleAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalGetSchema_packageAccess_defaultAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalGetSchema_packageAccess_multiAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalGetSchema_packageAccess_revokeAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalGetSchema_packageAccess_singleAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalSearch_withAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalSearch_withJoin" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalSearch_withJoin_packageFiltering" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalSearch_withJoin_partialAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalSearch_withJoin_withoutAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalSearch_withPackageFilters" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalSearch_withPartialAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testGlobalSearch_withoutAccess" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testNoPackageAccess_default" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testNoPackageAccess_revoked" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testNoPackageAccess_wrongCertificate" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testNoPackageAccess_wrongPackageName" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testPublicVisibility_accessibleTestPackage" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testPublicVisibility_inaccessibleHelperApp" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testPublicVisibility_invalidCertificate" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testRemoveObserver_otherPackagesNotRemoved" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testRemoveVisibilitySetting_noRemainingSettings" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testReportSystemUsage" />
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformCtsTest#testRequireAllPermissionsOfAnyCombinationToAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testAllowMultiplePackageAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testAllowPackageAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testAllowPermissionAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testAllowPermissions_sameError" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalGetById_requireAllVisibleToConfig_emptyConfig" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalGetById_requireAllVisibleToConfig_pkgAndPermission" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalGetById_sameErrorMessages" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalGetById_withAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalGetById_withoutAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalGetSchema_globalAccess_multiAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalGetSchema_globalAccess_singleAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalGetSchema_packageAccess_defaultAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalGetSchema_packageAccess_multiAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalGetSchema_packageAccess_revokeAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalGetSchema_packageAccess_singleAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalSearch_withAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalSearch_withJoin" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalSearch_withJoin_packageFiltering" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalSearch_withJoin_partialAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalSearch_withJoin_withoutAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalSearch_withPackageFilters" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalSearch_withPartialAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testGlobalSearch_withoutAccess" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testNoPackageAccess_default" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testNoPackageAccess_revoked" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testNoPackageAccess_wrongCertificate" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testNoPackageAccess_wrongPackageName" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testPublicVisibility_accessibleTestPackage" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testPublicVisibility_inaccessibleHelperApp" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testPublicVisibility_invalidCertificate" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testRemoveObserver_otherPackagesNotRemoved" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testRemoveVisibilitySetting_noRemainingSettings" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testReportSystemUsage" />
+    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionPlatformServiceCtsTest#testRequireAllPermissionsOfAnyCombinationToAccess" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.JoinSpecCtsTest#testBuild" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.JoinSpecCtsTest#testDefaultNestedSearchSpec" />
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.PackageIdentifierCtsTest#testGetters" />
