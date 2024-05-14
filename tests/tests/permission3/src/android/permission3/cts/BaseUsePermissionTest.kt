@@ -49,6 +49,7 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.android.compatibility.common.util.UiAutomatorUtils2
 import com.android.modules.utils.build.SdkLevel
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
@@ -1121,6 +1122,14 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
             } catch (e: UiObjectNotFoundException) {
                 // flingToEnd() sometimes still fails despite waitForIdle() and the exists() check
                 // (b/246984354).
+                e.printStackTrace()
+            }
+            try {
+                // Try using UiAutomatorUtils2 to further strengthen the scrolling search.
+                // We are keeping the "scrollTextIntoView" method above out of abundance of caution
+                // to avoid breaking tests that used to pass.
+                UiAutomatorUtils2.waitFindObjectOrNull(By.text(viewText))
+            } catch (e: UiObjectNotFoundException) {
                 e.printStackTrace()
             }
         }
