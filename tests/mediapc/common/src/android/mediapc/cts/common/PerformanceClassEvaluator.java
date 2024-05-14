@@ -379,30 +379,6 @@ public class PerformanceClassEvaluator {
         }
 
         /**
-         * [2.2.7.1/5.1/H-1-7] MUST have a codec initialization latency of 65(R) / 50(S) / 40(T)
-         * ms or less for a 1080p or smaller video encoding session for all hardware video
-         * encoders when under load. Load here is defined as a concurrent 1080p to 720p
-         * video-only transcoding session using hardware video codecs together with the 1080p
-         * audio-video recording initialization. For Dolby vision codec, the codec initialization
-         * latency MUST be 50 ms or less.
-         */
-        public static CodecInitLatencyRequirement createR5_1__H_1_7(String mediaType) {
-            long latency = mediaType.equals(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION) ? 50L : 40L;
-            RequiredMeasurement<Long> codec_init_latency =
-                RequiredMeasurement.<Long>builder().setId(RequirementConstants.CODEC_INIT_LATENCY)
-                        .setPredicate(RequirementConstants.LONG_LTE)
-                        .addRequiredValue(Build.VERSION_CODES.R, 65L)
-                        .addRequiredValue(Build.VERSION_CODES.S, 50L)
-                        .addRequiredValue(Build.VERSION_CODES.TIRAMISU, latency)
-                        .addRequiredValue(Build.VERSION_CODES.UPSIDE_DOWN_CAKE, latency)
-                        .addRequiredValue(Build.VERSION_CODES.VANILLA_ICE_CREAM, latency)
-                        .build();
-
-            return new CodecInitLatencyRequirement(RequirementConstants.R5_1__H_1_7,
-                codec_init_latency);
-        }
-
-        /**
          * [2.2.7.1/5.1/H-1-12] Codec initialization latency of 40ms or less for a 1080p or
          * smaller video decoding session for all hardware video encoders when under load. Load
          * here is defined as a concurrent 1080p to 720p video-only transcoding session using
@@ -2279,10 +2255,6 @@ public class PerformanceClassEvaluator {
 
     public ConcurrentCodecRequirement addR5_1__H_1_6_4k() {
         return this.addRequirement(ConcurrentCodecRequirement.createR5_1__H_1_6_4k());
-    }
-
-    public CodecInitLatencyRequirement addR5_1__H_1_7(String mediaType) {
-        return this.addRequirement(CodecInitLatencyRequirement.createR5_1__H_1_7(mediaType));
     }
 
     public ConcurrentCodecRequirement addR5_1__H_1_9_1080p() {
