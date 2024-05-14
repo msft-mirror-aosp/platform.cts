@@ -20,7 +20,6 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 import static android.mediav2.common.cts.CodecEncoderTestBase.colorFormatToString;
-import static android.mediav2.common.cts.CodecEncoderTestBase.getMuxerFormatForMediaType;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_BEFORE_U;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_BEFORE_U;
@@ -29,6 +28,7 @@ import static android.mediav2.common.cts.CodecTestBase.isDefaultCodec;
 import static android.mediav2.common.cts.CodecTestBase.isHardwareAcceleratedCodec;
 import static android.mediav2.common.cts.CodecTestBase.isSoftwareCodec;
 import static android.mediav2.common.cts.CodecTestBase.isVendorCodec;
+import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatForMediaType;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
