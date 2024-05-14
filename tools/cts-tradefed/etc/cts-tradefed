@@ -133,7 +133,6 @@ if [ "$USE_ATS" == "true" ]; then
       --ats_console_olc_server_path=${ATS_OLC_SERVER_JAR} \
       --check_device_interval=1h \
       --enable_android_device_ready_check=false \
-      --enable_api_config=false \
       --enable_xts_dynamic_downloader=true \
       --public_dir=/tmp \
       --simplified_log_format=true \
