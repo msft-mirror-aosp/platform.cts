@@ -18,38 +18,32 @@ package android.app.appsearch.cts.app;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.app.appsearch.GetByDocumentIdRequest;
-import android.app.appsearch.PropertyPath;
+import android.app.appsearch.SearchSuggestionResult;
 import android.os.Parcel;
 
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-
 import org.junit.Test;
 
 @SmallTest
-public class GetByDocumentIdRequestPlatformCtsTest {
+public class SearchSuggestionResultServiceCtsTest {
     @Test
-    @ApiTest(apis = {"android.app.appsearch.GetByDocumentIdRequest#CREATOR"})
+    @ApiTest(apis = {"android.app.appsearch.SearchSuggestionResult#CREATOR"})
     public void testSerialization() {
-        GetByDocumentIdRequest inputRequest = new GetByDocumentIdRequest.Builder("ns1")
-                .addIds("id1", "id2")
-                .addProjectionPaths("Type1", ImmutableSet.of(new PropertyPath("a")))
-                .build();
+        SearchSuggestionResult expectedSearchSuggestionResult =
+                new SearchSuggestionResult.Builder()
+                        .setSuggestedResult("AppSearch")
+                        .build();
         Parcel data = Parcel.obtain();
         try {
-            data.writeParcelable(inputRequest, /* flags= */ 0);
+            data.writeParcelable(expectedSearchSuggestionResult, /* flags= */ 0);
             data.setDataPosition(0);
             @SuppressWarnings("deprecation")
-            GetByDocumentIdRequest outputRequest = data.readParcelable(/* loader= */ null);
-            assertThat(outputRequest.getNamespace()).isEqualTo("ns1");
-            assertThat(outputRequest.getIds()).containsExactly("id1", "id2");
-            assertThat(outputRequest.getProjections())
-                    .containsExactly("Type1", ImmutableList.of("a"));
+            SearchSuggestionResult actualSearchSuggestionResult =
+                    data.readParcelable(/* loader= */ null);
+            assertThat(actualSearchSuggestionResult).isEqualTo(expectedSearchSuggestionResult);
         } finally {
             data.recycle();
         }
