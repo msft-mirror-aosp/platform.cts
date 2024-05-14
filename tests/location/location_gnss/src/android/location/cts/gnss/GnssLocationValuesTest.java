@@ -22,6 +22,7 @@ import android.location.cts.common.SoftAssert;
 import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 /**
@@ -33,6 +34,7 @@ import android.util.Log;
  *          3.1 Confirm locations have been found.
  * 3. Get LastKnownLocation, verified all fields are in the correct range.
  */
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
 public class GnssLocationValuesTest extends GnssTestCase {
 
   private static final String TAG = "GnssLocationValuesTest";
