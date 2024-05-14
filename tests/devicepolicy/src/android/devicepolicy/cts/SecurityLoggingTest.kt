@@ -33,9 +33,9 @@ import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.SlowApiTest
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.harrier.policies.GlobalSecurityLogging
 import com.android.bedstead.harrier.policies.SecurityLogging
 import com.android.bedstead.nene.TestApis

@@ -45,6 +45,7 @@ android_test {
         "device_policy_aconfig_flags_lib",
         "TestApisReflection",
         "bedstead-multiuser",
+        "bedstead-enterprise",
     ],
     srcs: [
         "src/**/*.java",
@@ -82,6 +83,7 @@ android_test {
         "bedstead-flags",
         "bedstead-root",
         "bedstead-multiuser",
+        "bedstead-enterprise",
     ],
     srcs: [
         "src/**/*.java",
@@ -121,6 +123,7 @@ android_test {
         "bedstead-flags",
         "bedstead-root",
         "bedstead-multiuser",
+        "bedstead-enterprise",
     ],
     srcs: [
         "src/android/devicepolicy/cts/ApplicationHiddenTest.java",

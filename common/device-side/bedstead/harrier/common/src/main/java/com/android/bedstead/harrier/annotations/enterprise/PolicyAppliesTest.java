@@ -27,14 +27,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark a test as testing the states where a policy is applied (by a Device Owner or Profile Owner)
- * and it should apply to the user the test is running on.
- *
- * <p>This will generated parameterized runs for all matching states.
+ * This is just a temporary class for compatibility with other repositories
+ * use {@link com.android.bedstead.enterprise.annotations.PolicyAppliesTest} instead
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @RequiresBedsteadJUnit4
+@Deprecated
 public @interface PolicyAppliesTest {
     /**
      * The policy being tested.
