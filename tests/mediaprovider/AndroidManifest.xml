@@ -48,7 +48,5 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.provider.cts.media"
          android:label="CTS tests of android.providers.media">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 </manifest>
