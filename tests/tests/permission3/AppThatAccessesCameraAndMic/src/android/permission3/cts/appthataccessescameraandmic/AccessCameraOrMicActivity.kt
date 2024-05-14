@@ -95,7 +95,6 @@ class AccessCameraOrMicActivity : Activity() {
             getWindow().setFlags(
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
-            setTranslucent(true)
             getWindow().setLayout(100, 100)
         }
     }
