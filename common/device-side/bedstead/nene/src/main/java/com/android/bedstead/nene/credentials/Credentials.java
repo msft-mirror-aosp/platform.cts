@@ -28,6 +28,7 @@ import static com.android.bedstead.testapisreflection.TestApisConstants.PROVIDER
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.credentials.CredentialManager;
+import android.credentials.CredentialProviderInfo;
 import android.cts.testapisreflection.TestApisReflectionKt;
 
 import androidx.annotation.RequiresApi;
@@ -38,6 +39,7 @@ import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Versions;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -74,12 +76,13 @@ public final class Credentials {
         }
     }
 
+    // TODO(b/337769574): revert to using testapis reflection once we figure out a way to deal with
+    //  the case where there are private obfuscated fields
+    @SuppressLint("NewApi")
     private static Set<CredentialProviderInfo> getCredentialProviderServicesForTesting(
             UserReference user) {
-        return TestApisReflectionKt.getCredentialProviderServicesForTesting(
-                        credentialManager(user), PROVIDER_FILTER_ALL_PROVIDERS)
-                .stream().map(c -> new CredentialProviderInfo(c))
-                .collect(Collectors.toSet());
+        return new HashSet<>(credentialManager(user)
+                .getCredentialProviderServicesForTesting(PROVIDER_FILTER_ALL_PROVIDERS));
     }
 
     /**

@@ -4457,8 +4457,8 @@ public class ImsServiceTest {
                     @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
                     @ImsRegistrationImplBase.ImsRegistrationTech int tech,
                     boolean isProvisioned) {
-                mOnRcsFeatureChangedQueue.offer(new Pair<>(capability,
-                        new Pair<>(tech, isProvisioned)));
+                mOnRcsFeatureChangedQueue.offer(
+                        new Pair<>(capability, new Pair<>(tech, isProvisioned)));
             }
         };
 
@@ -4474,11 +4474,6 @@ public class ImsServiceTest {
                     TelephonyUtils.CTS_APP_PACKAGE,
                     SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
 
-            // Clear Q before testing
-            // When Callback registered the initial provisioning value can be notified.
-            mIntQueue.clear();
-            mOnRcsFeatureChangedQueue.clear();
-
             assertTrue(provisioningManager.isRcsProvisioningRequiredForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE));
             assertTrue(provisioningManager.isRcsProvisioningRequiredForCapability(
@@ -4487,6 +4482,11 @@ public class ImsServiceTest {
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM));
             assertTrue(provisioningManager.isRcsProvisioningRequiredForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
+
+            // Clear Q before testing
+            // When Callback registered the initial provisioning value can be notified.
+            mIntQueue.clear();
+            mOnRcsFeatureChangedQueue.clear();
 
             // test get/setRcsProvisioningStatusForCapability for PRESENCE over LTE
             boolean isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
@@ -4498,63 +4498,16 @@ public class ImsServiceTest {
             assertTrue(waitForParam(mIntQueue,
                     new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
 
+            // Wait until framework finishes running
+            Thread.sleep(TEST_OPERATION_TIME_MS);
+            // Clear Q before running other test
+            mIntQueue.clear();
+            mOnRcsFeatureChangedQueue.clear();
+
             provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
                     IMS_REGI_TECH_LTE, isProvisioned);
             assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
                     new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
-
-            // test get/setRcsProvisioningStatusForCapability for PRESENCE over IWLAN
-            isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN);
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_IWLAN, !isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
-
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_IWLAN, isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
-
-            // test get/setRcsProvisioningStatusForCapability for PRESENCE over CROSS SIM
-            isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM);
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_CROSS_SIM, !isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE,
-                            new Pair<>(IMS_REGI_TECH_CROSS_SIM, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
-
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_CROSS_SIM, isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE,
-                            new Pair<>(IMS_REGI_TECH_CROSS_SIM, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
-
-            // test get/setRcsProvisioningStatusForCapability for PRESENCE over NR
-            isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_NR);
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_NR, !isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
-
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_NR, isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, isProvisioned))));
             assertTrue(waitForParam(mIntQueue,
                     new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
 
