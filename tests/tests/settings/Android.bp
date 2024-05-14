@@ -27,6 +27,7 @@ android_test {
         "junit",
         "truth",
         "telephony_flags_core_java_lib",
+        "camera_platform_flags_java_lib",
     ],
 
     srcs: ["src/**/*.java"],
