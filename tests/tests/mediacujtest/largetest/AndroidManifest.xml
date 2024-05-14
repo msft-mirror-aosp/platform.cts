@@ -40,9 +40,6 @@
     android:label="Media E2E tests InstrumentationRunner"
     android:name="androidx.test.runner.AndroidJUnitRunner"
     android:targetPackage="android.media.cujlargetest.cts">
-    <meta-data
-      android:name="listener"
-      android:value="com.android.cts.runner.CtsTestRunListener" />
   </instrumentation>
 </manifest>
 
