@@ -10,7 +10,7 @@ public class OffHostService {
     public static final CommandApdu[] APDU_COMMAND_SEQUENCE = {
         HceUtils.buildSelectApdu("A000000151000000", true),
         HceUtils.buildCommandApdu("80CA9F7F00", true),
-        HceUtils.buildSelectApdu("A000000003000000", true),
+        HceUtils.buildSelectApdu("A000000444000000", true),
         HceUtils.buildCommandApdu("80CA9F7F00", true)
     };
 
