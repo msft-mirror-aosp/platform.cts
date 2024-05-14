@@ -62,9 +62,12 @@ android_test_helper_app {
 
 android_test_helper_app {
     name: "CtsEmptyTestApp_AppMetadataInApk",
+    resource_dirs: [
+        "res",
+        "app_metadata_res",
+    ],
     defaults: ["cts_defaults"],
     manifest: "AndroidManifest_AslInApk.xml",
-    assets: ["app.metadata"],
     sdk_version: "current",
     // tag this module as a cts test artifact
     test_suites: [
@@ -74,9 +77,13 @@ android_test_helper_app {
 }
 
 android_test_helper_app {
-    name: "CtsEmptyTestApp_MissingAppMetadataInApk",
+    name: "CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit",
+    resource_dirs: [
+        "res",
+        "bad_app_metadata_res",
+    ],
     defaults: ["cts_defaults"],
-    manifest: "AndroidManifest_AslInApk.xml",
+    manifest: "AndroidManifest_AslInApk_ExceedSizeLimit.xml",
     sdk_version: "current",
     // tag this module as a cts test artifact
     test_suites: [
