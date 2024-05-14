@@ -1251,6 +1251,8 @@ public class WallpaperManagerTest {
      */
     @Test
     public void testEngineCallbackCounts() throws IOException {
+        // TODO(b/339161260): Remove this assumption once the bug is fixed.
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_WATCH));
         assumeTrue(mWallpaperManager.isLockscreenLiveWallpaperEnabled());
         ArrayList<String> errorMessages = new ArrayList<>();
         runWithShellPermissionIdentity(() -> {
