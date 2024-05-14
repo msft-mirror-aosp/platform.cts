@@ -29,10 +29,12 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
@@ -56,14 +58,13 @@ import android.view.Surface;
 import android.view.WindowMetrics;
 import android.window.WindowInfosListenerForTest.WindowInfo;
 
-import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -118,10 +119,7 @@ public class MediaProjectionMirroringTest {
     private CountDownLatch mScreenshotCountDownLatch;
     private VirtualDisplay mVirtualDisplay;
     private final ActivityOptions.LaunchCookie mLaunchCookie = new ActivityOptions.LaunchCookie();
-    @Rule
-    public final ActivityScenarioRule<Activity> mActivityLaunchCookieRule =
-            new ActivityScenarioRule<>(Activity.class,
-                    createActivityScenarioWithLaunchCookie(mLaunchCookie));
+    public ActivityScenario<TestRotationActivity> mTestRotationActivityActivityScenario;
     private Activity mActivity;
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     /**
@@ -140,7 +138,6 @@ public class MediaProjectionMirroringTest {
                     new UserHandle(ActivityManager.getCurrentUser()));
         });
         mMediaProjection = null;
-        mActivityLaunchCookieRule.getScenario().onActivity(activity -> mActivity = activity);
         if (DEBUG_MODE) {
             mScreenshotCountDownLatch = new CountDownLatch(1);
         }
@@ -172,10 +169,13 @@ public class MediaProjectionMirroringTest {
     // Validate that the mirrored hierarchy is the expected size.
     @Test
     public void testDisplayCapture() {
+        ActivityScenario<Activity> activityScenario =
+                ActivityScenario.launch(new Intent(mContext, Activity.class));
+        activityScenario.onActivity(activity -> mActivity = activity);
+
         final WindowMetrics maxWindowMetrics =
                 mActivity.getWindowManager().getMaximumWindowMetrics();
-        final WindowMetrics currentWindowMetrics =
-                mActivity.getWindowManager().getCurrentWindowMetrics();
+        final Rect activityRect = new Rect();
 
         // Select full screen capture.
         mMediaProjectionHelper.authorizeMediaProjection();
@@ -185,10 +185,14 @@ public class MediaProjectionMirroringTest {
         mVirtualDisplay = createVirtualDisplay(maxWindowMetrics.getBounds(), "testDisplayCapture");
         waitForLatestScreenshot();
 
+        // Get the bounds of the activity on screen - use getGlobalVisibleRect to account for
+        // possible insets caused by DisplayCutout
+        mActivity.getWindow().getDecorView().getGlobalVisibleRect(activityRect);
+
         validateMirroredHierarchy(mActivity,
                 mVirtualDisplay.getDisplay().getDisplayId(),
-                new Point(currentWindowMetrics.getBounds().width(),
-                        currentWindowMetrics.getBounds().height()));
+                new Point(activityRect.width(), activityRect.height()));
+        activityScenario.close();
     }
 
     // Validate that the mirrored hierarchy is the expected size after rotating the default display.
@@ -196,9 +200,14 @@ public class MediaProjectionMirroringTest {
     public void testDisplayCapture_rotation() {
         assumeTrue("Skipping test: no rotation support", supportsRotation());
 
+        mTestRotationActivityActivityScenario =
+                ActivityScenario.launch(new Intent(mContext, TestRotationActivity.class));
+        mTestRotationActivityActivityScenario.onActivity(activity -> mActivity = activity);
+
         final RotationSession rotationSession = createManagedRotationSession();
         final WindowMetrics maxWindowMetrics =
                 mActivity.getWindowManager().getMaximumWindowMetrics();
+        final Rect activityRect = new Rect();
         final int initialRotation = mActivity.getDisplay().getRotation();
 
         // Select full screen capture.
@@ -211,21 +220,31 @@ public class MediaProjectionMirroringTest {
 
         rotateDeviceAndWaitForActivity(rotationSession, initialRotation);
 
+        // Get the bounds of the activity on screen - use getGlobalVisibleRect to account for
+        // possible insets caused by DisplayCutout
+        mActivity.getWindow().getDecorView().getGlobalVisibleRect(activityRect);
+
         final Point mirroredSize = calculateScaledMirroredActivitySize(
-                mActivity.getWindowManager().getCurrentWindowMetrics(), mVirtualDisplay);
+                mActivity.getWindowManager().getCurrentWindowMetrics(), mVirtualDisplay,
+                new Point(activityRect.width(), activityRect.height()));
         validateMirroredHierarchy(mActivity, mVirtualDisplay.getDisplay().getDisplayId(),
                 mirroredSize);
 
         rotationSession.close();
+        mTestRotationActivityActivityScenario.close();
     }
 
     // Validate that the mirrored hierarchy is the expected size.
     @Test
     public void testSingleAppCapture() {
+        final ActivityScenario<Activity> activityScenario = ActivityScenario.launch(
+                new Intent(mContext, Activity.class),
+                createActivityScenarioWithLaunchCookie(mLaunchCookie)
+        );
+        activityScenario.onActivity(activity -> mActivity = activity);
         final WindowMetrics maxWindowMetrics =
                 mActivity.getWindowManager().getMaximumWindowMetrics();
-        final WindowMetrics currentWindowMetrics =
-                mActivity.getWindowManager().getCurrentWindowMetrics();
+        final Rect activityRect = new Rect();
 
         // Select single app capture if supported.
         mMediaProjectionHelper.authorizeMediaProjection(mLaunchCookie);
@@ -236,10 +255,14 @@ public class MediaProjectionMirroringTest {
                 "testSingleAppCapture");
         waitForLatestScreenshot();
 
+        // Get the bounds of the activity on screen - use getGlobalVisibleRect to account for
+        // possible insets caused by DisplayCutout
+        mActivity.getWindow().getDecorView().getGlobalVisibleRect(activityRect);
+
         validateMirroredHierarchy(mActivity,
                 mVirtualDisplay.getDisplay().getDisplayId(),
-                new Point(currentWindowMetrics.getBounds().width(),
-                        currentWindowMetrics.getBounds().height()));
+                new Point(activityRect.width(), activityRect.height()));
+        activityScenario.close();
     }
 
     // TODO (b/284968776): test single app capture in split screen
@@ -275,8 +298,8 @@ public class MediaProjectionMirroringTest {
     /**
      * Rotates the device 90 degrees & waits for the display & activity configuration to stabilize.
      */
-    private void rotateDeviceAndWaitForActivity(@NonNull RotationSession rotationSession,
-            @Surface.Rotation int initialRotation) {
+    private void rotateDeviceAndWaitForActivity(
+            @NonNull RotationSession rotationSession, @Surface.Rotation int initialRotation) {
         // Rotate the device by 90 degrees
         rotationSession.set((initialRotation + 1) % (ROTATION_270 + 1),
                 /* waitForDeviceRotation=*/ true);
@@ -287,7 +310,7 @@ public class MediaProjectionMirroringTest {
             Log.e(TAG, "Unable to wait for window to stabilize after rotation: " + e.getMessage());
         }
         // Re-fetch the activity since reference may have been modified during rotation.
-        mActivityLaunchCookieRule.getScenario().onActivity(activity -> mActivity = activity);
+        mTestRotationActivityActivityScenario.onActivity(activity -> mActivity = activity);
     }
 
     /**
@@ -300,27 +323,44 @@ public class MediaProjectionMirroringTest {
      */
     private static Point calculateScaledMirroredActivitySize(
             @NonNull WindowMetrics currentWindowMetrics,
-            @NonNull VirtualDisplay virtualDisplay) {
+            @NonNull VirtualDisplay virtualDisplay, @Nullable Point visibleBounds) {
         // Calculate the aspect ratio of the original activity.
-        final float aspectRatio = currentWindowMetrics.getBounds().width() * 1f
-                / currentWindowMetrics.getBounds().height();
+        final Point currentBounds = new Point(currentWindowMetrics.getBounds().width(),
+                currentWindowMetrics.getBounds().height());
+        final float aspectRatio = currentBounds.x * 1f / currentBounds.y;
         // Find the size of the surface we are mirroring to.
         final Point surfaceSize = virtualDisplay.getSurface().getDefaultSize();
         int mirroredWidth;
         int mirroredHeight;
 
+        // Calculate any width & height deltas caused by DisplayCutout insets
+        Point sizeDifference = new Point();
+        if (visibleBounds != null) {
+            int widthDifference = currentBounds.x - visibleBounds.x;
+            int heightDifference = currentBounds.y - visibleBounds.y;
+            sizeDifference.set(widthDifference, heightDifference);
+        }
+
         if (surfaceSize.x < surfaceSize.y) {
             // Output surface is portrait, so its width constrains. The mirrored activity is
             // scaled down to fill the width entirely, and will have horizontal black bars at the
             // top and bottom.
-            mirroredWidth = surfaceSize.x;
-            mirroredHeight = (int) (surfaceSize.x / aspectRatio);
+            // Also apply scaled insets, to handle case where device has a display cutout which
+            // shifts the content horizontally when landscape.
+            int adjustedHorizontalInsets = Math.round(sizeDifference.x / aspectRatio);
+            int adjustedVerticalInsets = Math.round(sizeDifference.y / aspectRatio);
+            mirroredWidth = surfaceSize.x - adjustedHorizontalInsets;
+            mirroredHeight = Math.round(surfaceSize.x / aspectRatio) - adjustedVerticalInsets;
         } else {
             // Output surface is landscape, so its height constrains. The mirrored activity is
             // scaled down to fill the height entirely, and will have horizontal black bars on the
             // left and right.
-            mirroredWidth = (int) (surfaceSize.y * aspectRatio);
-            mirroredHeight = surfaceSize.y;
+            // Also apply scaled insets, to handle case where device has a display cutout which
+            // shifts the content vertically when portrait.
+            int adjustedHorizontalInsets = Math.round(sizeDifference.x * aspectRatio);
+            int adjustedVerticalInsets = Math.round(sizeDifference.y * aspectRatio);
+            mirroredWidth = Math.round(surfaceSize.y * aspectRatio) - adjustedHorizontalInsets;
+            mirroredHeight = surfaceSize.y - adjustedVerticalInsets;
         }
         return new Point(mirroredWidth, mirroredHeight);
     }
@@ -376,9 +416,9 @@ public class MediaProjectionMirroringTest {
     }
 
     /**
-     * Stub activity for launching into split screen.
+     * Stub activity for launching an activity meant to be rotated.
      */
-    public static class TestMirroringActivity extends Activity {
+    public static class TestRotationActivity extends Activity {
         // Stub
     }
 
