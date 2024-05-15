@@ -17,42 +17,32 @@
 package com.android.cts.input
 
 import android.app.Instrumentation
-import android.content.Context
 import android.graphics.Point
 import android.hardware.input.InputManager
 import android.os.Handler
 import android.os.Looper
 import android.server.wm.WindowManagerStateHelper
-import android.util.Size
 import android.view.Display
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.TestUtils.waitOn
 import java.util.concurrent.TimeUnit
-import org.json.JSONArray
-import org.json.JSONObject
 
 /**
  * Helper class for configuring and interacting with a [UinputDevice] that uses the evdev
  * multitouch protocol.
  */
-class UinputTouchDevice(
+open class UinputTouchDevice(
     instrumentation: Instrumentation,
     display: Display,
-    private val rawResource: Int,
-    private val source: Int,
-    useDisplaySize: Boolean = false,
-) :
-    AutoCloseable {
+    private val registerCommand: UinputRegisterCommand,
+    source: Int,
+) : AutoCloseable {
 
     private val DISPLAY_ASSOCIATION_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5)
-
-    private val uinputDevice: UinputDevice
-    private lateinit var port: String
+    private val uinputDevice = UinputDevice(instrumentation, source, registerCommand)
     private val inputManager: InputManager
 
     init {
-        val size = Size(display.getMode().getPhysicalWidth(), display.getMode().getPhysicalHeight())
-        uinputDevice = createDevice(instrumentation, if (useDisplaySize) size else null)
         inputManager = instrumentation.targetContext.getSystemService(InputManager::class.java)!!
         associateWith(display)
 
@@ -114,54 +104,16 @@ class UinputTouchDevice(
     }
 
     fun getDeviceId(): Int {
-        return uinputDevice.getDeviceId()
-    }
-
-    private fun readRawResource(context: Context): String {
-        return context.resources
-            .openRawResource(rawResource)
-            .bufferedReader().use { it.readText() }
-    }
-
-    private fun createDevice(instrumentation: Instrumentation, sizeOverride: Size?): UinputDevice {
-        val json = JSONObject(readRawResource(instrumentation.targetContext))
-        val resourceDeviceId: Int = json.getInt("id")
-        val vendorId = json.getInt("vid")
-        val productId = json.getInt("pid")
-        port = json.getString("port")
-
-        if (sizeOverride != null) {
-            // Use the given size to set the maximum values of relevant axes.
-            val absInfo: JSONArray = json.getJSONArray("abs_info")
-            for (i in 0 until absInfo.length()) {
-                val item = absInfo.getJSONObject(i)
-                val code: Any = item.get("code")
-                if (code == ABS_MT_POSITION_X || code == "ABS_MT_POSITION_X") {
-                    item.getJSONObject("info")
-                        .put("maximum", sizeOverride.width - 1)
-                }
-                if (code == ABS_MT_POSITION_Y || code == "ABS_MT_POSITION_Y") {
-                    item.getJSONObject("info")
-                        .put("maximum", sizeOverride.height - 1)
-                }
-            }
-        }
-
-        // Create the uinput device.
-        val registerCommand = json.toString()
-        return UinputDevice(
-            instrumentation,
-            resourceDeviceId,
-            vendorId,
-            productId,
-            source,
-            registerCommand
-        )
+        return uinputDevice.deviceId
     }
 
     private fun associateWith(display: Display) {
         runWithShellPermissionIdentity(
-                { inputManager.addUniqueIdAssociationByPort(port, display.uniqueId!!) },
+                { inputManager.addUniqueIdAssociationByPort(
+                      registerCommand.port,
+                      display.uniqueId!!
+                  )
+                },
                 "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
         )
         waitForDeviceUpdatesUntil {
@@ -210,7 +162,7 @@ class UinputTouchDevice(
 
     override fun close() {
         runWithShellPermissionIdentity(
-                { inputManager.removeUniqueIdAssociationByPort(port) },
+                { inputManager.removeUniqueIdAssociationByPort(registerCommand.port) },
                 "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
         )
         uinputDevice.close()

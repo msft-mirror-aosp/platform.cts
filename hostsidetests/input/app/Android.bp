@@ -35,8 +35,6 @@ android_test_helper_app {
         "-Werror",
     ],
 
-    resource_dirs: ["res"],
-
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.ext.junit",

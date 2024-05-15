@@ -66,6 +66,7 @@ import android.text.InputType;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Pair;
+import android.view.Display;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -97,7 +98,9 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.UinputStylus;
 import com.android.cts.input.UinputTouchDevice;
+import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
@@ -1074,20 +1077,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             displayId = context.getDisplayId();
 
             String initialUserRotation = TestUtils.getRotation(displayId);
-
-            try (UinputTouchDevice touch = new UinputTouchDevice(
-                    instrumentation,
-                    context.getDisplay(),
-                    R.raw.test_touchscreen_register,
-                    InputDevice.SOURCE_TOUCHSCREEN,
-                    true /* useDisplaySize */);
-                        UinputTouchDevice stylus = new UinputTouchDevice(
-                            instrumentation,
-                            context.getDisplay(),
-                            R.raw.test_capacitive_stylus_register,
-                            InputDevice.SOURCE_STYLUS,
-                            true /* useDisplaySize */)) {
-
+            final Display display = context.getDisplay();
+            try (UinputTouchDevice touch = new UinputTouchScreen(instrumentation, display);
+                    UinputTouchDevice stylus = new UinputStylus(instrumentation, display)) {
                 String expectedRotation = "0";
                 if (!expectedRotation.equals(initialUserRotation)) {
                     // Set device-default rotation for UinputTouchDevice to work as expected.
