@@ -267,7 +267,6 @@ public class FgsTimeoutTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK,
                            Flags.FLAG_ENABLE_FGS_TIMEOUT_CRASH_BEHAVIOR})
-    @RequiresFlagsDisabled(Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR)
     public void testCrash() throws Exception {
         final int crashExtraTimeout = 5000;
         updateDeviceConfig("fgs_crash_extra_wait_duration", crashExtraTimeout);
@@ -440,7 +439,6 @@ public class FgsTimeoutTest {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
-    @RequiresFlagsDisabled(Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR)
     public void testStartService_throwsExceptionAfterTimeout() {
         final long serviceStartTime = SystemClock.uptimeMillis();
         // Start the service
@@ -500,8 +498,7 @@ public class FgsTimeoutTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK,
-                           Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR})
+    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_FGS_TIMEOUT_CRASH_BEHAVIOR)
     public void testNoCrash_whenFlagDisabled() throws Exception {
         final int crashExtraTimeout = 5000;
