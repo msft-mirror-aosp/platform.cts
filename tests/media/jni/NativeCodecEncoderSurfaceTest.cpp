@@ -85,7 +85,7 @@ class CodecEncoderSurfaceTest {
 
     bool testSimpleEncode(const char* encoder, const char* decoder, const char* srcPath,
                           const char* srcMediaType, const char* muxOutPath, int colorFormat,
-                          bool usePersistentSurface);
+                          bool usePersistentSurface, int frameLimit);
 };
 
 CodecEncoderSurfaceTest::CodecEncoderSurfaceTest(const char* mediaType, const char* cfgParams,
@@ -557,7 +557,7 @@ bool CodecEncoderSurfaceTest::doWork(int frameLimit) {
 bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* decoder,
                                                const char* srcPath, const char *srcMediaType,
                                                const char* muxOutPath, int colorFormat,
-                                               bool usePersistentSurface) {
+                                               bool usePersistentSurface, int frameLimit) {
     RETURN_IF_FALSE(setUpExtractor(srcPath, srcMediaType, colorFormat),
                     std::string{"setUpExtractor failed"})
     bool muxOutput = muxOutPath != nullptr;
@@ -596,7 +596,7 @@ bool CodecEncoderSurfaceTest::testSimpleEncode(const char* encoder, const char* 
         if (!configureCodec(isAsync, false, usePersistentSurface)) return false;
         RETURN_IF_FAIL(AMediaCodec_start(mEncoder), "Encoder AMediaCodec_start failed")
         RETURN_IF_FAIL(AMediaCodec_start(mDecoder), "Decoder AMediaCodec_start failed")
-        if (!doWork(INT32_MAX)) return false;
+        if (!doWork(frameLimit)) return false;
         if (!queueEOS()) return false;
         if (!waitForAllEncoderOutputs()) return false;
         if (muxOutput) {
@@ -654,7 +654,8 @@ static jboolean nativeTestSimpleEncode(JNIEnv* env, jobject, jstring jEncoder, j
                                        jstring jMediaType, jstring jtestFile,
                                        jstring jTestFileMediaType, jstring jmuxFile,
                                        jint jColorFormat, jboolean jUsePersistentSurface,
-                                       jstring jCfgParams, jstring jSeparator, jobject jRetMsg) {
+                                       jstring jCfgParams, jstring jSeparator, jobject jRetMsg,
+                                       jint jFrameLimit) {
     const char* cEncoder = env->GetStringUTFChars(jEncoder, nullptr);
     const char* cDecoder = env->GetStringUTFChars(jDecoder, nullptr);
     const char* cMediaType = env->GetStringUTFChars(jMediaType, nullptr);
@@ -666,7 +667,8 @@ static jboolean nativeTestSimpleEncode(JNIEnv* env, jobject, jstring jEncoder, j
     auto codecEncoderSurfaceTest = new CodecEncoderSurfaceTest(cMediaType, cCfgParams, cSeparator);
     bool isPass = codecEncoderSurfaceTest->testSimpleEncode(cEncoder, cDecoder, cTestFile,
                                                             cTestFileMediaType, cMuxFile,
-                                                            jColorFormat, jUsePersistentSurface);
+                                                            jColorFormat, jUsePersistentSurface,
+                                                            jFrameLimit);
     std::string msg = isPass ? std::string{} : codecEncoderSurfaceTest->getErrorMsg();
     delete codecEncoderSurfaceTest;
     jclass clazz = env->GetObjectClass(jRetMsg);
@@ -690,7 +692,7 @@ int registerAndroidMediaV2CtsEncoderSurfaceTest(JNIEnv* env) {
             {"nativeTestSimpleEncode",
              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
              "String;Ljava/lang/String;IZLjava/lang/String;Ljava/lang/String;Ljava/lang/"
-             "StringBuilder;)Z",
+             "StringBuilder;I)Z",
              (void*)nativeTestSimpleEncode},
     };
     jclass c = env->FindClass("android/mediav2/cts/CodecEncoderSurfaceTest");
