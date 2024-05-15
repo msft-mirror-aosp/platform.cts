@@ -62,16 +62,17 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Unit test cases for {@link BluetoothHearingAid}.
- * <p>
- * To run the test, use adb shell am instrument -e class 'android.bluetooth.HearingAidProfileTest'
- * -w 'com.android.bluetooth.tests/android.bluetooth.BluetoothTestRunner'
+ *
+ * <p>To run the test, use adb shell am instrument -e class
+ * 'android.bluetooth.HearingAidProfileTest' -w
+ * 'com.android.bluetooth.tests/android.bluetooth.BluetoothTestRunner'
  */
 @RunWith(AndroidJUnit4.class)
 public class HearingAidProfileTest {
     private static final String TAG = "HearingAidProfileTest";
 
     private static final int WAIT_FOR_INTENT_TIMEOUT_MS = 10000; // ms to wait for intent callback
-    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
+    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
     // ADAPTER_ENABLE_TIMEOUT_MS = AdapterState.BLE_START_TIMEOUT_DELAY +
     //                              AdapterState.BREDR_START_TIMEOUT_DELAY
     private static final int ADAPTER_ENABLE_TIMEOUT_MS = 8000;
@@ -84,16 +85,20 @@ public class HearingAidProfileTest {
     private BluetoothHearingAid mService;
     private BluetoothAdapter mBluetoothAdapter;
     private BroadcastReceiver mIntentReceiver;
-    private UiAutomation mUiAutomation;;
+    private UiAutomation mUiAutomation;
+    ;
 
     private Condition mConditionProfileConnection;
     private ReentrantLock mProfileConnectionlock;
     private boolean mIsProfileReady;
     private AdvertisementServiceData mAdvertisementData;
 
-    private static List<Integer> mValidConnectionStates = new ArrayList<Integer>(
-        Arrays.asList(BluetoothProfile.STATE_CONNECTING, BluetoothProfile.STATE_CONNECTED,
-                      BluetoothProfile.STATE_DISCONNECTED, BluetoothProfile.STATE_DISCONNECTING));
+    private static List<Integer> mValidConnectionStates =
+            new ArrayList<Integer>(
+                    Arrays.asList(
+                            BluetoothProfile.STATE_CONNECTING, BluetoothProfile.STATE_CONNECTED,
+                            BluetoothProfile.STATE_DISCONNECTED,
+                                    BluetoothProfile.STATE_DISCONNECTING));
 
     private List<BluetoothDevice> mIntentCallbackDeviceList;
 
@@ -107,8 +112,8 @@ public class HearingAidProfileTest {
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        BluetoothManager manager = (BluetoothManager) mContext.getSystemService(
-                Context.BLUETOOTH_SERVICE);
+        BluetoothManager manager =
+                (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = manager.getAdapter();
 
         assertTrue(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext));
@@ -116,8 +121,8 @@ public class HearingAidProfileTest {
         mConditionProfileConnection = mProfileConnectionlock.newCondition();
         mIsProfileReady = false;
         mService = null;
-        mBluetoothAdapter.getProfileProxy(mContext, new HearingAidsServiceListener(),
-                BluetoothProfile.HEARING_AID);
+        mBluetoothAdapter.getProfileProxy(
+                mContext, new HearingAidsServiceListener(), BluetoothProfile.HEARING_AID);
 
         Parcel parcel = Parcel.obtain();
         parcel.writeInt(0b110); // CSIP supported, MODE_BINAURAL, SIDE_LEFT
@@ -146,9 +151,7 @@ public class HearingAidProfileTest {
         assertFalse(mIsProfileReady);
     }
 
-    /**
-     * Basic test case to make sure that Hearing Aid Profile Proxy can connect.
-     */
+    /** Basic test case to make sure that Hearing Aid Profile Proxy can connect. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @MediumTest
     @Test
@@ -158,9 +161,7 @@ public class HearingAidProfileTest {
         assertNotNull(mService);
     }
 
-    /**
-     * Basic test case to make sure that a fictional device is disconnected.
-     */
+    /** Basic test case to make sure that a fictional device is disconnected. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @MediumTest
     @Test
@@ -194,9 +195,7 @@ public class HearingAidProfileTest {
         assertThrows(SecurityException.class, () -> mService.setVolume(42));
     }
 
-    /**
-     * Basic test case to make sure that a fictional device is unknown side.
-     */
+    /** Basic test case to make sure that a fictional device is unknown side. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @MediumTest
     @Test
@@ -214,9 +213,7 @@ public class HearingAidProfileTest {
         assertEquals(BluetoothHearingAid.SIDE_UNKNOWN, side);
     }
 
-    /**
-     * Basic test case to make sure that a fictional device is unknown mode.
-     */
+    /** Basic test case to make sure that a fictional device is unknown mode. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @MediumTest
     @Test
@@ -235,8 +232,8 @@ public class HearingAidProfileTest {
     }
 
     /**
-     * Basic test case to make sure that a fictional device's ASHA Advertisement Service Data
-     * is null.
+     * Basic test case to make sure that a fictional device's ASHA Advertisement Service Data is
+     * null.
      */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @MediumTest
@@ -289,7 +286,7 @@ public class HearingAidProfileTest {
         assertNotNull(mService);
 
         // Create a fake advertisement data
-        AdvertisementServiceData data  = mAdvertisementData;
+        AdvertisementServiceData data = mAdvertisementData;
 
         final int side = data.getDeviceSide();
         // Fake device should be SIDE_LEFT
@@ -297,8 +294,8 @@ public class HearingAidProfileTest {
     }
 
     /**
-     * Basic test case to make sure that a fictional device's truncated HiSyncId is the
-     * expected value.
+     * Basic test case to make sure that a fictional device's truncated HiSyncId is the expected
+     * value.
      */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @MediumTest
@@ -330,7 +327,7 @@ public class HearingAidProfileTest {
         assertNotNull(mService);
 
         // Create a fake advertisement data
-        AdvertisementServiceData data  = mAdvertisementData;
+        AdvertisementServiceData data = mAdvertisementData;
         assertNotNull(data);
 
         final boolean supported = data.isCsipSupported();
@@ -351,7 +348,7 @@ public class HearingAidProfileTest {
         assertNotNull(mService);
 
         // Create a fake advertisement data
-        final AdvertisementServiceData data  = mAdvertisementData;
+        final AdvertisementServiceData data = mAdvertisementData;
         assertNotNull(data);
 
         // Create another fake advertisement data
@@ -368,9 +365,7 @@ public class HearingAidProfileTest {
         assertEquals(true, isLikelyPair);
     }
 
-    /**
-     * Basic test case to get the list of connected Hearing Aid devices.
-     */
+    /** Basic test case to get the list of connected Hearing Aid devices. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @MediumTest
     @Test
@@ -404,10 +399,14 @@ public class HearingAidProfileTest {
         for (int connectionState : mValidConnectionStates) {
             List<BluetoothDevice> deviceList;
 
-            deviceList = mService.getDevicesMatchingConnectionStates(new int[]{connectionState});
+            deviceList = mService.getDevicesMatchingConnectionStates(new int[] {connectionState});
             assertNotNull(deviceList);
-            Log.d(TAG, "getDevicesMatchingConnectionStates(" + connectionState + "): size="
-                  + deviceList.size());
+            Log.d(
+                    TAG,
+                    "getDevicesMatchingConnectionStates("
+                            + connectionState
+                            + "): size="
+                            + deviceList.size());
             checkDeviceListAndStates(deviceList, connectionState);
         }
     }
@@ -430,7 +429,7 @@ public class HearingAidProfileTest {
         for (int connectionState : mValidConnectionStates) {
             List<BluetoothDevice> deviceList;
 
-            deviceList = mService.getDevicesMatchingConnectionStates(new int[]{connectionState});
+            deviceList = mService.getDevicesMatchingConnectionStates(new int[] {connectionState});
             bondedDeviceList.addAll(deviceList);
             numDevices += deviceList.size();
         }
@@ -462,9 +461,12 @@ public class HearingAidProfileTest {
         // Tear down
         mContext.unregisterReceiver(mIntentReceiver);
 
-        Log.d(TAG, "getConnectionStateChangedIntent: number of bonded device="
-              + numDevices + ", mIntentCallbackDeviceList.size()="
-              + mIntentCallbackDeviceList.size());
+        Log.d(
+                TAG,
+                "getConnectionStateChangedIntent: number of bonded device="
+                        + numDevices
+                        + ", mIntentCallbackDeviceList.size()="
+                        + mIntentCallbackDeviceList.size());
         for (BluetoothDevice device : mIntentCallbackDeviceList) {
             assertTrue(bondedDeviceList.contains(device));
         }
@@ -476,13 +478,13 @@ public class HearingAidProfileTest {
             // Wait for the Adapter to be disabled
             while (!mIsProfileReady) {
                 if (!mConditionProfileConnection.await(
-                    PROXY_CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                        PROXY_CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
                     // Timeout
                     Log.e(TAG, "Timeout while waiting for Profile Connect");
                     break;
                 } // else spurious wakeups
             }
-        } catch(InterruptedException e) {
+        } catch (InterruptedException e) {
             Log.e(TAG, "waitForProfileConnect: interrrupted");
         } finally {
             mProfileConnectionlock.unlock();
@@ -510,8 +512,7 @@ public class HearingAidProfileTest {
         return !mIsProfileReady;
     }
 
-    private final class HearingAidsServiceListener
-            implements BluetoothProfile.ServiceListener {
+    private final class HearingAidsServiceListener implements BluetoothProfile.ServiceListener {
 
         public void onServiceConnected(int profile, BluetoothProfile proxy) {
             mProfileConnectionlock.lock();
@@ -544,8 +545,14 @@ public class HearingAidProfileTest {
                 int previousState = intent.getIntExtra(BluetoothProfile.EXTRA_PREVIOUS_STATE, -1);
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
-                Log.d(TAG,"HearingAidIntentReceiver.onReceive: device=" + device
-                      + ", state=" + state + ", previousState=" + previousState);
+                Log.d(
+                        TAG,
+                        "HearingAidIntentReceiver.onReceive: device="
+                                + device
+                                + ", state="
+                                + state
+                                + ", previousState="
+                                + previousState);
 
                 checkValidConnectionState(state);
                 checkValidConnectionState(previousState);
@@ -556,12 +563,18 @@ public class HearingAidProfileTest {
     }
 
     private void checkDeviceListAndStates(List<BluetoothDevice> deviceList, int connectionState) {
-        Log.d(TAG, "checkDeviceListAndStates(): size=" + deviceList.size()
-              + ", connectionState=" + connectionState);
+        Log.d(
+                TAG,
+                "checkDeviceListAndStates(): size="
+                        + deviceList.size()
+                        + ", connectionState="
+                        + connectionState);
         for (BluetoothDevice device : deviceList) {
             int deviceConnectionState = mService.getConnectionState(device);
-            assertEquals("Mismatched connection state for " + device,
-                         connectionState, deviceConnectionState);
+            assertEquals(
+                    "Mismatched connection state for " + device,
+                    connectionState,
+                    deviceConnectionState);
         }
     }
 
@@ -572,6 +585,7 @@ public class HearingAidProfileTest {
     private static void sleep(long t) {
         try {
             Thread.sleep(t);
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException e) {
+        }
     }
 }
