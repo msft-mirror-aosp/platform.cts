@@ -63,7 +63,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 
 /** Unit test cases for {@link BluetoothHearingAid}. */
@@ -330,17 +329,12 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getConnectionStateChangedIntent() {
-        // Find out how many Hearing Aid bonded devices
-        List<BluetoothDevice> bondedDeviceList = new ArrayList();
-        for (int connectionState : sValidConnectionStates) {
-            List<BluetoothDevice> deviceList =
-                    mService.getDevicesMatchingConnectionStates(new int[] {connectionState});
-            bondedDeviceList.addAll(deviceList);
-        }
+        List<BluetoothDevice> bondedDeviceList =
+                mService.getDevicesMatchingConnectionStates(
+                        sValidConnectionStates.stream().mapToInt(Integer::intValue).toArray());
 
         int numDevices = bondedDeviceList.size();
-        if (numDevices <= 0) return;
-        Log.d(TAG, "Number Hearing Aids devices bonded=" + numDevices);
+        Assume.assumeTrue(numDevices > 0);
 
         BroadcastReceiver mockReceiver = mock(BroadcastReceiver.class);
         sContext.registerReceiver(
