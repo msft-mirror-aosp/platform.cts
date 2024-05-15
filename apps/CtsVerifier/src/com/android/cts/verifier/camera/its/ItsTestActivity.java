@@ -120,7 +120,7 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final Pattern PERF_METRICS_YUV_PLUS_JPEG_PATTERN =
             Pattern.compile("test_yuv_plus_jpeg_rms_diff:(\\d+(\\.\\d+)?)");
     private static final Pattern PERF_METRICS_YUV_PLUS_RAW_PATTERN =
-            Pattern.compile("test_yuv_plus_raw_rms_diff:(\\d+(\\.\\d+)?)");
+            Pattern.compile("test_yuv_plus_(raw|raw10|raw12)_rms_diff:(\\d+(\\.\\d+)?)");
     private static final Pattern PERF_METRICS_IMU_DRIFT_PATTERN =
             Pattern.compile("test_imu_drift_.*");
     private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
@@ -583,8 +583,10 @@ public class ItsTestActivity extends DialogTestListActivity {
 
                 if (yuvPlusRawMetricsMatches) {
                     Log.i(TAG, "raw pattern  matches");
-                    float diff = Float.parseFloat(yuvPlusRawMetricsMatcher.group(1));
-                    obj.put("yuv_plus_raw_rms_diff", diff);
+                    String fmtMatcher = yuvPlusRawMetricsMatcher.group(1); // "raw", "raw10", etc.
+                    float diff = Float.parseFloat(yuvPlusRawMetricsMatcher.group(2));
+                    String keyname = "yuv_plus_" + fmtMatcher + "_rms_diff";
+                    obj.put(keyname, diff);
                 }
 
                 if (imuDriftMetricsMatches) {
