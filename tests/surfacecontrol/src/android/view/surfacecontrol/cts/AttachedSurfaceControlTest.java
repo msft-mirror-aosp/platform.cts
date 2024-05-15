@@ -33,6 +33,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Rect;
+import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
@@ -129,13 +130,15 @@ public class AttachedSurfaceControlTest {
     }
 
     private void supportRotationCheck() {
-        PackageManager pm =
-                InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        PackageManager pm = context.getPackageManager();
         boolean supportsRotation = pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_PORTRAIT)
                 && pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE);
         final boolean isFixedToUserRotation =
                 "enabled".equals(SystemUtil.runShellCommand(FIXED_TO_USER_ROTATION_COMMAND).trim());
         Assume.assumeTrue(supportsRotation && !isFixedToUserRotation);
+        assumeFalse("Skipping test: square size may not have configuration changes",
+                ActivityManagerTestBase.isCloseToSquareDisplay(context));
     }
 
     @After
