@@ -311,17 +311,14 @@ public class HearingAidProfileTest {
     @Test
     public void getDevicesMatchingConnectionStates() {
         for (int connectionState : sValidConnectionStates) {
-            List<BluetoothDevice> deviceList;
-
-            deviceList = mService.getDevicesMatchingConnectionStates(new int[] {connectionState});
+            List<BluetoothDevice> deviceList =
+                    mService.getDevicesMatchingConnectionStates(new int[] {connectionState});
             assertThat(deviceList).isNotNull();
-            Log.d(
-                    TAG,
-                    "getDevicesMatchingConnectionStates("
-                            + connectionState
-                            + "): size="
-                            + deviceList.size());
-            checkDeviceListAndStates(deviceList, connectionState);
+            for (BluetoothDevice device : deviceList) {
+                assertWithMessage("Mismatched connection state for device=" + device)
+                        .that(mService.getConnectionState(device))
+                        .isEqualTo(connectionState);
+            }
         }
     }
 
@@ -367,20 +364,6 @@ public class HearingAidProfileTest {
                     .isIn(sValidConnectionStates);
             assertThat((BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE))
                     .isIn(bondedDeviceList);
-        }
-    }
-
-    private void checkDeviceListAndStates(List<BluetoothDevice> deviceList, int connectionState) {
-        Log.d(
-                TAG,
-                "checkDeviceListAndStates(): size="
-                        + deviceList.size()
-                        + ", connectionState="
-                        + connectionState);
-        for (BluetoothDevice device : deviceList) {
-            assertWithMessage("Mismatched connection state for device=" + device)
-                    .that(mService.getConnectionState(device))
-                    .isEqualTo(connectionState);
         }
     }
 }
