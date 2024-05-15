@@ -66,6 +66,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.List;
 
+@FlakyTest(bugId = 336489418)
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class CarDisplayInputLockTest extends AbstractCarTestCase {
@@ -123,7 +124,6 @@ public class CarDisplayInputLockTest extends AbstractCarTestCase {
         }
     }
 
-    @FlakyTest(bugId = 336489418)
     @CddTest(requirements = {"TODO(b/262236403)"})
     @Test
     public void testDisplayInputLockForTwoPassengerDisplaysAtOnce() throws Exception {
