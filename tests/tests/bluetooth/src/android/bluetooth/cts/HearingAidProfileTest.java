@@ -298,8 +298,7 @@ public class HearingAidProfileTest {
         List<BluetoothDevice> deviceList = mService.getConnectedDevices();
         Log.d(TAG, "getConnectedDevices(): size=" + deviceList.size());
         for (BluetoothDevice device : deviceList) {
-            int connectionState = mService.getConnectionState(device);
-            checkValidConnectionState(connectionState);
+            assertThat(mService.getConnectionState(device)).isIn(sValidConnectionStates);
         }
     }
 
@@ -383,9 +382,5 @@ public class HearingAidProfileTest {
                     .that(mService.getConnectionState(device))
                     .isEqualTo(connectionState);
         }
-    }
-
-    private void checkValidConnectionState(int connectionState) {
-        assertThat(connectionState).isIn(sValidConnectionStates);
     }
 }
