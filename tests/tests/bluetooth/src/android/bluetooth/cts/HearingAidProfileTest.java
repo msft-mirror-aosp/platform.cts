@@ -84,7 +84,8 @@ public class HearingAidProfileTest {
 
     private static final Duration PROXY_CONNECTION_TIMEOUT = Duration.ofMillis(500);
     private static final Duration WAIT_FOR_INTENT_TIMEOUT = Duration.ofSeconds(1);
-    private static final String FAKE_REMOTE_ADDRESS = "42:11:22:AA:BB:CC";
+    private static final BluetoothDevice sFakeDevice =
+            sBluetoothAdapter.getRemoteDevice("42:11:22:AA:BB:CC");
 
     private static List<Integer> sValidConnectionStates =
             List.of(
@@ -138,12 +139,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getConnectionState() {
-        // Create a fake device
-        BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertThat(device).isNotNull();
-
-        // Fake device should be disconnected
-        assertThat(mService.getConnectionState(device))
+        assertThat(mService.getConnectionState(sFakeDevice))
                 .isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
     }
 
@@ -164,12 +160,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getDeviceSide() {
-        // Create a fake device
-        final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertThat(device).isNotNull();
-
-        // Fake device should be no value, unknown side
-        assertThat(mService.getDeviceSide(device)).isEqualTo(BluetoothHearingAid.SIDE_UNKNOWN);
+        assertThat(mService.getDeviceSide(sFakeDevice)).isEqualTo(BluetoothHearingAid.SIDE_UNKNOWN);
     }
 
     /** Basic test case to make sure that a fictional device is unknown mode. */
@@ -177,12 +168,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getDeviceMode() {
-        // Create a fake device
-        final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertThat(device).isNotNull();
-
-        // Fake device should be no value, unknown mode
-        assertThat(mService.getDeviceMode(device)).isEqualTo(BluetoothHearingAid.MODE_UNKNOWN);
+        assertThat(mService.getDeviceMode(sFakeDevice)).isEqualTo(BluetoothHearingAid.MODE_UNKNOWN);
     }
 
     /**
@@ -193,14 +179,9 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getAdvertisementServiceData() {
-        // Create a fake device
-        final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertThat(device).isNotNull();
-
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED);
 
-        // Fake device should have no service data
-        assertThat(mService.getAdvertisementServiceData(device)).isNull();
+        assertThat(mService.getAdvertisementServiceData(sFakeDevice)).isNull();
     }
 
     /**
@@ -211,7 +192,6 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getAdvertisementDeviceMode() {
-        // Fake device should be MODE_BINAURAL
         assertThat(sAdvertisementData.getDeviceMode()).isEqualTo(BluetoothHearingAid.MODE_BINAURAL);
     }
 
@@ -223,7 +203,6 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getAdvertisementDeviceSide() {
-        // Fake device should be SIDE_LEFT
         assertThat(sAdvertisementData.getDeviceSide()).isEqualTo(BluetoothHearingAid.SIDE_LEFT);
     }
 
