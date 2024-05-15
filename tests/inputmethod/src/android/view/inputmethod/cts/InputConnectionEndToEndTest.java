@@ -1941,6 +1941,7 @@ public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
             "android.view.inputmethod.SelectGesture.Builder#setSelectionArea",
             "android.view.inputmethod.SelectGesture.Builder#setGranularity",
             "android.view.inputmethod.InputConnection#previewHandwritingGesture"})
+    @FlakyTest(bugId = 338754377)
     public void testPreviewHandwritingSelectGesture_ongoingGestureCancellation()
             throws Exception {
         SelectGesture.Builder builder = new SelectGesture.Builder();
