@@ -20,12 +20,10 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.BLUETOOTH_SCAN;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
@@ -117,19 +115,19 @@ public class HearingAidProfileTest {
         parcel.writeInt(1);
         parcel.setDataPosition(0);
         mAdvertisementData = AdvertisementServiceData.CREATOR.createFromParcel(parcel);
-        assertNotNull(mAdvertisementData);
+        assertThat(mAdvertisementData).isNotNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void closeProfileProxy() {
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mService);
-        assertTrue(mIsProfileReady);
+        assertThat(waitForProfileConnect()).isTrue();
+        assertThat(mService).isNotNull();
+        assertThat(mIsProfileReady).isTrue();
 
         sBluetoothAdapter.closeProfileProxy(BluetoothProfile.HEARING_AID, mService);
-        assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        assertThat(waitForProfileDisconnect()).isTrue();
+        assertThat(mIsProfileReady).isFalse();
     }
 
     /** Basic test case to make sure that Hearing Aid Profile Proxy can connect. */
@@ -138,8 +136,8 @@ public class HearingAidProfileTest {
     @Test
     public void getProxyServiceConnect() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
     }
 
     /** Basic test case to make sure that a fictional device is disconnected. */
@@ -148,16 +146,16 @@ public class HearingAidProfileTest {
     @Test
     public void getConnectionState() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         // Create a fake device
         BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertNotNull(device);
+        assertThat(device).isNotNull();
 
-        int connectionState = mService.getConnectionState(device);
         // Fake device should be disconnected
-        assertEquals(connectionState, BluetoothProfile.STATE_DISCONNECTED);
+        assertThat(mService.getConnectionState(device))
+                .isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
     }
 
     /**
@@ -169,8 +167,8 @@ public class HearingAidProfileTest {
     @Test
     public void setVolume() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
         assertThrows(SecurityException.class, () -> mService.setVolume(42));
@@ -182,16 +180,15 @@ public class HearingAidProfileTest {
     @Test
     public void getDeviceSide() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         // Create a fake device
         final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertNotNull(device);
+        assertThat(device).isNotNull();
 
-        final int side = mService.getDeviceSide(device);
         // Fake device should be no value, unknown side
-        assertEquals(BluetoothHearingAid.SIDE_UNKNOWN, side);
+        assertThat(mService.getDeviceSide(device)).isEqualTo(BluetoothHearingAid.SIDE_UNKNOWN);
     }
 
     /** Basic test case to make sure that a fictional device is unknown mode. */
@@ -200,16 +197,15 @@ public class HearingAidProfileTest {
     @Test
     public void getDeviceMode() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         // Create a fake device
         final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertNotNull(device);
+        assertThat(device).isNotNull();
 
-        final int mode = mService.getDeviceMode(device);
         // Fake device should be no value, unknown mode
-        assertEquals(BluetoothHearingAid.MODE_UNKNOWN, mode);
+        assertThat(mService.getDeviceMode(device)).isEqualTo(BluetoothHearingAid.MODE_UNKNOWN);
     }
 
     /**
@@ -221,17 +217,17 @@ public class HearingAidProfileTest {
     @Test
     public void getAdvertisementServiceData() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         // Create a fake device
         final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertNotNull(device);
+        assertThat(device).isNotNull();
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED);
 
         // Fake device should have no service data
-        assertNull(mService.getAdvertisementServiceData(device));
+        assertThat(mService.getAdvertisementServiceData(device)).isNull();
     }
 
     /**
@@ -243,15 +239,14 @@ public class HearingAidProfileTest {
     @Test
     public void getAdvertisementDeviceMode() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         // Create a fake advertisement data
         AdvertisementServiceData data = mAdvertisementData;
 
-        final int mode = data.getDeviceMode();
         // Fake device should be MODE_BINAURAL
-        assertEquals(BluetoothHearingAid.MODE_BINAURAL, mode);
+        assertThat(data.getDeviceMode()).isEqualTo(BluetoothHearingAid.MODE_BINAURAL);
     }
 
     /**
@@ -263,15 +258,14 @@ public class HearingAidProfileTest {
     @Test
     public void getAdvertisementDeviceSide() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         // Create a fake advertisement data
         AdvertisementServiceData data = mAdvertisementData;
 
-        final int side = data.getDeviceSide();
         // Fake device should be SIDE_LEFT
-        assertEquals(BluetoothHearingAid.SIDE_LEFT, side);
+        assertThat(data.getDeviceSide()).isEqualTo(BluetoothHearingAid.SIDE_LEFT);
     }
 
     /**
@@ -283,16 +277,15 @@ public class HearingAidProfileTest {
     @Test
     public void getTruncatedHiSyncId() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         // Create a fake advertisement data
         AdvertisementServiceData data = mAdvertisementData;
-        assertNotNull(data);
+        assertThat(data).isNotNull();
 
-        final int id = data.getTruncatedHiSyncId();
         // Fake device should be supported
-        assertEquals(1, id);
+        assertThat(data.getTruncatedHiSyncId()).isEqualTo(1);
     }
 
     /**
@@ -304,16 +297,15 @@ public class HearingAidProfileTest {
     @Test
     public void isCsipSupported() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         // Create a fake advertisement data
         AdvertisementServiceData data = mAdvertisementData;
-        assertNotNull(data);
+        assertThat(data).isNotNull();
 
-        final boolean supported = data.isCsipSupported();
         // Fake device should be supported
-        assertEquals(true, supported);
+        assertThat(data.isCsipSupported()).isTrue();
     }
 
     /**
@@ -325,12 +317,12 @@ public class HearingAidProfileTest {
     @Test
     public void isLikelyPairOfBluetoothHearingAid() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         // Create a fake advertisement data
         final AdvertisementServiceData data = mAdvertisementData;
-        assertNotNull(data);
+        assertThat(data).isNotNull();
 
         // Create another fake advertisement data
         Parcel parcel = Parcel.obtain();
@@ -339,11 +331,10 @@ public class HearingAidProfileTest {
         parcel.setDataPosition(0);
         AdvertisementServiceData dataOtherSide =
                 AdvertisementServiceData.CREATOR.createFromParcel(parcel);
-        assertNotNull(dataOtherSide);
+        assertThat(dataOtherSide).isNotNull();
 
-        final boolean isLikelyPair = data.isInPairWith(dataOtherSide);
         // two devices should be a pair
-        assertEquals(true, isLikelyPair);
+        assertThat(data.isInPairWith(dataOtherSide)).isTrue();
     }
 
     /** Basic test case to get the list of connected Hearing Aid devices. */
@@ -352,8 +343,8 @@ public class HearingAidProfileTest {
     @Test
     public void getConnectedDevices() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         List<BluetoothDevice> deviceList;
 
@@ -374,14 +365,14 @@ public class HearingAidProfileTest {
     @Test
     public void getDevicesMatchingConnectionStates() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         for (int connectionState : sValidConnectionStates) {
             List<BluetoothDevice> deviceList;
 
             deviceList = mService.getDevicesMatchingConnectionStates(new int[] {connectionState});
-            assertNotNull(deviceList);
+            assertThat(deviceList).isNotNull();
             Log.d(
                     TAG,
                     "getDevicesMatchingConnectionStates("
@@ -401,8 +392,8 @@ public class HearingAidProfileTest {
     @Test
     public void getConnectionStateChangedIntent() {
         waitForProfileConnect();
-        assertTrue(mIsProfileReady);
-        assertNotNull(mService);
+        assertThat(mIsProfileReady).isTrue();
+        assertThat(mService).isNotNull();
 
         // Find out how many Hearing Aid bonded devices
         List<BluetoothDevice> bondedDeviceList = new ArrayList();
@@ -426,8 +417,8 @@ public class HearingAidProfileTest {
         mIntentReceiver = new HearingAidIntentReceiver();
         sContext.registerReceiver(mIntentReceiver, filter);
 
-        assertTrue(BlockingBluetoothAdapter.disable(true));
-        assertTrue(BlockingBluetoothAdapter.enable());
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
 
         int sanityCount = WAIT_FOR_INTENT_TIMEOUT_MS;
         while ((numDevices != mIntentCallbackDeviceList.size()) && (sanityCount > 0)) {
@@ -439,15 +430,7 @@ public class HearingAidProfileTest {
         // Tear down
         sContext.unregisterReceiver(mIntentReceiver);
 
-        Log.d(
-                TAG,
-                "getConnectionStateChangedIntent: number of bonded device="
-                        + numDevices
-                        + ", mIntentCallbackDeviceList.size()="
-                        + mIntentCallbackDeviceList.size());
-        for (BluetoothDevice device : mIntentCallbackDeviceList) {
-            assertTrue(bondedDeviceList.contains(device));
-        }
+        assertThat(bondedDeviceList).containsExactly(mIntentCallbackDeviceList);
     }
 
     private boolean waitForProfileConnect() {
@@ -548,16 +531,14 @@ public class HearingAidProfileTest {
                         + ", connectionState="
                         + connectionState);
         for (BluetoothDevice device : deviceList) {
-            int deviceConnectionState = mService.getConnectionState(device);
-            assertEquals(
-                    "Mismatched connection state for " + device,
-                    connectionState,
-                    deviceConnectionState);
+            assertWithMessage("Mismatched connection state for device=" + device)
+                    .that(mService.getConnectionState(device))
+                    .isEqualTo(connectionState);
         }
     }
 
     private void checkValidConnectionState(int connectionState) {
-        assertTrue(sValidConnectionStates.contains(connectionState));
+        assertThat(connectionState).isIn(sValidConnectionStates);
     }
 
     private static void sleep(long t) {
