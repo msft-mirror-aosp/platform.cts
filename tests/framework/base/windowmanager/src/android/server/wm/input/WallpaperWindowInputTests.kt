@@ -16,24 +16,33 @@
 package android.server.wm.input
 
 import android.app.WallpaperManager
+import android.content.Context
 import android.content.pm.PackageManager
-import android.os.SystemClock
+import android.graphics.Point
+import android.hardware.display.DisplayManager
 import android.platform.test.annotations.Presubmit
 import android.server.wm.ActivityManagerTestBase
 import android.server.wm.CliIntentExtra
 import android.server.wm.TestJournalProvider
-import android.server.wm.WindowManagerState
 import android.server.wm.annotation.Group2
 import android.server.wm.app.Components
 import android.server.wm.app.Components.TestInteractiveLiveWallpaperKeys
+import android.view.Display.DEFAULT_DISPLAY
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.WindowManager
-import com.android.compatibility.common.util.PollingCheck
-import junit.framework.AssertionFailedError
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertThrows
+import com.android.cts.input.UinputTouchScreen
+import com.android.cts.input.inputeventmatchers.withCoords
+import com.android.cts.input.inputeventmatchers.withMotionAction
+import com.android.cts.input.inputeventmatchers.withSource
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.allOf
+import org.junit.After
+import org.junit.Assert.assertNull
+import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
@@ -47,7 +56,7 @@ import org.junit.Test
 @Presubmit
 @Group2
 class WallpaperWindowInputTests : ActivityManagerTestBase() {
-    private var lastMotionEvent: MotionEvent? = null
+    private lateinit var touchScreen: UinputTouchScreen
 
     @Before
     fun setup() {
@@ -57,117 +66,103 @@ class WallpaperWindowInputTests : ActivityManagerTestBase() {
             "Device does not support live wallpapers",
             mContext.packageManager.hasSystemFeature(PackageManager.FEATURE_LIVE_WALLPAPER)
         )
+        val displayManager =
+            mInstrumentation.context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        val display = displayManager.getDisplay(DEFAULT_DISPLAY)!!
+        touchScreen = UinputTouchScreen(mInstrumentation, display)
+    }
+
+    @After
+    fun tearDown() {
+        if (this::touchScreen.isInitialized) {
+            touchScreen.close()
+        }
+    }
+
+    private fun checkWallpaperEvent(enableWallpaperTouch: Boolean) {
+        val wallpaperSession = createManagedChangeWallpaperSession()
+        wallpaperSession.setWallpaperComponent(Components.TEST_INTERACTIVE_LIVE_WALLPAPER_SERVICE)
+
+        launchActivity(
+            Components.WALLPAPER_TARGET_ACTIVITY,
+            CliIntentExtra.extraBool(
+                Components.WallpaperTargetActivity.EXTRA_ENABLE_WALLPAPER_TOUCH,
+                enableWallpaperTouch
+            )
+        )
+        mWmState.waitAndAssertWindowShown(WindowManager.LayoutParams.TYPE_WALLPAPER, true)
+        TestJournalProvider.TestJournalContainer.start()
+        val task = mWmState.getTaskByActivity(Components.WALLPAPER_TARGET_ACTIVITY)
+        val bounds = task.bounds
+        val xOnScreen = bounds.width() / 2
+        val yOnScreen = bounds.height() / 2
+        val pointer = touchScreen.touchDown(xOnScreen, yOnScreen)
+
+        val event = waitForMotionEventFromTestJournal(2.seconds)
+        /**
+         * If the wallpaper touches are enabled, we should receive the motion event. Otherwise, the
+         * motion event should not reach the wallpaper.
+         */
+        if (enableWallpaperTouch) {
+            assertThat(event, allOf(
+                withMotionAction(MotionEvent.ACTION_DOWN),
+                withCoords(Point(xOnScreen, yOnScreen)),
+                withSource(InputDevice.SOURCE_TOUCHSCREEN)
+            ))
+        } else {
+            assertNull(event)
+        }
+        pointer.lift()
     }
 
     @Test
     fun testShowWallpaper_withTouchEnabled() {
-        val wallpaperSession = createManagedChangeWallpaperSession()
-        wallpaperSession.setWallpaperComponent(Components.TEST_INTERACTIVE_LIVE_WALLPAPER_SERVICE)
-
-        launchActivity(
-            Components.WALLPAPER_TARGET_ACTIVITY,
-            CliIntentExtra.extraBool(
-                Components.WallpaperTargetActivity.EXTRA_ENABLE_WALLPAPER_TOUCH,
-                true
-            )
-        )
-        mWmState.waitAndAssertWindowShown(WindowManager.LayoutParams.TYPE_WALLPAPER, true)
-        TestJournalProvider.TestJournalContainer.start()
-        val task = mWmState.getTaskByActivity(Components.WALLPAPER_TARGET_ACTIVITY)
-        val motionEvent = getDownEventForTaskCenter(task)
-        mInstrumentation.uiAutomation.injectInputEvent(motionEvent, true, true)
-
-        PollingCheck.waitFor(
-            2000,
-            { this.updateLastMotionEventFromTestJournal() },
-            "Waiting for wallpaper to receive the touch events"
-        )
-
-        assertNotNull(lastMotionEvent)
-        assertMotionEvent(lastMotionEvent, motionEvent)
+        checkWallpaperEvent(enableWallpaperTouch = true)
     }
 
     @Test
     fun testShowWallpaper_withWallpaperTouchDisabled() {
-        val wallpaperSession = createManagedChangeWallpaperSession()
-        wallpaperSession.setWallpaperComponent(Components.TEST_INTERACTIVE_LIVE_WALLPAPER_SERVICE)
-
-        launchActivity(
-            Components.WALLPAPER_TARGET_ACTIVITY,
-            CliIntentExtra.extraBool(
-                Components.WallpaperTargetActivity.EXTRA_ENABLE_WALLPAPER_TOUCH,
-                false
-            )
-        )
-        mWmState.waitAndAssertWindowShown(WindowManager.LayoutParams.TYPE_WALLPAPER, true)
-
-        TestJournalProvider.TestJournalContainer.start()
-        val task = mWmState.getTaskByActivity(Components.WALLPAPER_TARGET_ACTIVITY)
-        val motionEvent = getDownEventForTaskCenter(task)
-        mInstrumentation.uiAutomation.injectInputEvent(motionEvent, true, true)
-
-        val failMsg = "Waiting for wallpaper to receive the touch events"
-        val exception: Throwable = assertThrows(
-            AssertionFailedError::class.java
-        ) {
-            PollingCheck.waitFor(
-                2000,
-                { this.updateLastMotionEventFromTestJournal() },
-                "Waiting for wallpaper to receive the touch events"
-            )
-        }
-        assertEquals(failMsg, exception.message)
+        checkWallpaperEvent(enableWallpaperTouch = false)
     }
 
-    private fun updateLastMotionEventFromTestJournal(): Boolean {
+    private fun waitForMotionEventFromTestJournal(timeout: Duration): MotionEvent? {
+        var remainingTime = timeout
+        while (remainingTime > 0.milliseconds) {
+            val event = getMotionEventFromTestJournal()
+            if (event != null) {
+                return event
+            }
+            try {
+                Thread.sleep(TIME_SLICE.inWholeMilliseconds)
+            } catch (e: InterruptedException) {
+                fail("unexpected InterruptedException")
+            }
+            remainingTime -= TIME_SLICE
+        }
+        return null
+    }
+
+    private fun getMotionEventFromTestJournal(): MotionEvent? {
+        var event: MotionEvent? = null
         val journal =
             TestJournalProvider.TestJournalContainer.get(TestInteractiveLiveWallpaperKeys.COMPONENT)
         TestJournalProvider.TestJournalContainer.withThreadSafeAccess {
-            lastMotionEvent =
-                if (journal.extras.containsKey(
-                        TestInteractiveLiveWallpaperKeys.LAST_RECEIVED_MOTION_EVENT)
-                ) {
-                    journal.extras.getParcelable(
-                    TestInteractiveLiveWallpaperKeys.LAST_RECEIVED_MOTION_EVENT,
-                    MotionEvent::class.java
+            if (journal.extras.containsKey(
+                    TestInteractiveLiveWallpaperKeys.LAST_RECEIVED_MOTION_EVENT
                 )
-                } else {
-                    null
-                }
+            ) {
+                event =
+                    journal.extras.getParcelable(
+                        TestInteractiveLiveWallpaperKeys.LAST_RECEIVED_MOTION_EVENT,
+                        MotionEvent::class.java
+                    )
+            }
         }
-        return lastMotionEvent != null
+        return event
     }
 
     companion object {
         private const val TAG = "WallpaperWindowInputTests"
-
-        private fun getDownEventForTaskCenter(task: WindowManagerState.Task): MotionEvent {
-            // Get anchor coordinates on the screen
-            val bounds = task.bounds
-            val xOnScreen = bounds.width() / 2
-            val yOnScreen = bounds.height() / 2
-            val downTime = SystemClock.uptimeMillis()
-
-            val eventDown = MotionEvent.obtain(
-                downTime,
-                downTime,
-                MotionEvent.ACTION_DOWN,
-                xOnScreen.toFloat(),
-                yOnScreen.toFloat(),
-                1
-            )
-            eventDown.source = InputDevice.SOURCE_TOUCHSCREEN
-
-            return eventDown
-        }
-
-        private fun assertMotionEvent(event: MotionEvent?, expectedEvent: MotionEvent) {
-            assertEquals("$TAG (action)", event!!.action, expectedEvent.action)
-            assertEquals("$TAG (source)", event.source, expectedEvent.source)
-            assertEquals("$TAG (down time)", event.downTime, expectedEvent.downTime)
-            assertEquals("$TAG (event time)", event.eventTime, expectedEvent.eventTime)
-            assertEquals("$TAG (position x)", event.x, expectedEvent.x, 0.01f)
-            assertEquals("$TAG (position y)", event.y, expectedEvent.y, 0.01f)
-        }
+        private val TIME_SLICE = 50.milliseconds
     }
 }
