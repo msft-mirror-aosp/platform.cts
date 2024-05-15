@@ -32,8 +32,9 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHearingAid;
 import android.bluetooth.BluetoothHearingAid.AdvertisementServiceData;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
+import android.bluetooth.test_utils.EnableBluetoothRule;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -45,84 +46,71 @@ import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * Unit test cases for {@link BluetoothHearingAid}.
- *
- * <p>To run the test, use adb shell am instrument -e class
- * 'android.bluetooth.HearingAidProfileTest' -w
- * 'com.android.bluetooth.tests/android.bluetooth.BluetoothTestRunner'
- */
+/** Unit test cases for {@link BluetoothHearingAid}. */
 @RunWith(AndroidJUnit4.class)
 public class HearingAidProfileTest {
-    private static final String TAG = "HearingAidProfileTest";
+    private static final String TAG = HearingAidProfileTest.class.getSimpleName();
+
+    @ClassRule public static final EnableBluetoothRule sEnableBluetooth = new EnableBluetoothRule();
+
+    @Rule
+    public final AdoptShellPermissionsRule mPermissionRule =
+            new AdoptShellPermissionsRule(sUiAutomation, BLUETOOTH_CONNECT);
+
+    private static final BluetoothAdapter sBluetoothAdapter = BlockingBluetoothAdapter.getAdapter();
+    private static final Context sContext =
+            InstrumentationRegistry.getInstrumentation().getContext();
+    private static final UiAutomation sUiAutomation =
+            InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
     private static final int WAIT_FOR_INTENT_TIMEOUT_MS = 10000; // ms to wait for intent callback
     private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
-    // ADAPTER_ENABLE_TIMEOUT_MS = AdapterState.BLE_START_TIMEOUT_DELAY +
-    //                              AdapterState.BREDR_START_TIMEOUT_DELAY
-    private static final int ADAPTER_ENABLE_TIMEOUT_MS = 8000;
-    // ADAPTER_DISABLE_TIMEOUT_MS = AdapterState.BLE_STOP_TIMEOUT_DELAY +
-    //                                  AdapterState.BREDR_STOP_TIMEOUT_DELAY
-    private static final int ADAPTER_DISABLE_TIMEOUT_MS = 5000;
     private static final String FAKE_REMOTE_ADDRESS = "42:11:22:AA:BB:CC";
 
-    private Context mContext;
+    private static List<Integer> sValidConnectionStates =
+            List.of(
+                    BluetoothProfile.STATE_CONNECTING,
+                    BluetoothProfile.STATE_CONNECTED,
+                    BluetoothProfile.STATE_DISCONNECTED,
+                    BluetoothProfile.STATE_DISCONNECTING);
+
     private BluetoothHearingAid mService;
-    private BluetoothAdapter mBluetoothAdapter;
     private BroadcastReceiver mIntentReceiver;
-    private UiAutomation mUiAutomation;
-    ;
 
     private Condition mConditionProfileConnection;
     private ReentrantLock mProfileConnectionlock;
     private boolean mIsProfileReady;
     private AdvertisementServiceData mAdvertisementData;
 
-    private static List<Integer> mValidConnectionStates =
-            new ArrayList<Integer>(
-                    Arrays.asList(
-                            BluetoothProfile.STATE_CONNECTING, BluetoothProfile.STATE_CONNECTED,
-                            BluetoothProfile.STATE_DISCONNECTED,
-                                    BluetoothProfile.STATE_DISCONNECTING));
-
     private List<BluetoothDevice> mIntentCallbackDeviceList;
 
     @Before
-    public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-
-        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
+    public void setUp() {
+        Assume.assumeTrue(TestUtils.isBleSupported(sContext));
         Assume.assumeTrue(TestUtils.isProfileEnabled(BluetoothProfile.HEARING_AID));
 
-        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-
-        BluetoothManager manager =
-                (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
-        mBluetoothAdapter = manager.getAdapter();
-
-        assertTrue(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext));
         mProfileConnectionlock = new ReentrantLock();
         mConditionProfileConnection = mProfileConnectionlock.newCondition();
         mIsProfileReady = false;
         mService = null;
-        mBluetoothAdapter.getProfileProxy(
-                mContext, new HearingAidsServiceListener(), BluetoothProfile.HEARING_AID);
+        sBluetoothAdapter.getProfileProxy(
+                sContext, new HearingAidsServiceListener(), BluetoothProfile.HEARING_AID);
 
         Parcel parcel = Parcel.obtain();
         parcel.writeInt(0b110); // CSIP supported, MODE_BINAURAL, SIDE_LEFT
@@ -132,13 +120,6 @@ public class HearingAidProfileTest {
         assertNotNull(mAdvertisementData);
     }
 
-    @After
-    public void tearDown() {
-        if (mUiAutomation != null) {
-            mUiAutomation.dropShellPermissionIdentity();
-        }
-    }
-
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void closeProfileProxy() {
@@ -146,7 +127,7 @@ public class HearingAidProfileTest {
         assertNotNull(mService);
         assertTrue(mIsProfileReady);
 
-        mBluetoothAdapter.closeProfileProxy(BluetoothProfile.HEARING_AID, mService);
+        sBluetoothAdapter.closeProfileProxy(BluetoothProfile.HEARING_AID, mService);
         assertTrue(waitForProfileDisconnect());
         assertFalse(mIsProfileReady);
     }
@@ -171,7 +152,7 @@ public class HearingAidProfileTest {
         assertNotNull(mService);
 
         // Create a fake device
-        BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
+        BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
         assertNotNull(device);
 
         int connectionState = mService.getConnectionState(device);
@@ -205,7 +186,7 @@ public class HearingAidProfileTest {
         assertNotNull(mService);
 
         // Create a fake device
-        final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
+        final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
         assertNotNull(device);
 
         final int side = mService.getDeviceSide(device);
@@ -223,7 +204,7 @@ public class HearingAidProfileTest {
         assertNotNull(mService);
 
         // Create a fake device
-        final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
+        final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
         assertNotNull(device);
 
         final int mode = mService.getDeviceMode(device);
@@ -244,7 +225,7 @@ public class HearingAidProfileTest {
         assertNotNull(mService);
 
         // Create a fake device
-        final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
+        final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
         assertNotNull(device);
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED);
@@ -396,7 +377,7 @@ public class HearingAidProfileTest {
         assertTrue(mIsProfileReady);
         assertNotNull(mService);
 
-        for (int connectionState : mValidConnectionStates) {
+        for (int connectionState : sValidConnectionStates) {
             List<BluetoothDevice> deviceList;
 
             deviceList = mService.getDevicesMatchingConnectionStates(new int[] {connectionState});
@@ -426,7 +407,7 @@ public class HearingAidProfileTest {
         // Find out how many Hearing Aid bonded devices
         List<BluetoothDevice> bondedDeviceList = new ArrayList();
         int numDevices = 0;
-        for (int connectionState : mValidConnectionStates) {
+        for (int connectionState : sValidConnectionStates) {
             List<BluetoothDevice> deviceList;
 
             deviceList = mService.getDevicesMatchingConnectionStates(new int[] {connectionState});
@@ -443,13 +424,10 @@ public class HearingAidProfileTest {
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothHearingAid.ACTION_CONNECTION_STATE_CHANGED);
         mIntentReceiver = new HearingAidIntentReceiver();
-        mContext.registerReceiver(mIntentReceiver, filter);
+        sContext.registerReceiver(mIntentReceiver, filter);
 
-        Log.d(TAG, "getConnectionStateChangedIntent: disable adapter and wait");
-        assertTrue(BTAdapterUtils.disableAdapter(mBluetoothAdapter, mContext));
-
-        Log.d(TAG, "getConnectionStateChangedIntent: enable adapter and wait");
-        assertTrue(BTAdapterUtils.enableAdapter(mBluetoothAdapter, mContext));
+        assertTrue(BlockingBluetoothAdapter.disable(true));
+        assertTrue(BlockingBluetoothAdapter.enable());
 
         int sanityCount = WAIT_FOR_INTENT_TIMEOUT_MS;
         while ((numDevices != mIntentCallbackDeviceList.size()) && (sanityCount > 0)) {
@@ -459,7 +437,7 @@ public class HearingAidProfileTest {
         }
 
         // Tear down
-        mContext.unregisterReceiver(mIntentReceiver);
+        sContext.unregisterReceiver(mIntentReceiver);
 
         Log.d(
                 TAG,
@@ -485,7 +463,7 @@ public class HearingAidProfileTest {
                 } // else spurious wakeups
             }
         } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileConnect: interrrupted");
+            Log.e(TAG, "waitForProfileConnect: interrupted");
         } finally {
             mProfileConnectionlock.unlock();
         }
@@ -505,7 +483,7 @@ public class HearingAidProfileTest {
                 } // else spurious wakeups
             }
         } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileDisconnect: interrrupted");
+            Log.e(TAG, "waitForProfileDisconnect: interrupted");
         } finally {
             mProfileConnectionlock.unlock();
         }
@@ -579,7 +557,7 @@ public class HearingAidProfileTest {
     }
 
     private void checkValidConnectionState(int connectionState) {
-        assertTrue(mValidConnectionStates.contains(connectionState));
+        assertTrue(sValidConnectionStates.contains(connectionState));
     }
 
     private static void sleep(long t) {
