@@ -24,7 +24,9 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -82,7 +84,7 @@ public class HearingAidProfileTest {
             InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
     private static final Duration PROXY_CONNECTION_TIMEOUT = Duration.ofMillis(500);
-    private static final int WAIT_FOR_INTENT_TIMEOUT_MS = 10000; // ms to wait for intent callback
+    private static final Duration WAIT_FOR_INTENT_TIMEOUT = Duration.ofSeconds(1);
     private static final String FAKE_REMOTE_ADDRESS = "42:11:22:AA:BB:CC";
 
     private static List<Integer> sValidConnectionStates =
@@ -93,11 +95,8 @@ public class HearingAidProfileTest {
                     BluetoothProfile.STATE_DISCONNECTING);
 
     private BluetoothHearingAid mService;
-    private BroadcastReceiver mIntentReceiver;
 
     private AdvertisementServiceData mAdvertisementData;
-
-    private List<BluetoothDevice> mIntentCallbackDeviceList;
 
     @Mock BluetoothProfile.ServiceListener mServiceListener;
 
@@ -337,64 +336,38 @@ public class HearingAidProfileTest {
     public void getConnectionStateChangedIntent() {
         // Find out how many Hearing Aid bonded devices
         List<BluetoothDevice> bondedDeviceList = new ArrayList();
-        int numDevices = 0;
         for (int connectionState : sValidConnectionStates) {
-            List<BluetoothDevice> deviceList;
-
-            deviceList = mService.getDevicesMatchingConnectionStates(new int[] {connectionState});
+            List<BluetoothDevice> deviceList =
+                    mService.getDevicesMatchingConnectionStates(new int[] {connectionState});
             bondedDeviceList.addAll(deviceList);
-            numDevices += deviceList.size();
         }
 
+        int numDevices = bondedDeviceList.size();
         if (numDevices <= 0) return;
         Log.d(TAG, "Number Hearing Aids devices bonded=" + numDevices);
 
-        mIntentCallbackDeviceList = new ArrayList();
+        BroadcastReceiver mockReceiver = mock(BroadcastReceiver.class);
+        sContext.registerReceiver(
+                mockReceiver,
+                new IntentFilter(BluetoothHearingAid.ACTION_CONNECTION_STATE_CHANGED));
+        ArgumentCaptor<Intent> captor = ArgumentCaptor.forClass(Intent.class);
+        try {
+            assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+            assertThat(BlockingBluetoothAdapter.enable()).isTrue();
 
-        // Set up the Connection State Changed receiver
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothHearingAid.ACTION_CONNECTION_STATE_CHANGED);
-        mIntentReceiver = new HearingAidIntentReceiver();
-        sContext.registerReceiver(mIntentReceiver, filter);
-
-        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
-        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
-
-        int sanityCount = WAIT_FOR_INTENT_TIMEOUT_MS;
-        while ((numDevices != mIntentCallbackDeviceList.size()) && (sanityCount > 0)) {
-            final int SLEEP_QUANTUM_MS = 100;
-            sleep(SLEEP_QUANTUM_MS);
-            sanityCount -= SLEEP_QUANTUM_MS;
+            verify(mockReceiver, timeout(WAIT_FOR_INTENT_TIMEOUT.toMillis()).times(numDevices))
+                    .onReceive(any(), captor.capture());
+        } finally {
+            sContext.unregisterReceiver(mockReceiver);
         }
 
-        // Tear down
-        sContext.unregisterReceiver(mIntentReceiver);
-
-        assertThat(bondedDeviceList).containsExactly(mIntentCallbackDeviceList);
-    }
-
-    private class HearingAidIntentReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (BluetoothHearingAid.ACTION_CONNECTION_STATE_CHANGED.equals(intent.getAction())) {
-                int state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, -1);
-                int previousState = intent.getIntExtra(BluetoothProfile.EXTRA_PREVIOUS_STATE, -1);
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-
-                Log.d(
-                        TAG,
-                        "HearingAidIntentReceiver.onReceive: device="
-                                + device
-                                + ", state="
-                                + state
-                                + ", previousState="
-                                + previousState);
-
-                checkValidConnectionState(state);
-                checkValidConnectionState(previousState);
-
-                mIntentCallbackDeviceList.add(device);
-            }
+        for (Intent intent : captor.getAllValues()) {
+            assertThat(intent.getIntExtra(BluetoothProfile.EXTRA_STATE, -1))
+                    .isIn(sValidConnectionStates);
+            assertThat(intent.getIntExtra(BluetoothProfile.EXTRA_PREVIOUS_STATE, -1))
+                    .isIn(sValidConnectionStates);
+            assertThat((BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE))
+                    .isIn(bondedDeviceList);
         }
     }
 
@@ -414,12 +387,5 @@ public class HearingAidProfileTest {
 
     private void checkValidConnectionState(int connectionState) {
         assertThat(connectionState).isIn(sValidConnectionStates);
-    }
-
-    private static void sleep(long t) {
-        try {
-            Thread.sleep(t);
-        } catch (InterruptedException e) {
-        }
     }
 }
