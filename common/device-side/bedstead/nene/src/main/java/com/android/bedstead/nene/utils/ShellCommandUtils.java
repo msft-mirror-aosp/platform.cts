@@ -69,6 +69,7 @@ public final class ShellCommandUtils {
     private ShellCommandUtils() { }
 
     private static Boolean sRootAvailable = null;
+    private static Boolean sSuperUserAvailable = null;
 
     /**
      * Execute an adb shell command.
@@ -334,6 +335,37 @@ public final class ShellCommandUtils {
         return instrumentation().getUiAutomation();
     }
 
+    public static boolean isSuperUserAvailable() {
+        if (sSuperUserAvailable != null) {
+            return sSuperUserAvailable;
+        }
+
+        try {
+            // We run a basic command to check if the device can use the super user.
+            // Don't use .asRoot() here as it will cause infinite recursion, or add/keep the timeout
+            //TODO(b/301478821): Remove the timeout once b/303377922 is fixed.
+            String output = ShellCommand.builder("su root echo hello")
+                    .withTimeout(Duration.of(1, SECONDS)).execute();
+            if (output.contains("hello")) {
+                sSuperUserAvailable = true;
+            }
+        } catch (AdbException e) {
+            Log.i(LOG_TAG, "Exception when checking for super user.", e);
+        }
+
+        if (sSuperUserAvailable == null) {
+            Log.i(LOG_TAG,
+                    "Unable to run shell commands with super user as the device does not " +
+                            "allow that. The device is of type: " + Build.TYPE + ".\n However, " +
+                            "root may still be available. You can check with " +
+                            "ShellCommandUtils.isRootAvailable.");
+            sSuperUserAvailable = false;
+        }
+
+        return sSuperUserAvailable;
+
+
+    }
     /**
      * Check if the device can run commands as root.
      */
@@ -345,12 +377,13 @@ public final class ShellCommandUtils {
         try {
             // We run a basic command to check if the device can run it as root.
             //TODO(b/301478821): Remove the timeout once b/303377922 is fixed.
-            String output = ShellCommand.builder("echo hello").asRoot(true)
+            String output = ShellCommand.builder("cat /system/build.prop").asRoot(true)
                     .withTimeout(Duration.of(1, SECONDS)).execute();
-            if (output.contains("hello")) {
+            if (output.contains("ro.build")) {
                 sRootAvailable = true;
             }
-        } catch (AdbException ignored) {
+        } catch (AdbException e) {
+            Log.i(LOG_TAG, "Exception when checking for super user.", e);
         }
 
         if (sRootAvailable == null) {
