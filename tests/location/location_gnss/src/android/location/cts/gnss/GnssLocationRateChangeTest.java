@@ -22,6 +22,7 @@ import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestUtils;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 
 /**
  * Test the "gps" location output works through various rate changes
@@ -32,7 +33,7 @@ import android.platform.test.annotations.AppModeFull;
  *
  * Inspired by bugs 65246279, 65425110
  */
-
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
 public class GnssLocationRateChangeTest extends GnssTestCase {
 
     private static final String TAG = "GnssLocationRateChangeTest";
