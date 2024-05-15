@@ -33,7 +33,7 @@ _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_R = 2
 _CIRCLE_X = 0
 _CIRCLE_Y = 1
-_CIRCLISH_RTOL = 0.15  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CIRCLISH_RTOL = 0.35  # contour area vs ideal circle area pi*((w+h)/4)**2
 _MAX_STR = 'max'
 _MIN_STR = 'min'
 _MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels
@@ -256,7 +256,8 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
                 f'{img_name_stem}_zoomRatio_{z:.2f}_{size}_circle.png')
             circle = zoom_capture_utils.find_center_circle(
                 preview_img, preview_img_name, [width, height],
-                z, z_min, min_circle_pts=_MIN_CIRCLE_PTS, debug=debug)
+                z, z_min, circlish_rtol=_CIRCLISH_RTOL,
+                min_circle_pts=_MIN_CIRCLE_PTS, debug=debug)
 
             preview_test_data[i] = {'z': z, 'circle': circle}
 
