@@ -25,6 +25,7 @@ import android.app.ondeviceintelligence.DownloadCallback;
 import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.FeatureDetails;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
+import android.content.Intent;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
 import android.os.ParcelFileDescriptor;
@@ -50,6 +51,7 @@ import java.util.function.LongConsumer;
 
 public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     public static CountDownLatch sConnectLatch;
+    public static CountDownLatch sUnbindLatch;
 
     // The timeout to wait for async result
     public static final long WAIT_TIMEOUT_IN_MS = 5000;
@@ -68,6 +70,7 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     public static OnDeviceIntelligenceService getServiceInstance() {
         return sService;
     }
+
     public static Feature getSampleFeature(int id) {
         return new Feature.Builder(id).setFeatureParams(PersistableBundle.EMPTY).setModelName(
                 "test-model").setName("test-feature").setType(1).setVariant(2).build();
@@ -101,6 +104,16 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     }
 
     @Override
+    public boolean onUnbind(Intent intent) {
+        Log.d(TAG, "onUnbind()");
+        if (sUnbindLatch != null) {
+            sUnbindLatch.countDown();
+        }
+
+        return true;
+    }
+
+    @Override
     public void onGetReadOnlyFeatureFileDescriptorMap(@NonNull Feature feature,
             @NonNull Consumer<Map<String, ParcelFileDescriptor>> fileDescriptorMapConsumer) {
         try {
@@ -123,8 +136,12 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
             @Nullable CancellationSignal cancellationSignal,
             @NonNull DownloadCallback downloadCallback) {
         Log.w(TAG, "Received onDownloadFeature call from: " + callerUid);
+        if (feature.getId() == 3) {
+            return; // don't invoke any callback
+        }
         if (feature.getId() == 2) {
             downloadCallback.onDownloadFailed(1, "error message", PersistableBundle.EMPTY);
+            return;
         }
         downloadCallback.onDownloadStarted(100);
         downloadCallback.onDownloadProgress(100);
@@ -175,6 +192,26 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
             throw new AssertionError("OnDeviceIntelligenceService doesn't start.");
         }
         sConnectLatch = null;
+    }
+
+    /**
+     * Init the CountDownLatch that is used to wait for service onReady() and onShutdown().
+     */
+    public static void initUnbindLatch() {
+        sUnbindLatch = new CountDownLatch(1);
+    }
+
+    /**
+     * Wait for service {@link #onUnbind}.
+     */
+    public static void waitForUnbind() throws InterruptedException {
+        if (sUnbindLatch == null) {
+            throw new AssertionError("Should init connect CountDownLatch");
+        }
+        if (!sUnbindLatch.await(WAIT_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS)) {
+            throw new AssertionError("OnDeviceIntelligenceService doesn't get unbinded.");
+        }
+        sUnbindLatch = null;
     }
 
     private File getOrCreateTestFile() throws IOException {
