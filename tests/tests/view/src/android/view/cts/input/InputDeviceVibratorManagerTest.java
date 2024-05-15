@@ -36,6 +36,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.input.DebugInputRule;
 import com.android.cts.input.InputJsonParser;
 import com.android.cts.input.UinputDevice;
 import com.android.cts.input.UinputResultData;
@@ -43,6 +44,7 @@ import com.android.cts.input.UinputVibratorManagerTestData;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -86,6 +88,9 @@ public class InputDeviceVibratorManagerTest {
         }
         return null;
     }
+
+    @Rule
+    public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     @Before
     public void setup() {
@@ -200,6 +205,7 @@ public class InputDeviceVibratorManagerTest {
         }
     }
 
+    @DebugInputRule.DebugInput(bug = 329219118)
     @Test
     public void testInputVibratorManager() {
         testInputVibratorManagerEvents(R.raw.google_gamepad_vibratormanagertests);
