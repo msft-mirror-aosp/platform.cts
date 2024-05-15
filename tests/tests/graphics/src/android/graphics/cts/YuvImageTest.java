@@ -183,7 +183,7 @@ public class YuvImageTest {
         // test if handling compression parameters correctly
         verifyParameters();
 
-        // test various cases by varing
+        // test various cases by varying
         // <ImageFormat, Bitmap, HasPaddings, Rect>
         for (int i = 0; i < JPEG_FORMATS.length; ++i) {
             for (int j = 0; j < mTestBitmaps.length; ++j) {
@@ -524,7 +524,7 @@ public class YuvImageTest {
     }
 
     // Compress rect1 in testBitmap and rect2 in image.
-    // Then, compare the two resutls to check their MSE.
+    // Then, compare the two results to check their MSE.
     private void compressRects(Bitmap testBitmap, YuvImage image,
             Rect rect1, Rect rect2) {
         Bitmap expected = null;
