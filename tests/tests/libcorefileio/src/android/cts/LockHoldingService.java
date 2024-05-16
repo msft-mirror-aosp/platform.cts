@@ -16,11 +16,14 @@
 
 package android.cts;
 
+import static android.cts.FileChannelInterProcessLockTest.ChannelType;
+import static android.cts.FileChannelInterProcessLockTest.LockType;
+
 import android.app.Service;
 import android.content.Intent;
-import android.os.IBinder;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
@@ -29,9 +32,6 @@ import android.util.Log;
 import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.util.concurrent.ExecutionException;
-
-import static android.cts.FileChannelInterProcessLockTest.ChannelType;
-import static android.cts.FileChannelInterProcessLockTest.LockType;
 
 /**
  * A Service that listens for commands from the FileChannelInterProcessLockTest to acquire locks of
@@ -56,11 +56,6 @@ public class LockHoldingService extends Service {
     static final String NOTIFICATION_KEY = "notification";
 
     /**
-     * The value for the notification sent to the test just before the service stops.
-     */
-    static final String NOTIFICATION_STOP = "onStop";
-
-    /**
      * The value for the notification sent to the test after the lock is acquired.
      */
     static final String NOTIFICATION_LOCK_HELD = "lockHeld";
@@ -69,6 +64,11 @@ public class LockHoldingService extends Service {
      * The value for the notification sent to the test after the lock is released
      */
     static final String NOTIFICATION_LOCK_RELEASED = "lockReleased";
+
+    /**
+     * The value for the notification sent to the test after the lock is released for shutdown
+     */
+    static final String NOTIFICATION_READY_FOR_SHUTDOWN = "readyForShutdown";
 
     /**
      * The key of the Bundle extra used to send time for which the service should wait before
@@ -96,8 +96,11 @@ public class LockHoldingService extends Service {
      */
     static final int LOCK_BEHAVIOUR_ACQUIRE_ONLY_AND_NOTIFY = 2;
 
-    static final String ACTION_TYPE_FOR_INTENT_COMMUNICATION
-            = "android.cts.CtsLibcoreFileIOTestCases";
+    /**
+     * The message code used to let the service know to release the lock before test end, if still
+     * held.
+     */
+    static final int PREPARE_FOR_SHUTDOWN = 3;
 
     final String LOG_MESSAGE_TAG = "CtsLibcoreFileIOTestCases";
 
@@ -113,6 +116,9 @@ public class LockHoldingService extends Service {
                         break;
                     case LOCK_BEHAVIOUR_ACQUIRE_ONLY_AND_NOTIFY:
                         acquireLock(msg);
+                        break;
+                    case PREPARE_FOR_SHUTDOWN:
+                        prepareForShutdown(msg);
                         break;
                     default:
                         super.handleMessage(msg);
@@ -192,8 +198,15 @@ public class LockHoldingService extends Service {
         msg.replyTo.send(rsp);
     }
 
-    @Override
-    public boolean onUnbind(Intent intent) {
+    private void prepareForShutdown(Message msg) throws RemoteException {
+        doReleaseLock();
+        Message rsp = msg.obtain();
+        Bundle rspBundle = rsp.getData();
+        rspBundle.putBoolean(NOTIFICATION_READY_FOR_SHUTDOWN, true);
+        msg.replyTo.send(rsp);
+    }
+
+    private void doReleaseLock() {
         try {
             if (fileLock != null) {
                 fileLock.release();
@@ -201,11 +214,11 @@ public class LockHoldingService extends Service {
         } catch (IOException e) {
             Log.e(LOG_MESSAGE_TAG, e.getMessage());
         }
-        Intent notifIntent = new Intent()
-                .setPackage("android.libcorefileio.cts")
-                .putExtra(NOTIFICATION_KEY, NOTIFICATION_STOP)
-                .setAction(ACTION_TYPE_FOR_INTENT_COMMUNICATION);
-        sendBroadcast(notifIntent);
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        doReleaseLock();
         return false;
     }
 }

@@ -22,18 +22,11 @@
 
     <application>
         <uses-library android:name="android.test.runner"/>
+        <!-- Use ':' to indicate that lockHoldingService needs to run in a separate process.
+             See https://developer.android.com/guide/topics/manifest/service-element#proc -->
         <service android:name="android.cts.LockHoldingService"
              android:process=":lockHoldingService"
              android:permission="android.permission.WRITE_EXTERNAL_STORAGE"/>
-        <receiver android:name="android.cts.FileChannelInterProcessLockTest$IpcChannel"
-             android:exported="true">
-
-            <intent-filter>
-                <action android:name="android.cts.CtsLibcoreFileIOTestCases">
-                </action>
-            </intent-filter>
-
-        </receiver>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

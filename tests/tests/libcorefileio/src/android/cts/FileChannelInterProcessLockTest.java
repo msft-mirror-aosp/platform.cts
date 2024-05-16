@@ -16,13 +16,13 @@
 
 package android.cts;
 
-import android.content.BroadcastReceiver;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.Debug;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
@@ -39,8 +39,6 @@ import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 @SuppressWarnings("deprecation")
 public class FileChannelInterProcessLockTest extends AndroidTestCase {
@@ -62,11 +60,11 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
      * the service. This provides ample amount of time for the service to receive the request from
      * the test, then act, and respond back.
      */
-    final static int MAX_WAIT_TIME = 20;
+    final static int MAX_WAIT_TIME = 10;
 
     @Override
     public void tearDown() throws Exception {
-        IpcChannel.stopService();
+        IpcChannel.unbindService();
         super.tearDown();
     }
 
@@ -427,7 +425,7 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             boolean expectToGetLock) throws Exception {
         try {
             // Request that the remote lock be obtained.
-            IpcChannel.startService(getContext());
+            IpcChannel.bindService(getContext());
             IpcChannel.requestRemoteLock(remoteLockType, remoteChannelType);
 
             // Wait for a signal that the remote lock is definitely held.
@@ -444,7 +442,7 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             }
             // Release the remote lock.
         } finally {
-            IpcChannel.stopService();
+            IpcChannel.unbindService();
         }
     }
 
@@ -473,8 +471,9 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             long lockReleasedAndReacquiredTimeDeltaInMillis = 500;
 
             // Tell the service to acquire a remote lock.
-            IpcChannel.startService(getContext());
-            IpcChannel.requestRemoteLockAndRelease(remoteLockType, remoteChannelType, remoteLockHoldTimeMillis);
+            IpcChannel.bindService(getContext());
+            IpcChannel.requestRemoteLockAndRelease(remoteLockType,
+                    remoteChannelType, remoteLockHoldTimeMillis);
 
             // Wait for the service to hold the lock and notify for the same.
             assertTrue("No remote lock held notification",
@@ -541,7 +540,7 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             // Asserting if the fileLock is valid.
             assertTrue(fileLock.isValid());
         } finally {
-            IpcChannel.stopService();
+            IpcChannel.unbindService();
         }
     }
 
@@ -732,31 +731,30 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
     /**
      * Handles the comms with the LockHoldingService.
      *
-     * Binds to the service and sends requests and receives callbacks.
+     * Binds to the service and sends requests and receives callbacks from it.
      *
-     * Listens to broadcasts sent by the LockHoldingService and records information / provides
-     * latches so the test code can synchronize until it is informed the service has acted on
-     * requests it has sent.
+     * It records information / provides latches so the test code can synchronize until it is
+     * informed the service has acted on requests it has sent.
      */
-    public static class IpcChannel extends BroadcastReceiver {
+    public static class IpcChannel {
 
         static Context context;
 
-        static CountDownLatch onStopLatch;
+        static CountDownLatch onBindLatch;
+        static CountDownLatch onUnbindLatch;
         static CountDownLatch lockHeldLatch;
         static volatile Bundle lockHeldBundle;
         static CountDownLatch lockReleasedLatch;
         static volatile Bundle lockReleasedBundle;
 
         static volatile boolean bound = false;
-        static CountDownLatch boundLatch;
         static Messenger messenger;
         static Messenger responseMessenger;
         static ServiceConnection serviceConnection;
 
         static Handler responseMessageHandler;
 
-        static private Context getContext() {
+        private static Context getContext() {
             return context;
         }
 
@@ -767,8 +765,8 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
         static synchronized void resetReceiverState(Context testContext) {
             context = testContext;
             bound = false;
-            boundLatch = new CountDownLatch(1);
-            onStopLatch = new CountDownLatch(1);
+            onBindLatch = new CountDownLatch(1);
+            onUnbindLatch = new CountDownLatch(1);
             lockHeldLatch = new CountDownLatch(1);
             lockReleasedLatch = new CountDownLatch(1);
             lockHeldBundle = null;
@@ -784,6 +782,8 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
                     } else if (bundle.getBoolean(LockHoldingService.NOTIFICATION_LOCK_RELEASED)) {
                         lockReleasedBundle = bundle;
                         lockReleasedLatch.countDown();
+                    } else if (bundle.getBoolean(LockHoldingService.NOTIFICATION_READY_FOR_SHUTDOWN)) {
+                        onUnbindLatch.countDown();
                     } else {
                         super.handleMessage(msg);
                     }
@@ -792,24 +792,32 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             responseMessenger = new Messenger(responseMessageHandler);
 
             serviceConnection = new ServiceConnection() {
+                @Override
                 public void onServiceConnected(ComponentName className, IBinder service) {
                     messenger = new Messenger(service);
                     bound = true;
-                    boundLatch.countDown();
+                    onBindLatch.countDown();
                 }
 
+                @Override
+                public void onBindingDied(ComponentName className) {
+                    getContext().unbindService(this);
+                    bound = false;
+                }
+
+                @Override
                 public void onServiceDisconnected(ComponentName className) {
-                    messenger = null;
+                    getContext().unbindService(this);
                     bound = false;
                 }
             };
         }
 
-        static void startService(Context testContext) throws Exception {
+        static void bindService(Context testContext) throws Exception {
             resetReceiverState(testContext);
             getContext().bindService(new Intent(getContext(), LockHoldingService.class),
                     serviceConnection, Context.BIND_AUTO_CREATE);
-            boundLatch.await(MAX_WAIT_TIME, SECONDS);
+            assertTrue(onBindLatch.await(MAX_WAIT_TIME, SECONDS));
         }
 
         static void requestRemoteLock(LockType lockType, ChannelType channelType) throws Exception {
@@ -824,7 +832,8 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
 
         static void requestRemoteLockAndRelease(LockType lockType, ChannelType channelType,
                 long lockHoldTimeMillis) throws Exception {
-            Message msg = Message.obtain(null, LockHoldingService.LOCK_BEHAVIOR_RELEASE_AND_NOTIFY, 0, 0);
+            Message msg = Message.obtain(null,
+                    LockHoldingService.LOCK_BEHAVIOR_RELEASE_AND_NOTIFY, 0, 0);
             Bundle bundle = msg.getData();
             bundle.putSerializable(LockHoldingService.LOCK_TYPE_KEY, lockType);
             bundle.putSerializable(LockHoldingService.CHANNEL_TYPE_KEY, channelType);
@@ -836,29 +845,18 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
         /**
          * Requests and waits for the service to stop
          */
-        static void stopService() throws Exception {
+        static void unbindService() throws Exception {
             if (bound) {
+                Message msg = Message.obtain(null, LockHoldingService.PREPARE_FOR_SHUTDOWN, 0, 0);
+                msg.replyTo = responseMessenger;
+                messenger.send(msg);
+
+                assertTrue(onUnbindLatch.await(MAX_WAIT_TIME, SECONDS));
                 getContext().unbindService(serviceConnection);
                 bound = false;
             }
-
-            // onStopLatch can be null if we never start the service, possibly because of
-            // an earlier failure in the test.
-            if (onStopLatch != null) {
-                assertTrue(onStopLatch.await(MAX_WAIT_TIME, SECONDS));
-            }
-
+            messenger = null;
             deleteDir(getContext());
-        }
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String msg = intent.getStringExtra(LockHoldingService.NOTIFICATION_KEY);
-            switch (msg) {
-                case LockHoldingService.NOTIFICATION_STOP:
-                    onStopLatch.countDown();
-                    break;
-            }
         }
     }
 
