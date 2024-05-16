@@ -89,6 +89,7 @@ public final class ClusterHomeManagerTest {
     private CarAppFocusManager mCarAppFocusManager;
     private CarNavigationStatusManager mCarNavigationStatusManager;
     private TestActivity mTestActivity;
+    private String mTestMonitoringSurface;
 
     @Before
     public void setUp() {
@@ -106,7 +107,20 @@ public final class ClusterHomeManagerTest {
 
     @After
     public void tearDown() throws Exception {
-        // mTestActivity is not cleaned up here so each test that uses it needs to clean it up.
+        // Destroy the test activity.
+        if (mTestActivity != null) {
+            mTestActivity.finishAndRemoveTask();
+            mTestActivity.waitForDestroyed();
+            mTestActivity = null;
+        }
+        if (mTestMonitoringSurface != null && !mTestMonitoringSurface.equals("null")) {
+            // Ensure that visibility monitoring has stopped.
+            PollingCheck.waitFor(TIMEOUT_MS, () -> {
+                String monitoringSurface = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE)
+                        .get(DUMP_CLUSTER_SURFACE);
+                return !monitoringSurface.equals(mTestMonitoringSurface);
+            });
+        }
 
         mUiAutomation.dropShellPermissionIdentity();
     }
@@ -136,6 +150,7 @@ public final class ClusterHomeManagerTest {
 
         var oldDump2 = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE);
         int oldCount2 = Integer.valueOf(oldDump2.get(DUMP_TPL_COUNT));
+        mTestMonitoringSurface = oldDump2.get(DUMP_CLUSTER_SURFACE);
 
         // Insets can be accessible only in the Activity's thread.
         mTestActivity.getMainExecutor().execute(() -> {
@@ -151,19 +166,6 @@ public final class ClusterHomeManagerTest {
             int count = Integer.valueOf(dump.get(DUMP_TPL_COUNT));
             boolean visible = Boolean.parseBoolean(dump.get(DUMP_CLUSTER_VISIBLE));
             return count > oldCount2 && !visible;
-        });
-
-        // Destroy the test activity.
-        if (mTestActivity != null) {
-            mTestActivity.finishAndRemoveTask();
-            mTestActivity.waitForDestroyed();
-            mTestActivity = null;
-        }
-        // Ensure that visibility monitoring has stopped.
-        PollingCheck.waitFor(TIMEOUT_MS, () -> {
-            String monitoringSurface = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE)
-                    .get(DUMP_CLUSTER_SURFACE);
-            return monitoringSurface.equals("null");
         });
     }
 
