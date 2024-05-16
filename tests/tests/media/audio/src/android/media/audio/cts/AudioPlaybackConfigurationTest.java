@@ -700,6 +700,9 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                 assertTrue("onPlaybackConfigChanged play, format and device expected",
                         callback.waitForCallbacks(3,
                                 TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
+                if (mAt != null) {
+                    Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
+                }
             } else {
                 Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
             }
