@@ -65,7 +65,7 @@ public class PictureDrawableTest {
         // Check the color has been set.
         assertEquals(0xff0f0b0c, destBitmap.getPixel(10, 10));
         pictureDrawable.draw(canvas);
-        // Check the target pixle's color, ensure it has been changed.
+        // Check the target pixel's color, ensure it has been changed.
         assertEquals(0xff0a0c0b, destBitmap.getPixel(10, 10));
     }
 
