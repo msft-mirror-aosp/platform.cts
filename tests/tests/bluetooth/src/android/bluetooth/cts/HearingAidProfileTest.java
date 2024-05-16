@@ -78,7 +78,7 @@ public class HearingAidProfileTest {
     // ADAPTER_DISABLE_TIMEOUT_MS = AdapterState.BLE_STOP_TIMEOUT_DELAY +
     //                                  AdapterState.BREDR_STOP_TIMEOUT_DELAY
     private static final int ADAPTER_DISABLE_TIMEOUT_MS = 5000;
-    private static final String FAKE_REMOTE_ADDRESS = "00:11:22:AA:BB:CC";
+    private static final String FAKE_REMOTE_ADDRESS = "42:11:22:AA:BB:CC";
 
     private Context mContext;
     private BluetoothHearingAid mService;
