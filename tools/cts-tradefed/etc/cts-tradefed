@@ -127,12 +127,7 @@ if [ "$USE_ATS" == "true" ]; then
     DEVICE_INFRA_SERVICE_FLAGS=" \
       --aapt=$(type -P aapt2 2>/dev/null) \
       --adb=$(type -P adb 2>/dev/null) \
-      --adb_dont_kill_server=true \
-      --adb_max_no_device_detection_rounds=1200 \
-      --android_device_daemon=false \
       --ats_console_olc_server_path=${ATS_OLC_SERVER_JAR} \
-      --check_device_interval=1h \
-      --enable_android_device_ready_check=false \
       --enable_xts_dynamic_downloader=true \
       --public_dir=/tmp \
       --simplified_log_format=true \
