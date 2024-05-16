@@ -38,6 +38,7 @@ import android.bluetooth.BluetoothHearingAid.AdvertisementServiceData;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.EnableBluetoothRule;
+import android.bluetooth.test_utils.Permissions;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -179,9 +180,12 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getAdvertisementServiceData() {
-        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED);
-
-        assertThat(mService.getAdvertisementServiceData(sFakeDevice)).isNull();
+        Permissions.enforceEachPermissions(
+                () -> mService.getAdvertisementServiceData(sFakeDevice),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_SCAN));
+        try (var p = Permissions.withPermissions(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mService.getAdvertisementServiceData(sFakeDevice)).isNull();
+        }
     }
 
     /**
