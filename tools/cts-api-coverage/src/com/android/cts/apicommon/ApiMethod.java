@@ -113,6 +113,10 @@ public class ApiMethod implements Comparable<ApiMethod> {
         return mCoveredWith.keySet();
     }
 
+    public Set<String> getCoveredTests() {
+        return mCoveredTests.keySet();
+    }
+
     public void setCovered(String coveredWithModule) {
         if (coveredWithModule.endsWith(".apk")) {
             coveredWithModule = coveredWithModule.substring(0, coveredWithModule.length() - 4);
