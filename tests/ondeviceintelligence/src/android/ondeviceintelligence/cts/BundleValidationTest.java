@@ -206,6 +206,34 @@ public class BundleValidationTest {
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
     }
 
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void canSendNestedBundleWithSameConstraints() throws Exception {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        Feature feature = new Feature.Builder(1).build();
+        Bundle request = prepareBundleWithPersistableBundleAndPrimitives();
+
+        Bundle higherBundle = new Bundle();
+        higherBundle.putBundle("someKey", request);
+
+        mOnDeviceIntelligenceManager.processRequest(feature, higherBundle, 1, null, null, EXECUTOR,
+                new ProcessingCallback() {
+                    @Override
+                    public void onResult(Bundle result) {
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void canSendImmutableBitmap() throws Exception {
@@ -244,7 +272,7 @@ public class BundleValidationTest {
         Bundle request = new Bundle();
 
         try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(file,
-                ParcelFileDescriptor.MODE_READ_ONLY)) {
+                ParcelFileDescriptor.MODE_READ_WRITE)) {
             Bundle bundle = new Bundle();
             bundle.putParcelable("test-pfd", pfd);
             request.putParcelable("test-bundle", bundle);
