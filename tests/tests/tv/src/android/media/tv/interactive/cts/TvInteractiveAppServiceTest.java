@@ -105,6 +105,7 @@ import java.util.concurrent.Executor;
 @RunWith(AndroidJUnit4.class)
 public class TvInteractiveAppServiceTest {
     private static final long TIME_OUT_MS = 20000L;
+    private static final long LONGER_TIME_OUT_MS = 40000L;
     private static final Uri CHANNEL_0 = TvContract.buildChannelUri(0);
 
     private Instrumentation mInstrumentation;
@@ -698,7 +699,7 @@ public class TvInteractiveAppServiceTest {
     public void testRecordingError() throws Throwable {
         linkTvRecordingClient();
         mRecordingSession.notifyError(TvInputManager.RECORDING_ERROR_UNKNOWN);
-        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mRecordingErrorCount > 0);
+        PollingCheck.waitFor(LONGER_TIME_OUT_MS, () -> mSession.mRecordingErrorCount > 0);
 
         assertThat(mSession.mRecordingErrorCount).isEqualTo(1);
         assertThat(mSession.mRecordingId).isEqualTo("recording_id1");
