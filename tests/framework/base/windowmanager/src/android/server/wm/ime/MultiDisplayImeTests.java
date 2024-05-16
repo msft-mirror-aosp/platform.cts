@@ -96,12 +96,11 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
         super.setUp();
 
         assumeTrue(supportsMultiDisplay());
+        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
     }
 
     @Test
     public void testImeWindowCanSwitchToDifferentDisplays() throws Exception {
-        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
-
         final MockImeSession mockImeSession = createManagedMockImeSession(this);
         final TestActivitySession<ImeTestActivity> imeTestActivitySession =
                 createManagedTestActivitySession();
@@ -178,8 +177,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
     @Test
     public void testImeApiForBug118341760() throws Exception {
-        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
-
         final MockImeSession mockImeSession = createManagedMockImeSession(this);
         final TestActivitySession<ImeTestActivityWithBrokenContextWrapper> imeTestActivitySession =
                 createManagedTestActivitySession();
@@ -215,7 +212,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
         // If config_perDisplayFocusEnabled, the focus will not move even if touching on
         // the Activity in the different display.
         assumeFalse(perDisplayFocusEnabled());
-        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
 
         final MockImeSession mockImeSession = createManagedMockImeSession(this);
         final TestActivitySession<ImeTestActivity> imeTestActivitySession =
@@ -269,8 +265,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
      */
     @Test
     public void testCrossDisplayBasicImeOperations() throws Exception {
-        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
-
         final MockImeSession mockImeSession = createManagedMockImeSession(this);
         final TestActivitySession<ImeTestActivity> imeTestActivitySession =
                 createManagedTestActivitySession();
@@ -321,8 +315,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
      */
     @Test
     public void testDisplayPolicyImeHideImeOperation() throws Exception {
-        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
-
         final MockImeSession mockImeSession = createManagedMockImeSession(this);
         final TestActivitySession<ImeTestActivity> imeTestActivitySession =
                 createManagedTestActivitySession();
@@ -359,8 +351,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
      */
     @Test
     public void testHideImeWhenImeTargetOnEmbeddedVirtualDisplay() throws Exception {
-        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
-
         final VirtualDisplaySession session = createManagedVirtualDisplaySession();
         final MockImeSession imeSession = createManagedMockImeSession(this);
         final TestActivitySession<ImeTestActivity> imeActivitySession =
@@ -398,7 +388,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
         // If config_perDisplayFocusEnabled, the focus will not move even if touching on
         // the Activity in the different display.
         assumeFalse(perDisplayFocusEnabled());
-        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
 
         // Launch a regular activity on default display at the test beginning to prevent the test
         // may mis-touch the launcher icon that breaks the test expectation.
@@ -464,7 +453,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
         // If config_perDisplayFocusEnabled, the focus will not move even if touching on
         // the Activity in the different display.
         assumeFalse(perDisplayFocusEnabled());
-        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
 
         // Create two displays with the same display metrics
         final List<DisplayContent> newDisplays = createManagedVirtualDisplaySession()
