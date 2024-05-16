@@ -1114,7 +1114,8 @@ public class TunerTest {
             return;
         }
 
-        assertEquals(lnb.setVoltage(Lnb.VOLTAGE_5V), Tuner.RESULT_SUCCESS);
+        int targetLnbVoltage = getTargetLnbVoltage();
+        assertEquals(lnb.setVoltage(targetLnbVoltage), Tuner.RESULT_SUCCESS);
         assertEquals(lnb.setTone(Lnb.TONE_NONE), Tuner.RESULT_SUCCESS);
         assertEquals(
                 lnb.setSatellitePosition(Lnb.POSITION_A), Tuner.RESULT_SUCCESS);
@@ -2085,7 +2086,8 @@ public class TunerTest {
         TunerTestLnbCallback lnbCB1 = new TunerTestLnbCallback();
         Lnb lnbA = tunerA.openLnb(getExecutor(), lnbCB1);
         assumeTrue(lnbA != null);
-        lnbA.setVoltage(Lnb.VOLTAGE_5V);
+        int targetLnbVoltage = getTargetLnbVoltage();
+        lnbA.setVoltage(targetLnbVoltage);
         lnbA.setTone(Lnb.TONE_CONTINUOUS);
         lnbA.sendDiseqcMessage(new byte[] {1, 2});
         assertTrue(lnbCB1.getOnDiseqcMessageCalled());
