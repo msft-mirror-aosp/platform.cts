@@ -27,26 +27,40 @@ import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.os.StatsLog;
 import com.android.os.packagemanager.ComponentStateChangedReported;
 import com.android.os.packagemanager.PackagemanagerExtensionAtoms;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
 import com.google.protobuf.ExtensionRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 
 /**
  * Tests for ComponentStateChangedReported logging.
  */
-public class ComponentStateChangedReportedStatsTests extends PackageManagerStatsTestsBase {
+@RunWith(DeviceJUnit4ClassRunner.class)
+@AppModeFull
+public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test {
     private static final String TEST_INSTALL_APK = "CtsStatsdAtomTestComponentStateApp.apk";
     private static final String TEST_INSTALL_PACKAGE =
             "com.android.cts.packagemanager.stats.testcomponentstateapp";
     private static final String HELPER_PACKAGE = "com.android.cts.packagemanager.stats.device";
-    private static final String HELPER_CLASS = ".ComponentStateChangedReportedStatsTestsHelper";
+    private static final String HELPER_CLASS =
+            HELPER_PACKAGE + ".ComponentStateChangedReportedStatsTestsHelper";
     private static final String TEST_METHOD_SET_APPLICATION_ENABLED_SETTING =
             "testSetApplicationEnabledSetting";
     private static final String TEST_METHOD_SET_COMPONENT_ENABLED_SETTING_FOR_LAUNCHER_ACTIVITY =
@@ -56,19 +70,27 @@ public class ComponentStateChangedReportedStatsTests extends PackageManagerStats
     private static final String TEST_METHOD_SET_COMPONENT_ENABLED_SETTING_ENABLED_THEN_DISABLED =
             "testSetComponentEnabledSettingEnabledThenDisabled";
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+
+    @Before
+    public void setUp() throws Exception {
+        installPackage("CtsStatsdAtomApp.apk");
+        ConfigUtils.removeConfig(getDevice());
+        ReportUtils.clearReports(getDevice());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         getDevice().uninstallPackage(TEST_INSTALL_PACKAGE);
-        super.tearDown();
+        ConfigUtils.removeConfig(getDevice());
+        ReportUtils.clearReports(getDevice());
     }
 
     @RequiresFlagsEnabled(FLAG_COMPONENT_STATE_CHANGED_METRICS)
+    @Test
     public void testComponentStateChangedReportedForWholeApp() throws Throwable {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 PackagemanagerExtensionAtoms.COMPONENT_STATE_CHANGED_REPORTED_FIELD_NUMBER);
@@ -77,13 +99,12 @@ public class ComponentStateChangedReportedStatsTests extends PackageManagerStats
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
         PackagemanagerExtensionAtoms.registerAllExtensions(registry);
 
-        DeviceUtils.installTestApp(getDevice(), TEST_INSTALL_APK, TEST_INSTALL_PACKAGE,
-                mCtsBuild);
+        installPackage(TEST_INSTALL_APK);
         assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
                 String.valueOf(getDevice().getCurrentUser()))).isTrue();
 
         // Run test in CTS package
-        DeviceUtils.runDeviceTests(getDevice(), HELPER_PACKAGE, HELPER_CLASS,
+        runDeviceTests(getDevice(), HELPER_PACKAGE, HELPER_CLASS,
                 TEST_METHOD_SET_APPLICATION_ENABLED_SETTING);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
@@ -93,7 +114,8 @@ public class ComponentStateChangedReportedStatsTests extends PackageManagerStats
 
         ComponentStateChangedReported atom = data.get(0).getAtom().getExtension(
                 PackagemanagerExtensionAtoms.componentStateChangedReported);
-        assertThat(atom.getUid()).isEqualTo(getAppUid(TEST_INSTALL_PACKAGE));
+        assertThat(atom.getUid()).isEqualTo(
+                PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
         assertThat(atom.getComponentOldState()).isEqualTo(COMPONENT_STATE_DEFAULT);
         assertThat(atom.getComponentNewState()).isEqualTo(COMPONENT_STATE_ENABLED);
         assertThat(atom.getIsLauncher()).isFalse();
@@ -101,6 +123,7 @@ public class ComponentStateChangedReportedStatsTests extends PackageManagerStats
     }
 
     @RequiresFlagsEnabled(FLAG_COMPONENT_STATE_CHANGED_METRICS)
+    @Test
     public void testComponentStateChangedReportedForLauncherActivity() throws Throwable {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 PackagemanagerExtensionAtoms.COMPONENT_STATE_CHANGED_REPORTED_FIELD_NUMBER);
@@ -109,13 +132,12 @@ public class ComponentStateChangedReportedStatsTests extends PackageManagerStats
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
         PackagemanagerExtensionAtoms.registerAllExtensions(registry);
 
-        DeviceUtils.installTestApp(getDevice(), TEST_INSTALL_APK, TEST_INSTALL_PACKAGE,
-                mCtsBuild);
+        installPackage(TEST_INSTALL_APK);
         assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
                 String.valueOf(getDevice().getCurrentUser()))).isTrue();
 
         // Run test in CTS package
-        DeviceUtils.runDeviceTests(getDevice(), HELPER_PACKAGE, HELPER_CLASS,
+        runDeviceTests(getDevice(), HELPER_PACKAGE, HELPER_CLASS,
                 TEST_METHOD_SET_COMPONENT_ENABLED_SETTING_FOR_LAUNCHER_ACTIVITY);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
@@ -125,7 +147,8 @@ public class ComponentStateChangedReportedStatsTests extends PackageManagerStats
 
         ComponentStateChangedReported atom = data.get(0).getAtom().getExtension(
                 PackagemanagerExtensionAtoms.componentStateChangedReported);
-        assertThat(atom.getUid()).isEqualTo(getAppUid(TEST_INSTALL_PACKAGE));
+        assertThat(atom.getUid()).isEqualTo(
+                PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
         assertThat(atom.getComponentOldState()).isEqualTo(COMPONENT_STATE_DEFAULT);
         assertThat(atom.getComponentNewState()).isEqualTo(COMPONENT_STATE_ENABLED);
         assertThat(atom.getIsLauncher()).isTrue();
@@ -133,6 +156,7 @@ public class ComponentStateChangedReportedStatsTests extends PackageManagerStats
     }
 
     @RequiresFlagsEnabled(FLAG_COMPONENT_STATE_CHANGED_METRICS)
+    @Test
     public void testComponentStateChangedReportedForNoLauncherActivity() throws Throwable {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 PackagemanagerExtensionAtoms.COMPONENT_STATE_CHANGED_REPORTED_FIELD_NUMBER);
@@ -141,13 +165,12 @@ public class ComponentStateChangedReportedStatsTests extends PackageManagerStats
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
         PackagemanagerExtensionAtoms.registerAllExtensions(registry);
 
-        DeviceUtils.installTestApp(getDevice(), TEST_INSTALL_APK, TEST_INSTALL_PACKAGE,
-                mCtsBuild);
+        installPackage(TEST_INSTALL_APK);
         assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
                 String.valueOf(getDevice().getCurrentUser()))).isTrue();
 
         // Run test in CTS package
-        DeviceUtils.runDeviceTests(getDevice(), HELPER_PACKAGE, HELPER_CLASS,
+        runDeviceTests(getDevice(), HELPER_PACKAGE, HELPER_CLASS,
                 TEST_METHOD_SET_COMPONENT_ENABLED_SETTING_FOR_NO_LAUNCHER_ACTIVITY);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
@@ -157,7 +180,8 @@ public class ComponentStateChangedReportedStatsTests extends PackageManagerStats
 
         ComponentStateChangedReported atom = data.get(0).getAtom().getExtension(
                 PackagemanagerExtensionAtoms.componentStateChangedReported);
-        assertThat(atom.getUid()).isEqualTo(getAppUid(TEST_INSTALL_PACKAGE));
+        assertThat(atom.getUid()).isEqualTo(
+                PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
         assertThat(atom.getComponentOldState()).isEqualTo(COMPONENT_STATE_DEFAULT);
         assertThat(atom.getComponentNewState()).isEqualTo(COMPONENT_STATE_ENABLED);
         assertThat(atom.getIsLauncher()).isFalse();
@@ -165,6 +189,7 @@ public class ComponentStateChangedReportedStatsTests extends PackageManagerStats
     }
 
     @RequiresFlagsEnabled(FLAG_COMPONENT_STATE_CHANGED_METRICS)
+    @Test
     public void testComponentStateChangedReportedEnabledThenDisabled() throws Throwable {
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 PackagemanagerExtensionAtoms.COMPONENT_STATE_CHANGED_REPORTED_FIELD_NUMBER);
@@ -173,13 +198,12 @@ public class ComponentStateChangedReportedStatsTests extends PackageManagerStats
         ExtensionRegistry registry = ExtensionRegistry.newInstance();
         PackagemanagerExtensionAtoms.registerAllExtensions(registry);
 
-        DeviceUtils.installTestApp(getDevice(), TEST_INSTALL_APK, TEST_INSTALL_PACKAGE,
-                mCtsBuild);
+        installPackage(TEST_INSTALL_APK);
         assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
                 String.valueOf(getDevice().getCurrentUser()))).isTrue();
 
         // Run test in CTS package
-        DeviceUtils.runDeviceTests(getDevice(), HELPER_PACKAGE, HELPER_CLASS,
+        runDeviceTests(getDevice(), HELPER_PACKAGE, HELPER_CLASS,
                 TEST_METHOD_SET_COMPONENT_ENABLED_SETTING_ENABLED_THEN_DISABLED);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 

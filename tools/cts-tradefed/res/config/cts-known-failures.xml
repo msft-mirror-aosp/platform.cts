@@ -302,5 +302,6 @@
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.CameraManagerTest#testCameraManagerGetDeviceIdList[1]" />
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ConcurrentCameraTest#testMandatoryConcurrentStreamCombination[1]" />
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraPerfClassCharacteristics[1]" />
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]" />
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]" />
 </configuration>

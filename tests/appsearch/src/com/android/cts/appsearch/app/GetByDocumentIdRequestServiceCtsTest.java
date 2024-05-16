@@ -18,32 +18,38 @@ package android.app.appsearch.cts.app;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.app.appsearch.SearchSuggestionResult;
+import android.app.appsearch.GetByDocumentIdRequest;
+import android.app.appsearch.PropertyPath;
 import android.os.Parcel;
 
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import org.junit.Test;
 
 @SmallTest
-public class SearchSuggestionResultPlatformCtsTest {
+public class GetByDocumentIdRequestServiceCtsTest {
     @Test
-    @ApiTest(apis = {"android.app.appsearch.SearchSuggestionResult#CREATOR"})
+    @ApiTest(apis = {"android.app.appsearch.GetByDocumentIdRequest#CREATOR"})
     public void testSerialization() {
-        SearchSuggestionResult expectedSearchSuggestionResult =
-                new SearchSuggestionResult.Builder()
-                        .setSuggestedResult("AppSearch")
-                        .build();
+        GetByDocumentIdRequest inputRequest = new GetByDocumentIdRequest.Builder("ns1")
+                .addIds("id1", "id2")
+                .addProjectionPaths("Type1", ImmutableSet.of(new PropertyPath("a")))
+                .build();
         Parcel data = Parcel.obtain();
         try {
-            data.writeParcelable(expectedSearchSuggestionResult, /* flags= */ 0);
+            data.writeParcelable(inputRequest, /* flags= */ 0);
             data.setDataPosition(0);
             @SuppressWarnings("deprecation")
-            SearchSuggestionResult actualSearchSuggestionResult =
-                    data.readParcelable(/* loader= */ null);
-            assertThat(actualSearchSuggestionResult).isEqualTo(expectedSearchSuggestionResult);
+            GetByDocumentIdRequest outputRequest = data.readParcelable(/* loader= */ null);
+            assertThat(outputRequest.getNamespace()).isEqualTo("ns1");
+            assertThat(outputRequest.getIds()).containsExactly("id1", "id2");
+            assertThat(outputRequest.getProjections())
+                    .containsExactly("Type1", ImmutableList.of("a"));
         } finally {
             data.recycle();
         }
