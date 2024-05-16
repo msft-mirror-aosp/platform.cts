@@ -31,6 +31,8 @@ public final class CompatChangesPreInstallOverrideTest extends CompatChangeGatin
     private static final String CTS_CHANGE_ID_NAME = "CTS_SYSTEM_API_CHANGEID";
     private static final long CTS_CHANGE_ID = 149391281L;
 
+    private static final int WAIT_TIME_MS = 1_000;
+
     @Override
     protected void setUp() throws Exception {
         uninstallPackage(TEST_PACKAGE, false);
@@ -130,6 +132,9 @@ public final class CompatChangesPreInstallOverrideTest extends CompatChangeGatin
     }
 
     private Change getCtsChange() throws Exception {
+        // Data put by device_config app_compat_overrides need some time to update the data
+        // for dumpsys platform_compat so adding some sleep time
+        Thread.sleep(WAIT_TIME_MS);
         return getOnDeviceChangeIdConfig(CTS_CHANGE_ID);
     }
 }

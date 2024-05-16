@@ -63,22 +63,16 @@ def _check_orientation_and_flip(props, uw_img, w_img, img_name_stem):
   Returns:
     numpy array of uw_img and w_img.
   """
-  if props['android.lens.facing'] == (
-      camera_properties_utils.LENS_FACING['FRONT']):
-    uw_img_name = f'{img_name_stem}_uw.png'
-    w_img_name = f'{img_name_stem}_w.png'
-    if props['android.sensor.orientation'] in _SENSOR_ORIENTATIONS:
-      uw_img = np.ndarray.copy(np.flipud(uw_img))
-      w_img = np.ndarray.copy(np.flipud(w_img))
-      logging.debug('Found sensor orientation %d, flipping up down',
-                    props['android.sensor.orientation'])
-    else:
-      uw_img = np.ndarray.copy(np.fliplr(uw_img))
-      w_img = np.ndarray.copy(np.fliplr(w_img))
-      logging.debug('Found sensor orientation %d, flipping left right',
-                    props['android.sensor.orientation'])
-    image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, uw_img_name)
-    image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, w_img_name)
+  uw_img = (
+      preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+          props['android.sensor.orientation'], uw_img))
+  w_img = (
+      preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+          props['android.sensor.orientation'], w_img))
+  uw_img_name = f'{img_name_stem}_uw.png'
+  w_img_name = f'{img_name_stem}_w.png'
+  image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, uw_img_name)
+  image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, w_img_name)
   return uw_img, w_img
 
 
@@ -396,10 +390,12 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
           w_name)
 
       # Check the sensor orientation and flip image
-      img_name_stem = os.path.join(self.log_path, 'flipped_preview')
-      uw_img, w_img = _check_orientation_and_flip(
-          props, uw_img, w_img, img_name_stem
-      )
+      if (props['android.lens.facing'] ==
+          camera_properties_utils.LENS_FACING['FRONT']):
+        img_name_stem = os.path.join(self.log_path, 'flipped_preview')
+        uw_img, w_img = _check_orientation_and_flip(
+            props, uw_img, w_img, img_name_stem
+        )
 
       # Find ArUco markers in the image with UW lens
       # and extract the outer box patch

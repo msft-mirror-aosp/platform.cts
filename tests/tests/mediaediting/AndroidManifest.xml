@@ -31,8 +31,6 @@
   <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
        android:targetPackage="android.media.mediaediting.cts"
        android:label="Media editing tests InstrumentationRunner">
-      <meta-data android:name="listener"
-           android:value="com.android.cts.runner.CtsTestRunListener"/>
   </instrumentation>
 
 </manifest>

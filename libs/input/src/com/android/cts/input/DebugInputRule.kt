@@ -44,6 +44,8 @@ class DebugInputRule : TestWatcher() {
                 "InputDispatcherInboundEvent",
                 "InputTransportPublisher",
                 "InputTransportResampling",
+                "InputManager",
+                "InputManagerGlobal",
         )
 
         @JvmStatic

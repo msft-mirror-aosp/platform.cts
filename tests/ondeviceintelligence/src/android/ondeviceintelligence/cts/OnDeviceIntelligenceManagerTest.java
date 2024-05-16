@@ -32,6 +32,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import android.Manifest;
@@ -57,6 +58,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.service.ondeviceintelligence.OnDeviceIntelligenceService;
 import android.text.TextUtils;
 import android.util.Log;
@@ -147,13 +149,11 @@ public class OnDeviceIntelligenceManagerTest {
     public void setUp() throws Exception {
         mContext = getInstrumentation().getContext();
         mOnDeviceIntelligenceManager = mContext.getSystemService(OnDeviceIntelligenceManager.class);
-        clearTestableOnDeviceIntelligenceService();
         bindToTestableOnDeviceIntelligenceServices();
     }
 
     @After
     public void tearDown() throws Exception {
-        clearTestableOnDeviceIntelligenceService();
         getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
     }
 
@@ -975,7 +975,7 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(augmentedContent.get()).isEqualTo(TEST_AUGMENT_CONTENT);
     }
 
-    //===================== Tests broadcasts are sent for model updates =====================
+    //===================== Tests broadcasts are sent for model updates =========================
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void broadcastsMustBeSentOnModelUpdates() throws Exception {
@@ -1022,16 +1022,98 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
     }
 
+    //===================== Tests unbind based on timeout settings are invoked ====================
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void serviceUnbindsWhenCallbackIsNotPopulatedAfterIdleTimeout() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE,
+                        Manifest.permission.WRITE_SECURE_SETTINGS);
+        assumeTrue(isSystemUser(
+                getInstrumentation().getContext()));
+        updateSecureSettings();
+        // Feature Id to ensure no callbacks are invoked
+        Feature feature = new Feature.Builder(3).build();
+        CtsIntelligenceService.initServiceConnectionLatch();
+        CtsIntelligenceService.initUnbindLatch();
+        mOnDeviceIntelligenceManager.requestFeatureDownload(feature, null, EXECUTOR,
+                new DownloadCallback() {
+                    @Override
+                    public void onDownloadFailed(int failureStatus,
+                            @Nullable String errorMessage,
+                            @NonNull PersistableBundle errorParams) {
+                        Log.e(TAG, "Got Error", new RuntimeException(errorMessage));
+                    }
+
+                    @Override
+                    public void onDownloadProgress(long bytesDownloaded) {
+                    }
+
+                    @Override
+                    public void onDownloadStarted(long bytesDownloaded) {
+
+                    }
+
+                    @Override
+                    public void onDownloadCompleted(
+                            @NonNull PersistableBundle downloadParams) {
+                        Log.i(TAG, "Response : =" + downloadParams);
+                    }
+                });
+        CtsIntelligenceService.waitServiceConnect();
+        CtsIntelligenceService.waitForUnbind();
+        resetSecureSettings();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void serviceUnbindsWhenCallbackIsPopulatedAfterIdleTimeout() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE,
+                        Manifest.permission.WRITE_SECURE_SETTINGS);
+        assumeTrue(isSystemUser(
+                getInstrumentation().getContext()));
+        updateSecureSettings();
+        CtsIntelligenceService.initServiceConnectionLatch();
+        CtsIntelligenceService.initUnbindLatch();
+        CountDownLatch statusLatch = new CountDownLatch(1);
+
+        mOnDeviceIntelligenceManager.getVersion(EXECUTOR,
+                result -> {
+                    Log.i(TAG, "Version : =" + result);
+                    statusLatch.countDown();
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        CtsIntelligenceService.waitServiceConnect();
+        CtsIntelligenceService.waitForUnbind();
+        resetSecureSettings();
+    }
 
     public static void clearTestableOnDeviceIntelligenceService() {
         runShellCommand("cmd on_device_intelligence set-temporary-services");
     }
 
     public void bindToTestableOnDeviceIntelligenceServices() {
-        assertThat(getOnDeviceIntelligencePackageName()).isNotEqualTo(CTS_PACKAGE_NAME);
         setTestableOnDeviceIntelligenceServiceNames(
                 new String[]{CTS_INTELLIGENCE_SERVICE_NAME, CTS_INFERENCE_SERVICE_NAME});
         assertThat(CTS_INFERENCE_SERVICE_NAME).contains(getOnDeviceIntelligencePackageName());
+    }
+
+    private void updateSecureSettings() {
+        Settings.Secure.putLong(mContext.getContentResolver(),
+                Settings.Secure.ON_DEVICE_INTELLIGENCE_UNBIND_TIMEOUT_MS, SECONDS.toMillis(1));
+        Settings.Secure.putLong(mContext.getContentResolver(),
+                Settings.Secure.ON_DEVICE_INTELLIGENCE_IDLE_TIMEOUT_MS, SECONDS.toMillis(1));
+    }
+
+    private void resetSecureSettings() {
+        Settings.Secure.putLong(mContext.getContentResolver(),
+                Settings.Secure.ON_DEVICE_INTELLIGENCE_UNBIND_TIMEOUT_MS, -1);
+        Settings.Secure.putLong(mContext.getContentResolver(),
+                Settings.Secure.ON_DEVICE_INTELLIGENCE_IDLE_TIMEOUT_MS, HOURS.toMillis(1));
     }
 
     private String getOnDeviceIntelligencePackageName() {

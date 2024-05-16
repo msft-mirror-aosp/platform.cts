@@ -231,7 +231,7 @@ public class MusicRecognitionManagerTest {
         String expectedAttributionTag = "CtsMusicRecognitionAttributionTag";
         verify(listener, timeout(VERIFY_APPOP_CHANGE_TIMEOUT_MS))
                 .onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
-                eq(uid), eq(packageName), eq(expectedAttributionTag), eq(true),
+                eq(uid), eq(packageName), eq(expectedAttributionTag), anyInt(), eq(true),
                         anyInt(), anyInt());
 
         // Wait for streaming to finish.

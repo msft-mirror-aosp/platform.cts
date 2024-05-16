@@ -64,6 +64,9 @@ public class SettingsIntentsTest {
         assumeFalse(
                 "Skipping test: Satellite settings are not supported in AAOS",
                 SettingsTestUtils.isAutomotive());
+        assumeFalse(
+                "Skipping test: Satellite settings are not supported in Wear",
+                SettingsTestUtils.isWatch());
         Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
         final Intent intent = new Intent(Settings.ACTION_SATELLITE_SETTING).addFlags(

@@ -121,11 +121,17 @@ public class CtsCredentialProviderServiceDeviceTest {
             Arrays.asList(PASSKEY_CREDENTIAL_TYPE);
     private static final List<String> PASSWORD_CREDENTIAL_TYPE_LIST =
             Arrays.asList(PASSWORD_CREDENTIAL_TYPE);
-    private static final String CLASS_NAME = "android.credentials.cts.CtsNoOpCredentialProviderService";
+    private static final String CLASS_NAME =
+            "android.credentials.cts.CtsNoOpCredentialProviderService";
 
     private CredentialManager mCredentialManager;
     private final Context mContext = getInstrumentation().getContext();
     private final UserSettings mUserSettings = new UserSettings(mContext);
+
+    // Checks annoted flags for each test, and skips test if flag is not enabled/disabled
+    @Rule(order = 0)
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
 
     // Assumption fails, and all tests skipped if the credential manager feature
     // is not found on the device
@@ -149,10 +155,6 @@ public class CtsCredentialProviderServiceDeviceTest {
     @Rule
     public ActivityScenarioRule mActivityScenarioRule =
             new ActivityScenarioRule(TestCredentialActivity.class);
-
-    // Checks annoted flags for each test, and skips test if flag is not enabled/disabled
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @BeforeClass
     public static void setUpClass() {

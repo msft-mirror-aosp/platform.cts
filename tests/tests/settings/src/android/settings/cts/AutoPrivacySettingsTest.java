@@ -117,6 +117,10 @@ public class AutoPrivacySettingsTest {
         assumeFalse(
                 "Skipping test: Enabling/Disabling Camera is not supported in AAOS",
                 SettingsTestUtils.isAutomotive());
+        assumeFalse(
+                "Skipping test: Enabling/Disabling Camera is not supported in Wear",
+                SettingsTestUtils.isWatch());
+
         PackageManager pm = mContext.getPackageManager();
         if (!pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
             // Skip this test if the system does not have a camera.

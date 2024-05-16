@@ -13,18 +13,19 @@ import android.location.cts.common.TestGnssMeasurementListener;
 import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.List;
 
 /**
  * Test the {@link GnssMeasurement} values.
@@ -79,6 +80,7 @@ public class GnssMeasurementValuesTest {
      * This tests uses actual data retrieved from GPS HAL.
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testListenForGnssMeasurements() throws Exception {
         boolean isCorrVecSupported = false;
         boolean isSatPvtSupported = false;

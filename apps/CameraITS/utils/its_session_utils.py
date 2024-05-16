@@ -949,9 +949,12 @@ class ItsSession(object):
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
+    cam_id = self._camera_id
+    if 'physicalCamera' in output_surfaces[0]:
+      cam_id = output_surfaces[0]['physicalCamera']
     cmd = {
         _CMD_NAME_STR: 'doStaticPreviewRecording',
-        _CAMERA_ID_STR: self._camera_id,
+        _CAMERA_ID_STR: cam_id,
         'outputSurfaces': output_surfaces,
         'recordingDuration': duration,
         'stabilize': stabilize,
@@ -2575,12 +2578,15 @@ class ItsSession(object):
     Returns:
       a dictionary object containing format, size, and hdr-ness.
     """
-    return [
-        {'format': 'priv',
-         'width': int(size.split('x')[0]),
-         'height': int(size.split('x')[1]),
-         'hlg10': hlg10_enabled}
-    ]
+    surface = {
+        'format': 'priv',
+        'width': int(size.split('x')[0]),
+        'height': int(size.split('x')[1]),
+        'hlg10': hlg10_enabled
+    }
+    if self._hidden_physical_id:
+      surface['physicalCamera'] = self._hidden_physical_id
+    return [surface]
 
 
 def parse_camera_ids(ids):

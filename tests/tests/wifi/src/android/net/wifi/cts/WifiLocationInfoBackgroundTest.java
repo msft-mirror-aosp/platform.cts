@@ -42,7 +42,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.SystemUtil;
@@ -61,7 +60,6 @@ import java.util.List;
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 @ApiTest(apis = {"Manifest.permission#ACCESS_BACKGROUND_LOCATION"})
-@NonMainlineTest
 @RequiresDevice
 public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     private static final String TAG = "WifiLocationInfoTest";

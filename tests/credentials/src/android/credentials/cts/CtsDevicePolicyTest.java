@@ -25,6 +25,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.admin.PackagePolicy;
 import android.content.pm.PackageManager;
+import android.credentials.CredentialProviderInfo;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -36,7 +37,6 @@ import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.CredentialManagerPolicy;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.credentials.CredentialProviderInfo;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;

@@ -788,7 +788,7 @@ public class DialogTest {
     }
 
     @Test
-    public void testSetCancellable_true() {
+    public void testSetCancelable_true() {
         startDialogActivity(DialogStubActivity.TEST_DIALOG_WITHOUT_THEME);
         final Dialog d = mActivity.getDialog();
 
@@ -799,7 +799,7 @@ public class DialogTest {
     }
 
     @Test
-    public void testSetCancellable_false() {
+    public void testSetCancelable_false() {
         startDialogActivity(DialogStubActivity.TEST_DIALOG_WITHOUT_THEME);
         final Dialog d = mActivity.getDialog();
 
@@ -810,7 +810,7 @@ public class DialogTest {
     }
 
     @Test
-    public void testSetCancellableEsc_true() {
+    public void testSetCancelableEsc_true() {
         startDialogActivity(DialogStubActivity.TEST_DIALOG_WITHOUT_THEME);
         final Dialog d = mActivity.getDialog();
 
@@ -821,14 +821,28 @@ public class DialogTest {
     }
 
     @Test
-    public void testSetCancellableEsc_false() {
+    public void testSetCancelableEsc_false() {
         startDialogActivity(DialogStubActivity.TEST_DIALOG_WITHOUT_THEME);
         final Dialog d = mActivity.getDialog();
 
+        d.setCanceledOnTouchOutside(false);
         d.setCancelable(false);
         assertTrue(d.isShowing());
         sendKeys(KeyEvent.KEYCODE_ESCAPE);
         assertTrue(d.isShowing());
+    }
+
+
+    @Test
+    public void testSetCanceledOnTouchOutsideEsc_true() {
+        startDialogActivity(DialogStubActivity.TEST_DIALOG_WITHOUT_THEME);
+        final Dialog d = mActivity.getDialog();
+
+        d.setCanceledOnTouchOutside(true);
+        d.setCancelable(false);
+        assertTrue(d.isShowing());
+        sendKeys(KeyEvent.KEYCODE_ESCAPE);
+        PollingCheck.waitFor(() -> !d.isShowing());
     }
 
     /*

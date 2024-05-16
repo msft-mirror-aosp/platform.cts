@@ -164,11 +164,22 @@ public class MultiStaConcurrencyWifiNetworkSpecifierTest extends WifiJUnit4TestB
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.removeAppState(myUid(), mContext.getPackageName()));
 
+        List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.getPrivilegedConfiguredNetworks());
+
+        // Disconnect & disable auto-join on the saved network to prevent auto-connect from
+        // interfering with the test.
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> {
+                    for (WifiConfiguration savedNetwork : savedNetworks) {
+                        mWifiManager.disableNetwork(savedNetwork.networkId);
+                    }
+                    mWifiManager.disconnect();
+                });
+
         // We need 2 AP's for the test. If there are 2 networks saved on the device and in range,
         // use those. Otherwise, check if there are 2 BSSID's in range for the only saved network.
         // This assumes a CTS test environment with at least 2 connectable bssid's (Is that ok?).
-        List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.getPrivilegedConfiguredNetworks());
         List<WifiConfiguration> matchingNetworksWithBssid =
                 TestHelper.findMatchingSavedNetworksWithBssid(mWifiManager, savedNetworks, 2);
         assertWithMessage("Need at least 2 saved network bssids in range")
@@ -181,16 +192,6 @@ public class MultiStaConcurrencyWifiNetworkSpecifierTest extends WifiJUnit4TestB
                 .filter(w -> !w.SSID.equals(mTestNetworkForPeerToPeer.SSID))
                 .findAny()
                 .orElse(matchingNetworksWithBssid.get(1));
-
-        // Disconnect & disable auto-join on the saved network to prevent auto-connect from
-        // interfering with the test.
-        ShellIdentityUtils.invokeWithShellPermissions(
-                () -> {
-                    for (WifiConfiguration savedNetwork : savedNetworks) {
-                        mWifiManager.disableNetwork(savedNetwork.networkId);
-                    }
-                    mWifiManager.disconnect();
-                });
 
         // Wait for Wifi to be disconnected.
         PollingCheck.check(

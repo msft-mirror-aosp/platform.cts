@@ -28,6 +28,7 @@ import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
 import android.location.cts.gnss.pseudorange.PseudorangePositionVelocityFromRealTimeEvents;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import androidx.test.filters.RequiresDevice;
@@ -108,6 +109,7 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
    */
   @CddTest(requirement="7.3.3")
   @RequiresDevice  // emulated devices do not support real measurements so far.
+  @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
   public void testPseudorangeValue() throws Exception {
     // Checks if Gnss hardware feature is present, skips test (pass) if not
     if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {

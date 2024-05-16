@@ -3833,6 +3833,21 @@ public class DecoderTest extends MediaTestBase {
         Thread.sleep(200);
         mMediaCodecPlayer.stopDrainingAudioOutputBuffers(false);
 
+        // Wait until underrun recovers, otherwise false detection of end of playback occurs
+        {
+            long underrunRecoveryTimeoutMs = 200;
+            long startTimeMs = System.currentTimeMillis();
+            AudioTimestamp previousTimestamp;
+            do {
+              assertTrue(String.format("No underrun recovery after %d milliseconds",
+                              underrunRecoveryTimeoutMs),
+                      System.currentTimeMillis() - startTimeMs < underrunRecoveryTimeoutMs);
+              previousTimestamp = mMediaCodecPlayer.getTimestamp();
+              Thread.sleep(50);
+            } while (mMediaCodecPlayer.getTimestamp().framePosition
+                    == previousTimestamp.framePosition);
+        }
+
         // Sleep till framePosition stabilizes, i.e. playback is complete
         {
             long endOfPlayackTimeoutMs = 20000;

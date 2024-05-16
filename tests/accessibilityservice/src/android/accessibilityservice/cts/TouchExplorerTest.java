@@ -84,6 +84,8 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 
+import com.google.common.truth.Truth;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -617,13 +619,10 @@ public class TouchExplorerTest {
 
     /** Do the actual accessibility focus / input focus syncing. */
     private void syncAccessibilityFocusToInputFocusInternal() {
-        mService.runOnServiceSync(
-                () -> {
-                    AccessibilityNodeInfo focus =
-                            mService.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
-                    focus.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
-                    focus.recycle();
-                });
+        AccessibilityNodeInfo focus =
+                mService.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+        Truth.assertWithMessage("Could not find input focused node").that(focus).isNotNull();
+        focus.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS);
         mService.waitForAccessibilityFocus();
     }
 
