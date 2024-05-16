@@ -113,6 +113,9 @@ class PermissionTest23 : BaseUsePermissionTest() {
             clickPermissionRequestAllowButton()
         }
 
+        // Wait for PermissionController's LiveData to catch up
+        Thread.sleep(5_000)
+
         // Request the permission and do nothing
         // Expect the permission is granted
         requestAppPermissionsAndAssertResult(android.Manifest.permission.WRITE_CONTACTS to true) {}
