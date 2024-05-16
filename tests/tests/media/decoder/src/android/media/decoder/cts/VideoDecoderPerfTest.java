@@ -17,7 +17,6 @@
 package android.media.decoder.cts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -30,9 +29,7 @@ import android.media.cts.MediaHeavyPresubmitTest;
 import android.media.cts.MediaTestBase;
 import android.media.cts.TestArgs;
 import android.media.cts.TestUtils;
-import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
@@ -97,7 +94,7 @@ public class VideoDecoderPerfTest extends MediaTestBase {
     private int mBitrate;
 
     private boolean mSkipRateChecking = false;
-    private boolean mUpdatedSwCodec = false;
+    private boolean mUpdatedSwCodecModule = false;
     static final String mInpPrefix = WorkDir.getMediaDirString();
 
     static private List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList) {
@@ -168,6 +165,7 @@ public class VideoDecoderPerfTest extends MediaTestBase {
 
     public VideoDecoderPerfTest(String decodername, String mediaType, String[] resources,
             @SuppressWarnings("unused") String gfxcode) {
+
         mDecoderName = decodername;
         mMediaType = mediaType;
         mResources = resources;
@@ -177,10 +175,9 @@ public class VideoDecoderPerfTest extends MediaTestBase {
     @Override
     public void setUp() throws Throwable {
         super.setUp();
-        Bundle bundle = InstrumentationRegistry.getArguments();
-        mSkipRateChecking = TextUtils.equals("true", bundle.getString("mts-media"));
 
-        mUpdatedSwCodec =
+        mSkipRateChecking = TestUtils.isMtsMode();
+        mUpdatedSwCodecModule =
                 !TestUtils.isMainlineModuleFactoryVersion("com.google.android.media.swcodec");
     }
 
@@ -217,19 +214,19 @@ public class VideoDecoderPerfTest extends MediaTestBase {
         }
 
         // allow improvements in mainline-updated google-supplied software codecs.
-        boolean fasterIsOk = mUpdatedSwCodec & TestUtils.isMainlineCodec(name);
+        boolean fasterIsOk = mUpdatedSwCodecModule & TestUtils.isMainlineCodec(name);
         String error =
             MediaPerfUtils.verifyAchievableFrameRates(name, mime, width, height,
                            fasterIsOk,  measuredFps);
-        // Performance numbers only make sense on real devices, so skip on non-real devices
-        if ((MediaUtils.onFrankenDevice() || mSkipRateChecking) && error != null) {
-            if (TestUtils.isMtsMode() && TestUtils.isMainlineCodec(name)) {
-                assumeFalse(error, error.startsWith("Failed to get "));
-            } else {
-                // ensure there is data, but don't insist that it is correct
-                assertFalse(error, error.startsWith("Failed to get "));
-            }
+        if (error != null && MediaUtils.onFrankenDevice()) {
+            // not a real device; so note it as a non-fatal assumption failure
+            assumeFalse(error, error.startsWith("Failed to get "));
+        } else if (error != null && mSkipRateChecking) {
+            // sometimes speed issues are noted, but non-fatal
+            // this is most often because we're running mts (not mcts, not cts)
+            assumeFalse(error, error.startsWith("Failed to get "));
         } else {
+            // the rest of the time, we insist on performance verification.
             assertNull(error, error);
         }
         mSamplesInMemory.clear();
