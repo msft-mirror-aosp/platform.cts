@@ -42,7 +42,7 @@ public class StatsdCtsBackgroundService extends IntentService {
 
         switch (action) {
             case ACTION_BACKGROUND_SLEEP:
-                AtomTests.sleep(SLEEP_OF_ACTION_BACKGROUND_SLEEP);
+                sleep(SLEEP_OF_ACTION_BACKGROUND_SLEEP);
                 break;
             case ACTION_ALLOCATE_MEMORY:
                 new Thread(MemoryHogger::allocate).start();
@@ -51,6 +51,14 @@ public class StatsdCtsBackgroundService extends IntentService {
                 break;
             default:
                 Log.e(TAG, "Intent had invalid action");
+        }
+    }
+
+    static void sleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Interrupted exception while sleeping", e);
         }
     }
 }
