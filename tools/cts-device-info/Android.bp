@@ -69,6 +69,7 @@ android_test_helper_app {
         "mcts-wifi",
     ],
     static_libs: [
+        "camera_platform_flags_java_lib",
         "compatibility-device-info",
         "compatibility-device-util-axt",
     ],
