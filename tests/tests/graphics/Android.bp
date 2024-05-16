@@ -68,8 +68,11 @@ android_ravenwood_test {
         "androidx.annotation_annotation",
         "androidx.test.rules",
         "compatibility-device-util-axt",
+        "junit-params",
     ],
     srcs: [
+        "src/android/graphics/cts/ColorTest.java",
+        "src/android/graphics/cts/ColorSpaceTest.java",
         "src/android/graphics/cts/InsetsTest.java",
         "src/android/graphics/cts/InterpolatorTest.java",
         "src/android/graphics/cts/MatrixTest.java",
