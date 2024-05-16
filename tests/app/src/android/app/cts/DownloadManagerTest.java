@@ -468,11 +468,11 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         }
     }
 
-    private String cannonicalizeProcessName(ApplicationInfo ai) {
-        return cannonicalizeProcessName(ai.processName, ai);
+    private String canonicalizeProcessName(ApplicationInfo ai) {
+        return canonicalizeProcessName(ai.processName, ai);
     }
 
-    private String cannonicalizeProcessName(String process, ApplicationInfo ai) {
+    private String canonicalizeProcessName(String process, ApplicationInfo ai) {
         if (process == null) {
             return null;
         }
@@ -502,10 +502,10 @@ public class DownloadManagerTest extends DownloadManagerTestBase {
         ProviderInfo downloadInfo = pm.resolveContentProvider("downloads", 0);
         assertNotNull(downloadInfo);
         String downloadProcess
-                = cannonicalizeProcessName(downloadInfo.processName, downloadInfo.applicationInfo);
+                = canonicalizeProcessName(downloadInfo.processName, downloadInfo.applicationInfo);
 
         for (PackageInfo pi : mContext.getPackageManager().getInstalledPackages(0)) {
-            if (downloadProcess.equals(cannonicalizeProcessName(pi.applicationInfo))) {
+            if (downloadProcess.equals(canonicalizeProcessName(pi.applicationInfo))) {
                 assertTrue("package: " + pi.applicationInfo.packageName
                         + " must set android:usesCleartextTraffic=true"
                         ,(pi.applicationInfo.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC)
