@@ -100,13 +100,14 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
     @Option(name = "reset", description = "Start with a fresh directory.")
     private boolean mReset = false;
 
-    public CtsVideoQualityFloorHostTest(String jsonName) {
+    public CtsVideoQualityFloorHostTest(String jsonName,
+            @SuppressWarnings("unused") String testLabel) {
         mJsonName = jsonName;
     }
 
-    @Parameterized.Parameters(name = "{index}_{0}")
-    public static List<String> input() {
-        final List<String> args = new ArrayList<>();
+    @Parameterized.Parameters(name = "{index}_{1}")
+    public static List<Object[]> input() {
+        final List<Object[]> args = new ArrayList<>();
         String[] clips = {"Fireworks", "MountainBike", "Motorcycle", "TreesAndGrass"};
         String[] resolutions = {"1080p", "720p", "540p", "480p"};
         String[] codecInfos = {"avcBaseline3", "avcHigh4", "avcHigh52", "hevcMain3"};
@@ -114,7 +115,10 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
         for (String clip : clips) {
             for (String res : resolutions) {
                 for (String info : codecInfos) {
-                    args.add(res + "-" + clip + "-" + info + ".json");
+                    Object[] testArgs = new Object[2];
+                    testArgs[0] = res + "-" + clip + "-" + info + ".json";
+                    testArgs[1] = res + "_" + clip + "_" + info;
+                    args.add(testArgs);
                 }
             }
         }
