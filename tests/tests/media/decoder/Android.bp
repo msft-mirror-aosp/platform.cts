@@ -80,7 +80,6 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-media",
     ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",
@@ -122,6 +121,7 @@ android_test {
     test_config: "AndroidTest-mcts.xml",
     test_suites: [
         "mcts-media",
+        "mts-media",
     ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",
