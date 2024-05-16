@@ -16,6 +16,7 @@
 
 package android.widget.cts;
 
+import static android.server.wm.CtsWindowInfoUtils.waitForWindowFocus;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyInt;
@@ -261,6 +262,12 @@ public class SearchView_CursorTest {
             mSearchView.setOnQueryTextListener(mockQueryTextListener);
             mSearchView.setOnSuggestionListener(mockSuggestionListener);
             mSearchView.requestFocus();
+        });
+
+        assertTrue("Couldn't get window focus",
+                waitForWindowFocus(mSearchView, /*hasWindowFocus*/ true));
+
+        WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mSearchView, () -> {
             mSearchView.setQuery("Di", false);
         });
 
