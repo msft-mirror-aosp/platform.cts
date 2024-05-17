@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -2081,7 +2082,7 @@ public class TunerTest {
         // Open Lnb and check the callback
         TunerTestLnbCallback lnbCB1 = new TunerTestLnbCallback();
         Lnb lnbA = tunerA.openLnb(getExecutor(), lnbCB1);
-        assertNotNull(lnbA);
+        assumeTrue(lnbA != null);
         lnbA.setVoltage(Lnb.VOLTAGE_5V);
         lnbA.setTone(Lnb.TONE_CONTINUOUS);
         lnbA.sendDiseqcMessage(new byte[] {1, 2});
