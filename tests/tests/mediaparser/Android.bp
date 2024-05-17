@@ -58,6 +58,7 @@ java_defaults {
     static_libs: [
         "ctstestrunner-axt",
         "androidx.test.ext.junit",
+        "cts-media-common",
         "exoplayer-cts_media-test_assets",
         "exoplayer-cts_media-test_utils",
     ],
