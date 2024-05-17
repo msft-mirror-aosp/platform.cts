@@ -38,7 +38,7 @@
                 android:pathData="@string/rectangle200" />
 
             <group
-                android:name="ThridLevelGroup1"
+                android:name="ThirdLevelGroup1"
                 android:translateX="-100.0"
                 android:translateY="50.0" >
                 <path
@@ -47,7 +47,7 @@
                     android:pathData="@string/rectangle200" />
             </group>
             <group
-                android:name="ThridLevelGroup2"
+                android:name="ThirdLevelGroup2"
                 android:translateX="100.0"
                 android:translateY="50.0" >
                 <path
@@ -66,7 +66,7 @@
                 android:pathData="@string/rectangle200" />
 
             <group
-                android:name="ThridLevelGroup3"
+                android:name="ThirdLevelGroup3"
                 android:translateX="-100.0"
                 android:translateY="50.0" >
                 <path
@@ -75,7 +75,7 @@
                     android:pathData="@string/rectangle200" />
             </group>
             <group
-                android:name="ThridLevelGroup4"
+                android:name="ThirdLevelGroup4"
                 android:translateX="100.0"
                 android:translateY="50.0" >
                 <path

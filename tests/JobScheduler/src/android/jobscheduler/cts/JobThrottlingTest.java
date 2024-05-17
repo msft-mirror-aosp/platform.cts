@@ -48,6 +48,8 @@ import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
@@ -56,6 +58,8 @@ import com.android.compatibility.common.util.ThermalUtils;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -68,6 +72,10 @@ import java.util.function.BooleanSupplier;
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class JobThrottlingTest {
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private static final String TAG = JobThrottlingTest.class.getSimpleName();
     private static final long BACKGROUND_JOBS_EXPECTED_DELAY = 3_000;
     private static final long POLL_INTERVAL = 500;
@@ -97,7 +105,7 @@ public class JobThrottlingTest {
     private String mInitialActivityManagerConstants;
     private String mInitialDisplayTimeout;
     private String mInitialBatteryStatsConstants;
-    private boolean mAutomotiveDevice;
+
     private boolean mLeanbackOnly;
 
     private final TestAppInterface mTestAppInterface = new TestAppInterface(mContext, mTestJobId);
@@ -164,12 +172,12 @@ public class JobThrottlingTest {
                 Settings.Global.ACTIVITY_MANAGER_CONSTANTS, null);
 
         // In automotive device, always-on screen and endless battery charging are assumed.
-        mAutomotiveDevice =
+        boolean hasFeatureAutomotive =
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         // In leanback devices, it is assumed that there is no battery.
         mLeanbackOnly =
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY);
-        if (mAutomotiveDevice || mLeanbackOnly) {
+        if (hasFeatureAutomotive || mLeanbackOnly) {
             setScreenState(true);
             // TODO(b/159176758): make sure that initial power supply is on.
             setChargingState(true);
@@ -539,9 +547,9 @@ public class JobThrottlingTest {
      * when charging (but not idle).
      */
     @Test
+    @RequireNotAutomotive(reason = "Not testable in automotive device")
     public void testJobsInRestrictedBucket_CorrectParoleWhileCharging() throws Exception {
         assumeTrue("app standby not enabled", mAppStandbyEnabled);
-        assumeFalse("not testable in automotive device", mAutomotiveDevice);
         assumeFalse("not testable in leanback device", mLeanbackOnly);
 
         // Disable coalescing
@@ -1211,9 +1219,9 @@ public class JobThrottlingTest {
     TODO(224533485): make JS testable enough to enable these tests
 
     @Test
+    @RequireNotAutomotive(reason = "Not testable in automotive device as test needs battery")
     public void testRestrictingStopReason_ExpeditedQuota_startOnCharging() throws Exception {
         assumeTrue("app standby not enabled", mAppStandbyEnabled);
-        assumeFalse("not testable in automotive device", mAutomotiveDevice); // Test needs battery
         assumeFalse("not testable in leanback device", mLeanbackOnly); // Test needs battery
 
         // Reduce allowed time for testing. System to cap the time above 30 seconds.
@@ -1242,9 +1250,9 @@ public class JobThrottlingTest {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Not testable in automotive device as test needs battery")
     public void testRestrictingStopReason_ExpeditedQuota_noCharging() throws Exception {
         assumeTrue("app standby not enabled", mAppStandbyEnabled);
-        assumeFalse("not testable in automotive device", mAutomotiveDevice); // Test needs battery
         assumeFalse("not testable in leanback device", mLeanbackOnly); // Test needs battery
 
         // Reduce allowed time for testing.

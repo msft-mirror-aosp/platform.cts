@@ -106,15 +106,16 @@ public class BlurTests extends WindowManagerTestBase {
         WindowManagerState.WindowState windowState = mWmState.getWindowState(cn);
         WindowManagerState.Activity act = mWmState.getActivity(cn);
         mBackgroundActivityBounds = act.getBounds();
+
+        // Wait for the first frame *after* the splash screen is removed to take screenshots.
+        // Currently there isn't a definite event / callback for this.
+        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+        waitForActivityIdle(mBackgroundActivity.getActivity());
+
         insetGivenFrame(windowState,
                 insetsSource -> (insetsSource.is(WindowInsets.Type.captionBar())),
                 mBackgroundActivityBounds);
         mBackgroundActivityBounds.inset(mBackgroundActivity.getActivity().getSystemBarOverlaps());
-
-        // Wait for the first frame *after* the splash screen is removed to take screenshots.
-        // We don't currently have a definite event / callback for this.
-        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
-        waitForActivityIdle(mBackgroundActivity.getActivity());
 
         // Basic checks common to all tests
         verifyOnlyBackgroundImageVisible();
@@ -613,8 +614,11 @@ public class BlurTests extends WindowManagerTestBase {
 
     private void assertBlurBehind(Bitmap screenshot, Rect windowFrame) {
         mDumpOnFailure.dumpOnFailure("assertBlurBehind", screenshot);
-        assertBlur(screenshot, BLUR_BEHIND_PX, BLUR_BEHIND_PX,
-                windowFrame.top);
+        // From top of screenshot (accounting for extent on the edge) to the top of the centered
+        // window.
+        assertBlur(screenshot, BLUR_BEHIND_PX, BLUR_BEHIND_PX, windowFrame.top);
+        // From bottom of the centered window to bottom of screenshot accounting for extent on the
+        // edge.
         assertBlur(screenshot, BLUR_BEHIND_PX, windowFrame.bottom,
                 screenshot.getHeight() - BLUR_BEHIND_PX);
     }

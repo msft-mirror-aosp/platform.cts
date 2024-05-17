@@ -21,7 +21,7 @@
 
     <application android:hasCode="false" android:label="@string/app_name">
         <property android:name="android.content.PROPERTY_ANDROID_SAFETY_LABEL"
-                android:resource="@raw/app-metadata"/>
+                android:resource="@raw/app-metadata-exceed-size-limit"/>
     </application>
 
 </manifest>

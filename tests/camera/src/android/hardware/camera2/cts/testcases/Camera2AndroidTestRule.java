@@ -205,6 +205,10 @@ public class Camera2AndroidTestRule extends ExternalResource {
         return mPerfClassTest != null && mPerfClassTest.equals("on");
     }
 
+    public boolean isCameraIdOverriddenForTest() {
+        return mOverrideCameraId != null;
+    }
+
     private String[] deriveCameraIdsUnderTest() throws Exception {
         String[] idsUnderTest = mCameraManager.getCameraIdList();
         assertNotNull("Camera ids shouldn't be null", idsUnderTest);

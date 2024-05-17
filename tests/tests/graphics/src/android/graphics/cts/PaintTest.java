@@ -1810,7 +1810,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment() {
+    public void testEqualsForTextMeasurement() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1818,7 +1818,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_textSize() {
+    public void testEqualsForTextMeasurement_textSize() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1829,7 +1829,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_textSkew() {
+    public void testEqualsForTextMeasurement_textSkew() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1840,7 +1840,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_textScale() {
+    public void testEqualsForTextMeasurement_textScale() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1851,7 +1851,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_letterSpacing() {
+    public void testEqualsForTextMeasurement_letterSpacing() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1862,7 +1862,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_localeList() {
+    public void testEqualsForTextMeasurement_localeList() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1876,7 +1876,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_typeface() {
+    public void testEqualsForTextMeasurement_typeface() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 

@@ -630,7 +630,12 @@ public class RoutingTest extends AndroidTestCase {
         assertNull(mediaPlayer.getPreferredDevice());
 
         // resets to default
+        mediaPlayer.pause();
+        //Wait for state to change before setPreferDevice
+        SystemClock.sleep(200);
         assertTrue(mediaPlayer.setPreferredDevice(null));
+        mediaPlayer.start();
+        assertTrue(mediaPlayer.isPlaying());
 
         // test each device
         AudioDeviceInfo[] deviceList = mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
@@ -639,12 +644,22 @@ public class RoutingTest extends AndroidTestCase {
                 // Device with type as TYPE_TELEPHONY requires a privileged permission.
                 continue;
             }
+            mediaPlayer.pause();
+            //Wait for state to change before setPreferDevice
+            SystemClock.sleep(200);
             assertTrue(mediaPlayer.setPreferredDevice(deviceList[index]));
+            mediaPlayer.start();
+            assertTrue(mediaPlayer.isPlaying());
             assertTrue(mediaPlayer.getPreferredDevice() == deviceList[index]);
         }
 
         // Check defaults again
+        mediaPlayer.pause();
+        //Wait for state to change before setPreferDevice
+        SystemClock.sleep(200);
         assertTrue(mediaPlayer.setPreferredDevice(null));
+        mediaPlayer.start();
+        assertTrue(mediaPlayer.isPlaying());
         assertNull(mediaPlayer.getPreferredDevice());
 
         mediaPlayer.stop();
@@ -737,7 +752,12 @@ public class RoutingTest extends AndroidTestCase {
         for (AudioDeviceInfo device : devices) {
             if (routedDevice.getId() != device.getId() &&
                     device.getType() != AudioDeviceInfo.TYPE_TELEPHONY) {
+                mediaPlayer.pause();
+                //Wait for state to change before setPreferDevice
+                SystemClock.sleep(200);
                 mediaPlayer.setPreferredDevice(device);
+                mediaPlayer.start();
+                assertTrue(mediaPlayer.isPlaying());
                 listener.setCallExpected(true);
                 listener.await(WAIT_ROUTING_CHANGE_TIME_MS);
                 break;

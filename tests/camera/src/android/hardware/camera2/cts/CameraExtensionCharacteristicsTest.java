@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeFalse;
 
 import org.junit.After;
 import org.junit.Before;
@@ -186,6 +187,8 @@ public class CameraExtensionCharacteristicsTest {
     @Test
     @AppModeFull(reason = "Instant apps can't access Test API")
     public void testExtensionAvailability() throws Exception {
+        assumeFalse("Test is running on single overridden camera id, skipping",
+                     mTestRule.isCameraIdOverriddenForTest());
         boolean extensionsAdvertised = false;
         for (String id : mTestRule.getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.cts.apicoverage;
-
-import com.android.cts.apicommon.HasCoverage;
+package com.android.cts.apicommon;
 
 import java.util.Comparator;
 
 public class CoverageComparator implements Comparator<HasCoverage> {
+
+    /** Compares whether two coverage entities are same. */
     public int compare(HasCoverage entity, HasCoverage otherEntity) {
         int lhsPct = Math.round(entity.getCoveragePercentage());
         int rhsPct = Math.round(otherEntity.getCoveragePercentage());

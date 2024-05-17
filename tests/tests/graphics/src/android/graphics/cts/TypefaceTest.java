@@ -564,7 +564,7 @@ public class TypefaceTest {
 
     @Test
     public void testTypeface_SupportedCmapEncodingTest() {
-        // We support the following combinations of cmap platfrom/endcoding pairs.
+        // We support the following combinations of cmap platform/endcoding pairs.
         String[] fontPaths = {
             // Platform ID == 0, Encoding ID == 0
             "fonts/cmap_selection/CmapPlatform0Encoding0.ttf",
@@ -673,7 +673,7 @@ public class TypefaceTest {
         assertEquals(GLYPH_3EM_WIDTH, measureText("b", italicFamily), 0f);
         assertEquals(GLYPH_1EM_WIDTH, measureText("c", italicFamily), 0f);
 
-        // Draw with the italic font which weigth is 700.
+        // Draw with the italic font and weight set to 700.
         final Typeface boldItalicFamily =
                 Typeface.create(family, 700 /* weight */, true /* italic */);
         assertEquals(GLYPH_1EM_WIDTH, measureText("a", boldItalicFamily), 0f);

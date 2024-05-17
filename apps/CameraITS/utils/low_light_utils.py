@@ -33,10 +33,10 @@ _KEY_TOP_LEFT = 'top_left'
 _KEY_TOP_RIGHT = 'top_right'
 _MAX_ASPECT_RATIO = 1.2
 _MIN_ASPECT_RATIO = 0.8
-_RED_HSV_RANGE_LOWER_1 = np.array([0, 100, 100])
-_RED_HSV_RANGE_LOWER_2 = np.array([170, 100, 100])
-_RED_HSV_RANGE_UPPER_1 = np.array([20, 255, 255])
-_RED_HSV_RANGE_UPPER_2 = np.array([179, 255, 255])
+_RED_BGR_COLOR = (0, 0, 255)
+_NUM_CLUSTERS = 8
+_K_MEANS_ITERATIONS = 10
+_K_MEANS_EPSILON = 0.5
 _TEXT_COLOR = (255, 255, 255)
 
 
@@ -49,12 +49,33 @@ def _crop(img):
     numpy array of the cropped image or the original image if the crop region
     isn't found.
   """
-  hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-  # Define boundary of the red box in HSV which is the region to crop
-  # We create two masks and combine them
-  mask_1 = cv2.inRange(hsv_img, _RED_HSV_RANGE_LOWER_1, _RED_HSV_RANGE_UPPER_1)
-  mask_2 = cv2.inRange(hsv_img, _RED_HSV_RANGE_LOWER_2, _RED_HSV_RANGE_UPPER_2)
-  mask = mask_1 + mask_2
+  # To apply k-means clustering, we need to convert the image in to an array
+  # where each row represents a pixel in the image, and each column is a feature
+  # In this case, the feature represents the RGB channels of the pixel
+  data = img.reshape((-1, 3))
+  data = np.float32(data)
+
+  k_means_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER,
+                      _K_MEANS_ITERATIONS, _K_MEANS_EPSILON)
+  _, labels, centers = cv2.kmeans(data, _NUM_CLUSTERS, None, k_means_criteria,
+                                  _K_MEANS_ITERATIONS,
+                                  cv2.KMEANS_RANDOM_CENTERS)
+  # Find the cluster closest to red
+  min_dist = float('inf')
+  closest_cluster_index = -1
+  for index, center in enumerate(centers):
+    logging.debug(center)
+    dist = np.linalg.norm(center - np.array(_RED_BGR_COLOR))
+    if dist < min_dist:
+      min_dist = dist
+      closest_cluster_index = index
+
+  target_label = closest_cluster_index
+
+  # create a mask using the data associated with the cluster closest to red
+  mask = labels.flatten() == target_label
+  mask = mask.reshape((img.shape[0], img.shape[1]))
+  mask = mask.astype(np.uint8)
 
   contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
                                  cv2.CHAIN_APPROX_SIMPLE)

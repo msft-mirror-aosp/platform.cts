@@ -18,6 +18,7 @@ package com.android.bedstead.harrier.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.FIRST;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_AUTOMOTIVE;
+import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_LEANBACK;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_PC;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_TELEVISION;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_TOUCHSCREEN;
@@ -33,6 +34,7 @@ import java.lang.annotation.Target;
 @RequireFeature(FEATURE_TOUCHSCREEN)
 @RequireDoesNotHaveFeature(FEATURE_WATCH)
 @RequireDoesNotHaveFeature(FEATURE_TELEVISION)
+@RequireDoesNotHaveFeature(FEATURE_LEANBACK)
 @RequireDoesNotHaveFeature(FEATURE_AUTOMOTIVE)
 @RequireDoesNotHaveFeature(FEATURE_PC)
 public @interface RequireHandheldDevice {

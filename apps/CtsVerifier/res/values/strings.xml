@@ -3007,7 +3007,7 @@ You should be prompted to select credentials; choose the ones you just installed
            \"adb uninstall com.android.cts.vpnfirewall\"\n
 
         2. Install the first test app, by running\n
-           \"adb install /path/to/CtsVpnFirewallAppApi23.apk\"\n
+           \"adb install --bypass-low-target-sdk-block /path/to/CtsVpnFirewallAppApi23.apk\"\n
 
         3. Tap \"Prepare VPN\" button below and consent to the VPN connection.\n
 
@@ -3047,7 +3047,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="provisioning_byod_always_on_vpn_api23_instruction">
         1. Re-install CtsVpnFirewallAppApi23.apk (skip this if you already have the correct version
            installed):\n
-           \"adb install -r /path/to/CtsVpnFirewallAppApi23.apk\"\n
+           \"adb install -r --bypass-low-target-sdk-block /path/to/CtsVpnFirewallAppApi23.apk\"\n
         2. Tap \"Go\" button below to go to the VPN settings page.\n
         3. Open configuration details page for CtsVpnFirewallApp.\n
         4. Confirm the \"Always-on VPN\" and \"Block connections without VPN\" switches are both off

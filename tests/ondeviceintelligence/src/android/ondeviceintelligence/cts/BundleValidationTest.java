@@ -82,6 +82,8 @@ public class BundleValidationTest {
     public static final int REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES = 2001;
 
     private File file;
+    private File file2;
+
     private OnDeviceIntelligenceManager mOnDeviceIntelligenceManager;
 
     @Rule
@@ -98,7 +100,9 @@ public class BundleValidationTest {
     @Before
     public void setUp() throws Exception {
         file = File.createTempFile("testReadOnly", "bin");
+        file2 = File.createTempFile("testReadOnly2", "bin");
         file.createNewFile();
+        file2.createNewFile();
         mOnDeviceIntelligenceManager = getInstrumentation().getContext().getSystemService(
                 OnDeviceIntelligenceManager.class);
         OnDeviceIntelligenceManagerTest.clearTestableOnDeviceIntelligenceService();
@@ -150,8 +154,11 @@ public class BundleValidationTest {
         Feature feature = new Feature.Builder(1).build();
         Bundle request = new Bundle();
         try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(file,
-                ParcelFileDescriptor.MODE_READ_ONLY)) {
+                ParcelFileDescriptor.MODE_READ_ONLY);
+             ParcelFileDescriptor pfd2 = ParcelFileDescriptor.open(file2,
+                     ParcelFileDescriptor.MODE_READ_ONLY);) {
             request.putParcelable("request", pfd);
+            request.putParcelableArray("request2", new ParcelFileDescriptor[]{pfd2});
             mOnDeviceIntelligenceManager.processRequest(feature, request, 1, null, null, EXECUTOR,
                     new ProcessingCallback() {
                         @Override
@@ -166,11 +173,12 @@ public class BundleValidationTest {
             assertThat(statusLatch.await(1, SECONDS)).isTrue();
         }
 
+        Bundle request2 = new Bundle();
         try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(file,
                 ParcelFileDescriptor.MODE_READ_WRITE)) {
-            request.putParcelable("request", pfd);
+            request2.putParcelable("request", pfd);
             assertThrows(BadParcelableException.class,
-                    () -> processRequestAndHandleException(feature, request, 1));
+                    () -> processRequestAndHandleException(feature, request2, 1));
         }
     }
 
@@ -198,6 +206,34 @@ public class BundleValidationTest {
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
     }
 
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void canSendNestedBundleWithSameConstraints() throws Exception {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        Feature feature = new Feature.Builder(1).build();
+        Bundle request = prepareBundleWithPersistableBundleAndPrimitives();
+
+        Bundle higherBundle = new Bundle();
+        higherBundle.putBundle("someKey", request);
+
+        mOnDeviceIntelligenceManager.processRequest(feature, higherBundle, 1, null, null, EXECUTOR,
+                new ProcessingCallback() {
+                    @Override
+                    public void onResult(Bundle result) {
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void canSendImmutableBitmap() throws Exception {
@@ -208,7 +244,10 @@ public class BundleValidationTest {
         Bundle request = new Bundle();
         Bitmap immutableBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888).copy(
                 Bitmap.Config.ARGB_8888, false);
+        Bitmap immutableBitmap2 = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888).copy(
+                Bitmap.Config.ARGB_8888, false);
         request.putParcelable("test-bitmap", immutableBitmap);
+        request.putParcelableArray("test-bitmaps", new Bitmap[]{immutableBitmap2});
 
         mOnDeviceIntelligenceManager.processRequest(feature, request, 1, null, null, EXECUTOR,
                 new ProcessingCallback() {
@@ -233,7 +272,7 @@ public class BundleValidationTest {
         Bundle request = new Bundle();
 
         try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(file,
-                ParcelFileDescriptor.MODE_READ_ONLY)) {
+                ParcelFileDescriptor.MODE_READ_WRITE)) {
             Bundle bundle = new Bundle();
             bundle.putParcelable("test-pfd", pfd);
             request.putParcelable("test-bundle", bundle);

@@ -47,8 +47,8 @@ public class NinePatchTest {
     private static final int ALPHA_OPAQUE = 0xFF;
     private static final String NAME = "TESTNAME";
     private static final int WIDTH = 80;
-    private static final int HEIGTH = 120;
-    private static final int[] COLOR = new int[WIDTH * HEIGTH];
+    private static final int HEIGHT = 120;
+    private static final int[] COLOR = new int[WIDTH * HEIGHT];
 
     private NinePatch mNinePatch;
     private Bitmap mBitmap;

@@ -40,6 +40,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
 import android.server.wm.ActivityManagerTestBase;
@@ -1363,6 +1364,32 @@ public class CipherTest {
         for (ImportedKey key : importedKeys) {
             assertFalse(TestUtils.keyExists(key.getAlias()));
         }
+    }
+
+    @Test
+    public void testAuthBoundKeysKeyPermanentlyInvalidatedException() throws Exception {
+        assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
+
+        ImportedKey key = null;
+        try (DeviceLockSession dl = new DeviceLockSession()) {
+            KeyProtection importParams =
+                    TestUtils.getMinimalWorkingImportParametersForCipheringWith(BASIC_ALGORITHMS[0],
+                            KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT,
+                            /* ivProvidedWhenEncrypting= */ false,
+                            /* isUnlockedDeviceRequired= */ false,
+                            /* isUserAuthRequired= */ true);
+            key = importDefaultKatKey(BASIC_ALGORITHMS[0], importParams);
+            assertTrue(TestUtils.keyExists(key.getAlias()));
+        } // DeviceLockSession#close() removes the secure lock screen.
+
+        // Try to use the key after removal of secure screen lock screen.
+        KatVector testVector = KAT_VECTORS.get(BASIC_ALGORITHMS[0]);
+        Cipher cipher = Cipher.getInstance(BASIC_ALGORITHMS[0]);
+        Key encryptionKey = key.getKeystoreBackedEncryptionKey();
+        // Removing the secure lock screen should have invalidated the auth-bound keys.
+        assertThrows(KeyPermanentlyInvalidatedException.class, () -> {
+            cipher.init(Cipher.ENCRYPT_MODE, encryptionKey);
+        });
     }
 
     @Test

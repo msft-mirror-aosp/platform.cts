@@ -13,6 +13,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
 import org.junit.After
 import org.junit.Assert
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Test
 
@@ -40,6 +41,7 @@ class AppOpsMultiUserTest {
 
     @Before
     fun setUp() {
+        Assume.assumeTrue(UserManager.supportsMultipleUsers())
         SystemUtil.runWithShellPermissionIdentity {
             preExistingUsers.addAll(userManager.users)
         }

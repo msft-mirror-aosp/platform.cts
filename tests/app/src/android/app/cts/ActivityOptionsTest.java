@@ -98,7 +98,7 @@ public class ActivityOptionsTest {
             assertThat(bundle.containsKey(key)).isFalse();
         } else {
             assertThat(bundle.containsKey(key)).isTrue();
-            assertThat(bundle.getBoolean(key)).isEqualTo(allowed);
+            assertThat(bundle.getInt(key)).isEqualTo(mode);
         }
     }
 

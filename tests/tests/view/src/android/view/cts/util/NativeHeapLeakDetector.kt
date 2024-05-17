@@ -27,8 +27,9 @@ import org.junit.Assert
  *     try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
  *         ... code to be tested for memory leak ...
  *     }
- * Note: This only reports leaks larger then 5KB. Its recommended to run the code to be tested for
- * memory leak sufficient times for the leak to large enough to be detected.
+ * Note: This only reports leaks larger then MEMORY_LEAK_THRESHOLD_KB (35 KB). Its recommended to
+ * run the code to be tested for memory leak sufficient times for the leak to large enough to be
+ * detected.
  */
 class NativeHeapLeakDetector : AutoCloseable {
     private val mInitialNativeHeapUsage: Long
@@ -40,8 +41,8 @@ class NativeHeapLeakDetector : AutoCloseable {
 
     /**
      * MemoryInfo values are not always precise and reliable, to prevent the test from flake we are
-     * using a arbitrary limit of 5 KB over multiple iterations. It should still allow us to catch
-     * major memory leaks avoiding flakiness in the test.
+     * using a arbitrary limit of MEMORY_LEAK_THRESHOLD_KB (35 KB) over multiple iterations. It
+     * should still allow us to catch major memory leaks avoiding flakiness in the test.
      */
     override fun close() {
         runGcAndFinalizersSync()
@@ -49,11 +50,12 @@ class NativeHeapLeakDetector : AutoCloseable {
                 (Debug.getNativeHeapAllocatedSize() - mInitialNativeHeapUsage) / 1024
         Assert.assertFalse(
                 "Possible Memory leak. Leaked native memory usage: $leakedNativeHeapKB KB",
-                leakedNativeHeapKB > 5 // KB
+                leakedNativeHeapKB > MEMORY_LEAK_THRESHOLD_KB // KB
         )
     }
 
     companion object {
+        const val MEMORY_LEAK_THRESHOLD_KB = 35
         private fun runGcAndFinalizersSync() {
             // This is a simple way to wait for all finalizers to run.
             // It is not guaranteed to work, but it is sufficient for our purposes.

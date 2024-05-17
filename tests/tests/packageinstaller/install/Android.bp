@@ -57,7 +57,7 @@ android_test {
         ":CtsEmptyTestApp_FullScreenIntent",
         ":CtsDisabledLauncherActivityApp",
         ":CtsEmptyTestApp_AppMetadataInApk",
-        ":CtsEmptyTestApp_MissingAppMetadataInApk",
+        ":CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit",
     ],
     java_resources: [
         ":HelloWorldSdk1",
