@@ -19,8 +19,10 @@ package android.media.misc.cts;
 import android.content.Intent;
 import android.test.InstrumentationTestCase;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
+@FrameworkSpecificTest
 @NonMainlineTest
 public class FaceDetectorTest extends InstrumentationTestCase {
 

@@ -58,26 +58,18 @@ class InputAtomsTest : DeviceTestCase() {
 
     private val registry: ExtensionRegistry = ExtensionRegistry.newInstance()
 
-    private var initialLogTagValue: String = "UNKNOWN"
-
     override fun setUp() {
         super.setUp()
         ConfigUtils.removeConfig(device)
         ReportUtils.clearReports(device)
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG.toLong())
         InputExtensionAtoms.registerAllExtensions(registry)
-        initialLogTagValue =
-                device.executeShellCommand("getprop log.tag.InputReaderRawEvents")!!.trim()
-        device.executeShellCommand("setprop log.tag.InputReaderRawEvents DEBUG")
     }
 
     override fun tearDown() {
         super.tearDown()
         ConfigUtils.removeConfig(device)
         ReportUtils.clearReports(device)
-        device.executeShellCommand(
-            "setprop log.tag.InputReaderRawEvents ${initialLogTagValue.ifBlank { "UNKNOWN" } }"
-        )
     }
 
     @CddTest(requirements = ["6.1/C-0-10"])

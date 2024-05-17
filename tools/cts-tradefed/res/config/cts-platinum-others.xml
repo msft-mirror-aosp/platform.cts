@@ -9337,9 +9337,9 @@
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.BannedFilesTest#testNoSunxiDebug" />
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.BannedFilesTest#testNoSyncAgent" />
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.BannedFilesTest#testNoSystemCmdSocket" />
-    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertBlacklistTest#testBlacklistedCaUntrusted" />
-    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertBlacklistTest#testBlacklistedIntermediateFallback" />
-    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertBlacklistTest#testBlacklistedRootOfTrust" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertBlocklistTest#testBlocklistedCaUntrusted" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertBlocklistTest#testBlocklistedIntermediateFallback" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertBlocklistTest#testBlocklistedRootOfTrust" />
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertificateTest#testBlockCertificates[false]" />
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertificateTest#testBlockCertificates[true]" />
     <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertificateTest#testNoAddedCertificates[false]" />

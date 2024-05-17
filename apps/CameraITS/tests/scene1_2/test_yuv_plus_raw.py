@@ -43,6 +43,7 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
    props: object from its_session_utils.get_camera_properties().
    log_path_with_name: logging path where artifacts should be stored.
    raw_fmt: string 'raw', 'raw10', or 'raw12' to include in file name
+
   Returns:
     string "PASS" if test passed, else message for AssertionError.
   """
@@ -53,6 +54,7 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
   logging.debug('%s capture focus distance: %s', raw_fmt, focus_distance)
   logging.debug('%s capture shading mode: %d', raw_fmt, shading_mode)
 
+  # YUV
   img = image_processing_utils.convert_capture_to_rgb_image(cap_yuv)
   image_processing_utils.write_image(
       img, f'{log_path_with_name}_shading={shading_mode}_yuv.jpg', True)
@@ -76,7 +78,7 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
       rgb_means_yuv, rgb_means_raw)
   msg = f'{raw_fmt} diff: {rms_diff:.4f}'
   # Log rms-diff, so that it can be written to the report log.
-  print(f'test_yuv_plus_raw_rms_diff: {rms_diff:.4f}')
+  print(f'test_yuv_plus_{raw_fmt}_rms_diff: {rms_diff:.4f}')
   logging.debug('%s', msg)
   if rms_diff >= _THRESHOLD_MAX_RMS_DIFF:
     return f'{msg}, spec: {_THRESHOLD_MAX_RMS_DIFF}'
@@ -92,7 +94,6 @@ class YuvPlusRawTest(its_base_test.ItsBaseTest):
 
   def test_yuv_plus_raw(self):
     failure_messages = []
-    logging.debug('Starting %s', _NAME)
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
         camera_id=self.camera_id,
