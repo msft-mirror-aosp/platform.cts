@@ -419,7 +419,7 @@ public class KeyAttestationTest {
             // Feature Version is required on devices launching with Android 12 (API Level
             // 31) but may be reported on devices launching with an earlier version. If it's
             // present, it must match what is reported in attestation.
-            if (PropertyUtil.getFirstApiLevel() >= 31) {
+            if (TestUtils.getVendorApiLevel() >= 31) {
                 assertNotEquals(0, keyStoreFeatureVersion);
             }
             if (keyStoreFeatureVersion != 0) {
