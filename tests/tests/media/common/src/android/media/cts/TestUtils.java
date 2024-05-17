@@ -25,15 +25,15 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.core.app.ApplicationProvider;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Assert;
 import org.junit.AssumptionViolatedException;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -154,15 +154,112 @@ public final class TestUtils {
     }
 
     /*
-     * Report whether we are in MTS mode (vs in CTS) mode.
+     * decide whether we are in CTS, MCTS, or MTS mode.
+     * return the appropriate constant value
+     */
+    public static final int TESTMODE_CTS = 0;
+    public static final int TESTMODE_MCTS = 1;
+    public static final int TESTMODE_MTS = 2;
+
+    /**
+     * Report the current testing mode, as an enumeration.
+     * Testing mode is determined by argument 'media-testing-mode'
+     * which specifies 'cts', 'mcts', or 'mts'
+     * If missing, we use the older boolean "mts-media" to generate either 'cts' or 'mts'
+     *
+     * This is most often specified in a CtsMedia* app's AndroidTest.xml, using
+     * a line like:
+     * <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
+     * ...
+     * <option name="instrumentation-arg" key="media-testing-mode" value="CTS" />
+     * </test>
+     *
+     * @return {@code} one of the values TESTMODE_CTS, TESTMODE_MCTS, or TESTMODE_MTS.
+     *
+     */
+    public static int currentTestMode() {
+        Bundle bundle = InstrumentationRegistry.getArguments();
+        String value = bundle.getString("media-testing-mode");
+        if (value == null) {
+            value = bundle.getString("mts-media");
+            if (value == null || !value.equals("true")) {
+                value = "CTS";
+            } else {
+                value = "MTS";
+            }
+        }
+        int mode;
+        if (value.equals("CTS")) {
+            mode = TESTMODE_CTS;
+        } else if (value.equals("MCTS")) {
+            mode = TESTMODE_MCTS;
+        } else if (value.equals("MTS")) {
+            mode = TESTMODE_MTS;
+        } else {
+            mode = TESTMODE_CTS;
+        }
+        return mode;
+    }
+
+    /**
+     * Report the current testing mode, as a string.
+     * Testing mode is determined by argument 'media-testing-mode'
+     * which specifies 'cts', 'mcts', or 'mts'
+     * If missing, we use the older boolean "mts-media" to generate either 'cts' or 'mts'
+     *
+     * @return {@code} "CTS", "MCTS", or "MTS" corresponding to the mode.
+     */
+    public static String currentTestModeName() {
+        Bundle bundle = InstrumentationRegistry.getArguments();
+        String value = bundle.getString("media-testing-mode");
+        if (value == null) {
+            value = bundle.getString("mts-media");
+            if (value == null || !value.equals("true")) {
+                value = "CTS";
+            } else {
+                value = "MTS";
+            }
+        }
+        value = value.toUpperCase(Locale.ROOT);
+        if (value.equals("CTS")) {
+            return "CTS";
+        } else if (value.equals("MCTS")) {
+            return "MCTS";
+        } else if (value.equals("MTS")) {
+            return "MTS";
+        } else {
+            // same default as currentTestMode()
+            return "CTS";
+        }
+    }
+
+    /**
+     * Report whether this test run should evaluate module functionality.
      * Some tests (or parts of tests) are restricted to a particular mode.
+     *
+     * @return {@code} true is the current test mode is MCTS or MTS.
+     */
+    public static boolean isTestingModules() {
+        int mode = currentTestMode();
+        switch (mode) {
+            case TESTMODE_MCTS:
+            case TESTMODE_MTS:
+                return true;
+            default:
+                break;
+        }
+        return false;
+    }
+
+    /**
+     * Report whether we are in MTS mode (vs CTS or MCTS) mode.
+     * Some tests (or parts of tests) are restricted to a particular mode.
+     *
+     * @return {@code} true is the current test mode is MTS.
      */
     public static boolean isMtsMode() {
-        Bundle bundle = InstrumentationRegistry.getArguments();
-        // null if not set
-        boolean isMTS = TextUtils.equals("true", bundle.getString("mts-media"));
-
-        return isMTS;
+        int mode = currentTestMode();
+        return mode == TESTMODE_MTS;
     }
 
     /*
@@ -180,18 +277,22 @@ public final class TestUtils {
      */
     public static boolean isTestableCodecInCurrentMode(String name) {
         if (name == null) {
-            return false;
-        }
-        if (!isMtsMode()) {
-            // CTS mode -- test everything
             return true;
         }
-        // MTS mode, just the codecs that live in the modules
-        if (isMainlineCodec(name)) {
-            return true;
+        int mode = currentTestMode();
+        boolean result = false;
+        switch (mode) {
+            case TESTMODE_CTS:
+                result = !isMainlineCodec(name);
+                break;
+            case TESTMODE_MCTS:
+            case TESTMODE_MTS:
+                result = isMainlineCodec(name);
+                break;
         }
-        Log.d(TAG, "Test mode MTS does not test codec " + name);
-        return false;
+        Log.d(TAG, "codec " + name + (result ? "is " : "is not ")
+                   + "tested in mode " + currentTestModeName());
+        return result;
     }
 
     /*
