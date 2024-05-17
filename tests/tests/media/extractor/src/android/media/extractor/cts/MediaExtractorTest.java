@@ -53,7 +53,9 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
+import com.android.compatibility.common.util.ModuleSpecificTest;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.After;
@@ -120,6 +122,13 @@ public class MediaExtractorTest {
     }
 
     @Test
+    @FrameworkSpecificTest
+    public void testExtractorFrameworkStub() throws Exception {
+        Log.d(TAG, "Stub FrameworkSpecific tests are non-empty");
+    }
+
+    @Test
+    @ModuleSpecificTest
     public void testExtractorFailsIfMediaDataSourceReturnsAnError() throws Exception {
         TestMediaDataSource dataSource = getDataSourceFor("testvideo.3gp");
         dataSource.returnFromReadAt(-2);
@@ -152,6 +161,7 @@ public class MediaExtractorTest {
     // DolbyVisionMediaExtractor for profile-level (DvheDtr/Fhd30).
     @CddTest(requirement="5.3.8")
     @Test
+    @ModuleSpecificTest
     public void testDolbyVisionMediaExtractorProfileDvheDtr() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_30fps_dvhe_04.mp4");
 
@@ -201,6 +211,7 @@ public class MediaExtractorTest {
     // DolbyVisionMediaExtractor for profile-level (DvheSt/Fhd60).
     @CddTest(requirement="5.3.8")
     @Test
+    @ModuleSpecificTest
     public void testDolbyVisionMediaExtractorProfileDvheSt() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_60fps_dvhe_08.mp4");
 
@@ -250,6 +261,7 @@ public class MediaExtractorTest {
     // DolbyVisionMediaExtractor for profile-level (DvavSe/Fhd60).
     @CddTest(requirement="5.3.8")
     @Test
+    @ModuleSpecificTest
     public void testDolbyVisionMediaExtractorProfileDvavSe() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_60fps_dvav_09.mp4");
 
@@ -300,6 +312,7 @@ public class MediaExtractorTest {
     @SmallTest
     @CddTest(requirement="5.3.8")
     @Test
+    @ModuleSpecificTest
     public void testDolbyVisionMediaExtractorProfileDvav1() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_3840x2160_30fps_dav1_10.mp4");
 
@@ -326,6 +339,7 @@ public class MediaExtractorTest {
     @SmallTest
     @CddTest(requirement="5.3.8")
     @Test
+    @ModuleSpecificTest
     public void testDolbyVisionMediaExtractorProfileDvav1_2() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_3840x2160_30fps_dav1_10_2.mp4");
 
@@ -374,6 +388,7 @@ public class MediaExtractorTest {
 
     //MPEG-H 3D Audio single stream (mha1)
     @Test
+    @ModuleSpecificTest
     public void testMpegh3dAudioMediaExtractorMha1() throws Exception {
         TestMediaDataSource dataSource = setDataSource("sample_mpegh_mha1.mp4");
         assertEquals(1, mExtractor.getTrackCount());
@@ -394,6 +409,7 @@ public class MediaExtractorTest {
 
     //MPEG-H 3D Audio single stream encapsulated in MHAS (mhm1)
     @Test
+    @ModuleSpecificTest
     public void testMpegh3dAudioMediaExtractorMhm1() throws Exception {
         TestMediaDataSource dataSource = setDataSource("sample_mpegh_mhm1.mp4");
         assertEquals(1, mExtractor.getTrackCount());
@@ -467,6 +483,7 @@ public class MediaExtractorTest {
     }
 
     @Test
+    @ModuleSpecificTest
     public void testGetAudioPresentations() throws Exception {
         Preconditions.assertTestFileExists(mInpPrefix +
                         "MultiLangPerso_1PID_PC0_Select_AC4_H265_DVB_50fps_Audio_Only.ts");
@@ -717,6 +734,7 @@ public class MediaExtractorTest {
     }
 
     @Test
+    @ModuleSpecificTest
     public void testProgramStreamExtraction() throws Exception {
         AssetFileDescriptor testFd = getAssetFileDescriptorFor("programstream.mpeg");
 
@@ -859,6 +877,7 @@ public class MediaExtractorTest {
     }
 
     @Test
+    @ModuleSpecificTest
     @ApiTest(apis = {"android.media.MediaFormat#MIMETYPE_AUDIO_DTS"})
     public void testDtsInMpeg2ts() throws Exception {
         setDataSource("sample_dts.ts");
@@ -874,6 +893,7 @@ public class MediaExtractorTest {
     }
 
     @Test
+    @ModuleSpecificTest
     @ApiTest(apis = {"android.media.MediaFormat#MIMETYPE_AUDIO_DTS_HD"})
     public void testDtsHdInMpeg2ts() throws Exception {
         setDataSource("sample_dts_hd.ts");
@@ -894,6 +914,7 @@ public class MediaExtractorTest {
     }
 
     @Test
+    @ModuleSpecificTest
     @ApiTest(apis = {"android.media.MediaFormat#MIMETYPE_AUDIO_DTS_UHD"})
     public void testDtsUhdInMpeg2ts() throws Exception {
         setDataSource("sample_dts_uhd.ts");
@@ -914,30 +935,35 @@ public class MediaExtractorTest {
     }
 
     @Test
+    @ModuleSpecificTest
     public void testAV1InMP4() throws Exception {
         setDataSource("video_dovi_3840x2160_30fps_dav1_10_2.mp4");
         readAllData();
     }
 
     @Test
+    @ModuleSpecificTest
     public void testDolbyVisionInMP4() throws Exception {
         setDataSource("video_dovi_3840x2160_30fps_dav1_10.mp4");
         readAllData();
     }
 
     @Test
+    @ModuleSpecificTest
     public void testPcmLeInMov() throws Exception {
         setDataSource("sinesweeppcmlemov.mov");
         readAllData();
     }
 
     @Test
+    @ModuleSpecificTest
     public void testPcmBeInMov() throws Exception {
         setDataSource("sinesweeppcmbemov.mov");
         readAllData();
     }
 
     @Test
+    @ModuleSpecificTest
     public void testFragmentedRead() throws Exception {
         Preconditions.assertTestFileExists(mInpPrefix + "psshtest.mp4");
         setDataSource("psshtest.mp4");
@@ -946,6 +972,7 @@ public class MediaExtractorTest {
 
     @AppModeFull(reason = "Instant apps cannot bind sockets.")
     @Test
+    @ModuleSpecificTest
     public void testFragmentedHttpRead() throws Exception {
         CtsTestServer server = new CtsTestServer(getContext());
         Preconditions.assertTestFileExists(mInpPrefix + "psshtest.mp4");
