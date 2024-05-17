@@ -18,16 +18,19 @@ package android.hardware.camera2.cts;
 
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG_R;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.MAXIMUM;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PRIV;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1080P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S720P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.YUV;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.QUERY_COMBINATIONS;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
+import static android.hardware.camera2.cts.CameraTestUtils.SimpleImageReaderListener;
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithParamsSupported;
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithParamsSupportedChecked;
 
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
@@ -45,6 +48,7 @@ import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
 import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
+import android.media.Image;
 import android.media.ImageReader;
 import android.mediapc.cts.common.CameraRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
@@ -121,10 +125,12 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
             openDevice(id);
             CameraDeviceSetup cameraDeviceSetup = mCameraManager.getCameraDeviceSetup(id);
+            MaxStreamSizes maxStreamSizes = new MaxStreamSizes(mStaticInfo,
+                    cameraDeviceSetup.getId(), mContext, /*matchSize*/true);
 
             try {
-                for (int[] c : QUERY_COMBINATIONS) {
-                    testIsSessionConfigurationSupported(cameraDeviceSetup, c);
+                for (int[] c : maxStreamSizes.getQueryableCombinations()) {
+                    testIsSessionConfigurationSupported(cameraDeviceSetup, maxStreamSizes, c);
                 }
             } finally {
                 closeDevice(id);
@@ -133,9 +139,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
     }
 
     private void testIsSessionConfigurationSupported(CameraDeviceSetup cameraDeviceSetup,
-            int[] combination) throws Exception {
-        MaxStreamSizes maxStreamSizes = new MaxStreamSizes(mStaticInfo,
-                cameraDeviceSetup.getId(), mContext, /*matchSize*/true);
+            MaxStreamSizes maxStreamSizes, int[] combination) throws Exception {
 
         Set<Long> dynamicRangeProfiles = mStaticInfo.getAvailableDynamicRangeProfilesChecked();
         int[] videoStabilizationModes =
@@ -150,6 +154,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             List<SurfaceTexture> privTargets = new ArrayList<SurfaceTexture>();
             List<ImageReader> jpegTargets = new ArrayList<ImageReader>();
             List<ImageReader> yuvTargets = new ArrayList<ImageReader>();
+            List<SimpleImageReaderListener> jpegListeners = new ArrayList<>();
 
             if (dynamicProfile != DynamicRangeProfiles.STANDARD
                     && dynamicProfile != DynamicRangeProfiles.HLG10) {
@@ -159,7 +164,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
             long minFrameDuration = setupConfigurationTargets(combination, maxStreamSizes,
                     privTargets, jpegTargets, yuvTargets, outputConfigs, outputConfigs2Steps,
-                    NUM_BUFFERS_BURST, dynamicProfile, /*hasUseCase*/ false);
+                    NUM_BUFFERS_BURST, dynamicProfile, /*hasUseCase*/ false, jpegListeners);
             if (minFrameDuration == -1) {
                 // Stream combination isn't valid.
                 continue;
@@ -216,7 +221,20 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                         haveSession =
                                 verifyCombinationStreaming(outputConfigs, dynamicProfile,
                                         stabilizationMode, fpsRange, combinationStr,
-                                        hasReadoutTimestamp, /*mpc*/false);
+                                        hasReadoutTimestamp, /*mpc*/false, jpegTargets);
+
+                        assertEquals(jpegTargets.size(), jpegListeners.size());
+                        for (int i = 0; i < jpegTargets.size(); i++) {
+                            ImageReader jpegReader = jpegTargets.get(i);
+                            SimpleImageReaderListener listener = jpegListeners.get(i);
+                            for (int j = 0; j < NUM_BUFFERS_BURST; j++) {
+                                Image image = listener.getImage(CAPTURE_WAIT_TIMEOUT_MS);
+                                CameraTestUtils.validateImage(image, jpegReader.getWidth(),
+                                        jpegReader.getHeight(), jpegReader.getImageFormat(),
+                                        mDebugFileNameBase);
+                                image.close();
+                            }
+                        }
                     } catch (Throwable e) {
                         mCollector.addMessage(String.format(
                                 "Output combination %s failed due to: %s",
@@ -253,7 +271,8 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
     private boolean verifyCombinationStreaming(
             List<OutputConfiguration> outputConfigs, Long dynamicProfile,
             int stabilizationMode, @Nullable Range<Integer> fpsRange,
-            String combinationStr, boolean checkReadoutTimeStamp, boolean mpc)
+            String combinationStr, boolean checkReadoutTimeStamp, boolean mpc,
+            List<ImageReader> jpegTargets)
             throws Exception {
 
         createSessionByConfigs(outputConfigs);
@@ -299,9 +318,18 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                         fpsRange);
             }
 
+            boolean requestStallStream = false;
             for (Surface s : surfaces) {
                 builderForSession.addTarget(s);
+                if (jpegTargets
+                        .stream()
+                        .filter(p -> (p.getImageFormat() == ImageFormat.JPEG ||
+                                p.getImageFormat() == ImageFormat.JPEG_R))
+                        .count() > 0) {
+                    requestStallStream = true;
+                }
             }
+
             List<CaptureRequest> burst = new ArrayList<>();
             for (int i = 0; i < NUM_BUFFERS_BURST; i++) {
                 burst.add(builderForSession.build());
@@ -351,8 +379,8 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                     // is met. Skip for Cuttlefish due to performance reasons.
                     // TODO: (b/321824310) Remove the check once cuttlefish
                     // performance is improved.
-                    if (!MediaUtils.onCuttlefish() && i > NUM_WARMUP_BUFFERS
-                            && readoutTimestamps != null) {
+                    if (!MediaUtils.onCuttlefish() && !requestStallStream
+                            && i > NUM_WARMUP_BUFFERS && readoutTimestamps != null) {
                         long readoutInterval = readoutTimestamps.get(i)
                                 - readoutTimestamps.get(i - 1);
                         mCollector.expectInRange(
@@ -383,11 +411,13 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
         List<OutputConfiguration> outputConfigs = new ArrayList<>();
         List<SurfaceTexture> privTargets = new ArrayList<SurfaceTexture>();
         List<ImageReader> jpegTargets = new ArrayList<ImageReader>();
+        List<SimpleImageReaderListener> jpegListeners = new ArrayList<>();
 
         setupConfigurationTargets(combination, maxStreamSizes,
                 privTargets, jpegTargets, null/*yuvTargets*/, outputConfigs,
                 null/*outputConfigs2Steps*/,
-                NUM_BUFFERS_BURST, DynamicRangeProfiles.HLG10, /*hasUseCase*/ false);
+                NUM_BUFFERS_BURST, DynamicRangeProfiles.HLG10, /*hasUseCase*/ false,
+                jpegListeners);
 
         String combinationStr = MaxStreamSizes.combinationToString(combination);
 
@@ -411,7 +441,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             haveSession = verifyCombinationStreaming(outputConfigs, DynamicRangeProfiles.HLG10,
                     CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION,
                     /*fpsRange*/null, combinationStr,
-                    /*checkReadoutTimeStamp*/false, /*mpc*/true);
+                    /*checkReadoutTimeStamp*/false, /*mpc*/true, jpegTargets);
 
         } catch (Throwable e) {
             Log.e(TAG, String.format("Output combination %s failed due to: %s",
@@ -503,7 +533,8 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             List<SurfaceTexture> privTargets, List<ImageReader> jpegTargets,
             List<ImageReader> yuvTargets, List<OutputConfiguration> outputConfigs,
             @Nullable List<Pair<OutputConfiguration, Surface>> outputConfigs2Steps,
-            int numBuffers, Long dynamicProfile, boolean hasUseCase) {
+            int numBuffers, Long dynamicProfile, boolean hasUseCase,
+            List<SimpleImageReaderListener> jpegListeners) {
         ImageDropperListener imageDropperListener = new ImageDropperListener();
 
         long frameDuration = -1;
@@ -534,11 +565,15 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                     privTargets.add(target);
                     break;
                 }
-                case JPEG: {
-                    targetSize = maxSizes.getOutputSizeForFormat(JPEG, sizeLimit);
+                case JPEG:
+                case JPEG_R: {
+                    targetSize = maxSizes.getOutputSizeForFormat(format, sizeLimit);
                     ImageReader target = ImageReader.newInstance(
-                            targetSize.getWidth(), targetSize.getHeight(), JPEG, numBuffers);
-                    target.setOnImageAvailableListener(imageDropperListener, mHandler);
+                            targetSize.getWidth(), targetSize.getHeight(), format, numBuffers);
+                    SimpleImageReaderListener imageListener =
+                            new SimpleImageReaderListener(/*asyncMode*/false, numBuffers);
+                    jpegListeners.add(imageListener);
+                    target.setOnImageAvailableListener(imageListener, mHandler);
                     OutputConfiguration config = new OutputConfiguration(target.getSurface());
                     OutputConfiguration configNoSurface = new OutputConfiguration(
                             format, targetSize);

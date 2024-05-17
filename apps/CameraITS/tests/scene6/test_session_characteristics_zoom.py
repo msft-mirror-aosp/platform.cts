@@ -128,6 +128,8 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
             fmt = capture_request_utils.FMT_CODE_PRIV
           elif stream['format'] == 'jpeg':
             fmt = capture_request_utils.FMT_CODE_JPEG
+          elif stream['format'] == 'jpegr':
+            fmt = capture_request_utils.FMT_CODE_JPEG_R
           elif stream['format'] == 'yuv':
             fmt = capture_request_utils.FMT_CODE_YUV
 
@@ -138,9 +140,10 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
 
           # Second stream must be jpeg or yuv for zoom test. If not, skip
           if (i == 1 and fmt != capture_request_utils.FMT_CODE_JPEG and
+              fmt != capture_request_utils.FMT_CODE_JPEG_R and
               fmt != capture_request_utils.FMT_CODE_YUV):
             logging.debug(
-                'second stream format %s is not yuv/jpeg. Skip',
+                'second stream format %s is not yuv/jpeg/jpegr. Skip',
                 stream['format'])
             skip = True
             break
