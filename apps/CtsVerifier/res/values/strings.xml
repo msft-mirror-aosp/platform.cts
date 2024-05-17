@@ -1189,6 +1189,8 @@
     <string name="multinetwork_connectivity_turn_wifi_off">Please turn Wi-Fi off.</string>
     <string name="multinetwork_connectivity_turn_wifi_positive">OK</string>
     <string name="multinetwork_connectivity_turn_wifi_negative">Cancel</string>
+    <string name="multinetwork_connectivity_connect_to_target_ap_positive">OK</string>
+    <string name="multinetwork_connectivity_connect_to_target_ap">Connect to configured SSID: %s</string>
     <!-- Strings for NfcTestActivity -->
     <string name="nfc_test">NFC Test</string>
     <string name="nfc_test_info">The Peer-to-Peer Data Exchange tests require two devices with
