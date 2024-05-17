@@ -31,6 +31,7 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
@@ -43,6 +44,7 @@ import java.util.Set;
 /** Tests {@link MediaRoute2Info} and its {@link MediaRoute2Info.Builder builder}. */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@FrameworkSpecificTest
 @NonMainlineTest
 public class MediaRoute2InfoTest {
 
