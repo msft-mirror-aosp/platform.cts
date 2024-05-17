@@ -42,6 +42,7 @@ import com.android.internal.util.HexDump;
 import org.junit.Assert;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -1181,5 +1182,14 @@ public class TestUtils {
     public static boolean hasSecureLockScreen(Context context) {
         PackageManager pm = context.getPackageManager();
         return (pm != null && pm.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN));
+    }
+
+    /**
+     * Determines whether running build is GSI or not.
+     * @return true if running build is GSI, false otherwise.
+     */
+    public static boolean isGsiImage() {
+        final File initGsiRc = new File("/system/system_ext/etc/init/init.gsi.rc");
+        return initGsiRc.exists();
     }
 }
