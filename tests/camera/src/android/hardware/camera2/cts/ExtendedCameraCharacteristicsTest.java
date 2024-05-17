@@ -3682,6 +3682,10 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             primaryRearReq.setResolution(-1);
             primaryRearReq.setVideoSizeReqSatisfied(false);
             primaryRearReq.setVideoFps(-1);
+            primaryRearReq.set1080pVideoFps(-1);
+            primaryRearReq.set720pVideoFps(-1);
+            primaryRearReq.set720pVideoSizeReqSatisfied(false);
+            primaryRearReq.set1080pVideoSizeReqSatisfied(false);
             hwLevelReq.setPrimaryRearCameraHwlLevel(-1);
             timestampSourceReq.setRearCameraTimestampSource(
                     CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN);
