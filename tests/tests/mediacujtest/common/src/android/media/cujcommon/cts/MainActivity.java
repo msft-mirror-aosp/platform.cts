@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
     mExoplayerView = findViewById(R.id.exoplayer);
     mLockControllerButton = findViewById(R.id.lock_controller);
     mLockControllerButton.setVisibility(View.INVISIBLE);
-    mExoRewindButton = findViewById(R.id.exo_rew_with_amount);
+    mExoRewindButton = findViewById(androidx.media3.ui.R.id.exo_rew_with_amount);
     mExoplayerView.setPlayer(mPlayer);
   }
 
