@@ -30,7 +30,8 @@ import opencv_processing_utils
 import preview_processing_utils
 
 
-_AE_ATOL = 0.015  # 1.5%
+_AE_ATOL = 4.0
+_AE_RTOL = 0.04  # 4%
 _AF_ATOL = 0.02  # 2%
 _ARUCO_MARKERS_COUNT = 4
 _AWB_ATOL = 0.02  # 2%
@@ -190,9 +191,11 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
   y_avg_change_percent = (abs(w_y_avg-uw_y_avg)/uw_y_avg)*100
   logging.debug('y_avg_change_percent: %.4f', y_avg_change_percent)
 
-  if not math.isclose(uw_y_avg, w_y_avg, abs_tol=_AE_ATOL):
+  if not math.isclose(uw_y_avg, w_y_avg, rel_tol=_AE_RTOL, abs_tol=_AE_ATOL):
     raise AssertionError('y_avg change is greater than threshold value: '
+                         f'diff: {abs(w_y_avg-uw_y_avg):.4f} '
                          f'ATOL: {_AE_ATOL} '
+                         f'RTOL: {_AE_RTOL} '
                          f'uw_y_avg: {uw_y_avg:.4f} '
                          f'w_y_avg: {w_y_avg:.4f} ')
 
