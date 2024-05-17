@@ -15,9 +15,6 @@
 
 
 import logging
-import matplotlib
-from matplotlib import pylab
-import matplotlib.pyplot
 import os.path
 from mobly import test_runner
 
@@ -30,10 +27,6 @@ import capture_request_utils
 import image_processing_utils
 import its_session_utils
 
-_CMAP_BLUE = ('lightblue', 'blue', 'darkblue')
-_CMAP_GREEN = ('lightgreen', 'green', 'darkgreen')
-_CMAP_RED = ('lightsalmon', 'red', 'darkred')
-_CMAP_SIZE = 6  # 6 in
 _MAX_IMG_SIZE = (1920, 1080)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_RAW_CHANNELS = 4  # r, gr, gb, b
@@ -42,50 +35,6 @@ _PATCH_W = 0.1
 _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
 _THRESHOLD_MAX_RMS_DIFF = 0.035
-
-
-def plot_lsc_maps(lsc_maps, plot_name, test_name_with_log_path):
-  """Plot the lens shading correction maps.
-
-  Args:
-    lsc_maps: 4D np array; r, gr, gb, b lens shading correction maps.
-    plot_name: str; identifier for maps ('full_scale' or 'metadata').
-    test_name_with_log_path: str; test name with log_path location.
-
-  Returns:
-    None, but generates and saves plots.
-  """
-  aspect_ratio = lsc_maps[:, :, 0].shape[1] / lsc_maps[:, :, 0].shape[0]
-  plot_w = 1 + aspect_ratio * _CMAP_SIZE  # add 1 for heatmap legend
-  plot_h = _CMAP_SIZE
-  matplotlib.pyplot.figure('Metadata LSC maps', figsize=(plot_w, plot_h))
-  pylab.suptitle(plot_name)
-  pylab.subplot(2, 2, 1)  # 2x2 top left
-
-  pylab.title('R')
-  cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_RED)
-  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 0], cmap=cmap)
-  matplotlib.pyplot.colorbar()
-
-  pylab.subplot(2, 2, 2)  # 2x2 top right
-  pylab.title('Gr')
-  cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_GREEN)
-  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 1], cmap=cmap)
-  matplotlib.pyplot.colorbar()
-
-  pylab.subplot(2, 2, 3)  # 2x2 bottom left
-  pylab.title('Gb')
-  cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_GREEN)
-  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 2], cmap=cmap)
-  matplotlib.pyplot.colorbar()
-
-  pylab.subplot(2, 2, 4)  # 2x2 bottom right
-  pylab.title('B')
-  cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_BLUE)
-  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 3], cmap=cmap)
-  matplotlib.pyplot.colorbar()
-
-  matplotlib.pyplot.savefig(f'{test_name_with_log_path}_{plot_name}_cmaps.png')
 
 
 def apply_lens_shading_map(color_plane, black_level, white_level, lsc_map):
@@ -227,14 +176,17 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
     black_levels = image_processing_utils.get_black_levels(props, cap_raw)
     white_level = int(props['android.sensor.info.whiteLevel'])
     lsc_maps = unpack_lsc_map_from_metadata(cap_raw['metadata'])
-    plot_lsc_maps(lsc_maps, 'metadata', plot_name_stem_with_log_path)
+    image_processing_utils.plot_lsc_maps(
+        lsc_maps, 'metadata', plot_name_stem_with_log_path
+    )
     lsc_map_fs_r = populate_lens_shading_map(r.shape, lsc_maps[:, :, 0])
     lsc_map_fs_gr = populate_lens_shading_map(gr.shape, lsc_maps[:, :, 1])
     lsc_map_fs_gb = populate_lens_shading_map(gb.shape, lsc_maps[:, :, 2])
     lsc_map_fs_b = populate_lens_shading_map(b.shape, lsc_maps[:, :, 3])
-    plot_lsc_maps(
+    image_processing_utils.plot_lsc_maps(
         np.dstack((lsc_map_fs_r, lsc_map_fs_gr, lsc_map_fs_gb, lsc_map_fs_b)),
-        'fullscale', plot_name_stem_with_log_path)
+        'fullscale', plot_name_stem_with_log_path
+    )
     r = apply_lens_shading_map(r, black_levels[0], white_level, lsc_map_fs_r)
     gr = apply_lens_shading_map(gr, black_levels[1], white_level, lsc_map_fs_gr)
     gb = apply_lens_shading_map(gb, black_levels[2], white_level, lsc_map_fs_gb)
