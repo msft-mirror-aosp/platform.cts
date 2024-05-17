@@ -493,6 +493,10 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
     public void testAudioTrackMuteFromAppOpsNotification() throws Exception {
+        if (isWatch()) {
+            Log.w(TAG, "Skip testAudioTrackMuteFromAppOpsNotification for Wear");
+            return;
+        }
         if (!isValidPlatform("testAudioTrackMuteFromAppOpsNotification")) return;
         if (hasAudioSilentProperty()) {
             Log.w(TAG, "Device has ro.audio.silent set, skipping "
@@ -509,6 +513,10 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             "android.media.AudioManager.AudioPlaybackCallback#isMuted",
             "android.media.AudioManager.AudioPlaybackCallback#getMutedBy"})
     public void testMediaPlayerMuteFromAppOpsNotification() throws Exception {
+        if (isWatch()) {
+            Log.w(TAG, "Skip testMediaPlayerMuteFromAppOpsNotification for Wear");
+            return;
+        }
         if (!isValidPlatform("testMediaPlayerMuteFromAppOpsNotification")) return;
         if (hasAudioSilentProperty()) {
             Log.w(TAG, "Device has ro.audio.silent set, skipping "
@@ -1024,5 +1032,9 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             return false;
         }
         return true;
+    }
+
+    private boolean isWatch() {
+        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 }
