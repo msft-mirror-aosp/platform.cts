@@ -49,7 +49,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
-import android.os.SystemProperties;
 import android.security.AttestedKeyPair;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
@@ -143,10 +142,6 @@ public class DeviceOwnerKeyManagementTest {
                 signDataWithKey(algoIdentifier, keyPair.getPrivate()));
     }
 
-    int getDeviceFirstSdkLevel() {
-        return SystemProperties.getInt("ro.board.first_api_level", 0);
-    }
-
     private void validateDeviceIdAttestationData(Certificate[] certs,
                                                  String expectedSerial,
                                                  String expectedImei,
@@ -223,7 +218,7 @@ public class DeviceOwnerKeyManagementTest {
                 TestUtils.getFeatureVersionKeystore(sContext, useStrongbox) >= 300;
         final boolean emptySecondImei = TextUtils.isEmpty(expectedSecondImei);
         final boolean deviceShippedWithKeyMint3 =
-                getDeviceFirstSdkLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+                TestUtils.getVendorApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
         if (!isKeyMintV3) {
             // Earlier versions of KeyMint must not attest to second IMEI values as they are not
@@ -610,7 +605,7 @@ public class DeviceOwnerKeyManagementTest {
         // hence skipping this test for such scenario.
         assumeFalse("This test is not applicable for device running GSI image and"
                 + " first_api_level < 14", TestUtils.isGsiImage()
-                && getDeviceFirstSdkLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+                && TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
 
         final boolean isDeviceLocked = checkDeviceLocked();
         try (DeviceOwner o = TestApis.devicePolicy().setDeviceOwner(DEVICE_ADMIN_COMPONENT_NAME)) {
@@ -641,7 +636,7 @@ public class DeviceOwnerKeyManagementTest {
         // hence skipping this test for such scenario.
         assumeFalse("This test is not applicable for device running GSI image and"
                 + " first_api_level < 14", TestUtils.isGsiImage()
-                && getDeviceFirstSdkLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+                && TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
 
         final boolean isDeviceLocked = checkDeviceLocked();
         try (DeviceOwner o = TestApis.devicePolicy().setDeviceOwner(DEVICE_ADMIN_COMPONENT_NAME)) {
