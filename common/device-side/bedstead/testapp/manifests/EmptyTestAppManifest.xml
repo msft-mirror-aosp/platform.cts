@@ -33,5 +33,5 @@
         android:appComponentFactory="com.android.bedstead.testapp.TestAppAppComponentFactory">
         <meta-data android:name="test-metadata-key" android:value="test-metadata-value" />
     </application>
-    <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="28"/>
+    <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="32"/>
 </manifest>
