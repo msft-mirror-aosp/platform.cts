@@ -372,6 +372,22 @@ public class MediaExtractorTest {
         assertEquals("video/av01", mimeType);
     }
 
+    // DolbyVisionMediaExtractor for trimmed Dolby Vision file.
+    // Please check https://issuetracker.google.com/329121650 for details.
+    @Test
+    public void testTrimmedDolbyVisionFileTrackDuration() throws Exception {
+        TestMediaDataSource dataSource = setDataSource("video_dovi_dvhe_08_trimmed.mp4");
+
+        final int trackCount = mExtractor.getTrackCount();
+        assertTrue("There should be at least one track", 0 < trackCount);
+
+        long expectedTrackDurationUs = 3_026_666;
+        for (int i = 0; i < trackCount; i++) {
+            MediaFormat trackFormat = mExtractor.getTrackFormat(i);
+            assertEquals(expectedTrackDurationUs, trackFormat.getLong(MediaFormat.KEY_DURATION));
+        }
+    }
+
     //MPEG-H 3D Audio single stream (mha1)
     @Test
     public void testMpegh3dAudioMediaExtractorMha1() throws Exception {
