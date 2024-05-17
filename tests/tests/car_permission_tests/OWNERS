@@ -5,13 +5,13 @@ include platform/packages/services/Car:/OWNERS
 per-file src/com/android/car/media/CarAudio*.java = oscarazu@google.com, ericjeong@google.com
 
 # Cluster
-per-file src/com/android/car/cluster/* = ycheo@google.com
+per-file src/com/android/car/cluster/* = bkchoi@google.com
 
 # Input
-per-file src/com/android/car/input/* = ycheo@google.com, kanant@google.com
+per-file src/com/android/car/input/* = kanant@google.com
 
 # OccupantZone
-per-file src/com/android/car/CarOccupantZoneManagerPermissionTest.java = ycheo@google.com, oscarazu@google.com, ericjeong@google.com
+per-file src/com/android/car/CarOccupantZoneManagerPermissionTest.java = xiangw@google.com, oscarazu@google.com, ericjeong@google.com
 
 # Power
 per-file src/com/android/car/power/* = ericjeong@google.com
