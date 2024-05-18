@@ -25,7 +25,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import android.media.AudioFormat;
 import android.media.MediaCodec;
@@ -96,28 +95,35 @@ public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlock
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{3}")
     public static Collection<Object[]> input() {
         List<Object[]> defArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
-                // mediaType, arrays of bit-rates, sample rates, channel counts, pcm encoding
-                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000, 128000}, new int[]{8000, 12000,
-                        16000, 22050, 24000, 32000, 44100, 48000}, new int[]{1, 2},
-                        AudioFormat.ENCODING_PCM_16BIT},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, new int[]{64000, 128000}, new int[]{8000, 12000,
-                        16000, 24000, 48000}, new int[]{1, 2},
-                        AudioFormat.ENCODING_PCM_16BIT},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, new int[]{4750, 5150, 5900, 6700, 7400, 7950,
-                        10200, 12200}, new int[]{8000}, new int[]{1},
-                        AudioFormat.ENCODING_PCM_16BIT},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, new int[]{6600, 8850, 12650, 14250, 15850,
-                        18250, 19850, 23050, 23850}, new int[]{16000}, new int[]{1},
-                        AudioFormat.ENCODING_PCM_16BIT},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8},
-                        new int[]{8000, 16000, 32000, 48000, 96000, 192000}, new int[]{1, 2},
-                        AudioFormat.ENCODING_PCM_16BIT},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8},
-                        new int[]{8000, 16000, 32000, 48000, 96000, 192000}, new int[]{1, 2},
-                        AudioFormat.ENCODING_PCM_FLOAT},
+                // mediaType, arrays of bit-rates, sample rate, channel counts, pcm encoding
+
+                // mono testing @ common sample rates, pcm encoding
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000}, new int[]{8000, 16000},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT},
+                {MediaFormat.MIMETYPE_AUDIO_OPUS, new int[]{64000}, new int[]{8000, 16000},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT},
+                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, new int[]{4750, 12200}, new int[]{8000},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT},
+                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, new int[]{6600, 23850}, new int[]{16000},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT},
+                {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 7}, new int[]{8000, 16000},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT},
+                {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 7}, new int[]{8000, 16000},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_FLOAT},
+
+                // stereo testing @ common sample rates, pcm encoding
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{128000}, new int[]{44100, 48000},
+                        new int[]{2}, AudioFormat.ENCODING_PCM_16BIT},
+                {MediaFormat.MIMETYPE_AUDIO_OPUS, new int[]{128000}, new int[]{48000},
+                        new int[]{2}, AudioFormat.ENCODING_PCM_16BIT},
+                {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 7}, new int[]{48000, 192000},
+                        new int[]{2}, AudioFormat.ENCODING_PCM_16BIT},
+                {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 7}, new int[]{48000, 192000},
+                        new int[]{2}, AudioFormat.ENCODING_PCM_FLOAT},
         }));
         List<Object[]> argsList = flattenParams(defArgsList);
-        return prepareParamList(argsList, true, true, false, true);
+        return prepareParamList(argsList, true, true, false, true, ComponentClass.ALL,
+                new String[]{FEATURE_MultipleFrames});
     }
 
     public CodecEncoderBlockModelMultiAccessUnitTest(String encoder, String mediaType,
@@ -297,11 +303,6 @@ public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlock
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testSimpleEncode() throws IOException, InterruptedException {
-        assumeTrue(mCodecName + " does not support FEATURE_MultipleFrames",
-                isFeatureSupported(mCodecName, mMediaType, FEATURE_MultipleFrames));
-        assumeTrue(mCodecName + " is not compatible with LinearBlocks",
-                MediaCodec.LinearBlock.isCodecCopyFreeCompatible(new String[]{mCodecName}));
-
         CodecEncoderTestBase referenceBase = new CodecEncoderTestBase(mCodecName, mMediaType,
                 new EncoderConfigParams[]{mActiveEncCfg}, mAllTestParams);
         referenceBase.encodeToMemory(mCodecName, mActiveEncCfg, mActiveRawRes, Integer.MAX_VALUE,

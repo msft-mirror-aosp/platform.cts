@@ -141,6 +141,7 @@ import androidx.test.uiautomator.UiDevice;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.TestUtils;
 import com.android.server.accessibility.Flags;
 
 import org.junit.After;
@@ -152,6 +153,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -1633,7 +1635,7 @@ public class AccessibilityDisplayProxyTest {
         return tempActivity[0];
     }
 
-    private View showTopWindowAndWaitForItToShowUp() throws TimeoutException {
+    private View showTopWindowAndWaitForItToShowUp() throws Exception {
         final WindowManager wm =
                 mProxiedVirtualDisplayActivity.getSystemService(WindowManager.class);
         final Rect windowBounds = wm.getCurrentWindowMetrics().getBounds();
@@ -1645,8 +1647,11 @@ public class AccessibilityDisplayProxyTest {
         button.setText(sInstrumentation.getContext().getString(R.string.button1));
         WindowCreationUtils.addWindowAndWaitForEvent(mUiAutomation, sInstrumentation,
                 mProxiedVirtualDisplayActivity,
-                button, paramsForTop, (event) -> (event.getEventType() == TYPE_WINDOWS_CHANGED)
-                        && (findWindowByTitleWithList(mProxiedVirtualDisplayActivityTitle,
+                button, paramsForTop, (event) -> (event.getEventType() == TYPE_WINDOWS_CHANGED));
+
+        TestUtils.waitUntil(
+                "", Duration.ofSeconds(5).toSecondsPart(),
+                () -> (findWindowByTitleWithList(mProxiedVirtualDisplayActivityTitle,
                         mA11yProxy.getWindows())
                         != null)
                         && (findWindowByTitleWithList(TOP_WINDOW_TITLE, mA11yProxy.getWindows())
