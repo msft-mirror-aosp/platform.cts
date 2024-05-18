@@ -37,14 +37,16 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 import android.view.InputDevice;
-import android.view.cts.R;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.input.AbsInfo;
+import com.android.cts.input.ConfigurationItem;
 import com.android.cts.input.UinputDevice;
+import com.android.cts.input.UinputRegisterCommand;
 
 import org.junit.After;
 import org.junit.Before;
@@ -54,6 +56,7 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -368,13 +371,12 @@ public class InputDeviceSensorManagerTest {
 
     @Before
     public void setup() {
-        final int resourceId = R.raw.gamepad_sensors_register;
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mInputManager = mInstrumentation.getTargetContext().getSystemService(InputManager.class);
         assertNotNull(mInputManager);
 
-        mUinputDevice = UinputDevice.create(mInstrumentation, R.raw.gamepad_sensors_register,
-                InputDevice.SOURCE_KEYBOARD);
+        mUinputDevice = new UinputDevice(
+                mInstrumentation, InputDevice.SOURCE_KEYBOARD, createDeviceRegisterCommand());
         mSensorManager = getSensorManager(mUinputDevice.getVendorId(),
                 mUinputDevice.getProductId());
         assertNotNull(mSensorManager);
@@ -384,9 +386,49 @@ public class InputDeviceSensorManagerTest {
         mSensorHandler = new Handler(mSensorThread.getLooper());
     }
 
+    private static UinputRegisterCommand createDeviceRegisterCommand() {
+        List<ConfigurationItem> configurationItems = List.of(
+                new ConfigurationItem(
+                    "UI_SET_EVBIT",
+                    List.of("EV_KEY", "EV_ABS", "EV_MSC", "EV_FF")),
+                new ConfigurationItem(
+                    "UI_SET_KEYBIT",
+                    List.of("KEY_0", "KEY_1", "KEY_2", "KEY_3")),
+                new ConfigurationItem("UI_SET_FFBIT", List.of("FF_RUMBLE")),
+                new ConfigurationItem("UI_SET_PROPBIT", List.of("INPUT_PROP_ACCELEROMETER")),
+                new ConfigurationItem("UI_SET_MSCBIT", List.of("MSC_TIMESTAMP")),
+                new ConfigurationItem(
+                    "UI_SET_ABSBIT",
+                    List.of("ABS_X", "ABS_Y", "ABS_Z", "ABS_RX", "ABS_RY", "ABS_RZ"))
+        );
+
+        Map<String, AbsInfo> absInfoItems = Map.of(
+                "ABS_X", new AbsInfo(100, -32768, 32768, 16, 0, 8192),
+                "ABS_Y", new AbsInfo(100, -32768, 32768, 16, 0, 8192),
+                "ABS_Z", new AbsInfo(100, -32768, 32768, 16, 0, 8192),
+                "ABS_RX", new AbsInfo(100, -2097152, 2097152, 16, 0, 1024),
+                "ABS_RY", new AbsInfo(100, -2097152, 2097152, 16, 0, 1024),
+                "ABS_RZ", new AbsInfo(100, -2097152, 2097152, 16, 0, 1024)
+        );
+
+        return new UinputRegisterCommand(
+                /* id= */ 1,
+                "Gamepad with Motion Sensors (USB Test)",
+                0x054c,
+                0x05c4,
+                "usb",
+                "usb:1",
+                configurationItems,
+                absInfoItems,
+                /* ffEffectsMax= */ 1
+        );
+    }
+
     @After
     public void tearDown() {
-        mUinputDevice.close();
+        if (mUinputDevice != null) {
+            mUinputDevice.close();
+        }
     }
 
     @Test
@@ -471,7 +513,6 @@ public class InputDeviceSensorManagerTest {
         mSensorManager.unregisterDynamicSensorCallback(callback);
         // The isDynamicSensorDiscoverySupported API should returns false.
         assertFalse(mSensorManager.isDynamicSensorDiscoverySupported());
-
     }
 
 }

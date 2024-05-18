@@ -49,9 +49,12 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceService {
     static final String TAG = "SampleIsolatedService";
@@ -60,6 +63,12 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
     private static final String REGISTER_MODEL_UPDATE_CALLBACK_BUNDLE_KEY =
             "register_model_update_callback";
     private static final String MODEL_LOADED_BUNDLE_KEY = "model_loaded";
+    public static final String DEVICE_CONFIG_UPDATE_BUNDLE_KEY = "device_config_update";
+
+    private final Executor mAsyncRequestExecutor = Executors.newCachedThreadPool();
+
+    private PersistableBundle mReceivedDeviceConfig;
+    private CountDownLatch mConfigUpdateLatch = new CountDownLatch(1);
 
     public static TokenInfo constructTokenInfo(int status, PersistableBundle persistableBundle) {
         if (persistableBundle == null) {
@@ -199,6 +208,26 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             return;
         }
 
+        if (requestType
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG) {
+            mAsyncRequestExecutor.execute(() -> {
+                // This needs to happen async because updateProcessingState doesn't get a chance
+                // to run while we're blocking the binder thread with this method.
+                try {
+                    Log.e(TAG, "Waiting for DeviceConfig Update latch.");
+                    mConfigUpdateLatch.await(10, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    callback.onError(new OnDeviceIntelligenceException(-1, e.getMessage()));
+                    return;
+                }
+                Bundle bundle = new Bundle();
+                bundle.putParcelable(TEST_KEY, mReceivedDeviceConfig);
+                callback.onResult(bundle);
+                Log.e(TAG, "Sent DeviceConfig Update to caller.");
+            });
+            return;
+        }
+
         if (request.containsKey(EXCEPTION_STATUS_CODE_KEY)) {
             populateExceptionInCallback(request, callback);
             return;
@@ -237,7 +266,20 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             PersistableBundle resultBundle = new PersistableBundle();
             resultBundle.putBoolean(MODEL_LOADED_BUNDLE_KEY, true);
             callback.onResult(resultBundle);
+            return;
         }
+
+        if (processingState.containsKey(DEVICE_CONFIG_UPDATE_BUNDLE_KEY)) {
+            Log.e(TAG, "DeviceConfig Update callback received.");
+            mReceivedDeviceConfig = processingState.getParcelable(DEVICE_CONFIG_UPDATE_BUNDLE_KEY,
+                    PersistableBundle.class);
+            PersistableBundle resultBundle = new PersistableBundle();
+            resultBundle.putBoolean("deviceConfig", true);
+            callback.onResult(resultBundle);
+            mConfigUpdateLatch.countDown();
+            return;
+        }
+
         callback.onResult(PersistableBundle.EMPTY);
     }
 

@@ -75,7 +75,8 @@ public final class HidDevice extends VirtualInputDevice {
 
     public HidDevice(Instrumentation instrumentation, int id,
             int vendorId, int productId, int sources, String registerCommand) {
-        super(instrumentation, id, vendorId, productId, sources, registerCommand);
+        super(instrumentation, id, vendorId, productId, sources,
+                new UhidRegisterCommand(registerCommand));
     }
 
     /**
