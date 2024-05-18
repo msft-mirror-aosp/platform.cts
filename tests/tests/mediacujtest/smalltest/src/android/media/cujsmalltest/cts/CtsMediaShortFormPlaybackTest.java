@@ -309,7 +309,8 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
           deviceSupportPipMode(mActivity));
     }
     if (mCujTestParam.playerListener().isSplitScreenTest()) {
-      Assume.assumeFalse("Skipping " + mTestType + " on television", isTelevisionDevice(mActivity));
+      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support split screen feature",
+          deviceSupportSplitScreenMode(mActivity));
     }
     if (mCujTestParam.playerListener().getTestType()
         .equals(TestType.LOCK_PLAYBACK_CONTROLLER_TEST)) {

@@ -189,6 +189,7 @@ public final class TestUtils {
             }
         }
         int mode;
+        value = value.toUpperCase(Locale.ROOT);
         if (value.equals("CTS")) {
             mode = TESTMODE_CTS;
         } else if (value.equals("MCTS")) {
@@ -290,7 +291,7 @@ public final class TestUtils {
                 result = isMainlineCodec(name);
                 break;
         }
-        Log.d(TAG, "codec " + name + (result ? "is " : "is not ")
+        Log.d(TAG, "codec " + name + (result ? " is " : " is not ")
                    + "tested in mode " + currentTestModeName());
         return result;
     }

@@ -16,6 +16,7 @@
 
 package com.android.cts.verifier.audio;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
@@ -31,6 +32,7 @@ import android.widget.TextView;
 // CTS Verifier
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.analyzers.BaseSineAnalyzer;
+import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.AudioUtils;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
@@ -59,6 +61,7 @@ public class AudioMultichannelMixdownActivity
         implements View.OnClickListener, AppCallback {
     private static final String TAG = "AudioMultichannelMixdownActivity";
 
+    Context mContext;
     protected AudioManager mAudioManager;
 
     // UI
@@ -67,7 +70,7 @@ public class AudioMultichannelMixdownActivity
     private View mClearResultsButton;
 
     private RadioButton mSpeakerMicButton;
-    private RadioButton mHeadsetButton;
+    private RadioButton mAnalogJackButton;
     private RadioButton mUsbInterfaceButton;
     private RadioButton mUsbHeadsetButton;
 
@@ -80,6 +83,16 @@ public class AudioMultichannelMixdownActivity
     private  HtmlFormatter mHtmlFormatter = new HtmlFormatter();
 
     protected boolean mIsHandheld;
+
+    private boolean mSpeakerMicRequired;
+    private boolean mAnalogJackRequired;
+    private boolean mUsbInterfaceRequired;
+    private boolean mUsbHeadsetRequired;
+
+    private boolean mSpeakerMicRun;
+    private boolean mAnalogJackRun;
+    private boolean mUsbInterfaceRun;
+    private boolean mUsbHeadsetRun;
 
     // Routes
     // - USB Interface (w/loopback)
@@ -98,6 +111,7 @@ public class AudioMultichannelMixdownActivity
     AudioDeviceInfo mSelectedOutput;
     AudioDeviceInfo mSelectedInput;
 
+    // Duplex IO Specs
     private static final int OUT_SAMPLE_RATE = 48000;
     private static final int IN_SAMPLE_RATE = 48000;
 
@@ -366,16 +380,26 @@ public class AudioMultichannelMixdownActivity
             // "Bad Start"
             if (mTestManager.mState == TESTSTATUS_BADSTART) {
                 mHtmlFormatter.openBold()
-                    .appendText("Couldn't Start Duplex Audio.")
+                    .appendText(getString(R.string.audio_mixdown_cantstart))
                         .closeBold();
             } else {
                 // "Normal" Run
-                if (mSelectedInput == null || mSelectedOutput == null) {
+                if (mSelectedInput == null) {
                     mHtmlFormatter.openBold();
                     if (mSelectedInput == null) {
                         mHtmlFormatter.appendText(getString(R.string.audio_mixdown_invalidinput));
                         mHtmlFormatter.appendBreak();
                     }
+                    mHtmlFormatter.appendText(getString(R.string.audio_mixdown_testcanceled));
+                    mHtmlFormatter.closeBold();
+                } else {
+                    mHtmlFormatter.appendText(getString(R.string.audio_general_inputcolon)
+                            + " " + mSelectedInput.getProductName());
+                    mHtmlFormatter.appendBreak();
+                }
+
+                if (mSelectedOutput == null) {
+                    mHtmlFormatter.openBold();
                     if (mSelectedOutput == null) {
                         mHtmlFormatter.appendText(getString(R.string.audio_mixdown_invalidoutput));
                         mHtmlFormatter.appendBreak();
@@ -383,11 +407,16 @@ public class AudioMultichannelMixdownActivity
                     mHtmlFormatter.appendText(getString(R.string.audio_mixdown_testcanceled));
                     mHtmlFormatter.closeBold();
                 }
+                else {
+                    mHtmlFormatter.appendText(getString(R.string.audio_general_outputcolon)
+                            + " " + mSelectedOutput.getProductName());
+                    mHtmlFormatter.appendBreak();
+                }
 
                 for (TestPhase testPhase : mTestModules) {
                     if (testPhase.mState != TestPhase.STATUS_COMPLETE) {
                         mHtmlFormatter.openBold();
-                        mHtmlFormatter.appendText("Test Canceled.");
+                        mHtmlFormatter.appendText(getString(R.string.audio_mixdown_testcanceled));
                         mHtmlFormatter.closeBold();
                         break;
                     }
@@ -442,6 +471,40 @@ public class AudioMultichannelMixdownActivity
                     mHtmlFormatter.appendBreak();
                 }
             }
+
+            // Pass Criteria
+            String requiredString = " - " + getString(R.string.audio_mixdown_required);
+            String completedString = " - " + getString(R.string.audio_mixdown_completed);
+            String notCompletedString = " - " + getString(R.string.audio_mixdown_not_completed);
+
+            mHtmlFormatter.openParagraph();
+            mHtmlFormatter.appendText(getString(R.string.audio_mixdown_micspeaker));
+            if (mSpeakerMicRequired) {
+                mHtmlFormatter.appendText(requiredString);
+            }
+            mHtmlFormatter.appendText(mSpeakerMicRun  ? completedString : notCompletedString);
+
+            mHtmlFormatter.openParagraph();
+            mHtmlFormatter.appendText(getString(R.string.audio_mixdown_analogheadset));
+            if (mAnalogJackRequired) {
+                mHtmlFormatter.appendText(requiredString);
+            }
+            mHtmlFormatter.appendText(mAnalogJackRun  ? completedString : notCompletedString);
+
+            mHtmlFormatter.openParagraph();
+            mHtmlFormatter.appendText(getString(R.string.audio_mixdown_usbdevice));
+            if (mUsbInterfaceRequired) {
+                mHtmlFormatter.appendText(requiredString);
+            }
+            mHtmlFormatter.appendText(mUsbInterfaceRun ? completedString : notCompletedString);
+
+            mHtmlFormatter.openParagraph();
+            mHtmlFormatter.appendText(getString(R.string.audio_mixdown_usbheadset));
+            if (mUsbHeadsetRequired) {
+                mHtmlFormatter.appendText(requiredString);
+            }
+            mHtmlFormatter.appendText(mUsbHeadsetRun ? completedString : notCompletedString);
+
             mHtmlFormatter.closeDocument();
             mResultsView.loadData(mHtmlFormatter.toString(),
                     "text/html; charset=utf-8", "utf-8");
@@ -456,11 +519,38 @@ public class AudioMultichannelMixdownActivity
         mResultsView.setVisibility(View.VISIBLE);
     }
 
+    void setRouteButtonsText() {
+        String requiredStr = getString(R.string.audio_mixdown_req);
+        String doneStr = getString(R.string.audio_mixdown_done);
+
+        if (mSpeakerMicRequired) {
+            mSpeakerMicButton.setText(getString(R.string.audio_mixdown_micspeaker)
+                    + " - " + (mSpeakerMicRun ? doneStr : requiredStr));
+        }
+
+        if (mAnalogJackRequired) {
+            mAnalogJackButton.setText(getString(R.string.audio_mixdown_analogheadset)
+                    + " - " + (mAnalogJackRun ? doneStr : requiredStr));
+        }
+
+        if (mUsbInterfaceRequired) {
+            mUsbInterfaceButton.setText(getString(R.string.audio_mixdown_usbdevice)
+                    + " - " + (mUsbInterfaceRun ? doneStr : requiredStr));
+        }
+
+        if (mUsbHeadsetRequired) {
+            mUsbHeadsetButton.setText(getString(R.string.audio_mixdown_usbheadset)
+                    + " - " + (mUsbHeadsetRun ? doneStr : requiredStr));
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setContentView(R.layout.audio_multichannel_mixdown_activity);
 
         super.onCreate(savedInstanceState);
+
+        mContext = this;
 
         mTestManager.initializeTests();
 
@@ -468,6 +558,14 @@ public class AudioMultichannelMixdownActivity
         StreamBase.setup(this);
 
         mIsHandheld = AudioSystemFlags.isHandheld(this);
+
+        mSpeakerMicRequired = mIsHandheld;
+
+        mUsbInterfaceRequired = mUsbHeadsetRequired =
+                AudioDeviceUtils.supportsUsbAudio(this) == AudioDeviceUtils.SUPPORTSDEVICE_YES;
+
+        mAnalogJackRequired =
+            AudioDeviceUtils.supportsAnalogHeadset(this) == AudioDeviceUtils.SUPPORTSDEVICE_YES;
 
         setPassFailButtonClickListeners();
         setInfoResources(R.string.audio_multichannel_mixdown_test,
@@ -486,14 +584,20 @@ public class AudioMultichannelMixdownActivity
 
         mSpeakerMicButton = (RadioButton) findViewById(R.id.audio_mixdown_micspeaker);
         mSpeakerMicButton.setOnClickListener(this);
-        mHeadsetButton = (RadioButton) findViewById(R.id.audio_mixdown_analogheadset);
-        mHeadsetButton.setOnClickListener(this);
+
+        mAnalogJackButton = (RadioButton) findViewById(R.id.audio_mixdown_analogheadset);
+        mAnalogJackButton.setOnClickListener(this);
+
         mUsbInterfaceButton = (RadioButton) findViewById(R.id.audio_mixdown_usbdevice);
         mUsbInterfaceButton.setOnClickListener(this);
+
         mUsbHeadsetButton = (RadioButton) findViewById(R.id.audio_mixdown_usbheadset);
         mUsbHeadsetButton.setOnClickListener(this);
 
+        setRouteButtonsText();
+
         findViewById(R.id.audio_mixdown_calibrate_button).setOnClickListener(this);
+        findViewById(R.id.audio_mixdown_devices_button).setOnClickListener(this);
 
         mWaveView = (WaveScopeView) findViewById(R.id.uap_recordWaveView);
         mWaveView.setBackgroundColor(Color.DKGRAY);
@@ -544,7 +648,7 @@ public class AudioMultichannelMixdownActivity
         mHtmlFormatter.clear();
         mHtmlFormatter.openDocument();
         mHtmlFormatter.openParagraph();
-        mHtmlFormatter.appendText(getResources().getString(R.string.audio_exempt_nonhandheld));
+        mHtmlFormatter.appendText(getString(R.string.audio_exempt_nonhandheld));
         mHtmlFormatter.closeParagraph();
 
         mHtmlFormatter.closeDocument();
@@ -554,8 +658,9 @@ public class AudioMultichannelMixdownActivity
     }
 
     private void enableRouteButtons() {
+        Log.i(TAG, "enableRouteButtons()");
         mSpeakerMicButton.setEnabled(mSpeakerOut != null && mMicrophoneIn != null);
-        mHeadsetButton.setEnabled(mAnalogHeadsetOut != null && mAnalogHeadsetIn != null);
+        mAnalogJackButton.setEnabled(mAnalogHeadsetOut != null && mAnalogHeadsetIn != null);
         mUsbInterfaceButton.setEnabled(mUsbInterfaceOut != null && mUsbInterfaceIn != null);
         mUsbHeadsetButton.setEnabled(mUsbHeadsetOut != null && mUsbHeadsetIn != null);
     }
@@ -565,13 +670,13 @@ public class AudioMultichannelMixdownActivity
             return;
         }
 
-        if (mSelectedOutput == mSpeakerOut) {
+        if (mSelectedOutput.equals(mSpeakerOut)) {
             selectRouteButton(mSpeakerMicButton.getId());
-        } else if (mSelectedOutput == mAnalogHeadsetOut) {
-            selectRouteButton(mHeadsetButton.getId());
-        } else if (mSelectedOutput == mUsbHeadsetOut) {
+        } else if (mSelectedOutput.equals(mAnalogHeadsetOut)) {
+            selectRouteButton(mAnalogJackButton.getId());
+        } else if (mSelectedOutput.equals(mUsbHeadsetOut)) {
             selectRouteButton(mUsbHeadsetButton.getId());
-        } else if (mSelectedOutput == mUsbInterfaceOut) {
+        } else if (mSelectedOutput.equals(mUsbInterfaceOut)) {
             selectRouteButton(mUsbInterfaceButton.getId());
         }
     }
@@ -588,7 +693,7 @@ public class AudioMultichannelMixdownActivity
     private void selectRouteButton(int btnID) {
         // clear them...
         mSpeakerMicButton.setChecked(false);
-        mHeadsetButton.setChecked(false);
+        mAnalogJackButton.setChecked(false);
         mUsbInterfaceButton.setChecked(false);
         mUsbHeadsetButton.setChecked(false);
         // select "the one"
@@ -645,7 +750,19 @@ public class AudioMultichannelMixdownActivity
             }
             stopTest();
         } else if (mTestPhase == mTestManager.getNumTestPhases() - 1) {
+            // we are done here
             mTestManager.mState = TestManager.TESTSTATUS_COMPLETE;
+            // which route has been now tested
+            if (mSelectedOutput.equals(mSpeakerOut)) {
+                mSpeakerMicRun = true;
+            } else if (mSelectedOutput.equals(mAnalogHeadsetOut)) {
+                mAnalogJackRun = true;
+            } else if (mSelectedOutput.equals(mUsbHeadsetOut)) {
+                mUsbHeadsetRun = true;
+            } else if (mSelectedOutput.equals(mUsbInterfaceOut)) {
+                mUsbInterfaceRun = true;
+            }
+
             stopTest();
         } else {
             mTestPhase++;
@@ -690,6 +807,8 @@ public class AudioMultichannelMixdownActivity
                 mClearResultsButton.setEnabled(true);
 
                 mTestManager.displayTestResults();
+
+                setRouteButtonsText();
 
                 getPassButton().setEnabled(calculatePass());
             }
@@ -753,10 +872,14 @@ public class AudioMultichannelMixdownActivity
     }
 
     private boolean calculatePass() {
+        // Pass criteria
+        // For now just grant a pass if all have been run,
+        // but ultimately we want them to pass all paths
         boolean pass =
-                mIsHandheld
-                // run at least once
-                || mTestManager.mState == TestManager.TESTSTATUS_COMPLETE;
+                (!mSpeakerMicRequired || mSpeakerMicRun)
+                && (!mAnalogJackRequired || mAnalogJackRun)
+                && (!mUsbInterfaceRequired || mUsbInterfaceRun)
+                && (!mUsbHeadsetRequired || mUsbHeadsetRun);
 
         return pass;
     }
@@ -785,9 +908,9 @@ public class AudioMultichannelMixdownActivity
         } else if (id == R.id.audioJavaApiBtn || id == R.id.audioNativeApiBtn) {
             super.onClick(view);
         } else if (id == R.id.audio_mixdown_calibrate_button) {
-            AudioLoopbackCalibrationDialog calibrationDialog =
-                    new AudioLoopbackCalibrationDialog(this);
-            calibrationDialog.show();
+            (new AudioLoopbackCalibrationDialog(this)).show();
+        } else if (id == R.id.audio_mixdown_devices_button) {
+            (new AudioDevicesDialog(this)).show();
         } else if (id == R.id.audio_mixdown_micspeaker) {
             selectRouteButton(id);
             mSelectedOutput = mSpeakerOut;
@@ -884,13 +1007,6 @@ public class AudioMultichannelMixdownActivity
          * @return true if a useable pair of I/O devices is connected
          */
         boolean addDeviceHandler(AudioDeviceInfo[] addedDevices) {
-            // it is possible to connect analog headphones (i.e. no mic) though a USB dongle
-            // which would show up as TYPE_USB_HEADSET (there is no TYPE_USB_HEADPHONES).
-            // This would cause only 1 AudioDeviceInfo to be sent, so can't be used in this test.
-            if (addedDevices.length == 1) {
-                return false;
-            }
-
             for (AudioDeviceInfo devInfo : addedDevices) {
                 if (devInfo.isSource()) {
                     selectInputDevice(devInfo);
@@ -898,6 +1014,7 @@ public class AudioMultichannelMixdownActivity
                     selectOutputDevice(devInfo);
                 }
             }
+
             enableRouteButtons();
             setSelectedRouteButton();
             return true;
@@ -905,8 +1022,14 @@ public class AudioMultichannelMixdownActivity
 
         @Override
         public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
+            if (addedDevices == null) {
+                return;
+            }
             if (addDeviceHandler(addedDevices)) {
                 mTestManager.displayTestPhases();
+            }
+            if (addedDevices[0].getType() == AudioDeviceInfo.TYPE_USB_HEADSET) {
+                AudioDeviceUtils.validateUsbDevice(mContext);
             }
         }
 

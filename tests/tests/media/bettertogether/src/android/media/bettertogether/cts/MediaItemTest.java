@@ -15,14 +15,15 @@
  */
 package android.media.bettertogether.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.media.MediaDescription;
 import android.media.browse.MediaBrowser.MediaItem;
 import android.os.Parcel;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
@@ -31,6 +32,7 @@ import org.junit.runner.RunWith;
 /**
  * Test {@link android.media.browse.MediaBrowser.MediaItem}.
  */
+@FrameworkSpecificTest
 @NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 public class MediaItemTest {

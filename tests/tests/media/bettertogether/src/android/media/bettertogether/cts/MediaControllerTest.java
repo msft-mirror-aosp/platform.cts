@@ -45,6 +45,7 @@ import android.view.KeyEvent;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
@@ -55,6 +56,7 @@ import org.junit.runner.RunWith;
 /**
  * Test {@link android.media.session.MediaController}.
  */
+@FrameworkSpecificTest
 @NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 public class MediaControllerTest {

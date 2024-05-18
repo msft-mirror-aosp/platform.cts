@@ -4670,6 +4670,7 @@ public class CameraTestUtils extends Assert {
         static final int RAW  = ImageFormat.RAW_SENSOR;
         static final int Y8   = ImageFormat.Y8;
         static final int HEIC = ImageFormat.HEIC;
+        static final int JPEG_R = ImageFormat.JPEG_R;
 
         // Max resolution output indices
         static final int PREVIEW = 0;
@@ -4726,7 +4727,7 @@ public class CameraTestUtils extends Assert {
 
         // Note: This must match the required stream combinations defined in
         // CameraCharacteristcs#INFO_SESSION_CONFIGURATION_QUERY_VERSION.
-        public static final int[][] QUERY_COMBINATIONS = {
+        private static final int[][] QUERY_COMBINATIONS = {
             {PRIV, S1080P},
             {PRIV, S720P},
             {PRIV, S1080P,  JPEG, MAXIMUM_16_9},
@@ -4739,10 +4740,20 @@ public class CameraTestUtils extends Assert {
             {PRIV, S720P,   JPEG, S1080P},
             {PRIV, XVGA,    JPEG, MAXIMUM_4_3},
             {PRIV, S1080P_4_3, JPEG, MAXIMUM_4_3},
+            {PRIV, S1080P,  JPEG_R, MAXIMUM_16_9},
+            {PRIV, S1080P,  JPEG_R, UHD},
+            {PRIV, S1080P,  JPEG_R, S1440P_16_9},
+            {PRIV, S1080P,  JPEG_R, S1080P},
+            {PRIV, S720P,   JPEG_R, MAXIMUM_16_9},
+            {PRIV, S720P,   JPEG_R, UHD},
+            {PRIV, S720P,   JPEG_R, S1080P},
+            {PRIV, XVGA,    JPEG_R, MAXIMUM_4_3},
+            {PRIV, S1080P_4_3, JPEG_R, MAXIMUM_4_3},
         };
 
         private final Size[] mMaxPrivSizes = new Size[RESOLUTION_COUNT];
         private final Size[] mMaxJpegSizes = new Size[RESOLUTION_COUNT];
+        private final Size[] mMaxJpegRSizes = new Size[RESOLUTION_COUNT];
         private final Size[] mMaxYuvSizes = new Size[RESOLUTION_COUNT];
         private final Size[] mMaxY8Sizes = new Size[RESOLUTION_COUNT];
         private final Size[] mMaxHeicSizes = new Size[RESOLUTION_COUNT];
@@ -4752,6 +4763,7 @@ public class CameraTestUtils extends Assert {
         private final Size[] mMaxPrivInputSizes = new Size[INPUT_RESOLUTION_COUNT];
         private final Size[] mMaxYuvInputSizes = new Size[INPUT_RESOLUTION_COUNT];
         private final Size mMaxInputY8Size;
+        private int[][] mQueryableCombinations;
 
         public MaxStreamSizes(StaticMetadata sm, String cameraId, Context context) {
             this(sm, cameraId, context, /*matchSize*/false);
@@ -4767,6 +4779,8 @@ public class CameraTestUtils extends Assert {
             Size[] y8Sizes = sm.getAvailableSizesForFormatChecked(ImageFormat.Y8,
                     StaticMetadata.StreamDirection.Output, /*fastSizes*/true, /*slowSizes*/false);
             Size[] jpegSizes = sm.getAvailableSizesForFormatChecked(ImageFormat.JPEG,
+                    StaticMetadata.StreamDirection.Output, /*fastSizes*/true, /*slowSizes*/false);
+            Size[] jpegRSizes = sm.getAvailableSizesForFormatChecked(ImageFormat.JPEG_R,
                     StaticMetadata.StreamDirection.Output, /*fastSizes*/true, /*slowSizes*/false);
             Size[] rawSizes = sm.getAvailableSizesForFormatChecked(ImageFormat.RAW_SENSOR,
                     StaticMetadata.StreamDirection.Output, /*fastSizes*/true, /*slowSizes*/false);
@@ -4910,6 +4924,48 @@ public class CameraTestUtils extends Assert {
                     mMaxPrivSizes[UHD] = uhdSize;
                     mMaxYuvSizes[UHD] = uhdSize;
                     mMaxJpegSizes[UHD] = uhdSize;
+                }
+                if (sm.isJpegRSupported()) {
+                    mMaxJpegRSizes[MAXIMUM] = CameraTestUtils.getMaxSize(jpegRSizes);
+                    mMaxJpegRSizes[MAXIMUM_4_3] = CameraTestUtils.getMaxSize(
+                            jpegRSizes, aspectRatio43);
+                    mMaxJpegRSizes[MAXIMUM_16_9] = CameraTestUtils.getMaxSize(
+                            jpegRSizes, aspectRatio169);
+                    if (!matchSize) {
+                        mMaxJpegRSizes[S1080P] = CameraTestUtils.getMaxSizeWithBound(
+                                configs.getOutputSizes(ImageFormat.JPEG_R), s1080pSize);
+                        mMaxJpegRSizes[S1440P_16_9] = CameraTestUtils.getMaxSizeWithBound(
+                                configs.getOutputSizes(ImageFormat.JPEG_R), s1440p169Size);
+                        mMaxJpegRSizes[S1440P_4_3] = CameraTestUtils.getMaxSizeWithBound(
+                                configs.getOutputSizes(ImageFormat.JPEG_R), s1440p43Size);
+                        mMaxJpegRSizes[UHD] = CameraTestUtils.getMaxSizeWithBound(
+                                configs.getOutputSizes(ImageFormat.JPEG_R), uhdSize);
+                    } else {
+                        mMaxJpegRSizes[S720P] = s720pSize;
+                        mMaxJpegRSizes[XVGA] = xvgaSize;
+                        mMaxJpegRSizes[S1080P] = s1080pSize;
+                        mMaxJpegRSizes[S1080P_4_3] = s1080p43Size;
+                        mMaxJpegRSizes[S1440P_16_9] = s1440p169Size;
+                        mMaxJpegRSizes[UHD] = uhdSize;
+                    }
+                    mQueryableCombinations = QUERY_COMBINATIONS;
+                } else {
+                    // JPEG_R is not supported. Remove all combinations containing JPEG_R
+                    List<int[]> combinationsMinusJpegR = new ArrayList<int[]>();
+                    for (int i = 0; i < QUERY_COMBINATIONS.length; i++) {
+                        boolean hasJpegR = false;
+                        for (int j = 0; j < QUERY_COMBINATIONS[i].length; j += 2) {
+                            if (QUERY_COMBINATIONS[i][j] == JPEG_R) {
+                                hasJpegR = true;
+                                break;
+                            }
+                        }
+
+                        if (!hasJpegR) {
+                            combinationsMinusJpegR.add(QUERY_COMBINATIONS[i]);
+                        }
+                    }
+                    mQueryableCombinations = combinationsMinusJpegR.toArray(int[][]::new);
                 }
 
                 if (sm.isMonochromeWithY8()) {
@@ -5076,6 +5132,8 @@ public class CameraTestUtils extends Assert {
                     return mMaxYuvSizes[resolutionIndex];
                 case JPEG:
                     return mMaxJpegSizes[resolutionIndex];
+                case JPEG_R:
+                    return mMaxJpegRSizes[resolutionIndex];
                 case Y8:
                     return mMaxY8Sizes[resolutionIndex];
                 case HEIC:
@@ -5152,6 +5210,10 @@ public class CameraTestUtils extends Assert {
             return b.toString();
         }
 
+        public final int[][] getQueryableCombinations() {
+            return mQueryableCombinations;
+        }
+
         int getInputResolutionIndex(int resolutionIndex) {
             switch (resolutionIndex) {
                 case MAXIMUM:
@@ -5169,6 +5231,9 @@ public class CameraTestUtils extends Assert {
                     break;
                 case JPEG:
                     b.append("[JPEG, ");
+                    break;
+                case JPEG_R:
+                    b.append("[JPEG_R, ");
                     break;
                 case YUV:
                     b.append("[YUV, ");

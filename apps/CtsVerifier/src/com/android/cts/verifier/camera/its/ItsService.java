@@ -17,7 +17,6 @@
 package com.android.cts.verifier.camera.its;
 
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.QUERY_COMBINATIONS;
 
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -245,6 +244,7 @@ public class ItsService extends Service implements SensorEventListener {
     static {
         sFormatMap.put(ImageFormat.PRIVATE, "priv");
         sFormatMap.put(ImageFormat.JPEG, "jpeg");
+        sFormatMap.put(ImageFormat.JPEG_R, "jpegr");
         sFormatMap.put(ImageFormat.YUV_420_888, "yuv");
     }
 
@@ -2666,13 +2666,14 @@ public class ItsService extends Service implements SensorEventListener {
         MaxStreamSizes maxStreamSizes = new MaxStreamSizes(staticMetadata,
                 mCamera.getId(), (Context) this, /*matchSize*/true);
         StringBuilder responseBuilder = new StringBuilder();
-        for (int i = 0; i < QUERY_COMBINATIONS.length; i++) {
+        int[][] queryableCombinations = maxStreamSizes.getQueryableCombinations();
+        for (int i = 0; i < queryableCombinations.length; i++) {
             String oneCombination = "";
-            for (int j = 0; j < QUERY_COMBINATIONS[i].length; j += 2) {
-                String format = sFormatMap.get(QUERY_COMBINATIONS[i][j]);
-                int sizeIndex = QUERY_COMBINATIONS[i][j + 1];
+            for (int j = 0; j < queryableCombinations[i].length; j += 2) {
+                String format = sFormatMap.get(queryableCombinations[i][j]);
+                int sizeIndex = queryableCombinations[i][j + 1];
                 Size size = maxStreamSizes.getOutputSizeForFormat(
-                        QUERY_COMBINATIONS[i][j], sizeIndex);
+                        queryableCombinations[i][j], sizeIndex);
                 String oneStream = format + ":" + size.toString();
                 if (j > 0) {
                     oneCombination += "+";

@@ -20,12 +20,14 @@ import android.content.Context
 import android.graphics.Point
 import android.util.DisplayMetrics
 import android.util.Size
-import android.view.InputDevice
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.UinputDevice
+import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.UinputTouchPad
+import com.android.cts.input.UinputTouchScreen
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -63,13 +65,7 @@ class EmulateInputDevice {
      */
     @Test
     fun useTouchscreenForFiveSeconds() {
-        UinputTouchDevice(
-                instrumentation,
-                context.display,
-                R.raw.test_touchscreen_register,
-                InputDevice.SOURCE_TOUCHSCREEN,
-                useDisplaySize = true,
-        ).use { touchscreen ->
+        UinputTouchScreen(instrumentation, context.display).use { touchscreen ->
             // Start the usage session.
             touchscreen.tapOnScreen()
 
@@ -105,12 +101,7 @@ class EmulateInputDevice {
 
     @Test
     fun useTouchpadWithFingersAndPalms() {
-        UinputTouchDevice(
-                instrumentation,
-                context.display,
-                R.raw.test_touchpad_register,
-                InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE,
-        ).use { touchpad ->
+        UinputTouchPad(instrumentation, context.display).use { touchpad ->
             for (i in 0 until 3) {
                 val pointer = Point(100, 200)
                 touchpad.sendBtnTouch(true)
@@ -141,12 +132,7 @@ class EmulateInputDevice {
 
     @Test
     fun pinchOnTouchpad() {
-        UinputTouchDevice(
-            instrumentation,
-            context.display,
-            R.raw.test_touchpad_register,
-            InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE
-        ).use { touchpad ->
+        UinputTouchPad(instrumentation, context.display).use { touchpad ->
             val pointer0 = Point(500, 500)
             val pointer1 = Point(700, 700)
             touchpad.sendBtnTouch(true)
@@ -198,12 +184,7 @@ class EmulateInputDevice {
     }
 
     private fun multiFingerSwipe(numFingers: Int) {
-        UinputTouchDevice(
-            instrumentation,
-            context.display,
-            R.raw.test_touchpad_register,
-            InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE
-        ).use { touchpad ->
+        UinputTouchPad(instrumentation, context.display).use { touchpad ->
             val pointers = Array(numFingers) { i -> Point(500 + i * 200, 500) }
             touchpad.sendBtnTouch(true)
             touchpad.sendBtn(UinputTouchDevice.toolBtnForFingerCount(numFingers), true)
@@ -234,11 +215,7 @@ class EmulateInputDevice {
 
     @Test
     fun createKeyboardDevice() {
-        UinputDevice.create(
-            instrumentation,
-            R.raw.test_keyboard_register,
-            InputDevice.SOURCE_KEYBOARD
-        ).use {
+        UinputKeyboard(instrumentation).use {
             // Do nothing: Adding a device should trigger the logging logic.
             // Wait until the Input device created is sent to KeyboardLayoutManager to trigger
             // logging logic
@@ -248,11 +225,7 @@ class EmulateInputDevice {
 
     @Test
     fun createKeyboardDeviceAndSendCapsLockKey() {
-        UinputDevice.create(
-                instrumentation,
-                R.raw.test_keyboard_register,
-                InputDevice.SOURCE_KEYBOARD
-        ).use { keyboard ->
+        UinputKeyboard(instrumentation).use { keyboard ->
             // Wait for device to be added
             injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, KEY_PRESS, 0, 0, 0))
             injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, KEY_RELEASE, 0, 0, 0))

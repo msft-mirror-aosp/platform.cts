@@ -47,7 +47,7 @@ def apply_lens_shading_map(color_plane, black_level, white_level, lsc_map):
     lsc_map: 2D np array lens shading matching size of color_plane.
 
   Returns:
-    color_plane with lsc applied
+    color_plane with lsc applied.
   """
   logging.debug('color plane pre-lsc min, max: %.4f, %.4f',
                 np.min(color_plane), np.max(color_plane))
@@ -76,8 +76,6 @@ def populate_lens_shading_map(raw_plane_dims, lsc_map):
       lsc_map_fs[y][x] = get_full_scale_lsc_coefficient(
           x, y, raw_plane_dims[1], raw_plane_dims[0], lsc_map
       )
-  logging.debug('lsc_map_fs min, max: %.4f, %.4f',
-                np.min(lsc_map_fs), np.max(lsc_map_fs))
   return lsc_map_fs
 
 
@@ -125,7 +123,7 @@ def unpack_lsc_map_from_metadata(metadata):
     metadata: dict; metadata from RAW capture.
 
   Returns:
-    3D numpy array of lens shading map
+    3D numpy array of lens shading maps.
   """
   lsc_metadata = metadata['android.statistics.lensShadingCorrectionMap']
   lsc_map_w, lsc_map_h = lsc_metadata['width'], lsc_metadata['height']
@@ -133,16 +131,7 @@ def unpack_lsc_map_from_metadata(metadata):
   logging.debug(
       'lensShadingCorrectionMap (H, W): (%d, %d)', lsc_map_h, lsc_map_w
   )
-  lsc_map = np.array(lsc_map).reshape(lsc_map_h, lsc_map_w, _NUM_RAW_CHANNELS)
-  logging.debug('R lsc_map min, max: %.4f, %.4f',
-                np.min(lsc_map[:, :, 0]), np.max(lsc_map[:, :, 0]))
-  logging.debug('Gr lsc_map min, max: %.4f, %.4f',
-                np.min(lsc_map[:, :, 1]), np.max(lsc_map[:, :, 1]))
-  logging.debug('Gb lsc_map min, max: %.4f, %.4f',
-                np.min(lsc_map[:, :, 2]), np.max(lsc_map[:, :, 2]))
-  logging.debug('B lsc_map min, max: %.4f, %.4f',
-                np.min(lsc_map[:, :, 3]), np.max(lsc_map[:, :, 3]))
-  return lsc_map
+  return np.array(lsc_map).reshape(lsc_map_h, lsc_map_w, _NUM_RAW_CHANNELS)
 
 
 def convert_and_compare_captures(cap_raw, cap_yuv, props,
@@ -183,13 +172,21 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
       cap_raw, props=props
   )
   if not lens_shading_applied:  # get from metadata, upsample, and apply
+    plot_name_stem_with_log_path = f'{log_path_with_name}_{raw_fmt}'
     black_levels = image_processing_utils.get_black_levels(props, cap_raw)
     white_level = int(props['android.sensor.info.whiteLevel'])
-    lsc_map = unpack_lsc_map_from_metadata(cap_raw['metadata'])
-    lsc_map_fs_r = populate_lens_shading_map(r.shape, lsc_map[:, :, 0])
-    lsc_map_fs_gr = populate_lens_shading_map(gr.shape, lsc_map[:, :, 1])
-    lsc_map_fs_gb = populate_lens_shading_map(gb.shape, lsc_map[:, :, 2])
-    lsc_map_fs_b = populate_lens_shading_map(b.shape, lsc_map[:, :, 3])
+    lsc_maps = unpack_lsc_map_from_metadata(cap_raw['metadata'])
+    image_processing_utils.plot_lsc_maps(
+        lsc_maps, 'metadata', plot_name_stem_with_log_path
+    )
+    lsc_map_fs_r = populate_lens_shading_map(r.shape, lsc_maps[:, :, 0])
+    lsc_map_fs_gr = populate_lens_shading_map(gr.shape, lsc_maps[:, :, 1])
+    lsc_map_fs_gb = populate_lens_shading_map(gb.shape, lsc_maps[:, :, 2])
+    lsc_map_fs_b = populate_lens_shading_map(b.shape, lsc_maps[:, :, 3])
+    image_processing_utils.plot_lsc_maps(
+        np.dstack((lsc_map_fs_r, lsc_map_fs_gr, lsc_map_fs_gb, lsc_map_fs_b)),
+        'fullscale', plot_name_stem_with_log_path
+    )
     r = apply_lens_shading_map(r, black_levels[0], white_level, lsc_map_fs_r)
     gr = apply_lens_shading_map(gr, black_levels[1], white_level, lsc_map_fs_gr)
     gb = apply_lens_shading_map(gb, black_levels[2], white_level, lsc_map_fs_gb)

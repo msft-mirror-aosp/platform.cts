@@ -103,6 +103,7 @@
     <!-- Ensures that screen recording is captured -->
     <target_preparer class="com.android.tradefed.targetprep.RootTargetPreparer">
         <option name="force-root" value="true" />
+        <option name="throw-on-error" value="false" />
     </target_preparer>
 
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">

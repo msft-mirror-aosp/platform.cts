@@ -17,13 +17,12 @@
 package android.input.cts
 
 import android.hardware.input.InputManager
-import android.view.InputDevice
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
-import com.android.cts.input.UinputDevice
+import com.android.cts.input.UinputKeyboard
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Rule
@@ -73,11 +72,7 @@ class VerifyHardwareKeyEventTest {
      */
     @Test
     fun testVerifyHardwareKeyEvent() {
-        val keyboardDevice = UinputDevice.create(
-                instrumentation,
-                R.raw.test_keyboard_register,
-                InputDevice.SOURCE_KEYBOARD,
-        )
+        val keyboardDevice = UinputKeyboard(instrumentation)
 
         injectKeyDown(keyboardDevice, KEY_A)
         // Send the UP event right away to avoid key repeat

@@ -84,7 +84,8 @@ public class HearingAidProfileTest {
 
     private static final Duration PROXY_CONNECTION_TIMEOUT = Duration.ofMillis(500);
     private static final Duration WAIT_FOR_INTENT_TIMEOUT = Duration.ofSeconds(1);
-    private static final String FAKE_REMOTE_ADDRESS = "42:11:22:AA:BB:CC";
+    private static final BluetoothDevice sFakeDevice =
+            sBluetoothAdapter.getRemoteDevice("42:11:22:AA:BB:CC");
 
     private static List<Integer> sValidConnectionStates =
             List.of(
@@ -95,7 +96,15 @@ public class HearingAidProfileTest {
 
     private BluetoothHearingAid mService;
 
-    private AdvertisementServiceData mAdvertisementData;
+    private static final AdvertisementServiceData sAdvertisementData;
+
+    static {
+        Parcel parcel = Parcel.obtain();
+        parcel.writeInt(0b110); // CSIP supported, MODE_BINAURAL, SIDE_LEFT
+        parcel.writeInt(1);
+        parcel.setDataPosition(0);
+        sAdvertisementData = AdvertisementServiceData.CREATOR.createFromParcel(parcel);
+    }
 
     @Mock BluetoothProfile.ServiceListener mServiceListener;
 
@@ -115,13 +124,6 @@ public class HearingAidProfileTest {
                 .onServiceConnected(eq(BluetoothProfile.HEARING_AID), captor.capture());
         mService = (BluetoothHearingAid) captor.getValue();
         assertThat(mService).isNotNull();
-
-        Parcel parcel = Parcel.obtain();
-        parcel.writeInt(0b110); // CSIP supported, MODE_BINAURAL, SIDE_LEFT
-        parcel.writeInt(1);
-        parcel.setDataPosition(0);
-        mAdvertisementData = AdvertisementServiceData.CREATOR.createFromParcel(parcel);
-        assertThat(mAdvertisementData).isNotNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -137,12 +139,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getConnectionState() {
-        // Create a fake device
-        BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertThat(device).isNotNull();
-
-        // Fake device should be disconnected
-        assertThat(mService.getConnectionState(device))
+        assertThat(mService.getConnectionState(sFakeDevice))
                 .isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
     }
 
@@ -163,12 +160,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getDeviceSide() {
-        // Create a fake device
-        final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertThat(device).isNotNull();
-
-        // Fake device should be no value, unknown side
-        assertThat(mService.getDeviceSide(device)).isEqualTo(BluetoothHearingAid.SIDE_UNKNOWN);
+        assertThat(mService.getDeviceSide(sFakeDevice)).isEqualTo(BluetoothHearingAid.SIDE_UNKNOWN);
     }
 
     /** Basic test case to make sure that a fictional device is unknown mode. */
@@ -176,12 +168,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getDeviceMode() {
-        // Create a fake device
-        final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertThat(device).isNotNull();
-
-        // Fake device should be no value, unknown mode
-        assertThat(mService.getDeviceMode(device)).isEqualTo(BluetoothHearingAid.MODE_UNKNOWN);
+        assertThat(mService.getDeviceMode(sFakeDevice)).isEqualTo(BluetoothHearingAid.MODE_UNKNOWN);
     }
 
     /**
@@ -192,14 +179,9 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getAdvertisementServiceData() {
-        // Create a fake device
-        final BluetoothDevice device = sBluetoothAdapter.getRemoteDevice(FAKE_REMOTE_ADDRESS);
-        assertThat(device).isNotNull();
-
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED);
 
-        // Fake device should have no service data
-        assertThat(mService.getAdvertisementServiceData(device)).isNull();
+        assertThat(mService.getAdvertisementServiceData(sFakeDevice)).isNull();
     }
 
     /**
@@ -210,11 +192,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getAdvertisementDeviceMode() {
-        // Create a fake advertisement data
-        AdvertisementServiceData data = mAdvertisementData;
-
-        // Fake device should be MODE_BINAURAL
-        assertThat(data.getDeviceMode()).isEqualTo(BluetoothHearingAid.MODE_BINAURAL);
+        assertThat(sAdvertisementData.getDeviceMode()).isEqualTo(BluetoothHearingAid.MODE_BINAURAL);
     }
 
     /**
@@ -225,11 +203,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getAdvertisementDeviceSide() {
-        // Create a fake advertisement data
-        AdvertisementServiceData data = mAdvertisementData;
-
-        // Fake device should be SIDE_LEFT
-        assertThat(data.getDeviceSide()).isEqualTo(BluetoothHearingAid.SIDE_LEFT);
+        assertThat(sAdvertisementData.getDeviceSide()).isEqualTo(BluetoothHearingAid.SIDE_LEFT);
     }
 
     /**
@@ -240,12 +214,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void getTruncatedHiSyncId() {
-        // Create a fake advertisement data
-        AdvertisementServiceData data = mAdvertisementData;
-        assertThat(data).isNotNull();
-
-        // Fake device should be supported
-        assertThat(data.getTruncatedHiSyncId()).isEqualTo(1);
+        assertThat(sAdvertisementData.getTruncatedHiSyncId()).isEqualTo(1);
     }
 
     /**
@@ -256,12 +225,7 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void isCsipSupported() {
-        // Create a fake advertisement data
-        AdvertisementServiceData data = mAdvertisementData;
-        assertThat(data).isNotNull();
-
-        // Fake device should be supported
-        assertThat(data.isCsipSupported()).isTrue();
+        assertThat(sAdvertisementData.isCsipSupported()).isTrue();
     }
 
     /**
@@ -272,10 +236,6 @@ public class HearingAidProfileTest {
     @MediumTest
     @Test
     public void isLikelyPairOfBluetoothHearingAid() {
-        // Create a fake advertisement data
-        final AdvertisementServiceData data = mAdvertisementData;
-        assertThat(data).isNotNull();
-
         // Create another fake advertisement data
         Parcel parcel = Parcel.obtain();
         parcel.writeInt(0b111); // CSIP supported, MODE_BINAURAL, SIDE_RIGHT
@@ -286,7 +246,7 @@ public class HearingAidProfileTest {
         assertThat(dataOtherSide).isNotNull();
 
         // two devices should be a pair
-        assertThat(data.isInPairWith(dataOtherSide)).isTrue();
+        assertThat(sAdvertisementData.isInPairWith(dataOtherSide)).isTrue();
     }
 
     /** Basic test case to get the list of connected Hearing Aid devices. */

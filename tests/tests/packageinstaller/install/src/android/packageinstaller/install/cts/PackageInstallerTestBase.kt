@@ -62,7 +62,6 @@ import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Rule
 
 open class PackageInstallerTestBase {
@@ -99,12 +98,6 @@ open class PackageInstallerTestBase {
         val testUserId: Int = context.user.identifier
 
         private val apkFile = File(context.filesDir, TEST_APK_NAME)
-
-        @BeforeClass
-        @JvmStatic
-        fun copyTestApk() {
-            File(TEST_APK_LOCATION, TEST_APK_NAME).copyTo(target = apkFile, overwrite = true)
-        }
     }
 
     @get:Rule

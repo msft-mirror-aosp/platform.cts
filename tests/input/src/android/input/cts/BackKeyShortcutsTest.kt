@@ -17,14 +17,13 @@
 package android.input.cts
 
 import android.hardware.input.InputManager
-import android.view.InputDevice
 import android.view.KeyEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
-import com.android.cts.input.UinputDevice
+import com.android.cts.input.UinputKeyboard
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
@@ -80,11 +79,7 @@ class BackKeyShortcutsTest {
 
     @Test
     fun testBackKeyMetaShortcuts() {
-        UinputDevice.create(
-            instrumentation,
-            R.raw.test_keyboard_register,
-            InputDevice.SOURCE_KEYBOARD
-        ).use { keyboardDevice ->
+        UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
 
             for (scanCode in intArrayOf(KEY_ESC, KEY_BACKSPACE, KEY_LEFT)) {

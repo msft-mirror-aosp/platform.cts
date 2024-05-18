@@ -26,9 +26,11 @@ import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.AppOpsUtils
 import com.google.common.truth.Truth.assertThat
+import java.io.File
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -39,6 +41,15 @@ private const val ALERT_DIALOG_TITLE_ID = "android:id/alertTitle"
 @MediumTest
 @AppModeFull
 class ExternalSourcesTestAppOpAllowed : PackageInstallerTestBase() {
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun copyTestApk() {
+            File(TEST_APK_LOCATION, TEST_APK_NAME)
+                .copyTo(target = File(context.filesDir, TEST_APK_NAME), overwrite = true)
+        }
+    }
+
     private val packageName = context.packageName
 
     private fun assertUiObject(errorMessage: String, selector: BySelector) {
@@ -46,20 +57,27 @@ class ExternalSourcesTestAppOpAllowed : PackageInstallerTestBase() {
     }
 
     private fun assertInstallAllowed(errorMessage: String) {
-        assertUiObject(errorMessage, By.res(PACKAGE_INSTALLER_PACKAGE_NAME,
-                INSTALL_CONFIRM_TEXT_ID))
+        assertUiObject(errorMessage, By.res(
+            PACKAGE_INSTALLER_PACKAGE_NAME,
+                INSTALL_CONFIRM_TEXT_ID
+        ))
         uiDevice.pressBack()
     }
 
     private fun allowedSourceTest(startInstallation: () -> Unit) {
-        assertTrue("Package $packageName blocked from installing packages after setting app op " +
-                "to allowed", pm.canRequestPackageInstalls())
+        assertTrue(
+            "Package $packageName blocked from installing packages after setting app op " +
+                "to allowed",
+            pm.canRequestPackageInstalls()
+        )
 
         startInstallation()
         assertInstallAllowed("Install confirmation not shown when app op set to allowed")
 
-        assertTrue("Operation not logged", AppOpsUtils.allowedOperationLogged(packageName,
-                APP_OP_STR))
+        assertTrue("Operation not logged", AppOpsUtils.allowedOperationLogged(
+            packageName,
+                APP_OP_STR
+        ))
     }
 
     @Before
@@ -80,14 +98,19 @@ class ExternalSourcesTestAppOpAllowed : PackageInstallerTestBase() {
 
     @Test
     fun allowedSourceTest() {
-        assertTrue("Package $packageName blocked from installing packages after setting app op " +
-                "to allowed", pm.canRequestPackageInstalls())
+        assertTrue(
+            "Package $packageName blocked from installing packages after setting app op " +
+                "to allowed",
+            pm.canRequestPackageInstalls()
+        )
     }
 
     @Test
     fun testManageUnknownSourcesExists() {
         val manageUnknownSources = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
-        assertNotNull("No activity found for ${manageUnknownSources.action}",
-                pm.resolveActivity(manageUnknownSources, 0))
+        assertNotNull(
+            "No activity found for ${manageUnknownSources.action}",
+                pm.resolveActivity(manageUnknownSources, 0)
+        )
     }
 }

@@ -18,9 +18,7 @@ package android.input.cts
 
 import android.app.StatusBarManager
 import android.graphics.Point
-import android.view.InputDevice.SOURCE_KEYBOARD
 import android.view.InputDevice.SOURCE_STYLUS
-import android.view.InputDevice.SOURCE_TOUCHSCREEN
 import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -29,7 +27,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.DebugInputRule
-import com.android.cts.input.UinputDevice
+import com.android.cts.input.UinputBluetoothStylus
+import com.android.cts.input.UinputStylus
 import com.android.cts.input.UinputTouchDevice
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -104,11 +103,7 @@ class StylusButtonInputEventTest {
     @Test
     fun testStylusButtonsEnabledKeyEvents() {
         enableStylusButtons()
-        UinputDevice.create(
-                instrumentation,
-                R.raw.test_bluetooth_stylus_register,
-                SOURCE_KEYBOARD or SOURCE_STYLUS
-        ).use { bluetoothStylus ->
+        UinputBluetoothStylus(instrumentation).use { bluetoothStylus ->
             for (button in LINUX_TO_ANDROID_KEYCODE_MAP.entries.iterator()) {
                 bluetoothStylus.injectEvents(
                         makeEvents(EV_KEY, button.key, KEY_DOWN, EV_SYN, SYN_REPORT, 0)
@@ -127,11 +122,7 @@ class StylusButtonInputEventTest {
     @Test
     fun testStylusButtonsDisabledKeyEvents() {
         disableStylusButtons()
-        UinputDevice.create(
-                instrumentation,
-                R.raw.test_bluetooth_stylus_register,
-                SOURCE_KEYBOARD or SOURCE_STYLUS
-        ).use { bluetoothStylus ->
+        UinputBluetoothStylus(instrumentation).use { bluetoothStylus ->
             for (button in LINUX_TO_ANDROID_KEYCODE_MAP.entries.iterator()) {
                 bluetoothStylus.injectEvents(
                         makeEvents(EV_KEY, button.key, KEY_DOWN, EV_SYN, SYN_REPORT, 0)
@@ -151,12 +142,9 @@ class StylusButtonInputEventTest {
     @Test
     fun testStylusButtonsEnabledMotionEvents() {
         enableStylusButtons()
-        UinputTouchDevice(
+        UinputStylus(
                 instrumentation,
-                virtualDisplayRule.virtualDisplay.display,
-                R.raw.test_capacitive_stylus_register,
-                SOURCE_TOUCHSCREEN or SOURCE_STYLUS,
-                useDisplaySize = true,
+                virtualDisplayRule.virtualDisplay.display
         ).use { uinputStylus ->
             val pointer = Point(100, 100)
             for (button in LINUX_KEYCODE_TO_MOTIONEVENT_BUTTON.entries.iterator()) {
@@ -211,13 +199,8 @@ class StylusButtonInputEventTest {
     @Test
     fun testStylusButtonsDisabledMotionEvents() {
         disableStylusButtons()
-        UinputTouchDevice(
-                instrumentation,
-                virtualDisplayRule.virtualDisplay.display,
-                R.raw.test_capacitive_stylus_register,
-                SOURCE_TOUCHSCREEN or SOURCE_STYLUS,
-                useDisplaySize = true,
-        ).use { uinputStylus ->
+        UinputStylus(instrumentation, virtualDisplayRule.virtualDisplay.display).use {
+            uinputStylus ->
             val pointer = Point(100, 100)
             for (button in LINUX_KEYCODE_TO_MOTIONEVENT_BUTTON.entries.iterator()) {
                 pointer.offset(1, 1)

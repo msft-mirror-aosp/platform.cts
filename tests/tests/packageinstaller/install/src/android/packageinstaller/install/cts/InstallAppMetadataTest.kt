@@ -52,9 +52,11 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
 
         @BeforeClass
         @JvmStatic
-        fun copyTestApk2() {
+        fun copyTestApk() {
             File(TEST_APK_LOCATION, TEST_APK2_NAME)
                 .copyTo(target = File(context.filesDir, TEST_APK2_NAME), overwrite = true)
+            File(TEST_APK_LOCATION, TEST_APK_NAME)
+                .copyTo(target = File(context.filesDir, TEST_APK_NAME), overwrite = true)
         }
     }
 

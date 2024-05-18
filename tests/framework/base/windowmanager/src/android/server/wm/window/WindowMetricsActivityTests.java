@@ -26,6 +26,7 @@ import static android.server.wm.WindowMetricsTestHelper.maxWindowBoundsSandboxed
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -45,6 +46,7 @@ import android.view.WindowManager;
 import android.view.WindowMetrics;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.window.flags.Flags;
 
 import org.junit.Test;
 
@@ -168,6 +170,11 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
 
     @Test
     public void testMetricsMatchesLayoutOnFreeformActivity() {
+        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
+        // windowing mode
+        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
+        // behaviour will not be respected
+        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
         assumeTrue(supportsFreeform());
 
         final MetricsActivity activity = startActivityInWindowingModeFullScreen(

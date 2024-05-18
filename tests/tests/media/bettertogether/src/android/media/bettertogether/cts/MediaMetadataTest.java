@@ -29,6 +29,7 @@ import android.text.TextUtils;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
@@ -41,6 +42,7 @@ import java.util.Set;
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@FrameworkSpecificTest
 @NonMainlineTest
 public class MediaMetadataTest {
 

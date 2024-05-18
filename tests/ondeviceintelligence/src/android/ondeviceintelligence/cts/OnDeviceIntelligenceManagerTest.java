@@ -58,6 +58,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.service.ondeviceintelligence.OnDeviceIntelligenceService;
 import android.text.TextUtils;
@@ -86,6 +87,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 /**
@@ -105,6 +107,7 @@ public class OnDeviceIntelligenceManagerTest {
     public static final String EXCEPTION_PARAMS_KEY = "params_key";
     public static final String TOKEN_INFO_COUNT_KEY = "tokenInfo_count_key";
     public static final String TOKEN_INFO_PARAMS_KEY = "tokenInfo_params_key";
+    public static final String TEST_OD_NAMESPACE = "test_od_namespace";
 
 
     private static final String TAG = OnDeviceIntelligenceManagerTest.class.getSimpleName();
@@ -116,7 +119,7 @@ public class OnDeviceIntelligenceManagerTest {
     public static final String CTS_INFERENCE_SERVICE_NAME =
             CTS_PACKAGE_NAME + "/"
                     + android.ondeviceintelligence.cts.CtsIsolatedInferenceService.class.getCanonicalName();
-    private static final int TEMPORARY_SERVICE_DURATION = 10000;
+    private static final int TEMPORARY_SERVICE_DURATION = 20000;
     public static final String NAMESPACE_ON_DEVICE_INTELLIGENCE = "ondeviceintelligence";
     public static final String KEY_SERVICE_ENABLED = "service_enabled";
 
@@ -127,6 +130,8 @@ public class OnDeviceIntelligenceManagerTest {
     public static final int REQUEST_TYPE_GET_FILE_FROM_PFD = 1003;
     public static final int REQUEST_TYPE_GET_AUGMENTED_DATA = 1004;
     public static final int REQUEST_TYPE_GET_CALLER_UID = 1005;
+    public static final int REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG = 1006;
+
 
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
     private static final String MODEL_LOADED_BROADCAST_ACTION = "TEST_MODEL_LOADED";
@@ -150,6 +155,7 @@ public class OnDeviceIntelligenceManagerTest {
         mContext = getInstrumentation().getContext();
         mOnDeviceIntelligenceManager = mContext.getSystemService(OnDeviceIntelligenceManager.class);
         bindToTestableOnDeviceIntelligenceServices();
+        setTestableDeviceConfigNamespace(TEST_OD_NAMESPACE);
     }
 
     @After
@@ -1091,6 +1097,51 @@ public class OnDeviceIntelligenceManagerTest {
         CtsIntelligenceService.waitForUnbind();
         resetSecureSettings();
     }
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void deviceConfigUpdateMustBeSentOnInferenceServiceConnected() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE,
+                        "android.permission.WRITE_DEVICE_CONFIG",
+                        "android.permission.READ_DEVICE_CONFIG",
+                        "android.permission.MONITOR_DEVICE_CONFIG_ACCESS");
+        Feature feature = new Feature.Builder(1).build();
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        String currentVal = DeviceConfig.getProperty(TEST_OD_NAMESPACE, "key1");
+        if (currentVal == null) {
+            currentVal = "val1";
+        }
+        String modifiedVal = currentVal + "_new";
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                Bundle.EMPTY, REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG, null,
+                null, EXECUTOR, new ProcessingCallback() {
+                    @Override
+                    public void onResult(Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        PersistableBundle receivedConfig = result.getParcelable(TEST_KEY,
+                                PersistableBundle.class);
+                        assertThat(receivedConfig.containsKey("key1")).isTrue();
+                        assertThat(receivedConfig.getString("key1")).isEqualTo(modifiedVal);
+
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+                });
+        Executors.newScheduledThreadPool(1).schedule(
+                () -> {
+                    DeviceConfig.setProperty(TEST_OD_NAMESPACE, "key1", modifiedVal, false);
+                    Log.i(TAG, "Finished writing property to device config.");
+                }, 2L,
+                SECONDS);
+        assertThat(statusLatch.await(10, SECONDS)).isTrue();
+        DeviceConfig.deleteProperty(TEST_OD_NAMESPACE, "key1");
+    }
+
 
     public static void clearTestableOnDeviceIntelligenceService() {
         runShellCommand("cmd on_device_intelligence set-temporary-services");
@@ -1139,6 +1190,13 @@ public class OnDeviceIntelligenceManagerTest {
         runShellCommand(
                 "cmd on_device_intelligence set-model-broadcasts %s %s %s %d",
                 broadcastKeys[0], broadcastKeys[1], packageName, TEMPORARY_SERVICE_DURATION);
+    }
+
+
+    public static void setTestableDeviceConfigNamespace(String configNamespace) {
+        runShellCommand(
+                "cmd on_device_intelligence set-deviceconfig-namespace %s %d", configNamespace,
+                TEMPORARY_SERVICE_DURATION);
     }
 
     public static void setTestableOnDeviceIntelligenceServiceNames(String[] serviceNames) {

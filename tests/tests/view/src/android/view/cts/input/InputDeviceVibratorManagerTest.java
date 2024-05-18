@@ -69,6 +69,9 @@ public class InputDeviceVibratorManagerTest {
     /** The device id inside the resource file (register command) */
     private int mDeviceId;
 
+    @Rule
+    public DebugInputRule mDebugInputRule = new DebugInputRule();
+
     /**
      * Get a vibrator manager from input device with specified Vendor Id and Product Id.
      * @param vid Vendor Id
@@ -89,9 +92,6 @@ public class InputDeviceVibratorManagerTest {
         return null;
     }
 
-    @Rule
-    public DebugInputRule mDebugInputRule = new DebugInputRule();
-
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -99,8 +99,7 @@ public class InputDeviceVibratorManagerTest {
         assertNotNull(mInputManager);
         mParser = new InputJsonParser(mInstrumentation.getTargetContext());
 
-        mUinputDevice = UinputDevice.create(mInstrumentation, R.raw.google_gamepad_register,
-                InputDevice.SOURCE_KEYBOARD);
+        mUinputDevice = new UinputGoogleGamepad(mInstrumentation);
         mDeviceId = mUinputDevice.getRegisterCommandDeviceId();
         mVibratorManager = getVibratorManager(mUinputDevice.getVendorId(),
                 mUinputDevice.getProductId());

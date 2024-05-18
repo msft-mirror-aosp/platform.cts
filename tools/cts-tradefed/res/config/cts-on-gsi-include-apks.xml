@@ -46,7 +46,7 @@
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.AutoRevokeTest" />
 
     <!-- No Gallery2, Music -->
-    <option name="compatibility:include-filter" value="CtsProviderTestCases android.provider.cts.media.MediaStoreIntentsTest" />
+    <option name="compatibility:include-filter" value="CtsMediaProviderTestCases android.provider.cts.media.MediaStoreIntentsTest" />
 
     <!-- No Music -->
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.AvailableIntentsTest#testMusicPlayback" />
