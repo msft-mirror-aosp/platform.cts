@@ -1156,13 +1156,16 @@ public class TestUtils {
         return packageManager.hasSystemFeature(feature);
     }
 
-    private static void scrollIntoView(UiSelector selector) {
+    private static void scrollIntoView(UiSelector selector) throws Exception {
         UiScrollable uiScrollable = new UiScrollable(new UiSelector().scrollable(true));
+        uiScrollable.setSwipeDeadZonePercentage(0.25);
         try {
             uiScrollable.scrollIntoView(selector);
         } catch (UiObjectNotFoundException e) {
             // Scrolling can fail if the UI is not scrollable
         }
+        // Sleep for a few moments to let the scroll fully stop.
+        Thread.sleep(250);
     }
 
     /**
