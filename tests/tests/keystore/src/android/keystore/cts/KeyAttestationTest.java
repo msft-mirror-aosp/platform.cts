@@ -94,7 +94,6 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -420,7 +419,7 @@ public class KeyAttestationTest {
             // Feature Version is required on devices launching with Android 12 (API Level
             // 31) but may be reported on devices launching with an earlier version. If it's
             // present, it must match what is reported in attestation.
-            if (PropertyUtil.getFirstApiLevel() >= 31) {
+            if (TestUtils.getVendorApiLevel() >= 31) {
                 assertNotEquals(0, keyStoreFeatureVersion);
             }
             if (keyStoreFeatureVersion != 0) {
@@ -1276,13 +1275,8 @@ public class KeyAttestationTest {
         return expectedPurposes;
     }
 
-    private boolean isGsiImage() {
-        final File initGsiRc= new File("/system/system_ext/etc/init/init.gsi.rc");
-        return initGsiRc.exists();
-    }
-
     private void checkSystemPatchLevel(int teeOsPatchLevel, int systemPatchLevel) {
-        if (isGsiImage()) {
+        if (TestUtils.isGsiImage()) {
             // b/168663786: When using a GSI image, the system patch level might be
             // greater than or equal to the OS patch level reported from TEE.
             assertThat("For GSI image TEE os patch level should be less than or equal to system"
