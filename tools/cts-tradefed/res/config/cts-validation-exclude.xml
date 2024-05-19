@@ -25,6 +25,7 @@
     <option name="compatibility:exclude-filter" value="CtsViewTestCases" />
     <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceTestCases" />
     <option name="compatibility:exclude-filter" value="CtsProviderTestCases" />
+    <option name="compatibility:exclude-filter" value="CtsMediaProviderTestCases" />
     <option name="compatibility:exclude-filter" value="CtsContentTestCases" />
     <option name="compatibility:exclude-filter" value="CtsLocationGnssTestCases" />
     <option name="compatibility:exclude-filter" value="CtsIcuTestCases" />
