@@ -510,6 +510,8 @@ public class NfcAdapterTest {
 
             // TODO: Fix these tests as we add more functionality to this API surface.
             nfcOemExtension.clearPreference();
+            nfcOemExtension.synchronizeScreenState();
+            nfcOemExtension.maybeTriggerFirmwareUpdate();
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }
