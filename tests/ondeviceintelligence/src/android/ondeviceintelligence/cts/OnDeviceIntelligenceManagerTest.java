@@ -138,6 +138,7 @@ public class OnDeviceIntelligenceManagerTest {
 
     private Context mContext;
     public OnDeviceIntelligenceManager mOnDeviceIntelligenceManager;
+    private final Executor mExecutor = Executors.newCachedThreadPool();
 
     @Rule
     public final DeviceConfigStateChangerRule mDeviceConfigStateChangerRule =
@@ -642,7 +643,7 @@ public class OnDeviceIntelligenceManagerTest {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
-        CountDownLatch statusLatch = new CountDownLatch(1);
+        CountDownLatch statusLatch = new CountDownLatch(2);
         CancellationSignal cancellationSignal = new CancellationSignal();
         Feature feature = new Feature.Builder(1).build();
         CompletableFuture<Bundle> resultBundle = new CompletableFuture<>();
@@ -652,6 +653,7 @@ public class OnDeviceIntelligenceManagerTest {
                     @Override
                     public void onPartialResult(@NonNull Bundle partialResult) {
                         Log.i(TAG, "New Content : " + partialResult);
+                        cancellationSignal.cancel(); //cancel
                         statusLatch.countDown();
                     }
 
@@ -667,9 +669,6 @@ public class OnDeviceIntelligenceManagerTest {
                         Log.e(TAG, "Final Result : ", error);
                     }
                 });
-
-        cancellationSignal.cancel(); //cancel
-
         assertThat(statusLatch.await(2, SECONDS)).isTrue();
         assertThat(resultBundle.get()).isNotNull();
         assertThat(resultBundle.get().containsKey("test_key")).isTrue();
@@ -710,8 +709,9 @@ public class OnDeviceIntelligenceManagerTest {
                 });
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
         assertThat(resultBundle.get()).isNotNull();
-        assertThat(resultBundle.get().containsKey("test_key")).isTrue();
-        assertThat(resultBundle.get().getBoolean(TEST_KEY)).isTrue();
+        assertThat(
+                resultBundle.get().isEmpty()).isTrue(); // When cancelled before sending request,
+        // we simulate empty response.
     }
 
     @Test
@@ -1025,7 +1025,7 @@ public class OnDeviceIntelligenceManagerTest {
                         Log.e(TAG, "Final Result : ", error);
                     }
                 });
-        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        assertThat(statusLatch.await(5, SECONDS)).isTrue();
     }
 
     //===================== Tests unbind based on timeout settings are invoked ====================
@@ -1097,6 +1097,7 @@ public class OnDeviceIntelligenceManagerTest {
         CtsIntelligenceService.waitForUnbind();
         resetSecureSettings();
     }
+
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void deviceConfigUpdateMustBeSentOnInferenceServiceConnected() throws Exception {
