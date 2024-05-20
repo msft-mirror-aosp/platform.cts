@@ -131,7 +131,7 @@ public class OnDeviceIntelligenceManagerTest {
     public static final int REQUEST_TYPE_GET_AUGMENTED_DATA = 1004;
     public static final int REQUEST_TYPE_GET_CALLER_UID = 1005;
     public static final int REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG = 1006;
-
+    public static final int REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY = 1007;
 
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
     private static final String MODEL_LOADED_BROADCAST_ACTION = "TEST_MODEL_LOADED";
@@ -872,7 +872,7 @@ public class OnDeviceIntelligenceManagerTest {
     public void canAccessFilesInIsolated() throws Exception {
         int[] requestTypes =
                 new int[]{REQUEST_TYPE_GET_FILE_FROM_MAP, REQUEST_TYPE_GET_FILE_FROM_STREAM,
-                        REQUEST_TYPE_GET_FILE_FROM_PFD};
+                        REQUEST_TYPE_GET_FILE_FROM_PFD, REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY};
         for (int requestType : requestTypes) {
             sendRequestToReadTestFile(requestType);
         }
