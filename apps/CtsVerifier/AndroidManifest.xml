@@ -4801,6 +4801,18 @@
                        android:value="android.provider.AlarmClock#ACTION_SHOW_ALARMS|android.provider.AlarmClock#ACTION_SET_ALARM|android.provider.AlarmClock#ACTION_SET_TIMER" />
         </activity>
 
+        <activity android:name=".multidevice.MultiDeviceTestsActivity"
+                android:exported="true"
+                android:label="@string/multi_device_tests_title">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_multidevice" />
+            <meta-data android:name="display_mode"
+                       android:value="single_display_mode" />
+        </activity>
+
 <!-- TODO: enable when not requiring to tap the screen and timeouts are tuned -->
 <!-- Removed from initial L release
 
