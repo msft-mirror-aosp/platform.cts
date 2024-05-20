@@ -1,0 +1,6 @@
+TestBeds:
+  - Name: cts_nfc_hce_multi_device_test
+    Controllers:
+        AndroidDevice:
+          - serial: "<device-id>"
+          - serial: "<device-id>"
