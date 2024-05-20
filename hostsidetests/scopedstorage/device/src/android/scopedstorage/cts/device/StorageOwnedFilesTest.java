@@ -70,6 +70,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
@@ -149,18 +150,23 @@ public class StorageOwnedFilesTest {
     public void owned_deleteRequest() throws Exception {
         File fileToBeDeleted1 = new File(getDcimDir(), TAG + "_delete_1.jpg");
         File fileToBeDeleted2 = new File(getDcimDir(), TAG + "_delete_2.mp4");
+        Set<File> filesToBeDeleted = new HashSet<>();
+        filesToBeDeleted.add(fileToBeDeleted1);
+        filesToBeDeleted.add(fileToBeDeleted2);
         try {
             Uri uriToBeDeleted1 = sFilesRule.createFile(fileToBeDeleted1);
             Uri uriToBeDeleted2 = sFilesRule.createFile(fileToBeDeleted2);
-            Log.e(TAG, "alea " + uriToBeDeleted1 + " " + uriToBeDeleted2);
             doEscalation(
                     MediaStore.createDeleteRequest(sContentResolver,
                             Arrays.asList(uriToBeDeleted1, uriToBeDeleted2)));
             assertResolver_uriDoesNotExist(uriToBeDeleted1, sContentResolver);
+            filesToBeDeleted.remove(fileToBeDeleted1);
             assertResolver_uriDoesNotExist(uriToBeDeleted2, sContentResolver);
+            filesToBeDeleted.remove(fileToBeDeleted2);
         } finally {
-            fileToBeDeleted1.delete();
-            fileToBeDeleted2.delete();
+            for(File f: filesToBeDeleted) {
+                f.delete();
+            }
         }
     }
 
