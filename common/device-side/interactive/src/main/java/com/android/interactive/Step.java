@@ -20,7 +20,9 @@ import static com.android.bedstead.nene.permissions.CommonPermissions.INTERNAL_S
 import static com.android.bedstead.nene.permissions.CommonPermissions.SYSTEM_ALERT_WINDOW;
 import static com.android.bedstead.nene.permissions.CommonPermissions.SYSTEM_APPLICATION_OVERLAY;
 import static com.android.interactive.Automator.AUTOMATION_FILE;
+import static com.android.interactive.testrules.TestNameSaver.INTERACTIVE_TEST_NAME;
 
+import android.content.Context;
 import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.Looper;
@@ -418,7 +420,15 @@ public abstract class Step<E> {
         if (!mHasTakenScreenshot
                 && TestApis.instrumentation().arguments().getBoolean("TAKE_SCREENSHOT", false)) {
             mHasTakenScreenshot = true;
-            ScreenshotUtil.captureScreenshot(getClass().getCanonicalName());
+            String testName =
+                    TestApis.context()
+                            .instrumentedContext()
+                            .getSharedPreferences(INTERACTIVE_TEST_NAME, Context.MODE_PRIVATE)
+                            .getString(INTERACTIVE_TEST_NAME, "");
+            ScreenshotUtil.captureScreenshot(
+                    testName.isEmpty()
+                            ? getClass().getCanonicalName()
+                            : testName + "__" + getClass().getSimpleName());
         }
         if (mInstructionView != null) {
             TestApis.context()
