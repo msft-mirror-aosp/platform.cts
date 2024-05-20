@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsWallpaperEffectsGenerationServiceTestCases",
+    team: "trendy_team_system_performance",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.annotation_annotation",
