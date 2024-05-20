@@ -214,6 +214,7 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     private Context mOtherUserContext;
     private UsageStatsManager mOtherUsageStats;
     private WindowManagerStateHelper mWMStateHelper;
+    private NotificationManager mNotificationManager;
 
     @Before
     public void setUp() throws Exception {
@@ -231,6 +232,10 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         assumeTrue("App Standby not enabled on device", AppStandbyUtils.isAppStandbyEnabled());
         setAppOpsMode("allow");
         mCachedUsageSourceSetting = getSetting(Settings.Global.APP_TIME_LIMIT_USAGE_SOURCE);
+        mNotificationManager =
+                (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.cancelAll();
+
     }
 
     @After
@@ -910,8 +915,6 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     }
 
     private void generateAndSendNotification() throws Exception {
-        final NotificationManager mNotificationManager =
-                (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
         final NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, "Channel",
                 NotificationManager.IMPORTANCE_DEFAULT);
         // Configure the notification channel.

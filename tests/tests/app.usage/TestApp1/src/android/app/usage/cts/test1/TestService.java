@@ -43,7 +43,7 @@ public class TestService extends Service {
         public void createNotificationChannel(String channelId, String channelName,
                 String channelDescription) {
             final NotificationChannel channel = new NotificationChannel(channelId, channelName,
-                    NotificationManager.IMPORTANCE_DEFAULT);
+                    NotificationManager.IMPORTANCE_HIGH);
             channel.setDescription(channelDescription);
             getNotificationManager().createNotificationChannel(channel);
         }
