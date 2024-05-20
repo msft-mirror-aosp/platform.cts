@@ -97,7 +97,10 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     public void onInferenceServiceConnected() {
         mAsyncRequestExecutor.execute(() -> {
             try {
-                getOrCreateTestFile();
+                File testFile = new File(getFilesDir(), TEST_FILE_NAME);
+                File testFile2 = new File(TEST_FILE_NAME);
+                populateTestContent(testFile);
+                populateTestContent(testFile2);
             } catch (IOException e) {
                 Log.i(TAG, "Received failure when creating file.");
             }
@@ -130,7 +133,8 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     private void createAndPopulateTestFile(
             @NonNull Consumer<Map<String, ParcelFileDescriptor>> fileDescriptorMapConsumer) {
         try {
-            File testFile = getOrCreateTestFile();
+            File testFile = new File(getFilesDir(), TEST_FILE_NAME);
+            populateTestContent(testFile);
             try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(testFile,
                     ParcelFileDescriptor.MODE_READ_ONLY)) {
                 Map<String, ParcelFileDescriptor> fileDescriptorMap = new ArrayMap<>();
@@ -189,7 +193,6 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onGetVersion(@NonNull LongConsumer versionConsumer) {
         versionConsumer.accept(1);
-
     }
 
     /**
@@ -232,18 +235,14 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
         sUnbindLatch = null;
     }
 
-    private File getOrCreateTestFile() throws IOException {
-        File path = this.getFilesDir();
-        File file = new File(path, TEST_FILE_NAME);
+    private void populateTestContent(File file) throws IOException {
         if (file.exists()) {
-            return file;
+            return;
         }
 
         try (FileOutputStream stream = new FileOutputStream(file)) {
             stream.write(TEST_CONTENT.getBytes());
         }
-
-        return file;
     }
 
     private static boolean isMainThread() {

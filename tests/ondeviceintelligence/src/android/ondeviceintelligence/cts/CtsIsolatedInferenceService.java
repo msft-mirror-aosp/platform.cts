@@ -188,7 +188,21 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
                 == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_FILE_FROM_PFD) {
             Bundle bundle = new Bundle();
             try {
-                bundle.putString(TEST_KEY, fetchFileContentFromPfd().get());
+                bundle.putString(TEST_KEY,
+                        fetchFileContentFromPfd(
+                                getFilesDir().getPath() + "/" + TEST_FILE_NAME).get());
+                callback.onResult(bundle);
+            } catch (IOException | InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+            return;
+        }
+
+        if (requestType
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY) {
+            Bundle bundle = new Bundle();
+            try {
+                bundle.putString(TEST_KEY, fetchFileContentFromPfd(TEST_FILE_NAME).get());
                 callback.onResult(bundle);
             } catch (IOException | InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
@@ -355,10 +369,10 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         }
     }
 
-    private Future<String> fetchFileContentFromPfd() throws IOException {
+    private Future<String> fetchFileContentFromPfd(String filePath) throws IOException {
         return CallbackToFutureAdapter.getFuture(
                 completer -> {
-                    getReadOnlyFileDescriptor(TEST_FILE_NAME, getMainExecutor(),
+                    getReadOnlyFileDescriptor(filePath, getMainExecutor(),
                             pfd -> {
                                 try (InputStreamReader isr = new InputStreamReader(
                                         new FileInputStream(pfd.getFileDescriptor()));
