@@ -20,7 +20,9 @@ import static com.android.bedstead.permissions.CommonPermissions.INTERNAL_SYSTEM
 import static com.android.bedstead.permissions.CommonPermissions.SYSTEM_ALERT_WINDOW;
 import static com.android.bedstead.permissions.CommonPermissions.SYSTEM_APPLICATION_OVERLAY;
 import static com.android.interactive.Automator.AUTOMATION_FILE;
+import static com.android.interactive.testrules.TestNameSaver.INTERACTIVE_TEST_NAME;
 
+import android.content.Context;
 import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.Looper;
@@ -37,8 +39,8 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.TestLifecycleListener;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.interactive.annotations.CacheableStep;
 
 import java.time.Duration;
@@ -260,14 +262,16 @@ public abstract class Step<E> {
     /** Adds a button to the interaction prompt. */
     protected void addButton(String title, Runnable onClick) {
         // Push to UI thread to avoid animation issues when adding the button
-        new Handler(Looper.getMainLooper()).post(() -> {
-            Button btn = new Button(TestApis.context().instrumentedContext());
-            btn.setText(title);
-            btn.setOnClickListener(v -> onClick.run());
+        new Handler(Looper.getMainLooper())
+                .post(
+                        () -> {
+                            Button btn = new Button(TestApis.context().instrumentedContext());
+                            btn.setText(title);
+                            btn.setOnClickListener(v -> onClick.run());
 
-            GridLayout layout = mInstructionView.findViewById(R.id.buttons);
-            layout.addView(btn);
-        });
+                            GridLayout layout = mInstructionView.findViewById(R.id.buttons);
+                            layout.addView(btn);
+                        });
     }
 
     /**
@@ -276,20 +280,20 @@ public abstract class Step<E> {
      */
     protected void addSwapButton() {
         // Push to UI thread to avoid animation issues when adding the button
-        new Handler(Looper.getMainLooper()).post(() -> {
-            Button btn = new Button(TestApis.context().instrumentedContext());
-            // up/down arrow
-            btn.setText("\u21F5");
-            btn.setOnClickListener(v -> swap());
+        new Handler(Looper.getMainLooper())
+                .post(
+                        () -> {
+                            Button btn = new Button(TestApis.context().instrumentedContext());
+                            // up/down arrow
+                            btn.setText("\u21F5");
+                            btn.setOnClickListener(v -> swap());
 
-            GridLayout layout = mInstructionView.findViewById(R.id.buttons);
-            layout.addView(btn);
-        });
+                            GridLayout layout = mInstructionView.findViewById(R.id.buttons);
+                            layout.addView(btn);
+                        });
     }
 
-    /**
-     * Adds a small button that allows users to collapse the instructions.
-     */
+    /** Adds a small button that allows users to collapse the instructions. */
     protected void addCollapseInstructionsButton() {
         mCollapseButton = new Button(TestApis.context().instrumentedContext());
         mCollapseButton.setText("\u21F1");
@@ -381,7 +385,15 @@ public abstract class Step<E> {
         if (!mHasTakenScreenshot
                 && TestApis.instrumentation().arguments().getBoolean("TAKE_SCREENSHOT", false)) {
             mHasTakenScreenshot = true;
-            ScreenshotUtil.captureScreenshot(getClass().getCanonicalName());
+            String testName =
+                    TestApis.context()
+                            .instrumentedContext()
+                            .getSharedPreferences(INTERACTIVE_TEST_NAME, Context.MODE_PRIVATE)
+                            .getString(INTERACTIVE_TEST_NAME, "");
+            ScreenshotUtil.captureScreenshot(
+                    testName.isEmpty()
+                            ? getClass().getCanonicalName()
+                            : testName + "__" + getClass().getSimpleName());
         }
         if (mInstructionView != null) {
             TestApis.context()
