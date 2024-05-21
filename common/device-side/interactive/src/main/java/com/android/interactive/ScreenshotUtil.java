@@ -51,7 +51,8 @@ public final class ScreenshotUtil {
         }
 
         File screenshotFile =
-                new File(screenshotDir, screenshotName + "_" + System.currentTimeMillis() + ".png");
+                new File(
+                        screenshotDir, screenshotName + "__" + System.currentTimeMillis() + ".png");
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
                 .takeScreenshot(screenshotFile);
     }

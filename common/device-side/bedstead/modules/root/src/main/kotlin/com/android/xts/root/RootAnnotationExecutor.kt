@@ -39,9 +39,13 @@ class RootAnnotationExecutor : AnnotationExecutor {
         private val isInstrumentedAsRoot: Boolean by lazy {
             // We need to replace this with a better way of discovering root instrumentation
             try {
+                // TODO: This is only available from V+ so will always return
+                // false before that even if we are instrumented as root. We
+                // should replace this with an alternative way of discovering
+                // root instrumentation.
                 ShellCommandUtils.uiAutomation().clearOverridePermissionStates(-1)
                 true
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.i("RootAnnotationExecutor", "Got exception while trying to act as root", e)
                 false
             }

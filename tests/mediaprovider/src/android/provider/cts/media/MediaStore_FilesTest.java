@@ -206,6 +206,12 @@ public class MediaStore_FilesTest {
             mResolver.delete(uri, null, null);
         }
 
+        // Trigger scan to update latest metadata in DB
+        MediaStore.scanVolume(mResolver, MediaStore.VOLUME_INTERNAL);
+        try(Cursor c = mResolver.query(internalFiles, null, null, null, null)){
+            assertTrue(c.getCount() > 0);
+        }
+
         for (String invalid : new String[] {
                 "/data/media/" + System.nanoTime() + ".jpg",
                 "/data/system/appops.xml",

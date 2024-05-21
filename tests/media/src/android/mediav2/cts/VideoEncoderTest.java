@@ -62,12 +62,14 @@ import java.util.Objects;
 @RunWith(Parameterized.class)
 public class VideoEncoderTest extends CodecEncoderTestBase {
     private final SupportClass mSupportRequirements;
+    private final int mFrameLimit;
 
     public VideoEncoderTest(String encoder, String mediaType, EncoderConfigParams encCfgParams,
             SupportClass supportRequirements, @SuppressWarnings("unused") String testLabel,
             String allTestParams) {
         super(encoder, mediaType, new EncoderConfigParams[]{encCfgParams}, allTestParams);
         mSupportRequirements = supportRequirements;
+        mFrameLimit = Math.max(encCfgParams.mFrameRate, 30);
     }
 
     private static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int bitRate,
@@ -272,7 +274,7 @@ public class VideoEncoderTest extends CodecEncoderTestBase {
         if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1) && CodecTestBase.IS_BEFORE_U) {
             muxOutput = false;
         }
-        encodeToMemory(mCodecName, mEncCfgParams[0], res, Integer.MAX_VALUE, false, muxOutput);
+        encodeToMemory(mCodecName, mEncCfgParams[0], res, mFrameLimit, false, muxOutput);
 
         // validate output
         if (muxOutput) {

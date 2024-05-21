@@ -19,6 +19,7 @@ package android.server.wm;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -105,6 +106,15 @@ public class TestServiceClient implements ITestService {
     public void sendPendingIntentWithActivityForResult(PendingIntent pendingIntent,
             Bundle sendOptions) throws RemoteException {
         mTestService.sendPendingIntentWithActivityForResult(pendingIntent, sendOptions);
+    }
+
+    /**
+     * @see android.server.wm.backgroundactivity.common.TestService#sendIntentSender(
+     *          IntentSender, Bundle)
+     */
+    public void sendIntentSender(IntentSender intentSender,
+            Bundle sendOptions) throws RemoteException {
+        mTestService.sendIntentSender(intentSender, sendOptions);
     }
 
     @Override

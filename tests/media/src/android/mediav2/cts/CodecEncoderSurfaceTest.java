@@ -83,6 +83,7 @@ import java.util.Objects;
 public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
     private static final String LOG_TAG = CodecEncoderSurfaceTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
+    private final int mFrameLimit;
 
     private final ArrayList<String> mTmpFiles = new ArrayList<>();
 
@@ -99,6 +100,7 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
             @SuppressWarnings("unused") String testLabel, String allTestParams) {
         super(encoder, mediaType, decoder, testFileMediaType, MEDIA_DIR + testFile, encCfgParams,
                 colorFormat, isOutputToneMapped, usePersistentSurface, allTestParams);
+        mFrameLimit = Math.max(encCfgParams.mFrameRate, 30);
     }
 
     private static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int bitRate,
@@ -320,7 +322,7 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
                 mTmpFiles.add(tmpPath);
             }
             encodeToMemory(isAsync, false, saveToMem, (count == 0 ? ref : test), muxOutput,
-                    tmpPath);
+                    tmpPath, mFrameLimit);
             // TODO:(b/149027258) Remove false once output is validated across runs
             if (false) {
                 if (count != 0 && !ref.equals(test)) {
@@ -340,7 +342,8 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
 
     private native boolean nativeTestSimpleEncode(String encoder, String decoder, String mediaType,
             String testFile, String testFileMediaType, String muxFile, int colorFormat,
-            boolean usePersistentSurface, String cfgParams, String separator, StringBuilder retMsg);
+            boolean usePersistentSurface, String cfgParams, String separator, StringBuilder retMsg,
+            int frameLimit);
 
     /**
      * Test is similar to {@link #testSimpleEncodeFromSurface()} but uses ndk api
@@ -363,7 +366,7 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
         boolean isPass = nativeTestSimpleEncode(mEncoderName, mDecoderName, mEncMediaType,
                 mTestFile, mTestFileMediaType, tmpPath, colorFormat, mUsePersistentSurface,
                 EncoderConfigParams.serializeMediaFormat(mEncoderFormat),
-                EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig);
+                EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig, mFrameLimit);
         assertTrue(mTestConfig.toString(), isPass);
         if (tmpPath != null) {
             if (mEncCfgParams.mInputBitDepth > 8 && !VNDK_IS_AT_LEAST_T) return;

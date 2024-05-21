@@ -33,6 +33,7 @@ import android.app.appsearch.GenericDocument;
 import android.app.appsearch.functions.AppFunctionManager;
 import android.app.appsearch.functions.ExecuteAppFunctionRequest;
 import android.app.appsearch.functions.ExecuteAppFunctionResponse;
+import android.app.appsearch.testutil.PackageUtil;
 import android.app.appsearch.testutil.functions.ActivityCreationSynchronizer;
 import android.app.appsearch.testutil.functions.TestAppFunctionServiceLifecycleReceiver;
 import android.content.Context;
@@ -62,6 +63,16 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * CTS for {@link AppFunctionManager}.
+ *
+ * Implementation notes:
+ * We are using Bedstead to create the multi-user environment. To speed up test execution,
+ * Bedstead does not clean up the environment unless the test explicitly asks it to.
+ * For example, if there is a test setting up a device owner with @EnsureHasDeviceOwner, the
+ * latter tests will run with a device owner. To tell Bedstead to remove the device owner,
+ * we annotate the test functions with @EnsureHasNoDeviceOwner.
+ */
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)
 @RunWith(BedsteadJUnit4.class)
 public class AppFunctionManagerCtsTest {
@@ -73,6 +84,7 @@ public class AppFunctionManagerCtsTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TARGET_PACKAGE = "com.android.cts.appsearch";
+    private static final String PKG_B = "com.android.cts.appsearch.helper.b";
     private static final long SHORT_TIMEOUT_SECOND = 1;
     private static final long LONG_TIMEOUT_SECOND = 5;
 
@@ -160,7 +172,7 @@ public class AppFunctionManagerCtsTest {
     @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
     @Test
     @EnsureHasNoDeviceOwner
-    public void executeAppFunction_otherPackage() throws Exception {
+    public void executeAppFunction_otherNonExistingOtherPackage() throws Exception {
         ExecuteAppFunctionRequest request =
                 new ExecuteAppFunctionRequest.Builder("other.package", "someMethod").build();
 
@@ -169,6 +181,27 @@ public class AppFunctionManagerCtsTest {
         assertThat(response.isSuccess()).isFalse();
         // Apps without the permission can only invoke functions from themselves.
         assertThat(response.getResultCode()).isEqualTo(AppSearchResult.RESULT_SECURITY_ERROR);
+        assertThat(response.getErrorMessage()).endsWith(
+                "is not allowed to call executeAppFunction");
+        assertServiceWasNotCreated();
+    }
+
+    @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
+    @Test
+    @EnsureHasNoDeviceOwner
+    public void executeAppFunction_otherExistingTargetPackage() throws Exception {
+        ExecuteAppFunctionRequest request =
+                new ExecuteAppFunctionRequest.Builder(PKG_B, "someMethod").build();
+
+        AppSearchResult<ExecuteAppFunctionResponse> response = executeAppFunctionAndWait(request);
+
+        assertThat(response.isSuccess()).isFalse();
+        assertThat(response.getResultCode()).isEqualTo(AppSearchResult.RESULT_SECURITY_ERROR);
+        // The error message from this and executeAppFunction_otherNonExistingOther must be kept
+        // in sync. This verifies that a caller cannot tell whether a package is installed or not by
+        // comparing the error messages.
+        assertThat(response.getErrorMessage()).endsWith(
+                "is not allowed to call executeAppFunction");
         assertServiceWasNotCreated();
     }
 
@@ -314,6 +347,37 @@ public class AppFunctionManagerCtsTest {
 
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getResultCode()).isEqualTo(RESULT_SECURITY_ERROR);
+        assertServiceWasNotCreated();
+    }
+
+    @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
+    @Test
+    @EnsureHasNoDeviceOwner
+    public void executeAppFunction_correctSha256Certificate() throws Exception {
+        ExecuteAppFunctionRequest request =
+                new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp")
+                        .setSha256Certificate(PackageUtil.getSelfPackageSha256Cert(mContext))
+                        .build();
+
+        AppSearchResult<ExecuteAppFunctionResponse> response = executeAppFunctionAndWait(request);
+
+        assertThat(response.isSuccess()).isTrue();
+        assertServiceDestroyed();
+    }
+
+    @ApiTest(apis = {"android.app.appsearch.functions.AppFunctionManager#executeAppFunction"})
+    @Test
+    @EnsureHasNoDeviceOwner
+    public void executeAppFunction_wrongSha256Certificate() throws Exception {
+        ExecuteAppFunctionRequest request =
+                new ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp")
+                        .setSha256Certificate(new byte[]{100})
+                        .build();
+
+        AppSearchResult<ExecuteAppFunctionResponse> response = executeAppFunctionAndWait(request);
+
+        assertThat(response.isSuccess()).isFalse();
+        assertThat(response.getResultCode()).isEqualTo(RESULT_NOT_FOUND);
         assertServiceWasNotCreated();
     }
 

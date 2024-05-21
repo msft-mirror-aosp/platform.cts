@@ -87,7 +87,7 @@ public class ListeningPortsTest extends AndroidTestCase {
         EXCEPTION_PATTERNS.add("127.0.0.1 1084");
         EXCEPTION_PATTERNS.add("::1 1084");
         EXCEPTION_PATTERNS.add("224.0.0.116 1084");
-        EXCEPTION_PATTERNS.add("ff02::16 1084");
+        EXCEPTION_PATTERNS.add("ff02::116 1084");
         EXCEPTION_PATTERNS.add("0.0.0.0 1084");
         EXCEPTION_PATTERNS.add(":: 1084");
         //no current patterns involve address, port and UID combinations

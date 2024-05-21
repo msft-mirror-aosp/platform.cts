@@ -32,6 +32,8 @@ import android.os.Build;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ModuleSpecificTest;
+
 import com.google.android.exoplayer2.testutil.FakeExtractorInput;
 import com.google.android.exoplayer2.testutil.TestUtil;
 import com.google.android.exoplayer2.util.Util;
@@ -47,6 +49,7 @@ import java.util.Collections;
 import java.util.Map;
 
 @RunWith(AndroidJUnit4.class)
+@ModuleSpecificTest
 public class MediaParserTest {
 
     private static final String PARAMETER_IN_BAND_CRYPTO_INFO =
