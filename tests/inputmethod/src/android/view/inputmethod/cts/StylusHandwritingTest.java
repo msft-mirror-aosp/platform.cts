@@ -1059,7 +1059,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      */
     @Test
     public void testHandwriting_fingerTouchIsIgnored() throws Exception {
-        int displayId;
+        int displayId = 0;
+        String initialUserRotation = null;
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         try (MockImeSession imeSession = MockImeSession.create(
                 instrumentation.getContext(),
@@ -1076,16 +1077,12 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             Context context = focusedEditText.getContext();
             displayId = context.getDisplayId();
 
-            String initialUserRotation = TestUtils.getRotation(displayId);
+
             final Display display = context.getDisplay();
             try (UinputTouchDevice touch = new UinputTouchScreen(instrumentation, display);
                     UinputTouchDevice stylus = new UinputStylus(instrumentation, display)) {
-                String expectedRotation = "0";
-                if (!expectedRotation.equals(initialUserRotation)) {
-                    // Set device-default rotation for UinputTouchDevice to work as expected.
-                    TestUtils.setLockedRotation(displayId, expectedRotation);
-                    waitUntilActivityReadyForInput((Activity) context);
-                }
+                initialUserRotation =
+                        getInitialRotationAndAwaitExpectedRotation(displayId, context);
 
                 expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
                 notExpectEvent(
@@ -1170,8 +1167,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         NOT_EXPECT_TIMEOUT);
             } finally {
                 imeSession.callFinishStylusHandwriting();
-                TestUtils.setRotation(displayId, initialUserRotation);
             }
+        } finally {
+            TestUtils.setRotation(displayId, initialUserRotation);
         }
     }
 
@@ -1204,6 +1202,18 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         }
     }
 
+
+    private String getInitialRotationAndAwaitExpectedRotation(int displayId, Context context) {
+        String expectedRotation = "0";
+        String initialUserRotation = TestUtils.getRotation(displayId);
+        if (!expectedRotation.equals(initialUserRotation)) {
+            // Set device-default rotation for UinputTouchDevice to work as expected.
+            TestUtils.setLockedRotation(displayId, expectedRotation);
+            waitUntilActivityReadyForInput((Activity) context);
+        }
+        return initialUserRotation;
+    }
+
     private void waitUntilActivityReadyForInput(Activity activity) {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
@@ -1226,6 +1236,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     @Test
     @FlakyTest
     public void testOnViewClicked_withStylusTap() throws Exception {
+        UinputTouchDevice stylus = null;
+        int displayId = 0;
+        String initialUserRotation = null;
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
@@ -1238,29 +1251,35 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText focusedEditText = pair.first;
             final EditText unfocusedEditText = pair.second;
+            Context context = focusedEditText.getContext();
+            displayId = context.getDisplayId();
 
+            int x = focusedEditText.getWidth() / 2;
+            int y = focusedEditText.getHeight() / 2;
+
+            // Tap with stylus on focused editor
+            stylus = new UinputStylus(InstrumentationRegistry.getInstrumentation(),
+                            focusedEditText.getDisplay());
+            initialUserRotation = getInitialRotationAndAwaitExpectedRotation(displayId, context);
             expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
             notExpectEvent(
                     stream,
                     editorMatcher("onStartInputView", focusedMarker),
                     NOT_EXPECT_TIMEOUT);
+            TestUtils.injectStylusDownEvent(stylus, focusedEditText, x,  y);
+            TestUtils.injectStylusUpEvent(stylus);
 
-            final int startX = focusedEditText.getWidth() / 2;
-            final int startY = focusedEditText.getHeight() / 2;
-
-            // Tap with stylus on focused editor
-            TestUtils.injectStylusDownEvent(focusedEditText, startX, startY);
-            MotionEvent event = TestUtils.injectStylusUpEvent(focusedEditText, startX, startY);
-            int toolType = event.getToolType(event.getActionIndex());
-
+            int toolType = MotionEvent.TOOL_TYPE_STYLUS;
             expectEvent(
                     stream,
                     onUpdateEditorToolTypeMatcher(toolType),
                     TIMEOUT);
 
             // Tap with stylus on unfocused editor
-            TestUtils.injectStylusDownEvent(unfocusedEditText, startX, startY);
-            event = TestUtils.injectStylusUpEvent(unfocusedEditText, startX, startY);
+            x = unfocusedEditText.getWidth() / 2;
+            y = unfocusedEditText.getHeight() / 2;
+            TestUtils.injectStylusDownEvent(stylus, unfocusedEditText, x,  y);
+            TestUtils.injectStylusUpEvent(stylus);
             if (Flags.useHandwritingListenerForTooltype()) {
                 expectEvent(stream, startInputInitialEditorToolMatcher(toolType, unfocusedMarker),
                         TIMEOUT);
@@ -1269,25 +1288,14 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             }
             expectEvent(
                     stream,
-                    onUpdateEditorToolTypeMatcher(event.getToolType(event.getActionIndex())),
+                    onUpdateEditorToolTypeMatcher(toolType),
                     TIMEOUT);
-
-            if (Flags.useHandwritingListenerForTooltype()) {
-                // try handwriting on unfocused editor and onUpdateEditorToolType should be called.
-                // Note: focusedEditText is unfocused at this point.
-                final int touchSlop = getTouchSlop();
-                int endX = startX + 2 * touchSlop;
-                int endY = startY + 2 * touchSlop;
-                final int number = 5;
-                TestUtils.injectStylusDownEvent(focusedEditText, startX, startY);
-                TestUtils.injectStylusMoveEvents(focusedEditText, startX, startY,
-                        endX, endY, number);
-                event = TestUtils.injectStylusUpEvent(focusedEditText, endX, endY);
-                expectEvent(
-                        stream,
-                        onUpdateEditorToolTypeMatcher(
-                                event.getToolType(event.getActionIndex())),
-                        TIMEOUT);
+        } finally {
+            if (stylus != null) {
+                stylus.close();
+            }
+            if (initialUserRotation != null) {
+                TestUtils.setRotation(displayId, initialUserRotation);
             }
         }
     }
@@ -1299,6 +1307,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     @Test
     @FlakyTest
     public void testOnViewClicked_withFingerTap() throws Exception {
+        UinputTouchDevice touch = null;
+        int displayId = 0;
+        String initialUserRotation = null;
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
@@ -1311,36 +1322,45 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText focusedEditText = pair.first;
             final EditText unfocusedEditText = pair.second;
+            Context context = focusedEditText.getContext();
+            displayId = context.getDisplayId();
 
+            touch = new UinputTouchScreen(
+                    InstrumentationRegistry.getInstrumentation(), unfocusedEditText.getDisplay());
+            initialUserRotation = getInitialRotationAndAwaitExpectedRotation(displayId, context);
+            int toolTypeFinger = MotionEvent.TOOL_TYPE_FINGER;
             expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
             notExpectEvent(
                     stream,
                     editorMatcher("onStartInputView", focusedMarker),
                     NOT_EXPECT_TIMEOUT);
+            TestUtils.injectFingerEventOnViewCenter(
+                    touch, focusedEditText, MotionEvent.ACTION_DOWN);
+            TestUtils.injectFingerEventOnViewCenter(
+                    touch, focusedEditText, MotionEvent.ACTION_UP);
 
-            TestUtils.injectFingerEventOnViewCenter(focusedEditText, MotionEvent.ACTION_DOWN);
-            MotionEvent upEvent =
-                    TestUtils.injectFingerEventOnViewCenter(focusedEditText, MotionEvent.ACTION_UP);
-            int toolTypeFinger = upEvent.getToolType(upEvent.getActionIndex());
-            assertEquals(
-                    "tool type finger must match", MotionEvent.TOOL_TYPE_FINGER, toolTypeFinger);
             expectEvent(
                     stream,
-                    onUpdateEditorToolTypeMatcher(toolTypeFinger),
+                    onUpdateEditorToolTypeMatcher(MotionEvent.TOOL_TYPE_FINGER),
                     TIMEOUT);
 
             // tap on unfocused editor
-            TestUtils.injectFingerEventOnViewCenter(unfocusedEditText, MotionEvent.ACTION_DOWN);
-            upEvent = TestUtils.injectFingerEventOnViewCenter(
-                    unfocusedEditText, MotionEvent.ACTION_UP);
-            toolTypeFinger = upEvent.getToolType(upEvent.getActionIndex());
-            assertEquals(
-                    "tool type finger must match", MotionEvent.TOOL_TYPE_FINGER, toolTypeFinger);
+            TestUtils.injectFingerEventOnViewCenter(
+                    touch, unfocusedEditText, MotionEvent.ACTION_DOWN);
+            TestUtils.injectFingerEventOnViewCenter(
+                    touch, unfocusedEditText, MotionEvent.ACTION_UP);
             expectEvent(stream, onStartInputMatcher(toolTypeFinger, unfocusedMarker), TIMEOUT);
             expectEvent(
                     stream,
                     onUpdateEditorToolTypeMatcher(MotionEvent.TOOL_TYPE_FINGER),
                     TIMEOUT);
+        } finally {
+            if (touch != null) {
+                touch.close();
+            }
+            if (initialUserRotation != null) {
+                TestUtils.setRotation(displayId, initialUserRotation);
+            }
         }
     }
 
@@ -1829,14 +1849,16 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
     /**
      * Tap on a view with stylus to launch a new activity with Editor. The editor's
-     * initialToolType should match stylus.
+     * editor ToolType should match stylus.
      */
     @Test
-    public void testHandwriting_initialToolTypeOnNewWindow() throws Exception {
+    public void testHandwriting_editorToolTypeOnNewWindow() throws Exception {
         assumeTrue(Flags.useHandwritingListenerForTooltype());
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        UinputTouchDevice stylus = null;
         try (MockImeSession imeSession = MockImeSession.create(
-                InstrumentationRegistry.getInstrumentation().getContext(),
-                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                instrumentation.getContext(),
+                instrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
@@ -1845,6 +1867,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Use a clickable view that launches activity and focuses an editor.
             final AtomicReference<View> clickableViewRef = new AtomicReference<>();
+            final AtomicReference<View> editorViewRef = new AtomicReference<>();
             TestActivity.startSync(activity -> {
                 final LinearLayout layout = new LinearLayout(activity);
                 final View clickableView = new View(activity);
@@ -1852,10 +1875,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 clickableView.setBackgroundColor(Color.GREEN);
                 clickableView.setOnClickListener(v -> {
                     final EditText editText = new EditText(activity);
-                    editText.setIsHandwritingDelegate(true);
                     editText.setPrivateImeOptions(editTextMarker);
                     editText.setHint("editText");
                     layout.addView(editText);
+                    editorViewRef.set(editText);
                     editText.requestFocus();
                     latch.countDown();
                 });
@@ -1871,16 +1894,27 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             View clickableView = clickableViewRef.get();
             expectBindInput(stream, Process.myPid(), TIMEOUT);
             // click on view with stylus to launch new activity
-            TestUtils.injectStylusDownEvent(clickableView, 0, 0);
-            TestUtils.injectStylusUpEvent(clickableView, 0, 0);
+            stylus = new UinputStylus(instrumentation, clickableView.getDisplay());
+            final int x = clickableView.getWidth() / 2;
+            final int y = clickableView.getHeight() / 2;
+            TestUtils.injectStylusDownEvent(stylus, clickableView, x,  y);
+            TestUtils.injectStylusUpEvent(stylus);
             // Wait until editor on next activity has focus.
             latch.await(TIMEOUT_1_S, TimeUnit.MILLISECONDS);
 
-            // verify editor on new activity has initialToolType as stylus.
-            expectEvent(stream,
-                    startInputInitialEditorToolMatcher(
-                            MotionEvent.TOOL_TYPE_STYLUS, editTextMarker),
+            // call showSoftInput and make sure onUpdateToolType is stylus.
+            final InputMethodManager imm =
+                    mContext.getSystemService(InputMethodManager.class);
+            imm.showSoftInput(editorViewRef.get(), 0);
+            // verify editor on new activity has editorToolType as stylus.
+            expectEvent(
+                    stream,
+                    onUpdateEditorToolTypeMatcher(MotionEvent.TOOL_TYPE_STYLUS),
                     TIMEOUT);
+        } finally {
+            if (stylus != null) {
+                stylus.close();
+            }
         }
     }
 
