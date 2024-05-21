@@ -2977,6 +2977,7 @@
 
         <activity
             android:name=".camera.fov.PhotoCaptureActivity"
+            android:configChanges="orientation|screenSize"
             android:label="@string/camera_fov_calibration"
             android:exported="true"
             android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" >
