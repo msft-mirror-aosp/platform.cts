@@ -172,7 +172,9 @@ public class CodecEncoderBlockModelTestBase extends CodecEncoderTestBase {
                         mTrackID = mMuxer.addTrack(mCodec.getOutputFormat());
                         mMuxer.start();
                     }
-                    mMuxer.writeSampleData(mTrackID, buf, info);
+                    if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                        mMuxer.writeSampleData(mTrackID, buf, info);
+                    }
                 }
                 frame.getLinearBlock().recycle();
             }

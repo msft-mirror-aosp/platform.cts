@@ -136,7 +136,9 @@ public class CodecEncoderTestBase extends CodecTestBase {
             int trackID = muxer.addTrack(format);
             muxer.start();
             for (MediaCodec.BufferInfo info : infos) {
-                muxer.writeSampleData(trackID, buffer, info);
+                if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                    muxer.writeSampleData(trackID, buffer, info);
+                }
             }
             muxer.stop();
         } finally {
@@ -537,7 +539,9 @@ public class CodecEncoderTestBase extends CodecTestBase {
                     mTrackID = mMuxer.addTrack(mCodec.getOutputFormat());
                     mMuxer.start();
                 }
-                mMuxer.writeSampleData(mTrackID, buf, info);
+                if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                    mMuxer.writeSampleData(mTrackID, buf, info);
+                }
             }
         }
         mCodec.releaseOutputBuffer(bufferIndex, false);
