@@ -84,6 +84,7 @@
     <string name="test_category_display_cutout">DisplayCutout</string>
     <string name="test_category_other">Other</string>
     <string name="test_category_device_controls">Device controls</string>
+    <string name="test_category_multidevice">Multi Device</string>
     <string name="clear">Clear</string>
     <string name="test_results_clear_title">Remove all test results?</string>
     <string name="test_results_clear_yes">Yes</string>
@@ -3298,6 +3299,15 @@ You should be prompted to select credentials; choose the ones you just installed
         This test verifies that the user is prompted for the current keyguard password before prompting for a new password.\n
         \nClick the \"Set password\" button if you currently don\'t have a password set.\n
         \nThen click the \"Change password\" button to change it. You should be prompted for the current password first. If you are not, then mark the test as failed.
+    </string>
+
+    <!-- Strings for MultiDeviceTests. -->
+    <string name="multi_device_tests_title">Multi-device Tests</string>
+    <string name="multi_device_tests_dialog_title">Multi-device Tests Dialog</string>
+    <string name="multi_device_tests_dialog_content">
+        All multi-device host-side tests.\n
+        The DUT \"must\" be connected to a host to run these tests.\n
+        Please follow the detailed instruction of the tests to execute scripts and get results.
     </string>
 
     <!-- String for Projection Tests -->
