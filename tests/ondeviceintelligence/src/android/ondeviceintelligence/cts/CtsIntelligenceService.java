@@ -27,6 +27,7 @@ import android.app.ondeviceintelligence.FeatureDetails;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
 import android.content.Intent;
 import android.os.CancellationSignal;
+import android.os.Looper;
 import android.os.OutcomeReceiver;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
@@ -45,6 +46,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -57,6 +60,8 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     public static final long WAIT_TIMEOUT_IN_MS = 5000;
 
     private static OnDeviceIntelligenceService sService;
+    private final Executor mAsyncRequestExecutor = Executors.newCachedThreadPool();
+
 
     @Override
     public void onReady() {
@@ -90,11 +95,16 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
 
     @Override
     public void onInferenceServiceConnected() {
-        try {
-            getOrCreateTestFile();
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to create test file", e);
-        }
+        mAsyncRequestExecutor.execute(() -> {
+            try {
+                File testFile = new File(getFilesDir(), TEST_FILE_NAME);
+                File testFile2 = new File(TEST_FILE_NAME);
+                populateTestContent(testFile);
+                populateTestContent(testFile2);
+            } catch (IOException e) {
+                Log.i(TAG, "Received failure when creating file.");
+            }
+        });
         Log.i(TAG, "Received onInferenceServiceStarted");
     }
 
@@ -106,18 +116,25 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public boolean onUnbind(Intent intent) {
         Log.d(TAG, "onUnbind()");
-        if (sUnbindLatch != null) {
-            sUnbindLatch.countDown();
-        }
-
+        mAsyncRequestExecutor.execute(() -> {
+            if (sUnbindLatch != null) {
+                sUnbindLatch.countDown();
+            }
+        });
         return true;
     }
 
     @Override
     public void onGetReadOnlyFeatureFileDescriptorMap(@NonNull Feature feature,
             @NonNull Consumer<Map<String, ParcelFileDescriptor>> fileDescriptorMapConsumer) {
+        mAsyncRequestExecutor.execute(() -> createAndPopulateTestFile(fileDescriptorMapConsumer));
+    }
+
+    private void createAndPopulateTestFile(
+            @NonNull Consumer<Map<String, ParcelFileDescriptor>> fileDescriptorMapConsumer) {
         try {
-            File testFile = getOrCreateTestFile();
+            File testFile = new File(getFilesDir(), TEST_FILE_NAME);
+            populateTestContent(testFile);
             try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(testFile,
                     ParcelFileDescriptor.MODE_READ_ONLY)) {
                 Map<String, ParcelFileDescriptor> fileDescriptorMap = new ArrayMap<>();
@@ -157,6 +174,11 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onGetFeature(int callerUid, int featureId,
             @NonNull OutcomeReceiver<Feature, OnDeviceIntelligenceException> featureCallback) {
+        if (!isMainThread()) {
+            featureCallback.onError(
+                    new OnDeviceIntelligenceException(-1, "Not running on app thread."));
+        }
+
         featureCallback.onResult(getSampleFeature(featureId));
     }
 
@@ -171,7 +193,6 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onGetVersion(@NonNull LongConsumer versionConsumer) {
         versionConsumer.accept(1);
-
     }
 
     /**
@@ -214,17 +235,17 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
         sUnbindLatch = null;
     }
 
-    private File getOrCreateTestFile() throws IOException {
-        File path = this.getFilesDir();
-        File file = new File(path, TEST_FILE_NAME);
+    private void populateTestContent(File file) throws IOException {
         if (file.exists()) {
-            return file;
+            return;
         }
 
         try (FileOutputStream stream = new FileOutputStream(file)) {
             stream.write(TEST_CONTENT.getBytes());
         }
+    }
 
-        return file;
+    private static boolean isMainThread() {
+        return Looper.myLooper() == Looper.getMainLooper();
     }
 }

@@ -116,8 +116,8 @@ class InputShellCommandTest {
         val event = getMotionEvent()
         assertThat(event.source).isEqualTo(InputDevice.SOURCE_MOUSE)
         assertThat(event.action).isEqualTo(MotionEvent.ACTION_SCROLL)
-        assertThat(event.x).isEqualTo(x)
-        assertThat(event.y).isEqualTo(y)
+        assertThat(event.getRawX()).isEqualTo(x)
+        assertThat(event.getRawY()).isEqualTo(y)
         assertThat(event.getAxisValue(MotionEvent.AXIS_VSCROLL)).isEqualTo(-1)
     }
 

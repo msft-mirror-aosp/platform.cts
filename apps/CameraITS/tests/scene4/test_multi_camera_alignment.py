@@ -479,7 +479,7 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
         if j == 0:
           logging.debug('Camera %s', i)
         k[i] = camera_properties_utils.get_intrinsic_calibration(
-            physical_props[i], j == 0)
+            physical_props[i], caps[fmt, i]['metadata'], j == 0)
         r[i] = camera_properties_utils.get_rotation_matrix(
             physical_props[i], j == 0)
         t[i] = camera_properties_utils.get_translation_matrix(
@@ -502,7 +502,7 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
 
         # Correct lens distortion to image (if available) and save before/after
         if (camera_properties_utils.distortion_correction(physical_props[i]) and
-            camera_properties_utils.intrinsic_calibration(physical_props[i]) and
+            caps[fmt, i]['metadata'] and
             fmt == 'raw'):
           cv2_distort = camera_properties_utils.get_distortion_matrix(
               physical_props[i])

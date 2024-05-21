@@ -33,6 +33,7 @@ import android.app.ondeviceintelligence.TokenInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
+import android.os.Looper;
 import android.os.OutcomeReceiver;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
@@ -68,7 +69,7 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
     private final Executor mAsyncRequestExecutor = Executors.newCachedThreadPool();
 
     private PersistableBundle mReceivedDeviceConfig;
-    private CountDownLatch mConfigUpdateLatch = new CountDownLatch(1);
+    private final CountDownLatch mConfigUpdateLatch = new CountDownLatch(1);
 
     public static TokenInfo constructTokenInfo(int status, PersistableBundle persistableBundle) {
         if (persistableBundle == null) {
@@ -84,7 +85,6 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         return getMainExecutor();
     }
 
-    @NonNull
     @Override
     public void onTokenInfoRequest(int callerUid, @NonNull Feature feature, @NonNull Bundle request,
             @Nullable CancellationSignal cancellationSignal,
@@ -93,19 +93,22 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
                 request.getParcelable(TOKEN_INFO_PARAMS_KEY, PersistableBundle.class)));
     }
 
-    @NonNull
     @Override
     public void onProcessRequestStreaming(int callerUid, @NonNull Feature feature,
             @NonNull Bundle request,
             int requestType, @Nullable CancellationSignal cancellationSignal,
             @Nullable ProcessingSignal processingSignal,
             @NonNull StreamingProcessingCallback callback) {
+        mAsyncRequestExecutor.execute(() -> {
+            processRequestStreaming(cancellationSignal, processingSignal, callback);
+        });
+    }
+
+    private void processRequestStreaming(@Nullable CancellationSignal cancellationSignal,
+            @Nullable ProcessingSignal processingSignal,
+            @NonNull StreamingProcessingCallback callback) {
+        waitForSignalPropagation();
         if (processingSignal != null) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
             processingSignal.setOnProcessingSignalCallback(getCallbackExecutor(),
                     actionParams -> {
                         Log.i(TAG,
@@ -115,6 +118,12 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
                     });
         }
         if (cancellationSignal != null) {
+            if (cancellationSignal.isCanceled()) {
+                callback.onResult(Bundle.EMPTY);
+                return; //already canceled,can exit from here.
+            }
+
+            callback.onPartialResult(Bundle.EMPTY);
             cancellationSignal.setOnCancelListener(() -> {
                 Log.i(TAG,
                         "Received cancellation signal");
@@ -127,11 +136,29 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         callback.onResult(Bundle.EMPTY);
     }
 
-    @NonNull
+    private static void waitForSignalPropagation() {
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public void onProcessRequest(int callerUid, @NonNull Feature feature, @Nullable Bundle request,
             int requestType, @Nullable CancellationSignal cancellationSignal,
             @Nullable ProcessingSignal processingSignal,
+            @NonNull ProcessingCallback callback) {
+        if (!isMainThread()) {
+            callback.onError(new OnDeviceIntelligenceException(-1, "Not running on app thread."));
+        }
+        mAsyncRequestExecutor.execute(() -> {
+            processRequest(callerUid, feature, request, requestType, cancellationSignal, callback);
+        });
+    }
+
+    private void processRequest(int callerUid, @NonNull Feature feature, @Nullable Bundle request,
+            int requestType, @Nullable CancellationSignal cancellationSignal,
             @NonNull ProcessingCallback callback) {
         if (requestType
                 == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_FILE_FROM_MAP) {
@@ -161,7 +188,21 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
                 == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_FILE_FROM_PFD) {
             Bundle bundle = new Bundle();
             try {
-                bundle.putString(TEST_KEY, fetchFileContentFromPfd().get());
+                bundle.putString(TEST_KEY,
+                        fetchFileContentFromPfd(
+                                getFilesDir().getPath() + "/" + TEST_FILE_NAME).get());
+                callback.onResult(bundle);
+            } catch (IOException | InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+            return;
+        }
+
+        if (requestType
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY) {
+            Bundle bundle = new Bundle();
+            try {
+                bundle.putString(TEST_KEY, fetchFileContentFromPfd(TEST_FILE_NAME).get());
                 callback.onResult(bundle);
             } catch (IOException | InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
@@ -210,21 +251,19 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
 
         if (requestType
                 == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG) {
-            mAsyncRequestExecutor.execute(() -> {
-                // This needs to happen async because updateProcessingState doesn't get a chance
-                // to run while we're blocking the binder thread with this method.
-                try {
-                    Log.e(TAG, "Waiting for DeviceConfig Update latch.");
-                    mConfigUpdateLatch.await(10, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    callback.onError(new OnDeviceIntelligenceException(-1, e.getMessage()));
-                    return;
-                }
-                Bundle bundle = new Bundle();
-                bundle.putParcelable(TEST_KEY, mReceivedDeviceConfig);
-                callback.onResult(bundle);
-                Log.e(TAG, "Sent DeviceConfig Update to caller.");
-            });
+            // This needs to happen async because updateProcessingState doesn't get a chance
+            // to run while we're blocking the binder thread with this method.
+            try {
+                Log.e(TAG, "Waiting for DeviceConfig Update latch.");
+                mConfigUpdateLatch.await(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                callback.onError(new OnDeviceIntelligenceException(-1, e.getMessage()));
+                return;
+            }
+            Bundle bundle = new Bundle();
+            bundle.putParcelable(TEST_KEY, mReceivedDeviceConfig);
+            callback.onResult(bundle);
+            Log.e(TAG, "Sent DeviceConfig Update to caller.");
             return;
         }
 
@@ -234,11 +273,7 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         }
 
         if (cancellationSignal != null) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            waitForSignalPropagation();
             cancellationSignal.setOnCancelListener(() -> {
                 Bundle bundle = new Bundle();
                 bundle.putBoolean(OnDeviceIntelligenceManagerTest.TEST_KEY, true);
@@ -259,6 +294,11 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
 
     @Override
     public void onUpdateProcessingState(@NonNull Bundle processingState,
+            @NonNull OutcomeReceiver<PersistableBundle, OnDeviceIntelligenceException> callback) {
+        mAsyncRequestExecutor.execute(() -> updateProcessingState(processingState, callback));
+    }
+
+    private void updateProcessingState(@NonNull Bundle processingState,
             @NonNull OutcomeReceiver<PersistableBundle, OnDeviceIntelligenceException> callback) {
         Log.i(TAG, "onUpdateProcessingState invoked.");
         if (processingState.containsKey(REGISTER_MODEL_UPDATE_CALLBACK_BUNDLE_KEY)) {
@@ -329,10 +369,10 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         }
     }
 
-    private Future<String> fetchFileContentFromPfd() throws IOException {
+    private Future<String> fetchFileContentFromPfd(String filePath) throws IOException {
         return CallbackToFutureAdapter.getFuture(
                 completer -> {
-                    getReadOnlyFileDescriptor(TEST_FILE_NAME, getMainExecutor(),
+                    getReadOnlyFileDescriptor(filePath, getMainExecutor(),
                             pfd -> {
                                 try (InputStreamReader isr = new InputStreamReader(
                                         new FileInputStream(pfd.getFileDescriptor()));
@@ -374,5 +414,9 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         return new OnDeviceIntelligenceException(bundle.getInt(EXCEPTION_STATUS_CODE_KEY),
                 bundle.getString(EXCEPTION_MESSAGE_KEY),
                 bundle.getParcelable(EXCEPTION_PARAMS_KEY, PersistableBundle.class));
+    }
+
+    private static boolean isMainThread() {
+        return Looper.myLooper() == Looper.getMainLooper();
     }
 }
