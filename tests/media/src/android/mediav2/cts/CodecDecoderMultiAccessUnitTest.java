@@ -20,7 +20,6 @@ import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFra
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
@@ -72,7 +71,6 @@ import java.util.Map;
 public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnitTestBase {
     private static final String LOG_TAG = CodecDecoderMultiAccessUnitTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
-    private static final Map<String, String> RECONFIG_FILE_MEDIA_TYPE_MAP = new HashMap<>();
     private static final int[][] OUT_SIZE_IN_MS = {
             {1000, 250},  // max out size, threshold batch out size
             {1000, 100},
@@ -80,256 +78,92 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
             {100, 100},
             {40, 100}
     };
+    static final Map<String, String> RECONFIG_FILE_MEDIA_TYPE_MAP = new HashMap<>();
 
     static {
-        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_RAW, "bbb_1ch_16kHz.wav");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_24kHz.wav");
         RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_MPEG,
-                "bbb_1ch_8kHz_lame_cbr.mp3");
+                "bbb_2ch_44kHz_lame_crc.mp3");
         RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AMR_WB,
-                "bbb_1ch_16kHz_16kbps_amrwb.3gp");
+                "audio/bbb_mono_16kHz_15.85kbps_amrwb.3gp");
         RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AMR_NB,
-                "bbb_1ch_8kHz_10kbps_amrnb.3gp");
-        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_FLAC, "bbb_1ch_16kHz_flac.mka");
+                "audio/bbb_mono_8kHz_7.40kbps_amrnb.3gp");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_FLAC,
+                "audio/bbb_1ch_32kHz_lvl4_flac.mka");
         RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_G711_ALAW,
                 "bbb_1ch_8kHz_alaw.wav");
         RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_G711_MLAW,
                 "bbb_1ch_8kHz_mulaw.wav");
         RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_MSGSM, "bbb_1ch_8kHz_gsm.wav");
         RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_VORBIS,
-                "bbb_1ch_16kHz_vorbis.mka");
-        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_2ch_48kHz_opus.mka");
-        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, "bbb_1ch_16kHz_aac.mp4");
+                "audio/bbb_1ch_32kHz_q10_vorbis.ogg");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_OPUS,
+                "audio/bbb_1ch_32kHz_opus.ogg");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC,
+                "audio/bbb_1ch_32kHz_aac_lc.m4a");
     }
+
+    static final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_8kHz.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_16kHz.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_44kHz.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_48kHz.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/sd_2ch_48kHz.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bellezza_2ch_48kHz_s32le.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bellezza_2ch_48kHz_s24le.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_2ch_192kHz.wav"},
+
+            {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_1ch_8kHz_lame_cbr.mp3"},
+            {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_1ch_16kHz_lame_vbr.mp3"},
+            {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_2ch_44kHz_lame_cbr.mp3"},
+            {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_stereo_48kHz_192kbps_mp3.mp3"},
+
+            {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_6.6kbps_amrwb.3gp"},
+            {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_23.85kbps_amrwb.3gp"},
+
+            {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_12.2kbps_amrnb.3gp"},
+            {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_4.75kbps_amrnb.3gp"},
+
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_8kHz_lvl4_flac.mka"},
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_16kHz_lvl4_flac.mka"},
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_44kHz_lvl4_flac.mka"},
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_48kHz_lvl4_flac.mka"},
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/sd_2ch_48kHz_lvl4_flac.mka"},
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_2ch_192kHz_lvl4_flac.mka"},
+
+            {MediaFormat.MIMETYPE_AUDIO_G711_ALAW, "bbb_1ch_8kHz_alaw.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_G711_ALAW, "bbb_2ch_8kHz_alaw.wav"},
+
+            {MediaFormat.MIMETYPE_AUDIO_G711_MLAW, "bbb_1ch_8kHz_mulaw.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_G711_MLAW, "bbb_2ch_8kHz_mulaw.wav"},
+
+            {MediaFormat.MIMETYPE_AUDIO_MSGSM, "bbb_1ch_8kHz_gsm.wav"},
+
+            {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_8kHz_q10_vorbis.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_16kHz_q10_vorbis.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_48kHz_q10_vorbis.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/highres_2ch_96kHz_q10_vorbis.ogg"},
+
+            {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_8kHz_opus.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_16kHz_opus.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_48kHz_opus.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_48kHz_opus.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_48kHz_opus.ogg"},
+
+            {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_8kHz_aac_lc.m4a"},
+            {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_16kHz_aac_lc.m4a"},
+            {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_lc.m4a"},
+            {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_48kHz_aac_lc.m4a"},
+            {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_48kHz_aac_lc.m4a"},
+    }));
+
 
     private final String mReconfigFile;
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
     public static Collection<Object[]> input() {
-        final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "bbb_1ch_16kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "bbb_2ch_44kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_8kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_16kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_22kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_24kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_32kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_44kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_48kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_8kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_16kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_22kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_24kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_32kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_44kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_48kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_1ch_96kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_2ch_96kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/sd_2ch_48kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bellezza_2ch_48kHz_s32le.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bellezza_2ch_48kHz_s24le.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_1ch_176kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_1ch_192kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_2ch_176kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_2ch_192kHz.wav"},
-
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_1ch_8kHz_lame_cbr.mp3"},
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_2ch_44kHz_lame_cbr.mp3"},
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_2ch_44kHz_lame_vbr.mp3"},
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_1ch_16kHz_lame_vbr.mp3"},
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_2ch_44kHz_lame_crc.mp3"},
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_stereo_48kHz_192kbps_mp3.mp3"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "bbb_1ch_16kHz_16kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "bbb_1ch_16kHz_23kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_6.6kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_8.85kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_12.65kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_14.25kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_15.85kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_18.25kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_19.85kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_23.05kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_23.85kbps_amrwb.3gp"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "bbb_1ch_8kHz_10kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "bbb_1ch_8kHz_8kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_12.2kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_10.2kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_7.95kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_7.40kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_6.70kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_5.90kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_5.15kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_4.75kbps_amrnb.3gp"},
-
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "bbb_1ch_16kHz_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "bbb_2ch_44kHz_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_8kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_12kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_16kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_22kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_24kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_32kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_44kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_48kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_8kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_12kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_16kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_22kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_24kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_32kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_44kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_48kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_1ch_96kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_1ch_176kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_1ch_192kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_2ch_96kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_2ch_176kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_2ch_192kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/sd_2ch_48kHz_lvl4_flac.mka"},
-
-                {MediaFormat.MIMETYPE_AUDIO_G711_ALAW, "bbb_1ch_8kHz_alaw.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_G711_ALAW, "bbb_2ch_8kHz_alaw.wav"},
-
-                {MediaFormat.MIMETYPE_AUDIO_G711_MLAW, "bbb_1ch_8kHz_mulaw.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_G711_MLAW, "bbb_2ch_8kHz_mulaw.wav"},
-
-                {MediaFormat.MIMETYPE_AUDIO_MSGSM, "bbb_1ch_8kHz_gsm.wav"},
-
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "bbb_1ch_16kHz_vorbis.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "bbb_2ch_44kHz_vorbis.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_8kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_12kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_16kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_24kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_32kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_48kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_8kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_12kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_16kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_24kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_32kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_48kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/highres_1ch_96kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/highres_2ch_96kHz_q10_vorbis.ogg"},
-
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_2ch_48kHz_opus.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_1ch_48kHz_opus.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_8kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_12kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_16kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_24kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_32kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_48kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_8kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_12kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_16kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_24kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_32kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_48kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_8kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_12kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_16kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_24kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_32kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_48kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_8kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_12kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_16kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_24kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_32kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_48kHz_opus.ogg"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "bbb_1ch_16kHz_aac.mp4"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "bbb_2ch_44kHz_aac.mp4"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_8kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_12kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_16kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_22kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_24kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_32kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_44kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_48kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_8kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_12kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_16kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_22kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_24kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_32kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_44kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_8kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_12kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_16kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_22kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_24kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_32kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_44kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_48kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_8kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_12kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_16kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_22kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_24kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_32kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_44kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_48kHz_aac_lc.m4a"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_16kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_22kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_24kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_32kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_44kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_16kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_22kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_24kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_32kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_44kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_48kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_16kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_22kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_24kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_32kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_44kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_48kHz_aac_he.m4a"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_16kHz_aac_hev2.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_22kHz_aac_hev2.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_24kHz_aac_hev2.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_32kHz_aac_hev2.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_44kHz_aac_hev2.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_hev2.m4a"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_16kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_22kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_24kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_32kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_44kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_48kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_16kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_22kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_24kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_32kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_44kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_eld.m4a"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_8kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_16kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_22kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_24kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_32kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_44kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_48kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_8kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_16kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_22kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_24kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_32kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_44kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_usac.m4a"},
-        }));
-        return prepareParamList(exhaustiveArgsList, false, true, false, true);
+        return prepareParamList(exhaustiveArgsList, false, true, false, true, ComponentClass.ALL,
+                new String[]{FEATURE_MultipleFrames});
     }
 
     public CodecDecoderMultiAccessUnitTest(String decoder, String mediaType, String testFile,
@@ -364,9 +198,6 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testSimpleDecode() throws IOException, InterruptedException {
-        assumeTrue(mCodecName + " does not support FEATURE_MultipleFrames",
-                isFeatureSupported(mCodecName, mMediaType, FEATURE_MultipleFrames));
-
         CodecDecoderTestBase cdtb = new CodecDecoderTestBase(mCodecName, mMediaType, null,
                 mAllTestParams);
         cdtb.decodeToMemory(mTestFile, mCodecName, 0, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
@@ -383,10 +214,10 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
         for (int[] outSizeInMs : OUT_SIZE_IN_MS) {
             configureKeysForLargeAudioFrameMode(format, maxSampleSize, outSizeInMs[0],
                     outSizeInMs[1]);
-            for (boolean eosType : boolStates) {
-                mOutputBuff = eosType ? testA : testB;
+            for (boolean signalEosWithLastFrame : boolStates) {
+                mOutputBuff = signalEosWithLastFrame ? testA : testB;
                 mOutputBuff.reset();
-                configureCodec(format, true, eosType, false);
+                configureCodec(format, true, signalEosWithLastFrame, false);
                 mMaxInputLimitMs = outSizeInMs[0];
                 mCodec.start();
                 mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
@@ -440,8 +271,6 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
     @Ignore("TODO(b/147576107)")
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testFlush() throws IOException, InterruptedException {
-        assumeTrue(mCodecName + " does not support FEATURE_MultipleFrames",
-                isFeatureSupported(mCodecName, mMediaType, FEATURE_MultipleFrames));
         MediaFormat format = setUpSource(mTestFile);
         final long pts = 250000;
         mExtractor.release();
@@ -559,9 +388,6 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testReconfigure() throws IOException, InterruptedException {
-        assumeTrue(mCodecName + " does not support FEATURE_MultipleFrames",
-                isFeatureSupported(mCodecName, mMediaType, FEATURE_MultipleFrames));
-
         MediaFormat format = setUpSource(mTestFile);
         mExtractor.release();
         MediaFormat newFormat = setUpSource(mReconfigFile);
