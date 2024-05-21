@@ -60,15 +60,6 @@ class SessionParamsPermissionStateTest : PackageInstallerTestBase() {
 
         @JvmStatic
         @BeforeClass
-        fun copySubclassTestApk() {
-            File(TEST_APK_LOCATION, FULL_SCREEN_INTENT_APK).copyTo(
-                target = File(context.filesDir, FULL_SCREEN_INTENT_APK),
-                overwrite = true
-            )
-        }
-
-        @JvmStatic
-        @BeforeClass
         fun verifyNoGrantRuntimePermission() {
             // Ensure the test doesn't have the grant runtime permission
             assertThat(
