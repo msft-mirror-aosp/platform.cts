@@ -2893,11 +2893,10 @@ def remove_frame_files(dir_name, save_files_list=None):
     dir_name: test directory name.
     save_files_list: list of files not to be removed. Default is empty list.
   """
-  if save_files_list is not None:
-    if os.path.exists(dir_name):
-      for image in glob.glob('%s/*.png' % dir_name):
-        if image not in save_files_list:
-          os.remove(image)
+  if os.path.exists(dir_name):
+    for image in glob.glob('%s/*.png' % dir_name):
+      if save_files_list is None or image not in save_files_list:
+        os.remove(image)
 
 
 def remove_mp4_file(file_name_with_path):
