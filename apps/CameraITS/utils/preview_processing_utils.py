@@ -29,6 +29,7 @@ import video_processing_utils
 
 _AREA_720P_VIDEO = 1280 * 720
 _ASPECT_RATIO_16_9 = 16/9  # determine if preview fmt > 16:9
+_ASPECT_TOL = 0.01
 _HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
 _IMG_FORMAT = 'png'
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
@@ -314,7 +315,13 @@ def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
   return recording_obj
 
 
-def get_max_preview_test_size(cam, camera_id):
+def is_aspect_ratio_match(size_str, target_ratio):
+  """Checks if a resolution string matches the target aspect ratio."""
+  width, height = map(int, size_str.split('x'))
+  return abs(width / height - target_ratio) < _ASPECT_TOL
+
+
+def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
   """Finds the max preview size to be tested.
 
   If the device supports the _HIGH_RES_SIZE preview size then
@@ -324,15 +331,23 @@ def get_max_preview_test_size(cam, camera_id):
   Args:
     cam: camera object
     camera_id: str; camera device id under test
+    aspect_ratio: preferred aspect_ratio For example: '4/3'
 
   Returns:
     preview_test_size: str; wxh resolution of the size to be tested
   """
   resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
   supported_preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
-  supported_preview_sizes = [size for size in supported_preview_sizes
-                             if resolution_to_area(size)
-                             >= video_processing_utils.LOWEST_RES_TESTED_AREA]
+  if aspect_ratio is None:
+    supported_preview_sizes = [size for size in supported_preview_sizes
+                               if resolution_to_area(size)
+                               >= video_processing_utils.LOWEST_RES_TESTED_AREA]
+  else:
+    supported_preview_sizes = [size for size in supported_preview_sizes
+                               if resolution_to_area(size)
+                               >= video_processing_utils.LOWEST_RES_TESTED_AREA
+                               and is_aspect_ratio_match(size, aspect_ratio)]
+
   logging.debug('Supported preview resolutions: %s', supported_preview_sizes)
 
   if _HIGH_RES_SIZE in supported_preview_sizes:

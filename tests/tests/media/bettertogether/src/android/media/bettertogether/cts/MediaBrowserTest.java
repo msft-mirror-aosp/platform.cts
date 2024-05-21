@@ -25,6 +25,7 @@ import android.content.ComponentName;
 import android.media.browse.MediaBrowser;
 import android.media.browse.MediaBrowser.MediaItem;
 import android.os.Bundle;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -51,6 +52,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @FrameworkSpecificTest
 @NonMainlineTest
 @RunWith(AndroidJUnit4.class)
+@AppModeNonSdkSandbox(reason = "SDK sandbox does not need MediaBrowser.")
 public class MediaBrowserTest {
     // The maximum time to wait for an operation.
     private static final long TIME_OUT_MS = 3000L;

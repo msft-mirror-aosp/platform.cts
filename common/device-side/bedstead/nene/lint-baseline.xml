@@ -265,4 +265,26 @@
             column="68"/>
     </issue>
 
+    <issue
+        id="NewApi"
+        message="Call requires API level 35 (current min is 29): `android.content.pm.PackageManager#isPackageStopped`"
+        errorLine1="                return userPackageManager.isPackageStopped(mPackageName);"
+        errorLine2="                                          ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/nene/src/main/java/com/android/bedstead/nene/packages/Package.java"
+            line="751"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="NewApi"
+        message="Call requires API level 35 (current min is 29): `android.content.pm.PackageManager#isPackageStopped`"
+        errorLine1="            return pm.isPackageStopped(mPackageName);"
+        errorLine2="                      ~~~~~~~~~~~~~~~~">
+        <location
+            file="cts/common/device-side/bedstead/nene/src/main/java/com/android/bedstead/nene/packages/Package.java"
+            line="778"
+            column="23"/>
+    </issue>
+
 </issues>

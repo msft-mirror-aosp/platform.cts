@@ -46,6 +46,7 @@ import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.observer.DocumentChangeInfo;
 import android.app.appsearch.observer.ObserverSpec;
 import android.app.appsearch.testutil.AppSearchEmail;
+import android.app.appsearch.testutil.PackageUtil;
 import android.app.appsearch.testutil.SystemUtil;
 import android.app.appsearch.testutil.TestObserverCallback;
 import android.app.appsearch.util.DocumentIdUtil;
@@ -53,9 +54,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.SigningInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -75,7 +73,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -173,24 +170,6 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         clearData(PKG_B, DB_NAME);
     }
 
-    // This does not have a fixed certificate, so we need to get it live
-    private byte[] getCtsPackageSha256Cert() {
-        try {
-            PackageInfo packageInfo = mContext.getPackageManager().getPackageInfo(
-                    mContext.getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
-            SigningInfo signingInfo = packageInfo.signingInfo;
-
-            if (signingInfo != null) {
-                MessageDigest md = MessageDigest.getInstance("SHA256");
-                md.update(signingInfo.getSigningCertificateHistory()[0].toByteArray());
-                return md.digest();
-            }
-        } catch (Exception e) {
-            // Invalid certificate or test setup failure, continue to return null
-        }
-        return null;
-    }
-
     // We could add a third package, PKG_C, that the cts package cannot query. However, this does
     // not allow us to bind to PKG_C, meaning we can't index documents in PKG_C, making it useless.
     // Instead, we will take advantage of the fact that the cts package can query both PKG_A and
@@ -237,7 +216,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         mDb.setSchemaAsync(new SetSchemaRequest.Builder()
                 .addSchemas(ctsSchema, bSchema)
                 .setPubliclyVisibleSchema(ctsSchema.getSchemaType(),
-                        new PackageIdentifier(ctsPackageName, getCtsPackageSha256Cert()))
+                        new PackageIdentifier(ctsPackageName,
+                                PackageUtil.getSelfPackageSha256Cert(mContext)))
                 .setPubliclyVisibleSchema(bSchema.getSchemaType(),
                         new PackageIdentifier(PKG_B, PKG_B_CERT_SHA256))
                 .build()).get();
@@ -284,7 +264,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         String ctsSchemaName = ctsPackageName + "Schema";
         GenericDocument ctsDoc =
                 new GenericDocument.Builder<>(NAMESPACE_NAME, "id1", ctsSchemaName)
-                        .setPropertyString("searchable", "pineapple from com.android.cts.appsearch")
+                        .setPropertyString("searchable", "pineapple from " + ctsPackageName)
                         .build();
 
         assertThat(mContext.getPackageManager().canPackageQuery(PKG_A, ctsPackageName)).isTrue();
@@ -295,8 +275,10 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                 bindToHelperService(PKG_B);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
-            boolean documentVisibilitySetup = commandReceiver.setUpPubliclyVisibleDocuments(
-                    ctsPackageName, getCtsPackageSha256Cert(), PKG_B, PKG_B_CERT_SHA256);
+            boolean documentVisibilitySetup =
+                    commandReceiver.setUpPubliclyVisibleDocuments(
+                            ctsPackageName, PackageUtil.getSelfPackageSha256Cert(mContext), PKG_B,
+                            PKG_B_CERT_SHA256);
             assertThat(documentVisibilitySetup).isTrue();
 
             // Assert that B sees two documents
@@ -316,6 +298,7 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
             String resultWithoutTimestamp =
                     results.get(0).replaceAll("creationTimestampMillis: [0-9]+",
                             "creationTimestampMillis: " + ctsDoc.getCreationTimestampMillis());
+
             assertThat(resultWithoutTimestamp).isEqualTo(ctsDoc.toString());
 
         } finally {
@@ -860,7 +843,10 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     public void testGlobalGetById_requireAllVisibleToConfig_pkgAndPermission() throws Exception {
         String ctsPackageName = mContext.getPackageName();
         PackageIdentifier ctsPackage =
-                new PackageIdentifier(ctsPackageName, getCtsPackageSha256Cert());
+                new PackageIdentifier(
+                        ctsPackageName,
+                        PackageUtil.getSelfPackageSha256Cert(mContext)
+                );
         PackageIdentifier otherPackage =
                 new PackageIdentifier("com.android.other", new byte[32]);
         // index global searchable document in pkg_A and set it requires READ_SMS and accessible
@@ -997,7 +983,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         String ctsPackageName = mContext.getPackageName();
         assertThat(mContext.getPackageManager().canPackageQuery(ctsPackageName, PKG_A)).isTrue();
         PackageIdentifier ctsPackage =
-                new PackageIdentifier(ctsPackageName, getCtsPackageSha256Cert());
+                new PackageIdentifier(ctsPackageName,
+                        PackageUtil.getSelfPackageSha256Cert(mContext));
         PackageIdentifier packageA = new PackageIdentifier(PKG_A, PKG_A_CERT_SHA256);
         PackageIdentifier otherPackage =
                 new PackageIdentifier("com.android.other", new byte[32]);
