@@ -998,6 +998,65 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     }
 
     /**
+     * With handwriting setting disabled, inject stylus events on top of an unfocused EditText and
+     * verify handwriting is not started and keyboard is not shown.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_HANDWRITING_UNSUPPORTED_MESSAGE)
+    public void testHandwriting_unfocusedEditText_prefDisabled() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            // Disable preference
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                Settings.Secure.putInt(mContext.getContentResolver(),
+                        STYLUS_HANDWRITING_ENABLED, SETTING_VALUE_OFF);
+            }, Manifest.permission.WRITE_SECURE_SETTINGS);
+            mShouldRestoreInitialHwState = true;
+
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
+            final Pair<EditText, EditText> editTextPair =
+                    launchTestActivity(focusedMarker, unfocusedMarker);
+            final EditText unfocusedEditText = editTextPair.second;
+
+            expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
+            notExpectEvent(
+                    stream,
+                    editorMatcher("onStartInputView", focusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+
+            addVirtualStylusIdForTestSession();
+            final int touchSlop = getTouchSlop();
+            final int x = unfocusedEditText.getWidth() / 2;
+            final int startY = 2 * touchSlop;
+            // (endX, endY) is out of bound to avoid that unfocusedEditText is focused due to the
+            // stylus touch.
+            final int endY = unfocusedEditText.getHeight() + 2 * touchSlop;
+            final int number = 5;
+
+            TestUtils.injectStylusDownEvent(unfocusedEditText, x, startY);
+            TestUtils.injectStylusMoveEvents(unfocusedEditText, x, startY, x, endY, number);
+
+            // Handwriting is not started,
+            notExpectEvent(stream, editorMatcher("onStartInput", unfocusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", unfocusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+            notExpectEvent(
+                    stream,
+                    editorMatcher("onStartStylusHandwriting", unfocusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+            verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+
+            TestUtils.injectStylusUpEvent(unfocusedEditText, x, endY);
+        }
+    }
+
+    /**
      * Inject stylus events on top of an unfocused editor which disabled the autoHandwriting and
      * verify keyboard is shown and handwriting is not started.
      */
