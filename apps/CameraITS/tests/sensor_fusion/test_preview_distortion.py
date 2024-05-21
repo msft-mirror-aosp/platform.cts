@@ -32,10 +32,11 @@ import zoom_capture_utils
 
 _ACCURACY = 0.001
 _ARUCO_COUNT = 8
-_ARUCO_DIST_TOL = 0.1
+_ARUCO_DIST_TOL = 0.15
 _ARUCO_SIZE = (3, 3)
+_ASPECT_RATIO_4_3 = 4/3
 _CHESSBOARD_CORNERS = 24
-_CHKR_DIST_TOL = 0.1
+_CHKR_DIST_TOL = 0.05
 _CROSS_SIZE = 6
 _CROSS_THICKNESS = 1
 _FONT_SCALE = 0.3
@@ -46,7 +47,7 @@ _MAX_ZOOM = 2.0  # UW and W camera covered by 2x zoom
 _MAX_ITER = 30
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
-_RED = (0, 0, 255)
+_RED = (255, 0, 0)
 _WIDE_ZOOM = 1
 
 
@@ -166,9 +167,19 @@ def get_distortion_error(image, corners, ideal_points):
   # 3) Except, do not use distortion coefficients so we model ideal pinhole
   # 4) Calculate the error of the detected corners relative to the ideal
   # 5) Normalize the average error by the size of the chart
+  calib_flags = (
+      cv2.CALIB_FIX_K1
+      + cv2.CALIB_FIX_K2
+      + cv2.CALIB_FIX_K3
+      + cv2.CALIB_FIX_K4
+      + cv2.CALIB_FIX_K5
+      + cv2.CALIB_FIX_K6
+      + cv2.CALIB_ZERO_TANGENT_DIST
+  )
+
   ret, matrix, dist_coeffs, rotation_vector, translation_vector = (
       cv2.calibrateCamera([ideal_points], [corners], image.shape[:2],
-                          None, None)
+                          None, None, flags=calib_flags)
   )
   logging.debug('Projection error: %s dist_coeffs: %s', ret, dist_coeffs)
 
@@ -176,23 +187,25 @@ def get_distortion_error(image, corners, ideal_points):
                                        translation_vector[0], matrix, None)
   # Reshape projected points to 2D array
   projected = projected_points[0].reshape(-1, 2)
+  corners_reshaped = corners.reshape(-1, 2)
   logging.debug('projected: %s', projected)
 
   plot_corners(image, projected, _GREEN_LIGHT, _GREEN_DARK)
 
-  # Calculate the error
-  error = projected[0] - corners
-  total_distortion_error = np.mean(np.linalg.norm(error, axis=1))
-  logging.debug('Total distortion error: %s', total_distortion_error)
+  # Calculate the distortion error
+  distortion_errors = [
+      math.dist(projected_point, corner_point)
+      for projected_point, corner_point in zip(projected, corners_reshaped)
+  ]
+  logging.debug('distortion_error: %s', distortion_errors)
 
-  # Calculate the normalized error in pixels
-  normalized_distortion_error = total_distortion_error / corners.size
-  logging.debug('Normalized average distortion error: %s',
-                normalized_distortion_error)
+  # Get RMS of error
+  rms_error = math.sqrt(np.mean(np.square(distortion_errors)))
+  logging.debug('RMS distortion error: %s', rms_error)
 
   # Calculate as a percentage of the chart diagonal
   normalized_distortion_error_percentage = (
-      normalized_distortion_error / chart_diagonal_pixels * 100
+      rms_error / chart_diagonal_pixels * 100
   )
   logging.debug('Normalized percent distortion error: %s',
                 normalized_distortion_error_percentage)
@@ -266,12 +279,7 @@ def aruco_distortion_error(image):
     logging.debug('ArUco markers are not found')
     return None, None
 
-  if len(ids) < _ARUCO_COUNT:
-    logging.debug('Only %s arUCO markers found instead of %s',
-                  len(ids), _ARUCO_COUNT)
-    return None, None
-
-  aruco.drawDetectedMarkers(image, corners, ids)
+  aruco.drawDetectedMarkers(image, corners, ids, _RED)
 
   # Convert to numpy array
   corners = np.concatenate(corners, axis=0).reshape(-1, 4, 2)
@@ -282,6 +290,11 @@ def aruco_distortion_error(image):
 
   # Create marker_dict using efficient vectorization
   marker_dict = dict(zip(ids.flatten(), corners))
+
+  if len(marker_dict) != _ARUCO_COUNT:
+    logging.debug('%s arUCO markers found instead of %s',
+                  len(ids), _ARUCO_COUNT)
+    return None, None
 
   # Arrange corners based on ids
   arranged_corners = np.array([marker_dict[i] for i in range(len(corners))])
@@ -339,7 +352,7 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
             f'You must use the arduino controller for {_NAME}.')
 
       preview_size = preview_processing_utils.get_max_preview_test_size(
-          cam, self.camera_id)
+          cam, self.camera_id, _ASPECT_RATIO_4_3)
       logging.debug('preview_size: %s', preview_size)
 
       # Determine test zoom range and step size

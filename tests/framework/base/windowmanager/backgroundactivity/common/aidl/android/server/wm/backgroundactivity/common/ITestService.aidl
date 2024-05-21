@@ -18,7 +18,6 @@ package android.server.wm.backgroundactivity.common;
 
 import android.app.PendingIntent;
 import android.content.ComponentName;
-import android.content.IntentSender;
 import android.os.ResultReceiver;
 
 interface ITestService {
@@ -29,6 +28,5 @@ interface ITestService {
     void sendPendingIntent(in PendingIntent pendingIntent, in Bundle sendOptions);
     void sendPendingIntentWithActivity(in PendingIntent pendingIntent, in Bundle sendOptions);
     void sendPendingIntentWithActivityForResult(in PendingIntent pendingIntent, in Bundle sendOptions);
-    void sendIntentSender(in IntentSender intentSender, in Bundle sendOptions);
     void startActivityIntent(in Intent intent);
 }

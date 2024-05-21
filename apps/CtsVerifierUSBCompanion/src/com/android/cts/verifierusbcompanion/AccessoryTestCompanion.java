@@ -29,6 +29,7 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
+
 import androidx.annotation.NonNull;
 
 import java.nio.ByteBuffer;
@@ -207,6 +208,7 @@ class AccessoryTestCompanion extends TestCompanion {
 
                     case "echo max bytes": {
                         byte[] buffer = new byte[MAX_BUFFER_SIZE];
+                        byte[] zerobuffer = new byte[1];
 
                         int numTransferred = connection.bulkTransfer(in, buffer, MAX_BUFFER_SIZE,
                                 0);
@@ -215,7 +217,7 @@ class AccessoryTestCompanion extends TestCompanion {
                         // MAX_BUFFER_SIZE is a multiple of the package size, hence we get a zero
                         // sized package after. Some older devices do not send these packages, but
                         // this is not compliant anymore.
-                        numTransferred = connection.bulkTransfer(in, buffer, 1, TIMEOUT_MILLIS);
+                        numTransferred = connection.bulkTransfer(in, zerobuffer, 1, TIMEOUT_MILLIS);
                         assertEquals(0, numTransferred);
 
                         numTransferred = connection.bulkTransfer(out, buffer, MAX_BUFFER_SIZE, 0);
@@ -225,6 +227,7 @@ class AccessoryTestCompanion extends TestCompanion {
 
                     case "echo max*2 bytes": {
                         byte[] buffer = new byte[MAX_BUFFER_SIZE * 2];
+                        byte[] zerobuffer = new byte[1];
 
                         int numTransferred = connection.bulkTransfer(in, buffer, MAX_BUFFER_SIZE,
                                 0);
@@ -238,7 +241,7 @@ class AccessoryTestCompanion extends TestCompanion {
                         // MAX_BUFFER_SIZE is a multiple of the package size, hence we get a zero
                         // sized package after. Some older devices do not send these packages, but
                         // this is not compliant anymore.
-                        numTransferred = connection.bulkTransfer(in, buffer, 1, TIMEOUT_MILLIS);
+                        numTransferred = connection.bulkTransfer(in, zerobuffer, 1, TIMEOUT_MILLIS);
                         assertEquals(0, numTransferred);
 
                         numTransferred = connection.bulkTransfer(out, buffer, MAX_BUFFER_SIZE, 100);

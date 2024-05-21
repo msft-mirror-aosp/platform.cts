@@ -339,8 +339,10 @@ bool CodecEncoderSurfaceTest::dequeueEncoderOutput(size_t bufferIndex,
                 mMuxTrackID = AMediaMuxer_addTrack(mMuxer, AMediaCodec_getOutputFormat(mEncoder));
                 RETURN_IF_FAIL(AMediaMuxer_start(mMuxer), "AMediaMuxer_start failed")
             }
-            RETURN_IF_FAIL(AMediaMuxer_writeSampleData(mMuxer, mMuxTrackID, buf, info),
-                           "AMediaMuxer_writeSampleData failed")
+            if ((info->flags & AMEDIACODEC_BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                RETURN_IF_FAIL(AMediaMuxer_writeSampleData(mMuxer, mMuxTrackID, buf, info),
+                                "AMediaMuxer_writeSampleData failed")
+            }
         }
         if ((info->flags & AMEDIACODEC_BUFFER_FLAG_CODEC_CONFIG) == 0) {
             mOutputBuff->saveOutPTS(info->presentationTimeUs);

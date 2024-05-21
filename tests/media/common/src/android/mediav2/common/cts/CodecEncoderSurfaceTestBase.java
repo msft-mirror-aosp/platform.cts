@@ -342,7 +342,9 @@ public class CodecEncoderSurfaceTestBase {
                     mTrackID = mMuxer.addTrack(mEncoder.getOutputFormat());
                     mMuxer.start();
                 }
-                mMuxer.writeSampleData(mTrackID, buf, info);
+                if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                    mMuxer.writeSampleData(mTrackID, buf, info);
+                }
             }
             if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
                 mOutputBuff.saveOutPTS(info.presentationTimeUs);

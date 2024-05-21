@@ -129,7 +129,7 @@ public class StatsdCtsForegroundActivity extends Activity {
         new AsyncTask<Void, Void, Void>() {
             @Override
             protected Void doInBackground(Void... params) {
-                AtomTests.sleep(sleepTime);
+                sleep(sleepTime);
                 return null;
             }
 
@@ -167,7 +167,7 @@ public class StatsdCtsForegroundActivity extends Activity {
         wm.addView(v, wmlp);
 
         // The overlay continues long after the finish. The following is just to end the activity.
-        AtomTests.sleep(SLEEP_OF_ACTION_SHOW_APPLICATION_OVERLAY);
+        sleep(SLEEP_OF_ACTION_SHOW_APPLICATION_OVERLAY);
         finish();
     }
 
@@ -257,8 +257,16 @@ public class StatsdCtsForegroundActivity extends Activity {
         WifiManager wm = getSystemService(WifiManager.class);
         WifiManager.WifiLock lock = wm.createWifiLock(lockMode, "StatsdCTSWifiLock");
         lock.acquire();
-        AtomTests.sleep(500);
+        sleep(500);
         lock.release();
         finish();
+    }
+
+    static void sleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Interrupted exception while sleeping", e);
+        }
     }
 }

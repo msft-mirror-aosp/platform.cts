@@ -28,6 +28,8 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowInsets.Type.captionBar;
 import static android.view.WindowInsets.Type.systemBars;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -77,8 +79,8 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
 
     @Test
     public void testGravityAndDefaultSizeTopLeft() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
+        // TODO(b/340172101): Remove check once desktopmode windows support activity layout
+        //  declaring gravity, minWidth/minHeight, and defaultWidth/defaultHeight.
         // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
         // behaviour will not be respected
         assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
@@ -88,8 +90,8 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
 
     @Test
     public void testGravityAndDefaultSizeTopRight() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
+        // TODO(b/340172101): Remove check once desktopmode windows support activity layout
+        //  declaring gravity, minWidth/minHeight, and defaultWidth/defaultHeight.
         // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
         // behaviour will not be respected
         assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
@@ -99,8 +101,8 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
 
     @Test
     public void testGravityAndDefaultSizeBottomLeft() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
+        // TODO(b/340172101): Remove check once desktopmode windows support activity layout
+        //  declaring gravity, minWidth/minHeight, and defaultWidth/defaultHeight.
         // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
         // behaviour will not be respected
         assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
@@ -110,8 +112,8 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
 
     @Test
     public void testGravityAndDefaultSizeBottomRight() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
+        // TODO(b/340172101): Remove check once desktopmode windows support activity layout
+        //  declaring gravity, minWidth/minHeight, and defaultWidth/defaultHeight.
         // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
         // behaviour will not be respected
         assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
@@ -121,13 +123,6 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
 
     @Test
     public void testMinimalSizeFreeform() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-        assumeTrue("Skipping test: no freeform support", supportsFreeform());
-
         testMinimalSize(true /* freeform */);
     }
 
@@ -166,10 +161,17 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
         final int actualWidth = parentFrame.width() + cutoutSize;
         final int actualHeight = parentFrame.height();
 
-        assertTrue("Min width is incorrect",
-                (actualWidth == minWidth || actualWidth == alternativeMinWidth));
-        assertTrue("Min height is incorrect",
-                (actualHeight == minHeight || actualHeight == alternativeMinHeight));
+        if (freeform) {
+            // Freeform windows should be no smaller than the min size enforced by policy, but they
+            // can have a larger minimum size.
+            assertThat(actualWidth).isAtLeast(Math.min(minWidth, alternativeMinWidth));
+            assertThat(actualHeight).isAtLeast(Math.min(minHeight, alternativeMinHeight));
+        } else {
+            assertTrue("Min width is incorrect",
+                    (actualWidth == minWidth || actualWidth == alternativeMinWidth));
+            assertTrue("Min height is incorrect",
+                    (actualHeight == minHeight || actualHeight == alternativeMinHeight));
+        }
     }
 
     private void testLayout(

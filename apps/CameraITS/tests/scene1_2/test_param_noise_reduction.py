@@ -209,4 +209,3 @@ class ParamNoiseReductionTest(its_base_test.ItsBaseTest):
 
 if __name__ == '__main__':
   test_runner.main()
-
