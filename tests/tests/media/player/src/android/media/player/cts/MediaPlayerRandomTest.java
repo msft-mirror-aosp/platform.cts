@@ -29,6 +29,7 @@ import android.view.SurfaceHolder;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
 import com.android.compatibility.common.util.WatchDog;
@@ -46,6 +47,7 @@ import java.util.Random;
  *
  * <p>Only fails when a crash or a blocking call happens. Does not verify output.
  */
+@FrameworkSpecificTest
 @NonMainlineTest
 @MediaHeavyPresubmitTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")

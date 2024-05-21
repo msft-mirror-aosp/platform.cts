@@ -27,6 +27,7 @@ import android.webkit.cts.CtsTestServer;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
@@ -42,7 +43,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-
 import java.net.Socket;
 import java.util.Random;
 import java.util.Vector;
@@ -53,6 +53,7 @@ import java.util.concurrent.FutureTask;
  * Executes a range of tests on MediaPlayer while streaming a video
  * from an HTTP server over a simulated "flaky" network.
  */
+@FrameworkSpecificTest
 @NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
