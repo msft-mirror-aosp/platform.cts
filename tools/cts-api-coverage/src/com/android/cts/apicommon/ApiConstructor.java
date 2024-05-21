@@ -80,4 +80,8 @@ public class ApiConstructor implements Comparable<ApiConstructor> {
     public Set<String> getCoveredWith() {
         return mCoveredWith.keySet();
     }
+
+    public Set<String> getCoveredTests() {
+        return mCoveredTests.keySet();
+    }
 }

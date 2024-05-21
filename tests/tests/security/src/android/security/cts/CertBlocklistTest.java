@@ -16,70 +16,80 @@
 
 package android.security.cts;
 
-import android.content.Context;
 import android.test.AndroidTestCase;
 
 import java.io.InputStream;
-import java.util.Collection;
+import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.KeyStore;
+import java.util.Collection;
+
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 /**
- * End to end version of org.conscrypt.CertBlacklistTest that tests the platform default
+ * End to end version of org.conscrypt.CertBlocklistTest that tests the platform default
  * {@link X509TrustManager}.
  *
- * The test blacklisted CA's private key can be found in
- * external/conscrypt/src/test/resources/blacklist_ca_key.pem
+ * The test blocklisted CA's private key can be found in
+ * external/conscrypt/src/test/resources/blocklist_ca_key.pem
  */
-public class CertBlacklistTest extends AndroidTestCase {
+public class CertBlocklistTest extends AndroidTestCase {
 
-    private static final int BLACKLIST_CA = R.raw.test_blacklist_ca;
-    private static final int BLACKLISTED_CHAIN = R.raw.blacklist_test_chain;
-    private static final int BLACKLIST_FALLBACK_VALID_CA = R.raw.blacklist_test_valid_ca;
-    private static final int BLACKLISTED_VALID_CHAIN = R.raw.blacklist_test_valid_chain;
+    private static final int BLOCKLIST_CA = R.raw.test_blocklist_ca;
+    private static final int BLOCKLIST_DIGINOTAR = R.raw.blocklist_diginotar;
+    private static final int BLOCKLISTED_CHAIN = R.raw.blocklist_test_chain;
+    private static final int BLOCKLIST_FALLBACK_VALID_CA = R.raw.blocklist_test_valid_ca;
+    private static final int BLOCKLISTED_VALID_CHAIN = R.raw.blocklist_test_valid_chain;
 
     /**
-     * Checks that the blacklisted CA is rejected even if it used as a root of trust
+     * Checks that the blocklisted CA is rejected even if it used as a root of trust
      */
-    public void testBlacklistedCaUntrusted() throws Exception {
-        X509Certificate blacklistedCa = loadCertificate(BLACKLIST_CA);
-        assertUntrusted(new X509Certificate[] {blacklistedCa}, getTrustManager(blacklistedCa));
+    public void testBlocklistedCaUntrusted() throws Exception {
+        X509Certificate blocklistedCa = loadCertificate(BLOCKLIST_CA);
+        assertUntrusted(new X509Certificate[] {blocklistedCa}, getTrustManager(blocklistedCa));
     }
 
     /**
-     * Checks that a chain that is rooted in a blacklisted trusted CA is rejected.
+     * Checks that a known compromised CA certificate is blocked.
      */
-    public void testBlacklistedRootOfTrust() throws Exception {
-        // Chain is leaf -> blacklisted
-        X509Certificate[] chain = loadCertificates(BLACKLISTED_CHAIN);
-        X509Certificate blacklistedCa = loadCertificate(BLACKLIST_CA);
-        assertUntrusted(chain, getTrustManager(blacklistedCa));
+    public void testBlocklistedDiginotar() throws Exception {
+        // Public Key SHA1 = 410f36363258f30b347d12ce4863e433437806a8
+        X509Certificate blocklistedCa = loadCertificate(BLOCKLIST_DIGINOTAR);
+        assertUntrusted(new X509Certificate[] {blocklistedCa}, getTrustManager(blocklistedCa));
     }
 
     /**
-     * Tests that the path building correctly routes around a blacklisted cert where there are
+     * Checks that a chain that is rooted in a blocklisted trusted CA is rejected.
+     */
+    public void testBlocklistedRootOfTrust() throws Exception {
+        // Chain is leaf -> blocklisted
+        X509Certificate[] chain = loadCertificates(BLOCKLISTED_CHAIN);
+        X509Certificate blocklistedCa = loadCertificate(BLOCKLIST_CA);
+        assertUntrusted(chain, getTrustManager(blocklistedCa));
+    }
+
+    /**
+     * Tests that the path building correctly routes around a blocklisted cert where there are
      * other valid paths available. This prevents breakage where a cert was cross signed by a
-     * blacklisted CA but is still valid due to also being cross signed by CAs that remain trusted.
+     * blocklisted CA but is still valid due to also being cross signed by CAs that remain trusted.
      * Path:
      *
-     * leaf -> intermediate -> blacklisted_ca
+     * leaf -> intermediate -> blocklisted_ca
      *               \
      *                -------> trusted_ca
      */
-    public void testBlacklistedIntermediateFallback() throws Exception {
-        X509Certificate[] chain = loadCertificates(BLACKLISTED_VALID_CHAIN);
-        X509Certificate blacklistedCa = loadCertificate(BLACKLIST_CA);
-        X509Certificate validCa = loadCertificate(BLACKLIST_FALLBACK_VALID_CA);
-        assertTrusted(chain, getTrustManager(blacklistedCa, validCa));
+    public void testBlocklistedIntermediateFallback() throws Exception {
+        X509Certificate[] chain = loadCertificates(BLOCKLISTED_VALID_CHAIN);
+        X509Certificate blocklistedCa = loadCertificate(BLOCKLIST_CA);
+        X509Certificate validCa = loadCertificate(BLOCKLIST_FALLBACK_VALID_CA);
+        assertTrusted(chain, getTrustManager(blocklistedCa, validCa));
         // Check that without the trusted_ca the chain is invalid (since it only chains to a
-        // blacklisted ca)
-        assertUntrusted(chain, getTrustManager(blacklistedCa));
+        // blocklisted ca)
+        assertUntrusted(chain, getTrustManager(blocklistedCa));
     }
 
     private X509Certificate loadCertificate(int resId) throws Exception {
