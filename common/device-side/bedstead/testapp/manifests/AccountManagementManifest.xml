@@ -32,5 +32,5 @@
                        android:resource="@xml/authenticator" />
         </service>
     </application>
-    <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="28"/>
+    <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="32"/>
 </manifest>
