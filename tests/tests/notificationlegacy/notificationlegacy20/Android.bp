@@ -22,9 +22,7 @@ android_test {
     defaults: ["cts_defaults"],
     platform_apis: true,
     static_libs: [
-        "androidx.test.rules",
         "ctstestrunner-axt",
-        "androidx.test.rules",
         "junit",
         "permission-test-util-lib",
         "compatibility-device-util-axt",
