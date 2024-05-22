@@ -16,12 +16,14 @@
 
 package com.android.bedstead.harrier.annotations.enterprise;
 
+import static com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner.DO_PO_PRIORITY;
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner.DO_PO_PRIORITY;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -29,20 +31,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark that a test requires that there is no dpc on the device.
- *
- * <p>This checks that there is no device owner, the current user has no work profiles, and the
- * current user has no profile owner.
- *
- * <p>Your test configuration may be configured so that this test is only run on a device which has
- * no dpc. Otherwise, you can use {@code Devicestate} to ensure that the device enters
- * the correct state for the method.
+ * This is just a temporary class for compatibility with other repositories
+ * use {@link com.android.bedstead.enterprise.annotations.EnsureHasNoDpc} instead
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @EnsureHasNoDeviceOwner
 @EnsureHasNoWorkProfile
 @EnsureHasNoProfileOwner
+@Deprecated
 public @interface EnsureHasNoDpc {
 
     /** This is currently non-functional. */

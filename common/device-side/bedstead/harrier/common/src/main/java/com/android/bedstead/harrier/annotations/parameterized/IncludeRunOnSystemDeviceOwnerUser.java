@@ -19,11 +19,11 @@ package com.android.bedstead.harrier.annotations.parameterized;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
 import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDelegate;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
@@ -32,7 +32,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Parameterize a test so that it runs on the same user as the device owner. */
+/**
+ * This is just a temporary class for compatibility with other repositories
+ * use {@link com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser} instead
+ */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @ParameterizedAnnotation(scope = ENTERPRISE)
@@ -40,6 +43,7 @@ import java.lang.annotation.Target;
 @EnsureHasNoWorkProfile
 @EnsureHasDeviceOwner(isPrimary = true, key = "dpc")
 @EnsureHasNoDelegate
+@Deprecated
 public @interface IncludeRunOnSystemDeviceOwnerUser {
      /**
      * Priority sets the order that annotations will be resolved.

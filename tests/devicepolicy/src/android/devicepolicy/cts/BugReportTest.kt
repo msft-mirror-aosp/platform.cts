@@ -25,9 +25,9 @@ import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureWillTakeQuickBugReports
 import com.android.bedstead.harrier.annotations.NotificationsTest
 import com.android.bedstead.harrier.annotations.SlowApiTest
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.harrier.policies.RequestBugReport
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat
