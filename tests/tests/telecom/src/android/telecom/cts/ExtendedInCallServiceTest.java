@@ -41,7 +41,7 @@ import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 import android.telephony.TelephonyManager;
 
-import com.android.compatibility.common.util.FeatureUtil;
+import com.android.server.telecom.flags.Flags;
 
 import java.util.List;
 import java.util.UUID;
@@ -489,12 +489,14 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testSwitchCallEndpoint() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !Flags.earlyUpdateInternalCallAudioState()) {
             return;
         }
 
         placeAndVerifyCall();
         final MockConnection connection = verifyConnectionForOutgoingCall();
+        TestUtils.InvokeCounter connectionOnCallEndpointChangedCounter =
+                connection.getConnectionOnCallEndpointChangedCounter();
 
         final MockInCallService inCallService = mInCallCallbacks.getService();
 
@@ -527,6 +529,10 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
                         @Override
                         public void onError(CallEndpointException exception) {}
                     });
+            // Wait for connection onCallEndpointChanged.
+            connectionOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 1,
+                    WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+            // Wait for ICS connection onCallEndpointChanged.
             mOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 1,
                     WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
             assertEndpointType(connection, anotherEndpointType);
@@ -539,7 +545,11 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
                         @Override
                         public void onError(CallEndpointException exception) {}
                     });
-            mOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 1,
+            // Wait for connection onCallEndpointChanged.
+            connectionOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 2,
+                    WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+            // Wait for ICS connection onCallEndpointChanged.
+            mOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 2,
                     WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
             assertEndpointType(connection, currentEndpointType);
             assertEndpointType(inCallService, currentEndpointType);
