@@ -64,19 +64,10 @@ class PreapprovalInstallTest : PackageInstallerTestBase() {
         const val PROPERTY_IS_PRE_APPROVAL_REQUEST_AVAILABLE = "is_preapproval_available"
     }
 
-    private val apkFile_pl = File(context.filesDir, TEST_APK_NAME_PL)
-    private val apkFile_v2 = File(context.filesDir, TEST_APK_NAME_V2)
-
     @get:Rule
     val deviceConfigPreApprovalRequestAvailable = DeviceConfigStateChangerRule(
         context, DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE,
             PROPERTY_IS_PRE_APPROVAL_REQUEST_AVAILABLE, true.toString())
-
-    @Before
-    fun copyOtherTestApks() {
-        File(TEST_APK_LOCATION, TEST_APK_NAME_PL).copyTo(target = apkFile_pl, overwrite = true)
-        File(TEST_APK_LOCATION, TEST_APK_NAME_V2).copyTo(target = apkFile_v2, overwrite = true)
-    }
 
     @Before
     fun checkPreconditions() {
