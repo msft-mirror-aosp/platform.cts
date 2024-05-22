@@ -18,6 +18,9 @@ import copy
 import io
 import logging
 import math
+import matplotlib
+from matplotlib import pylab
+import matplotlib.pyplot
 import os
 import sys
 
@@ -28,6 +31,12 @@ import noise_model_constants
 import numpy
 from PIL import Image
 from PIL import ImageCms
+
+
+_CMAP_BLUE = ('black', 'blue', 'lightblue')
+_CMAP_GREEN = ('black', 'green', 'lightgreen')
+_CMAP_RED = ('black', 'red', 'lightcoral')
+_CMAP_SIZE = 6  # 6 inches
 
 # The matrix is from JFIF spec
 DEFAULT_YUV_TO_RGB_CCM = numpy.matrix([[1.000, 0.000, 1.402],
@@ -64,6 +73,49 @@ EXPECTED_BY_SRGB = 0.066
 COLORSPACE_TRIANGLE_AREA_TOL = 0.00028
 
 
+def plot_lsc_maps(lsc_maps, plot_name, test_name_with_log_path):
+  """Plot the lens shading correction maps.
+
+  Args:
+    lsc_maps: 4D np array; r, gr, gb, b lens shading correction maps.
+    plot_name: str; identifier for maps ('full_scale' or 'metadata').
+    test_name_with_log_path: str; test name with log_path location.
+
+  Returns:
+    None, but generates and saves plots.
+  """
+  aspect_ratio = lsc_maps[:, :, 0].shape[1] / lsc_maps[:, :, 0].shape[0]
+  plot_w = 1 + aspect_ratio * _CMAP_SIZE  # add 1 for heatmap legend
+  matplotlib.pyplot.figure(plot_name, figsize=(plot_w, _CMAP_SIZE))
+  pylab.suptitle(plot_name)
+
+  pylab.subplot(2, 2, 1)  # 2x2 top left
+  pylab.title('R')
+  cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_RED)
+  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 0], cmap=cmap)
+  matplotlib.pyplot.colorbar()
+
+  pylab.subplot(2, 2, 2)  # 2x2 top right
+  pylab.title('Gr')
+  cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_GREEN)
+  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 1], cmap=cmap)
+  matplotlib.pyplot.colorbar()
+
+  pylab.subplot(2, 2, 3)  # 2x2 bottom left
+  pylab.title('Gb')
+  cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_GREEN)
+  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 2], cmap=cmap)
+  matplotlib.pyplot.colorbar()
+
+  pylab.subplot(2, 2, 4)  # 2x2 bottom right
+  pylab.title('B')
+  cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_BLUE)
+  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 3], cmap=cmap)
+  matplotlib.pyplot.colorbar()
+
+  matplotlib.pyplot.savefig(f'{test_name_with_log_path}_{plot_name}_cmaps.png')
+
+
 def capture_scene_image(cam, props, name_with_log_path):
   """Take a picture of the scene on test FAIL."""
   req = capture_request_utils.auto_capture_request()
@@ -80,6 +132,15 @@ def convert_image_to_uint8(image):
 def assert_props_is_not_none(props):
   if not props:
     raise AssertionError('props is None')
+
+
+def assert_capture_width_and_height(cap, width, height):
+  if cap['width'] != width or cap['height'] != height:
+    raise AssertionError(
+        'Unexpected capture WxH size, expected [{}x{}], actual [{}x{}]'.format(
+            width, height, cap['width'], cap['height']
+        )
+    )
 
 
 def convert_capture_to_rgb_image(cap,
@@ -441,7 +502,6 @@ def convert_capture_to_planes(cap, props=None):
     assert_props_is_not_none(props)
     is_quad_bayer = 'QuadBayer' in cap['format']
     white_level = get_white_level(props, cap['metadata'])
-    logging.debug('dynamic white level: %.2f', white_level)
     img = numpy.ndarray(
         shape=(h * w,), dtype='<u2', buffer=cap['data'][0:w * h * 2])
     img = img.astype(numpy.float32).reshape(h, w) / white_level
@@ -595,7 +655,6 @@ def convert_raw_to_rgb_image(r_plane, gr_plane, gb_plane, b_plane, props,
   # Values required for the RAW to RGB conversion.
   assert_props_is_not_none(props)
   white_level = get_white_level(props, cap_res)
-  logging.debug('dynamic white level: %.2f', white_level)
   gains = cap_res['android.colorCorrection.gains']
   ccm = cap_res['android.colorCorrection.transform']
 
@@ -755,8 +814,10 @@ def get_white_level(props, cap_metadata=None):
       'android.sensor.dynamicWhiteLevel' in cap_metadata and
       cap_metadata['android.sensor.dynamicWhiteLevel'] is not None):
     white_level = cap_metadata['android.sensor.dynamicWhiteLevel']
+    logging.debug('dynamic white level: %.2f', white_level)
   else:
     white_level = props['android.sensor.info.whiteLevel']
+    logging.debug('white level: %.2f', white_level)
   return float(white_level)
 
 

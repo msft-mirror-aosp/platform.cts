@@ -78,6 +78,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.PendingIntent;
 import android.app.assist.AssistStructure.ViewNode;
@@ -2265,6 +2266,12 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     @Test
     @AppModeFull(reason = "Unit test")
     public void testNoContainers() throws Exception {
+
+        assumeTrue("Rotation is supported", Helper.isRotationSupported(mContext));
+        assumeTrue(
+                "Device state is not REAR_DISPLAY",
+                !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.REAR_DISPLAY));
+
         // Enable flag
         Helper.setDeviceConfig(
                 mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, true);

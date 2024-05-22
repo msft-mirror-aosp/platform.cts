@@ -56,7 +56,6 @@ public class StartActivityAsUserTests {
 
     private static final String PACKAGE = "android.server.wm.cts";
     private static final String CLASS = "android.server.wm.activity.StartActivityAsUserActivity";
-    private static final String USER_CREATION_OVERRIDE = "debug.user.creation_override";
     private static final int INVALID_STACK = -1;
     private static final boolean SUPPORTS_MULTIPLE_USERS = UserManager.supportsMultipleUsers();
 

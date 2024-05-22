@@ -235,6 +235,9 @@ public final class UserManagerTest {
     @ApiTest(apis = {"android.os.UserManager#isUserForeground"})
     @RequireRunOnInitialUser
     public void testIsUserForeground_differentContext_noPermission() throws Exception {
+        // Skip test for devices that support only a single user, since we cannot get a different
+        // user's context for such devices.
+        assumeTrue(mUserManager.supportsMultipleUsers());
         Context context = getContextForOtherUser();
         UserManager um = context.getSystemService(UserManager.class);
 
@@ -245,6 +248,9 @@ public final class UserManagerTest {
     @ApiTest(apis = {"android.os.UserManager#isUserForeground"})
     @EnsureHasPermission(INTERACT_ACROSS_USERS)
     public void testIsUserForeground_differentContext_withPermission() throws Exception {
+        // Skip test for devices that support only a single user, since we cannot get a different
+        // user's context for such devices.
+        assumeTrue(mUserManager.supportsMultipleUsers());
         Context userContext = getContextForOtherUser();
         UserManager um = userContext.getSystemService(UserManager.class);
 

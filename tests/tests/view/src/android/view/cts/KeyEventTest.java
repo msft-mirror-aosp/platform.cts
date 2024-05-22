@@ -64,6 +64,11 @@ public class KeyEventTest {
     private long mDownTime;
     private long mEventTime;
 
+    // Underestimated from ~112 B to breach threshold when leaked
+    private static final int APPROX_KEY_EVENT_SIZE_BYTES = 100;
+    private static final int NUM_KEY_EVENT_ALLOCATIONS =
+            NativeHeapLeakDetector.MEMORY_LEAK_THRESHOLD_KB * 1024 / APPROX_KEY_EVENT_SIZE_BYTES;
+
     private static native void nativeKeyEventTest(KeyEvent event);
 
     private static native void obtainNativeKeyEventCopyFromJava(KeyEvent event);
@@ -863,7 +868,7 @@ public class KeyEventTest {
         final KeyEvent javaKeyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A);
 
         try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
-            for (int iteration = 0; iteration < 100; ++iteration) {
+            for (int iteration = 0; iteration < NUM_KEY_EVENT_ALLOCATIONS; ++iteration) {
                 obtainKeyEventCopyFromNative(javaKeyEvent);
             }
         }
@@ -874,7 +879,7 @@ public class KeyEventTest {
         final KeyEvent javaKeyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A);
 
         try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
-            for (int iteration = 0; iteration < 100; ++iteration) {
+            for (int iteration = 0; iteration < NUM_KEY_EVENT_ALLOCATIONS; ++iteration) {
                 obtainNativeKeyEventCopyFromJava(javaKeyEvent);
             }
         }

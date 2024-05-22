@@ -38,8 +38,10 @@ import android.app.admin.DevicePolicyManager;
 import android.app.admin.NoArgsPolicyKey;
 import android.app.admin.PolicyState;
 import android.app.admin.PolicyUpdateResult;
+import android.app.admin.RemoteDevicePolicyManager;
 import android.app.admin.StringSetUnion;
 import android.app.admin.flags.Flags;
+import android.content.ComponentName;
 import android.devicepolicy.cts.utils.PolicyEngineUtils;
 import android.devicepolicy.cts.utils.PolicySetResultUtils;
 import android.os.Bundle;
@@ -163,20 +165,18 @@ public final class UserControlDisabledPackagesTest {
         try (TestAppInstance instance = sTestApp.install()) {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
                     sDeviceState.dpc().componentName(), List.of(testAppPackageName));
-
-            instance.activities().any().start();
-            int processIdBeforeStopping = instance.process().pid();
-
-            sActivityManager.forceStopPackage(testAppPackageName);
-
             try {
+
+                instance.activities().any().start();
+                int processIdBeforeStopping = instance.process().pid();
+
+                sActivityManager.forceStopPackage(testAppPackageName);
+
                 assertPackageNotStopped(sTestApp.pkg(), processIdBeforeStopping);
             } finally {
-                stopPackage(sTestApp.pkg());
+                sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
+                        sDeviceState.dpc().componentName(), List.of());
             }
-        } finally {
-            sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                    sDeviceState.dpc().componentName(), List.of());
         }
     }
 
@@ -192,20 +192,17 @@ public final class UserControlDisabledPackagesTest {
         try (TestAppInstance instance = sTestApp.install()) {
             sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
                     sDeviceState.dpc().componentName(), List.of(testAppPackageName));
-
-            instance.activities().any().start();
-            int processIdBeforeStopping = instance.process().pid();
-
-            sActivityManager.forceStopPackage(testAppPackageName);
-
             try {
+                instance.activities().any().start();
+                int processIdBeforeStopping = instance.process().pid();
+
+                sActivityManager.forceStopPackage(testAppPackageName);
+
                 assertPackageStopped(sTestApp.pkg(), processIdBeforeStopping);
             } finally {
-                stopPackage(sTestApp.pkg());
+                sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
+                        sDeviceState.dpc().componentName(), List.of());
             }
-        } finally {
-            sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                    sDeviceState.dpc().componentName(), List.of());
         }
     }
 
@@ -253,6 +250,29 @@ public final class UserControlDisabledPackagesTest {
             } finally {
                 sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
                         sDeviceState.dpc().componentName(), List.of());
+            }
+        }
+    }
+
+    /**
+     * Ensures that if the app was force stopped or never started, FLAG_STOPPED gets cleared.
+     */
+    @PolicyAppliesTest(policy = UserControlDisabledPackages.class)
+    @RequireFlagsEnabled(Flags.FLAG_DISALLOW_USER_CONTROL_STOPPED_STATE_FIX)
+    public void setUserControlDisabledPackages_clearsStoppedState() throws Exception {
+        RemoteDevicePolicyManager dpcDpm = sDeviceState.dpc().devicePolicyManager();
+        ComponentName dpcAdmin = sDeviceState.dpc().componentName();
+
+        try (TestAppInstance testApp = sTestApp.install()) {
+            testApp.pkg().forceStop();
+            // If the app gets started spuriously somehow, the test is invalid.
+            Assume.assumeTrue("App didn't get into stopped state", testApp.pkg().isStopped());
+
+            dpcDpm.setUserControlDisabledPackages(dpcAdmin, List.of(testApp.packageName()));
+            try {
+                assertThat(testApp.pkg().isStopped()).isFalse();
+            } finally {
+                dpcDpm.setUserControlDisabledPackages(dpcAdmin, List.of());
             }
         }
     }
@@ -362,13 +382,6 @@ public final class UserControlDisabledPackagesTest {
 //            TestApis.flags().set(
 //                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, null);
         }
-    }
-
-    private void stopPackage(Package pkg) throws Exception {
-        sDeviceState.dpc().devicePolicyManager().setUserControlDisabledPackages(
-                sDeviceState.dpc().componentName(), List.of());
-
-        pkg.forceStop();
     }
 
     private void assertPackageStopped(Package pkg, int processIdBeforeStopping)

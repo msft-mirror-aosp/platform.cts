@@ -42,6 +42,10 @@ class DefaultCapturePerfClassTest(its_base_test.ItsBaseTest):
         uiautomator.ANDROID_SERVICE_NAME, uiautomator.UiAutomatorService
     )
 
+  def on_fail(self, record):
+    super().on_fail(record)
+    self.dut.take_screenshot(self.log_path, prefix='on_test_fail')
+
   def test_default_camera_launch(self):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,

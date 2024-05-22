@@ -1,3 +1,83 @@
+{{- /*
+ * CompMethod generates comparison method constant from a RequiredMeasurement
+ */}}
+{{- define "CompMethod" -}}
+    {{- $c :=.GetComparison }}
+    {{- $mt :=.GetMeasurementType }}
+    {{- if eq $mt.String "MEASUREMENT_TYPE_BOOL" -}}BOOLEAN
+    {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}DOUBLE
+    {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}INTEGER
+    {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}STRING
+    {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}LONG
+    {{- else }}{{$mt}}
+    {{- end }}_
+    {{- if eq $c.String "COMPARISON_EQUAL" -}}EQ
+    {{- else if eq $c.String "COMPARISON_LESS_THAN" -}}LT
+    {{- else if eq $c.String "COMPARISON_LESS_THAN_OR_EQUAL" -}}LTE
+    {{- else if eq $c.String "COMPARISON_GREATER_THAN" -}}GTE
+    {{- else if eq $c.String "COMPARISON_GREATER_THAN_OR_EQUAL" -}}GTE
+    {{- else if eq $c.String "COMPARISON_INFO_ONLY" -}}INFO
+    {{- else }}{{$c}}
+    {{- end }}
+{{- end -}}
+
+
+{{- /*
+ * JavaClass generates Java class name from a MeasurementType
+ */}}
+{{- define "JavaClass" -}}
+    {{- if eq .String "MEASUREMENT_TYPE_BOOL" -}}Boolean
+    {{- else if eq .String "MEASUREMENT_TYPE_DOUBLE" -}}Double
+    {{- else if eq .String "MEASUREMENT_TYPE_INT" -}}Integer
+    {{- else if eq .String "MEASUREMENT_TYPE_STRING" -}}String
+    {{- else if eq .String "MEASUREMENT_TYPE_LONG" -}}Long
+    {{- else }}{{.}}
+    {{- end }}
+{{- end -}}
+
+{{- /*
+ * JavaClass generates Java type from a MeasurementType
+ */}}
+{{- define "JavaType" -}}
+    {{- if eq .String "MEASUREMENT_TYPE_BOOL" -}}boolean
+    {{- else if eq .String "MEASUREMENT_TYPE_DOUBLE" -}}double
+    {{- else if eq .String "MEASUREMENT_TYPE_INT" -}}int
+    {{- else if eq .String "MEASUREMENT_TYPE_STRING" -}}String
+    {{- else if eq .String "MEASUREMENT_TYPE_LONG" -}}long
+    {{- else }}{{.}}
+    {{- end }}
+{{- end -}}
+
+{{- /*
+ * VersionCode generates the android.Build VersionCode constant from an mpc value.
+ * It is an error if the mpc value listed here.
+ */}}
+{{- define "VersionCode" -}}
+    VERSION_CODES.
+    {{- if  eq . 30}}R
+    {{- else if eq . 31}}S
+    {{- else if eq . 33}}TIRAMISU
+    {{- else if eq . 34}}UPSIDE_DOWN_CAKE
+    {{- else if eq . 35}}VANILLA_ICE_CREAM
+    {{- else }}{{.}}
+    {{- end }}
+{{- end -}}
+
+
+{{- /*
+ * MeasurementValue gets value from RequiredValue base on the MeasurementType
+ * It is an error if the MeasurementType is not listed here.
+ */}}
+{{- define "MeasurementValue" -}}
+    {{- if eq .MeasurementType.String "MEASUREMENT_TYPE_BOOL" -}}{{.RequiredValue.GetBoolValue}}
+    {{- else if eq .MeasurementType.String "MEASUREMENT_TYPE_DOUBLE" -}}{{printf "%f" .RequiredValue.GetDoubleValue}}
+    {{- else if eq .MeasurementType.String "MEASUREMENT_TYPE_INT" -}}{{.RequiredValue.GetIntValue}}
+    {{- else if eq .MeasurementType.String "MEASUREMENT_TYPE_STRING" -}}"{{.RequiredValue.GetStringValue}}"
+    {{- else if eq .MeasurementType.String "MEASUREMENT_TYPE_LONG" -}}{{.RequiredValue.GetLongValue}}L
+    {{- else }}{{.MeasurementType}}
+    {{- end }}
+{{- end -}}
+
 /*
  * Copyright (C) 2024 The Android Open Source Project
  *
@@ -16,6 +96,8 @@
 
 package android.mediapc.cts.common;
 
+import android.os.Build.VERSION_CODES;
+
 /**
  * Requirements Classes.
  */
@@ -24,14 +106,34 @@ public final class Requirements {
 {{- range $r := .ReqList.GetRequirements }}
 {{- if $r.GetName }}
     /**
-      * Create  {{UpperCamelCase $r.GetName}}Requirement for requirement {{ $r.GetId }}.
+      * Add a new {{UpperCamelCase $r.GetName}}Requirement for requirement {{ $r.GetId }} to a
+      * {@code PerformanceClassEvaluator} instance.
       {{- with $r.GetDescription}}
       *
       * {{.}}{{end}}
       */
-    public static {{UpperCamelCase $r.GetName}}Requirement create{{ SafeReqID $r.GetId | UpperCase}}() {
-        return {{UpperCamelCase $r.GetName}}Requirement.create();
-     }
+    public static {{UpperCamelCase $r.GetName}}Requirement add{{ SafeReqID $r.GetId | UpperCase}}(
+           PerformanceClassEvaluator pce) {
+        return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create());
+    }
+
+    {{- range $v_id, $v := $r.GetVariants }}
+
+    /**
+      * Add a new {{UpperCamelCase $r.GetName}}Requirement for requirement {{ $r.GetId }}
+      * to a {@code PerformanceClassEvaluator} instance
+      * {{$v.GetDescription}}.
+      {{- with $r.GetDescription}}
+      *
+      * {{.}}{{end}}
+      */
+    public static {{UpperCamelCase $r.GetName}}Requirement add{{ SafeReqID $r.GetId | UpperCase}}
+              {{- UpperCamelCase $v_id}}(
+           PerformanceClassEvaluator pce) {
+        return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create
+            {{- UpperCamelCase $v_id}}());
+    }
+    {{- end }}{{/* range $v_id, $v */}}
 
     /**
       * {{ $r.GetId }} {{$r.GetName}}
@@ -47,80 +149,77 @@ public final class Requirements {
           *
           * {{.}}{{end}}
           */
-        public static {{UpperCamelCase $r.GetName}}Requirement create() {
+        private static {{UpperCamelCase $r.GetName}}Requirement create() {
             {{- range $m_id, $m := $r.GetMeasurements }}
             {{- $mt := $m.GetMeasurementType}}
             {{- $c := $m.GetComparison}}
             var {{LowerCamelCase $m_id}} = RequiredMeasurement
-                    .<
-                        {{- if eq $mt.String "MEASUREMENT_TYPE_BOOL" -}}Boolean
-                        {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}Double
-                        {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}Integer
-                        {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}String
-                        {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}Long
-                        {{- else }}{{$mt}}
-                        {{- end }}>builder()
+                    .<{{template "JavaClass" $mt}}>builder()
                     .setId("{{$m_id}}")
-                    .setPredicate(RequirementConstants.
-                        {{- if eq $mt.String "MEASUREMENT_TYPE_BOOL" -}}BOOLEAN
-                        {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}DOUBLE
-                        {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}INTEGER
-                        {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}STRING
-                        {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}LONG
-                        {{- else }}{{$mt}}
-                        {{- end }}_
-                        {{- if eq $c.String "COMPARISON_EQUAL" -}}EQ
-                        {{- else if eq $c.String "COMPARISON_LESS_THAN" -}}LT
-                        {{- else if eq $c.String "COMPARISON_LESS_THAN_OR_EQUAL" -}}LTE
-                        {{- else if eq $c.String "COMPARISON_GREATER_THAN" -}}GTE
-                        {{- else if eq $c.String "COMPARISON_GREATER_THAN_OR_EQUAL" -}}GTE
-                        {{- else if eq $c.String "COMPARISON_INFO_ONLY" -}}INFO
-                        {{- else }}{{$c}}
-                        {{- end }})
+                    .setPredicate(RequirementConstants.{{template "CompMethod" $m}})
                     {{- range $mpc, $s := $r.GetSpecs }}
                     {{- with index $s.GetRequiredValues $m_id}}
-                    .addRequiredValue({{$mpc}}
-                       {{- if eq $mt.String "MEASUREMENT_TYPE_BOOL" -}}, {{.GetBoolValue}}
-                       {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}, {{printf "%f" .GetDoubleValue}}
-                       {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}, {{.GetIntValue}}
-                       {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}, "{{.GetStringValue}}"
-                       {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}, {{.GetLongValue}}L
-                       {{- else }}{{$mt}}
-                       {{- end }})
+                    .addRequiredValue({{template "VersionCode" $mpc}}, {{template
+                         "MeasurementValue" Dict "RequiredValue" . "MeasurementType" $mt}})
                     {{- end}}
                     {{- end}}
                     .build();
             {{- end }}
-           return new {{UpperCamelCase $r.GetName}}Requirement(
+            return new {{UpperCamelCase $r.GetName}}Requirement(
                     "{{SafeReqID $r.GetId }}"
                     {{- range $m_id, $m := $r.GetMeasurements }},
                     {{LowerCamelCase $m_id}}
                     {{- end}});
         }
 
+        {{- range $v_id, $v := $r.GetVariants }}
+        /**
+          * {{ $r.GetId }} {{$r.GetName}}{{- with $v.GetDescription}} {{.}}{{end}}
+          {{- with $r.GetDescription}}
+          *
+          * {{.}}{{end}}
+          */
+        private static {{UpperCamelCase $r.GetName}}Requirement create{{UpperCamelCase $v_id}}() {
+            {{- range $m_id, $m := $r.GetMeasurements }}
+            {{- $mt := $m.GetMeasurementType}}
+            {{- $c := $m.GetComparison}}
+            var {{LowerCamelCase $m_id}} = RequiredMeasurement
+                    .<{{template "JavaClass" $mt}}>builder()
+                    .setId("{{$m_id}}")
+                    .setPredicate(RequirementConstants.{{template "CompMethod" $m}})
+                    {{- range $mpc, $s := $r.GetSpecs }}
+                    {{- $vs := index $s.GetVariantSpecs $v_id}}
+                    {{- if $vs }}
+                    {{- with index $vs.GetRequiredValues $m_id}}
+                    .addRequiredValue({{template "VersionCode" $mpc}}, {{template
+                         "MeasurementValue" Dict "RequiredValue" . "MeasurementType" $mt}})
+                    {{- end}}{{/* if $vs */}}
+                    {{- end}}{{/* with rv */}}
+                    {{- end}}{{/* range $mpc, $s */}}
+                    .build();
+            {{- end}}{{/* range $m_id, $m */}}
+            return new {{UpperCamelCase $r.GetName}}Requirement(
+                    "{{SafeReqID $r.GetId }}"
+                    {{- range $m_id, $m := $r.GetMeasurements }},
+                    {{LowerCamelCase $m_id}}
+                    {{- end}});
+        }
+        {{- end }}{{/* range $v_id, $v */}}
 
-       {{- range $m_id, $m := $r.GetMeasurements }}
-       {{- $mt := $m.GetMeasurementType}}
-       /** {{$m.GetDescription}} */
-       public void set{{UpperCamelCase $m_id}}(
-         {{- if eq $mt.String "MEASUREMENT_TYPE_BOOL" -}}boolean
-         {{- else if eq $mt.String "MEASUREMENT_TYPE_DOUBLE" -}}double
-         {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}int
-         {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}String
-         {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}long
-         {{- else }}{{$mt}}
-         {{- end }} v) {
-           this.setMeasuredValue("{{$m_id}}", v);
-       }
-       {{- end }}{{/* range $m_id, $m */}}
+        {{- range $m_id, $m := $r.GetMeasurements }}
+        {{- $mt := $m.GetMeasurementType}}
+        /** {{$m.GetDescription}} */
+        public void set{{UpperCamelCase $m_id}}({{template "JavaType" $mt}} v) {
+            this.setMeasuredValue("{{$m_id}}", v);
+        }
+        {{- end }}{{/* range $m_id, $m */}}
 
-       private {{UpperCamelCase $r.GetName}}Requirement(String id, RequiredMeasurement<?>... reqs) {
-           super(id, reqs);
-       }
-
+        private {{UpperCamelCase $r.GetName}}Requirement(String id, RequiredMeasurement<?>... reqs) {
+            super(id, reqs);
+        }
     }
 {{- end }} {{/* if $r.GetName */}}
 {{- end }} {{/* range $r */}}
 
-  private Requirements () {}
+    private Requirements () {}
 }

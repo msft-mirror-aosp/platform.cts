@@ -175,14 +175,10 @@ SUB_CAMERA_TESTS = types.MappingProxyType({
     'scene1_2': (
         'test_raw_exposure',
         'test_raw_sensitivity',
-        'test_yuv_jpeg_all',
         'test_yuv_plus_raw',
     ),
     'scene2_a': (
         'test_num_faces',
-    ),
-    'scene2_b': (
-        'test_yuv_jpeg_capture_sameness',
     ),
     'scene4': (
         'test_aspect_ratio_and_crop',
@@ -863,6 +859,7 @@ def main():
               '-c',
               f'{new_yml_file_name}'
           ]
+        return_string = ''
         for num_try in range(NUM_TRIES):
           # Handle manual lighting control redirected stdout in test
           if (test in _LIGHTING_CONTROL_TESTS and

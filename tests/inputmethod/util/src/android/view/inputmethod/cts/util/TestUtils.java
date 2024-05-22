@@ -405,7 +405,7 @@ public final class TestUtils {
         final long downTime = SystemClock.uptimeMillis();
 
         MotionEvent event = getMotionEvent(
-                downTime, downTime, action, x, y, UinputTouchDevice.MT_TOOL_FINGER);
+                downTime, downTime, action, x, y, MotionEvent.TOOL_TYPE_FINGER);
         injectMotionEvent(event, true /* sync */);
 
         return event;

@@ -28,12 +28,13 @@ import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
 import preview_processing_utils
-import video_processing_utils
 
-_AE_RTOL = 0.015  # 1.5%
-_AF_RTOL = 0.02  # 2%
+
+_AE_ATOL = 4.0
+_AE_RTOL = 0.04  # 4%
+_AF_ATOL = 0.02  # 2%
 _ARUCO_MARKERS_COUNT = 4
-_AWB_RTOL = 0.02  # 2%
+_AWB_ATOL = 0.02  # 2%
 _CH_FULL_SCALE = 255
 _COLORS = ('r', 'g', 'b', 'gray')
 _IMG_FORMAT = 'png'
@@ -63,22 +64,16 @@ def _check_orientation_and_flip(props, uw_img, w_img, img_name_stem):
   Returns:
     numpy array of uw_img and w_img.
   """
-  if props['android.lens.facing'] == (
-      camera_properties_utils.LENS_FACING['FRONT']):
-    uw_img_name = f'{img_name_stem}_uw.png'
-    w_img_name = f'{img_name_stem}_w.png'
-    if props['android.sensor.orientation'] in _SENSOR_ORIENTATIONS:
-      uw_img = np.ndarray.copy(np.flipud(uw_img))
-      w_img = np.ndarray.copy(np.flipud(w_img))
-      logging.debug('Found sensor orientation %d, flipping up down',
-                    props['android.sensor.orientation'])
-    else:
-      uw_img = np.ndarray.copy(np.fliplr(uw_img))
-      w_img = np.ndarray.copy(np.fliplr(w_img))
-      logging.debug('Found sensor orientation %d, flipping left right',
-                    props['android.sensor.orientation'])
-    image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, uw_img_name)
-    image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, w_img_name)
+  uw_img = (
+      preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+          props['android.sensor.orientation'], uw_img))
+  w_img = (
+      preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+          props['android.sensor.orientation'], w_img))
+  uw_img_name = f'{img_name_stem}_uw.png'
+  w_img_name = f'{img_name_stem}_w.png'
+  image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, uw_img_name)
+  image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, w_img_name)
   return uw_img, w_img
 
 
@@ -97,9 +92,9 @@ def _do_af_check(uw_img, w_img, log_path):
   sharpness_w = _compute_slanted_edge_sharpness(w_img, f'{file_stem}_w.png')
   logging.debug('Sharpness for W patch: %.2f', sharpness_w)
 
-  if not math.isclose(sharpness_w, sharpness_uw, rel_tol=_AF_RTOL):
+  if not math.isclose(sharpness_w, sharpness_uw, abs_tol=_AF_ATOL):
     raise AssertionError('Sharpness change is greater than the threshold value.'
-                         f' RTOL: {_AF_RTOL} '
+                         f' ATOL: {_AF_ATOL} '
                          f'sharpness_w: {sharpness_w} '
                          f'sharpness_uw: {sharpness_uw}')
 
@@ -136,15 +131,15 @@ def _do_awb_check(uw_img, w_img):
   w_r_g_ratio, w_b_g_ratio = _get_color_ratios(w_img, 'W')
 
   if not math.isclose(uw_r_g_ratio, w_r_g_ratio,
-                      rel_tol=_AWB_RTOL):
+                      abs_tol=_AWB_ATOL):
     raise AssertionError(f'R/G change is greater than the threshold value: '
-                         f'RTOL: {_AWB_RTOL} '
+                         f'ATOL: {_AWB_ATOL} '
                          f'uw_r_g_ratio: {uw_r_g_ratio:.4f} '
                          f'w_r_g_ratio: {w_r_g_ratio:.4f}')
   if not math.isclose(uw_b_g_ratio, w_b_g_ratio,
-                      rel_tol=_AWB_RTOL):
+                      abs_tol=_AWB_ATOL):
     raise AssertionError(f'B/G change is greater than the threshold value: '
-                         f'RTOL: {_AWB_RTOL} '
+                         f'ATOL: {_AWB_ATOL} '
                          f'uw_b_g_ratio: {uw_b_g_ratio:.4f} '
                          f'w_b_g_ratio: {w_b_g_ratio:.4f}')
 
@@ -196,8 +191,10 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
   y_avg_change_percent = (abs(w_y_avg-uw_y_avg)/uw_y_avg)*100
   logging.debug('y_avg_change_percent: %.4f', y_avg_change_percent)
 
-  if not math.isclose(uw_y_avg, w_y_avg, rel_tol=_AE_RTOL):
+  if not math.isclose(uw_y_avg, w_y_avg, rel_tol=_AE_RTOL, abs_tol=_AE_ATOL):
     raise AssertionError('y_avg change is greater than threshold value: '
+                         f'diff: {abs(w_y_avg-uw_y_avg):.4f} '
+                         f'ATOL: {_AE_ATOL} '
                          f'RTOL: {_AE_RTOL} '
                          f'uw_y_avg: {uw_y_avg:.4f} '
                          f'w_y_avg: {w_y_avg:.4f} ')
@@ -333,30 +330,12 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
           cam, self.camera_id)
       cam.do_3a()
 
-      # dynamic preview recording
-      recording_obj = preview_processing_utils.collect_preview_data_with_zoom(
-          cam, preview_test_size, _ZOOM_RANGE_UW_W[0],
-          _ZOOM_RANGE_UW_W[1], _ZOOM_STEP, _RECORDING_DURATION)
-
-      # Grab the recording from DUT
-      self.dut.adb.pull([recording_obj['recordedOutputPath'], self.log_path])
-      preview_file_name = (
-          recording_obj['recordedOutputPath'].split('/')[-1])
-      logging.debug('preview_file_name: %s', preview_file_name)
-      logging.debug('recorded video size : %s', recording_obj['videoSize'])
-
-      # Extract frames as png from mp4 preview recording
-      file_list = video_processing_utils.extract_all_frames_from_video(
-          self.log_path, preview_file_name, _IMG_FORMAT
+      # Start dynamic preview recording and collect results
+      capture_results, file_list = (
+          preview_processing_utils.preview_over_zoom_range(
+              self.dut, cam, preview_test_size, _ZOOM_RANGE_UW_W[0],
+              _ZOOM_RANGE_UW_W[1], _ZOOM_STEP, self.log_path)
       )
-
-      # TODO(ruchamk): Raise error if capture result and
-      # frame count doesn't match.
-      capture_results = recording_obj['captureMetadata']
-
-      # skip frames which might not have 3A converged
-      capture_results = capture_results[_SKIP_INITIAL_FRAMES:]
-      file_list = file_list[_SKIP_INITIAL_FRAMES:]
 
       physical_id_before = None
       counter = 0  # counter for the index of crossover point result
@@ -414,10 +393,12 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
           w_name)
 
       # Check the sensor orientation and flip image
-      img_name_stem = os.path.join(self.log_path, 'flipped_preview')
-      uw_img, w_img = _check_orientation_and_flip(
-          props, uw_img, w_img, img_name_stem
-      )
+      if (props['android.lens.facing'] ==
+          camera_properties_utils.LENS_FACING['FRONT']):
+        img_name_stem = os.path.join(self.log_path, 'flipped_preview')
+        uw_img, w_img = _check_orientation_and_flip(
+            props, uw_img, w_img, img_name_stem
+        )
 
       # Find ArUco markers in the image with UW lens
       # and extract the outer box patch

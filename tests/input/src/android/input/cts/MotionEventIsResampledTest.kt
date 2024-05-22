@@ -16,16 +16,16 @@
 
 package android.input.cts
 
+import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
-import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.hardware.input.Flags
 import org.junit.After
@@ -52,7 +52,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class MotionEventIsResampledTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private lateinit var touchScreen: UinputTouchDevice
+    private lateinit var touchScreen: UinputTouchScreen
     private lateinit var verifier: EventVerifier
 
     @get:Rule
@@ -64,13 +64,7 @@ class MotionEventIsResampledTest {
 
     @Before
     fun setUp() {
-        touchScreen = UinputTouchDevice(
-                instrumentation,
-                virtualDisplayRule.virtualDisplay.display,
-                R.raw.test_touchscreen_register,
-                InputDevice.SOURCE_TOUCHSCREEN,
-                useDisplaySize = true,
-        )
+        touchScreen = UinputTouchScreen(instrumentation, virtualDisplayRule.virtualDisplay.display)
         verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
     }
 

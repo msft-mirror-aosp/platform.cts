@@ -29,6 +29,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.hamcrest.CoreMatchers.allOf;
 
+import android.Manifest;
 import android.view.ActionMode;
 import android.view.InputDevice;
 import android.view.Menu;
@@ -48,6 +49,7 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellUtils;
 
@@ -62,7 +64,13 @@ import org.junit.runner.RunWith;
 public class TextViewMouseInteractionTest {
     private static final String CUSTOM_FLOATING_TOOLBAR_LABEL = "@B(DE";
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityScenarioRule<TextViewMouseInteractionActivity> rule = new ActivityScenarioRule<>(
             TextViewMouseInteractionActivity.class);
 

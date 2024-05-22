@@ -519,6 +519,8 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             Log.d(TAG, "Skipping test since ethernet is connected.");
             return;
         }
+        // To ensure the job doesn't start immediately after scheduling.
+        mNetworkingHelper.setAllNetworksEnabled(false);
 
         mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
         mTestAppInterface.scheduleJob(false, JobInfo.NETWORK_TYPE_ANY, false);
@@ -529,6 +531,9 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
                     mTestAppInterface::isNetworkBlockedByPolicy,
                     "Test app did not lose network access after being stopped");
         }
+        // The job should run after network is connected, even though the app does not have access
+        // due to policy right now.
+        mNetworkingHelper.setAllNetworksEnabled(true);
 
         mTestAppInterface.runSatisfiedJob();
         assertTrue(

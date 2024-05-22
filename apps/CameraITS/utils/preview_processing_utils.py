@@ -20,6 +20,8 @@ import os
 import threading
 import time
 
+import numpy as np
+
 import its_session_utils
 import image_processing_utils
 import sensor_fusion_utils
@@ -27,12 +29,12 @@ import video_processing_utils
 
 _AREA_720P_VIDEO = 1280 * 720
 _ASPECT_RATIO_16_9 = 16/9  # determine if preview fmt > 16:9
+_ASPECT_TOL = 0.01
 _HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
 _IMG_FORMAT = 'png'
-_MAX_ZOOM_TOL = 0.1   # add Zoom tolerance to enable capture at max zoom
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
+_NATURAL_ORIENTATION_PORTRAIT = (90, 270)  # orientation in "normal position"
 _NUM_ROTATIONS = 24
-_NUM_STEPS = 10
 _PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 _PREVIEW_MIN_TESTED_AREA = 320 * 240
 _PREVIEW_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed
@@ -97,7 +99,35 @@ def collect_data(cam, tablet_device, preview_size, stabilize, rot_rig,
     fps_range: list; target fps range.
     hlg10: boolean; whether to capture hlg10 output.
     ois: boolean; whether optical image stabilization is ON.
+  Returns:
+    recording object; a dictionary containing output path, video size, etc.
+  """
 
+  output_surfaces = cam.preview_surface(preview_size, hlg10)
+  return collect_data_with_surfaces(cam, tablet_device, output_surfaces,
+                                    stabilize, rot_rig, zoom_ratio,
+                                    fps_range, ois)
+
+
+def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
+                               stabilize, rot_rig, zoom_ratio=None,
+                               fps_range=None, ois=False):
+  """Capture a new set of data from the device.
+
+  Captures camera preview frames while the user is moving the device in
+  the prescribed manner.
+
+  Args:
+    cam: camera object.
+    tablet_device: boolean; based on config file.
+    output_surfaces: list of dict; The list of output surfaces configured for
+      the recording. Only the first surface is used for recording; the rest are
+      configured, but not requested.
+    stabilize: boolean; whether preview stabilization is ON.
+    rot_rig: dict with 'cntl' and 'ch' defined.
+    zoom_ratio: float; static zoom ratio. None if default zoom.
+    fps_range: list; target fps range.
+    ois: boolean; whether optical image stabilization is ON.
   Returns:
     recording object; a dictionary containing output path, video size, etc.
   """
@@ -136,9 +166,9 @@ def collect_data(cam, tablet_device, preview_size, stabilize, rot_rig,
   # Record video and return recording object
   min_fps = fps_range[0] if (fps_range is not None) else None
   max_fps = fps_range[1] if (fps_range is not None) else None
-  recording_obj = cam.do_preview_recording(
-      preview_size, _VIDEO_DURATION, stabilize, ois, zoom_ratio=zoom_ratio,
-      ae_target_fps_min=min_fps, ae_target_fps_max=max_fps, hlg10_enabled=hlg10)
+  recording_obj = cam.do_preview_recording_multiple_surfaces(
+      output_surfaces, _VIDEO_DURATION, stabilize, ois, zoom_ratio=zoom_ratio,
+      ae_target_fps_min=min_fps, ae_target_fps_max=max_fps)
 
   logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
   logging.debug('Tested quality: %s', recording_obj['quality'])
@@ -285,7 +315,13 @@ def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
   return recording_obj
 
 
-def get_max_preview_test_size(cam, camera_id):
+def is_aspect_ratio_match(size_str, target_ratio):
+  """Checks if a resolution string matches the target aspect ratio."""
+  width, height = map(int, size_str.split('x'))
+  return abs(width / height - target_ratio) < _ASPECT_TOL
+
+
+def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
   """Finds the max preview size to be tested.
 
   If the device supports the _HIGH_RES_SIZE preview size then
@@ -295,15 +331,23 @@ def get_max_preview_test_size(cam, camera_id):
   Args:
     cam: camera object
     camera_id: str; camera device id under test
+    aspect_ratio: preferred aspect_ratio For example: '4/3'
 
   Returns:
     preview_test_size: str; wxh resolution of the size to be tested
   """
   resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
   supported_preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
-  supported_preview_sizes = [size for size in supported_preview_sizes
-                             if resolution_to_area(size)
-                             >= video_processing_utils.LOWEST_RES_TESTED_AREA]
+  if aspect_ratio is None:
+    supported_preview_sizes = [size for size in supported_preview_sizes
+                               if resolution_to_area(size)
+                               >= video_processing_utils.LOWEST_RES_TESTED_AREA]
+  else:
+    supported_preview_sizes = [size for size in supported_preview_sizes
+                               if resolution_to_area(size)
+                               >= video_processing_utils.LOWEST_RES_TESTED_AREA
+                               and is_aspect_ratio_match(size, aspect_ratio)]
+
   logging.debug('Supported preview resolutions: %s', supported_preview_sizes)
 
   if _HIGH_RES_SIZE in supported_preview_sizes:
@@ -322,6 +366,34 @@ def get_max_preview_test_size(cam, camera_id):
   logging.debug('Selected preview resolution: %s', preview_test_size)
 
   return preview_test_size
+
+
+def mirror_preview_image_by_sensor_orientation(
+    sensor_orientation, input_preview_img):
+  """If testing front camera, mirror preview image to match camera capture.
+
+  Preview are flipped on device's natural orientation, so for sensor
+  orientation 90 or 270, it is up or down. Sensor orientation 0 or 180
+  is left or right.
+
+  Args:
+    sensor_orientation: integer; display orientation in natural position.
+    input_preview_img: numpy array; image extracted from preview recording.
+  Returns:
+    output_preview_img: numpy array; flipped according to natural orientation.
+  """
+  if sensor_orientation in _NATURAL_ORIENTATION_PORTRAIT:
+    # Opencv expects a numpy array but np.flip generates a 'view' which
+    # doesn't work with opencv. ndarray.copy forces copy instead of view.
+    output_preview_img = np.ndarray.copy(np.flipud(input_preview_img))
+    logging.debug(
+        'Found sensor orientation %d, flipping up down', sensor_orientation)
+  else:
+    output_preview_img = np.ndarray.copy(np.fliplr(input_preview_img))
+    logging.debug(
+        'Found sensor orientation %d, flipping left right', sensor_orientation)
+
+  return output_preview_img
 
 
 def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
@@ -349,7 +421,7 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
 
   # recording preview
   preview_rec_obj = collect_preview_data_with_zoom(
-      cam, preview_size, z_min, z_max + _MAX_ZOOM_TOL, z_step_size,
+      cam, preview_size, z_min, z_max, z_step_size,
       _PREVIEW_DURATION)
 
   preview_file_name = its_session_utils.pull_file_from_dut(

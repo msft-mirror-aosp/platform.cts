@@ -22,6 +22,7 @@ import android.companion.virtual.VirtualDeviceManager
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice
 import android.companion.virtual.VirtualDeviceParams
 import android.content.Context
+import android.cts.input.EventVerifier
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -31,7 +32,6 @@ import android.hardware.input.VirtualMouseConfig
 import android.hardware.input.VirtualMouseRelativeEvent
 import android.os.Environment
 import android.view.Display
-import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.PointerIcon
 import android.virtualdevice.cts.common.FakeAssociationRule
@@ -39,6 +39,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.cts.input.DefaultPointerSpeedRule
+import com.android.cts.input.UinputDrawingTablet
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import kotlin.test.assertNotNull
@@ -296,14 +297,8 @@ enum class PointerDevice {
             display: Display,
             fakeAssociationRule: FakeAssociationRule
         ) {
-            drawingTablet =
-                UinputTouchDevice(
-                    InstrumentationRegistry.getInstrumentation(),
-                    display,
-                    R.raw.test_drawing_tablet_register,
-                    InputDevice.SOURCE_MOUSE or InputDevice.SOURCE_STYLUS,
-                    useDisplaySize = true,
-                )
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            drawingTablet = UinputDrawingTablet(instrumentation, display)
             // Start with the pointer in the middle of the display.
             pointer = Point((display.width - 1) / 2, (display.height - 1) / 2)
         }

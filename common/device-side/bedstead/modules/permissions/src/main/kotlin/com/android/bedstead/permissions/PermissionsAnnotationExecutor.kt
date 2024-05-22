@@ -33,18 +33,20 @@ import com.android.bedstead.permissions.annotations.EnsureHasPermission
 
 class PermissionsAnnotationExecutor : AnnotationExecutor {
 
-    var permissionContext: PermissionContextImpl? = null
-
+    private var permissionContext: PermissionContextImpl? = null
 
     override fun applyAnnotation(annotation: Annotation) {
         when (annotation) {
             is EnsureHasPermission -> {
                 if (!Versions.meetsSdkVersionRequirements(
                         annotation.minVersion,
-                        annotation.maxVersion)) {
-                    Log.d(LOG_TAG,
-                        "Version " + VERSION.SDK_INT + " does not need to get permission "
-                                + annotation.value.contentToString())
+                        annotation.maxVersion
+                    )) {
+                    Log.d(
+                        LOG_TAG,
+                        "Version " + VERSION.SDK_INT + " does not need to get permission " +
+                                annotation.value.contentToString()
+                    )
                     return
                 }
                 try {
@@ -53,8 +55,10 @@ class PermissionsAnnotationExecutor : AnnotationExecutor {
                     }
                     withPermission(*annotation.value)
                 } catch (e: NeneException) {
-                    AnnotationExecutorUtil.failOrSkip("Error getting permission: $e",
-                        annotation.failureMode)
+                    AnnotationExecutorUtil.failOrSkip(
+                        "Error getting permission: $e",
+                        annotation.failureMode
+                    )
                 }
             }
 
@@ -62,19 +66,23 @@ class PermissionsAnnotationExecutor : AnnotationExecutor {
                 try {
                     withoutPermission(*annotation.value)
                 } catch (e: NeneException) {
-                    AnnotationExecutorUtil.failOrSkip("Error denying permission: $e",
-                        annotation.failureMode)
+                    AnnotationExecutorUtil.failOrSkip(
+                        "Error denying permission: $e",
+                        annotation.failureMode
+                    )
                 }
             }
 
             is EnsureCanGetPermission -> {
                 if (!Versions.meetsSdkVersionRequirements(
                         annotation.minVersion,
-                        annotation.maxVersion)) {
-                    Log.d(LOG_TAG,
-                        "Version " + VERSION.SDK_INT + " does not need to get permissions "
-                                +
-                                annotation.value.contentToString())
+                        annotation.maxVersion
+                    )) {
+                    Log.d(
+                        LOG_TAG,
+                        "Version " + VERSION.SDK_INT + " does not need to get permissions " +
+                                annotation.value.contentToString()
+                    )
                     return
                 }
                 for (permission: String in annotation.value) {
@@ -85,17 +93,21 @@ class PermissionsAnnotationExecutor : AnnotationExecutor {
             is EnsureHasAppOp -> {
                 if (!Versions.meetsSdkVersionRequirements(
                         annotation.minVersion,
-                        annotation.maxVersion)) {
-                    Log.d(LOG_TAG,
-                        "Version " + VERSION.SDK_INT + " does not need to get appOp "
-                                + annotation.value)
+                        annotation.maxVersion
+                    )) {
+                    Log.d(
+                        LOG_TAG,
+                        "Version ${VERSION.SDK_INT} does not need to get appOp ${annotation.value}"
+                    )
                     return
                 }
                 try {
                     withAppOp(annotation.value)
                 } catch (e: NeneException) {
-                    AnnotationExecutorUtil.failOrSkip("Error getting appOp: $e",
-                        annotation.failureMode)
+                    AnnotationExecutorUtil.failOrSkip(
+                        "Error getting appOp: $e",
+                        annotation.failureMode
+                    )
                 }
             }
 
@@ -103,8 +115,10 @@ class PermissionsAnnotationExecutor : AnnotationExecutor {
                 try {
                     withoutAppOp(annotation.value)
                 } catch (e: NeneException) {
-                    AnnotationExecutorUtil.failOrSkip("Error denying appOp: $e",
-                        annotation.failureMode)
+                    AnnotationExecutorUtil.failOrSkip(
+                        "Error denying appOp: $e",
+                        annotation.failureMode
+                    )
                 }
             }
         }
@@ -133,8 +147,10 @@ class PermissionsAnnotationExecutor : AnnotationExecutor {
 
     private fun ensureCanGetPermission(permission: String) {
         // TODO: replace with dependency on bedstead-root when properly modularised
-        if (hasTag("root-instrumentation") && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
-            return  // If we're rooted we're always able to get permissions
+        if (hasTag("root-instrumentation") &&
+            Versions.meetsMinimumSdkVersionRequirement(Versions.V)
+        ) {
+            return // If we're rooted we're always able to get permissions
         }
         if (permissions().usablePermissions().contains(permission)) {
             return
@@ -142,18 +158,26 @@ class PermissionsAnnotationExecutor : AnnotationExecutor {
         if (packages().instrumented().isInstantApp) {
             // Instant Apps aren't able to know the permissions of shell so we can't know
             // if we can adopt it - we'll assume we can adopt and log
-            Log.i(LOG_TAG, "Assuming we can get permission " + permission
-                    + " as running on instant app")
+            Log.i(
+                LOG_TAG,
+                "Assuming we can get permission " + permission +
+                        " as running on instant app"
+            )
             return
         }
         permissions().throwPermissionException(
-            "Can not get required permission", permission)
+            "Can not get required permission",
+            permission
+        )
     }
 
     // TODO: Move this into packages module
     private fun requireNotInstantApp(reason: String, failureMode: FailureMode) {
-        AnnotationExecutorUtil.checkFailOrSkip("Test does not run as an instant-app: $reason",
-            !packages().instrumented().isInstantApp, failureMode)
+        AnnotationExecutorUtil.checkFailOrSkip(
+            "Test does not run as an instant-app: $reason",
+            !packages().instrumented().isInstantApp,
+            failureMode
+        )
     }
 
     override fun teardownNonShareableState() {
@@ -164,12 +188,15 @@ class PermissionsAnnotationExecutor : AnnotationExecutor {
     }
 
     override fun onTestFailed(exception: Throwable) {
-        if (exception is SecurityException
-            || exception.stackTraceToString().contains("SecurityException")) {
+        if (exception is SecurityException ||
+            exception.stackTraceToString().contains("SecurityException")) {
             // Commonly we have SecurityExceptions when there are missing permissions.
 
-            Log.i(LOG_TAG,
-                "SecurityException when using PermissionsAnnotationExecutor. Permission state: " + permissions().dump())
+            Log.i(
+                LOG_TAG,
+                "SecurityException when using PermissionsAnnotationExecutor. Permission state: " +
+                        permissions().dump()
+            )
         }
     }
 

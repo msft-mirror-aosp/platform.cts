@@ -20,7 +20,7 @@
           android:versionCode="5"
           android:versionName="15_r1">
 
-    <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="34"/>
+    <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="35"/>
 
     <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
     <uses-permission android:name="android.car.permission.READ_CAR_POWER_POLICY" />
@@ -4801,6 +4801,18 @@
                        android:value="android.provider.AlarmClock#ACTION_SHOW_ALARMS|android.provider.AlarmClock#ACTION_SET_ALARM|android.provider.AlarmClock#ACTION_SET_TIMER" />
         </activity>
 
+        <activity android:name=".multidevice.MultiDeviceTestsActivity"
+                android:exported="true"
+                android:label="@string/multi_device_tests_title">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_multidevice" />
+            <meta-data android:name="display_mode"
+                       android:value="single_display_mode" />
+        </activity>
+
 <!-- TODO: enable when not requiring to tap the screen and timeouts are tuned -->
 <!-- Removed from initial L release
 
@@ -6385,7 +6397,7 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="5.6" />
+            <meta-data android:name="CddTest" android:value="5.6/C-4-1" />
         </activity>
 
         <service android:name=".tv.MockTvInputService"
@@ -7292,6 +7304,31 @@
             <meta-data android:name="NonApiTest"
                        android:value="Helper class. Used to perform admin policy setup." />
         </activity>
+        <activity android:name=".widget.GeneratedPreviewsTestActivity"
+            android:exported="true"
+            android:label="@string/widget_generated_previews_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_other" />
+            <meta-data android:name="test_required_features"
+                android:value="android.software.app_widgets" />
+            <meta-data android:name="display_mode"
+                android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.appwidget.AppWidgetManager#setWidgetPreview|android.appwidget.AppWidgetManager#getWidgetPreview" />
+        </activity>
+        <receiver android:name=".widget.GeneratedPreviewWidgetProvider"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/widget_generated_previews_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/generated_previews_widget_info" />
+        </receiver>
     </application>
 
     <queries>

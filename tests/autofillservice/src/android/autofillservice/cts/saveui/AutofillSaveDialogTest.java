@@ -53,7 +53,7 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    public static final String DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE =
+    public static final String DEVICE_CONFIG_IGNORE_VIEW_STATE_RESET_TO_EMPTY =
             "ignore_view_state_reset_to_empty";
 
     // This does not assert that icon is actually hidden, this has to be done manually.
@@ -276,7 +276,7 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
     public void testShowSaveUiAfterLoginViewReset() throws Exception {
         // Enable flag
         Helper.setDeviceConfig(
-                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, true);
+                mContext, DEVICE_CONFIG_IGNORE_VIEW_STATE_RESET_TO_EMPTY, true);
 
         // Set service.
         enableService();
@@ -292,6 +292,12 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
         mUiBot.assertShownByRelativeId(LoginActivity.ID_USERNAME_CONTAINER);
 
         sReplier.addResponse(new CannedFillResponse.Builder()
+                .addDataset(new CannedFillResponse.CannedDataset.Builder()
+                        .setField(ID_USERNAME, "placeholder")
+                        .setField(ID_PASSWORD, "placeholder")
+                        .setPresentation(createPresentation("placeholder"))
+                        .setInlinePresentation(createInlinePresentation("placeholder"))
+                        .build())
                 .setRequiredSavableIds(SAVE_DATA_TYPE_USERNAME, ID_USERNAME)
                 .build());
 
@@ -307,6 +313,9 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
 
         // Reset view
         loginActivity.onUsername((v) -> v.setText(""));
+
+        // Check suggestion shows after clearing the text (verifying fix ag/27270423)
+        mUiBot.assertDatasets("placeholder");
 
         // Start SimpleAfterLoginActivity after login activity.
         startActivityWithFlag(loginActivity, SimpleAfterLoginActivity.class, /* flags= */ 0);
@@ -325,14 +334,14 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
 
         // Disable flag
         Helper.setDeviceConfig(
-                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, false);
+                mContext, DEVICE_CONFIG_IGNORE_VIEW_STATE_RESET_TO_EMPTY, false);
     }
 
     @Test
     public void testDontShowSaveUiIfViewIsResetToEmptyProgressively() throws Exception {
         // Enable flag
         Helper.setDeviceConfig(
-                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, true);
+                mContext, DEVICE_CONFIG_IGNORE_VIEW_STATE_RESET_TO_EMPTY, true);
 
         // Set service.
         enableService();
@@ -383,14 +392,14 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
 
         // Disable flag
         Helper.setDeviceConfig(
-                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, false);
+                mContext, DEVICE_CONFIG_IGNORE_VIEW_STATE_RESET_TO_EMPTY, false);
     }
 
     @Test
     public void testDontShowSaveUiAfterLoginViewResetIfFlagNotSet() throws Exception {
         // Disable flag
         Helper.setDeviceConfig(
-                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, false);
+                mContext, DEVICE_CONFIG_IGNORE_VIEW_STATE_RESET_TO_EMPTY, false);
 
         // Set service.
         enableService();

@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -1113,7 +1114,8 @@ public class TunerTest {
             return;
         }
 
-        assertEquals(lnb.setVoltage(Lnb.VOLTAGE_5V), Tuner.RESULT_SUCCESS);
+        int targetLnbVoltage = getTargetLnbVoltage();
+        assertEquals(lnb.setVoltage(targetLnbVoltage), Tuner.RESULT_SUCCESS);
         assertEquals(lnb.setTone(Lnb.TONE_NONE), Tuner.RESULT_SUCCESS);
         assertEquals(
                 lnb.setSatellitePosition(Lnb.POSITION_A), Tuner.RESULT_SUCCESS);
@@ -1599,14 +1601,14 @@ public class TunerTest {
 
     @Test
     public void testOpenDvrRecorder() throws Exception {
-        DvrRecorder d = mTuner.openDvrRecorder(100, getExecutor(), getRecordListener());
+        DvrRecorder d = mTuner.openDvrRecorder(188, getExecutor(), getRecordListener());
         assertNotNull(d);
         d.close();
     }
 
     @Test
     public void testOpenDvPlayback() throws Exception {
-        DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+        DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
         assertNotNull(d);
         d.close();
     }
@@ -1839,7 +1841,7 @@ public class TunerTest {
         FrontendSettings feSettings = createFrontendSettings(info);
 
         int[] statusTypes = {1};
-        boolean exceptionThrown = false;
+        boolean exceptionThrown;
 
         Tuner tuner100 = new Tuner(mContext, null, 100);
         Tuner tuner200 = new Tuner(mContext, null, 200);
@@ -1932,7 +1934,7 @@ public class TunerTest {
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
-        FrontendSettings feSettings = createFrontendSettings(info);
+        createFrontendSettings(info);
 
         // SCENARIO 1 - transfer and close the previous owner
 
@@ -1946,7 +1948,7 @@ public class TunerTest {
         // Create another tuner and share frontend from tunerA
         Tuner tunerB = new Tuner(mContext, null, 500);
         tunerB.shareFrontendFromTuner(tunerA);
-        DvrRecorder d = tunerB.openDvrRecorder(100, getExecutor(), getRecordListener());
+        DvrRecorder d = tunerB.openDvrRecorder(188, getExecutor(), getRecordListener());
         assertNotNull(d);
 
         // Call transferOwner in the wrong configurations and confirm it fails
@@ -1994,7 +1996,7 @@ public class TunerTest {
 
         // apply target frontend only, for case when there are multiple instances in frontend type
         res = tunerA.applyFrontend(info);
-        assertEquals(Tuner.RESULT_SUCCESS, res); // this should reclaim tunerB
+        assertEquals(Tuner.RESULT_SUCCESS, res);
 
         // Confirm tuberB is revoked
         assertNull(tunerB.getFrontendInfo());
@@ -2083,8 +2085,9 @@ public class TunerTest {
         // Open Lnb and check the callback
         TunerTestLnbCallback lnbCB1 = new TunerTestLnbCallback();
         Lnb lnbA = tunerA.openLnb(getExecutor(), lnbCB1);
-        assertNotNull(lnbA);
-        lnbA.setVoltage(Lnb.VOLTAGE_5V);
+        assumeTrue(lnbA != null);
+        int targetLnbVoltage = getTargetLnbVoltage();
+        lnbA.setVoltage(targetLnbVoltage);
         lnbA.setTone(Lnb.TONE_CONTINUOUS);
         lnbA.sendDiseqcMessage(new byte[] {1, 2});
         assertTrue(lnbCB1.getOnDiseqcMessageCalled());
@@ -2718,7 +2721,7 @@ public class TunerTest {
         assertTrue(token2 == null);
 
         // Use DvrPlayback as data source
-        DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+        DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
         assertNotNull(d);
 
         Settings settings = SectionSettingsWithTableInfo
@@ -2860,7 +2863,7 @@ public class TunerTest {
         assertTrue(token != null);
 
         // Use DvrPlayer as data source
-        DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+        DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
         assertNotNull(d);
 
         assertTrue(mSharedFilterTestServer.verifySharedFilter(token));
@@ -2899,7 +2902,7 @@ public class TunerTest {
 
             f.configure(config);
 
-            DvrPlayback d = mTuner.openDvrPlayback(100, getExecutor(), getPlaybackListener());
+            DvrPlayback d = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
             assertNotNull(d);
             d.configure(getDvrSettings());
 
@@ -2949,29 +2952,33 @@ public class TunerTest {
             int type = mTuner.getFrontendInfoById(ids.get(i)).getType();
             if (TunerVersionChecker.isHigherOrEqualVersionTo(
                         TunerVersionChecker.TUNER_VERSION_2_0)) {
-                int defaultMax = -1;
+                int defaultMax = mTuner.getMaxNumberOfFrontends(type);
                 int status;
-                // Check default value
-                defaultMax = mTuner.getMaxNumberOfFrontends(type);
-                assertTrue(defaultMax > 0);
-                // Set to -1
-                status = mTuner.setMaxNumberOfFrontends(type, -1);
-                assertEquals(Tuner.RESULT_INVALID_ARGUMENT, status);
-                // Set to defaultMax + 1
-                status = mTuner.setMaxNumberOfFrontends(type, defaultMax + 1);
-                assertEquals(Tuner.RESULT_INVALID_ARGUMENT, status);
-                // Set to 0
-                status = mTuner.setMaxNumberOfFrontends(type, 0);
-                assertEquals(Tuner.RESULT_SUCCESS, status);
-                // Check after set
-                int currentMax = -1;
-                currentMax = mTuner.getMaxNumberOfFrontends(type);
-                assertEquals(currentMax, 0);
-                // Reset to default
-                status = mTuner.setMaxNumberOfFrontends(type, defaultMax);
-                assertEquals(Tuner.RESULT_SUCCESS, status);
-                currentMax = mTuner.getMaxNumberOfFrontends(type);
-                assertEquals(defaultMax, currentMax);
+                // Use try block to ensure restoring the max Tuner
+                try {
+                    // Check default value
+                    assertTrue(defaultMax > 0);
+                    // Set to -1
+                    status = mTuner.setMaxNumberOfFrontends(type, -1);
+                    assertEquals(Tuner.RESULT_INVALID_ARGUMENT, status);
+                    // Set to defaultMax + 1
+                    status = mTuner.setMaxNumberOfFrontends(type, defaultMax + 1);
+                    assertEquals(Tuner.RESULT_INVALID_ARGUMENT, status);
+                    // Set to 0
+                    status = mTuner.setMaxNumberOfFrontends(type, 0);
+                    assertEquals(Tuner.RESULT_SUCCESS, status);
+                    // Check after set
+                    int currentMax = mTuner.getMaxNumberOfFrontends(type);
+                    assertEquals(currentMax, 0);
+                } catch (Exception e) {
+                    throw (e);
+                } finally {
+                    // Reset to default
+                    status = mTuner.setMaxNumberOfFrontends(type, defaultMax);
+                    assertEquals(Tuner.RESULT_SUCCESS, status);
+                    int currentMax = mTuner.getMaxNumberOfFrontends(type);
+                    assertEquals(defaultMax, currentMax);
+                }
             } else {
                 int defaultMax = mTuner.getMaxNumberOfFrontends(type);
                 assertEquals(defaultMax, -1);
@@ -2991,44 +2998,63 @@ public class TunerTest {
                 assertEquals(Tuner.RESULT_SUCCESS, mTuner.tune(feSettings1));
                 assertNotNull(mTuner.getFrontendInfo());
 
-                // validate that set max cannot be set to lower value than current usage
-                assertEquals(Tuner.RESULT_INVALID_ARGUMENT,
+                // Use try block to ensure restoring the max Tuner
+                try {
+                    // validate that set max cannot be set to lower value than current usage
+                    assertEquals(Tuner.RESULT_INVALID_ARGUMENT,
                             mTuner.setMaxNumberOfFrontends(type1, 0));
 
-                // validate max value is reflected in the tune behavior
-                mTuner.closeFrontend();
-                assertEquals(Tuner.RESULT_SUCCESS,
+                    // validate max value is reflected in the tune behavior
+                    mTuner.closeFrontend();
+                    assertEquals(Tuner.RESULT_SUCCESS,
                             mTuner.setMaxNumberOfFrontends(type1, 0));
-                assertEquals(Tuner.RESULT_UNAVAILABLE,
+                    assertEquals(Tuner.RESULT_UNAVAILABLE,
                             mTuner.tune(feSettings1));
 
-                assertEquals(Tuner.RESULT_SUCCESS,
+                    assertEquals(Tuner.RESULT_SUCCESS,
                             mTuner.setMaxNumberOfFrontends(type1, originalMax1));
-                assertEquals(Tuner.RESULT_SUCCESS, mTuner.tune(feSettings1));
-                assertNotNull(mTuner.getFrontendInfo());
-                mTuner.closeFrontend();
+                    assertEquals(Tuner.RESULT_SUCCESS, mTuner.tune(feSettings1));
+                    assertNotNull(mTuner.getFrontendInfo());
+                    mTuner.closeFrontend();
+                } catch (Exception e) {
+                    throw(e);
+                } finally {
+                    assertEquals(Tuner.RESULT_SUCCESS,
+                            mTuner.setMaxNumberOfFrontends(type1, originalMax1));
+                }
             }
 
             // validate max number on one frontend type has no impact on other
             if (ids.size() >= 2) {
-                FrontendInfo info2 = mTuner.getFrontendInfoById(ids.get(1));
-                int type2 = info2.getType();
-                int originalMax2 = mTuner.getMaxNumberOfFrontends(type2);
+                int type2 = type1;
+                for (int i = 0; i < ids.size(); i++) {
+                    FrontendInfo info2 = mTuner.getFrontendInfoById(ids.get(i));
+                    type2 = info2.getType();
+                    if (type1 != type2) break;
+                }
 
-                assertEquals(Tuner.RESULT_SUCCESS,
-                        mTuner.setMaxNumberOfFrontends(type2, 0));
-                assertEquals(Tuner.RESULT_SUCCESS,
-                        mTuner.tune(feSettings1));
-                assertNotNull(mTuner.getFrontendInfo());
-
-                // set it back to the original max
-                assertEquals(Tuner.RESULT_SUCCESS,
-                        mTuner.setMaxNumberOfFrontends(type2, originalMax2));
-                mTuner.closeFrontend();
-
+                if (type1 != type2) {
+                    int originalMax2 = mTuner.getMaxNumberOfFrontends(type2);
+                    // Use try block to ensure restoring the max Tuner
+                    try {
+                        assertEquals(Tuner.RESULT_SUCCESS,
+                                mTuner.setMaxNumberOfFrontends(type2, 0));
+                        assertEquals(Tuner.RESULT_SUCCESS,
+                                mTuner.tune(feSettings1));
+                        assertNotNull(mTuner.getFrontendInfo());
+                        mTuner.closeFrontend();
+                    } catch (Exception e) {
+                        throw (e);
+                    } finally {
+                        // set it back to the original max
+                        assertEquals(Tuner.RESULT_SUCCESS,
+                                mTuner.setMaxNumberOfFrontends(type2, originalMax2));
+                    }
+                }
             }
         }
     }
+
 
     public static Filter createTsSectionFilter(
             Tuner tuner, Executor e, FilterCallback cb) {

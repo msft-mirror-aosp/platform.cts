@@ -32,6 +32,8 @@ android_test {
         "junit-params",
     ],
 
+    jni_libs: ["libvirtualcameratest-jni"],
+
     srcs: [
         "src/**/*.java",
         ":CameraCtsBitmapUtils",

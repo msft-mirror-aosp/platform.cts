@@ -51,6 +51,7 @@ JCA_CAPTURE_STATUS_TAG = 'JCA_CAPTURE_STATUS'
 LOAD_SCENE_DELAY_SEC = 3
 PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 PREVIEW_MIN_TESTED_AREA = 320 * 240
+PRIVATE_FORMAT = 'priv'
 SCALING_TO_FILE_ATOL = 0.01
 SINGLE_CAPTURE_NCAP = 1
 SUB_CAMERA_SEPARATOR = '.'
@@ -123,6 +124,8 @@ _USE_CASE_CROPPED_RAW = 6
 _EXTRA_TIMEOUT_FACTOR = 10
 _COPY_SCENE_DELAY_SEC = 1
 _DST_SCENE_DIR = '/sdcard/Download/'
+_BIT_HLG10 = 0x01  # bit 1 for feature mask
+_BIT_STABILIZATION = 0x02  # bit 2 for feature mask
 
 
 def validate_tablet(tablet_name, brightness, device_id):
@@ -425,6 +428,7 @@ class ItsSession(object):
       if self._hidden_physical_id not in physical_ids:
         raise AssertionError(f'{self._hidden_physical_id} is not a hidden '
                              f'sub-camera of {self._camera_id}')
+      logging.debug('Overriding cam %s props', self._hidden_physical_id)
       props = self.get_camera_properties_by_id(self._hidden_physical_id)
       self.props = props
     return props
@@ -922,6 +926,50 @@ class ItsSession(object):
           f'Invalid response from command{cmd[_CMD_NAME_STR]}')
     return data[_OBJ_VALUE_STR]
 
+  def do_preview_recording_multiple_surfaces(
+      self, output_surfaces, duration, stabilize, ois=False,
+      zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None):
+    """Issue a preview request and read back the preview recording object.
+
+    The resolution of the preview and its recording will be determined by
+    video_size. The duration is the time in seconds for which the preview will
+    be recorded. The recorded object consists of a path on the device at
+    which the recorded video is saved.
+
+    Args:
+      output_surfaces: list; The list of output surfaces used for creating
+                             preview recording session. The first surface
+                             is used for recording.
+      duration: int; The time in seconds for which the video will be recorded.
+      stabilize: boolean; Whether the preview should be stabilized or not
+      ois: boolean; Whether the preview should be optically stabilized or not
+      zoom_ratio: float; static zoom ratio. None if default zoom
+      ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
+      ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
+    Returns:
+      video_recorded_object: The recorded object returned from ItsService
+    """
+    cam_id = self._camera_id
+    if 'physicalCamera' in output_surfaces[0]:
+      cam_id = output_surfaces[0]['physicalCamera']
+    cmd = {
+        _CMD_NAME_STR: 'doStaticPreviewRecording',
+        _CAMERA_ID_STR: cam_id,
+        'outputSurfaces': output_surfaces,
+        'recordingDuration': duration,
+        'stabilize': stabilize,
+        'ois': ois,
+    }
+    if zoom_ratio:
+      if self.zoom_ratio_within_range(zoom_ratio):
+        cmd['zoomRatio'] = zoom_ratio
+      else:
+        raise AssertionError(f'Zoom ratio {zoom_ratio} out of range')
+    if ae_target_fps_min and ae_target_fps_max:
+      cmd['aeTargetFpsMin'] = ae_target_fps_min
+      cmd['aeTargetFpsMax'] = ae_target_fps_max
+    return self._execute_preview_recording(cmd)
+
   def do_preview_recording(self, video_size, duration, stabilize, ois=False,
                            zoom_ratio=None, ae_target_fps_min=None,
                            ae_target_fps_max=None, hlg10_enabled=False):
@@ -945,24 +993,10 @@ class ItsSession(object):
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
-    cmd = {
-        _CMD_NAME_STR: 'doStaticPreviewRecording',
-        _CAMERA_ID_STR: self._camera_id,
-        'videoSize': video_size,
-        'recordingDuration': duration,
-        'stabilize': stabilize,
-        'ois': ois,
-        'hlg10Enabled': hlg10_enabled,
-    }
-    if zoom_ratio:
-      if self.zoom_ratio_within_range(zoom_ratio):
-        cmd['zoomRatio'] = zoom_ratio
-      else:
-        raise AssertionError(f'Zoom ratio {zoom_ratio} out of range')
-    if ae_target_fps_min and ae_target_fps_max:
-      cmd['aeTargetFpsMin'] = ae_target_fps_min
-      cmd['aeTargetFpsMax'] = ae_target_fps_max
-    return self._execute_preview_recording(cmd)
+    output_surfaces = self.preview_surface(video_size, hlg10_enabled)
+    return self.do_preview_recording_multiple_surfaces(
+        output_surfaces, duration, stabilize, ois, zoom_ratio,
+        ae_target_fps_min, ae_target_fps_max)
 
   def do_preview_recording_with_dynamic_zoom(self, video_size, stabilize,
                                              sweep_zoom,
@@ -989,10 +1023,11 @@ class ItsSession(object):
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
+    output_surface = self.preview_surface(video_size)
     cmd = {
         _CMD_NAME_STR: 'doDynamicZoomPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
-        'videoSize': video_size,
+        'outputSurfaces': output_surface,
         'stabilize': stabilize,
         'ois': False
     }
@@ -1039,10 +1074,11 @@ class ItsSession(object):
     Returns:
       video_recorded_object: The recorded object returned from ItsService.
     """
+    output_surface = self.preview_surface(video_size)
     cmd = {
         _CMD_NAME_STR: 'doDynamicMeteringRegionPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
-        'videoSize': video_size,
+        'outputSurfaces': output_surface,
         'stabilize': stabilize,
         'ois': False,
         'aeAwbRegionDuration': ae_awb_region_duration
@@ -1103,7 +1139,9 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     if not data[_STR_VALUE_STR]:
       raise error_util.CameraItsError('No supported preview sizes')
-    return data[_STR_VALUE_STR].split(';')
+    supported_preview_sizes = data[_STR_VALUE_STR].split(';')
+    logging.debug('Supported preview sizes: %s', supported_preview_sizes)
+    return supported_preview_sizes
 
   def get_supported_preview_sizes(self, camera_id):
     """Get supported preview resolutions for this camera device.
@@ -2530,6 +2568,26 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return buf
 
+  def preview_surface(self, size, hlg10_enabled=False):
+    """Create a surface dictionary based on size and hdr-ness.
+
+    Args:
+      size: str, Resolution of an output surface. ex. "1920x1080"
+      hlg10_enabled: boolean; Whether the output is hlg10 or not.
+
+    Returns:
+      a dictionary object containing format, size, and hdr-ness.
+    """
+    surface = {
+        'format': 'priv',
+        'width': int(size.split('x')[0]),
+        'height': int(size.split('x')[1]),
+        'hlg10': hlg10_enabled
+    }
+    if self._hidden_physical_id:
+      surface['physicalCamera'] = self._hidden_physical_id
+    return [surface]
+
 
 def parse_camera_ids(ids):
   """Parse the string of camera IDs into array of CameraIdCombo tuples.
@@ -2840,3 +2898,44 @@ def remove_frame_files(dir_name, save_files_list=None):
       for image in glob.glob('%s/*.png' % dir_name):
         if image not in save_files_list:
           os.remove(image)
+
+
+def remove_mp4_file(file_name_with_path):
+  """Removes the mp4 file at given path.
+
+  Args:
+    file_name_with_path: string, path to mp4 recording.
+  """
+  try:
+    os.remove(file_name_with_path)
+  except FileNotFoundError:
+    logging.debug('File not found: %s', file_name_with_path)
+
+
+def check_and_update_features_tested(
+    features_tested, hlg10, is_stabilized):
+  """Check if the [hlg10, is_stabilized] combination is already tested.
+
+  Args:
+    features_tested: The list of feature combinations already tested
+    hlg10: boolean; Whether HLG10 is enabled
+    is_stabilized: boolean; Whether preview stabilizatoin is enabled
+
+  Returns:
+    Whether the [hlg10, is_stabilized] is already tested.
+  """
+  feature_mask = 0
+  if hlg10: feature_mask |= _BIT_HLG10
+  if is_stabilized: feature_mask |= _BIT_STABILIZATION
+  tested = False
+  for tested_feature in features_tested:
+    # Only test a combination if they aren't already a subset
+    # of another tested combination.
+    if (tested_feature | feature_mask) == tested_feature:
+      tested = True
+      break
+
+  if not tested:
+    features_tested.append(feature_mask)
+
+  return tested

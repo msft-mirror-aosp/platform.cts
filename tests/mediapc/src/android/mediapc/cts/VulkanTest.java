@@ -16,13 +16,13 @@
 package android.mediapc.cts;
 
 import android.mediapc.cts.common.PerformanceClassEvaluator;
-import android.mediapc.cts.common.VulkanRequirement;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.VulkanRequirement;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.SystemUtil;
 
 import com.google.common.collect.ImmutableList;
 
@@ -49,19 +49,22 @@ public class VulkanTest {
     private static final int VK_EXT_GLOBAL_PRIORITY_SPEC_VERSION = 1;
 
     private ImmutableList<JSONObject> mVulkanDevices;
+    private static native String nativeGetVkJSON();
 
     @Rule
     public final TestName mTestName = new TestName();
 
+    static {
+        System.loadLibrary("ctsmediapc_vulkan_jni");
+    }
 
     /**
      * Test specific setup
      */
     @Before
     public void setUp() throws Exception {
-        final String output = SystemUtil.runShellCommand("cmd gpu vkjson");
-        final JSONArray vkjson = (new JSONObject(output)).getJSONArray("devices");
-
+        JSONObject instance = new JSONObject(nativeGetVkJSON());
+        final JSONArray vkjson = instance.getJSONArray("devices");
         var builder = ImmutableList.<JSONObject>builder();
         for (int i = 0; i < vkjson.length(); i++) {
             builder.add(vkjson.getJSONObject(i));
@@ -74,12 +77,12 @@ public class VulkanTest {
      * {@code VkPhysicalDeviceProtectedMemoryFeatures.protectedMemory} and
      * {@code VK_EXT_global_priority}.
      */
-    @CddTest(requirements = {"7.1.4.1/H-1-2"})
+    @CddTest(requirements = {"7.1.4.1/H-1-3"})
     @Test
     public void checkVulkanProtectedMemoryAndGlobalPrioritySupport() throws Exception {
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        VulkanRequirement req = pce.addR7_1_4_1__H_1_3();
+        VulkanRequirement req = Requirements.addR7_1_4_1__H_1_3(pce);
 
         var filteredDevices = mVulkanDevices.stream().filter(this::notCpuDevice).toList();
         final boolean extGlobalPriority = filteredDevices.stream().allMatch(
@@ -88,9 +91,9 @@ public class VulkanTest {
         final boolean hasProtectedMemory = filteredDevices.stream().allMatch(
                 this::hasProtectedMemory);
 
-        req.setNonCpuVulcanDeviceCount(filteredDevices.size());
-        req.setDeviceProtectedMemorySupported(hasProtectedMemory);
-        req.setGlobalPrioritySupported(extGlobalPriority);
+        req.setVkNonCpuDeviceCount(filteredDevices.size());
+        req.setVkPhysicalDeviceProtectedMemory(hasProtectedMemory);
+        req.setVkExtGlobalPriority(extGlobalPriority);
 
         pce.submitAndCheck();
     }

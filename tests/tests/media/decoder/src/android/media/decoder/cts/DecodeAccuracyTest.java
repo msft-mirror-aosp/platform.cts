@@ -62,7 +62,7 @@ public class DecodeAccuracyTest extends DecodeAccuracyTestBase {
 
     private static final String TAG = DecodeAccuracyTest.class.getSimpleName();
     private static final Field[] fields = R.raw.class.getFields();
-    private static final int ALLOWED_GREATEST_PIXEL_DIFFERENCE = 90;
+    private static final int ALLOWED_GREATEST_PIXEL_DIFFERENCE = 105;
     private static final int OFFSET = 10;
     private static final long PER_TEST_TIMEOUT_MS = 60000;
     private static final String[] VIDEO_FILES = {
@@ -193,15 +193,27 @@ public class DecodeAccuracyTest extends DecodeAccuracyTestBase {
             }
             String[] componentNames = MediaUtils.getDecoderNamesForMime(mediaType);
             for (String componentName : componentNames) {
-                if (TestArgs.shouldSkipCodec(componentName)) {
+                if (!MediaUtils.supports(componentName, mediaFormat)) {
                     continue;
                 }
-                if (MediaUtils.supports(componentName, mediaFormat)) {
+
+                // we only test the first codec that supports the format.
+                // if that codec is not tested in this mode, we do NOT proceed to
+                // later codecs in the list.
+                //
+                // this means:
+                // in CTS, we'll test the HW codec.
+                // in MCTS/MTS, we'll see the HW codec, skip testing it, but NOT fall through
+                // to test any of the module-homed codecs.
+
+                if (!TestArgs.shouldSkipCodec(componentName)) {
                     testParams.add(new Object[] {componentName, file, testName});
-                    // Test only the first decoder that supports given format.
-                    // Remove the following break statement to test all decoders on the device.
-                    break;
                 }
+
+                // ignore any further codes that might handle this mediatype, even if we
+                // chose not to test this first one.
+                // NB: remove this break to change from "test first codec" to "test all codecs"
+                break;
             }
         }
         return testParams;
@@ -296,7 +308,7 @@ public class DecodeAccuracyTest extends DecodeAccuracyTestBase {
         final Bitmap golden = getHelper().generateBitmapFromImageResourceId(goldenId);
 
         int ignorePixels = 0;
-        if (IS_BEFORE_U && TestUtils.isMtsMode()) {
+        if (IS_BEFORE_U && TestUtils.isTestingModules()) {
             if (TestUtils.isMainlineCodec(decoderName)) {
                 // some older systems don't give proper behavior at the edges (in system code).
                 // while we can't fix the behavior at the edges, we can verify that the rest

@@ -16,6 +16,7 @@
 
 package android.input.cts
 
+import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.graphics.PointF
 import android.hardware.input.InputManager
@@ -25,13 +26,13 @@ import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATIO
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_270
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_90
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.WIDTH
-import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withFlags
 import com.android.cts.input.inputeventmatchers.withMotionAction
@@ -62,13 +63,7 @@ class TouchScreenTest {
 
     @Before
     fun setUp() {
-        touchScreen = UinputTouchDevice(
-                instrumentation,
-                virtualDisplayRule.virtualDisplay.display,
-                R.raw.test_touchscreen_register,
-                InputDevice.SOURCE_TOUCHSCREEN,
-                useDisplaySize = true,
-        )
+        touchScreen = UinputTouchScreen(instrumentation, virtualDisplayRule.virtualDisplay.display)
         verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
     }
 

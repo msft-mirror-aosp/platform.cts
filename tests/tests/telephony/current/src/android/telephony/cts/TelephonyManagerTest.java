@@ -405,13 +405,13 @@ public class TelephonyManagerTest {
         + "\"com.google.android.apps.tycho\":{\"carrierIds\":[1989],\"callerSHA256Ids\":"
         + "[\"B9CFCE1C47A6AC713442718F15EF55B00B3A6D1A6D48CB46249FA8EB51465350\","
         + "\"4C36AF4A5BDAD97C1F3D8B283416D244496C2AC5EAFE8226079EF6F676FD1859\"]},"
-        + "\"com.comcast.mobile.mxs\":{\"carrierIds\":[2032, 2532, 2556],\"callerSHA256Ids\":"
+        + "\"com.comcast.mobile.mxs\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
         + "[\"914C26403B57D2D482359FC235CC825AD00D52B0121C18EF2B2B9D4DDA4B8996\"]},"
-        + "\"com.xfinity.digitalhome\":{\"carrierIds\":[2032],\"callerSHA256Ids\":"
+        + "\"com.xfinity.digitalhome\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
         + "[\"31b4c17315c2269040d535f7b6a79cf4d11517c664d9de8f1ddf4f8a785aad47\"]},"
-        + "\"com.xfinity.digitalhome.debug\":{\"carrierIds\":[2032],\"callerSHA256Ids\":"
+        + "\"com.xfinity.digitalhome.debug\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
         + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},"
-        + "\"com.xfinity.dh.xm.app\":{\"carrierIds\":[2032],\"callerSHA256Ids\":"
+        + "\"com.xfinity.dh.xm.app\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
         + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]}"
         + "}";
 
@@ -7318,6 +7318,24 @@ public class TelephonyManagerTest {
             assertThrows(IllegalStateException.class, () ->
                     ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                             (tm) -> tm.getEmergencyAssistancePackageName()));
+        }
+    }
+
+    @Test
+    public void testGetServiceStateForSlot() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+        try {
+            for (int i = 0; i < mTelephonyManager.getActiveModemCount(); i++) {
+                ServiceState serviceState = mTelephonyManager.getServiceStateForSlot(i);
+                assertNotNull(serviceState);
+            }
+        } finally {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
         }
     }
 

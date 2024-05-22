@@ -152,6 +152,7 @@
                   android:exported="true"/>
 
         <activity android:name="android.server.wm.keyguard.KeyguardLockedTests$ShowImeAfterLockscreenActivity"
+                  android:theme="@style/OptOutEdgeToEdge"
                   android:configChanges="keyboard|keyboardHidden|navigation"/>
 
         <activity android:name="android.server.wm.keyguard.KeyguardLockedTests$ShowWhenLockedImeActivity"/>
@@ -392,6 +393,10 @@
              android:theme="@style/OptOutEdgeToEdge"
              android:label="DecorInsetTestsBase.TestActivity"
              android:exported="true"/>
+
+        <activity android:name="android.server.wm.window.WindowPolicyTests$TestActivity"
+                  android:theme="@android:style/Theme.Material.NoActionBar"
+                  android:exported="true"/>
 
         <activity android:name="android.server.wm.window.WindowCtsActivity"
              android:theme="@style/OptOutEdgeToEdge.NoActionBar"

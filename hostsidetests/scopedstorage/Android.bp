@@ -135,6 +135,7 @@ android_test_helper_app {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
 }
 
@@ -151,6 +152,7 @@ android_test_helper_app {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
 }
 
@@ -167,6 +169,7 @@ android_test_helper_app {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
 }
 
@@ -317,6 +320,7 @@ android_test_helper_app {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
 }
 
@@ -349,6 +353,7 @@ android_test_helper_app {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
 }
 
@@ -365,6 +370,7 @@ android_test_helper_app {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
 }
 
@@ -381,6 +387,7 @@ android_test_helper_app {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
 }
 
@@ -416,6 +423,7 @@ java_test_host {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
     test_config: "CoreTest.xml",
     data: [
@@ -445,6 +453,7 @@ java_test_host {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
     test_config: "AndroidTest.xml",
     per_testcase_directory: true,
@@ -478,6 +487,7 @@ java_test_host {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
     test_config: "AndroidTestAppCloning.xml",
     per_testcase_directory: true,
@@ -559,6 +569,7 @@ android_test {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
     sdk_version: "test_current",
     target_sdk_version: "33",
@@ -609,6 +620,7 @@ android_test {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
     sdk_version: "test_current",
     target_sdk_version: "33",
@@ -655,6 +667,7 @@ android_test {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
     sdk_version: "test_current",
     target_sdk_version: "33",
@@ -701,6 +714,7 @@ android_test {
         "general-tests",
         "mts-mediaprovider",
         "mcts-mediaprovider",
+        "cts",
     ],
     sdk_version: "test_current",
     target_sdk_version: "33",

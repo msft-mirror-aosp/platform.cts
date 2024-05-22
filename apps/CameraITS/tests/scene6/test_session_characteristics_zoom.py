@@ -89,14 +89,16 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
       combinations_str, combinations = cam.get_queryable_stream_combinations()
       logging.debug('Queryable stream combinations: %s', combinations_str)
 
-      # Stabilization modes
-      stabilization_params = [camera_properties_utils.STABILIZATION_MODE_OFF]
+      # Stabilization modes. Make sure to test ON first.
+      stabilization_params = []
       stabilization_modes = props[
           'android.control.availableVideoStabilizationModes']
       if (camera_properties_utils.STABILIZATION_MODE_PREVIEW in
           stabilization_modes):
         stabilization_params.append(
             camera_properties_utils.STABILIZATION_MODE_PREVIEW)
+      stabilization_params.append(
+          camera_properties_utils.STABILIZATION_MODE_OFF)
       logging.debug('stabilization modes: %s', stabilization_params)
 
       configs = props['android.scaler.streamConfigurationMap'][
@@ -122,10 +124,12 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
         for i, stream in enumerate(stream_combination['combination']):
           fmt = None
           size = [int(e) for e in stream['size'].split('x')]
-          if stream['format'] == 'priv':
+          if stream['format'] == its_session_utils.PRIVATE_FORMAT:
             fmt = capture_request_utils.FMT_CODE_PRIV
           elif stream['format'] == 'jpeg':
             fmt = capture_request_utils.FMT_CODE_JPEG
+          elif stream['format'] == 'jpegr':
+            fmt = capture_request_utils.FMT_CODE_JPEG_R
           elif stream['format'] == 'yuv':
             fmt = capture_request_utils.FMT_CODE_YUV
 
@@ -136,9 +140,10 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
 
           # Second stream must be jpeg or yuv for zoom test. If not, skip
           if (i == 1 and fmt != capture_request_utils.FMT_CODE_JPEG and
+              fmt != capture_request_utils.FMT_CODE_JPEG_R and
               fmt != capture_request_utils.FMT_CODE_YUV):
             logging.debug(
-                'second stream format %s is not yuv/jpeg. Skip',
+                'second stream format %s is not yuv/jpeg/jpegr. Skip',
                 stream['format'])
             skip = True
             break
@@ -172,16 +177,19 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
             max_achievable_fps >= fps[_MAX_FPS_INDEX] - _FPS_SELECTION_ATOL)]
 
         for fps_range in fps_params:
-          # HLG10
-          hlg10_params = [False]
+          # HLG10. Make sure to test ON first.
+          hlg10_params = []
           if camera_properties_utils.dynamic_range_ten_bit(props):
             hlg10_params.append(True)
+          hlg10_params.append(False)
 
+          features_tested = []  # feature combinations already tested
           for hlg10 in hlg10_params:
             # Construct output surfaces
             output_surfaces = []
             for configured_stream in configured_streams:
-              hlg10_stream = (configured_stream['format'] == 'priv')
+              hlg10_stream = (hlg10 and configured_stream['format'] ==
+                              its_session_utils.PRIVATE_FORMAT)
               output_surfaces.append({'format': configured_stream['format'],
                                       'width': configured_stream['width'],
                                       'height': configured_stream['height'],
@@ -198,11 +206,20 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
               logging.debug('combination name: %s', combination_name)
 
               # Is the feature combination supported?
-              supported = cam.is_stream_combination_supported(
-                  output_surfaces, settings)
-              if not supported:
+              if not cam.is_stream_combination_supported(
+                  output_surfaces, settings):
                 logging.debug('%s not supported', combination_name)
                 break
+
+              # If a superset of features are already tested, skip.
+              # pylint: disable=line-too-long
+              is_stabilized = (
+                  stabilize == camera_properties_utils.STABILIZATION_MODE_PREVIEW
+              )
+              skip_test = its_session_utils.check_and_update_features_tested(
+                  features_tested, hlg10, is_stabilized)
+              if skip_test:
+                continue
 
               # Get zoom ratio range
               session_props = cam.get_session_properties(
@@ -223,7 +240,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
               img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
               req = capture_request_utils.auto_capture_request()
 
-              test_data = {}
+              test_data = []
               fmt_str = configured_streams[1]['format']
               for i, z in enumerate(z_list):
                 req['android.control.zoomRatio'] = z
@@ -267,8 +284,15 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
                 # Zoom is too large to find center circle
                 if circle is None:
                   break
-                test_data[i] = {'z': z, 'circle': circle, 'r_tol': radius_tol,
-                                'o_tol': offset_tol, 'fl': cap_fl}
+                test_data.append(
+                    zoom_capture_utils.ZoomTestData(
+                        result_zoom=z,
+                        circle=circle,
+                        radius_tol=radius_tol,
+                        offset_tol=offset_tol,
+                        focal_length=cap_fl
+                    )
+                )
 
               if not zoom_capture_utils.verify_zoom_results(
                   test_data, size, z_max, z_min):

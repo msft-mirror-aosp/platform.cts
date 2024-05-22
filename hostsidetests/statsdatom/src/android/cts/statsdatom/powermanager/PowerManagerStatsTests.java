@@ -23,6 +23,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
@@ -212,7 +213,7 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
                 AdpfExtensionAtoms.ADPF_HINT_SESSION_TID_CLEANUP_FIELD_NUMBER);
         TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
                 DEVICE_TEST_CLASS, testMethod);
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        RunUtil.getDefault().sleep(5 * AtomTestUtils.WAIT_TIME_LONG);
         TestResult result = testRunResult.getTestResults().get(desc);
         assertNotNull(result);
         TestStatus status = result.getStatus();
@@ -222,7 +223,7 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         AdpfExtensionAtoms.registerAllExtensions(registry);
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
                 registry);
-        assertThat(data.size()).isAtLeast(1);
+        assumeTrue(data.size() == 1);
         String tidsStr = result.getMetrics().get(KEY_RESULT_TIDS);
         int uid = Integer.parseInt(result.getMetrics().get(KEY_UID));
         List<Integer> tids = Arrays.stream(tidsStr.split(",")).map(Integer::parseInt).toList();

@@ -84,6 +84,7 @@
     <string name="test_category_display_cutout">DisplayCutout</string>
     <string name="test_category_other">Other</string>
     <string name="test_category_device_controls">Device controls</string>
+    <string name="test_category_multidevice">Multi Device</string>
     <string name="clear">Clear</string>
     <string name="test_results_clear_title">Remove all test results?</string>
     <string name="test_results_clear_yes">Yes</string>
@@ -1189,6 +1190,8 @@
     <string name="multinetwork_connectivity_turn_wifi_off">Please turn Wi-Fi off.</string>
     <string name="multinetwork_connectivity_turn_wifi_positive">OK</string>
     <string name="multinetwork_connectivity_turn_wifi_negative">Cancel</string>
+    <string name="multinetwork_connectivity_connect_to_target_ap_positive">OK</string>
+    <string name="multinetwork_connectivity_connect_to_target_ap">Connect to configured SSID: %s</string>
     <!-- Strings for NfcTestActivity -->
     <string name="nfc_test">NFC Test</string>
     <string name="nfc_test_info">The Peer-to-Peer Data Exchange tests require two devices with
@@ -2851,6 +2854,15 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="widget_name">Widget Framework Test</string>
     <string name="widget_pass">Pass</string>
     <string name="widget_fail">Fail</string>
+    <string name="widget_generated_previews_test">Widget Generated Previews Test</string>
+    <string name="widget_generated_previews_test_info">This test checks that the widget picker
+        displays the generated preview for a widget if it is available. In order to perform the
+        test, press the Home button and open the widget picker. Scroll to find the widget titled
+        \"Generated Previews\", and verify that the widget preview displays the text
+        \"This is a generated preview\".</string>
+    <string name="widget_generated_previews_widget_name">Generated Previews</string>
+    <string name="widget_generated_previews_default_preview_text">static previewLayout preview</string>
+    <string name="widget_generated_previews_generated_preview_text">This is a generated preview</string>
 
     <string name="provisioning_byod_non_market_apps">Non-market app installation restrictions</string>
     <string name="provisioning_byod_non_market_apps_info">
@@ -2998,7 +3010,7 @@ You should be prompted to select credentials; choose the ones you just installed
            \"adb uninstall com.android.cts.vpnfirewall\"\n
 
         2. Install the first test app, by running\n
-           \"adb install /path/to/CtsVpnFirewallAppApi23.apk\"\n
+           \"adb install --bypass-low-target-sdk-block /path/to/CtsVpnFirewallAppApi23.apk\"\n
 
         3. Tap \"Prepare VPN\" button below and consent to the VPN connection.\n
 
@@ -3038,7 +3050,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="provisioning_byod_always_on_vpn_api23_instruction">
         1. Re-install CtsVpnFirewallAppApi23.apk (skip this if you already have the correct version
            installed):\n
-           \"adb install -r /path/to/CtsVpnFirewallAppApi23.apk\"\n
+           \"adb install -r --bypass-low-target-sdk-block /path/to/CtsVpnFirewallAppApi23.apk\"\n
         2. Tap \"Go\" button below to go to the VPN settings page.\n
         3. Open configuration details page for CtsVpnFirewallApp.\n
         4. Confirm the \"Always-on VPN\" and \"Block connections without VPN\" switches are both off
@@ -3287,6 +3299,15 @@ You should be prompted to select credentials; choose the ones you just installed
         This test verifies that the user is prompted for the current keyguard password before prompting for a new password.\n
         \nClick the \"Set password\" button if you currently don\'t have a password set.\n
         \nThen click the \"Change password\" button to change it. You should be prompted for the current password first. If you are not, then mark the test as failed.
+    </string>
+
+    <!-- Strings for MultiDeviceTests. -->
+    <string name="multi_device_tests_title">Multi-device Tests</string>
+    <string name="multi_device_tests_dialog_title">Multi-device Tests Dialog</string>
+    <string name="multi_device_tests_dialog_content">
+        All multi-device host-side tests.\n
+        The DUT \"must\" be connected to a host to run these tests.\n
+        Please follow the detailed instruction of the tests to execute scripts and get results.
     </string>
 
     <!-- String for Projection Tests -->
@@ -5695,7 +5716,9 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_left">Left</string>
     <string name="audio_general_right">Right</string>
     <string name="audio_general_Input">Input</string>
+    <string name="audio_general_inputcolon">Input:</string>
     <string name="audio_general_Output">Output</string>
+    <string name="audio_general_outputcolon">Output:</string>
 
     <string name="audio_general_record">Record</string>
     <string name="audio_general_play">Play</string>
@@ -5829,8 +5852,11 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="usbwarning_message_heading">Unvalidated USB Audio Adapter</string>
     <string name="usbwarning_paragraph_0">The connected USB audio device has not been verified for
         use in this test.</string>
-    <string name="usbwarning_paragraph_1_1">The test may succeed with this device, but if it does not,
-        please obtain a</string>
+    <string name="usbwarning_paragraph_1_1">The test may pass using this USB peripheral.
+        However, some adapters have been seen to implement noise
+        suppression and/or echo cancellation, or introduce significant latency that
+        may cause the test to fail. If the test does not pass with this adapter,
+        you should obtain the</string>
     <string name="usbwarning_googadapter">Google USB-C to 3.5mm Adapter</string>
     <string name="usbwarning_paragraph_1_2">for use in this test.</string>
 
@@ -5942,20 +5968,42 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_multichannel_mixdown_info">
         This test verifies that for High Channel Count Positional Playback (QUAD, 5.1, 7.1, 7.1.4),
         all playback channels are represented in a stereo mix. It does not verify placement
-        in the output field.\n
-        This test requires a 2-channel loopback device such as a 2-channel USB audio interface
+        in the output field.
+        \n\nThis test requires a 2-channel loopback device such as a 2-channel USB audio interface
         correctly configured for audio loopback (see the Audio Loopback Latency test for more
-        information).\n
-        Since this is a new test, at this time the test process need only be executed and the
-        test will be allowed to pass even if incorrect multi-channel playback is noted.
+        information).
+        \n\nSince this is a new test, at this time the test process need only be executed for
+        each required route and the test will be allowed to pass even if incorrect
+        multi-channel playback is noted.
     </string>
     <string name="audio_mixdown_clearresults">Clear Results</string>
+    <string name="audio_mixdown_calibrate">Calibrate Audio</string>
+    <string name="audio_mixdown_devices">Audio Devices</string>
 
     <string name="audio_mixdown_stereo">Stereo</string>
     <string name="audio_mixdown_quad">Quad</string>
     <string name="audio_mixdown_sevendotone">7.1</string>
     <string name="audio_mixdown_fivedotone">5.1</string>
     <string name="audio_mixdown_sevendotonedotfour">7.1.4</string>
+
+    <!-- Mixdown Route Names -->
+    <string name="audio_mixdown_micspeaker">Mic/Speaker</string>
+    <string name="audio_mixdown_analogheadset">Analog Headset</string>
+    <string name="audio_mixdown_usbdevice">USB Device</string>
+    <string name="audio_mixdown_usbheadset">USB Headset</string>
+
+    <!-- Mixdown status strings -->
+    <string name="audio_mixdown_invalidinput">Invalid Input.</string>
+    <string name="audio_mixdown_invalidoutput">Invalid Output.</string>
+    <string name="audio_mixdown_testcanceled">Test Canceled.</string>
+    <string name="audio_mixdown_cantstart">Couldn\'t Start Duplex Audio.</string>
+
+    <string name="audio_mixdown_required">Required</string>
+    <string name="audio_mixdown_completed">Completed</string>
+    <string name="audio_mixdown_not_completed">Not Completed</string>
+
+    <string name="audio_mixdown_req">req</string>
+    <string name="audio_mixdown_done">done</string>
 
     <!-- Channel Position Names -->
     <string name="audio_channel_mask_left">Left</string>
@@ -5970,17 +6018,6 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_channel_mask_topfrontright">Top Front Right</string>
     <string name="audio_channel_mask_topbackleft">Top Back Left</string>
     <string name="audio_channel_mask_topbackright">Top Back Right</string>
-
-    <!-- Mixdown Route Names -->
-    <string name="audio_mixdown_micspeaker">Mic/Speaker</string>
-    <string name="audio_mixdown_analogheadset">Analog Headset</string>
-    <string name="audio_mixdown_usbdevice">USB Device</string>
-    <string name="audio_mixdown_usbheadset">USB Headset</string>
-
-    <!-- Mixdown status strings -->
-    <string name="audio_mixdown_invalidinput">Invalid Input</string>
-    <string name="audio_mixdown_invalidoutput">Invalid Output</string>
-    <string name="audio_mixdown_testcanceled">Test Canceled</string>
 
     <!-- Audio Cold-Start Latency Test -->
     <string name="audio_coldstart_out_latency_test">Audio Cold Start Output Latency Test</string>

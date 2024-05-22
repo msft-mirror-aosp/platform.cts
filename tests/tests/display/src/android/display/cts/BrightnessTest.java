@@ -57,6 +57,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.function.Predicate;
 
 @AppModeFull
 @MediumTest
@@ -449,22 +450,21 @@ public class BrightnessTest extends TestBase {
             runShellCommand("cmd display set-brightness 0.3");
 
             // Check we got a slider event for the change.
-            List<BrightnessChangeEvent> newEvents = getNewEvents(1);
-            assertEquals(1, newEvents.size());
-            BrightnessChangeEvent firstEvent = newEvents.get(0);
+            List<BrightnessChangeEvent> newEvents =
+                    getNewEvents(1, (e) -> !e.isDefaultBrightnessConfig);
+            assertFalse(newEvents.isEmpty());
+            BrightnessChangeEvent firstEvent = newEvents.get(newEvents.size() - 1);
             assertValidLuxData(firstEvent);
-            assertFalse(firstEvent.isDefaultBrightnessConfig);
 
             // Update brightness again now with default curve.
             mDisplayManager.setBrightnessConfiguration(null);
             runShellCommand("cmd display set-brightness 0.4");
 
             // Check we get a second slider event.
-            newEvents = getNewEvents(1);
-            assertEquals(1, newEvents.size());
-            BrightnessChangeEvent secondEvent = newEvents.get(0);
+            newEvents = getNewEvents(1, (e) -> e.isDefaultBrightnessConfig);
+            assertFalse(newEvents.isEmpty());
+            BrightnessChangeEvent secondEvent = newEvents.get(newEvents.size() - 1);
             assertValidLuxData(secondEvent);
-            assertTrue(secondEvent.isDefaultBrightnessConfig);
         } finally {
             runShellCommand("cmd display set-brightness " + Integer.toString(previousBrightness));
             setSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE, previousBrightnessMode);
@@ -604,14 +604,22 @@ public class BrightnessTest extends TestBase {
         return packages.size();
     }
 
-    private List<BrightnessChangeEvent> getNewEvents(int expected)
-            throws InterruptedException {
+    private List<BrightnessChangeEvent> getNewEvents(int expected) throws InterruptedException {
+        return getNewEvents(expected, (e) -> true);
+    }
+
+    private List<BrightnessChangeEvent> getNewEvents(int expected,
+            Predicate<BrightnessChangeEvent> pred) throws InterruptedException {
         List<BrightnessChangeEvent> newEvents = new ArrayList<>();
         for (int i = 0; newEvents.size() < expected && i < 20; ++i) {
             if (i != 0) {
                 Thread.sleep(100);
             }
-            newEvents.addAll(getNewEvents());
+            for (BrightnessChangeEvent e : getNewEvents()) {
+                if (pred.test(e)) {
+                    newEvents.add(e);
+                }
+            }
         }
         return newEvents;
     }

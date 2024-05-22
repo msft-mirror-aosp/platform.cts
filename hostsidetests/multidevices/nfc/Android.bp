@@ -23,7 +23,7 @@ python_defaults {
         "mobly",
     ],
     test_suites: [
-        "cts",
+        // Added this test suite to CTS-V
         "general-tests",
     ],
     version: {
@@ -39,8 +39,8 @@ python_test_host {
     srcs: ["cts_nfc_hce_multi_device_test.py"],
     test_config: "AndroidTest.xml",
     data: [
-        ":CtsNfcReaderTestApp",
-        ":CtsNfcEmulatorTestApp",
+        ":NfcReaderTestApp",
+        ":NfcEmulatorTestApp",
     ],
     test_options: {
         unit_test: false,

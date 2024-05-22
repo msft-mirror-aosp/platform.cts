@@ -24,8 +24,24 @@ android_test {
     ],
     min_sdk_version: "29",
     test_suites: [
+        "cts",
         "general-tests",
         "mts-media",
+        "mcts-media",
+    ],
+}
+
+android_test {
+    name: "MctsMediaParserTestCases",
+    defaults: [
+        "CtsMediaParserTestCasesDefaults",
+        "cts_defaults",
+    ],
+    min_sdk_version: "29",
+    test_config: "AndroidTest-mcts.xml",
+    test_suites: [
+        "general-tests",
+        "cts",
         "mcts-media",
     ],
 }
@@ -42,6 +58,7 @@ java_defaults {
     static_libs: [
         "ctstestrunner-axt",
         "androidx.test.ext.junit",
+        "cts-media-common",
         "exoplayer-cts_media-test_assets",
         "exoplayer-cts_media-test_utils",
     ],

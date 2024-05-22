@@ -15,6 +15,7 @@
 -->
 
 <ScrollView  xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:id="@+id/scrollView">
@@ -26,11 +27,25 @@
 
         <include layout="@layout/audio_java_native_api_buttons" />
 
-        <Button
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/audio_datapaths_calibrate"
-            android:id="@+id/audio_mixdown_calibrate_button"/>
+            android:orientation="horizontal"
+            style="?android:attr/buttonBarStyle">
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="?android:attr/buttonBarButtonStyle"
+                android:text="@string/audio_datapaths_calibrate"
+                android:id="@+id/audio_mixdown_calibrate_button"/>
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="?android:attr/buttonBarButtonStyle"
+                android:text="@string/audio_mixdown_devices"
+                android:id="@+id/audio_mixdown_devices_button"/>
+        </LinearLayout>
 
         <!-- Routing Buttons -->
         <LinearLayout

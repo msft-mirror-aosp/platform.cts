@@ -19,7 +19,6 @@ package android.input.cts
 import android.hardware.input.InputManager
 import android.hardware.input.InputSettings
 import android.platform.test.annotations.RequiresFlagsEnabled
-import android.view.InputDevice
 import android.view.KeyEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -27,7 +26,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
-import com.android.cts.input.UinputDevice
+import com.android.cts.input.UinputKeyboard
 import com.android.hardware.input.Flags.FLAG_KEYBOARD_A11Y_BOUNCE_KEYS_FLAG
 import com.android.input.flags.Flags.FLAG_ENABLE_INPUT_FILTER_RUST_IMPL
 import org.junit.After
@@ -103,11 +102,7 @@ class A11yBounceKeysTest {
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_INPUT_FILTER_RUST_IMPL, FLAG_KEYBOARD_A11Y_BOUNCE_KEYS_FLAG)
     fun testKeyIgnoredIfPressedWithinBounceThreshold() {
-        UinputDevice.create(
-            instrumentation,
-            R.raw.test_keyboard_register,
-            InputDevice.SOURCE_KEYBOARD
-        ).use { keyboardDevice ->
+        UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
 
             // First key press
@@ -125,11 +120,7 @@ class A11yBounceKeysTest {
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_INPUT_FILTER_RUST_IMPL, FLAG_KEYBOARD_A11Y_BOUNCE_KEYS_FLAG)
     fun testKeyAcceptedIfPressedAfterBounceThreshold() {
-        UinputDevice.create(
-            instrumentation,
-            R.raw.test_keyboard_register,
-            InputDevice.SOURCE_KEYBOARD
-        ).use { keyboardDevice ->
+        UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
 
             // First key press

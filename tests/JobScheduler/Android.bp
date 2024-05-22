@@ -27,6 +27,7 @@ android_test {
         "Harrier",
         "net_flags_lib",
         "flag-junit",
+        "Harrier",
     ],
     libs: ["android.test.base"],
     srcs: [

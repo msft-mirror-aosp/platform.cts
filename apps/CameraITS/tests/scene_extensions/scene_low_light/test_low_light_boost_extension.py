@@ -183,7 +183,6 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
 
       # Determine preview width and height to test
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      logging.debug('supported_preview_sizes: %s', supported_preview_sizes)
       supported_video_qualities = cam.get_supported_video_qualities(
           self.camera_id)
       logging.debug(

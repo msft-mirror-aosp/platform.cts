@@ -27,6 +27,9 @@ android_test {
         "MediaPerformanceClassCommon",
         "mediapc-requirements",
     ],
+    jni_libs: [
+        "libctsmediapc_vulkan_jni",
+    ],
     platform_apis: true,
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact

@@ -21,6 +21,7 @@ import static android.accessibilityservice.MagnificationConfig.MAGNIFICATION_MOD
 import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUtils.filterWindowsChangedWithChangeTypes;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.content.pm.PackageManager.FEATURE_WINDOW_MAGNIFICATION;
 import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_ADDED;
 
@@ -28,6 +29,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyFloat;
 import static org.mockito.Mockito.eq;
@@ -169,6 +171,8 @@ public class AccessibilityMagnificationTest {
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        assumeFalse("Magnification is not supported on Automotive.",
+                isAutomotive(mInstrumentation.getTargetContext()));
         ShellCommandBuilder.create(sUiAutomation)
                 .deleteSecureSetting(ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED)
                 .run();
@@ -1057,8 +1061,6 @@ public class AccessibilityMagnificationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            Flags.FLAG_USE_WINDOW_ORIGINAL_TOUCHABLE_REGION_WHEN_MAGNIFICATION_RECOMPUTE_BOUNDS)
     public void testMagnificationRegion_hasNonMagnifiableWindow_excludeWindowExactTouchableRegion()
             throws Exception {
         final MagnificationController controller = mService.getMagnificationController();
@@ -1127,89 +1129,6 @@ public class AccessibilityMagnificationTest {
                         tmpRegion.set(magnificationRegion);
                         tmpRegion.union(touchableRect1);
                         tmpRegion.union(touchableRect2);
-                        return expectedMagnificationRegion.equals(tmpRegion);
-                    });
-        } finally {
-            if (createdButton != null) {
-                mInstrumentation.getContext().getSystemService(WindowManager.class).removeView(
-                        createdButton);
-            }
-            // After the non-magnifiable window is removed, the magnificationRegion should restore
-            // to the original region.
-            waitUntilMagnificationRegion(controller, expectedMagnificationRegion);
-
-            mService.runOnServiceSync(() -> controller.reset(/* animate =*/ false));
-        }
-    }
-
-    @Test
-    @RequiresFlagsDisabled(
-            Flags.FLAG_USE_WINDOW_ORIGINAL_TOUCHABLE_REGION_WHEN_MAGNIFICATION_RECOMPUTE_BOUNDS)
-    public void testMagnificationRegion_hasNonMagnifiableWindow_excludeWindowUnitedTouchableRect()
-            throws Exception {
-        final MagnificationController controller = mService.getMagnificationController();
-        final Region expectedMagnificationRegion = controller.getMagnificationRegion();
-        final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
-
-        mService.runOnServiceSync(() -> controller.setScale(4.0f, /* animate =*/ false));
-
-        Button createdButton = null;
-        try {
-            // We should ensure all the button area is in magnifyBounds for the following tests
-            Button button = addNonMagnifiableWindow(R.string.button1, "button1", params -> {
-                params.gravity = Gravity.LEFT | Gravity.TOP;
-                params.x = magnifyBounds.left;
-                params.y = magnifyBounds.top;
-                params.width = magnifyBounds.width();
-                params.height = magnifyBounds.height() / 8;
-            });
-            createdButton = button;
-
-            // Set two small rects at the top-left and right-bottom corner as the touchable region
-            Rect buttonBounds = new Rect();
-            button.getBoundsOnScreen(buttonBounds, false);
-            int touchableRegionWidth = buttonBounds.width() / 4;
-            int touchableRegionHeight = buttonBounds.height() / 4;
-            Rect touchableRect1 = new Rect(0, 0, touchableRegionWidth, touchableRegionHeight);
-            Rect touchableRect2 = new Rect(
-                    buttonBounds.width() - touchableRegionWidth,
-                    buttonBounds.height() - touchableRegionHeight,
-                    buttonBounds.width(),
-                    buttonBounds.height());
-            Region touchableRegion = new Region();
-            touchableRegion.op(touchableRect1, Region.Op.UNION);
-            touchableRegion.op(touchableRect2, Region.Op.UNION);
-            mInstrumentation.runOnMainSync(() ->
-                    button.getRootSurfaceControl().setTouchableRegion(touchableRegion));
-
-            // Offset the touchable rects to screen coordinates
-            touchableRect1.offset(buttonBounds.left, buttonBounds.top);
-            touchableRect2.offset(buttonBounds.left, buttonBounds.top);
-            Rect unitedTouchableRect = new Rect(touchableRect1);
-            unitedTouchableRect.union(touchableRect2);
-            TestUtils.waitUntil(
-                    "The updated magnification region is not expected. expected: "
-                            + expectedMagnificationRegion + " , actual: "
-                            + controller.getMagnificationRegion() + ", touchableRect1: "
-                            + touchableRect1 + ", touchableRect2: " + touchableRect2
-                            + ", unitedTouchableRect: " + unitedTouchableRect,
-                    TIMEOUT_CONFIG_SECONDS,
-                    () -> {
-                        final Region magnificationRegion = controller.getMagnificationRegion();
-
-                        Region tmpRegion = new Region();
-
-                        // magnificationRegion should not intersect with united touchable rect
-                        tmpRegion.set(magnificationRegion);
-                        tmpRegion.op(unitedTouchableRect, Region.Op.INTERSECT);
-                        if (!tmpRegion.isEmpty()) {
-                            return false;
-                        }
-
-                        // The region united by magnificationRegion and unitedTouchableRect
-                        // should equal to the original region
-                        tmpRegion.set(magnificationRegion);
-                        tmpRegion.union(unitedTouchableRect);
                         return expectedMagnificationRegion.equals(tmpRegion);
                     });
         } finally {
@@ -1686,10 +1605,8 @@ public class AccessibilityMagnificationTest {
 
     private static boolean isWindowModeSupported(Context context) {
         PackageManager pm = context.getPackageManager();
-        // TODO(b/285201744): remove automotive check
-        boolean isAuto = pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         final boolean isWatch = pm.hasSystemFeature(PackageManager.FEATURE_WATCH);
-        return pm.hasSystemFeature(FEATURE_WINDOW_MAGNIFICATION) && !isAuto && !isWatch;
+        return pm.hasSystemFeature(FEATURE_WINDOW_MAGNIFICATION) && !isWatch;
     }
 
     private static MagnificationConfig.Builder obtainConfigBuilder(MagnificationConfig config) {

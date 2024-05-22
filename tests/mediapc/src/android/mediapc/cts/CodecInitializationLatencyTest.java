@@ -361,15 +361,21 @@ public class CodecInitializationLatencyTest {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         if (isEncoder) {
             if (isAudio) {
-                pce.addRequirement(
-                        Requirements.createR5_1__H_1_8()).setCodecInitializationLatencyMs(
+                Requirements.addR5_1__H_1_8(pce).setCodecInitializationLatencyMs(
                         initializationLatency);
             } else {
-                pce.addR5_1__H_1_7(mMime).setCodecInitLatencyMs(initializationLatency);
+                if (mMime.equals(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)) {
+                    Requirements.addR5_1__H_1_7Dolby(pce).setCodecInitializationLatencyMs(
+                            initializationLatency);
+                } else {
+                    Requirements.addR5_1__H_1_7(pce).setCodecInitializationLatencyMs(
+                            initializationLatency);
+                }
             }
         } else {
             if (isAudio) {
-                pce.addR5_1__H_1_13().setCodecInitLatencyMs(initializationLatency);
+                Requirements.addR5_1__H_1_13(pce).setCodecInitializationLatencyMs(
+                        initializationLatency);
             } else {
                 pce.addR5_1__H_1_12().setCodecInitLatencyMs(initializationLatency);
             }

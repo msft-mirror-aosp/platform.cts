@@ -48,10 +48,6 @@
         <service android:name=".InstrumentationHelperService"
                 android:exported="true"
                 android:process=":helper" />
-        <service android:name="android.app.cts.locationfgs.LocationBootCompletedFgs"
-                 android:foregroundServiceType="location"
-                 android:exported="true">
-        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

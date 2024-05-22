@@ -16,6 +16,7 @@
 
 package android.input.cts
 
+import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.graphics.PointF
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
@@ -29,6 +30,7 @@ import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.UinputDrawingTablet
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withMotionAction
@@ -56,14 +58,8 @@ class DrawingTabletTest {
 
     @Before
     fun setUp() {
-        drawingTablet =
-            UinputTouchDevice(
-                InstrumentationRegistry.getInstrumentation(),
-                virtualDisplayRule.virtualDisplay.display,
-                R.raw.test_drawing_tablet_register,
-                InputDevice.SOURCE_MOUSE or InputDevice.SOURCE_STYLUS,
-                useDisplaySize = true,
-            )
+        drawingTablet = UinputDrawingTablet(
+            InstrumentationRegistry.getInstrumentation(), virtualDisplayRule.virtualDisplay.display)
         verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
     }
 

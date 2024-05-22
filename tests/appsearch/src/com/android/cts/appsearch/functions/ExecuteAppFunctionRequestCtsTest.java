@@ -23,25 +23,33 @@ import android.app.appsearch.functions.ExecuteAppFunctionRequest;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import com.android.appsearch.flags.Flags;
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)
 public class ExecuteAppFunctionRequestCtsTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @ApiTest(apis = {
             "android.app.appsearch.functions.ExecuteAppFunctionRequest.Builder#Builder",
             "android.app.appsearch.functions.ExecuteAppFunctionRequest.Builder#setParameter",
             "android.app.appsearch.functions.ExecuteAppFunctionRequest.Builder#setExtras",
+            "android.app.appsearch.functions.ExecuteAppFunctionRequest"
+                    + ".Builder#setSha256Certificate",
             "android.app.appsearch.functions.ExecuteAppFunctionRequest.Builder#build",
             "android.app.appsearch.functions.ExecuteAppFunctionRequest#writeToParcel",
             "android.app.appsearch.functions.ExecuteAppFunctionRequest#CREATOR",
             "android.app.appsearch.functions.ExecuteAppFunctionRequest#getTargetPackageName",
             "android.app.appsearch.functions.ExecuteAppFunctionRequest#getParameters",
-            "android.app.appsearch.functions.ExecuteAppFunctionRequest#getExtras"
+            "android.app.appsearch.functions.ExecuteAppFunctionRequest#getExtras",
+            "android.app.appsearch.functions.ExecuteAppFunctionRequest#getSha256Certificate",
     })
     @Test
     public void build() {
@@ -52,6 +60,7 @@ public class ExecuteAppFunctionRequestCtsTest {
                 .build();
         ExecuteAppFunctionRequest request = new ExecuteAppFunctionRequest.Builder("pkg", "method")
                 .setParameters(parameters)
+                .setSha256Certificate(new byte[] {100})
                 .setExtras(extras)
                 .build();
 
@@ -59,6 +68,7 @@ public class ExecuteAppFunctionRequestCtsTest {
 
         assertThat(restored.getTargetPackageName()).isEqualTo("pkg");
         assertThat(restored.getParameters()).isEqualTo(parameters);
+        assertThat(restored.getSha256Certificate()).isEqualTo(new byte[] {100});
         assertThat(restored.getExtras().size()).isEqualTo(1);
         assertThat(restored.getExtras().getString("extra")).isEqualTo("value");
     }

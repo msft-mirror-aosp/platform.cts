@@ -35,5 +35,16 @@ public class Logt {
         long t = android.os.SystemClock.elapsedRealtime();
         Log.e(tag, String.format("[%d] %s", t, msg), tr);
     }
+
+    /**
+     * Log verbose with time.
+     *
+     * @param tag : Tag for logcat
+     * @param msg : Message for logcat
+     */
+    public static void v(String tag, String msg) {
+        long t = android.os.SystemClock.elapsedRealtime();
+        Log.v(tag, String.format("[%d] %s", t, msg));
+    }
 }
 

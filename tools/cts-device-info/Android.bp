@@ -69,6 +69,7 @@ android_test_helper_app {
         "mcts-wifi",
     ],
     static_libs: [
+        "camera_platform_flags_java_lib",
         "compatibility-device-info",
         "compatibility-device-util-axt",
     ],
@@ -122,6 +123,7 @@ genrule {
         " -a com.android.compatibility.common.deviceinfo.MediaOutputDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.MemoryDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.PackageDeviceInfo " +
+        " -a com.android.compatibility.common.deviceinfo.PermissionDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.ScreenDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.StorageDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.UserDeviceInfo " +

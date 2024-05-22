@@ -73,7 +73,7 @@ public final class ShellCommand {
         private boolean mAllowEmptyOutput = false;
         @Nullable
         private Function<String, Boolean> mOutputSuccessChecker = null;
-        private boolean mShouldRunAsRoot = false;
+        private boolean mShouldRunAsRootWithSuperUser = false;
 
         private Builder(String command) {
             commandBuilder = new StringBuilder(command);
@@ -83,7 +83,8 @@ public final class ShellCommand {
          * Run command as root by adding {@code su root} as prefix.
          */
         public Builder asRoot(boolean shouldRunAsRoot) {
-            mShouldRunAsRoot = shouldRunAsRoot;
+            mShouldRunAsRootWithSuperUser = shouldRunAsRoot &&
+                    ShellCommandUtils.isSuperUserAvailable();
             return this;
         }
 
@@ -155,7 +156,7 @@ public final class ShellCommand {
          * Build the full command including all options and operands.
          */
         public String build() {
-            if (mShouldRunAsRoot) {
+            if (mShouldRunAsRootWithSuperUser) {
                 return commandBuilder.insert(0, "su root ").toString();
             }
 

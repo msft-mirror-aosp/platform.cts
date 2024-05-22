@@ -80,6 +80,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.PollingCheck;
 
@@ -110,6 +111,7 @@ import java.util.stream.Collectors;
 @RunWith(BedsteadJUnit4.class)
 @AppModeFull(reason = "The system should be able to bind to StubMediaRoute2ProviderService")
 @LargeTest
+@FrameworkSpecificTest
 @NonMainlineTest
 public class MediaRouter2Test {
     private static final String TAG = "MR2Test";
@@ -148,6 +150,12 @@ public class MediaRouter2Test {
 
         mRouter2 = MediaRouter2.getInstance(mContext);
         MediaRouter2TestActivity.startActivity(mContext);
+
+        if (isAutomotive()) {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        }
     }
 
     private void setUpStubProvider() {
@@ -177,6 +185,8 @@ public class MediaRouter2Test {
 
     @After
     public void tearDown() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity();
         mRouter2.unregisterRouteCallback(mRouterDummyCallback);
         // Clearing RouteListingPreference.
         mRouter2.setRouteListingPreference(null);
@@ -1717,5 +1727,9 @@ public class MediaRouter2Test {
             result.add(route.getOriginalId());
         }
         return result;
+    }
+
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }

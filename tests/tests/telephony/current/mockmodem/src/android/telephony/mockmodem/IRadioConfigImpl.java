@@ -26,6 +26,7 @@ import android.hardware.radio.config.PhoneCapability;
 import android.hardware.radio.config.SimSlotStatus;
 import android.hardware.radio.config.SlotPortMapping;
 import android.os.AsyncResult;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
@@ -80,8 +81,10 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
                 mSubId, mHandler, EVENT_PHONE_CAPABILITY_CHANGED, null);
         mMockModemConfigInterface.registerForSimSlotStatusChanged(
                 mSubId, mHandler, EVENT_SIM_SLOT_STATUS_CHANGED, null);
-        mMockModemConfigInterface.registerForSimultaneousCallingSupportStatusChanged(
-                mSubId, mHandler, EVENT_SIMULTANEOUS_CALLING_SUPPORT_CHANGED, null);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            mMockModemConfigInterface.registerForSimultaneousCallingSupportStatusChanged(
+                    mSubId, mHandler, EVENT_SIMULTANEOUS_CALLING_SUPPORT_CHANGED, null);
+        }
     }
 
     /** Handler class to handle callbacks */
