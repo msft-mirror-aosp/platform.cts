@@ -5984,9 +5984,9 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <!-- Mixdown Route Names -->
     <string name="audio_mixdown_micspeaker">Mic/Speaker</string>
-    <string name="audio_mixdown_analogheadset">Analog Headset</string>
-    <string name="audio_mixdown_usbdevice">USB Device</string>
-    <string name="audio_mixdown_usbheadset">USB Headset</string>
+    <string name="audio_mixdown_analogheadset">Analog Headset Jack + Loopback</string>
+    <string name="audio_mixdown_usbdevice">USB Interface + Loopback</string>
+    <string name="audio_mixdown_usbheadset">USB Headset Adapter + Looback</string>
 
     <!-- Mixdown status strings -->
     <string name="audio_mixdown_invalidinput">Invalid Input.</string>
@@ -5998,7 +5998,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_mixdown_completed">Completed</string>
     <string name="audio_mixdown_not_completed">Not Completed</string>
 
-    <string name="audio_mixdown_req">req</string>
+    <string name="audio_mixdown_req">required</string>
     <string name="audio_mixdown_done">done</string>
 
     <!-- Channel Position Names -->
