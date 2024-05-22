@@ -37,6 +37,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
@@ -398,6 +399,7 @@ public class MuxerTest {
      * setOrientationHint are dependent on the media type and OutputFormat. Legality of these APIs
      * are tested in this class.
      */
+    @FrameworkSpecificTest
     @NonMainlineTest
     @SmallTest
     @RunWith(Parameterized.class)
@@ -709,6 +711,7 @@ public class MuxerTest {
     /**
      * Tests muxing multiple Video/Audio Tracks
      */
+    @FrameworkSpecificTest
     @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
@@ -853,6 +856,7 @@ public class MuxerTest {
      * Add an offset to the presentation time of samples of a track. Mux with the added offset,
      * validate by re-extracting the muxer output file and compare with original.
      */
+    @FrameworkSpecificTest
     @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
@@ -970,6 +974,7 @@ public class MuxerTest {
      */
     @ApiTest(apis = {"AMediaMuxer_append", "AMEDIAMUXER_APPEND_IGNORE_LAST_VIDEO_GOP",
             "AMEDIAMUXER_APPEND_TO_EXISTING_DATA"})
+    @FrameworkSpecificTest
     @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
@@ -1067,6 +1072,7 @@ public class MuxerTest {
      * The results are checked for inconsistencies with the requirements of CDD.
      */
     @CddTest(requirements = {"5.1.3", "5.1.8"})
+    @FrameworkSpecificTest
     @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
@@ -1222,6 +1228,7 @@ public class MuxerTest {
     }
 
     @ApiTest(apis = {"android.media.MediaMuxer#start", "android.media.MediaMuxer#stop"})
+    @FrameworkSpecificTest
     @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
