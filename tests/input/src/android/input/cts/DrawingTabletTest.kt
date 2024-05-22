@@ -98,6 +98,60 @@ class DrawingTabletTest {
         }
     }
 
+    @Test
+    fun testHover() {
+        val pointerId = 0
+        val commonMatcher =
+            allOf(
+                withSource(InputDevice.SOURCE_STYLUS or InputDevice.SOURCE_MOUSE),
+                withToolType(MotionEvent.TOOL_TYPE_STYLUS),
+            )
+
+        // Inject and verify HOVER_ENTER
+        drawingTablet.sendBtnTouch(false)
+        drawingTablet.sendDown(pointerId, INJECTION_POINTS[0], UinputTouchDevice.MT_TOOL_PEN)
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_ENTER),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
+                commonMatcher
+            )
+        )
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
+                commonMatcher
+            )
+        )
+
+        // Inject and verify HOVER_MOVE
+        drawingTablet.sendMove(pointerId, INJECTION_POINTS[1])
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[1])!!),
+                commonMatcher
+            )
+        )
+
+        // Inject and verify HOVER_EXIT
+        drawingTablet.sendUp(pointerId)
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_EXIT),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[1])!!),
+                commonMatcher
+            )
+        )
+    }
+
     /**
      * Taps at each point in [INJECTION_POINTS] and ensures that the event is received at the
      * corresponding point in [expectedPoints].
