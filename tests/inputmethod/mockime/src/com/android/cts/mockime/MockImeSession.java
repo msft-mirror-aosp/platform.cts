@@ -1783,6 +1783,15 @@ public class MockImeSession implements AutoCloseable {
     }
 
     /**
+     * Calls and returns value of
+     * {@link android.inputmethodservice.InputMethodService#onEvaluateFullscreenMode}.
+     */
+    @NonNull
+    public ImeCommand callGetOnEvaluateFullscreenMode() {
+        return callCommandInternal("getOnEvaluateFullscreenMode", new Bundle());
+    }
+
+    /**
      * Verifies {@code InputMethodService.getLayoutInflater().getContext()} is equal to
      * {@code InputMethodService.this}.
      *
