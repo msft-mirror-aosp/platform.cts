@@ -52,6 +52,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -90,10 +91,8 @@ public class CtsSyncAccountAccessOtherCertTestCases {
         disallowSyncAdapterRunInBackgroundAndDataInBackground();
     }
 
-    /*
     @Ignore("In some cases test cannot scroll through notifications to find permission request "
-            + "b/147410068")
-     */
+            + "b/341912681")
     @Test
     public void testAccountAccess_otherCertAsAuthenticatorCanNotSeeAccount() throws Exception {
         assumeTrue(hasDataConnection());
