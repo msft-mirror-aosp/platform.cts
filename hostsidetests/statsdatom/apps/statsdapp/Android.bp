@@ -67,6 +67,7 @@ android_test_helper_app {
         "androidx.test.rules",
         "cts-net-utils",
         "collector-device-lib",
+        "cts_adpf_atom_common",
     ],
     jni_libs: [
         "liblmkhelper_statsdatom",
