@@ -91,6 +91,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private OnBtnClickListener mBtnClickListener = new OnBtnClickListener();
     private Button[] mStartButtons = new Button[NUM_TEST_ROUTES];
 
+    private Button mCalibrateAudioButton;
+    private Button mAudioDevicesButton;
+
     String mYesString;
     String mNoString;
 
@@ -498,8 +501,11 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mStartButtons[TESTROUTE_USB] = (Button) findViewById(R.id.audio_loopback_usbpath_btn);
         mStartButtons[TESTROUTE_USB].setOnClickListener(mBtnClickListener);
 
-        findViewById(R.id.audio_loopback_calibrate_button).setOnClickListener(mBtnClickListener);
-        findViewById(R.id.audio_loopback_devsupport_button).setOnClickListener(mBtnClickListener);
+        mCalibrateAudioButton = findViewById(R.id.audio_loopback_calibrate_button);
+        mCalibrateAudioButton.setOnClickListener(mBtnClickListener);
+
+        mAudioDevicesButton = findViewById(R.id.audio_loopback_devsupport_button);
+        mAudioDevicesButton.setOnClickListener(mBtnClickListener);
 
         mTestInstructions = (TextView) findViewById(R.id.audio_loopback_instructions);
 
@@ -581,6 +587,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                 mStartButtons[routeId].setEnabled(false);
             }
         }
+        mCalibrateAudioButton.setEnabled(enable);
+        mAudioDevicesButton.setEnabled(enable);
     }
 
     private void connectLoopbackUI() {

@@ -65,6 +65,9 @@ public class AudioMultichannelMixdownActivity
     protected AudioManager mAudioManager;
 
     // UI
+    private View mCalibrateAudioButton;
+    private View mAudioDevicesButton;
+
     private View mStartButton;
     private View mStopButton;
     private View mClearResultsButton;
@@ -596,8 +599,11 @@ public class AudioMultichannelMixdownActivity
 
         setRouteButtonsText();
 
-        findViewById(R.id.audio_mixdown_calibrate_button).setOnClickListener(this);
-        findViewById(R.id.audio_mixdown_devices_button).setOnClickListener(this);
+        mCalibrateAudioButton = findViewById(R.id.audio_mixdown_calibrate_button);
+        mCalibrateAudioButton.setOnClickListener(this);
+
+        mAudioDevicesButton = findViewById(R.id.audio_mixdown_devices_button);
+        mAudioDevicesButton.setOnClickListener(this);
 
         mWaveView = (WaveScopeView) findViewById(R.id.uap_recordWaveView);
         mWaveView.setBackgroundColor(Color.DKGRAY);
@@ -712,6 +718,8 @@ public class AudioMultichannelMixdownActivity
         mStartButton.setEnabled(false);
         mStopButton.setEnabled(true);
         mClearResultsButton.setEnabled(false);
+        mCalibrateAudioButton.setEnabled(false);
+        mAudioDevicesButton.setEnabled(false);
 
         // setup for the first phase
         mTestManager.mState = TestManager.TESTSTATUS_RUNNING;
@@ -805,6 +813,8 @@ public class AudioMultichannelMixdownActivity
                 mStartButton.setEnabled(true);
                 mStopButton.setEnabled(false);
                 mClearResultsButton.setEnabled(true);
+                mCalibrateAudioButton.setEnabled(true);
+                mAudioDevicesButton.setEnabled(true);
 
                 mTestManager.displayTestResults();
 
