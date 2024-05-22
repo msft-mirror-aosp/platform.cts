@@ -41,7 +41,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.UserPair;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;

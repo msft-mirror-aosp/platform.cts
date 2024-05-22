@@ -115,7 +115,7 @@ public class View_UsingViewsTest {
 
     @Rule(order = 1)
     public ActivityTestRule<UsingViewsCtsActivity> mActivityRule =
-            new ActivityTestRule<>(UsingViewsCtsActivity.class);
+            new ActivityTestRule<>(UsingViewsCtsActivity.class, /* initialTouchMode= */ true);
 
     @Before
     public void setup() {
@@ -316,9 +316,9 @@ public class View_UsingViewsTest {
         verifyZeroInteractions(symbolListener);
         verifyZeroInteractions(warningListener);
 
-        // set ok button to focus
+        // exit touch mode and set ok button to focus
         reset(editListener);
-        assertTrue(mButtonOk.requestFocus());
+        assertTrue(mButtonOk.requestFocusFromTouch());
         assertTrue(mButtonOk.hasFocus());
         verify(okListener, times(1)).onFocusChange(mButtonOk, true);
         assertFalse(mEditText.hasFocus());

@@ -16,6 +16,9 @@
 
 package android.mediastress.cts;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
+
+@FrameworkSpecificTest
 public class Vp8R480x360LongPlayerTest extends MediaPlayerStressTest {
     private static final String VIDEO_PATH_MIDDLE = "bbb_full/480x360/webm_libvpx_libvorbis/";
     private final String[] mMedias = {

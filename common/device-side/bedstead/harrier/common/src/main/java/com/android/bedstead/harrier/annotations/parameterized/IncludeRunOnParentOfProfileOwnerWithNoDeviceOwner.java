@@ -19,11 +19,12 @@ package com.android.bedstead.harrier.annotations.parameterized;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
 import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDelegate;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 
 import java.lang.annotation.ElementType;
@@ -31,7 +32,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Parameterize a test so that it runs on the parent of a profile owner. */
+/**
+ * This is just a temporary class for compatibility with other repositories
+ * use {@link com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner} instead
+ */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @ParameterizedAnnotation(
@@ -40,6 +44,7 @@ import java.lang.annotation.Target;
 @EnsureHasNoDeviceOwner
 @EnsureHasWorkProfile(dpcIsPrimary = true, dpcKey = "dpc")
 @EnsureHasNoDelegate
+@Deprecated
 public @interface IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner {
      /**
      * Priority sets the order that annotations will be resolved.

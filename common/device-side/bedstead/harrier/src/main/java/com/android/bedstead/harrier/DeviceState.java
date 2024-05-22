@@ -26,7 +26,7 @@ import static com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip;
 import static com.android.bedstead.harrier.annotations.EnsureHasAccount.DEFAULT_ACCOUNT_KEY;
 import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 import static com.android.bedstead.harrier.annotations.UsesAnnotationExecutorKt.getAnnotationExecutorClass;
-import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate.DELEGATE_KEY;
+import static com.android.bedstead.enterprise.annotations.EnsureHasDelegate.DELEGATE_KEY;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_CLONE_PROFILE;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_MANAGED_PROFILE;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_PRIVATE_PROFILE;
@@ -126,22 +126,22 @@ import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnD
 import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDevicePolicyManagerRoleHolder;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDelegate;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoProfileOwner;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwnerKt;
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
-import com.android.bedstead.harrier.annotations.enterprise.MostImportantCoexistenceTest;
-import com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
-import com.android.bedstead.harrier.annotations.enterprise.RequireHasPolicyExemptApps;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasDelegate;
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwnerKt;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
+import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.RequireHasPolicyExemptApps;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasNoProfileAnnotation;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasNoUserAnnotation;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasProfileAnnotation;
@@ -737,12 +737,28 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
+            if (annotation instanceof com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner ensureHasDeviceOwnerAnnotation) {
+
+                ensureHasDeviceOwner(ensureHasDeviceOwnerAnnotation.failureMode(),
+                        ensureHasDeviceOwnerAnnotation.isPrimary(),
+                        ensureHasDeviceOwnerAnnotation.headlessDeviceOwnerType(),
+                        new HashSet<>(
+                                Arrays.asList(
+                                        ensureHasDeviceOwnerAnnotation.affiliationIds())),
+                        ensureHasDeviceOwnerAnnotation.type(),
+                        getDpcKeyFromAnnotation(annotation, "key"),
+                        getDpcQueryFromAnnotation(annotation));
+                continue;
+            }
+
             if (annotation instanceof EnsureHasNoDelegate ensureHasNoDelegateAnnotation) {
                 ensureHasNoDelegate(ensureHasNoDelegateAnnotation.admin());
                 continue;
             }
 
-            if (annotation instanceof EnsureHasNoDeviceOwner) {
+            if (annotation instanceof EnsureHasNoDeviceOwner ||
+                    annotation instanceof com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner
+            ) {
                 ensureHasNoDeviceOwner();
                 continue;
             }

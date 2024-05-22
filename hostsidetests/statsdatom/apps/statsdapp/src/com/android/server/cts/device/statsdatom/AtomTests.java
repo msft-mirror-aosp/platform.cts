@@ -18,6 +18,7 @@ package com.android.server.cts.device.statsdatom;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertNotNull;
@@ -35,12 +36,13 @@ import android.app.GameState;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.app.usage.NetworkStatsManager;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
+import android.bluetooth.test_utils.EnableBluetoothRule;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -84,6 +86,7 @@ import android.util.StatsLog;
 
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.PropertyUtil;
@@ -93,7 +96,9 @@ import libcore.javax.net.ssl.TestSSLContext;
 import libcore.javax.net.ssl.TestSSLSocketPair;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -102,11 +107,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 
 import javax.net.ssl.SSLSocket;
 
+@RunWith(AndroidJUnit4.class)
 public class AtomTests {
+    @ClassRule
+    public static final EnableBluetoothRule sEnableBluetoothRule = new EnableBluetoothRule();
+
     private static final String TAG = AtomTests.class.getSimpleName();
 
     private static final String MY_PACKAGE_NAME = "com.android.server.cts.device.statsdatom";
@@ -169,62 +177,56 @@ public class AtomTests {
 
     @Test
     public void testBleScanInterrupted() throws Exception {
-        performBleAction((bluetoothAdapter, bleScanner) -> {
-            ScanSettings scanSettings = new ScanSettings.Builder()
-                    .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
-            ScanCallback scanCallback = new ScanCallback() {
-                @Override
-                public void onScanResult(int callbackType, ScanResult result) {
-                    Log.v(TAG, "called onScanResult");
-                }
-
-                @Override
-                public void onScanFailed(int errorCode) {
-                    Log.v(TAG, "called onScanFailed");
-                }
-
-                @Override
-                public void onBatchScanResults(List<ScanResult> results) {
-                    Log.v(TAG, "called onBatchScanResults");
-                }
-            };
-
-            int uid = Process.myUid();
-            int whatAtomId = 9_999;
-
-            // Get the current setting for bluetooth background scanning.
-            // Set to 0 if the setting is not found or an error occurs.
-            int initialBleScanGlobalSetting = Settings.Global.getInt(
-                    InstrumentationRegistry.getTargetContext().getContentResolver(),
-                    Settings.Global.BLE_SCAN_ALWAYS_AVAILABLE, 0);
-
-            // Turn off bluetooth background scanning.
-            Settings.Global.putInt(InstrumentationRegistry.getTargetContext().getContentResolver(),
-                    Settings.Global.BLE_SCAN_ALWAYS_AVAILABLE, 0);
-
-            // Change state to State.ON.
-            bleScanner.startScan(null, scanSettings, scanCallback);
-            sleep(6_000);
-            writeSliceByBleScanStateChangedAtom(whatAtomId, uid, false, false, false);
-            writeSliceByBleScanStateChangedAtom(whatAtomId, uid, false, false, false);
-
-            bluetoothAdapter.disable();
-            sleep(6_000);
-
-            // Trigger State.RESET so that new state is State.OFF.
-            if (!bluetoothAdapter.enable()) {
-                Log.e(TAG, "Could not enable bluetooth to trigger state reset");
-                return;
+        BluetoothLeScanner bleScanner = sEnableBluetoothRule.mAdapter.getBluetoothLeScanner();
+        assertThat(bleScanner).isNotNull();
+        ScanSettings scanSettings = new ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+        ScanCallback scanCallback = new ScanCallback() {
+            @Override
+            public void onScanResult(int callbackType, ScanResult result) {
+                Log.v(TAG, "called onScanResult");
             }
-            sleep(6_000); // Wait for Bluetooth to fully turn on.
-            writeSliceByBleScanStateChangedAtom(whatAtomId, uid, false, false, false);
-            writeSliceByBleScanStateChangedAtom(whatAtomId, uid, false, false, false);
-            writeSliceByBleScanStateChangedAtom(whatAtomId, uid, false, false, false);
 
-            // Set bluetooth background scanning to original setting.
-            Settings.Global.putInt(InstrumentationRegistry.getTargetContext().getContentResolver(),
-                    Settings.Global.BLE_SCAN_ALWAYS_AVAILABLE, initialBleScanGlobalSetting);
-        });
+            @Override
+            public void onScanFailed(int errorCode) {
+                Log.v(TAG, "called onScanFailed");
+            }
+
+            @Override
+            public void onBatchScanResults(List<ScanResult> results) {
+                Log.v(TAG, "called onBatchScanResults");
+            }
+        };
+
+        int uid = Process.myUid();
+        int whatAtomId = 9_999;
+
+        // Get the current setting for bluetooth background scanning.
+        // Set to 0 if the setting is not found or an error occurs.
+        int initialBleScanGlobalSetting = Settings.Global.getInt(
+                InstrumentationRegistry.getTargetContext().getContentResolver(),
+                Settings.Global.BLE_SCAN_ALWAYS_AVAILABLE, 0);
+
+        // Turn off bluetooth background scanning.
+        Settings.Global.putInt(InstrumentationRegistry.getTargetContext().getContentResolver(),
+                Settings.Global.BLE_SCAN_ALWAYS_AVAILABLE, 0);
+
+        // Change state to State.ON.
+        bleScanner.startScan(null, scanSettings, scanCallback);
+        sleep(6_000);
+        writeSliceByBleScanStateChangedAtom(whatAtomId, uid, false, false, false);
+        writeSliceByBleScanStateChangedAtom(whatAtomId, uid, false, false, false);
+
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
+
+        writeSliceByBleScanStateChangedAtom(whatAtomId, uid, false, false, false);
+        writeSliceByBleScanStateChangedAtom(whatAtomId, uid, false, false, false);
+        writeSliceByBleScanStateChangedAtom(whatAtomId, uid, false, false, false);
+
+        // Set bluetooth background scanning to original setting.
+        Settings.Global.putInt(InstrumentationRegistry.getTargetContext().getContentResolver(),
+                Settings.Global.BLE_SCAN_ALWAYS_AVAILABLE, initialBleScanGlobalSetting);
     }
 
     private static void writeSliceByBleScanStateChangedAtom(int atomId, int firstUid,
@@ -241,71 +243,37 @@ public class AtomTests {
         StatsLog.write(builder.build());
     }
 
-    /**
-     * Set up BluetoothLeScanner and perform the action in the callback.
-     * Restore Bluetooth to original state afterwards.
-     **/
-    private static void performBleAction(BiConsumer<BluetoothAdapter, BluetoothLeScanner> actions) {
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter == null) {
-            Log.e(TAG, "Device does not support Bluetooth");
-            return;
-        }
-        boolean bluetoothEnabledByTest = false;
-        if (!bluetoothAdapter.isEnabled()) {
-            if (!bluetoothAdapter.enable()) {
-                Log.e(TAG, "Bluetooth is not enabled");
-                return;
-            }
-            sleep(2_000); // Wait for Bluetooth to fully turn on.
-            bluetoothEnabledByTest = true;
-        }
-        BluetoothLeScanner bleScanner = bluetoothAdapter.getBluetoothLeScanner();
-        if (bleScanner == null) {
-            Log.e(TAG, "Cannot access BLE scanner");
-            return;
-        }
-
-        actions.accept(bluetoothAdapter, bleScanner);
-
-        // Restore adapter state
-        if (bluetoothEnabledByTest) {
-            bluetoothAdapter.disable();
-        }
-    }
-
-
     private static void performBleScan(ScanSettings scanSettings, List<ScanFilter> scanFilters,
             boolean waitForResult) {
-        performBleAction((bluetoothAdapter, bleScanner) -> {
-            CountDownLatch resultsLatch = new CountDownLatch(1);
-            ScanCallback scanCallback = new ScanCallback() {
-                @Override
-                public void onScanResult(int callbackType, ScanResult result) {
-                    Log.v(TAG, "called onScanResult");
-                    resultsLatch.countDown();
-                }
-
-                @Override
-                public void onScanFailed(int errorCode) {
-                    Log.v(TAG, "called onScanFailed");
-                }
-
-                @Override
-                public void onBatchScanResults(List<ScanResult> results) {
-                    Log.v(TAG, "called onBatchScanResults");
-                    resultsLatch.countDown();
-                }
-            };
-
-            bleScanner.startScan(scanFilters, scanSettings, scanCallback);
-            if (waitForResult) {
-                waitForReceiver(InstrumentationRegistry.getContext(), 59_000, resultsLatch, null);
-            } else {
-                sleep(2_000);
+        BluetoothLeScanner bleScanner = sEnableBluetoothRule.mAdapter.getBluetoothLeScanner();
+        assertThat(bleScanner).isNotNull();
+        CountDownLatch resultsLatch = new CountDownLatch(1);
+        ScanCallback scanCallback = new ScanCallback() {
+            @Override
+            public void onScanResult(int callbackType, ScanResult result) {
+                Log.v(TAG, "called onScanResult");
+                resultsLatch.countDown();
             }
-            bleScanner.stopScan(scanCallback);
-        });
+
+            @Override
+            public void onScanFailed(int errorCode) {
+                Log.v(TAG, "called onScanFailed");
+            }
+
+            @Override
+            public void onBatchScanResults(List<ScanResult> results) {
+                Log.v(TAG, "called onBatchScanResults");
+                resultsLatch.countDown();
+            }
+        };
+
+        bleScanner.startScan(scanFilters, scanSettings, scanCallback);
+        if (waitForResult) {
+            waitForReceiver(InstrumentationRegistry.getContext(), 59_000, resultsLatch, null);
+        } else {
+            sleep(2_000);
+        }
+        bleScanner.stopScan(scanCallback);
     }
 
     @Test
