@@ -16,6 +16,9 @@
 
 package android.mediastress.cts;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
+
+@FrameworkSpecificTest
 public class H264R480pAacShortPlayerTest extends MediaPlayerStressTest {
     private static final String VIDEO_PATH_MIDDLE = "bbb_short/720x480/mp4_libx264_libfaac/";
     private final String[] mMedias = {

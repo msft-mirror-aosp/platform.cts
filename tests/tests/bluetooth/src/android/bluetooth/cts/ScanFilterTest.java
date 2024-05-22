@@ -17,6 +17,7 @@
 package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.Manifest.permission.BLUETOOTH_SCAN;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -32,6 +33,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.TransportBlockFilter;
+import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Parcel;
@@ -337,11 +339,13 @@ public class ScanFilterTest {
                 .setTdsFlags(tdsFlag, tdsFlagMask)
                 .setTransportData(transportData, transportDataMask).build();
 
-        if (mBluetoothAdapter.getOffloadedTransportDiscoveryDataScanSupported()
-                != FEATURE_SUPPORTED) {
-            assertThrows(IllegalArgumentException.class,
-                    () -> mFilterBuilder.setTransportBlockFilter(transportBlockFilter));
-            return;
+        try (var p = Permissions.withPermissions(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED)) {
+            if (mBluetoothAdapter.getOffloadedTransportDiscoveryDataScanSupported()
+                    != FEATURE_SUPPORTED) {
+                assertThrows(IllegalArgumentException.class,
+                        () -> mFilterBuilder.setTransportBlockFilter(transportBlockFilter));
+                return;
+            }
         }
 
         final ScanFilter filter = mFilterBuilder

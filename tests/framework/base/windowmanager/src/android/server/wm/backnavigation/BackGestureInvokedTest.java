@@ -27,6 +27,7 @@ import static android.window.BackNavigationInfo.TYPE_RETURN_TO_HOME;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -37,6 +38,7 @@ import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.ComponentNameUtils;
+import android.server.wm.MockImeHelper;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -158,6 +160,9 @@ public class BackGestureInvokedTest extends ActivityManagerTestBase {
 
     @Test
     public void testImeDismissed() {
+        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
+        MockImeHelper.createManagedMockImeSession(this);
+
         ComponentName componentName = new ComponentName(mContext, ImeTestActivity.class);
         launchActivity(componentName);
         mWmState.waitForActivityState(componentName, STATE_RESUMED);

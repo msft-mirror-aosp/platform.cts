@@ -22,11 +22,16 @@ import static android.graphics.text.LineBreaker.BREAK_STRATEGY_SIMPLE;
 import static android.graphics.text.LineBreaker.HYPHENATION_FREQUENCY_FULL;
 import static android.graphics.text.LineBreaker.HYPHENATION_FREQUENCY_NONE;
 import static android.graphics.text.LineBreaker.HYPHENATION_FREQUENCY_NORMAL;
+import static android.graphics.text.LineBreaker.JUSTIFICATION_MODE_INTER_CHARACTER;
 import static android.graphics.text.LineBreaker.JUSTIFICATION_MODE_INTER_WORD;
 import static android.graphics.text.LineBreaker.JUSTIFICATION_MODE_NONE;
 import static android.graphics.text.LineBreaker.ParagraphConstraints;
 import static android.graphics.text.LineBreaker.Result;
+
 import static com.android.text.flags.Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN;
+import static com.android.text.flags.Flags.FLAG_MISSING_GETTER_APIS;
+
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -41,12 +46,15 @@ import android.graphics.text.LineBreakConfig;
 import android.graphics.text.LineBreaker;
 import android.graphics.text.MeasuredText;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -54,6 +62,10 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class LineBreakerTest {
     private static final String TAG = "LineBreakerTest";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static Paint sPaint;
     @BeforeClass
@@ -69,6 +81,88 @@ public class LineBreakerTest {
     @Test
     public void testLineBreak_construct() {
         assertNotNull(new LineBreaker.Builder().build());
+    }
+
+    @RequiresFlagsEnabled(FLAG_MISSING_GETTER_APIS)
+    @Test
+    public void testSetGet_BreakStrategy() {
+        assertEquals(BREAK_STRATEGY_SIMPLE, new LineBreaker.Builder().build().getBreakStrategy());
+        assertEquals(BREAK_STRATEGY_BALANCED,
+                new LineBreaker.Builder().setBreakStrategy(BREAK_STRATEGY_BALANCED).build()
+                        .getBreakStrategy());
+        assertEquals(BREAK_STRATEGY_SIMPLE,
+                new LineBreaker.Builder().setBreakStrategy(BREAK_STRATEGY_SIMPLE).build()
+                        .getBreakStrategy());
+        assertEquals(BREAK_STRATEGY_HIGH_QUALITY,
+                new LineBreaker.Builder().setBreakStrategy(BREAK_STRATEGY_HIGH_QUALITY).build()
+                        .getBreakStrategy());
+    }
+
+    @RequiresFlagsEnabled(FLAG_MISSING_GETTER_APIS)
+    @Test
+    public void testSetGet_HyphenationFrequency() {
+        assertEquals(HYPHENATION_FREQUENCY_NONE,
+                new LineBreaker.Builder().build().getHyphenationFrequency());
+        assertEquals(HYPHENATION_FREQUENCY_FULL,
+                new LineBreaker.Builder()
+                        .setHyphenationFrequency(HYPHENATION_FREQUENCY_FULL)
+                        .build()
+                        .getHyphenationFrequency());
+        assertEquals(HYPHENATION_FREQUENCY_NORMAL,
+                new LineBreaker.Builder()
+                        .setHyphenationFrequency(HYPHENATION_FREQUENCY_NORMAL)
+                        .build()
+                        .getHyphenationFrequency());
+        assertEquals(HYPHENATION_FREQUENCY_NONE,
+                new LineBreaker.Builder()
+                        .setHyphenationFrequency(HYPHENATION_FREQUENCY_NONE)
+                        .build()
+                        .getHyphenationFrequency());
+    }
+
+    @RequiresFlagsEnabled(FLAG_MISSING_GETTER_APIS)
+    @Test
+    public void testSetGet_JustificationMode() {
+        assertEquals(JUSTIFICATION_MODE_NONE,
+                new LineBreaker.Builder().build().getJustificationMode());
+        assertEquals(JUSTIFICATION_MODE_NONE,
+                new LineBreaker.Builder()
+                        .setJustificationMode(JUSTIFICATION_MODE_NONE)
+                        .build()
+                        .getJustificationMode());
+        assertEquals(JUSTIFICATION_MODE_INTER_WORD,
+                new LineBreaker.Builder()
+                        .setJustificationMode(JUSTIFICATION_MODE_INTER_WORD)
+                        .build()
+                        .getJustificationMode());
+        assertEquals(JUSTIFICATION_MODE_INTER_CHARACTER,
+                new LineBreaker.Builder()
+                        .setJustificationMode(JUSTIFICATION_MODE_INTER_CHARACTER)
+                        .build()
+                        .getJustificationMode());
+    }
+
+    @RequiresFlagsEnabled(FLAG_MISSING_GETTER_APIS)
+    @Test
+    public void testSetGet_Indents() {
+        assertNull(new LineBreaker.Builder().build().getIndents());
+        assertNull(new LineBreaker.Builder().setIndents(null).build().getIndents());
+        assertArrayEquals(new int[] { 1, 2, 3 },
+                new LineBreaker.Builder().setIndents(new int[] { 1, 2, 3}).build().getIndents());
+    }
+
+    @RequiresFlagsEnabled(FLAG_MISSING_GETTER_APIS)
+    @Test
+    public void testSetGet_UseBoundsForWidth() {
+        assertFalse(new LineBreaker.Builder().build().getUseBoundsForWidth());
+        assertTrue(new LineBreaker.Builder()
+                .setUseBoundsForWidth(true)
+                .build()
+                .getUseBoundsForWidth());
+        assertFalse(new LineBreaker.Builder()
+                .setUseBoundsForWidth(false)
+                .build()
+                .getUseBoundsForWidth());
     }
 
     @Test

@@ -397,11 +397,11 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setContentView(R.layout.audio_loopback_latency_activity);
+
         super.onCreate(savedInstanceState);
 
         mContext = this;
-
-        setContentView(R.layout.audio_loopback_latency_activity);
 
         // MegaAudio Initialization
         StreamBase.setup(this);
@@ -587,14 +587,6 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mTestStatusText = (TextView) findViewById(R.id.audio_loopback_status_text);
         mProgressBar = (ProgressBar) findViewById(R.id.audio_loopback_progress_bar);
         showWait(false);
-    }
-
-    void startCalibrationDialog() {
-        (new AudioLoopbackCalibrationDialog(this)).show();
-    }
-
-    void startDeviceSupportDialog() {
-        (new AudioDevicesDialog(this)).show();
     }
 
     //
@@ -1029,9 +1021,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
             }  else if (id == R.id.audio_loopback_usbpath_btn) {
                 startAudioTest(mMessageHandler, TESTROUTE_USB);
             } else if (id == R.id.audio_loopback_calibrate_button) {
-                startCalibrationDialog();
+                (new AudioLoopbackCalibrationDialog(mContext)).show();
             } else if (id == R.id.audio_loopback_devsupport_button) {
-                startDeviceSupportDialog();
+                (new AudioDevicesDialog(mContext)).show();
             }
         }
     }

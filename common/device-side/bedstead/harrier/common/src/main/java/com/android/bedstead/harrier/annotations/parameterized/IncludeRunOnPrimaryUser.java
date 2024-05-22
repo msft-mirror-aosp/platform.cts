@@ -21,7 +21,7 @@ import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationSc
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDelegate;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 
 import java.lang.annotation.ElementType;

@@ -84,8 +84,8 @@ android_test {
     // Tag this module as a cts test artifact
     test_suites: [
         "general-tests",
-        "cts",
         "mcts-media",
+        "mts-media",
     ],
     min_sdk_version: "29",
 }

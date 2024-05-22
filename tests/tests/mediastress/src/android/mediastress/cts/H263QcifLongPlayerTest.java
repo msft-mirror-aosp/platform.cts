@@ -16,6 +16,9 @@
 
 package android.mediastress.cts;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
+
+@FrameworkSpecificTest
 public class H263QcifLongPlayerTest extends MediaPlayerStressTest {
     private final static String VIDEO_PATH_MIDDLE = "bbb_full/176x144/3gp_h263_libfaac/";
     private final String[] mMedias = { // indentation shortened due to long file name

@@ -17,7 +17,7 @@
 package com.android.bedstead.harrier;
 
 import static com.android.bedstead.permissions.annotations.EnsureHasPermissionKt.ensureHasPermission;
-import static com.android.bedstead.harrier.annotations.EnsureHasWorkProfileKt.ensureHasWorkProfile;
+import static com.android.bedstead.enterprise.annotations.EnsureHasWorkProfileKt.ensureHasWorkProfile;
 import static com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntentKt.ensureNoPackageRespondsToIntent;
 import static com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntentKt.ensurePackageRespondsToIntent;
 import static com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntentKt.requireNoPackageRespondsToIntent;

@@ -9,8 +9,8 @@ import android.content.pm.PackageManager.FEATURE_MANAGED_USERS
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.RequireFeature
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.harrier.policies.ReceiveSystemUpdateCallback
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.utils.Assert.assertThrows

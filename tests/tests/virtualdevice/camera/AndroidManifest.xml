@@ -26,6 +26,10 @@
         <activity
             android:name=".util.NativeCameraTestActivity"
             android:exported="false" />
+        <activity
+            android:name="androidx.appcompat.app.AppCompatActivity"
+            android:theme="@style/Theme.AppCompat"
+            android:exported="false" />
     </application>
 
     <uses-feature android:name="android.software.companion_device_setup" />

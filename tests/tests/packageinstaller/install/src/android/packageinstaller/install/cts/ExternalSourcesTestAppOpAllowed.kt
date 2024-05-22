@@ -26,11 +26,9 @@ import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.AppOpsUtils
 import com.google.common.truth.Truth.assertThat
-import java.io.File
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -41,15 +39,6 @@ private const val ALERT_DIALOG_TITLE_ID = "android:id/alertTitle"
 @MediumTest
 @AppModeFull
 class ExternalSourcesTestAppOpAllowed : PackageInstallerTestBase() {
-    companion object {
-        @BeforeClass
-        @JvmStatic
-        fun copyTestApk() {
-            File(TEST_APK_LOCATION, TEST_APK_NAME)
-                .copyTo(target = File(context.filesDir, TEST_APK_NAME), overwrite = true)
-        }
-    }
-
     private val packageName = context.packageName
 
     private fun assertUiObject(errorMessage: String, selector: BySelector) {

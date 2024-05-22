@@ -18,16 +18,15 @@ package android.mediastress.cts;
 import android.app.Instrumentation;
 import android.content.Intent;
 import android.media.MediaFormat;
-import android.media.MediaRecorder.AudioEncoder;
 import android.media.MediaRecorder.VideoEncoder;
-import android.os.Environment;
 import android.test.ActivityInstrumentationTestCase2;
-import android.util.Log;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 
 import junit.framework.Assert;
 
+@FrameworkSpecificTest
 public class NativeMediaTest extends ActivityInstrumentationTestCase2<NativeMediaActivity> {
     private static final String TAG = "NativeMediaTest";
     private static final String MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;

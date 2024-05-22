@@ -19,6 +19,7 @@ package com.android.bedstead.harrier.annotations.enterprise;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ADMIN;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner.HeadlessDeviceOwnerType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.RequireFeature;
@@ -33,19 +34,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark that a test requires that a device owner is available on the device.
- *
- * <p>Your test configuration may be configured so that this test is only run on a device which has
- * a device owner. Otherwise, you can use {@code Devicestate} to ensure that the device enters
- * the correct state for the method. If using {@code Devicestate}, you can use
- * {@code Devicestate#deviceOwner()} to interact with the device owner.
- *
- * <p>When running on a device with a headless system user, enforcing this with {@code Devicestate}
- * will also result in the profile owner of the current user being set to the same device policy
- * controller.
- *
- * <p>If {@code Devicestate} is required to set the device owner (because there isn't one already)
- * then all users and accounts may be removed from the device.
+ * This is just a temporary class for compatibility with other repositories
+ * use {@link com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner} instead
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
@@ -53,33 +43,8 @@ import java.lang.annotation.Target;
 // TODO(b/206441366): Add instant app support
 @RequireNotInstantApp(reason = "Instant Apps cannot run Enterprise Tests")
 @RequireNotWatch(reason = "b/270121483 Watches get marked as paired which means we can't change Device Owner")
+@Deprecated
 public @interface EnsureHasDeviceOwner {
-
-    /** See {@link EnsureHasDeviceOwner#headlessDeviceOwnerType }. */
-    enum HeadlessDeviceOwnerType {
-        /**
-         * When used - the Device Owner will be set but no profile owners will be set.
-         */
-        NONE,
-
-        /**
-         * When used - when setting the device owner on a headless system user mode device, a profile
-         * owner will also be set on the initial user. This matches the behaviour when the DPC
-         * has 'headless-system-user device-owner-mode="affiliated"' in device_admin.xml.
-         *
-         * <p>Note that when this is set - a default affiliation ID will be added to the Device
-         * Owner and to the Profile Owner set on any other users.
-         */
-        AFFILIATED,
-
-        /**
-         * When used - the Device Owner will be set on the first secondary user (user 10).
-         * This matches the behaviour when the DPC has
-         * 'headless-system-user device-owner-mode="single_user"'
-         * in headless_single_user_device_admin.xml.
-         */
-        SINGLE_USER;
-    }
 
     int DO_PO_PRIORITY = MIDDLE;
 

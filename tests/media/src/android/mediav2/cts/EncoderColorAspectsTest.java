@@ -43,6 +43,7 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 
@@ -287,6 +288,7 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
             "android.media.MediaFormat#KEY_COLOR_TRANSFER"})
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
+    @FrameworkSpecificTest
     @NonMainlineTest
     public void testColorAspectsEndToEnd() throws IOException, InterruptedException {
         doFullColorAspects(true /* includeMuxing */);

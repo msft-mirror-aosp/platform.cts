@@ -18,7 +18,6 @@ import logging
 import os.path
 from mobly import test_runner
 
-import math
 import numpy as np
 
 import its_base_test
@@ -59,57 +58,39 @@ def apply_lens_shading_map(color_plane, black_level, white_level, lsc_map):
   return color_plane
 
 
-def populate_lens_shading_map(raw_plane_dims, lsc_map):
-  """Populate lens shading map.
-
-  Args:
-    raw_plane_dims: tuple from raw_plane.shape.
-    lsc_map: 2D np array; low res lens shading map from metadata.
-
-  Returns:
-    lsc_map_fs: 2D np array; full scale lens shading map.
-  """
-  lsc_map_fs = np.ones(raw_plane_dims)
-  logging.debug('full scale lens shading map shape: %s', lsc_map_fs.shape)
-  for x in range(lsc_map_fs.shape[1]):
-    for y in range(lsc_map_fs.shape[0]):
-      lsc_map_fs[y][x] = get_full_scale_lsc_coefficient(
-          x, y, raw_plane_dims[1], raw_plane_dims[0], lsc_map
-      )
-  return lsc_map_fs
-
-
-def get_full_scale_lsc_coefficient(x, y, img_w, img_h, lsc_map):
+def populate_lens_shading_map(img_shape, lsc_map):
   """Helper function to create LSC coeifficients for RAW image.
 
   Args:
-    x: int; x-location in image [0, img_w-1].
-    y: int; y-location in image [0, img_h-1].
-    img_w: int; RAW image width.
-    img_h: int; RAW image height.
+    img_shape: tuple; RAW image shape.
     lsc_map: 2D low resolution array with lens shading map values.
 
   Returns:
     value for lens shading map at point (x, y) in the image.
   """
+  img_w, img_h = img_shape[1], img_shape[0]
+  map_w, map_h = lsc_map.shape[1], lsc_map.shape[0]
 
-  map_w = lsc_map.shape[1]
-  map_h = lsc_map.shape[0]
+  x, y = np.meshgrid(np.arange(img_w), np.arange(img_h))
+
   # (u,v) is lsc map location, values [0, map_w-1], [0, map_h-1]
+  # Vectorized calculations
   u = x * (map_w - 1) / (img_w - 1)
   v = y * (map_h - 1) / (img_h - 1)
-  u_min = math.floor(u)
+  u_min = np.floor(u).astype(int)
+  v_min = np.floor(v).astype(int)
   u_frac = u - u_min
-  v_min = math.floor(v)
   v_frac = v - v_min
-  u_max = u_min + 1 if u_frac > 0 else u_min
-  v_max = v_min + 1 if v_frac > 0 else v_min
+  u_max = np.where(u_frac > 0, u_min + 1, u_min)
+  v_max = np.where(v_frac > 0, v_min + 1, v_min)
 
-  lsc_tl = lsc_map[v_min][u_min]
-  lsc_tr = lsc_map[v_min][u_max]
-  lsc_bl = lsc_map[v_max][u_min]
-  lsc_br = lsc_map[v_max][u_max]
+  # Gather LSC values, handling edge cases (optional)
+  lsc_tl = lsc_map[(v_min, u_min)]
+  lsc_tr = lsc_map[(v_min, u_max)]
+  lsc_bl = lsc_map[(v_max, u_min)]
+  lsc_br = lsc_map[(v_max, u_max)]
 
+  # Bilinear interpolation (vectorized)
   lsc_t = lsc_tl * (1 - u_frac) + lsc_tr * u_frac
   lsc_b = lsc_bl * (1 - u_frac) + lsc_br * u_frac
 
@@ -180,17 +161,25 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
         lsc_maps, 'metadata', plot_name_stem_with_log_path
     )
     lsc_map_fs_r = populate_lens_shading_map(r.shape, lsc_maps[:, :, 0])
-    lsc_map_fs_gr = populate_lens_shading_map(gr.shape, lsc_maps[:, :, 1])
-    lsc_map_fs_gb = populate_lens_shading_map(gb.shape, lsc_maps[:, :, 2])
-    lsc_map_fs_b = populate_lens_shading_map(b.shape, lsc_maps[:, :, 3])
+    lsc_map_fs_gr = populate_lens_shading_map(r.shape, lsc_maps[:, :, 1])
+    lsc_map_fs_gb = populate_lens_shading_map(r.shape, lsc_maps[:, :, 2])
+    lsc_map_fs_b = populate_lens_shading_map(r.shape, lsc_maps[:, :, 3])
     image_processing_utils.plot_lsc_maps(
         np.dstack((lsc_map_fs_r, lsc_map_fs_gr, lsc_map_fs_gb, lsc_map_fs_b)),
         'fullscale', plot_name_stem_with_log_path
     )
-    r = apply_lens_shading_map(r, black_levels[0], white_level, lsc_map_fs_r)
-    gr = apply_lens_shading_map(gr, black_levels[1], white_level, lsc_map_fs_gr)
-    gb = apply_lens_shading_map(gb, black_levels[2], white_level, lsc_map_fs_gb)
-    b = apply_lens_shading_map(b, black_levels[3], white_level, lsc_map_fs_b)
+    r = apply_lens_shading_map(
+        r[:, :, 0], black_levels[0], white_level, lsc_map_fs_r
+    )
+    gr = apply_lens_shading_map(
+        gr[:, :, 0], black_levels[1], white_level, lsc_map_fs_gr
+    )
+    gb = apply_lens_shading_map(
+        gb[:, :, 0], black_levels[2], white_level, lsc_map_fs_gb
+    )
+    b = apply_lens_shading_map(
+        b[:, :, 0], black_levels[3], white_level, lsc_map_fs_b
+    )
   img = image_processing_utils.convert_raw_to_rgb_image(
       r, gr, gb, b, props, cap_raw['metadata']
   )

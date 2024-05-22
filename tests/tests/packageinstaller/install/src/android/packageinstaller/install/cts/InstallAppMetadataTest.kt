@@ -35,7 +35,6 @@ import com.google.common.truth.Truth.assertThat
 import java.io.File
 import java.io.FileNotFoundException
 import org.junit.Assert.assertEquals
-import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -49,15 +48,6 @@ class InstallAppMetadataTest : PackageInstallerTestBase() {
         private val TEST_FIELD = "testField"
         private val TEST_APK2_NAME = "CtsEmptyTestApp_AppMetadataInApk.apk"
         private val TEST_APK3_NAME = "CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk"
-
-        @BeforeClass
-        @JvmStatic
-        fun copyTestApk() {
-            File(TEST_APK_LOCATION, TEST_APK2_NAME)
-                .copyTo(target = File(context.filesDir, TEST_APK2_NAME), overwrite = true)
-            File(TEST_APK_LOCATION, TEST_APK_NAME)
-                .copyTo(target = File(context.filesDir, TEST_APK_NAME), overwrite = true)
-        }
     }
 
     private val uiAutomation: UiAutomation =

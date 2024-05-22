@@ -20,8 +20,7 @@ import android.app.admin.flags.Flags
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile
-import com.android.bedstead.nene.TestApis
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.nene.utils.ShellCommand
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule

@@ -69,6 +69,7 @@ import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
 import android.os.UserHandle;
+import android.util.Log;
 import android.view.Surface;
 
 import com.google.common.collect.Iterables;
@@ -88,6 +89,7 @@ public final class VirtualCameraUtils {
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final float EPSILON = 0.3f;
     private static final double BITMAP_MAX_DIFF = 0.1;
+    private static final String TAG = "VirtualCameraUtils";
 
     static VirtualCameraConfig createVirtualCameraConfig(
             int width, int height, int format, int maximumFramesPerSecond, int sensorOrientation,
@@ -228,6 +230,7 @@ public final class VirtualCameraUtils {
         // The FilePullerLogCollector only pulls image in png
         File imageFile = new File(dir, imageName + ".png");
         try {
+            Log.i(TAG, "Saving image to disk at " + imageFile.getAbsolutePath());
             bitmap.compress(Bitmap.CompressFormat.PNG, 80, new FileOutputStream(imageFile));
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
@@ -240,11 +243,21 @@ public final class VirtualCameraUtils {
      * @param prefix    Prefix for the image file generated in case of error.
      */
     static void assertImagesSimilar(Bitmap generated, Bitmap golden, String prefix) {
+        assertImagesSimilar(generated, golden, prefix, BITMAP_MAX_DIFF);
+    }
+
+    /**
+     * @param generated Bitmap generated from the test.
+     * @param golden    Golden bitmap to compare to.
+     * @param prefix    Prefix for the image file generated in case of error.
+     */
+    static void assertImagesSimilar(Bitmap generated, Bitmap golden, String prefix,
+            double maxDiff) {
         boolean assertionPassed = false;
         try {
             double actual = BitmapUtils.calcDifferenceMetric(generated, golden);
-            assertWithMessage("Generated image does not match golden").that(actual).isAtMost(
-                    BITMAP_MAX_DIFF);
+            assertWithMessage("Generated image does not match golden. "
+                    + "Images have been saved to disk.").that(actual).isAtMost(maxDiff);
             assertionPassed = true;
         } finally {
             if (!assertionPassed) {

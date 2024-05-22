@@ -44,6 +44,7 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
@@ -70,6 +71,7 @@ public class CodecUnitTest {
     // Following tests were added in Android R and are not limited to c2.android.* codecs.
     // Hence limit the tests to Android R and above and also annotate as NonMainlineTest
     @SdkSuppress(minSdkVersion = 30)
+    @FrameworkSpecificTest
     @NonMainlineTest
     public static class TestApi extends CodecTestBase {
         private final CodecDecoderBlockModelTestBase.LinearBlockWrapper
@@ -2795,6 +2797,7 @@ public class CodecUnitTest {
     // Following tests were added in Android R and are not limited to c2.android.* codecs.
     // Hence limit the tests to Android R and above and also annotate as NonMainlineTest
     @SdkSuppress(minSdkVersion = 30)
+    @FrameworkSpecificTest
     @NonMainlineTest
     public static class TestApiNative {
         @Rule

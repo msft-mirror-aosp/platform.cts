@@ -18,6 +18,7 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.Manifest.permission.BLUETOOTH_SCAN;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -38,6 +39,7 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothQualityReport;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.test_utils.Permissions;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -416,9 +418,14 @@ public class BluetoothAdapterTest {
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         assertThrows(IllegalArgumentException.class, () -> mAdapter.setDiscoverableTimeout(
                 Duration.ofDays(25000)));
-        assertEquals(BluetoothStatusCodes.SUCCESS,
-                mAdapter.setDiscoverableTimeout(minutes));
-        assertEquals(minutes, mAdapter.getDiscoverableTimeout());
+        Permissions.enforceEachPermissions(
+                () -> mAdapter.setDiscoverableTimeout(minutes),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_SCAN));
+        try (var p = Permissions.withPermissions(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED)) {
+            assertEquals(BluetoothStatusCodes.SUCCESS,
+                    mAdapter.setDiscoverableTimeout(minutes));
+            assertEquals(minutes, mAdapter.getDiscoverableTimeout());
+        }
     }
 
     @Test

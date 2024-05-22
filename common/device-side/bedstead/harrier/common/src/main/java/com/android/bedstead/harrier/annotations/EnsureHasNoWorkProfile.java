@@ -28,21 +28,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark that a test method should run on a user which does not have a work profile.
- *
- * <p>Your test configuration may be configured so that this test is only run on a user which has
- * no work profile. Otherwise, you can use {@code Devicestate} to ensure that the device enters
- * the correct state for the method.
+ * This is just a temporary class for compatibility with other repositories
+ * use {@link com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile} instead
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @EnsureHasNoProfileAnnotation("android.os.usertype.profile.MANAGED")
 @RequireFeature("android.software.managed_users")
+@Deprecated
 public @interface EnsureHasNoWorkProfile {
     /** Which user type the work profile should not be attached to. */
     UserType forUser() default INSTRUMENTED_USER;
 
-     /**
+    /**
      * Priority sets the order that annotations will be resolved.
      *
      * <p>Annotations with a lower priority will be resolved before annotations with a higher

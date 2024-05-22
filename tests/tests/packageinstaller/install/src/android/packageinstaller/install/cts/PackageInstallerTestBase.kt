@@ -96,8 +96,6 @@ open class PackageInstallerTestBase {
 
         val context: Context = InstrumentationRegistry.getTargetContext()
         val testUserId: Int = context.user.identifier
-
-        private val apkFile = File(context.filesDir, TEST_APK_NAME)
     }
 
     @get:Rule
@@ -230,9 +228,8 @@ open class PackageInstallerTestBase {
     }
 
     protected fun writeSession(session: Session, apkName: String) {
-        val apkFile = File(context.filesDir, apkName)
         // Write data to session
-        apkFile.inputStream().use { fileOnDisk ->
+        File(TEST_APK_LOCATION, apkName).inputStream().use { fileOnDisk ->
             session.openWrite(apkName, 0, -1).use { sessionFile ->
                 fileOnDisk.copyTo(sessionFile)
             }
@@ -353,6 +350,10 @@ open class PackageInstallerTestBase {
     }
 
     protected fun getInstallationIntent(): Intent {
+        val apkFile = File(context.filesDir, TEST_APK_NAME)
+        if (!apkFile.exists()) {
+            File(TEST_APK_LOCATION, TEST_APK_NAME).copyTo(target = apkFile, overwrite = true)
+        }
         val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
         intent.data = FileProvider.getUriForFile(context, CONTENT_AUTHORITY, apkFile)
         intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
