@@ -21,6 +21,7 @@ android_test {
     name: "CtsLibcoreWycheproofConscryptTestCases",
     defaults: ["cts_support_defaults"],
     platform_apis: true,
+    min_sdk_version: "30",
     static_libs: [
         "cts-core-test-runner-axt",
 
