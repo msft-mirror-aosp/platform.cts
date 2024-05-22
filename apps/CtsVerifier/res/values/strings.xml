@@ -5753,7 +5753,6 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_calibrate">Calibrate Audio</string>
     <string name="audio_datapaths_calibratetitle">Calibrate Loopback Audio</string>
 
-    <string name="audio_loopback_devsupport_button">Audio Devices</string>
     <string name="audio_devicesupport_title">Audio Devices</string>
     <string name="audio_devicesupport_cantdetermine">Audio device support could not be determined.</string>
 
@@ -5901,13 +5900,10 @@ You should be prompted to select credentials; choose the ones you just installed
           Please connect a "Loopback Plug" and press "Loopback Plug Ready".
     </string>
     <string name="audio_loopback_plug_ready_btn">Loopback Plug Ready</string>
-    <string name="audio_loopback_instructions_calibrate">
-          Use the \"Calibrate Audio\" panel to set the audio level to a suitable value for each supported route.
-          Then press the \"Start\" button for each supported route.
-    </string>
-    <string name="audio_loopback_instructions_supportdevs">
-          Use the \"Audio Devices\" panel to determine which audio devices are supported and/or available.
-    </string>
+
+    <string name="audio_loopback_calibrate_button">Calibrate Audio</string>
+    <string name="audio_loopback_devsupport_button">Audio Devices</string>
+
     <string name="audio_loopback_level_text">Audio Level</string>
     <string name="audio_loopback_test_btn">Test</string>
     <string name="audio_loopback_results_text">Results...</string>
@@ -6019,7 +6015,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_channel_mask_topbackleft">Top Back Left</string>
     <string name="audio_channel_mask_topbackright">Top Back Right</string>
 
-    <!-- Audio Cold-Start Latency Test -->
+     <!-- Audio Cold-Start Latency Test -->
     <string name="audio_coldstart_out_latency_test">Audio Cold Start Output Latency Test</string>
     <string name="audio_coldstart_in_latency_test">Audio Cold Start Input Latency Test</string>
 
