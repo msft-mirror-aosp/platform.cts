@@ -18,6 +18,7 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.Manifest.permission.BLUETOOTH_SCAN;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -37,14 +38,13 @@ import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.BluetoothUuid;
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.AdvertisingSetParameters;
+import android.bluetooth.test_utils.Permissions;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.ParcelUuid;
 import android.provider.Settings;
-import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -62,9 +62,6 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 @RunWith(AndroidJUnit4.class)
 public class SystemBluetoothTest {
@@ -81,10 +78,6 @@ public class SystemBluetoothTest {
             mContext.getSystemService(BluetoothManager.class).getAdapter();
     private final UiAutomation mUiAutomation =
             InstrumentationRegistry.getInstrumentation().getUiAutomation();
-
-    private ReentrantLock mDiscoveryStartedLock;
-    private Condition mConditionDiscoveryStarted;
-    private boolean mIsDiscoveryStarted;
 
     @Before
     public void setUp() throws Exception {
@@ -156,21 +149,25 @@ public class SystemBluetoothTest {
                         "android.bluetooth.cts", android.Manifest.permission.ACCESS_FINE_LOCATION);
             }
 
-            mDiscoveryStartedLock = new ReentrantLock();
-            mConditionDiscoveryStarted = mDiscoveryStartedLock.newCondition();
-
             IntentFilter filter = new IntentFilter();
             filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
             filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
-            mContext.registerReceiver(mDiscoveryStartedReceiver, filter);
 
-            mAdapter.startDiscovery();
-            assertThat(waitForDiscoveryStart()).isTrue();
+            BroadcastReceiver mockReceiver = mock(BroadcastReceiver.class);
+            mContext.registerReceiver(mockReceiver, filter);
+
+            try (var p = Permissions.withPermissions(BLUETOOTH_SCAN)) {
+                mAdapter.startDiscovery();
+                // Wait for any of ACTION_DISCOVERY_STARTED intent, while holding BLUETOOTH_SCAN
+                verify(mockReceiver, timeout(DISCOVERY_START_TIMEOUT)).onReceive(any(), any());
+            }
+
             long discoveryEndTime = mAdapter.getDiscoveryEndMillis();
             long currentTime = System.currentTimeMillis();
             assertThat(discoveryEndTime > currentTime).isTrue();
             assertThat(discoveryEndTime - currentTime < DEFAULT_DISCOVERY_TIMEOUT_MS).isTrue();
-            mContext.unregisterReceiver(mDiscoveryStartedReceiver);
+
+            mContext.unregisterReceiver(mockReceiver);
         } finally {
             if (recoverOffState) {
                 TestUtils.disableLocation(mContext);
@@ -455,42 +452,4 @@ public class SystemBluetoothTest {
         assertThat(mAdapter.setScanMode(BluetoothAdapter.SCAN_MODE_CONNECTABLE))
                 .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
     }
-
-    private boolean waitForDiscoveryStart() {
-        mDiscoveryStartedLock.lock();
-        try {
-            // Wait for discovery to be started
-            while (!mIsDiscoveryStarted) {
-                if (!mConditionDiscoveryStarted.await(
-                        DISCOVERY_START_TIMEOUT, TimeUnit.MILLISECONDS)) {
-                    Log.e(TAG, "Timeout while waiting for discovery to start");
-                    break;
-                }
-            }
-        } catch (InterruptedException e) {
-            Log.e(TAG, "waitForDiscoveryStart: interrupted");
-        } finally {
-            mDiscoveryStartedLock.unlock();
-        }
-        return mIsDiscoveryStarted;
-    }
-
-    private final BroadcastReceiver mDiscoveryStartedReceiver =
-            new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    String action = intent.getAction();
-                    if (action.equals(BluetoothAdapter.ACTION_DISCOVERY_STARTED)) {
-                        Log.i(TAG, "Discovery started");
-                        mDiscoveryStartedLock.lock();
-                        mIsDiscoveryStarted = true;
-                        try {
-                            mConditionDiscoveryStarted.signal();
-                        } catch (IllegalMonitorStateException ex) {
-                        } finally {
-                            mDiscoveryStartedLock.unlock();
-                        }
-                    }
-                }
-            };
 }
