@@ -57,8 +57,11 @@ public class ContactsContractIntentsTest extends AndroidTestCase {
 
     public void testSetDefaultAccount() {
         PackageManager packageManager = getContext().getPackageManager();
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
-            return; // Skip test on watch since the intent is not required.
+        if (
+                packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+        ) {
+            return; // Skip test on watch and automotive since the intent is not required.
         }
 
         Intent intent = new Intent(ContactsContract.Settings.ACTION_SET_DEFAULT_ACCOUNT);
