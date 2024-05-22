@@ -18,6 +18,7 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -62,7 +63,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BluetoothHapClientTest {
     private static final String TAG = BluetoothHapClientTest.class.getSimpleName();
 
-    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
+    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
 
     private Context mContext;
     private BluetoothAdapter mAdapter;
@@ -104,8 +105,8 @@ public class BluetoothHapClientTest {
         mIsProfileReady = false;
         mBluetoothHapClient = null;
 
-        mAdapter.getProfileProxy(mContext, new BluetoothHapClientServiceListener(),
-                BluetoothProfile.HAP_CLIENT);
+        mAdapter.getProfileProxy(
+                mContext, new BluetoothHapClientServiceListener(), BluetoothProfile.HAP_CLIENT);
     }
 
     @After
@@ -167,19 +168,18 @@ public class BluetoothHapClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         // Verify returns STATE_DISCONNECTED when invalid input is given
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
-                mBluetoothHapClient.getConnectionState(null));
+        assertEquals(
+                BluetoothProfile.STATE_DISCONNECTED, mBluetoothHapClient.getConnectionState(null));
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
         // Verify returns STATE_DISCONNECTED if bluetooth is not enabled
-        assertEquals(BluetoothProfile.STATE_DISCONNECTED,
+        assertEquals(
+                BluetoothProfile.STATE_DISCONNECTED,
                 mBluetoothHapClient.getConnectionState(testDevice));
     }
 
-    /**
-     * Verify getHapGroup() return -1 if Bluetooth is disabled.
-     */
+    /** Verify getHapGroup() return -1 if Bluetooth is disabled. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getHapGroup() {
@@ -207,9 +207,7 @@ public class BluetoothHapClientTest {
         assertEquals(0, mBluetoothHapClient.getActivePresetIndex(testDevice));
     }
 
-    /**
-     * Verify getActivePresetInfo() return null if Bluetooth is disabled.
-     */
+    /** Verify getActivePresetInfo() return null if Bluetooth is disabled. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getActivePresetInfo() {
@@ -247,9 +245,7 @@ public class BluetoothHapClientTest {
         mBluetoothHapClient.selectPresetForGroup(1, 1);
     }
 
-    /**
-     * Verify switchToNextPreset() will not cause exception when Bluetooth is disabled.
-     */
+    /** Verify switchToNextPreset() will not cause exception when Bluetooth is disabled. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void switchToNextPreset() {
@@ -263,9 +259,7 @@ public class BluetoothHapClientTest {
         mBluetoothHapClient.switchToNextPreset(testDevice);
     }
 
-    /**
-     * Verify switchToNextPresetForGroup() will not cause exception when Bluetooth is disabled.
-     */
+    /** Verify switchToNextPresetForGroup() will not cause exception when Bluetooth is disabled. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void switchToNextPresetForGroup() {
@@ -277,9 +271,7 @@ public class BluetoothHapClientTest {
         mBluetoothHapClient.switchToNextPresetForGroup(1);
     }
 
-    /**
-     * Verify switchToPreviousPreset() doesn't cause exception when Bluetooth is disabled.
-     */
+    /** Verify switchToPreviousPreset() doesn't cause exception when Bluetooth is disabled. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void switchToPreviousPreset() {
@@ -307,9 +299,7 @@ public class BluetoothHapClientTest {
         mBluetoothHapClient.switchToPreviousPresetForGroup(1);
     }
 
-    /**
-     * Verify switchToNextPresetForGroup() doesn't cause exception when Bluetooth is disabled.
-     */
+    /** Verify switchToNextPresetForGroup() doesn't cause exception when Bluetooth is disabled. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getPresetInfo() {
@@ -349,7 +339,7 @@ public class BluetoothHapClientTest {
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
-        mBluetoothHapClient.setPresetName(testDevice, 1 , "New Name");
+        mBluetoothHapClient.setPresetName(testDevice, 1, "New Name");
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -360,7 +350,7 @@ public class BluetoothHapClientTest {
 
         assertTrue(BTAdapterUtils.disableAdapter(mAdapter, mContext));
 
-        mBluetoothHapClient.setPresetNameForGroup(1, 1 , "New Name");
+        mBluetoothHapClient.setPresetNameForGroup(1, 1, "New Name");
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -369,20 +359,25 @@ public class BluetoothHapClientTest {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
-        assertThrows(NullPointerException.class,
-                () -> mBluetoothHapClient.setConnectionPolicy(null, 0));
-        assertEquals(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
+        assertThrows(
+                NullPointerException.class, () -> mBluetoothHapClient.setConnectionPolicy(null, 0));
+        assertEquals(
+                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN,
                 mBluetoothHapClient.getConnectionPolicy(null));
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        assertTrue(mBluetoothHapClient.setConnectionPolicy(testDevice,
-                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertTrue(
+                mBluetoothHapClient.setConnectionPolicy(
+                        testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
 
         TestUtils.dropPermissionAsShellUid();
-        assertThrows(SecurityException.class, () -> mBluetoothHapClient
-                .setConnectionPolicy(testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
-        assertThrows(SecurityException.class,
-                () -> mBluetoothHapClient.getConnectionPolicy(testDevice));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        mBluetoothHapClient.setConnectionPolicy(
+                                testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
+        assertThrows(
+                SecurityException.class, () -> mBluetoothHapClient.getConnectionPolicy(testDevice));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
     }
@@ -395,34 +390,40 @@ public class BluetoothHapClientTest {
 
         Executor executor = mContext.getMainExecutor();
 
-        BluetoothHapClient.Callback callback = new BluetoothHapClient.Callback() {
-            @Override
-            public void onPresetSelected(BluetoothDevice device, int presetIndex, int reasonCode) {}
+        BluetoothHapClient.Callback callback =
+                new BluetoothHapClient.Callback() {
+                    @Override
+                    public void onPresetSelected(
+                            BluetoothDevice device, int presetIndex, int reasonCode) {}
 
-            @Override
-            public void onPresetSelectionFailed(BluetoothDevice device, int statusCode) {}
+                    @Override
+                    public void onPresetSelectionFailed(BluetoothDevice device, int statusCode) {}
 
-            @Override
-            public void onPresetSelectionForGroupFailed(int hapGroupId, int statusCode) {}
+                    @Override
+                    public void onPresetSelectionForGroupFailed(int hapGroupId, int statusCode) {}
 
-            @Override
-            public void onPresetInfoChanged(BluetoothDevice device,
-                    List<BluetoothHapPresetInfo> presetInfoList, int statusCode) {}
+                    @Override
+                    public void onPresetInfoChanged(
+                            BluetoothDevice device,
+                            List<BluetoothHapPresetInfo> presetInfoList,
+                            int statusCode) {}
 
-            @Override
-            public void onSetPresetNameFailed(BluetoothDevice device, int status) {}
+                    @Override
+                    public void onSetPresetNameFailed(BluetoothDevice device, int status) {}
 
-            @Override
-            public void onSetPresetNameForGroupFailed(int hapGroupId, int status) {}
-        };
+                    @Override
+                    public void onSetPresetNameForGroupFailed(int hapGroupId, int status) {}
+                };
 
         // Verify parameter
-        assertThrows(NullPointerException.class, () ->
-                mBluetoothHapClient.registerCallback(null, callback));
-        assertThrows(NullPointerException.class, () ->
-                mBluetoothHapClient.registerCallback(executor, null));
-        assertThrows(NullPointerException.class, () ->
-                mBluetoothHapClient.unregisterCallback(null));
+        assertThrows(
+                NullPointerException.class,
+                () -> mBluetoothHapClient.registerCallback(null, callback));
+        assertThrows(
+                NullPointerException.class,
+                () -> mBluetoothHapClient.registerCallback(executor, null));
+        assertThrows(
+                NullPointerException.class, () -> mBluetoothHapClient.unregisterCallback(null));
 
         // Verify valid parameters
         mBluetoothHapClient.registerCallback(executor, callback);
@@ -432,7 +433,8 @@ public class BluetoothHapClientTest {
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
 
         // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(SecurityException.class,
+        assertThrows(
+                SecurityException.class,
                 () -> mBluetoothHapClient.registerCallback(executor, callback));
     }
 
@@ -447,29 +449,34 @@ public class BluetoothHapClientTest {
 
         Executor executor = mContext.getMainExecutor();
 
-        BluetoothHapClient.Callback callback = new BluetoothHapClient.Callback() {
-            @Override
-            public void onPresetSelected(BluetoothDevice device, int presetIndex, int reasonCode) {}
+        BluetoothHapClient.Callback callback =
+                new BluetoothHapClient.Callback() {
+                    @Override
+                    public void onPresetSelected(
+                            BluetoothDevice device, int presetIndex, int reasonCode) {}
 
-            @Override
-            public void onPresetSelectionFailed(BluetoothDevice device, int statusCode) {}
+                    @Override
+                    public void onPresetSelectionFailed(BluetoothDevice device, int statusCode) {}
 
-            @Override
-            public void onPresetSelectionForGroupFailed(int hapGroupId, int statusCode) {}
+                    @Override
+                    public void onPresetSelectionForGroupFailed(int hapGroupId, int statusCode) {}
 
-            @Override
-            public void onPresetInfoChanged(BluetoothDevice device,
-                    List<BluetoothHapPresetInfo> presetInfoList, int statusCode) {}
+                    @Override
+                    public void onPresetInfoChanged(
+                            BluetoothDevice device,
+                            List<BluetoothHapPresetInfo> presetInfoList,
+                            int statusCode) {}
 
-            @Override
-            public void onSetPresetNameFailed(BluetoothDevice device, int status) {}
+                    @Override
+                    public void onSetPresetNameFailed(BluetoothDevice device, int status) {}
 
-            @Override
-            public void onSetPresetNameForGroupFailed(int hapGroupId, int status) {}
-        };
+                    @Override
+                    public void onSetPresetNameForGroupFailed(int hapGroupId, int status) {}
+                };
 
         // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(SecurityException.class,
+        assertThrows(
+                SecurityException.class,
                 () -> mBluetoothHapClient.registerCallback(executor, callback));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
@@ -481,44 +488,48 @@ public class BluetoothHapClientTest {
         assertTrue(waitForProfileConnect());
         assertNotNull(mBluetoothHapClient);
 
-        BluetoothHapClient.Callback callback = new BluetoothHapClient.Callback() {
-            @Override
-            public void onPresetSelected(BluetoothDevice device, int presetIndex, int reasonCode) {
-                mOnPresetSelected = true;
-                mCallbackCountDownLatch.countDown();
-            }
+        BluetoothHapClient.Callback callback =
+                new BluetoothHapClient.Callback() {
+                    @Override
+                    public void onPresetSelected(
+                            BluetoothDevice device, int presetIndex, int reasonCode) {
+                        mOnPresetSelected = true;
+                        mCallbackCountDownLatch.countDown();
+                    }
 
-            @Override
-            public void onPresetSelectionFailed(BluetoothDevice device, int statusCode) {
-                mOnPresetSelectionFailed = true;
-                mCallbackCountDownLatch.countDown();
-            }
+                    @Override
+                    public void onPresetSelectionFailed(BluetoothDevice device, int statusCode) {
+                        mOnPresetSelectionFailed = true;
+                        mCallbackCountDownLatch.countDown();
+                    }
 
-            @Override
-            public void onPresetSelectionForGroupFailed(int hapGroupId, int statusCode) {
-                mOnPresetSelectionForGroupFailed = true;
-                mCallbackCountDownLatch.countDown();
-            }
+                    @Override
+                    public void onPresetSelectionForGroupFailed(int hapGroupId, int statusCode) {
+                        mOnPresetSelectionForGroupFailed = true;
+                        mCallbackCountDownLatch.countDown();
+                    }
 
-            @Override
-            public void onPresetInfoChanged(BluetoothDevice device,
-                    List<BluetoothHapPresetInfo> presetInfoList, int statusCode) {
-                mOnPresetInfoChanged = true;
-                mCallbackCountDownLatch.countDown();
-            }
+                    @Override
+                    public void onPresetInfoChanged(
+                            BluetoothDevice device,
+                            List<BluetoothHapPresetInfo> presetInfoList,
+                            int statusCode) {
+                        mOnPresetInfoChanged = true;
+                        mCallbackCountDownLatch.countDown();
+                    }
 
-            @Override
-            public void onSetPresetNameFailed(BluetoothDevice device, int status) {
-                mOnSetPresetNameFailed = true;
-                mCallbackCountDownLatch.countDown();
-            }
+                    @Override
+                    public void onSetPresetNameFailed(BluetoothDevice device, int status) {
+                        mOnSetPresetNameFailed = true;
+                        mCallbackCountDownLatch.countDown();
+                    }
 
-            @Override
-            public void onSetPresetNameForGroupFailed(int hapGroupId, int status) {
-                mOnSetPresetNameForGroupFailed = true;
-                mCallbackCountDownLatch.countDown();
-            }
-        };
+                    @Override
+                    public void onSetPresetNameForGroupFailed(int hapGroupId, int status) {
+                        mOnSetPresetNameForGroupFailed = true;
+                        mCallbackCountDownLatch.countDown();
+                    }
+                };
 
         mCallbackCountDownLatch = new CountDownLatch(6);
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
@@ -653,8 +664,8 @@ public class BluetoothHapClientTest {
         return !mIsProfileReady;
     }
 
-    private final class BluetoothHapClientServiceListener implements
-            BluetoothProfile.ServiceListener {
+    private final class BluetoothHapClientServiceListener
+            implements BluetoothProfile.ServiceListener {
 
         @Override
         public void onServiceConnected(int profile, BluetoothProfile proxy) {
