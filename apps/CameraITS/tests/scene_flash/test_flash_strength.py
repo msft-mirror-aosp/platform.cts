@@ -178,13 +178,10 @@ class FlashStrengthTest(its_base_test.ItsBaseTest):
       props = cam.override_with_hidden_physical_camera_props(props)
 
       # check SKIP conditions
-      vendor_api_level = its_session_utils.get_vendor_api_level(
-          self.dut.serial)
       max_flash_strength = props[_MAX_FLASH_STRENGTH]
       max_torch_strength = props[_MAX_TORCH_STRENGTH]
       camera_properties_utils.skip_unless(
           camera_properties_utils.flash(props) and
-          vendor_api_level >= its_session_utils.ANDROID15_API_LEVEL and
           max_flash_strength > 1 and max_torch_strength > 1)
       # establish connection with lighting controller
       arduino_serial_port = lighting_control_utils.lighting_control(

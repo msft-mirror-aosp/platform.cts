@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsStatsdAtomHostTestCases",
+    team: "trendy_team_android_telemetry_infra",
     defaults: ["cts_defaults"],
     srcs: [
         "src/**/alarm/*.java",

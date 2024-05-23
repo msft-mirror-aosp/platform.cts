@@ -218,7 +218,7 @@ def _extract_y(img_uint8, file_name):
   return y_uint8
 
 
-def _extract_main_patch(img_rgb, img_path, lens_suffix):
+def _extract_main_patch(corners, ids, img_rgb, img_path, lens_suffix):
   """Extracts the main rectangle patch from the captured frame.
 
   Find aruco markers in the captured image and detects if the
@@ -227,25 +227,41 @@ def _extract_main_patch(img_rgb, img_path, lens_suffix):
   without the aruco markers in it.
 
   Args:
+    corners: list of detected corners.
+    ids: list of int ids for each ArUco markers in the input_img.
     img_rgb: An openCV image in RGB order.
     img_path: Path to save the image.
     lens_suffix: str; suffix used to save the image.
   Returns:
     rectangle_patch: numpy float image array of the rectangle patch.
   """
-  aruco_path = img_path.with_name(
-      f'{img_path.stem}_{lens_suffix}_aruco{img_path.suffix}')
-  corners, ids, _ = opencv_processing_utils.find_aruco_markers(
-      img_rgb, aruco_path)
-  if len(ids) != _ARUCO_MARKERS_COUNT:
-    raise AssertionError(
-        f'{_ARUCO_MARKERS_COUNT} ArUco markers should be detected.')
   rectangle_patch = opencv_processing_utils.get_patch_from_aruco_markers(
       img_rgb, corners, ids)
   patch_path = img_path.with_name(
       f'{img_path.stem}_{lens_suffix}_patch{img_path.suffix}')
   image_processing_utils.write_image(rectangle_patch/_CH_FULL_SCALE, patch_path)
   return rectangle_patch
+
+
+def _find_aruco_markers(img, img_path, lens_suffix):
+  """Detect ArUco markers in the input image.
+
+  Args:
+    img: input img in numpy array with ArUco markers.
+    img_path: path to save the image.
+    lens_suffix: suffix used to save the image.
+  Returns:
+    corners: list of detected corners.
+    ids: list of int ids for each ArUco markers in the input_img.
+  """
+  aruco_path = img_path.with_name(
+      f'{img_path.stem}_{lens_suffix}_aruco{img_path.suffix}')
+  corners, ids, _ = opencv_processing_utils.find_aruco_markers(
+      img, aruco_path)
+  if len(ids) != _ARUCO_MARKERS_COUNT:
+    raise AssertionError(
+        f'{_ARUCO_MARKERS_COUNT} ArUco markers should be detected.')
+  return corners, ids
 
 
 def _get_four_quadrant_patches(img, img_path, lens_suffix):
@@ -402,13 +418,17 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # Find ArUco markers in the image with UW lens
       # and extract the outer box patch
-      uw_chart_patch = _extract_main_patch(uw_img, uw_path, 'uw')
+      corners, ids = _find_aruco_markers(uw_img, uw_path, 'uw')
+      uw_chart_patch = _extract_main_patch(
+          corners, ids, uw_img, uw_path, 'uw')
       uw_four_patches = _get_four_quadrant_patches(
           uw_chart_patch, uw_path, 'uw')
 
       # Find ArUco markers in the image with W lens
       # and extract the outer box patch
-      w_chart_patch = _extract_main_patch(w_img, w_path, 'w')
+      corners, ids = _find_aruco_markers(w_img, w_path, 'w')
+      w_chart_patch = _extract_main_patch(
+          corners, ids, w_img, w_path, 'w')
       w_four_patches = _get_four_quadrant_patches(
           w_chart_patch, w_path, 'w')
 

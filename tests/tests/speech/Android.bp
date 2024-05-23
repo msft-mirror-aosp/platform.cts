@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsSpeechTestCases",
+    team: "trendy_team_text_to_speech",
     defaults: ["cts_defaults"],
     static_libs: [
         "ctstestrunner-axt",

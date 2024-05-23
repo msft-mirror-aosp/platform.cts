@@ -4,6 +4,7 @@ package {
 
 java_test_host {
     name: "CtsTaggingHostTestCases",
+    team: "trendy_team_art_performance",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     libs: [

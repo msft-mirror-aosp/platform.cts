@@ -28,22 +28,18 @@ import image_processing_utils
 import its_session_utils
 import lighting_control_utils
 import low_light_utils
-import video_processing_utils
+import preview_processing_utils
 
 _AE_LOW_LIGHT_BOOST_MODE = 6  # The preview frame number to capture
 
-_COLOR_CORRECTION_MODE_FAST = 1
 _CONTROL_AF_MODE_AUTO = 1
 _CONTROL_AWB_MODE_AUTO = 1
 _CONTROL_MODE_AUTO = 1
 _CONTROL_VIDEO_STABILIZATION_MODE_OFF = 0
 _LENS_OPTICAL_STABILIZATION_MODE_OFF = 0
-_SHADING_MODE_FAST = 1
-_TONEMAP_MODE_FAST = 1
 
 _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics#EXTENSION_NIGHT
 _EXTENSION_NONE = -1  # Use Camera2 instead of a Camera Extension
-_MIN_SIZE = 1280*720  # 720P
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_FRAMES_TO_WAIT = 40  # The preview frame number to capture
 _TABLET_BRIGHTNESS_REAR_CAMERA = '6'  # Target brightness on a supported tablet
@@ -56,9 +52,6 @@ _CAPTURE_REQUEST = {
     'android.control.aeMode': _AE_LOW_LIGHT_BOOST_MODE,
     'android.control.awbMode': _CONTROL_AWB_MODE_AUTO,
     'android.control.afMode': _CONTROL_AF_MODE_AUTO,
-    'android.colorCorrection.mode': _COLOR_CORRECTION_MODE_FAST,
-    'android.shading.mode': _SHADING_MODE_FAST,
-    'android.tonemap.mode': _TONEMAP_MODE_FAST,
     'android.lens.opticalStabilizationMode':
         _LENS_OPTICAL_STABILIZATION_MODE_OFF,
     'android.control.videoStabilizationMode':
@@ -181,16 +174,6 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
         self.tablet.adb.shell(
             f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
-      # Determine preview width and height to test
-      supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      supported_video_qualities = cam.get_supported_video_qualities(
-          self.camera_id)
-      logging.debug(
-          'Supported video profiles and ID: %s', supported_video_qualities)
-      target_preview_size, _ = (
-          video_processing_utils.get_lowest_common_preview_video_size(
-              supported_preview_sizes, supported_video_qualities, _MIN_SIZE))
-      logging.debug('target_preview_size: %s', target_preview_size)
 
       # Set tablet brightness to darken scene
       props = cam.get_camera_properties()
@@ -213,7 +196,15 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       should_mirror = (props['android.lens.facing'] ==
                        camera_properties_utils.LENS_FACING['FRONT'])
 
+      # Since low light boost can be supported by Camera2 and Night Mode
+      # Extensions, run the test for both (if supported)
+
       if is_low_light_boost_supported:
+        # Determine preview width and height to test
+        target_preview_size = preview_processing_utils.get_max_preview_test_size(
+            cam, self.camera_id)
+        logging.debug('target_preview_size: %s', target_preview_size)
+
         logging.debug('capture frame using camera2')
         file_stem = f'{test_name}_camera2'
         _capture_and_analyze(cam, file_stem, self.camera_id,
@@ -221,6 +212,12 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
                              should_mirror)
 
       if is_low_light_boost_supported_night:
+        # Determine preview width and height to test
+        target_preview_size = preview_processing_utils \
+            .get_max_extension_preview_test_size(
+                cam, self.camera_id, _EXTENSION_NIGHT)
+        logging.debug('target_preview_size: %s', target_preview_size)
+
         logging.debug('capture frame using night mode extension')
         file_stem = f'{test_name}_camera_extension'
         _capture_and_analyze(cam, file_stem, self.camera_id,

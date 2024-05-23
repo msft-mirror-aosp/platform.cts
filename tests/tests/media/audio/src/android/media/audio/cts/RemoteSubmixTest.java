@@ -19,6 +19,7 @@ package android.media.audio.cts;
 import static android.media.AudioAttributes.ALLOW_CAPTURE_BY_ALL;
 
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -26,6 +27,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 
 import android.media.AudioAttributes;
 import android.media.AudioAttributes.AttributeUsage;
@@ -44,6 +46,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.UiDevice;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -82,6 +85,9 @@ public class RemoteSubmixTest {
     private AudioManager mAudioManager;
     private MediaProjectionActivity mActivity;
     private MediaProjection mMediaProjection;
+    private Map<Integer, Integer> mStreamVolume = new HashMap<Integer, Integer>();
+    private Map<Integer, String> mStreamNames = new HashMap<Integer, String>();
+
     @Rule
     public ActivityTestRule<MediaProjectionActivity> mActivityRule =
             new ActivityTestRule<>(MediaProjectionActivity.class);
@@ -91,6 +97,14 @@ public class RemoteSubmixTest {
         mActivity = mActivityRule.getActivity();
         mAudioManager = mActivity.getSystemService(AudioManager.class);
         mMediaProjection = mActivity.waitForMediaProjection();
+        mStreamNames.put(AudioManager.STREAM_RING, "RING");
+        mStreamNames.put(AudioManager.STREAM_NOTIFICATION, "NOTIFICATION");
+        mStreamNames.put(AudioManager.STREAM_SYSTEM, "SYSTEM");
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        unmuteStreams();
     }
 
     private AudioRecord createPlaybackCaptureRecord() throws Exception {
@@ -153,28 +167,41 @@ public class RemoteSubmixTest {
         return buffer;
     }
 
+    /**
+     * Mute device audio streams
+     */
+    private void muteStreams() {
+        for (Map.Entry<Integer, String> map : mStreamNames.entrySet()) {
+            // Get current device stream volume level
+            mStreamVolume.put(map.getKey(), mAudioManager.getStreamVolume(map.getKey()));
+            // Mute device streams
+            mAudioManager.adjustStreamVolume(
+                    map.getKey(), AudioManager.ADJUST_MUTE, 0 /*no flag used*/);
+            assumeThat("Stream " + map.getValue() + " can not be muted",
+                    mAudioManager.getStreamVolume(map.getKey()), is(0));
+        }
+    }
+
+    /**
+     * Unmute device audio streams
+     */
+    private void unmuteStreams() {
+        for (Map.Entry<Integer, Integer> map : mStreamVolume.entrySet()) {
+            // Restore device stream volume
+            mAudioManager.setStreamVolume(map.getKey(), map.getValue(), 0 /*no flag used*/);
+            assertEquals("Stream " + map.getValue() + " can not be unmuted", (int) map.getValue(),
+                    mAudioManager.getStreamVolume(map.getKey()));
+        }
+        mStreamVolume.clear();
+    }
+
     public void testPlaybackCapture(boolean testWithScreenLock) throws Exception {
         MediaPlayer mediaPlayer = createMediaPlayer(
                 ALLOW_CAPTURE_BY_ALL, R.raw.sine1320hz5sec, AudioAttributes.USAGE_MEDIA);
         AudioRecord audioRecord = createPlaybackCaptureRecord();
         ByteBuffer rawBuffer = null;
 
-        int[] streams = {AudioManager.STREAM_RING, AudioManager.STREAM_NOTIFICATION,
-                AudioManager.STREAM_SYSTEM};
-
-        // Get current device stream volume level
-        Map<Integer, Integer> streamVolume = new HashMap<Integer, Integer>();
-        for (int stream : streams) {
-            streamVolume.put(stream, mAudioManager.getStreamVolume(stream));
-        }
         try {
-            for (int stream : streams) {
-                // Mute device streams
-                mAudioManager.adjustStreamVolume(
-                        stream, AudioManager.ADJUST_MUTE, 0 /*no flag used*/);
-                assertEquals(mAudioManager.getStreamVolume(stream), 0);
-            }
-
             audioRecord.startRecording();
             mediaPlayer.start();
 
@@ -202,12 +229,6 @@ public class RemoteSubmixTest {
                         .pressKeyCode(KeyEvent.KEYCODE_WAKEUP);
                 UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
                         .executeShellCommand("wm dismiss-keyguard");
-            }
-
-            for (Map.Entry<Integer, Integer> map : streamVolume.entrySet()) {
-                // Restore device stream volume
-                mAudioManager.setStreamVolume(map.getKey(), map.getValue(), 0 /*no flag used*/);
-                assertEquals(mAudioManager.getStreamVolume(map.getKey()), (int) map.getValue());
             }
 
             audioRecord.release();
@@ -242,6 +263,7 @@ public class RemoteSubmixTest {
 
     @Test
     public void testRemoteSubmixRecordingContinuity() {
+        muteStreams();
         for (int i = 0; i < TEST_ITERATIONS; i++) {
             try {
                 testPlaybackCapture(/* testWithScreenLock */ false);
@@ -254,6 +276,7 @@ public class RemoteSubmixTest {
 
     @Test
     public void testRemoteSubmixRecordingContinuityWithScreenLock() {
+        muteStreams();
         for (int i = 0; i < TEST_ITERATIONS; i++) {
             try {
                 testPlaybackCapture(/* testWithScreenLock */ true);

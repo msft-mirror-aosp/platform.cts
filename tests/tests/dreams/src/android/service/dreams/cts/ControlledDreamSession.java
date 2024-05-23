@@ -30,12 +30,16 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.server.wm.DreamCoordinator;
+import android.util.ArraySet;
 import android.util.Log;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.ArrayList;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * {@link ControlledDreamSession} manages connecting and accessing a controlled dream instance that
@@ -56,18 +60,41 @@ public class ControlledDreamSession {
     public static final int DREAM_LIFECYCLE_UNKNOWN = 0;
     public static final int DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW = 1;
     public static final int DREAM_LIFECYCLE_ON_DREAMING_STARTED = 2;
-    public static final int DREAM_LIFECYCLE_ON_DREAMING_STOPPED = 3;
-    public static final int DREAM_LIFECYCLE_ON_DEATTACHED_FROM_WINDOW = 4;
+    public static final int DREAM_LIFECYCLE_ON_FOCUS_GAINED = 3;
+    public static final int DREAM_LIFECYCLE_ON_WAKEUP = 4;
+    public static final int DREAM_LIFECYCLE_ON_DREAMING_STOPPED = 5;
+    public static final int DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW = 6;
+    public static final int DREAM_LIFECYCLE_ON_DESTROYED = 7;
 
     @IntDef(prefix = { "DREAM_LIFECYCLE_" }, value = {
             DREAM_LIFECYCLE_UNKNOWN,
             DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW,
             DREAM_LIFECYCLE_ON_DREAMING_STARTED,
+            DREAM_LIFECYCLE_ON_FOCUS_GAINED,
+            DREAM_LIFECYCLE_ON_WAKEUP,
             DREAM_LIFECYCLE_ON_DREAMING_STOPPED,
-            DREAM_LIFECYCLE_ON_DEATTACHED_FROM_WINDOW
+            DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW,
+            DREAM_LIFECYCLE_ON_DESTROYED,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface Dreamlifecycle{}
+
+    /**
+     * Returns a string description for the lifecycle.
+     */
+    public static String lifecycleToString(@Dreamlifecycle int lifecycle) {
+        return switch (lifecycle) {
+            case DREAM_LIFECYCLE_UNKNOWN -> "unknown";
+            case DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW -> "attached_to_window";
+            case DREAM_LIFECYCLE_ON_DREAMING_STARTED -> "on_dream_started";
+            case DREAM_LIFECYCLE_ON_FOCUS_GAINED -> "on_focus_gained";
+            case DREAM_LIFECYCLE_ON_WAKEUP -> "on_wake_up";
+            case DREAM_LIFECYCLE_ON_DREAMING_STOPPED -> "on_dreaming_stopped";
+            case DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW -> "on_detached_from_window";
+            case DREAM_LIFECYCLE_ON_DESTROYED -> "on_destroyed";
+            default -> "not found";
+        };
+    }
 
 
     // Connection for accessing the dream proxy.
@@ -110,7 +137,9 @@ public class ControlledDreamSession {
 
     private IControlledDream mControlledDream;
 
-    private @Dreamlifecycle int mLastLifecycle = DREAM_LIFECYCLE_UNKNOWN;
+    private ArrayList<Integer> mSeenLifecycles = new ArrayList<>();
+
+    private final Set<Consumer<Integer>> mLifecycleConsumers = new ArraySet<>();
 
     public ControlledDreamSession(Context context, ComponentName dreamComponent,
             DreamCoordinator coordinator) {
@@ -121,21 +150,43 @@ public class ControlledDreamSession {
 
     private IDreamLifecycleListener mLifecycleListener = new IDreamLifecycleListener.Stub() {
         public void onAttachedToWindow(IControlledDream dream) {
-            mLastLifecycle = DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW;
+            pushLifecycle(DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW);
         }
 
         public void onDreamingStarted(IControlledDream dream) {
-            mLastLifecycle = DREAM_LIFECYCLE_ON_DREAMING_STARTED;
+            pushLifecycle(DREAM_LIFECYCLE_ON_DREAMING_STARTED);
+        }
+
+        public void onFocusChanged(IControlledDream dream, boolean hasFocus) {
+            if (hasFocus) {
+                pushLifecycle(DREAM_LIFECYCLE_ON_FOCUS_GAINED);
+            }
         }
 
         public void onDreamingStopped(IControlledDream dream) {
-            mLastLifecycle = DREAM_LIFECYCLE_ON_DREAMING_STOPPED;
+            pushLifecycle(DREAM_LIFECYCLE_ON_DREAMING_STOPPED);
+        }
+
+        public void onWakeUp(IControlledDream dream) {
+            pushLifecycle(DREAM_LIFECYCLE_ON_WAKEUP);
         }
 
         public void onDetachedFromWindow(IControlledDream dream) {
-            mLastLifecycle = DREAM_LIFECYCLE_ON_DEATTACHED_FROM_WINDOW;
+            pushLifecycle(DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW);
+        }
+
+        public void onDreamDestroyed(IControlledDream dream) {
+            pushLifecycle(DREAM_LIFECYCLE_ON_DESTROYED);
         }
     };
+
+    private void pushLifecycle(@Dreamlifecycle int lifecycle) {
+        mSeenLifecycles.add(lifecycle);
+        // Make a copy of the set to prevent concurrent modification.
+        final Set<Consumer<Integer>> consumers = new ArraySet<>();
+        consumers.addAll(mLifecycleConsumers);
+        consumers.forEach(consumer -> consumer.accept(lifecycle));
+    }
 
     /**
      * Sets the dream component specified at construction as the active dream and subsequently
@@ -223,9 +274,26 @@ public class ControlledDreamSession {
     }
 
     /**
-     * Returns the last lifecycle observed.
+     * Waits for a lifecycle to be reached, timing out if never reached.
      */
-    public @Dreamlifecycle int getLastLifecycle() {
-        return mLastLifecycle;
+    public void awaitLifecycle(@Dreamlifecycle int targetLifecycle) throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Consumer<Integer> consumer = lifecycle -> {
+            if (lifecycle == targetLifecycle) {
+                latch.countDown();
+            }
+        };
+
+        try {
+            mLifecycleConsumers.add(consumer);
+
+            if (mSeenLifecycles.contains(targetLifecycle)) {
+                return;
+            }
+
+            assertThat(latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+        } finally {
+            mLifecycleConsumers.remove(consumer);
+        }
     }
 }

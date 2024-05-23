@@ -34,9 +34,24 @@ interface IDreamLifecycleListener {
     void onDreamingStarted(IControlledDream dream);
 
     /**
+     * invoked when focus changes.
+     */
+    void onFocusChanged(IControlledDream dream, boolean hasFocus);
+
+    /**
      * invoked when dreaming stops.
      */
     void onDreamingStopped(IControlledDream dream);
+
+    /**
+     * invoked when waking up.
+     */
+    void onWakeUp(IControlledDream dream);
+
+    /**
+     * invoked when the dream is destroyed.
+     */
+    void onDreamDestroyed(IControlledDream dream);
 
     /**
      * invoked when the dream is detached.

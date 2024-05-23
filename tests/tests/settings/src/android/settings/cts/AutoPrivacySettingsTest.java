@@ -42,7 +42,6 @@ import androidx.test.uiautomator.Until;
 
 import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.CddTest;
-import com.android.internal.camera.flags.Flags;
 import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.Before;
@@ -58,8 +57,11 @@ public class AutoPrivacySettingsTest {
     private static final String PRIVACY = "Privacy";
     private static final String MICROPHONE = "Microphone";
     private static final String USE_MICROPHONE = "Use microphone";
+    private static final String MICROPHONE_ACCESS = "Microphone access";
     private static final String[] EXPECTED_MICROPHONE_ENABLED_SETTINGS = {
             USE_MICROPHONE, "Recently accessed", "Manage microphone permissions"};
+    private static final String[] EXPECTED_MICROPHONE_ENABLED_SETTINGS_V2 = {
+            MICROPHONE_ACCESS, "Recently accessed", "Manage microphone permissions"};
 
     // For the camera privacy setting test
     private static final String CAMERA = "Camera";
@@ -104,6 +106,7 @@ public class AutoPrivacySettingsTest {
      */
     @CddTest(requirement = "9.8.2/A-1-3")
     @Test
+    @RequiresFlagsEnabled(com.android.car.settings.Flags.FLAG_MICROPHONE_PRIVACY_UPDATES)
     @RequireRunNotOnVisibleBackgroundNonProfileUser
     public void testPrivacyMicrophoneSettings() throws Exception {
         PackageManager pm = mContext.getPackageManager();
@@ -126,8 +129,18 @@ public class AutoPrivacySettingsTest {
 
         // verify state when mic is enabled
         disableCameraMicPrivacy();
-        for (String setting : EXPECTED_MICROPHONE_ENABLED_SETTINGS) {
-            assertScrollToAndFind(setting);
+        if (SdkLevel.isAtLeastV()) {
+            for (String setting : EXPECTED_MICROPHONE_ENABLED_SETTINGS_V2) {
+                assertScrollToAndFind(setting);
+            }
+            UiObject2 micAccessObj = scrollToText(MICROPHONE_ACCESS);
+            micAccessObj.click();
+            mDevice.waitForIdle();
+            assertScrollToAndFind(INFOTAINMENT_APPS);
+        } else {
+            for (String setting : EXPECTED_MICROPHONE_ENABLED_SETTINGS) {
+                assertScrollToAndFind(setting);
+            }
         }
 
         goHome();
@@ -141,7 +154,7 @@ public class AutoPrivacySettingsTest {
      */
     @CddTest(requirement = "9.8.2/A-2-3")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_PRIVACY_ALLOWLIST)
+    @RequiresFlagsEnabled(com.android.internal.camera.flags.Flags.FLAG_CAMERA_PRIVACY_ALLOWLIST)
     @RequireRunNotOnVisibleBackgroundNonProfileUser
     public void testPrivacyCameraSettings() throws Exception {
         assumeFalse(

@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsContextualSearchServiceTestCases",
+    team: "trendy_team_system_intelligence",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.annotation_annotation",
