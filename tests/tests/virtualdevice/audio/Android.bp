@@ -19,7 +19,7 @@ package {
 
 android_test {
     name: "CtsVirtualDevicesAudioTestCases",
-
+    sdk_version: "test_current",
     defaults: ["cts_defaults"],
 
     libs: [
