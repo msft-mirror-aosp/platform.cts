@@ -42,6 +42,7 @@ java_library {
         "android.test.runner",
         "androidx.test.rules",
         "junit",
+        "truth",
     ],
 
     platform_apis: true,
