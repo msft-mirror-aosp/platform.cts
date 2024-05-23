@@ -405,10 +405,15 @@ public abstract class ActivityManagerTestBase {
     }
 
     protected void waitForActivityResumed(int timeoutMs, ComponentName componentName) {
+        waitForActivityState(timeoutMs, componentName, STATE_RESUMED);
+    }
+
+    protected void waitForActivityState(int timeoutMs, ComponentName componentName,
+            String expectedState) {
         long endTime = System.currentTimeMillis() + timeoutMs;
         while (endTime > System.currentTimeMillis()) {
             mWmState.computeState();
-            if (mWmState.hasActivityState(componentName, STATE_RESUMED)) {
+            if (mWmState.hasActivityState(componentName, expectedState)) {
                 SystemClock.sleep(200);
                 mWmState.computeState();
                 break;
