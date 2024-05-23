@@ -1173,6 +1173,38 @@ class ItsSession(object):
     )
     return supported_preview_sizes
 
+  def get_supported_extension_preview_sizes(self, camera_id, extension):
+    """Get all supported preview resolutions for the extension mode.
+
+    ie. ['640x480', '800x600', '1280x720', '1440x1080', '1920x1080']
+
+    Note: resolutions are sorted by width x height in ascending order
+
+    Args:
+      camera_id: int; device id
+      extension: int; camera extension mode
+
+    Returns:
+      List of all supported camera extension preview resolutions in
+      ascending order.
+    """
+    cmd = {
+        _CMD_NAME_STR: 'getSupportedExtensionPreviewSizes',
+        _CAMERA_ID_STR: camera_id,
+        "extension": extension
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] != 'supportedExtensionPreviewSizes':
+      raise error_util.CameraItsError('Invalid command response')
+    if not data[_STR_VALUE_STR]:
+      raise error_util.CameraItsError('No supported extension preview sizes')
+    supported_preview_sizes = data[_STR_VALUE_STR].split(';')
+    logging.debug('Supported extension preview sizes: %s', supported_preview_sizes)
+    return supported_preview_sizes
+
   def get_queryable_stream_combinations(self):
     """Get all queryable stream combinations for this camera device.
 

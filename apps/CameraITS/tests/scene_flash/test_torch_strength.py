@@ -208,13 +208,10 @@ class TorchStrengthTest(its_base_test.ItsBaseTest):
       props = cam.override_with_hidden_physical_camera_props(props)
 
       # check SKIP conditions
-      first_api_level = its_session_utils.get_first_api_level(
-          self.dut.serial)
       max_flash_strength = props[_MAX_SINGLE_STRENGTH_PROP_KEY]
       max_torch_strength = props[_MAX_TORCH_STRENGTH_PROP_KEY]
       camera_properties_utils.skip_unless(
           camera_properties_utils.flash(props) and
-          first_api_level >= its_session_utils.ANDROID15_API_LEVEL and
           max_flash_strength > _SINGLE_STRENGTH_CONTROL_THRESHOLD and
           max_torch_strength > _TORCH_STRENGTH_CONTROL_THRESHOLD)
 

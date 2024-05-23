@@ -19,6 +19,7 @@ package {
 java_test_host {
     // Must match the package name in CtsTestCaseList.mk
     name: "CtsOsHostTestCases",
+    team: "trendy_team_powermanager_framework",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     libs: [

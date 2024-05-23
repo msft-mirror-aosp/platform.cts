@@ -3502,6 +3502,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     public void testCameraPerfClassCharacteristics() throws Exception {
         assumeFalse("Media performance class tests not applicable if shell permission is adopted",
                 mAdoptShellPerm);
+        assumeTrue("Media performance class tests not applicable when test is restricted "
+                + "to single camera by specifying camera id override.", mOverrideCameraId == null);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         CameraRequirement.PrimaryCameraRequirement primaryRearReq =
@@ -3682,6 +3684,10 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             primaryRearReq.setResolution(-1);
             primaryRearReq.setVideoSizeReqSatisfied(false);
             primaryRearReq.setVideoFps(-1);
+            primaryRearReq.set1080pVideoFps(-1);
+            primaryRearReq.set720pVideoFps(-1);
+            primaryRearReq.set720pVideoSizeReqSatisfied(false);
+            primaryRearReq.set1080pVideoSizeReqSatisfied(false);
             hwLevelReq.setPrimaryRearCameraHwlLevel(-1);
             timestampSourceReq.setRearCameraTimestampSource(
                     CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN);

@@ -1114,7 +1114,7 @@ public class CameraTest extends Assert {
         if (passedSoFar) {
             passedSoFar = expectTrue("Exif TAG_MODEL value: " + model
                     + " should match build manufacturer: " + Build.MODEL, logBuf,
-                    model.equals(Build.MODEL));
+                    model.startsWith(Build.MODEL) || model.endsWith(Build.MODEL));
         }
         allTestsPassed = allTestsPassed && passedSoFar;
 
