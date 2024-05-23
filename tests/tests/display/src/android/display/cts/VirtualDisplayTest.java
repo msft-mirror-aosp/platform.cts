@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -53,6 +54,9 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.util.DisplayMetrics;
@@ -144,6 +148,9 @@ public class VirtualDisplayTest {
     public StateKeeperRule<DisplayStateManager.DisplayState> mDisplayManagerStateKeeper =
             new StateKeeperRule<>(new DisplayStateManager(
                     InstrumentationRegistry.getInstrumentation().getTargetContext()));
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -396,6 +403,66 @@ public class VirtualDisplayTest {
                 RotationChangeWaiter waiter = new RotationChangeWaiter(display);
                 activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                 assertFalse(waiter.rotationChanged());
+                assertEquals(Surface.ROTATION_0, display.getRotation());
+            }
+        } finally {
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(display);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_DISPLAY_ROTATION_API)
+    public void testRotateVirtualDisplay_invalidRotationValue_throws() {
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
+                WIDTH, HEIGHT, DENSITY, mSurface, /* flags= */ 0);
+        assertNotNull("virtual display must not be null", virtualDisplay);
+
+        try {
+            assertThrows(IllegalArgumentException.class, () -> virtualDisplay.setRotation(-1));
+            assertThrows(IllegalArgumentException.class, () -> virtualDisplay.setRotation(4));
+        } finally {
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(virtualDisplay.getDisplay());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_DISPLAY_ROTATION_API)
+    public void testRotateVirtualDisplay() throws Exception {
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
+                WIDTH, HEIGHT, DENSITY, mSurface,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+        assertNotNull("virtual display must not be null", virtualDisplay);
+
+        Display display = virtualDisplay.getDisplay();
+        assertEquals(Surface.ROTATION_0, display.getRotation());
+        // Without an activity we're not going to receive display rotation changes
+        launchTestActivityOnDisplay(display.getDisplayId());
+        try {
+            {
+                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                virtualDisplay.setRotation(Surface.ROTATION_270);
+                assertTrue(waiter.rotationChanged());
+                assertEquals(Surface.ROTATION_270, display.getRotation());
+
+            }
+            {
+                // Set the current rotation as the new rotation and check that this does NOT
+                // result in a rotation event.
+                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                virtualDisplay.setRotation(Surface.ROTATION_270);
+                assertFalse(waiter.rotationChanged());
+                assertEquals(Surface.ROTATION_270, display.getRotation());
+            }
+            {
+                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                virtualDisplay.setRotation(Surface.ROTATION_0);
+                assertTrue(waiter.rotationChanged());
                 assertEquals(Surface.ROTATION_0, display.getRotation());
             }
         } finally {
