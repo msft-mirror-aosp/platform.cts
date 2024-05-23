@@ -22,8 +22,8 @@ import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -32,7 +32,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHapClient;
 import android.bluetooth.BluetoothHapPresetInfo;
 import android.bluetooth.BluetoothProfile;
-import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 import android.os.Build;
@@ -54,11 +53,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
@@ -74,21 +70,6 @@ public class BluetoothHapClientTest {
             sAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
     private BluetoothHapClient mService;
-
-    private boolean mOnPresetSelected = false;
-    private boolean mOnPresetSelectionFailed = false;
-    private boolean mOnPresetSelectionForGroupFailed = false;
-    private boolean mOnPresetInfoChanged = false;
-    private boolean mOnSetPresetNameFailed = false;
-    private boolean mOnSetPresetNameForGroupFailed = false;
-
-    private CountDownLatch mCallbackCountDownLatch;
-    private List<BluetoothHapPresetInfo> mPresetInfoList = new ArrayList();
-
-    private static final int TEST_REASON_CODE = BluetoothStatusCodes.REASON_LOCAL_STACK_REQUEST;
-    private static final int TEST_PRESET_INDEX = 13;
-    private static final int TEST_STATUS_CODE = BluetoothStatusCodes.ERROR_HAP_INVALID_PRESET_INDEX;
-    private static final int TEST_HAP_GROUP_ID = 65;
 
     @Mock BluetoothProfile.ServiceListener mServiceListener;
 
@@ -305,45 +286,24 @@ public class BluetoothHapClientTest {
     public void registerUnregisterCallback() {
         Executor executor = sContext.getMainExecutor();
 
-        BluetoothHapClient.Callback callback =
-                new BluetoothHapClient.Callback() {
-                    @Override
-                    public void onPresetSelected(
-                            BluetoothDevice device, int presetIndex, int reasonCode) {}
-
-                    @Override
-                    public void onPresetSelectionFailed(BluetoothDevice device, int statusCode) {}
-
-                    @Override
-                    public void onPresetSelectionForGroupFailed(int hapGroupId, int statusCode) {}
-
-                    @Override
-                    public void onPresetInfoChanged(
-                            BluetoothDevice device,
-                            List<BluetoothHapPresetInfo> presetInfoList,
-                            int statusCode) {}
-
-                    @Override
-                    public void onSetPresetNameFailed(BluetoothDevice device, int status) {}
-
-                    @Override
-                    public void onSetPresetNameForGroupFailed(int hapGroupId, int status) {}
-                };
+        BluetoothHapClient.Callback mockCallback = mock(BluetoothHapClient.Callback.class);
 
         // Verify parameter
-        assertThrows(NullPointerException.class, () -> mService.registerCallback(null, callback));
+        assertThrows(
+                NullPointerException.class, () -> mService.registerCallback(null, mockCallback));
         assertThrows(NullPointerException.class, () -> mService.registerCallback(executor, null));
         assertThrows(NullPointerException.class, () -> mService.unregisterCallback(null));
 
         // Verify valid parameters
-        mService.registerCallback(executor, callback);
-        mService.unregisterCallback(callback);
+        mService.registerCallback(executor, mockCallback);
+        mService.unregisterCallback(mockCallback);
 
         TestUtils.dropPermissionAsShellUid();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
 
         // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(SecurityException.class, () -> mService.registerCallback(executor, callback));
+        assertThrows(
+                SecurityException.class, () -> mService.registerCallback(executor, mockCallback));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -352,105 +312,14 @@ public class BluetoothHapClientTest {
         TestUtils.dropPermissionAsShellUid();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
 
-        Executor executor = sContext.getMainExecutor();
-
-        BluetoothHapClient.Callback callback =
-                new BluetoothHapClient.Callback() {
-                    @Override
-                    public void onPresetSelected(
-                            BluetoothDevice device, int presetIndex, int reasonCode) {}
-
-                    @Override
-                    public void onPresetSelectionFailed(BluetoothDevice device, int statusCode) {}
-
-                    @Override
-                    public void onPresetSelectionForGroupFailed(int hapGroupId, int statusCode) {}
-
-                    @Override
-                    public void onPresetInfoChanged(
-                            BluetoothDevice device,
-                            List<BluetoothHapPresetInfo> presetInfoList,
-                            int statusCode) {}
-
-                    @Override
-                    public void onSetPresetNameFailed(BluetoothDevice device, int status) {}
-
-                    @Override
-                    public void onSetPresetNameForGroupFailed(int hapGroupId, int status) {}
-                };
+        BluetoothHapClient.Callback mockCallback = mock(BluetoothHapClient.Callback.class);
 
         // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(SecurityException.class, () -> mService.registerCallback(executor, callback));
+        assertThrows(
+                SecurityException.class,
+                () -> mService.registerCallback(sContext.getMainExecutor(), mockCallback));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-    }
-
-    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
-    @Test
-    public void callbackCalls() {
-        BluetoothHapClient.Callback callback =
-                new BluetoothHapClient.Callback() {
-                    @Override
-                    public void onPresetSelected(
-                            BluetoothDevice device, int presetIndex, int reasonCode) {
-                        mOnPresetSelected = true;
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onPresetSelectionFailed(BluetoothDevice device, int statusCode) {
-                        mOnPresetSelectionFailed = true;
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onPresetSelectionForGroupFailed(int hapGroupId, int statusCode) {
-                        mOnPresetSelectionForGroupFailed = true;
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onPresetInfoChanged(
-                            BluetoothDevice device,
-                            List<BluetoothHapPresetInfo> presetInfoList,
-                            int statusCode) {
-                        mOnPresetInfoChanged = true;
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onSetPresetNameFailed(BluetoothDevice device, int status) {
-                        mOnSetPresetNameFailed = true;
-                        mCallbackCountDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onSetPresetNameForGroupFailed(int hapGroupId, int status) {
-                        mOnSetPresetNameForGroupFailed = true;
-                        mCallbackCountDownLatch.countDown();
-                    }
-                };
-
-        mCallbackCountDownLatch = new CountDownLatch(6);
-        try {
-            callback.onPresetSelected(sTestDevice, TEST_PRESET_INDEX, TEST_REASON_CODE);
-            callback.onPresetSelectionFailed(sTestDevice, TEST_STATUS_CODE);
-            callback.onPresetSelectionForGroupFailed(TEST_HAP_GROUP_ID, TEST_STATUS_CODE);
-            callback.onPresetInfoChanged(sTestDevice, mPresetInfoList, TEST_STATUS_CODE);
-            callback.onSetPresetNameFailed(sTestDevice, TEST_STATUS_CODE);
-            callback.onSetPresetNameForGroupFailed(TEST_HAP_GROUP_ID, TEST_STATUS_CODE);
-
-            // Wait for all the callback calls or 5 seconds to verify
-            mCallbackCountDownLatch.await(5, TimeUnit.SECONDS);
-            assertThat(mOnPresetSelected).isTrue();
-            assertThat(mOnPresetSelectionFailed).isTrue();
-            assertThat(mOnPresetSelectionForGroupFailed).isTrue();
-            assertThat(mOnPresetInfoChanged).isTrue();
-            assertThat(mOnSetPresetNameFailed).isTrue();
-            assertThat(mOnSetPresetNameForGroupFailed).isTrue();
-        } catch (InterruptedException e) {
-            fail("Failed to register callback call: " + e.toString());
-        }
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
