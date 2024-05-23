@@ -40,7 +40,7 @@ public final class RoleContext implements AutoCloseable {
         mRole = role;
         mPackage = pkg;
         mUser = user;
-        mPreviousRoleHolders = TestApis.roles().getRoleHoldersAsUser(role, user);
+        mPreviousRoleHolders = TestApis.roles().getRoleHoldersAsUser(user, role);
     }
 
     @Override
@@ -49,7 +49,7 @@ public final class RoleContext implements AutoCloseable {
                 INTERACT_ACROSS_USERS_FULL)) {
             mPackage.removeAsRoleHolder(mRole, mUser);
 
-            Set<String> currentRoleHolders = TestApis.roles().getRoleHoldersAsUser(mRole, mUser);
+            Set<String> currentRoleHolders = TestApis.roles().getRoleHoldersAsUser(mUser, mRole);
             // Re-adding previous role holder just for exclusive role as we would have overridden
             // the previous role holder in this case, for non exclusive roles it's not a problem
             // as we just add as one of the role holder so just removing them is fine.

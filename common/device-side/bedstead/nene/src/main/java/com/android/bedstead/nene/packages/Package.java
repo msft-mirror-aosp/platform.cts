@@ -1022,7 +1022,7 @@ public final class Package {
                     fail("Could not set role holder of " + role + "." + " Relevant logcat: "
                             + TestApis.logcat().dump((line) -> line.contains(role) || line.contains("Role")));
                 }
-                if (!TestApis.roles().getRoleHoldersAsUser(role, user).contains(packageName())) {
+                if (!TestApis.roles().getRoleHoldersAsUser(user, role).contains(packageName())) {
                     fail("addRoleHolderAsUser returned true but did not add role holder. "
                             + "Relevant logcat: " + TestApis.logcat().dump(
                                     (line) -> line.contains(role) || line.contains("Role")));
@@ -1081,7 +1081,7 @@ public final class Package {
                     fail("Failed to clear the role holder of "
                             + role + ".");
                 }
-                if (TestApis.roles().getRoleHoldersAsUser(role, user).contains(packageName())) {
+                if (TestApis.roles().getRoleHoldersAsUser(user, role).contains(packageName())) {
                     fail("removeRoleHolderAsUser returned true but did not remove role holder. "
                             + "Relevant logcat: " + TestApis.logcat().dump(
                                     (line) -> line.contains(role)));
