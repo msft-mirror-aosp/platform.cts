@@ -358,6 +358,28 @@ public final class DeviceState extends HarrierRule {
         throw new IllegalStateException("Unknown description type: " + description);
     }
 
+    @Override
+    protected void releaseResources() {
+        Log.i(LOG_TAG, "Releasing resources");
+        mTestAppProvider.releaseResources();
+        mProfileOwners.clear();
+        mAddedUserRestrictions.clear();
+        mRegisteredBroadcastReceivers.clear();
+        mChangedProfileOwners.clear();
+        mTestApps.clear();
+        mOriginalProperties.clear();
+        mOriginalGlobalSettings.clear();
+        mOriginalSecureSettings.clear();
+        mTemporaryContentSuggestionsServiceSet.clear();
+        mOriginalDefaultContentSuggestionsServiceEnabled.clear();
+        mCreatedAccounts.clear();
+        mAccounts.clear();
+        mAccountAuthenticators.clear();
+
+        Log.i(LOG_TAG, "Shutting down test thread executor");
+        mTestExecutor.shutdown();
+    }
+
     private Statement applyTest(Statement base, Description description) {
         return new Statement() {
             @Override
@@ -1375,8 +1397,7 @@ public final class DeviceState extends HarrierRule {
                     // TestApis.device().keepScreenOn(false);
                     TestApis.users().setStopBgUsersOnSwitch(OptionalBoolean.ANY);
 
-                    Log.i(LOG_TAG, "Shutting down test thread executor");
-                    mTestExecutor.shutdown();
+                    releaseResources();
                 }
             }
         };
