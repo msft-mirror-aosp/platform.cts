@@ -333,6 +333,7 @@ public class ItsService extends Service implements SensorEventListener {
     private volatile boolean mNeedsLockedAWB = false;
     private volatile boolean mDoAE = true;
     private volatile boolean mDoAF = true;
+    private volatile boolean mSend3AResults = true;
     private final LinkedBlockingQueue<String> unavailableEventQueue = new LinkedBlockingQueue<>();
     private final LinkedBlockingQueue<Pair<String, String>> unavailablePhysicalCamEventQueue =
                 new LinkedBlockingQueue<>();
@@ -1031,6 +1032,11 @@ public class ItsService extends Service implements SensorEventListener {
                     int extension = cmdObj.getInt("extension");
                     int format = cmdObj.getInt("format");
                     doGetSupportedExtensionSizes(cameraId, extension, format);
+                } else if ("getSupportedExtensionPreviewSizes"
+                        .equals(cmdObj.getString("cmdName"))) {
+                    String cameraId = cmdObj.getString("cameraId");
+                    int extension = cmdObj.getInt("extension");
+                    doGetSupportedExtensionPreviewSizes(cameraId, extension);
                 } else if ("doBasicRecording".equals(cmdObj.getString("cmdName"))) {
                     String cameraId = cmdObj.getString("cameraId");
                     int profileId = cmdObj.getInt("profileId");
@@ -2719,6 +2725,23 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
+    private void doGetSupportedExtensionPreviewSizes(String id, int extension)
+            throws ItsException {
+        try {
+            CameraExtensionCharacteristics chars =
+                    mCameraManager.getCameraExtensionCharacteristics(id);
+            List<Size> extensionSizes = chars.getExtensionSupportedSizes(extension,
+                    SurfaceTexture.class);
+            String response = extensionSizes.stream()
+                    .distinct()
+                    .sorted(Comparator.comparingInt(s -> s.getWidth() * s.getHeight()))
+                    .map(Size::toString)
+                    .collect(Collectors.joining(";"));
+            mSocketRunnableObj.sendResponse("supportedExtensionPreviewSizes", response);
+        } catch (CameraAccessException e) {
+            throw new ItsException("Failed to get supported extensions sizes list", e);
+        }
+    }
 
     private void doBasicRecording(String cameraId, int profileId, String quality,
             int recordingDuration, int videoStabilizationMode,
@@ -3150,17 +3173,26 @@ public class ItsService extends Service implements SensorEventListener {
                     CameraDevice.TEMPLATE_PREVIEW);
             reqBuilder = ItsSerializer.deserialize(reqBuilder,
                     params.getJSONObject("captureRequest"));
+            CaptureRequest.Builder threeAReqBuilder = mCamera.createCaptureRequest(
+                    CameraDevice.TEMPLATE_PREVIEW);
+            threeAReqBuilder = ItsSerializer.deserialize(threeAReqBuilder,
+                    params.getJSONObject("captureRequest"));
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            // Do not send 3A results
+            mSend3AResults = false;
+
             // If extension is -1 then use Camera2
             if (extension == -1) {
                 capturePreviewFrame(
                         reqBuilder,
+                        threeAReqBuilder,
                         frameNumToCapture,
                         pr,
                         outputStream);
             } else {
                 capturePreviewFrameWithExtension(
                         reqBuilder,
+                        threeAReqBuilder,
                         frameNumToCapture,
                         pr,
                         outputStream,
@@ -3180,7 +3212,8 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void capturePreviewFrame(CaptureRequest.Builder reqBuilder,
-            int frameNumToCapture, PreviewRecorder pr, OutputStream outputStream)
+            CaptureRequest.Builder threeAReqBuilder, int frameNumToCapture,
+            PreviewRecorder pr, OutputStream outputStream)
             throws ItsException, CameraAccessException, InterruptedException {
         Log.d(TAG, "capturePreviewFrame [start]");
         CountDownLatch frameNumLatch = new CountDownLatch(frameNumToCapture + 1);
@@ -3189,6 +3222,8 @@ public class ItsService extends Service implements SensorEventListener {
 
         Surface surface = pr.getCameraSurface();
         reqBuilder.addTarget(surface);
+        reqBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+                CameraMetadata.CONTROL_AE_PRECAPTURE_TRIGGER_IDLE);
         OutputConfiguration outConfig = new OutputConfiguration(surface);
 
         long[] availableStreamUseCases = mCameraCharacteristics.get(
@@ -3209,12 +3244,7 @@ public class ItsService extends Service implements SensorEventListener {
                     @Override
                     public void onConfigured(CameraCaptureSession session) {
                         mSession = session;
-                        try {
-                            mSession.setRepeatingRequest(reqBuilder.build(),
-                                    captureResultListener, mCameraHandler);
-                        } catch (CameraAccessException e) {
-                            Log.e(TAG, "CameraCaptureSession configuration failed.", e);
-                        }
+                        sessionListener.onConfigured(session);
                     }
 
                     @Override
@@ -3237,8 +3267,58 @@ public class ItsService extends Service implements SensorEventListener {
         // Create capture session
         mCamera.createCaptureSession(sessionConfiguration);
 
+        sessionListener.getStateWaiter().waitForState(
+                BlockingSessionCallback.SESSION_READY, TIMEOUT_SESSION_READY);
+        try {
+            ThreeAResultListener threeAListener = new ThreeAResultListener();
+            Logt.i(TAG, "Triggering precapture sequence");
+
+            mSession.setRepeatingRequest(reqBuilder.build(), threeAListener,
+                    mCameraHandler);
+            synchronized (m3AStateLock) {
+                mPrecaptureTriggered = false;
+                mConvergeAETriggered = false;
+            }
+
+            threeAReqBuilder.addTarget(surface);
+            threeAReqBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                    CameraMetadata.CONTROL_AF_TRIGGER_START);
+            threeAReqBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+                    CameraMetadata.CONTROL_AE_PRECAPTURE_TRIGGER_START);
+
+            mSession.capture(threeAReqBuilder.build(), threeAListener,
+                    mCameraHandler);
+            mInterlock3A.open();
+            long tstart = System.currentTimeMillis();
+            while (!mPrecaptureTriggered) {
+                if (!mInterlock3A.block(TIMEOUT_3A * 1000)
+                        || System.currentTimeMillis() - tstart > TIMEOUT_3A * 1000) {
+                    throw new ItsException(
+                        "3A failed to converge after " + TIMEOUT_3A + " seconds.\n"
+                        + "AE converge state: " + mConvergedAE + ".");
+                }
+            }
+
+            tstart = System.currentTimeMillis();
+            while (!mConvergeAETriggered) {
+                if (!mInterlock3A.block(TIMEOUT_3A * 1000)
+                        || System.currentTimeMillis() - tstart > TIMEOUT_3A * 1000) {
+                    throw new ItsException(
+                        "3A failed to converge after " + TIMEOUT_3A + " seconds.\n"
+                        + "AE converge state: " + mConvergedAE + ".");
+                }
+            }
+            mInterlock3A.close();
+            Logt.i(TAG, "AE state after precapture sequence: " + mConvergeAETriggered);
+            threeAListener.stop();
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "CameraCaptureSession configuration failed.", e);
+        }
+
         Log.d(TAG, "capturePreviewFrame [waiting for " + frameNumToCapture + " frames]");
         // Wait until the requested number of frames have been received and then capture the frame
+        mSession.setRepeatingRequest(reqBuilder.build(), captureResultListener,
+                mCameraHandler);
         frameNumLatch.await(TIMEOUT_CAPTURE_PREVIEW_FRAME_SECONDS, TimeUnit.SECONDS);
         Log.d(TAG, "capturePreviewFrame [getting frame]");
         pr.getFrame(outputStream);
@@ -3253,13 +3333,15 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void capturePreviewFrameWithExtension(CaptureRequest.Builder reqBuilder,
-            int frameNumToCapture, PreviewRecorder pr, OutputStream outputStream,
-            int extension)
+            CaptureRequest.Builder threeAReqBuilder, int frameNumToCapture,
+            PreviewRecorder pr, OutputStream outputStream, int extension)
             throws CameraAccessException, InterruptedException, ItsException {
         Log.d(TAG, "capturePreviewFrameWithExtension [start]");
 
         Surface surface = pr.getCameraSurface();
         reqBuilder.addTarget(surface);
+        reqBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+                CameraMetadata.CONTROL_AE_PRECAPTURE_TRIGGER_IDLE);
 
         CountDownLatch frameNumLatch = new CountDownLatch(frameNumToCapture + 1);
         ExtensionPreviewFrameCaptureResultListener captureResultListener =
@@ -3276,8 +3358,55 @@ public class ItsService extends Service implements SensorEventListener {
 
         Log.d(TAG, "capturePreviewFrameWithExtension [start extension session]");
         mExtensionSession = sessionListener.waitAndGetSession(TIMEOUT_IDLE_MS_EXTENSIONS);
+        Executor executor = new HandlerExecutor(mResultHandler);
+        try {
+            ExtensionsThreeAResultListener threeAListener = new ExtensionsThreeAResultListener();
+            Logt.i(TAG, "Triggering precapture sequence");
+            mExtensionSession.setRepeatingRequest(reqBuilder.build(), executor,
+                    threeAListener);
+            synchronized (m3AStateLock) {
+                mPrecaptureTriggered = false;
+                mConvergeAETriggered = false;
+            }
+
+            threeAReqBuilder.addTarget(surface);
+            threeAReqBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                    CameraMetadata.CONTROL_AF_TRIGGER_START);
+            threeAReqBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+                    CameraMetadata.CONTROL_AE_PRECAPTURE_TRIGGER_START);
+
+            mExtensionSession.capture(threeAReqBuilder.build(), executor,
+                    threeAListener);
+            mInterlock3A.open();
+
+            long tstart = System.currentTimeMillis();
+            while (!mPrecaptureTriggered) {
+                if (!mInterlock3A.block(TIMEOUT_3A * 1000)
+                        || System.currentTimeMillis() - tstart > TIMEOUT_3A * 1000) {
+                    throw new ItsException(
+                        "3A failed to converge after " + TIMEOUT_3A + " seconds.\n"
+                        + "AE converge state: " + mConvergedAE + ".");
+                }
+            }
+
+            tstart = System.currentTimeMillis();
+            while (!mConvergeAETriggered) {
+                if (!mInterlock3A.block(TIMEOUT_3A * 1000)
+                        || System.currentTimeMillis() - tstart > TIMEOUT_3A * 1000) {
+                    throw new ItsException(
+                        "3A failed to converge after " + TIMEOUT_3A + " seconds.\n"
+                        + "AE converge state: " + mConvergedAE + ".");
+                }
+            }
+            mInterlock3A.close();
+            Logt.i(TAG, "AE state after precapture sequence: " + mConvergeAETriggered);
+            threeAListener.stop();
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "CameraCaptureSession configuration failed.", e);
+        }
+
         mExtensionSession.setRepeatingRequest(reqBuilder.build(),
-                new HandlerExecutor(mResultHandler),
+                executor,
                 captureResultListener);
 
         Log.d(TAG, "capturePreviewFrameWithExtension [wait for " + frameNumToCapture + " frames]");
@@ -4384,13 +4513,142 @@ public class ItsService extends Service implements SensorEventListener {
         return logMsg.toString();
     }
 
-    private class ThreeAResultListener extends CaptureResultListener {
+    private class ThreeAResultHandler {
         private volatile boolean stopped = false;
         private boolean aeResultSent = false;
         private boolean awbResultSent = false;
         private boolean afResultSent = false;
         private CameraCharacteristics c = mCameraCharacteristics;
         private boolean isFixedFocusLens = isFixedFocusLens(c);
+
+        void handleCaptureResult(CaptureRequest request, TotalCaptureResult result)
+                throws ItsException {
+            if (stopped) {
+                return;
+            }
+
+            if (request == null || result == null) {
+                throw new ItsException("Request/result is invalid");
+            }
+
+            Logt.i(TAG, "TotalCaptureResult: " + buildLogString(result));
+
+            synchronized (m3AStateLock) {
+                if (result.get(CaptureResult.CONTROL_AE_STATE) != null) {
+                    mConvergedAE = result.get(CaptureResult.CONTROL_AE_STATE)
+                            == CaptureResult.CONTROL_AE_STATE_CONVERGED
+                            || result.get(CaptureResult.CONTROL_AE_STATE)
+                            == CaptureResult.CONTROL_AE_STATE_FLASH_REQUIRED
+                            || result.get(CaptureResult.CONTROL_AE_STATE)
+                            == CaptureResult.CONTROL_AE_STATE_LOCKED;
+                    mLockedAE = result.get(CaptureResult.CONTROL_AE_STATE)
+                            == CaptureResult.CONTROL_AE_STATE_LOCKED;
+                    if (!mPrecaptureTriggered) {
+                        mPrecaptureTriggered = result.get(CaptureResult.CONTROL_AE_STATE)
+                                == CaptureResult.CONTROL_AE_STATE_PRECAPTURE;
+                    }
+                    if (!mConvergeAETriggered) {
+                        mConvergeAETriggered = mConvergedAE;
+                    }
+                }
+                if (result.get(CaptureResult.CONTROL_AF_STATE) != null) {
+                    mConvergedAF = result.get(CaptureResult.CONTROL_AF_STATE)
+                             == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED;
+                }
+                if (result.get(CaptureResult.CONTROL_AWB_STATE) != null) {
+                    mConvergedAWB = result.get(CaptureResult.CONTROL_AWB_STATE)
+                            == CaptureResult.CONTROL_AWB_STATE_CONVERGED
+                                    || result.get(CaptureResult.CONTROL_AWB_STATE)
+                                            == CaptureResult.CONTROL_AWB_STATE_LOCKED;
+                    mLockedAWB = result.get(CaptureResult.CONTROL_AWB_STATE)
+                            == CaptureResult.CONTROL_AWB_STATE_LOCKED;
+                }
+
+                if ((mConvergedAE || !mDoAE) && mConvergedAWB
+                        && (!mDoAF || isFixedFocusLens || mConvergedAF)) {
+                    if (mSend3AResults && (!mNeedsLockedAE || mLockedAE) && !aeResultSent) {
+                        aeResultSent = true;
+                        if (result.get(CaptureResult.SENSOR_SENSITIVITY) != null
+                                && result.get(CaptureResult.SENSOR_EXPOSURE_TIME) != null) {
+                            mSocketRunnableObj.sendResponse("aeResult",
+                                    String.format(Locale.getDefault(), "%d %d",
+                                        result.get(CaptureResult.SENSOR_SENSITIVITY).intValue(),
+                                        result.get(CaptureResult.SENSOR_EXPOSURE_TIME).intValue()
+                                    ));
+                        } else {
+                            Logt.i(TAG, String.format(
+                                    "AE converged but NULL exposure values, sensitivity:%b,"
+                                    + " expTime:%b",
+                                    result.get(CaptureResult.SENSOR_SENSITIVITY) == null,
+                                    result.get(CaptureResult.SENSOR_EXPOSURE_TIME) == null));
+                        }
+                    }
+                    if (mSend3AResults && !afResultSent) {
+                        afResultSent = true;
+                        if (result.get(CaptureResult.LENS_FOCUS_DISTANCE) != null) {
+                            mSocketRunnableObj.sendResponse("afResult", String.format(
+                                    Locale.getDefault(), "%f",
+                                    result.get(CaptureResult.LENS_FOCUS_DISTANCE)
+                                    ));
+                        } else {
+                            Logt.i(TAG, "AF converged but NULL focus distance values");
+                        }
+                    }
+                    if (mSend3AResults && (!mNeedsLockedAWB || mLockedAWB) && !awbResultSent) {
+                        awbResultSent = true;
+                        if (result.get(CaptureResult.COLOR_CORRECTION_GAINS) != null
+                                && result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM) != null) {
+                            mSocketRunnableObj.sendResponse("awbResult", String.format(
+                                    Locale.getDefault(),
+                                    "%f %f %f %f %f %f %f %f %f %f %f %f %f",
+                                    result.get(CaptureResult.COLOR_CORRECTION_GAINS)
+                                            .getRed(),
+                                    result.get(CaptureResult.COLOR_CORRECTION_GAINS)
+                                            .getGreenEven(),
+                                    result.get(CaptureResult.COLOR_CORRECTION_GAINS)
+                                            .getGreenOdd(),
+                                    result.get(CaptureResult.COLOR_CORRECTION_GAINS)
+                                            .getBlue(),
+                                    r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)
+                                            .getElement(0, 0)),
+                                    r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)
+                                            .getElement(1, 0)),
+                                    r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)
+                                            .getElement(2, 0)),
+                                    r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)
+                                            .getElement(0, 1)),
+                                    r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)
+                                            .getElement(1, 1)),
+                                    r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)
+                                            .getElement(2, 1)),
+                                    r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)
+                                            .getElement(0, 2)),
+                                    r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)
+                                            .getElement(1, 2)),
+                                    r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)
+                                            .getElement(2, 2))));
+                        } else {
+                            Logt.i(TAG, String.format(
+                                    "AWB converged but NULL color correction values, gains:%b,"
+                                    + " ccm:%b",
+                                    result.get(CaptureResult.COLOR_CORRECTION_GAINS) == null,
+                                    result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM)
+                                            == null));
+                        }
+                    }
+                }
+            }
+
+            mInterlock3A.open();
+        }
+
+        void stop() {
+            stopped = true;
+        }
+    }
+
+    private class ThreeAResultListener extends CaptureResultListener {
+        private ThreeAResultHandler mThreeAResultHandler = new ThreeAResultHandler();
 
         @Override
         public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
@@ -4401,120 +4659,7 @@ public class ItsService extends Service implements SensorEventListener {
         public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request,
                 TotalCaptureResult result) {
             try {
-                if (stopped) {
-                    return;
-                }
-
-                if (request == null || result == null) {
-                    throw new ItsException("Request/result is invalid");
-                }
-
-                Logt.i(TAG, buildLogString(result));
-
-                synchronized(m3AStateLock) {
-                    if (result.get(CaptureResult.CONTROL_AE_STATE) != null) {
-                        mConvergedAE = result.get(CaptureResult.CONTROL_AE_STATE) ==
-                                                  CaptureResult.CONTROL_AE_STATE_CONVERGED ||
-                                       result.get(CaptureResult.CONTROL_AE_STATE) ==
-                                                  CaptureResult.CONTROL_AE_STATE_FLASH_REQUIRED ||
-                                       result.get(CaptureResult.CONTROL_AE_STATE) ==
-                                                  CaptureResult.CONTROL_AE_STATE_LOCKED;
-                        mLockedAE = result.get(CaptureResult.CONTROL_AE_STATE) ==
-                                CaptureResult.CONTROL_AE_STATE_LOCKED;
-                        if (!mPrecaptureTriggered) {
-                            mPrecaptureTriggered = result.get(CaptureResult.CONTROL_AE_STATE) ==
-                                    CaptureResult.CONTROL_AE_STATE_PRECAPTURE;
-                        }
-                        if (!mConvergeAETriggered) {
-                            mConvergeAETriggered = mConvergedAE;
-                        }
-                    }
-                    if (result.get(CaptureResult.CONTROL_AF_STATE) != null) {
-                        mConvergedAF = result.get(CaptureResult.CONTROL_AF_STATE) ==
-                                                  CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED;
-                    }
-                    if (result.get(CaptureResult.CONTROL_AWB_STATE) != null) {
-                        mConvergedAWB = result.get(CaptureResult.CONTROL_AWB_STATE) ==
-                                                   CaptureResult.CONTROL_AWB_STATE_CONVERGED ||
-                                        result.get(CaptureResult.CONTROL_AWB_STATE) ==
-                                                   CaptureResult.CONTROL_AWB_STATE_LOCKED;
-                        mLockedAWB = result.get(CaptureResult.CONTROL_AWB_STATE) ==
-                                                CaptureResult.CONTROL_AWB_STATE_LOCKED;
-                    }
-
-                    if((mConvergedAE || !mDoAE) && mConvergedAWB &&
-                            (!mDoAF || isFixedFocusLens || mConvergedAF)){
-                        if ((!mNeedsLockedAE || mLockedAE) && !aeResultSent) {
-                            aeResultSent = true;
-                            if (result.get(CaptureResult.SENSOR_SENSITIVITY) != null
-                                    && result.get(CaptureResult.SENSOR_EXPOSURE_TIME) != null) {
-                                mSocketRunnableObj.sendResponse("aeResult", String.format("%d %d",
-                                        result.get(CaptureResult.SENSOR_SENSITIVITY).intValue(),
-                                        result.get(CaptureResult.SENSOR_EXPOSURE_TIME).intValue()
-                                        ));
-                            } else {
-                                Logt.i(TAG, String.format(
-                                        "AE converged but NULL exposure values, sensitivity:%b,"
-                                        + " expTime:%b",
-                                        result.get(CaptureResult.SENSOR_SENSITIVITY) == null,
-                                        result.get(CaptureResult.SENSOR_EXPOSURE_TIME) == null));
-                            }
-                        }
-                        if (!afResultSent) {
-                            afResultSent = true;
-                            if (result.get(CaptureResult.LENS_FOCUS_DISTANCE) != null) {
-                                mSocketRunnableObj.sendResponse("afResult", String.format("%f",
-                                        result.get(CaptureResult.LENS_FOCUS_DISTANCE)
-                                        ));
-                            } else {
-                                Logt.i(TAG, "AF converged but NULL focus distance values");
-                            }
-                        }
-                        if ((!mNeedsLockedAWB || mLockedAWB) && !awbResultSent) {
-                            awbResultSent = true;
-                            if (result.get(CaptureResult.COLOR_CORRECTION_GAINS) != null
-                                    && result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM) != null) {
-                                mSocketRunnableObj.sendResponse("awbResult", String.format(
-                                        "%f %f %f %f %f %f %f %f %f %f %f %f %f",
-                                        result.get(CaptureResult.COLOR_CORRECTION_GAINS).
-                                                getRed(),
-                                        result.get(CaptureResult.COLOR_CORRECTION_GAINS).
-                                                getGreenEven(),
-                                        result.get(CaptureResult.COLOR_CORRECTION_GAINS).
-                                                getGreenOdd(),
-                                        result.get(CaptureResult.COLOR_CORRECTION_GAINS).
-                                                getBlue(),
-                                        r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM).
-                                                getElement(0,0)),
-                                        r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM).
-                                                getElement(1,0)),
-                                        r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM).
-                                                getElement(2,0)),
-                                        r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM).
-                                                getElement(0,1)),
-                                        r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM).
-                                                getElement(1,1)),
-                                        r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM).
-                                                getElement(2,1)),
-                                        r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM).
-                                                getElement(0,2)),
-                                        r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM).
-                                                getElement(1,2)),
-                                        r2f(result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM).
-                                                getElement(2,2))));
-                            } else {
-                                Logt.i(TAG, String.format(
-                                        "AWB converged but NULL color correction values, gains:%b,"
-                                        + " ccm:%b",
-                                        result.get(CaptureResult.COLOR_CORRECTION_GAINS) == null,
-                                        result.get(CaptureResult.COLOR_CORRECTION_TRANSFORM) ==
-                                                null));
-                            }
-                        }
-                    }
-                }
-
-                mInterlock3A.open();
+                mThreeAResultHandler.handleCaptureResult(request, result);
             } catch (ItsException e) {
                 Logt.e(TAG, "Script error: ", e);
             } catch (Exception e) {
@@ -4529,7 +4674,36 @@ public class ItsService extends Service implements SensorEventListener {
         }
 
         public void stop() {
-            stopped = true;
+            mThreeAResultHandler.stop();
+        }
+    }
+
+    private class ExtensionsThreeAResultListener extends ExtensionCaptureResultListener {
+        private ThreeAResultHandler mThreeAResultHandler = new ThreeAResultHandler();
+        @Override
+        public void onCaptureStarted(CameraExtensionSession session, CaptureRequest request,
+                long timestamp) {
+        }
+
+        @Override
+        public void onCaptureResultAvailable(CameraExtensionSession session, CaptureRequest request,
+                TotalCaptureResult result) {
+            try {
+                mThreeAResultHandler.handleCaptureResult(request, result);
+            } catch (ItsException e) {
+                Logt.e(TAG, "Script error: ", e);
+            } catch (Exception e) {
+                Logt.e(TAG, "Script error: ", e);
+            }
+        }
+
+        @Override
+        public void onCaptureFailed(CameraExtensionSession session, CaptureRequest request) {
+            Logt.e(TAG, "Script error: capture failed");
+        }
+
+        public void stop() {
+            mThreeAResultHandler.stop();
         }
     }
 

@@ -64,7 +64,6 @@ def _crop(img):
   min_dist = float('inf')
   closest_cluster_index = -1
   for index, center in enumerate(centers):
-    logging.debug(center)
     dist = np.linalg.norm(center - np.array(_RED_BGR_COLOR))
     if dist < min_dist:
       min_dist = dist
