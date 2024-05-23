@@ -97,6 +97,19 @@ public class ControlledTestDreamService extends DreamService {
     }
 
     @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        mDreamLifecycleListeners.forEach(
+                listener -> {
+                    try {
+                        listener.onFocusChanged(mProxy, hasFocus);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "could not inform listeners of onAttachedToWindow", e);
+                    }
+                });
+    }
+
+    @Override
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
         mDreamLifecycleListeners.forEach(
@@ -128,7 +141,19 @@ public class ControlledTestDreamService extends DreamService {
                         Log.e(TAG, "could not inform listeners of onDreamingStarted", e);
                     }
                 });
+    }
 
+    @Override
+    public void onWakeUp() {
+        mDreamLifecycleListeners.forEach(
+                listener -> {
+                    try {
+                        listener.onWakeUp(mProxy);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "could not inform listeners of onWakeUp", e);
+                    }
+                });
+        super.onWakeUp();
     }
 
     @Override
@@ -142,7 +167,19 @@ public class ControlledTestDreamService extends DreamService {
                         Log.e(TAG, "could not inform listeners of onDreamingStopped", e);
                     }
                 });
+    }
 
+    @Override
+    public void onDestroy() {
+        mDreamLifecycleListeners.forEach(
+                listener -> {
+                    try {
+                        listener.onDreamDestroyed(mProxy);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "could not inform listeners of onDreamingStopped", e);
+                    }
+                });
+        super.onDestroy();
     }
 
     @Override

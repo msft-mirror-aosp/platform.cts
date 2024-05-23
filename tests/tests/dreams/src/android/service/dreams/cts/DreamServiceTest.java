@@ -50,6 +50,8 @@ import android.view.ActionMode;
 import android.view.Display;
 import android.view.KeyEvent;
 
+import androidx.test.InstrumentationRegistry;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -91,6 +93,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
     @Before
     public void setup() {
         mDreamCoordinator.setup();
+        InstrumentationRegistry.getInstrumentation().setInTouchMode(false);
     }
 
     @After
@@ -224,7 +227,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         dreamSession.start();
         waitAndAssertResumedActivity(mDreamCoordinator.getDreamActivityName(dreamComponent),
                 "Dream activity should be resumed");
-
+        dreamSession.awaitLifecycle(ControlledDreamSession.DREAM_LIFECYCLE_ON_FOCUS_GAINED);
         return dreamSession;
     }
 
@@ -242,13 +245,10 @@ public class DreamServiceTest extends ActivityManagerTestBase {
 
         injectKey(KeyEvent.KEYCODE_SPACE, false, true);
 
+        dreamSession.awaitLifecycle(ControlledDreamSession.DREAM_LIFECYCLE_ON_WAKEUP);
+
         // Assert keyguard is gone
         mWmState.waitAndAssertKeyguardGone();
-
-        assertThat(dreamSession.getLastLifecycle()).isAnyOf(
-                ControlledDreamSession.DREAM_LIFECYCLE_ON_DEATTACHED_FROM_WINDOW,
-                ControlledDreamSession.DREAM_LIFECYCLE_ON_DREAMING_STOPPED);
-
         dreamSession.stop();
     }
 
