@@ -23,6 +23,9 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -32,7 +35,6 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
 import android.content.Context;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -46,29 +48,28 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class BluetoothHapClientTest {
     private static final String TAG = BluetoothHapClientTest.class.getSimpleName();
 
-    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500; // ms timeout for Proxy Connect
+    private static final Duration PROXY_CONNECTION_TIMEOUT = Duration.ofMillis(500);
 
     private Context mContext;
     private BluetoothAdapter mAdapter;
 
-    private BluetoothHapClient mBluetoothHapClient;
-    private boolean mIsProfileReady;
-    private Condition mConditionProfileConnection;
-    private ReentrantLock mProfileConnectionlock;
+    private BluetoothHapClient mService;
 
     private boolean mOnPresetSelected = false;
     private boolean mOnPresetSelectionFailed = false;
@@ -85,8 +86,11 @@ public class BluetoothHapClientTest {
     private static final int TEST_STATUS_CODE = BluetoothStatusCodes.ERROR_HAP_INVALID_PRESET_INDEX;
     private static final int TEST_HAP_GROUP_ID = 65;
 
+    @Mock BluetoothProfile.ServiceListener mServiceListener;
+
     @Before
     public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
         Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
@@ -97,22 +101,20 @@ public class BluetoothHapClientTest {
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
         assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
-        mProfileConnectionlock = new ReentrantLock();
-        mConditionProfileConnection = mProfileConnectionlock.newCondition();
-        mIsProfileReady = false;
-        mBluetoothHapClient = null;
+        assertThat(
+                        mAdapter.getProfileProxy(
+                                mContext, mServiceListener, BluetoothProfile.HAP_CLIENT))
+                .isTrue();
 
-        mAdapter.getProfileProxy(
-                mContext, new BluetoothHapClientServiceListener(), BluetoothProfile.HAP_CLIENT);
+        ArgumentCaptor<BluetoothProfile> captor = ArgumentCaptor.forClass(BluetoothProfile.class);
+        verify(mServiceListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+                .onServiceConnected(eq(BluetoothProfile.HAP_CLIENT), captor.capture());
+        mService = (BluetoothHapClient) captor.getValue();
+        assertThat(mService).isNotNull();
     }
 
     @After
     public void tearDown() throws Exception {
-        if (mBluetoothHapClient != null) {
-            mBluetoothHapClient.close();
-            mBluetoothHapClient = null;
-            mIsProfileReady = false;
-        }
         mAdapter = null;
         TestUtils.dropPermissionAsShellUid();
     }
@@ -120,56 +122,42 @@ public class BluetoothHapClientTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void closeProfileProxy() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-        assertThat(mIsProfileReady).isTrue();
-
-        mAdapter.closeProfileProxy(BluetoothProfile.HAP_CLIENT, mBluetoothHapClient);
-        assertThat(waitForProfileDisconnect()).isTrue();
-        assertThat(mIsProfileReady).isFalse();
+        mAdapter.closeProfileProxy(BluetoothProfile.HAP_CLIENT, mService);
+        verify(mServiceListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+                .onServiceDisconnected(eq(BluetoothProfile.HAP_CLIENT));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getConnectedDevices() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns empty list if bluetooth is not enabled
-        List<BluetoothDevice> connectedDevices = mBluetoothHapClient.getConnectedDevices();
+        List<BluetoothDevice> connectedDevices = mService.getConnectedDevices();
         assertThat(connectedDevices.isEmpty()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getDevicesMatchingConnectionStates() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns empty list if bluetooth is not enabled
-        List<BluetoothDevice> connectedDevices =
-                mBluetoothHapClient.getDevicesMatchingConnectionStates(null);
+        List<BluetoothDevice> connectedDevices = mService.getDevicesMatchingConnectionStates(null);
         assertThat(connectedDevices.isEmpty()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getConnectionState() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
-        assertThat(mBluetoothHapClient.getConnectionState(null))
+        assertThat(mService.getConnectionState(null))
                 .isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        assertThat(mBluetoothHapClient.getConnectionState(testDevice))
+        assertThat(mService.getConnectionState(testDevice))
                 .isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
     }
 
@@ -177,106 +165,82 @@ public class BluetoothHapClientTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getHapGroup() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        assertThat(mBluetoothHapClient.getHapGroup(testDevice)).isEqualTo(-1);
+        assertThat(mService.getHapGroup(testDevice)).isEqualTo(-1);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getActivePresetIndex() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns 0 if bluetooth is not enabled
-        assertThat(mBluetoothHapClient.getActivePresetIndex(testDevice)).isEqualTo(0);
+        assertThat(mService.getActivePresetIndex(testDevice)).isEqualTo(0);
     }
 
     /** Verify getActivePresetInfo() return null if Bluetooth is disabled. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getActivePresetInfo() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        assertThat(mBluetoothHapClient.getActivePresetInfo(testDevice)).isNull();
+        assertThat(mService.getActivePresetInfo(testDevice)).isNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void selectPreset() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        mBluetoothHapClient.selectPreset(testDevice, 1);
+        mService.selectPreset(testDevice, 1);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void selectPresetForGroup() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        mBluetoothHapClient.selectPresetForGroup(1, 1);
+        mService.selectPresetForGroup(1, 1);
     }
 
     /** Verify switchToNextPreset() will not cause exception when Bluetooth is disabled. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void switchToNextPreset() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        mBluetoothHapClient.switchToNextPreset(testDevice);
+        mService.switchToNextPreset(testDevice);
     }
 
     /** Verify switchToNextPresetForGroup() will not cause exception when Bluetooth is disabled. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void switchToNextPresetForGroup() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        mBluetoothHapClient.switchToNextPresetForGroup(1);
+        mService.switchToNextPresetForGroup(1);
     }
 
     /** Verify switchToPreviousPreset() doesn't cause exception when Bluetooth is disabled. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void switchToPreviousPreset() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        mBluetoothHapClient.switchToPreviousPreset(testDevice);
+        mService.switchToPreviousPreset(testDevice);
     }
 
     /**
@@ -285,82 +249,63 @@ public class BluetoothHapClientTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void switchToPreviousPresetForGroup() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        mBluetoothHapClient.switchToPreviousPresetForGroup(1);
+        mService.switchToPreviousPresetForGroup(1);
     }
 
     /** Verify switchToNextPresetForGroup() doesn't cause exception when Bluetooth is disabled. */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getPresetInfo() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns null if bluetooth is not enabled
-        assertThat(mBluetoothHapClient.getPresetInfo(testDevice, 1)).isNull();
+        assertThat(mService.getPresetInfo(testDevice, 1)).isNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getAllPresetInfo() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns empty list if bluetooth is not enabled
-        List<BluetoothHapPresetInfo> presets = mBluetoothHapClient.getAllPresetInfo(testDevice);
+        List<BluetoothHapPresetInfo> presets = mService.getAllPresetInfo(testDevice);
         assertThat(presets.isEmpty()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void setPresetName() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        mBluetoothHapClient.setPresetName(testDevice, 1, "New Name");
+        mService.setPresetName(testDevice, 1, "New Name");
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void setPresetNameForGroup() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
-        mBluetoothHapClient.setPresetNameForGroup(1, 1, "New Name");
+        mService.setPresetNameForGroup(1, 1, "New Name");
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void setGetConnectionPolicy() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
-        assertThrows(
-                NullPointerException.class, () -> mBluetoothHapClient.setConnectionPolicy(null, 0));
-        assertThat(mBluetoothHapClient.getConnectionPolicy(null))
+        assertThrows(NullPointerException.class, () -> mService.setConnectionPolicy(null, 0));
+        assertThat(mService.getConnectionPolicy(null))
                 .isEqualTo(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN);
 
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
         assertThat(
-                        mBluetoothHapClient.setConnectionPolicy(
+                        mService.setConnectionPolicy(
                                 testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN))
                 .isTrue();
 
@@ -368,10 +313,9 @@ public class BluetoothHapClientTest {
         assertThrows(
                 SecurityException.class,
                 () ->
-                        mBluetoothHapClient.setConnectionPolicy(
+                        mService.setConnectionPolicy(
                                 testDevice, BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
-        assertThrows(
-                SecurityException.class, () -> mBluetoothHapClient.getConnectionPolicy(testDevice));
+        assertThrows(SecurityException.class, () -> mService.getConnectionPolicy(testDevice));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
     }
@@ -379,9 +323,6 @@ public class BluetoothHapClientTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void registerUnregisterCallback() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         Executor executor = mContext.getMainExecutor();
 
         BluetoothHapClient.Callback callback =
@@ -410,26 +351,19 @@ public class BluetoothHapClientTest {
                 };
 
         // Verify parameter
-        assertThrows(
-                NullPointerException.class,
-                () -> mBluetoothHapClient.registerCallback(null, callback));
-        assertThrows(
-                NullPointerException.class,
-                () -> mBluetoothHapClient.registerCallback(executor, null));
-        assertThrows(
-                NullPointerException.class, () -> mBluetoothHapClient.unregisterCallback(null));
+        assertThrows(NullPointerException.class, () -> mService.registerCallback(null, callback));
+        assertThrows(NullPointerException.class, () -> mService.registerCallback(executor, null));
+        assertThrows(NullPointerException.class, () -> mService.unregisterCallback(null));
 
         // Verify valid parameters
-        mBluetoothHapClient.registerCallback(executor, callback);
-        mBluetoothHapClient.unregisterCallback(callback);
+        mService.registerCallback(executor, callback);
+        mService.unregisterCallback(callback);
 
         TestUtils.dropPermissionAsShellUid();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
 
         // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(
-                SecurityException.class,
-                () -> mBluetoothHapClient.registerCallback(executor, callback));
+        assertThrows(SecurityException.class, () -> mService.registerCallback(executor, callback));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
@@ -437,9 +371,6 @@ public class BluetoothHapClientTest {
     public void registerCallbackNoPermission() {
         TestUtils.dropPermissionAsShellUid();
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
-
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
 
         Executor executor = mContext.getMainExecutor();
 
@@ -469,9 +400,7 @@ public class BluetoothHapClientTest {
                 };
 
         // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(
-                SecurityException.class,
-                () -> mBluetoothHapClient.registerCallback(executor, callback));
+        assertThrows(SecurityException.class, () -> mService.registerCallback(executor, callback));
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
     }
@@ -479,9 +408,6 @@ public class BluetoothHapClientTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void callbackCalls() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothHapClient.Callback callback =
                 new BluetoothHapClient.Callback() {
                     @Override
@@ -551,137 +477,55 @@ public class BluetoothHapClientTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getHearingAidType() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns 0x00 if bluetooth is not enabled
-        assertThat(mBluetoothHapClient.getHearingAidType(testDevice)).isEqualTo(0x00);
+        assertThat(mService.getHearingAidType(testDevice)).isEqualTo(0x00);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void supportsSynchronizedPresets() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertThat(mBluetoothHapClient.supportsSynchronizedPresets(testDevice)).isFalse();
+        assertThat(mService.supportsSynchronizedPresets(testDevice)).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void supportsIndependentPresets() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertThat(mBluetoothHapClient.supportsIndependentPresets(testDevice)).isFalse();
+        assertThat(mService.supportsIndependentPresets(testDevice)).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void supportsDynamicPresets() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertThat(mBluetoothHapClient.supportsDynamicPresets(testDevice)).isFalse();
+        assertThat(mService.supportsDynamicPresets(testDevice)).isFalse();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void supportsWritablePresets() {
-        assertThat(waitForProfileConnect()).isTrue();
-        assertThat(mBluetoothHapClient).isNotNull();
-
         BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
 
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
 
         // Verify returns false if bluetooth is not enabled
-        assertThat(mBluetoothHapClient.supportsWritablePresets(testDevice)).isFalse();
-    }
-
-    private boolean waitForProfileConnect() {
-        mProfileConnectionlock.lock();
-        try {
-            // Wait for the Adapter to be disabled
-            while (!mIsProfileReady) {
-                if (!mConditionProfileConnection.await(
-                        PROXY_CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                    // Timeout
-                    Log.e(TAG, "Timeout while waiting for Profile Connect");
-                    break;
-                } // else spurious wakeups
-            }
-        } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileConnect: interrupted");
-        } finally {
-            mProfileConnectionlock.unlock();
-        }
-        return mIsProfileReady;
-    }
-
-    private boolean waitForProfileDisconnect() {
-        mConditionProfileConnection = mProfileConnectionlock.newCondition();
-        mProfileConnectionlock.lock();
-        try {
-            while (mIsProfileReady) {
-                if (!mConditionProfileConnection.await(
-                        PROXY_CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                    // Timeout
-                    Log.e(TAG, "Timeout while waiting for Profile Disconnect");
-                    break;
-                } // else spurious wakeups
-            }
-        } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileDisconnect: interrupted");
-        } finally {
-            mProfileConnectionlock.unlock();
-        }
-        return !mIsProfileReady;
-    }
-
-    private final class BluetoothHapClientServiceListener
-            implements BluetoothProfile.ServiceListener {
-
-        @Override
-        public void onServiceConnected(int profile, BluetoothProfile proxy) {
-            mProfileConnectionlock.lock();
-            mBluetoothHapClient = (BluetoothHapClient) proxy;
-            mIsProfileReady = true;
-            try {
-                mConditionProfileConnection.signal();
-            } finally {
-                mProfileConnectionlock.unlock();
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(int profile) {
-            mProfileConnectionlock.lock();
-            mIsProfileReady = false;
-            try {
-                mConditionProfileConnection.signal();
-            } finally {
-                mProfileConnectionlock.unlock();
-            }
-        }
+        assertThat(mService.supportsWritablePresets(testDevice)).isFalse();
     }
 }
