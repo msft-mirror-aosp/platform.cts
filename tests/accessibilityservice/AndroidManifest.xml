@@ -77,6 +77,7 @@
 
         <activity android:label="@string/non_proxy_activity"
                   android:name=".activities.NonProxyActivity"
+                  android:windowSoftInputMode="stateHidden"
                   android:screenOrientation="locked"/>
 
         <activity android:label="Full screen activity for gesture dispatch testing"
@@ -89,6 +90,7 @@
 
         <activity android:label="@string/accessibility_embedded_hierarchy_test_activity"
              android:name=".AccessibilityEmbeddedHierarchyTest$AccessibilityEmbeddedHierarchyActivity"
+             android:windowSoftInputMode="stateHidden"
              android:screenOrientation="locked"/>
 
         <activity android:label="@string/accessibility_drag_and_drop_test_activity"
