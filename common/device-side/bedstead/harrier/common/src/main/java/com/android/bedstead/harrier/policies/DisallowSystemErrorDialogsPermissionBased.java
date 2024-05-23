@@ -16,10 +16,10 @@
 
 package com.android.bedstead.harrier.policies;
 
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_OWN_USER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_SYSTEM_DIALOGS;
 
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 /**
  * Policy related to setting {@code DISALLOW_SYSTEM_ERROR_DIALOGS}

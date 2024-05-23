@@ -26,10 +26,10 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest
 import com.android.bedstead.harrier.policies.DisallowRemoveUser
 import com.android.bedstead.harrier.policies.DisallowUserSwitch
 import com.android.bedstead.harrier.policies.ReceiveUserCallbacks

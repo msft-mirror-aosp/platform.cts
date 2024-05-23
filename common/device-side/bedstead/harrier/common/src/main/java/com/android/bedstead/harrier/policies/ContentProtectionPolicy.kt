@@ -16,10 +16,10 @@
 
 package com.android.bedstead.harrier.policies
 
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_OWN_USER
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER
 
 /**
  * Policy for controlling content protection.

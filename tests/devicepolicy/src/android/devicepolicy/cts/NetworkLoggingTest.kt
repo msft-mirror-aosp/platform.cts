@@ -22,10 +22,10 @@ import com.android.bedstead.harrier.UserType.ADDITIONAL_USER
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.harrier.policies.GlobalNetworkLogging
 import com.android.bedstead.harrier.policies.NetworkLogging
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder

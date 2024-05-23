@@ -25,7 +25,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.harrier.policies.TheftDetection;
 import com.android.compatibility.common.util.ApiTest;
 

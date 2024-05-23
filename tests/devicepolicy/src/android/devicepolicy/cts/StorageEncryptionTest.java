@@ -24,7 +24,7 @@ import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported;
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsupported;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.harrier.policies.StorageEncryption;
 
 import org.junit.ClassRule;

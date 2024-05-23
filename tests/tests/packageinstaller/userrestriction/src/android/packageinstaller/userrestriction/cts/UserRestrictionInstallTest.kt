@@ -42,11 +42,10 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.annotations.enterprise.DevicePolicyRelevant
 import com.android.bedstead.nene.TestApis
-import android.app.AppOpsManager.OPSTR_REQUEST_INSTALL_PACKAGES
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_DEBUGGING_FEATURES
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
@@ -54,7 +53,6 @@ import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
-import com.android.bedstead.permissions.annotations.EnsureHasAppOp
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.FutureResultActivity
@@ -193,11 +191,8 @@ class UserRestrictionInstallTest {
     @DevicePolicyRelevant
     @EnsureHasUserRestriction(value = DISALLOW_DEBUGGING_FEATURES, onUser = UserType.WORK_PROFILE)
     @EnsureDoesNotHaveUserRestriction(value = DISALLOW_INSTALL_APPS, onUser = UserType.WORK_PROFILE)
-    @EnsureHasAppOp(OPSTR_REQUEST_INSTALL_PACKAGES)
     @RequireRunOnWorkProfile
     fun disallowDebuggingFeatures_intentInstallOnWorkProfile_installationSucceeds() {
-        val context = TestApis.context().instrumentedContext()
-        // val apkFile = File(context.filesDir, TEST_APK_NAME)
         val appInstallIntent = getAppInstallationIntent(apkFile)
 
         val installation = startInstallationViaIntent(appInstallIntent)
@@ -292,11 +287,8 @@ class UserRestrictionInstallTest {
         value = DISALLOW_DEBUGGING_FEATURES,
         onUser = UserType.WORK_PROFILE
     )
-    @EnsureHasAppOp(OPSTR_REQUEST_INSTALL_PACKAGES)
     @RequireRunOnWorkProfile
     fun disallowInstallApps_intentInstallOnWorkProfile_installationFails() {
-        val context = TestApis.context().instrumentedContext()
-        // val apkFile = File(context.filesDir, TEST_APK_NAME)
         val appInstallIntent = getAppInstallationIntent(apkFile)
 
         val installation = startInstallationViaIntent(appInstallIntent)
