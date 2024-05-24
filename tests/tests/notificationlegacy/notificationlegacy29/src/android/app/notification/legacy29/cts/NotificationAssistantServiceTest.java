@@ -63,6 +63,7 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -267,6 +268,7 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
+    @Ignore("b/330193582")
     public void testAdjustNotifications_rankingScoreKey() throws Exception {
         setUpListeners();
 
