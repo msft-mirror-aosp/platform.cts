@@ -61,7 +61,7 @@ if [[ -n ${android_version} ]]; then
   path="${android_version}/${abi}"
 fi
 
-dir_prefix="/tmp/mcts_dynamic_download/android/xts/mcts"
+dir_prefix="$HOME/xts/mcts_dynamic_download/android/xts/mcts"
 full_dir_path="$dir_prefix/$path"
 mkdir -p $full_dir_path
 
