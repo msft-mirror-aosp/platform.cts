@@ -16,9 +16,7 @@
 
 package com.android.bedstead.nene.tile
 
-import android.cts.testapisreflection.*
 import android.service.quicksettings.TileService
-import com.android.bedstead.nene.TestApis
 
 object QuickSettings {
 
@@ -26,8 +24,7 @@ object QuickSettings {
      * See [android.service.quicksettings.TileService#isQuickSettingsSupported].
      */
     fun isSupported(): Boolean {
-        val tileService = TestApis.context().instrumentedContext().getSystemService(TileService::class.java)!!
-        return tileService.isQuickSettingsSupported()
+        return TileService.isQuickSettingsSupported()
     }
 
 }
