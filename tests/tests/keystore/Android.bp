@@ -49,6 +49,7 @@ java_library {
 
 android_test {
     name: "CtsKeystoreTestCases",
+    team: "trendy_team_android_hardware_backed_security",
     defaults: ["cts_defaults"],
     // Tag this module as a cts test artifact
     test_suites: [
@@ -95,6 +96,7 @@ android_test {
 
 android_test {
     name: "CtsKeystorePerformanceTestCases",
+    team: "trendy_team_android_hardware_backed_security",
     defaults: ["cts_defaults"],
     manifest: "CtsKeystorePerformanceTestManifest.xml",
     test_config: "CtsKeystorePerformanceTestConfig.xml",
@@ -125,6 +127,7 @@ android_test {
 
 android_test {
     name: "CtsKeystoreWycheproofTestCases",
+    team: "trendy_team_android_hardware_backed_security",
     defaults: ["cts_defaults"],
     manifest: "CtsKeystoreWycheproofTestManifest.xml",
     test_config: "CtsKeystoreWycheproofTestConfig.xml",
