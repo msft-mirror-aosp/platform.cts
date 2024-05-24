@@ -153,6 +153,7 @@ import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountReference;
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy;
+import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.OperationSafetyReason;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController;
@@ -168,6 +169,7 @@ import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.FailureDumper;
+import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ResolveInfoWrapper;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.nene.utils.Versions;
@@ -2212,6 +2214,15 @@ public final class DeviceState extends HarrierRule {
                     CommonDevicePolicy.DevicePolicyOperation.OPERATION_NONE,
                     CommonDevicePolicy.OperationSafetyReason.OPERATION_SAFETY_REASON_NONE);
             mNextSafetyOperationSet = false;
+
+            for (OperationSafetyReason reason : OperationSafetyReason.values()) {
+                if (reason == OperationSafetyReason.OPERATION_SAFETY_REASON_NONE) continue;
+
+                Poll.forValue("Is Safe Operation", () ->
+                                TestApis.devicePolicy().isSafeOperation(reason))
+                        .toBeEqualTo(true)
+                        .await();
+            }
         }
     }
 
