@@ -27,6 +27,7 @@ import static org.junit.Assert.fail;
 import android.content.Context;
 import android.keystore.cts.util.EmptyArray;
 import android.keystore.cts.util.ImportedKey;
+import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
 import android.security.keystore.KeyInfo;
 import android.security.keystore.KeyPermanentlyInvalidatedException;
@@ -753,6 +754,7 @@ public class SignatureTest {
 
     @Test
     public void testLongMsgKat() throws Exception {
+        StrictModeDetector strict = new StrictModeDetector(getContext());
         byte[] message = TestUtils.generateLargeKatMsg(LONG_MSG_KAT_SEED, LONG_MSG_KAT_SIZE_BYTES);
 
         Provider provider = Security.getProvider(EXPECTED_PROVIDER_NAME);
@@ -801,10 +803,12 @@ public class SignatureTest {
                         algorithm, provider, keyPair.getPublic(), message, goodSigBytes, 718871);
 
                 // Sign the message in one go
+                strict.clear();
                 Signature signature = Signature.getInstance(algorithm, provider);
                 signature.initSign(keyPair.getPrivate());
                 signature.update(message);
                 byte[] generatedSigBytes = signature.sign();
+                strict.check("signature with " + algorithm);
                 String paddingScheme = TestUtils.getSignatureAlgorithmPadding(algorithm);
                 boolean deterministicSignatureScheme =
                         KeyProperties.SIGNATURE_PADDING_RSA_PKCS1.equalsIgnoreCase(paddingScheme);
