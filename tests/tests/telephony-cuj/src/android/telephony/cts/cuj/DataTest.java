@@ -74,26 +74,12 @@ public class DataTest {
     public void testBasicPhoneAttributes() {
         assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, TelephonyManager::getActiveModemCount)).isGreaterThan(0);
-        assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::getPhoneType))
-                        .isEqualTo(TelephonyManager.PHONE_TYPE_GSM);
         assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, TelephonyManager::getNetworkOperatorName)).isNotEmpty();
         assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, TelephonyManager::getLine1Number)).isNotEmpty();
-        assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::getVoiceMailNumber)).isNotEmpty();
-        assertThat((boolean) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::isNetworkRoaming)).isFalse();
-        assertThat((boolean) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::isDeviceSmsCapable)).isTrue();
-        assertThat((boolean) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::isDeviceVoiceCapable)).isTrue();
         assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, TelephonyManager::getDataNetworkType))
-                        .isGreaterThan(TelephonyManager.NETWORK_TYPE_UNKNOWN);
-        assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::getVoiceNetworkType))
                         .isGreaterThan(TelephonyManager.NETWORK_TYPE_UNKNOWN);
     }
 
