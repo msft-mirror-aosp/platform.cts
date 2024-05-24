@@ -35,6 +35,7 @@ import android.widget.EditText;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -42,6 +43,14 @@ import java.util.concurrent.TimeUnit;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class MultiDisplaySecurityImeTests extends MultiDisplayTestBase {
+    @Before
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+
+        assumeTrue(supportsMultiDisplay());
+    }
+
     @Test
     public void testNoInputConnectionForUntrustedVirtualDisplay() throws Exception {
         assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
