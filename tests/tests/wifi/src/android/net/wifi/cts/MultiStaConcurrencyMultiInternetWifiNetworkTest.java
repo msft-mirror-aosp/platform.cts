@@ -204,7 +204,8 @@ public class MultiStaConcurrencyMultiInternetWifiNetworkTest extends WifiJUnit4T
         List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.getPrivilegedConfiguredNetworks());
         mMatchingNetworksMap =
-                TestHelper.findMatchingSavedNetworksWithBssidByBand(mWifiManager, savedNetworks, 2);
+                TestHelper.findMatchingSavedNetworksWithBssidByBand(mWifiManager, savedNetworks,
+                        0, 2);
         assertWithMessage("Need at least 2 saved network bssids in different bands").that(
                 mMatchingNetworksMap.size()).isAtLeast(2);
 

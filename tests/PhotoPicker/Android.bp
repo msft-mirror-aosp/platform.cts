@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_storage",
 }
 
 android_test {
@@ -29,6 +30,7 @@ android_test {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
     sdk_version: "core_current",

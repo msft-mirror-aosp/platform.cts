@@ -36,13 +36,16 @@ java_test_host {
 
     ],
     static_libs: [
+        "com.android.media.flags.bettertogether-aconfig-java-host",
+        "CompatChangeGatingTestBase",
         "cts-host-utils",
         "cts-statsd-atom-host-test-utils",
-        "CompatChangeGatingTestBase",
         "CtsMediaHostTestCommon",
+        "flag-junit-host",
     ],
     data: [
         ":CtsAudioHostTestApp",
+        ":CtsMediaExtractorHostTestApp",
         ":CtsMediaMetricsHostTestApp",
         ":CtsMediaRouterHostSideTestBluetoothPermissionsApp",
         ":CtsMediaRouterHostSideTestModifyAudioRoutingApp",
@@ -51,6 +54,7 @@ java_test_host {
         ":CtsMediaRouterHostSideTestProviderApp2",
         ":CtsMediaRouterHostSideTestProviderApp3",
         ":CtsMediaRouterHostSideTestProviderSelfScanOnlyApp",
+        ":CtsMediaRouterHostSideTestProviderWithPackageManagerSpam",
         ":CtsMediaSessionHostTestApp",
         ":CtsMediaSessionTestHelper",
         ":CtsProxyMediaRouterSecondaryUserTestHelperApp",

@@ -616,7 +616,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // Tap where the embedded window is placed to ensure focus is given via touch
         assertTrue("Failed to tap on embedded",
                 tapOnWindowCenter(mInstrumentation, () -> mEmbeddedView.getWindowToken(),
-                        /* useGlobalInjection= */ true));
+                        /* useGlobalInjection= */ true, null /* outCoords */));
         assertWindowFocused(mEmbeddedView, true);
         // assert host does not have focus
         assertWindowFocused(mSurfaceView, false);
@@ -624,7 +624,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // Tap where the host window is placed to ensure focus is given back to host when touched
         assertTrue("Failed to tap on host",
                 tapOnWindowCenter(mInstrumentation, () -> mViewParent.getWindowToken(),
-                        /* useGlobalInjection= */ true));
+                        /* useGlobalInjection= */ true, null /* outCoords */));
         assertWindowFocused(mEmbeddedView, false);
         // assert host does not have focus
         assertWindowFocused(mViewParent, true);
@@ -652,8 +652,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         waitUntilViewDrawn(embeddedViewChild);
 
         assertTrue("Failed to tap on embedded child",
-                tapOnWindowCenter(mInstrumentation, () -> embeddedViewChild.getWindowToken(),
-                        /* useGlobalInjection= */ true));
+                tapOnWindowCenter(mInstrumentation, embeddedViewChild::getWindowToken,
+                        /* useGlobalInjection= */ true, null /* outCoords */));
         // When tapping on the child embedded window, it should gain focus.
         assertWindowFocused(embeddedViewChild, true);
         // assert parent embedded window does not have focus.
@@ -688,7 +688,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                     } catch (RemoteException e) {
                         return null;
                     }
-                }, /* useGlobalInjection= */ true));
+                }, /* useGlobalInjection= */ true, null /* outCoords */));
         assertTrue(mTestService.waitForFocus(true));
         // assert host does not have focus
         assertWindowFocused(mSurfaceView, false);
@@ -696,7 +696,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // Tap where the host window is placed to ensure focus is given back to host when touched
         assertTrue("Failed to tap on host",
                 tapOnWindowCenter(mInstrumentation, () -> mViewParent.getWindowToken(),
-                        /* useGlobalInjection= */ true));
+                        /* useGlobalInjection= */ true, null /* outCoords */));
         assertTrue(mTestService.waitForFocus(false));
         // assert host does not have focus
         assertWindowFocused(mViewParent, true);
@@ -868,7 +868,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // Check if SurfacePackage copy remains valid even though the original package has
         // been released.
         boolean success = tapOnWindowCenter(mInstrumentation,
-                () -> mEmbeddedView.getWindowToken(), /* useGlobalInjection= */ true);
+                () -> mEmbeddedView.getWindowToken(), /* useGlobalInjection= */ true,
+                null /* outCoords */);
         assertAndDumpWindowState(TAG, "Failed to find embedded window to tap", success);
         assertTrue(mClicked);
     }
@@ -999,8 +1000,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         // Check to see if the click went through - this only would happen if the surface package
         // was replaced
-        boolean success = CtsWindowInfoUtils.tapOnWindowCenter(mInstrumentation,
-                () -> mEmbeddedView.getWindowToken(), /* useGlobalInjection= */ true);
+        boolean success = tapOnWindowCenter(mInstrumentation,
+                () -> mEmbeddedView.getWindowToken(), /* useGlobalInjection= */ true,
+                null /* outCoords */);
         assertAndDumpWindowState(TAG, "Failed to tap on window", success);
         assertTrue(mClicked);
     }
@@ -1427,7 +1429,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // window token. The supplier is called each time the predicate is
         // tested, eventually returning the window token.
         assertTrue(waitForWindowInfo(hasExpectedDimensions, 5, TimeUnit.SECONDS,
-                popupView::getWindowToken));
+                popupView::getWindowToken, mActivity.getDisplay().getDisplayId()));
     }
 
     @Test
@@ -1455,16 +1457,19 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         Predicate<WindowInfo> hasExpectedDimensions =
                 windowInfo -> windowInfo.bounds.width() == 50 && windowInfo.bounds.height() == 50;
         assertTrue(waitForWindowInfo(hasExpectedDimensions, 5, TimeUnit.SECONDS,
-                popupView::getWindowToken));
+                popupView::getWindowToken, mActivity.getDisplay().getDisplayId()));
     }
 
     class TouchTransferringView extends View {
         boolean mExpectsFirstMotion = true;
         boolean mExpectsCancel = false;
         boolean mGotCancel = false;
+        // True if the test should use the WindowManager#transferTouchGesture API.
+        private final boolean mUseTransferTouchGestureApi;
 
-        TouchTransferringView(Context c) {
+        TouchTransferringView(Context c, boolean useTransferTouchGestureApi) {
             super(c);
+            mUseTransferTouchGestureApi = useTransferTouchGestureApi;
         }
 
         @Override
@@ -1473,7 +1478,13 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             synchronized (this) {
                 if (mExpectsFirstMotion) {
                     assertEquals(action, MotionEvent.ACTION_DOWN);
-                    assertTrue(mVr.transferTouchGestureToHost());
+                    if (mUseTransferTouchGestureApi) {
+                        assertTrue(mWm.transferTouchGesture(
+                                mVr.getSurfacePackage().getInputTransferToken(),
+                                mSurfaceView.getRootSurfaceControl().getInputTransferToken()));
+                    } else {
+                        assertTrue(mVr.transferTouchGestureToHost());
+                    }
                     mExpectsFirstMotion = false;
                     mExpectsCancel = true;
                 } else if (mExpectsCancel) {
@@ -1514,11 +1525,12 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         }
     }
 
-    @Test
-    public void testEmbeddedWindowCanTransferTouchGestureToHost() throws Throwable {
+    private void testEmbeddedWindowCanTransferTouchGestureToHost(boolean useTransferTouchGestureApi)
+            throws Throwable {
         // Inside the embedded view hierarchy, we set up a view that transfers touch
         // to the host upon receiving a touch event
-        TouchTransferringView ttv = new TouchTransferringView(mActivity);
+        TouchTransferringView ttv = new TouchTransferringView(mActivity,
+                useTransferTouchGestureApi);
         mEmbeddedView = ttv;
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
@@ -1564,6 +1576,19 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             }
         }
         assertTrue(mHostGotEvent);
+    }
+
+    @Test
+    public void testEmbeddedWindowCanTransferTouchGestureToHost_transferTouchGestureToHost()
+            throws Throwable {
+        testEmbeddedWindowCanTransferTouchGestureToHost(false);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
+    @Test
+    public void testEmbeddedWindowCanTransferTouchGestureToHost_transferTouchGesture()
+            throws Throwable {
+        testEmbeddedWindowCanTransferTouchGestureToHost(true);
     }
 
     @Test
@@ -1669,7 +1694,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertNotEquals(FLAG_KEEP_SCREEN_ON, (windowState.getFlags() & FLAG_KEEP_SCREEN_ON));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_TRANSFER_GESTURE_TO_EMBEDDED)
+    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
     public void testTransferHostTouchGestureToEmbedded() throws Throwable {
         mEmbeddedView = new Button(mActivity);
@@ -1684,8 +1709,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                 return;
             }
             hostGotEvent[0] = true;
-            mSurfaceView.getRootSurfaceControl().transferHostTouchGestureToEmbedded(
-                    mVr.getSurfacePackage());
+            mActivity.getWindowManager().transferTouchGesture(
+                    mSurfaceView.getRootSurfaceControl().getInputTransferToken(),
+                    mVr.getSurfacePackage().getInputTransferToken());
             receivedTouches.countDown();
         };
 

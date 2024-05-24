@@ -23,7 +23,10 @@ import static com.google.common.truth.Truth.assertThat;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.Flags;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.ApplicationInfoFlags;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -44,11 +47,15 @@ import org.junit.runner.RunWith;
 import java.io.File;
 
 @AppModeFull
+@AppModeNonSdkSandbox
 @RunWith(AndroidJUnit4.class)
 public class InstallDontKillTest {
     private static final String TMP_PATH = "/data/local/tmp/cts/content/";
     private static final String SPLIT_APK_1 = TMP_PATH + "CtsPackageManagerTestCases_hdpi-v4.apk";
     private static final String SPLIT_APK_2 = TMP_PATH + "CtsPackageManagerTestCases_mdpi-v4.apk";
+    private static final String BASE_SPLIT_NAME = "base.apk";
+    private static final String SPLIT_NAME_1 = "split_config.hdpi.apk";
+    private static final String SPLIT_NAME_2 = "split_config.mdpi.apk";
     private static final String PROPERTY_DEFERRED_NO_KILL_POST_DELETE_DELAY_MS_EXTENDED =
             "deferred_no_kill_post_delete_delay_ms_extended";
     private static final int WAIT_MILLIS = 5000;
@@ -60,6 +67,7 @@ public class InstallDontKillTest {
     private String mPathAfterFirstSplitInstall;
     private String mPathAfterSecondSplitInstall;
     private String mDeleteDelayInDeviceConfig;
+    private PackageManager mPackageManager;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -71,8 +79,12 @@ public class InstallDontKillTest {
         mContext = instrumentation.getContext();
         mPackageName = mContext.getPackageName();
         mDeleteDelayInDeviceConfig = getDeleteDelayInDeviceConfig();
+        mPackageManager = mContext.getPackageManager();
+        // Make sure we only fetch the latest ApplicationInfo
+        PackageManager.disableApplicationInfoCache();
 
-        mOldPath = mContext.getApplicationInfo().getCodePath();
+        mOldPath = mPackageManager.getApplicationInfo(
+                mPackageName,  ApplicationInfoFlags.of(0)).getCodePath();
     }
 
     @After
@@ -100,36 +112,38 @@ public class InstallDontKillTest {
         installSplitsWithDontKill();
         // Wait a bit and check that the old paths are still there after some time
         Thread.sleep(WAIT_MILLIS);
-        // Test that the files in the old code paths are still accessible
-        assertThat(new File(mOldPath, "base.apk").exists()).isTrue();
-        assertThat(new File(mPathAfterFirstSplitInstall, "base.apk").exists()).isTrue();
-        assertThat(new File(mPathAfterSecondSplitInstall,
-                "split_config.hdpi.apk").exists()).isTrue();
+        // Test that the old code paths are still accessible and new splits are linked back to them
+        assertThat(new File(mOldPath, BASE_SPLIT_NAME).exists()).isTrue();
+        assertThat(new File(mOldPath, SPLIT_NAME_1).exists()).isTrue();
+        assertThat(new File(mOldPath, SPLIT_NAME_2).exists()).isTrue();
+        assertThat(new File(mPathAfterFirstSplitInstall, BASE_SPLIT_NAME).exists()).isTrue();
+        assertThat(new File(mPathAfterFirstSplitInstall, SPLIT_NAME_1).exists()).isTrue();
+        assertThat(new File(mPathAfterFirstSplitInstall, SPLIT_NAME_2).exists()).isTrue();
         // Wait a bit longer and check that the old paths are deleted
         Thread.sleep(WAIT_MILLIS);
         assertThat(new File(mOldPath).exists()).isFalse();
         assertThat(new File(mPathAfterFirstSplitInstall).exists()).isFalse();
     }
 
-    private void installSplitsWithDontKill() {
+    private void installSplitsWithDontKill() throws Exception {
         // Install a split for this test itself and check that the code path has changed
         assertThat(SystemUtil.runShellCommand(String.format(
                 "pm install -p %s --dont-kill %s", mPackageName, SPLIT_APK_1))
         ).isEqualTo("Success\n");
-        mPathAfterFirstSplitInstall = mContext.getApplicationInfo().getCodePath();
+        mPathAfterFirstSplitInstall = mPackageManager.getApplicationInfo(
+                mPackageName,  ApplicationInfoFlags.of(0)).getCodePath();
         assertThat(mPathAfterFirstSplitInstall).isNotEqualTo(mOldPath);
         // Do it again with another split
         assertThat(SystemUtil.runShellCommand(String.format(
                 "pm install -p %s --dont-kill %s", mPackageName, SPLIT_APK_2))
         ).isEqualTo("Success\n");
-        mPathAfterSecondSplitInstall = mContext.getApplicationInfo().getCodePath();
+        mPathAfterSecondSplitInstall = mPackageManager.getApplicationInfo(
+                mPackageName,  ApplicationInfoFlags.of(0)).getCodePath();
         assertThat(mPathAfterSecondSplitInstall).isNotEqualTo(mPathAfterFirstSplitInstall);
         // Test that the files in the new code path are accessible
-        assertThat(new File(mPathAfterSecondSplitInstall, "base.apk").exists()).isTrue();
-        assertThat(new File(mPathAfterSecondSplitInstall,
-                "split_config.hdpi.apk").exists()).isTrue();
-        assertThat(new File(mPathAfterSecondSplitInstall,
-                "split_config.mdpi.apk").exists()).isTrue();
+        assertThat(new File(mPathAfterSecondSplitInstall, BASE_SPLIT_NAME).exists()).isTrue();
+        assertThat(new File(mPathAfterSecondSplitInstall, SPLIT_NAME_1).exists()).isTrue();
+        assertThat(new File(mPathAfterSecondSplitInstall, SPLIT_NAME_2).exists()).isTrue();
     }
 
     private String getDeleteDelayInDeviceConfig() {

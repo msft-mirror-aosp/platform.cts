@@ -145,6 +145,7 @@ import android.system.StructStat;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.FeatureUtil;
@@ -1316,6 +1317,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                 /* permission */ null, AppOpsManager.OPSTR_WRITE_MEDIA_VIDEO, /* forWrite */ true);
     }
 
+    @FlakyTest(bugId = 324388050)
     @Test
     public void testAccessMediaLocationInvalidation() throws Exception {
         File imgFile = new File(getDcimDir(), "access_media_location.jpg");
@@ -1402,6 +1404,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         }
     }
 
+    @FlakyTest(bugId = 324551195)
     @Test
     public void testAppReinstallInvalidation() throws Exception {
         File file = new File(getDcimDir(), "app_reinstall.jpg");
@@ -1854,13 +1857,17 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             assertCantRenameDirectory(downloadDir, new File(dcimDir, TEST_DIRECTORY_NAME), null);
 
             // Moving media directory to Download directory is allowed.
+            // Allow falling back to a recursive copy, since the rename will fail on ARCVM
+            // due to EXDEV.
             assertCanRenameDirectory(mediaDirectory1, mediaDirectory2, new File[] {videoFile1},
-                    new File[] {videoFile2});
+                    new File[] {videoFile2}, true /* allowCopyFallback */);
 
             // Moving media directory to Movies directory and renaming directory in new path is
             // allowed.
+            // Allow falling back to a recursive copy, since the rename will fail on ARCVM
+            // due to EXDEV.
             assertCanRenameDirectory(mediaDirectory2, mediaDirectory3, new File[] {videoFile2},
-                    new File[] {videoFile3});
+                    new File[] {videoFile3}, true /* allowCopyFallback */);
 
             // Can't rename a mediaDirectory to non empty non Media directory.
             assertCantRenameDirectory(mediaDirectory3, nonMediaDirectory, new File[] {videoFile3});

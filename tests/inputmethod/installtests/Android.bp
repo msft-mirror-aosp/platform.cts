@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_input_method_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -27,17 +28,21 @@ android_test {
     compile_multilib: "both",
     libs: ["android.test.runner"],
     static_libs: [
+        "CtsInputMethodServiceCommon",
+        "Harrier",
+        "Nene",
+        "TestApp",
+        "android.view.inputmethod.flags-aconfig-java",
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
         "compatibility-device-util-axt",
-        "cts-wm-util",
         "cts-inputmethod-util",
+        "cts-wm-util",
         "ctstestrunner-axt",
-        "testng",
-        "android.view.inputmethod.flags-aconfig-java",
         "flag-junit",
         "platform-test-annotations",
+        "testng",
     ],
     srcs: [
         "src/**/*.java",

@@ -953,6 +953,13 @@ public class WindowManagerState {
     }
 
     /**
+     * Count root tasks with a specific activity type.
+     */
+    public int getRootTaskCountWithActivityType(int activityType) {
+        return getRootTasksCount(t -> t.getActivityType() == activityType);
+    }
+
+    /**
      * Count root tasks filtered by the predicate passed as argument.
      */
     public int getRootTasksCount(Predicate<? super Task> predicate) {
@@ -1733,6 +1740,11 @@ public class WindowManagerState {
         private boolean mShouldForceRotateForCameraCompat;
         private boolean mShouldRefreshActivityForCameraCompat;
         private boolean mShouldRefreshActivityViaPauseForCameraCompat;
+        private boolean mShouldOverrideMinAspectRatio;
+        private boolean mShouldIgnoreOrientationRequestLoop;
+        private boolean mShouldOverrideForceResizeApp;
+        private boolean mShouldEnableUserAspectRatioSettings;
+        private boolean mIsUserFullscreenOverrideEnabled;
 
         Activity(ActivityRecordProto proto, WindowContainer parent) {
             super(proto.windowToken.windowContainer);
@@ -1757,6 +1769,11 @@ public class WindowManagerState {
             mShouldRefreshActivityForCameraCompat = proto.shouldRefreshActivityForCameraCompat;
             mShouldRefreshActivityViaPauseForCameraCompat =
                     proto.shouldRefreshActivityViaPauseForCameraCompat;
+            mShouldOverrideMinAspectRatio = proto.shouldOverrideMinAspectRatio;
+            mShouldIgnoreOrientationRequestLoop = proto.shouldIgnoreOrientationRequestLoop;
+            mShouldOverrideForceResizeApp = proto.shouldOverrideForceResizeApp;
+            mShouldEnableUserAspectRatioSettings = proto.shouldEnableUserAspectRatioSettings;
+            mIsUserFullscreenOverrideEnabled = proto.isUserFullscreenOverrideEnabled;
         }
 
         @NonNull
@@ -1830,6 +1847,27 @@ public class WindowManagerState {
         public boolean getShouldRefreshActivityViaPauseForCameraCompat() {
             return mShouldRefreshActivityViaPauseForCameraCompat;
         }
+
+        public boolean getShouldOverrideMinAspectRatio() {
+            return mShouldOverrideMinAspectRatio;
+        }
+
+        public boolean getShouldIgnoreOrientationRequestLoop() {
+            return mShouldIgnoreOrientationRequestLoop;
+        }
+
+        public boolean getShouldOverrideForceResizeApp() {
+            return mShouldOverrideForceResizeApp;
+        }
+
+        public boolean getShouldEnableUserAspectRatioSettings() {
+            return mShouldEnableUserAspectRatioSettings;
+        }
+
+        public boolean getIsUserFullscreenOverrideEnabled() {
+            return mIsUserFullscreenOverrideEnabled;
+        }
+
 
         @Override
         public Rect getBounds() {
@@ -2427,14 +2465,12 @@ public class WindowManagerState {
 
     public static class InsetsSource {
         private int mType;
-        private String mTypeName;
         private Rect mFrame;
         private Rect mVisibleFrame;
         private boolean mVisible;
 
         InsetsSource(InsetsSourceProto proto) {
             mType = proto.typeNumber;
-            mTypeName = proto.type;
             if (proto.frame != null) {
                 mFrame = new Rect(
                         proto.frame.left, proto.frame.top, proto.frame.right, proto.frame.bottom);
@@ -2496,7 +2532,7 @@ public class WindowManagerState {
 
         @Override
         public String toString() {
-            return "InsetsSource: {type=" + mTypeName
+            return "InsetsSource: {type=" + WindowInsets.Type.toString(mType)
                     + " frame=" + mFrame
                     + " visibleFrame=" + mVisibleFrame
                     + " visible=" + mVisible

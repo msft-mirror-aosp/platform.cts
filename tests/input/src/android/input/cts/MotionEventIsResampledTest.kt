@@ -17,18 +17,16 @@
 package android.input.cts
 
 import android.graphics.Point
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.WIDTH
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
-import android.util.Size
 import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.hardware.input.Flags
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -71,7 +69,7 @@ class MotionEventIsResampledTest {
                 virtualDisplayRule.virtualDisplay.display,
                 R.raw.test_touchscreen_register,
                 InputDevice.SOURCE_TOUCHSCREEN,
-                Size(WIDTH, HEIGHT),
+                useDisplaySize = true,
         )
         verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
     }
@@ -96,7 +94,7 @@ class MotionEventIsResampledTest {
         touchScreen.sendBtnTouch(true)
         touchScreen.sendDown(pointerId, pointer)
         touchScreen.sync()
-        verifier.assertReceivedDown()
+        verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN))
 
         // Three ACTION_MOVEs
         val xCoords = HashSet<Float>()
@@ -147,7 +145,7 @@ class MotionEventIsResampledTest {
         touchScreen.sendBtnTouch(false)
         touchScreen.sendUp(pointerId)
         touchScreen.sync()
-        verifier.assertReceivedUp()
+        verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP))
 
         Log.d(TAG, "Number of resampled PointerCoords: $numResamples")
     }

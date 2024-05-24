@@ -102,6 +102,7 @@ java_defaults {
         "cts",
         "general-tests",
         "mts-documentsui",
+        "mcts-documentsui",
     ],
     min_sdk_version: "29",
     replace_max_sdk_version_placeholder: "current",
@@ -111,14 +112,22 @@ android_test {
     name: "CtsContentTestCases",
     defaults: ["cts_content_defaults"],
 
+    static_libs: [
+        "android.security.flags-aconfig-java",
+        "flag-junit",
+        "TestParameterInjector",
+    ],
     srcs: [
         "src/android/content/cts/**/*.java",
         "BinderPermissionTestService/**/I*.aidl",
+        "ContentUriTestApp/**/I*.aidl",
     ],
     data: [
         ":CtsSyncAccountAccessStubs",
         ":CtsBinderPermissionTestService",
         ":CtsContentMockRestrictedApp",
+        ":CtsContentUriTestApp",
+        ":CtsIntentResolutionTestApp",
     ],
     test_config: "CtsContentTest.xml",
 }
@@ -127,6 +136,9 @@ android_test {
     name: "CtsResourcesTestCases",
     defaults: ["cts_content_defaults"],
 
+    static_libs: [
+        "android.content.res.flags-aconfig-java",
+    ],
     srcs: [
         "src/android/content/om/**/*.java",
         "src/android/content/res/**/*.java",
@@ -151,7 +163,9 @@ android_test {
     static_libs: [
         "android.content.pm.flags-aconfig-java",
         "android.security.flags-aconfig-java",
+        "android.multiuser.flags-aconfig-java",
         "flag-junit",
+        "androidx.test.rules",
     ],
     srcs: [
         "src/android/content/pm/**/*.java",
@@ -204,6 +218,7 @@ android_test {
         ":HelloWorld7",
         ":HelloWorldNoAppStorage",
         ":HelloWorldResHardening",
+        ":HelloWorldSettings",
         ":HelloWorldSdk1",
         ":HelloWorldSdk1DifferentSigner",
         ":HelloWorldSdk1MajorVersion2",
@@ -213,6 +228,7 @@ android_test {
         ":HelloWorldSdk3UsingSdk1",
         ":HelloWorldSdk3UsingSdk1And2",
         ":HelloWorldSystem",
+        ":HelloWorldSharedUid",
         ":HelloWorldUsingSdk1",
         ":HelloWorldUsingSdk1And2",
         ":HelloWorldUsingSdk1Optional",
@@ -227,6 +243,19 @@ android_test {
         ":HelloVerifierReject",
         ":HelloVerifierDelayedReject",
         ":HelloVerifierDisabled",
+        ":HelloWorldSystemUserOnly",
+        ":CtsMultiArchApp32_arm",
+        ":CtsMultiArchApp32_x86",
+        ":CtsMultiArchApp64_arm",
+        ":CtsMultiArchApp64_x86",
+        ":CtsMultiArchAppBoth_arm",
+        ":CtsMultiArchAppBoth_x86",
+        ":CtsMultiArchApp32_targetSdk33_arm",
+        ":CtsMultiArchApp32_targetSdk33_x86",
+        ":CtsMultiArchApp64_targetSdk33_arm",
+        ":CtsMultiArchApp64_targetSdk33_x86",
+        ":CtsMultiArchAppBoth_targetSdk33_arm",
+        ":CtsMultiArchAppBoth_targetSdk33_x86",
     ],
     java_resources: [
         ":PackagePropertyTestApp1",
@@ -255,6 +284,7 @@ android_ravenwood_test {
     ],
     srcs: [
         "src/android/content/cts/util/XmlUtils.java",
+        "src/android/content/cts/ClipboardManagerTest.java",
         "src/android/content/cts/ClipDataTest.java",
         "src/android/content/cts/ClipDescriptionTest.java",
         "src/android/content/cts/ComponentNameTest.java",

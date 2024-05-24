@@ -36,6 +36,7 @@ import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.UserManager;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.backgroundactivity.appa.Components;
@@ -73,6 +74,12 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     static final String APP_C_PACKAGE = "android.server.wm.backgroundactivity.appc";
     static final Components APP_C = Components.get(APP_C_PACKAGE);
     static final Components APP_C_33 = Components.get(APP_C_PACKAGE + "33");
+    static final Components APP_ASM_OPT_IN =
+            Components.get("android.server.wm.backgroundactivity.appasmoptin");
+
+    static final String APP_ASM_OPT_OUT_PACKAGE =
+            "android.server.wm.backgroundactivity.appasmoptout";
+    static final Components APP_ASM_OPT_OUT = Components.get(APP_ASM_OPT_OUT_PACKAGE);
 
     static final List<Components> ALL_APPS =
             List.of(APP_A, APP_A_33, APP_B, APP_B_33, APP_C, APP_C_33);
@@ -96,12 +103,22 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
 
     @Before
     public void enableFeatureFlags() {
-        mDeviceConfig.set(ASM_RESTRICTIONS_ENABLED, "1");
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            mDeviceConfig.set(ASM_RESTRICTIONS_ENABLED, "1");
+        }
     }
 
     @After
     public void disableFeatureFlags() throws Exception {
-        mDeviceConfig.close();
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            mDeviceConfig.close();
+        } else {
+            try {
+                mDeviceConfig.close();
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to tear down feature flags.", e);
+            }
+        }
     }
 
     @Override
@@ -296,6 +313,17 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         ActivityStartVerifier activity(ComponentName to, int id) {
             activity(to);
             mLaunchIntent.putExtra(COMMON_FOREGROUND_ACTIVITY_EXTRAS.ACTIVITY_ID, id);
+            return this;
+        }
+
+        ActivityStartVerifier activityIntoNewTask(ComponentName to) {
+            activity(to);
+            mLaunchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            return this;
+        }
+
+        ActivityStartVerifier allowCrossUidLaunch() {
+            mLaunchIntent.putExtra(COMMON_FOREGROUND_ACTIVITY_EXTRAS.ALLOW_CROSS_UID, true);
             return this;
         }
 

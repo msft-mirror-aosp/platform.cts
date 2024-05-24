@@ -106,6 +106,9 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         final TouchHelper.SwipeSession touchSession = new TouchHelper.SwipeSession(
                 DEFAULT_DISPLAY, true, false);
         touchSession.beginSwipe(0, midHeight);
+        // Back start event shouldn't be sent until the edge swipe threshold is crossed.
+        assertNotInvoked(mTracker.mStartLatch);
+
         touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
         assertInvoked(mTracker.mStartLatch);
         assertInvoked(mTracker.mProgressLatch);
@@ -189,6 +192,27 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertInvoked(mTracker.mCancelLatch);
         assertNotInvoked(mTracker.mProgressLatch);
         assertNotInvoked(mTracker.mInvokeLatch);
+    }
+
+    @Test
+    public void ignoresKeyCodeBackDuringDispatch() {
+        int midHeight = mUiDevice.getDisplayHeight() / 2;
+        int midWidth = mUiDevice.getDisplayWidth() / 2;
+
+        final TouchHelper.SwipeSession touchSession = new TouchHelper.SwipeSession(
+                DEFAULT_DISPLAY, true, false);
+        touchSession.beginSwipe(0, midHeight);
+        touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+        waitForIdle();
+        mTracker.reset();
+        TouchHelper.injectKey(KeyEvent.KEYCODE_BACK, false /* longpress */, true /* sync */);
+        waitForIdle();
+        // Make sure the KEYCODE_BACKs don't invoke callbacks.
+        assertNotInvoked(mTracker.mStartLatch);
+        assertNotInvoked(mTracker.mProgressLatch);
+        assertNotInvoked(mTracker.mInvokeLatch);
+        assertNotInvoked(mTracker.mCancelLatch);
+        touchSession.finishSwipe();
     }
 
     @Test

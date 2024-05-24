@@ -29,9 +29,12 @@ android_test {
         "androidx.test.ext.junit",
         "testng",
         "platform-compat-test-rules",
-        "flag-junit",
-        "android.service.voice.flags-aconfig-java",
+        "android.app.wearable.flags-aconfig-java",
         "android.permission.flags-aconfig-java",
+        "Harrier",
+        "Nene",
+        "ActivityContext",
+        "TestApp",
     ],
     aidl: {
         local_include_dirs: [
@@ -46,6 +49,7 @@ android_test {
         "service/src/android/voiceinteraction/service/MainInteractionSession.java",
         "service/src/android/voiceinteraction/service/MainInteractionSessionService.java",
         "service/src/android/voiceinteraction/service/MainRecognitionService.java",
+        "service/src/android/voiceinteraction/service/MainWearableSensingService.java",
         "service/src/android/voiceinteraction/service/EventPayloadParcelable.java",
         "service/src/android/voiceinteraction/service/EventPayloadParcelable.aidl",
         "service/src/android/voiceinteraction/service/MainVisualQueryDetectionService.java",

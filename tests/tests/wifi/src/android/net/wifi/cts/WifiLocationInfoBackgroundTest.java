@@ -32,6 +32,7 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.PowerManager;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresDevice;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
@@ -60,6 +61,7 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @ApiTest(apis = {"Manifest.permission#ACCESS_BACKGROUND_LOCATION"})
 @NonMainlineTest
+@RequiresDevice
 public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     private static final String TAG = "WifiLocationInfoTest";
 
@@ -104,6 +106,9 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
         }
         sShouldRunTest = true;
 
+        sPower = sContext.getSystemService(PowerManager.class);
+        sLock = sPower.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+
         sWifiManager = sContext.getSystemService(WifiManager.class);
         assertThat(sWifiManager).isNotNull();
 
@@ -133,8 +138,6 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
                 "Wifi not connected",
                 WIFI_CONNECT_TIMEOUT_MILLIS,
                 () -> sWifiManager.getConnectionInfo().getNetworkId() != -1);
-        sPower = sContext.getSystemService(PowerManager.class);
-        sLock = sPower.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
         turnScreenOff();
     }
 

@@ -16,22 +16,32 @@
 
 package android.view.cts.surfacevalidator;
 
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
+
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.RemoteException;
 import android.util.Log;
+import android.view.Choreographer;
 import android.view.Display;
+import android.view.MotionEvent;
+import android.view.Surface;
+import android.view.SurfaceControl;
 import android.view.SurfaceControl.Transaction;
 import android.view.SurfaceControlViewHost;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.window.InputTransferToken;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -40,6 +50,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class EmbeddedSCVHService extends Service {
+    private static final long WAIT_TIME_S = 5L * HW_TIMEOUT_MULTIPLIER;
+
     private static final String TAG = "SCVHEmbeddedService";
     private SurfaceControlViewHost mVr;
 
@@ -47,10 +59,17 @@ public class EmbeddedSCVHService extends Service {
 
     private SlowView mSlowView;
 
+    private SurfaceControl mSurfaceControl;
+
+    private WindowManager mWm;
+
+    private InputTransferToken mEmbeddedInputTransferToken;
+
     @Override
     public void onCreate() {
         super.onCreate();
         mHandler = new Handler(Looper.getMainLooper());
+        mWm = getSystemService(WindowManager.class);
     }
 
     @Nullable
@@ -144,5 +163,73 @@ public class EmbeddedSCVHService extends Service {
                 throw new RuntimeException();
             });
         }
+
+        @Override
+        public String attachEmbeddedSurfaceControl(SurfaceControl parentSc, int displayId,
+                InputTransferToken hostToken, int width, int height, boolean transferTouchToHost,
+                @Nullable IMotionEventReceiver receiver) {
+            CountDownLatch registeredLatch = new CountDownLatch(1);
+            String name = "Child SurfaceControl";
+            mHandler.post(() -> {
+                mSurfaceControl = new SurfaceControl.Builder().setName(name)
+                        .setParent(parentSc).setBufferSize(width, height).build();
+                new SurfaceControl.Transaction().setVisibility(mSurfaceControl, true).setCrop(
+                        mSurfaceControl, new Rect(0, 0, width, height)).apply();
+
+                Surface surface = new Surface(mSurfaceControl);
+                Canvas c = surface.lockCanvas(null);
+                c.drawColor(Color.BLUE);
+                surface.unlockCanvasAndPost(c);
+
+                mEmbeddedInputTransferToken = mWm.registerBatchedSurfaceControlInputReceiver(
+                        displayId, hostToken, mSurfaceControl, Choreographer.getInstance(),
+                        event -> {
+                            if (event instanceof MotionEvent) {
+                                if (transferTouchToHost) {
+                                    mWm.transferTouchGesture(mEmbeddedInputTransferToken,
+                                            hostToken);
+                                }
+
+                                try {
+                                    receiver.onMotionEventReceived(
+                                            MotionEvent.obtain((MotionEvent) event));
+                                } catch (RemoteException e) {
+                                    Log.e(TAG, "Failed to send motion event to host", e);
+                                }
+                            }
+                            return false;
+                        });
+                registeredLatch.countDown();
+            });
+
+            try {
+                if (!registeredLatch.await(WAIT_TIME_S, TimeUnit.SECONDS)) {
+                    Log.e(TAG, "Failed to wait for input to be registered");
+                    return null;
+                }
+            } catch (InterruptedException e) {
+                return null;
+            }
+            // Use name instead of token because retrieving the token is a through a TestApi that
+            // this process is unable to call
+            return name;
+        }
+
+        @Override
+        public InputTransferToken getEmbeddedInputTransferToken() {
+            return mEmbeddedInputTransferToken;
+        }
+
+        @Override
+        public void tearDownEmbeddedSurfaceControl() {
+            mHandler.post(() -> {
+                if (mSurfaceControl != null) {
+                    mWm.unregisterSurfaceControlInputReceiver(mSurfaceControl);
+                    new Transaction().reparent(mSurfaceControl, null);
+                    mSurfaceControl.release();
+                }
+            });
+        }
+
     }
 }

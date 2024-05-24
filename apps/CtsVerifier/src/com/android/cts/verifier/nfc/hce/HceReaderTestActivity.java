@@ -16,18 +16,19 @@
 
 package com.android.cts.verifier.nfc.hce;
 
+import android.app.role.RoleManager;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.nfc.NfcAdapter;
 import android.nfc.cardemulation.CardEmulation;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.SystemProperties;
+
 import com.android.cts.verifier.ArrayTestListAdapter;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestListAdapter.TestListItem;
-
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.SystemProperties;
 
 /** Activity that lists all the NFC HCE reader tests. */
 public class HceReaderTestActivity extends PassFailButtons.TestListActivity {
@@ -37,9 +38,9 @@ public class HceReaderTestActivity extends PassFailButtons.TestListActivity {
         setContentView(R.layout.pass_fail_list);
         setInfoResources(R.string.nfc_test, R.string.nfc_hce_reader_test_info, 0);
         setPassFailButtonClickListeners();
-
+        RoleManager roleManager = getSystemService(RoleManager.class);
         ArrayTestListAdapter adapter = new ArrayTestListAdapter(this);
-
+        boolean isWalletRoleAvailable = roleManager.isRoleAvailable(RoleManager.ROLE_WALLET);
         if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) {
             adapter.add(TestListItem.newCategory(this, R.string.nfc_hce_reader_tests));
 
@@ -53,7 +54,8 @@ public class HceReaderTestActivity extends PassFailButtons.TestListActivity {
 
             adapter.add(TestListItem.newTest(this, R.string.nfc_hce_dual_payment_reader,
                     getString(R.string.nfc_hce_dual_payment_reader),
-                    DualPaymentEmulatorActivity.buildReaderIntent(this), null));
+                    DualPaymentEmulatorActivity.buildReaderIntent(this,
+                            isWalletRoleAvailable), null));
 
             adapter.add(TestListItem.newTest(this, R.string.nfc_hce_change_default_reader,
                     getString(R.string.nfc_hce_change_default_reader),
@@ -112,7 +114,8 @@ public class HceReaderTestActivity extends PassFailButtons.TestListActivity {
 
                 adapter.add(TestListItem.newTest(this, R.string.nfc_hce_payment_prefix_aids_reader_2,
                         getString(R.string.nfc_hce_payment_prefix_aids_reader_2),
-                        PrefixPaymentEmulator2Activity.buildReaderIntent(this), null));
+                        PrefixPaymentEmulator2Activity.buildReaderIntent(this,
+                                isWalletRoleAvailable), null));
 
                 adapter.add(TestListItem.newTest(this, R.string.nfc_hce_other_prefix_aids_reader,
                         getString(R.string.nfc_hce_other_prefix_aids_reader),
@@ -122,6 +125,22 @@ public class HceReaderTestActivity extends PassFailButtons.TestListActivity {
                         getString(R.string.nfc_hce_other_conflicting_prefix_aids_reader),
                         ConflictingNonPaymentPrefixEmulatorActivity.buildReaderIntent(this), null));
             }
+
+            adapter.add(TestListItem.newTest(this, R.string.nfc_observe_mode_reader,
+                    ObserveModeReaderActivity.class.getName(),
+                    new Intent(this, ObserveModeReaderActivity.class), null));
+            adapter.add(TestListItem.newTest(this, R.string.nfc_polling_loop_a_reader,
+                    getString(R.string.nfc_polling_loop_a_reader),
+                    PollingLoopEmulatorActivity.buildReaderIntent(this,
+                            NfcAdapter.FLAG_READER_NFC_A), null));
+            adapter.add(TestListItem.newTest(this, R.string.nfc_polling_loop_b_reader,
+                    getString(R.string.nfc_polling_loop_b_reader),
+                    PollingLoopEmulatorActivity.buildReaderIntent(this,
+                            NfcAdapter.FLAG_READER_NFC_B), null));
+            adapter.add(TestListItem.newTest(this, R.string.nfc_polling_loop_ab_reader,
+                    getString(R.string.nfc_polling_loop_ab_reader),
+                    PollingLoopEmulatorActivity.buildReaderIntent(this,
+                            NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_NFC_B), null));
 
             int firstSdk =
                     SystemProperties.getInt("ro.product.first_api_level", Build.VERSION_CODES.S);

@@ -47,6 +47,7 @@ import com.android.cts.verifier.audio.audiolib.AudioUtils;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 import com.android.cts.verifier.audio.audiolib.StatUtils;
 
+import org.hyphonate.megaaudio.common.Globals;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -131,7 +132,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private static final double CONFIDENCE_THRESHOLD_WIRED = 0.6;
 
     public static final double LATENCY_NOT_MEASURED = 0.0;
-    public static final double LATENCY_BASIC = 300.0;
+    public static final double LATENCY_BASIC = 250.0; // chaned from 300 in CDD 15 for VIC
     public static final double LATENCY_PRO_AUDIO_AT_LEAST_ONE = 25.0;
     public static final double LATENCY_PRO_AUDIO_ANALOG = 20.0;
     public static final double LATENCY_PRO_AUDIO_USB = 25.0;
@@ -709,30 +710,36 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private static final String KEY_PATHS = "paths";
 
     private void recordGlobalResults(CtsVerifierReportLog reportLog) {
-            int audioLevel = mAudioLevelSeekbar.getProgress();
-            reportLog.addValue(
-                    KEY_LEVEL,
-                    audioLevel,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
+        int audioLevel = mAudioLevelSeekbar.getProgress();
+        reportLog.addValue(
+                KEY_LEVEL,
+                audioLevel,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
 
-            reportLog.addValue(
-                    KEY_IS_PRO_AUDIO,
-                    mClaimsProAudio,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_IS_PRO_AUDIO,
+                mClaimsProAudio,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
 
-            reportLog.addValue(
-                    KEY_TEST_MMAP,
-                    mSupportsMMAP,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_TEST_MMAP,
+                mSupportsMMAP,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
 
-            reportLog.addValue(
-                    KEY_TEST_MMAPEXCLUSIVE,
-                    mSupportsMMAPExclusive,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
+        reportLog.addValue(
+                KEY_TEST_MMAPEXCLUSIVE,
+                mSupportsMMAPExclusive,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+
+        reportLog.addValue(
+                Common.KEY_VERSION_CODE,
+                Common.VERSION_CODE,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
     }
 
     private void recordAllRoutes(CtsVerifierReportLog reportLog) {
@@ -784,6 +791,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         getPassButton().setEnabled(false);
 
         mTestPhase = 0;
+
+        // Set mmap enabled as mmap supported to get best latency
+        Globals.setMMapEnabled(Globals.isMMapSupported());
 
         mNativeAnalyzerThread = new NativeAnalyzerThread(this);
         if (mNativeAnalyzerThread != null) {

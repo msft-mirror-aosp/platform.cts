@@ -17,6 +17,17 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+TEST_SUITES_DEFAULT = [
+    "cts",
+    "general-tests",
+    "mts-documentsui",
+    "mts-mainline-infra",
+    "mts-mediaprovider",
+    "mcts-documentsui",
+    "mcts-mainline-infra",
+    "mcts-mediaprovider",
+]
+
 java_library_host {
     name: "CtsAppSecurityUtils",
     defaults: ["cts_defaults"],
@@ -68,21 +79,15 @@ java_defaults {
         "cts-host-utils",
         "cts-statsd-atom-host-test-utils",
         "sts-host-util",
+        "flag-junit-host",
+        "com.android.internal.pm.pkg.component.flags-aconfig-java-host",
     ],
 
     java_resource_dirs: ["res"],
 
     per_testcase_directory: true,
 
-    // tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-        "mts-documentsui",
-        "mts-mainline-infra",
-        "mts-mediaprovider",
-        "sts",
-    ],
+    test_suites: TEST_SUITES_DEFAULT,
 }
 
 java_test_host {
@@ -97,12 +102,16 @@ java_test_host {
         "src/**/ListeningPortsTest.java",
         "src/**/PkgInstallSignatureVerificationTest.java",
         "src/**/StatsdAppSecurityAtomTest.java",
+        "src/**/RoleSecurityTest.java",
     ],
 
     static_libs: [
         "flag-junit-host",
         "android.security.flags-aconfig-java-host",
+        "sts-host-util",
     ],
+
+    test_suites: TEST_SUITES_DEFAULT + ["sts"],
 
     data: [
         // AppSecurityTests
@@ -185,12 +194,35 @@ java_test_host {
         ":v3-rsa-2048-declperm",
         // StatsdAppSecurityAtomTest
         ":CtsStatsSecurityApp",
+        // ApkVerityInstallTest
+        ":CtsApkVerityTestApp",
+        ":CtsApkVerityTestAppSplit",
+        // PackageSetInstallerTest
+        ":CtsPkgInstallerPermRequestApp",
+        ":CtsPkgInstallerPermWhitelistApp",
+        // CtsAppDataIsolationAppA
+        ":CtsAppDataIsolationAppA",
+        ":CtsAppDataIsolationAppSharedA",
+        ":CtsAppDataIsolationAppDirectBootA",
+        ":CtsAppDataIsolationAppApi29A",
+        ":CtsAppDataIsolationAppB",
+        ":CtsAppDataIsolationAppSharedB",
+        // ReadableSettingsFieldsTest
+        ":CtsReadSettingsFieldsApp",
+        ":CtsReadSettingsFieldsAppTestOnly",
+        ":CtsReadSettingsFieldsAppTargetQ",
+        ":CtsReadSettingsFieldsAppTargetR",
+        ":CtsReadSettingsFieldsAppTargetS",
+        // UseProcessTest
+        ":CtsUseProcessFailActivity",
     ],
 }
 
 java_test_host {
     name: "CtsPermissionsHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
+
+    test_suites: TEST_SUITES_DEFAULT + ["sts"],
 
     srcs: [
         "src/**/AccessSerialNumberTest.java",
@@ -238,7 +270,9 @@ java_test_host {
     ],
     data: [
         ":CtsUseEmbeddedDexApp_Canonical",
+        ":CtsUseEmbeddedDexApp_Canonical_PerProcess",
         ":CtsUseEmbeddedDexApp_DexCompressed",
+        ":CtsUseEmbeddedDexApp_DexCompressed_PerProcess",
         ":CtsUseEmbeddedDexApp_NotPreferred",
         ":CtsUseEmbeddedDexAppSplit_Canonical",
         ":CtsUseEmbeddedDexAppSplit_CompressedDex",
@@ -265,6 +299,10 @@ java_test_host {
         "src/**/SharedUserIdTest.java",
         "src/**/SplitTests.java",
         "src/**/UseProcessTest.java",
+    ],
+    static_libs: [
+        "flag-junit-host",
+        "android.content.pm.flags-aconfig-java-host",
     ],
     data: [
         // ApplicationVisibilityTest
@@ -373,7 +411,7 @@ java_test_host {
 java_test_host {
     name: "CtsInstantAppsHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
-
+    test_suites: TEST_SUITES_DEFAULT + ["sts"],
     srcs: [
         "src/**/EphemeralTest.java",
         "src/**/InstantAppUserTest.java",
@@ -424,6 +462,10 @@ java_test_host {
     name: "CtsStorageHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
+    static_libs: [
+        "flag-junit-host",
+        "android.app.usage.flags-aconfig-java-host",
+    ],
     srcs: [
         "src/**/*Storage*.java",
     ],

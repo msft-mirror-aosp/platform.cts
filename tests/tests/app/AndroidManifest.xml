@@ -18,6 +18,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.app.cts">
 
+    <permission android:name="android.permission.COMPONENT_CALLER_TEST_PROVIDER_UNUSED_PERMISSION" />
+
+    <uses-permission android:name="android.permission.COMPONENT_CALLER_HELPER_PATH_PROVIDER_READ_PERMISSION" />
+
     <application>
         <uses-library android:name="android.test.runner" />
 
@@ -32,12 +36,73 @@
         <activity android:name=".ShareIdentityTest$ShareIdentityTestActivity"
                   android:exported="true" />
 
+        <activity android:name=".ShareIdentityTest$ActivityInitialCallerShareIdentityTestActivity"
+            android:exported="true" />
+
+        <activity android:name=".ShareIdentityTest$ActivityNewIntentGetCurrentCallerShareIdentityTestActivity"
+            android:exported="true"
+            android:launchMode="singleInstance"/>
+
+        <activity android:name=".ShareIdentityTest$ActivityNewIntentOverloadCallerShareIdentityTestActivity"
+            android:exported="true"
+            android:launchMode="singleInstance"/>
+
+        <activity android:name=".ShareIdentityTest$ActivityResultGetCurrentCallerShareIdentityTestActivity"
+            android:exported="true" />
+
+        <activity android:name=".ShareIdentityTest$ActivityResultOverloadCallerShareIdentityTestActivity"
+            android:exported="true" />
+
+        <activity android:name=".ShareIdentityTest$ActivitySetResultSameUidShareIdentityTestActivity"
+            android:exported="true" />
+
         <receiver android:name=".ShareIdentityTest$ShareIdentityTestReceiver"
                   android:exported="true">
             <intent-filter>
                 <action android:name="android.app.cts.SHARE_IDENTITY_TEST_MANIFEST_ACTION" />
             </intent-filter>
         </receiver>
+
+        <activity android:name=".ComponentCallerTest$InitialCallerTestActivity"
+            android:exported="true" />
+
+        <activity android:name=".ComponentCallerTest$NewIntentGetCurrentCallerTestActivity"
+            android:exported="true"
+            android:launchMode="singleInstance" />
+
+        <activity android:name=".ComponentCallerTest$NewIntentOverloadCallerTestActivity"
+            android:exported="true"
+            android:launchMode="singleInstance" />
+
+        <activity android:name=".ComponentCallerTest$NewIntentGetSetIntentCurrentCallerTestActivity"
+            android:exported="true"
+            android:launchMode="singleInstance" />
+
+        <activity android:name=".ComponentCallerTest$NewIntentGetSetIntentOverloadCallerTestActivity"
+            android:exported="true"
+            android:launchMode="singleInstance" />
+
+        <activity android:name=".ComponentCallerTest$ResultGetSetIntentCurrentCallerTestActivity"
+            android:exported="true" />
+
+        <activity android:name=".ComponentCallerTest$ResultGetSetIntentOverloadCallerTestActivity"
+            android:exported="true" />
+
+        <activity android:name=".ComponentCallerTest$SetResultTestActivity"
+            android:exported="true" />
+
+        <receiver android:name=".ComponentCallerTest$TestReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.app.cts.ACTIVITY_CALLER_ACTION" />
+            </intent-filter>
+        </receiver>
+
+        <provider android:name=".ComponentCallerTest$TestProvider"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:authorities="android.app.cts.componentcaller.provider"
+            android:permission="android.permission.COMPONENT_CALLER_TEST_PROVIDER_UNUSED_PERMISSION" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

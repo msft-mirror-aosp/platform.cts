@@ -33,20 +33,26 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricManager.Authenticators;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
+import android.hardware.biometrics.PromptContentView;
+import android.hardware.biometrics.PromptVerticalListContentView;
 import android.hardware.biometrics.SensorProperties;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TestJournalProvider.TestJournal;
 import android.server.wm.UiDeviceUtils;
@@ -64,6 +70,8 @@ import com.android.server.biometrics.nano.BiometricServiceStateProto;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -74,6 +82,10 @@ import java.util.concurrent.Executor;
  * Base class containing useful functionality. Actual tests should be done in subclasses.
  */
 abstract class BiometricTestBase extends ActivityManagerTestBase implements TestSessionList.Idler {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = "BiometricTestBase";
     private static final String DUMPSYS_BIOMETRIC = Utils.DUMPSYS_BIOMETRIC;
@@ -88,9 +100,12 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
     protected static final String BUTTON_ID_TRY_AGAIN = "button_try_again";
 
     // Biometric text contents
+    protected static final String LOGO_VIEW = "logo";
+    protected static final String LOGO_DESCRIPTION_VIEW = "logo_description";
     protected static final String TITLE_VIEW = "title";
     protected static final String SUBTITLE_VIEW = "subtitle";
     protected static final String DESCRIPTION_VIEW = "description";
+    protected static final String CONTENT_CONTAINER_VIEW = "customized_view_container";
 
     protected static final String VIEW_ID_PASSWORD_FIELD = "lockPassword";
     protected static final String KEY_ENTER = "key_enter";
@@ -131,6 +146,12 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
                 + FLAG_CLEAR_SCHEDULER_LOG);
         final BiometricServiceStateProto proto = BiometricServiceStateProto.parseFrom(dump);
         return BiometricServiceState.parseFrom(proto);
+    }
+
+
+    @Nullable
+    protected String getCurrentPackageName() {
+        return mDevice.getCurrentPackageName();
     }
 
     @Nullable
@@ -205,7 +226,7 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
         return false;
     }
 
-    protected void successfullyAuthenticate(@NonNull BiometricTestSession session, int userId)
+    private void successfullyAuthenticate(@NonNull BiometricTestSession session, int userId)
             throws Exception {
         session.acceptAuthentication(userId);
         mInstrumentation.waitForIdleSync();
@@ -222,6 +243,28 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
 
         assertEquals("Failed to become idle after authenticating",
                 STATE_AUTH_IDLE, getCurrentState().mState);
+    }
+
+    protected void successfullyAuthenticate(@NonNull BiometricTestSession session, int userId,
+            TestJournal journal) throws Exception {
+        successfullyAuthenticate(session, userId);
+        mInstrumentation.waitForIdleSync();
+        BiometricCallbackHelper.State callbackState = getCallbackState(journal);
+        assertNotNull(callbackState);
+        assertEquals(callbackState.toString(), 1, callbackState.mNumAuthAccepted);
+        assertEquals(callbackState.toString(), 0, callbackState.mAcquiredReceived.size());
+        assertEquals(callbackState.toString(), 0, callbackState.mErrorsReceived.size());
+    }
+
+    protected void successfullyAuthenticate(@NonNull BiometricTestSession session, int userId,
+            BiometricPrompt.AuthenticationCallback callback) throws Exception {
+        successfullyAuthenticate(session, userId);
+        ArgumentCaptor<BiometricPrompt.AuthenticationResult> resultCaptor =
+                ArgumentCaptor.forClass(BiometricPrompt.AuthenticationResult.class);
+        verify(callback).onAuthenticationSucceeded(resultCaptor.capture());
+        assertEquals("Must be TYPE_BIOMETRIC",
+                BiometricPrompt.AUTHENTICATION_RESULT_TYPE_BIOMETRIC,
+                resultCaptor.getValue().getAuthenticationType());
     }
 
     protected void successfullyEnterCredential() throws Exception {
@@ -287,7 +330,7 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
             @NonNull CancellationSignal cancellationSignal,
             boolean shouldShow) throws Exception {
         showCredentialOnlyBiometricPromptWithContents(callback, cancellationSignal, shouldShow,
-                "Title", "Subtitle", "Description");
+                "Title", "Subtitle", "Description", null /* contentView */);
     }
 
     /**
@@ -298,33 +341,21 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
             @NonNull BiometricPrompt.AuthenticationCallback callback,
             @NonNull CancellationSignal cancellationSignal, boolean shouldShow,
             @NonNull String title, @NonNull String subtitle,
-            @NonNull String description) throws Exception {
+            @NonNull String description, @Nullable PromptContentView contentView) throws Exception {
         final Handler handler = new Handler(Looper.getMainLooper());
         final Executor executor = handler::post;
         final BiometricPrompt prompt = new BiometricPrompt.Builder(mContext)
                 .setTitle(title)
                 .setSubtitle(subtitle)
                 .setDescription(description)
+                .setContentView(contentView)
                 .setAllowedAuthenticators(Authenticators.DEVICE_CREDENTIAL)
                 .setAllowBackgroundAuthentication(true)
                 .build();
 
         prompt.authenticate(cancellationSignal, executor, callback);
-        mInstrumentation.waitForIdleSync();
 
-        // Wait for any animations to complete. Ideally, this should be reflected in
-        // STATE_SHOWING_DEVICE_CREDENTIAL, but SysUI and BiometricService are different processes
-        // so we'd need to add some additional plumbing. We can improve this in the future.
-        // TODO(b/152240892)
-        Thread.sleep(1000);
-
-        if (shouldShow) {
-            waitForState(STATE_SHOWING_DEVICE_CREDENTIAL);
-            BiometricServiceState state = getCurrentState();
-            assertEquals(state.toString(), STATE_SHOWING_DEVICE_CREDENTIAL, state.mState);
-        } else {
-            Utils.waitForIdleService(this::getSensorStates);
-        }
+        waitForCredentialIdle(shouldShow, contentView == null);
     }
 
     /**
@@ -346,42 +377,41 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
                 .build();
 
         prompt.authenticate(cancellationSignal, executor, callback);
-        mInstrumentation.waitForIdleSync();
 
-        // Wait for any animations to complete. Ideally, this should be reflected in
-        // STATE_SHOWING_DEVICE_CREDENTIAL, but SysUI and BiometricService are different processes
-        // so we'd need to add some additional plumbing. We can improve this in the future.
-        // TODO(b/152240892)
-        Thread.sleep(1000);
-
-        if (shouldShow) {
-            waitForState(STATE_SHOWING_DEVICE_CREDENTIAL);
-            BiometricServiceState state = getCurrentState();
-            assertEquals(state.toString(), STATE_SHOWING_DEVICE_CREDENTIAL, state.mState);
-        } else {
-            Utils.waitForIdleService(this::getSensorStates);
-        }
+        waitForCredentialIdle(shouldShow, true /* isContentViewNull */);
     }
 
-    protected void showDefaultBiometricPrompt(int sensorId, int userId,
-            boolean requireConfirmation, @NonNull BiometricPrompt.AuthenticationCallback callback,
+    protected BiometricPrompt showDefaultBiometricPrompt(int sensorId,
+            @NonNull BiometricPrompt.AuthenticationCallback callback,
             @NonNull CancellationSignal cancellationSignal) throws Exception {
+        return showDefaultBiometricPromptWithLogo(sensorId, callback, cancellationSignal,
+                -1 /* logoRes */, null /* logoBitmap */, null /* logoDescription */);
+    }
+
+    protected BiometricPrompt showDefaultBiometricPromptWithLogo(int sensorId,
+            @NonNull BiometricPrompt.AuthenticationCallback callback,
+            @NonNull CancellationSignal cancellationSignal, int logoRes, Bitmap logoBitmap,
+            String logoDescription) throws Exception {
         final Handler handler = new Handler(Looper.getMainLooper());
         final Executor executor = handler::post;
         final BiometricPrompt prompt = new BiometricPrompt.Builder(mContext)
                 .setTitle("Title")
                 .setSubtitle("Subtitle")
                 .setDescription("Description")
-                .setConfirmationRequired(requireConfirmation)
+                .setConfirmationRequired(true)
                 .setNegativeButton("Negative Button", executor, (dialog, which) -> {
                     Log.d(TAG, "Negative button pressed");
                 })
                 .setAllowBackgroundAuthentication(true)
                 .setAllowedSensorIds(new ArrayList<>(Collections.singletonList(sensorId)))
+                .setLogoRes(logoRes)
+                .setLogoBitmap(logoBitmap)
+                .setLogoDescription(logoDescription)
                 .build();
         prompt.authenticate(cancellationSignal, executor, callback);
 
         waitForState(STATE_AUTH_STARTED_UI_SHOWING);
+        return prompt;
     }
 
     /**
@@ -391,13 +421,15 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
     protected void showDefaultBiometricPromptWithContents(int sensorId, int userId,
             boolean requireConfirmation, @NonNull BiometricPrompt.AuthenticationCallback callback,
             @NonNull String title, @NonNull String subtitle, @NonNull String description,
-            @NonNull String negativeButtonText) throws Exception {
+            @Nullable PromptContentView contentView, @NonNull String negativeButtonText)
+            throws Exception {
         final Handler handler = new Handler(Looper.getMainLooper());
         final Executor executor = handler::post;
         final BiometricPrompt prompt = new BiometricPrompt.Builder(mContext)
                 .setTitle(title)
                 .setSubtitle(subtitle)
                 .setDescription(description)
+                .setContentView(contentView)
                 .setConfirmationRequired(requireConfirmation)
                 .setNegativeButton(negativeButtonText, executor, (dialog, which) -> {
                     Log.d(TAG, "Negative button pressed");
@@ -419,23 +451,27 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
         BiometricPrompt.AuthenticationCallback callback = mock(
                 BiometricPrompt.AuthenticationCallback.class);
         showDefaultBiometricPromptWithContents(sensorId, userId, false /* requireConfirmation */,
-                callback, "Title", "Subtitle", "Description", "Negative Button");
+                callback, "Title", "Subtitle", "Description",
+                new PromptVerticalListContentView.Builder().build(), "Negative Button");
         successfullyAuthenticate(session, userId);
     }
 
-    protected void showBiometricPromptWithAuthenticators(int authenticators) {
+    protected BiometricPrompt showBiometricPromptWithAuthenticators(int authenticators) {
         final Handler handler = new Handler(Looper.getMainLooper());
         final Executor executor = handler::post;
-        final BiometricPrompt prompt = new BiometricPrompt.Builder(mContext)
+        final BiometricPrompt.Builder promptBuilder = new BiometricPrompt.Builder(mContext)
                 .setTitle("Title")
                 .setSubtitle("Subtitle")
                 .setDescription("Description")
-                .setNegativeButton("Negative Button", executor, (dialog, which) -> {
-                    Log.d(TAG, "Negative button pressed");
-                })
                 .setAllowBackgroundAuthentication(true)
-                .setAllowedAuthenticators(authenticators)
-                .build();
+                .setAllowedAuthenticators(authenticators);
+        if ((authenticators & Authenticators.DEVICE_CREDENTIAL) == 0) {
+            promptBuilder.setNegativeButton("Negative Button", executor, (dialog, which) -> {
+                Log.d(TAG, "Negative button pressed");
+            });
+        }
+
+        final BiometricPrompt prompt = promptBuilder.build();
         prompt.authenticate(new CancellationSignal(), executor,
                 new BiometricPrompt.AuthenticationCallback() {
                     @Override
@@ -449,6 +485,7 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
                         Log.d(TAG, "onAuthenticationSucceeded");
                     }
                 });
+        return prompt;
     }
 
     protected void launchActivityAndWaitForResumed(@NonNull ActivitySession activitySession) {
@@ -557,6 +594,32 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
         final BiometricServiceState state = getCurrentState();
         assertEquals("Sensor: " + sensorId + " should have exactly one enrollment",
                 1, state.mSensorStates.sensorStates
-                .get(sensorId).getUserStates().get(userId).numEnrolled);
+                        .get(sensorId).getUserStates().get(userId).numEnrolled);
+    }
+
+    protected void waitForCredentialIdle(boolean shouldShow, boolean isContentViewNull)
+            throws Exception {
+        boolean shouldShowBpWithoutIconForCredential = Utils.shouldShowBpWithoutIconForCredential(
+                isContentViewNull, false /*isBiometricAllowed*/);
+        mInstrumentation.waitForIdleSync();
+
+        // Wait for any animations to complete. Ideally, this should be reflected in
+        // STATE_SHOWING_DEVICE_CREDENTIAL, but SysUI and BiometricService are different processes
+        // so we'd need to add some additional plumbing. We can improve this in the future.
+        // TODO(b/152240892)
+        Thread.sleep(1000);
+
+        if (shouldShow) {
+            if (shouldShowBpWithoutIconForCredential) {
+                waitForState(STATE_AUTH_STARTED_UI_SHOWING);
+                findAndPressButton(BUTTON_ID_USE_CREDENTIAL);
+                waitForState(STATE_SHOWING_DEVICE_CREDENTIAL);
+            }
+            waitForState(STATE_SHOWING_DEVICE_CREDENTIAL);
+            BiometricServiceState state = getCurrentState();
+            assertEquals(state.toString(), STATE_SHOWING_DEVICE_CREDENTIAL, state.mState);
+        } else {
+            Utils.waitForIdleService(this::getSensorStates);
+        }
     }
 }

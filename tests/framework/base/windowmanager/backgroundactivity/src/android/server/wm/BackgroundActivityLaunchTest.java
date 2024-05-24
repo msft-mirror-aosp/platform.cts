@@ -28,15 +28,9 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
-import static org.junit.Assume.assumeTrue;
+import static com.google.common.truth.TruthJUnit.assume;
 
 import android.Manifest;
 import android.app.ActivityOptions;
@@ -54,6 +48,7 @@ import android.content.pm.ResolveInfo;
 import android.content.pm.UserInfo;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Icon;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
@@ -84,8 +79,6 @@ import androidx.test.uiautomator.Until;
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.window.flags.Flags;
 
-import org.junit.Assume;
-import org.junit.AssumptionViolatedException;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -173,9 +166,9 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         launchActivity(APP_A.BACKGROUND_ACTIVITY);
 
         // If the activity launches, it means the START_ACTIVITIES_FROM_BACKGROUND permission works.
-        assertEquals("Launched activity should be at the top",
-                ComponentNameUtils.getActivityName(APP_A.BACKGROUND_ACTIVITY),
-                mWmState.getTopActivityName(0));
+        assertWithMessage("Launched activity should be at the top")
+                .that(mWmState.getTopActivityName(0))
+                .isEqualTo(ComponentNameUtils.getActivityName(APP_A.BACKGROUND_ACTIVITY));
     }
 
     @Test
@@ -190,20 +183,22 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    public void testBackgroundActivity_withinASMGracePeriod_isAllowed() throws Exception {
+    public void testBackgroundActivity_withinASMGracePeriod_isBlocked() throws Exception {
+        assumeSdkNewerThanUpsideDownCake();
         // Start AppA foreground activity
         startActivity(APP_A.FOREGROUND_ACTIVITY);
         // Don't press home button to avoid stop app switches
         mContext.sendBroadcast(new Intent(APP_A.FOREGROUND_ACTIVITY_ACTIONS.FINISH_ACTIVITY));
         mWmState.waitAndAssertActivityRemoved(APP_A.FOREGROUND_ACTIVITY);
         startBackgroundActivity(APP_A);
-        assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+        assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
     }
 
     @Test
     @FlakyTest(bugId = 297339382)
     public void testBackgroundActivity_withinBalAfterAsmGracePeriod_isBlocked()
             throws Exception {
+        assumeSdkNewerThanUpsideDownCake();
         // Start AppA foreground activity
         startActivity(APP_A.FOREGROUND_ACTIVITY);
         // Don't press home button to avoid stop app switches
@@ -226,6 +221,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
     @Test
     public void testBackgroundActivityBlockedWhenForegroundActivityNotTop() throws Exception {
+        assumeSdkNewerThanUpsideDownCake();
+
         startActivity(APP_A.FOREGROUND_ACTIVITY);
         mContext.sendBroadcast(getLaunchActivitiesBroadcast(APP_A, APP_B.FOREGROUND_ACTIVITY));
         mWmState.waitForValidState(APP_B.FOREGROUND_ACTIVITY);
@@ -309,6 +306,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
     @Test
     public void testActivityBlockedFromBgActivityInFgTask() {
+        assumeSdkNewerThanUpsideDownCake();
         // Launch Activity A, B in the same task with different processes.
         startActivity(APP_A.FOREGROUND_ACTIVITY);
         mContext.sendBroadcast(getLaunchActivitiesBroadcast(APP_A, APP_B.FOREGROUND_ACTIVITY));
@@ -442,8 +440,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
-    public void testPI_onlyCreatorAllowsBAL_isNotBlocked() throws Exception {
+    @RequiresFlagsDisabled(Flags.FLAG_BAL_DONT_BRING_EXISTING_BACKGROUND_TASK_STACK_TO_FG)
+    public void testPI_onlyCreatorAllowsBALInSameTask_isNotBlocked() throws Exception {
         // creator (appa) is not privileged
         grantSystemAlertWindow(APP_A, false);
         // sender (appb) is privileged, and grants
@@ -454,8 +452,10 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         pressHomeAndWaitHomeResumed();
 
         TestServiceClient serviceB = getTestService(APP_B);
-        PendingIntent pi = serviceB.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY);
+        PendingIntent pi = serviceB.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY,
+                CREATE_OPTIONS_ALLOW_BAL);
         TestServiceClient serviceA = getTestService(APP_A);
+        // send the pending intent in the same task.
         serviceA.sendPendingIntentWithActivity(pi, Bundle.EMPTY);
 
         assertActivityFocused(APP_B.BACKGROUND_ACTIVITY);
@@ -464,11 +464,34 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
-    public void testPI_onlyCreatorAllowsBALwithOptIn_isNotBlocked() throws Exception {
-        // creator (appa) is not privileged
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_DONT_BRING_EXISTING_BACKGROUND_TASK_STACK_TO_FG)
+    public void testPI_onlyCreatorAllowsBALInSameTask_isBlocked() throws Exception {
+        // sender (appa) is not privileged
         grantSystemAlertWindow(APP_A, false);
-        // sender (appb) is privileged, and grants
+        // creator (appb) is privileged, and grants
+        grantSystemAlertWindow(APP_B);
+
+        startActivity(APP_A.FOREGROUND_ACTIVITY);
+
+        pressHomeAndWaitHomeResumed();
+
+        TestServiceClient serviceB = getTestService(APP_B);
+        PendingIntent pi = serviceB.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY,
+                CREATE_OPTIONS_ALLOW_BAL);
+        TestServiceClient serviceA = getTestService(APP_A);
+        // send the pending intent in the same task.
+        serviceA.sendPendingIntentWithActivity(pi, Bundle.EMPTY);
+
+        assertActivityNotFocused(APP_B.BACKGROUND_ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
+    @RequiresFlagsDisabled(Flags.FLAG_BAL_DONT_BRING_EXISTING_BACKGROUND_TASK_STACK_TO_FG)
+    public void testPI_onlyCreatorAllowsBALwithOptIn_isNotBlocked() throws Exception {
+        // sender (appa) is not privileged
+        grantSystemAlertWindow(APP_A, false);
+        // creator (appb) is privileged, and grants
         grantSystemAlertWindow(APP_B);
 
         startActivity(APP_A.FOREGROUND_ACTIVITY);
@@ -488,15 +511,54 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
-    public void testPI_onlyCreatorAllowsBALwithoutOptInForResult_isNotBlocked() throws Exception {
-        // creator (appa) is not privileged
+    @RequiresFlagsDisabled(Flags.FLAG_BAL_DONT_BRING_EXISTING_BACKGROUND_TASK_STACK_TO_FG)
+    public void testPI_onlyCreatorAllowsBALwithoutOptInSdk33_isNotBlocked() throws Exception {
+        // A (privileged) creates PI, B (non-privileged) sends PI from BG, C is started
+        grantSystemAlertWindow(APP_A_33);
+        grantSystemAlertWindow(APP_B, false);
+
+        startActivity(APP_B.FOREGROUND_ACTIVITY);
+
+        pressHomeAndWaitHomeResumed();
+
+        TestServiceClient servicePiCreator = getTestService(APP_A_33);
+        PendingIntent pi = servicePiCreator.generatePendingIntent(APP_C.BACKGROUND_ACTIVITY,
+                CREATE_OPTIONS_ALLOW_BAL);
+        TestServiceClient servicePiSender = getTestService(APP_B);
+        servicePiSender.sendPendingIntentWithActivity(pi, Bundle.EMPTY);
+
+        assertActivityFocused(APP_C.BACKGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_B.FOREGROUND_ACTIVITY, APP_C.BACKGROUND_ACTIVITY,
+                APP_B.FOREGROUND_ACTIVITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR,
+            Flags.FLAG_BAL_DONT_BRING_EXISTING_BACKGROUND_TASK_STACK_TO_FG})
+    public void testPI_onlyCreatorAllowsBALwithOptIn_isStartedInBackground() throws Exception {
+        // sender (appa) is not privileged
         grantSystemAlertWindow(APP_A, false);
-        // sender (appb) is privileged, and grants
+        // creator (appb) is privileged, and grants
         grantSystemAlertWindow(APP_B);
 
         startActivity(APP_A.FOREGROUND_ACTIVITY);
 
         pressHomeAndWaitHomeResumed();
+
+        TestServiceClient serviceB = getTestService(APP_B);
+        PendingIntent pi = serviceB.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY,
+                CREATE_OPTIONS_ALLOW_BAL);
+        TestServiceClient serviceA = getTestService(APP_A);
+        serviceA.sendPendingIntentWithActivity(pi, Bundle.EMPTY);
+
+        assertActivityNotFocused(APP_B.BACKGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_A.FOREGROUND_ACTIVITY, APP_B.BACKGROUND_ACTIVITY,
+                APP_A.FOREGROUND_ACTIVITY);
+    }
+
+    @Test
+    public void testPI_onlySenderAllowsBALwithoutOptInForResult_isNotBlocked() throws Exception {
+        startActivity(APP_A.FOREGROUND_ACTIVITY);
 
         TestServiceClient serviceB = getTestService(APP_B);
         PendingIntent pi = serviceB.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY);
@@ -505,14 +567,34 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         serviceA.sendPendingIntentWithActivityForResult(pi, Bundle.EMPTY);
 
         assertActivityFocused(APP_B.BACKGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_A.FOREGROUND_ACTIVITY, APP_B.BACKGROUND_ACTIVITY,
+                APP_A.FOREGROUND_ACTIVITY);
+    }
+
+    @Test
+    public void testPI_onlyCreatorAllowsBALwithoutOptInForResult_isBlocked() throws Exception {
+        // creator (appb) is privileged, and grants
+        grantSystemAlertWindow(APP_B);
+
+        startActivity(APP_A.FOREGROUND_ACTIVITY);
+        pressHomeAndWaitHomeResumed();
+
+        TestServiceClient serviceB = getTestService(APP_B);
+        PendingIntent pi = serviceB.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY);
+        TestServiceClient serviceA = getTestService(APP_A);
+        // sendPendingIntentForResult does not opt in the creator of the PI
+        serviceA.sendPendingIntentWithActivityForResult(pi, Bundle.EMPTY);
+
+        assertActivityNotFocused(APP_B.BACKGROUND_ACTIVITY);
+        assertTaskStackHasComponents(APP_A.FOREGROUND_ACTIVITY, APP_A.FOREGROUND_ACTIVITY);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_BAL_REQUIRE_OPT_IN_BY_PENDING_INTENT_CREATOR)
     public void testPI_onlyCreatorAllowsBALwithoutOptIn_isBlocked() throws Exception {
-        // creator (appa) is not privileged
+        // sender (appa) is not privileged
         grantSystemAlertWindow(APP_A, false);
-        // sender (appb) is privileged, and grants
+        // creator (appb) is privileged, and grants
         grantSystemAlertWindow(APP_B);
 
         startActivity(APP_A.FOREGROUND_ACTIVITY);
@@ -559,6 +641,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @SuppressWarnings("MissingFail") // TODO(b/320664730) expect Exception after V release
     public void testPI_appAIsFgDenyCreatorPrivilege_appBTryOverrideCreatorPrivilege_isBlocked()
             throws Exception {
         // Start AppB foreground activity
@@ -573,9 +656,17 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         // cannot be set from the sender side.
         TestServiceClient serviceA = getTestService(APP_A);
         PendingIntent pi =
-                serviceA.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY, CREATE_OPTIONS_DENY_BAL);
+                serviceA.generatePendingIntent(APP_B.BACKGROUND_ACTIVITY,
+                        CREATE_OPTIONS_DENY_BAL);
         TestServiceClient serviceB = getTestService(APP_B);
-        serviceB.sendPendingIntent(pi, CREATE_OPTIONS_ALLOW_BAL);
+        try {
+            serviceB.sendPendingIntent(pi, CREATE_OPTIONS_ALLOW_BAL);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageThat()
+                    .contains("pendingIntentCreatorBackgroundActivityStartMode");
+            // If sending the PendingIntent failed because we detected a mismatch in the bundle,
+            // the result should be the same as suppressing the start (just earlier).
+        }
         assertActivityNotFocused(APP_B.FOREGROUND_ACTIVITY);
     }
 
@@ -675,6 +766,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @SuppressWarnings("MissingFail") // TODO(b/320664730) expect Exception after V release
     public void testPendingIntentBroadcastActivity_appBIsForegroundAndTryPassBalOnIntent_isBlocked()
             throws Exception {
         // Start AppB foreground activity
@@ -687,16 +779,22 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         // behalf of the sender by adding the BAL option to the Intent's extras, which should have
         // no effect.
         TestServiceClient serviceA = getTestService(APP_A);
-        PendingIntent pi =
-                serviceA.generatePendingIntent(APP_A.BACKGROUND_ACTIVITY, SEND_OPTIONS_ALLOW_BAL);
-        TestServiceClient serviceB = getTestService(APP_B);
-        sendPendingIntent(pi, serviceB);
-
+        try {
+            PendingIntent pi = serviceA.generatePendingIntent(APP_A.BACKGROUND_ACTIVITY,
+                            SEND_OPTIONS_ALLOW_BAL);
+            TestServiceClient serviceB = getTestService(APP_B);
+            sendPendingIntent(pi, serviceB);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageThat().contains("pendingIntentBackgroundActivityStartMode");
+            // If generating the PendingIntent failed because we detected a mismatch in the bundle,
+            // the result should be the same as suppressing the start (just earlier).
+        }
         assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
         assertTaskStackHasComponents(APP_B.FOREGROUND_ACTIVITY, APP_B.FOREGROUND_ACTIVITY);
     }
 
     @Test
+    @SuppressWarnings("MissingFail") // TODO(b/320664730) expect Exception after V release
     public void testPendingIntentBroadcastActivity_appBIsFgAndTryPassBalOnIntentWithNullBundleOnPendingIntent_isBlocked()
             throws Exception {
         // Start AppB foreground activity
@@ -706,10 +804,16 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         // Send pendingIntent from AppA to AppB, and the AppB launch the pending intent to start
         // activity in App A
         TestServiceClient serviceA = getTestService(APP_A);
-        PendingIntent pi =
-                serviceA.generatePendingIntent(APP_A.BACKGROUND_ACTIVITY, SEND_OPTIONS_ALLOW_BAL);
-        TestServiceClient serviceB = getTestService(APP_B);
-        serviceB.sendPendingIntent(pi, null);
+        try {
+            PendingIntent pi = serviceA.generatePendingIntent(APP_A.BACKGROUND_ACTIVITY,
+                    SEND_OPTIONS_ALLOW_BAL);
+            TestServiceClient serviceB = getTestService(APP_B);
+            serviceB.sendPendingIntent(pi, null);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageThat().contains("pendingIntentBackgroundActivityStartMode");
+            // If generating the PendingIntent failed because we detected a mismatch in the bundle,
+            // the result should be the same as suppressing the start (just earlier).
+        }
 
         assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
         assertTaskStackHasComponents(APP_B.FOREGROUND_ACTIVITY, APP_B.FOREGROUND_ACTIVITY);
@@ -862,8 +966,10 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
     @Test
     public void testDeviceOwner() throws Exception {
-        assumeTrue("Device doesn't support FEATURE_DEVICE_ADMIN",
-                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_DEVICE_ADMIN));
+        assume().withMessage("Device doesn't support FEATURE_DEVICE_ADMIN")
+                .that(mContext.getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_DEVICE_ADMIN))
+                .isTrue();
 
         // Remove existing guest user. The device may already have a guest present if it is
         // configured with config_guestUserAutoCreated.
@@ -894,7 +1000,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
             Log.d(TAG, "users: " + cmdResult);
             cmdResult = runShellCommandOrThrow("dpm list-owner");
             Log.d(TAG, "device owners: " + cmdResult);
-            throw new AssumptionViolatedException("This test needs to be able to set device owner");
+            assume().withMessage("This test needs to be able to set device owner")
+                    .fail();
         }
 
         // Send pendingIntent from AppA to AppB, and the AppB launch the pending intent to start
@@ -1072,10 +1179,10 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     private void clickAllowBindWidget(Components app, ResultReceiver resultReceiver)
             throws Exception {
         PackageManager pm = mContext.getPackageManager();
-        Assume.assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_APP_WIDGETS));
+        assume().that(pm.hasSystemFeature(PackageManager.FEATURE_APP_WIDGETS)).isTrue();
         // Skip on auto and TV devices only as they don't support appwidget bind.
-        Assume.assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
-        Assume.assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY));
+        assume().that(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)).isFalse();
+        assume().that(pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY)).isFalse();
 
         // Create appWidgetId so we can send it to app, to request bind widget and start config
         // activity.
@@ -1103,11 +1210,9 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
                 settingsPkgName = ri.activityInfo.packageName;
             }
         }
-        assertNotEquals("Cannot find settings app", "", settingsPkgName);
-
-        if (!device.wait(Until.hasObject(By.pkg(settingsPkgName)), 1000 * 10)) {
-            fail("Unable to start AllowBindAppWidgetActivity");
-        }
+        assertWithMessage("Cannot find settings app").that(settingsPkgName).isNotEmpty();
+        assertWithMessage("Unable to start AllowBindAppWidgetActivity")
+                .that(device.wait(Until.hasObject(By.pkg(settingsPkgName)), 1000 * 10)).isTrue();
         boolean buttonClicked = false;
         BySelector selector = By.clickable(true);
         List<UiObject2> objects = device.findObjects(selector);
@@ -1122,9 +1227,9 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
                 break;
             }
         }
-        if (!device.wait(Until.gone(By.pkg(settingsPkgName)), 1000 * 10) || !buttonClicked) {
-            fail("Create' button not found/clicked");
-        }
+        assertWithMessage("Create' button not found/clicked")
+                .that(device.wait(Until.gone(By.pkg(settingsPkgName)), 1000 * 10) && buttonClicked)
+                .isTrue();
 
         // Wait the bind widget activity goes away.
         waitUntilForegroundChanged(settingsPkgName, false,
@@ -1139,8 +1244,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     private void assumeSetupComplete() {
-        assumeThat(Settings.Secure.getInt(mContext.getContentResolver(),
-                Settings.Secure.USER_SETUP_COMPLETE, 0), is(1));
+        assume().that(Settings.Secure.getInt(mContext.getContentResolver(),
+                Settings.Secure.USER_SETUP_COMPLETE, 0)).isEqualTo(1);
     }
 
     private boolean checkPackageResumed(String pkg) {
@@ -1165,9 +1270,9 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     private void assertActivityNotResumed(Components app) throws Exception {
-        assertFalse("Test activity is resumed",
+        assertWithMessage("Test activity is resumed").that(
                 waitUntilForegroundChanged(app.APP_PACKAGE_NAME, true,
-                        ACTIVITY_NOT_RESUMED_TIMEOUT_MS));
+                        ACTIVITY_NOT_RESUMED_TIMEOUT_MS)).isFalse();
     }
 
     private void pressHomeAndResumeAppSwitch() {
@@ -1257,7 +1362,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         final int mode = allow ? MODE_ALLOWED : MODE_ERRORED;
         final String opStr = "android:system_alert_window";
         AppOpsUtils.setOpMode(packageName, opStr, mode);
-        assertEquals(AppOpsUtils.getOpMode(packageName, opStr), mode);
+        assertThat(AppOpsUtils.getOpMode(packageName, opStr)).isEqualTo(mode);
     }
 
     private static void startBackgroundActivity(TestServiceClient service, Components app)
@@ -1287,5 +1392,13 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     private static void sendPendingIntent(PendingIntent pi, TestServiceClient service)
             throws RemoteException {
         service.sendPendingIntent(pi, Bundle.EMPTY);
+    }
+
+    static void assumeSdkNewerThanUpsideDownCake() {
+        // Feature flag "ActivitySecurity__asm_restrictions_enabled" is set to 1 in
+        // BackgroundActivityTestBase. For backward compatibility reasons, it is only enabled
+        // for apps with targetSdkVersion starting Android V.
+        // TODO remove this assumption after V released.
+        assume().that(Build.VERSION.SDK_INT).isGreaterThan(Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
     }
 }

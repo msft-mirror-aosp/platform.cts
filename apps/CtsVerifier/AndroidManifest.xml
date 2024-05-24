@@ -2046,6 +2046,8 @@
                        android:value="single_display_mode" />
             <meta-data android:name="CddTest"
                        android:value="9.11.1/C-4-1" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.fingerprint#authenticate|android.hardware.fingerprint#hasEnrolledFingerprints" />
         </activity>
 
         <activity android:name=".security.ProtectedConfirmationTest"
@@ -2402,6 +2404,57 @@
                                       android.nfc.tech.NfcA#getAtqa|
                                       android.nfc.tech.NfcA#getSak|
                                       android.nfc.tech.NfcA#transceive" />
+        </activity>
+
+        <activity android:name=".nfc.hce.ObserveModeReaderActivity"
+                android:label="@string/nfc_observe_mode_reader">
+                <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+                <meta-data android:name="ApiTest"
+                       android:value="android.nfc.NfcAdapter#disallowTransaction"/>
+        </activity>
+
+        <activity android:name=".nfc.hce.ObserveModeEmulatorActivity"
+                android:label="@string/nfc_observe_mode_emulator">
+                <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+                <meta-data android:name="GmsTest" android:value="GMS-VSR-3.2.8-001" />
+                <meta-data android:name="ApiTest"
+                       android:value="android.nfc.NfcAdapter#disallowTransaction|
+                                      android.nfc.NfcAdapter#allowTransaction|
+                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_A|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
+        </activity>
+
+        <activity android:name=".nfc.hce.PollingLoopReaderActivity"
+                android:label="@string/nfc_polling_loop_a_reader">
+                <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+                <meta-data android:name="GmsTest" android:value="GMS-VSR-3.2.8-001" />
+                <meta-data android:name="ApiTest"
+                       android:value="android.nfc.NfcAdapter#disallowTransaction|
+                                      android.nfc.NfcAdapter#allowTransaction|
+                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_B|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
+        </activity>
+
+        <activity android:name=".nfc.hce.PollingLoopEmulatorActivity"
+                android:label="@string/nfc_polling_loop_a_emulator">
+                <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+                <meta-data android:name="GmsTest" android:value="GMS-VSR-3.2.8-001" />
+                <meta-data android:name="ApiTest"
+                       android:value="android.nfc.NfcAdapter#disallowTransaction|
+                                      android.nfc.NfcAdapter#allowTransaction|
+                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_A|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_B|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
         </activity>
 
         <activity android:name=".nfc.hce.DualPaymentEmulatorActivity"
@@ -2772,6 +2825,15 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/screen_off_payment_aid_list"/>
+        </service>
+        <service android:name=".nfc.hce.PollingLoopService" android:exported="true"
+                 android:permission="android.permission.BIND_NFC_SERVICE"
+                 android:enabled="false">
+            <intent-filter>
+                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/access_aid_list"/>
         </service>
 
         <service
@@ -7005,6 +7067,34 @@
         </activity>
 
         <activity
+            android:name=".controls.ControlsPanelVerifierSettingTest$DreamTestFalse"
+            android:label="@string/controls_panel_dream_test_false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_parent" android:value="com.android.cts.verifier.controls.ControlsPanelVerifierTestList"/>
+            <meta-data android:name="test_required_features" android:value="android.software.controls"/>
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest" android:value="android.services.controls.ControlsProviderService#META_DATA_PANEL_ACTIVITY" />
+        </activity>
+
+        <activity
+            android:name=".controls.ControlsPanelVerifierSettingTest$DreamTestTrue"
+            android:label="@string/controls_panel_dream_test_true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_parent" android:value="com.android.cts.verifier.controls.ControlsPanelVerifierTestList"/>
+            <meta-data android:name="test_required_features" android:value="android.software.controls"/>
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest" android:value="android.services.controls.ControlsProviderService#META_DATA_PANEL_ACTIVITY" />
+        </activity>
+
+        <activity
             android:name=".input.UsiVersionActivity"
             android:label="@string/usi_version_test"
             android:exported="true">
@@ -7016,6 +7106,115 @@
             <meta-data android:name="ApiTest" android:value="android.view.InputDevice#getUsiVersion" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
+
+        <!-- Components for Sharesheet tests -->
+       <activity
+            android:name=".sharesheet.SharesheetChooserResultActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_result_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
+                    |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <!-- TODO: b/324916074
+        <activity
+            android:name=".sharesheet.SharesheetPayloadToggleActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:label="@string/sharesheet_payload_toggle_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST.SharesheetPayloadToggleActivity" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
+                    |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>-->
+
+        <activity
+            android:name=".sharesheet.SharesheetPayloadToggleActionActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:label="@string/sharesheet_payload_toggle_action_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST.SharesheetPayloadToggleActionActivity" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
+                    |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetAlbumActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_album_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_CONTENT_TYPE_HINT
+                    |android.content.Intent#CHOOSER_CONTENT_TYPE_ALBUM" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <provider
+            android:authorities="com.android.cts.verifier.sharesheet.images"
+            android:name=".sharesheet.SharesheetTestImageProvider"
+            android:exported="false"
+            android:enabled="true"
+            android:grantUriPermissions="true" />
+
+        <provider
+            android:authorities="com.android.cts.verifier.sharesheet.extracontent"
+            android:name=".sharesheet.SharesheetAdditionalContentProvider"
+            android:exported="false"
+            android:enabled="true"
+            android:grantUriPermissions="true" />
+
 
         <!-- Components used for CTS Verifying Capture Content For Notes APIs. -->
         <activity

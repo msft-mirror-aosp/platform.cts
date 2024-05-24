@@ -97,6 +97,7 @@ public abstract class AudioDataPathsBaseActivity
     private boolean mSupportsMMAPExclusive;
 
     protected boolean mHasUsb;
+    protected boolean mIsHandheld;
 
     // Analysis
     private BaseSineAnalyzer mAnalyzer = new BaseSineAnalyzer();
@@ -123,6 +124,7 @@ public abstract class AudioDataPathsBaseActivity
 
         // Use as a proxy for "has a USB port"
         mHasUsb = AudioSystemFlags.claimsProAudio(this);
+        mIsHandheld = AudioSystemFlags.isHandheld(this);
 
         String yesString = getResources().getString(R.string.audio_general_yes);
         String noString = getResources().getString(R.string.audio_general_no);
@@ -165,9 +167,12 @@ public abstract class AudioDataPathsBaseActivity
 
         mAudioManager.registerAudioDeviceCallback(new AudioDeviceConnectionCallback(), null);
 
-        getPassButton().setEnabled(false);
-
         DisplayUtils.setKeepScreenOn(this, true);
+
+        getPassButton().setEnabled(!mIsHandheld);
+        if (!mIsHandheld) {
+            displayNonHandheldMessage();
+        }
     }
 
     @Override
@@ -242,8 +247,9 @@ public abstract class AudioDataPathsBaseActivity
         TestResults[] mTestResults;
 
         // Pass/Fail criteria (with defaults)
-        double mMinPassMagnitude = 0.01;
-        double mMaxPassJitter = 0.1;
+        static final double MIN_SIGNAL_PASS_MAGNITUDE = 0.01;
+        static final double MAX_SIGNAL_PASS_JITTER = 0.1;
+        static final double MAX_XTALK_PASS_MAGNITUDE = 0.02;
 
         TestModule(int outDeviceType, int outSampleRate, int outChannelCount,
                    int inDeviceType, int inSampleRate, int inChannelCount) {
@@ -256,24 +262,33 @@ public abstract class AudioDataPathsBaseActivity
             mInChannelCount = inChannelCount;
             mInSampleRate = inSampleRate;
 
+            initializeTestState();
+        }
+
+        private void initializeTestState() {
             mTestState = new int[NUM_TEST_APIS];
             for (int api = 0; api < NUM_TEST_APIS; api++) {
                 mTestState[api] = TestModule.TESTSTATUS_NOT_RUN;
             }
             mTestResults = new TestResults[NUM_TEST_APIS];
-        }
 
+        }
+        /**
+         * We need a more-or-less deep copy so as not to share mTestState and mTestResults
+         * arrays. We are only using this to setup closely related test modules, so it is
+         * sufficient to initialize mTestState and mTestResults to their "not tested" states.
+         *
+         * @return The (mostly) cloned TestModule object.
+         */
         @Override
-        public TestModule clone() {
-            TestModule newModule = new TestModule(
-                    mOutDeviceType, mOutSampleRate, mOutChannelCount,
-                    mInDeviceType, mInSampleRate, mInChannelCount);
-            newModule.setSources(mSourceProvider, mSinkProvider);
-            newModule.setInputPreset(mInputPreset);
-            newModule.setDescription(mDescription);
-            newModule.setAnalysisChannel(mAnalysisChannel);
-            newModule.setTransferType(mTransferType);
-            return newModule;
+        public TestModule clone() throws CloneNotSupportedException {
+            // this will clone all the simple data members
+            TestModule clonedModule = (TestModule) super.clone();
+
+            // Each clone needs it own set of states and results
+            clonedModule.initializeTestState();
+
+            return clonedModule;
         }
 
         public void setAnalysisType(int type) {
@@ -380,10 +395,10 @@ public abstract class AudioDataPathsBaseActivity
             boolean passed = false;
             if (hasRun(api)) {
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
-                    passed = mTestResults[api].mMaxMagnitude >= mMinPassMagnitude
-                            && mTestResults[api].mPhaseJitter <= mMaxPassJitter;
+                    passed = mTestResults[api].mMaxMagnitude >= MIN_SIGNAL_PASS_MAGNITUDE
+                            && mTestResults[api].mPhaseJitter <= MAX_SIGNAL_PASS_JITTER;
                 } else {
-                    passed = mTestResults[api].mMaxMagnitude <= mMinPassMagnitude;
+                    passed = mTestResults[api].mMaxMagnitude <= MAX_XTALK_PASS_MAGNITUDE;
                 }
             }
             return passed;
@@ -446,12 +461,6 @@ public abstract class AudioDataPathsBaseActivity
                     return setTestState(api, TESTSTATUS_BAD_ANALYSIS_CHANNEL);
                 }
 
-                boolean enableMMAP = mTransferType != TRANSFER_LEGACY;
-                Globals.setMMapEnabled(enableMMAP);
-                if (Globals.isMMapEnabled() != enableMMAP) {
-                    Log.d(TAG, "  Invalid MMAP request - " + getDescription());
-                    return setTestState(api, TESTSTATUS_BAD_MMAP);
-                }
 
                 // Player
                 mDuplexAudioManager.setSources(mSourceProvider, mSinkProvider);
@@ -469,9 +478,20 @@ public abstract class AudioDataPathsBaseActivity
                 mDuplexAudioManager.setRecorderSharingMode(mTransferType == TRANSFER_MMAP_EXCLUSIVE
                         ? BuilderBase.SHARING_MODE_EXCLUSIVE : BuilderBase.SHARING_MODE_SHARED);
 
-                // Open the streams.
-                // Note AudioSources and AudioSinks get allocated at this point
-                mDuplexAudioManager.buildStreams(mAudioApi, mAudioApi);
+                boolean enableMMAP = mTransferType != TRANSFER_LEGACY;
+                Globals.setMMapEnabled(enableMMAP);
+                if (Globals.isMMapEnabled() != enableMMAP) {
+                    Log.d(TAG, "  Invalid MMAP request - " + getDescription());
+                    Globals.setMMapEnabled(Globals.isMMapSupported());
+                    return setTestState(api, TESTSTATUS_BAD_MMAP);
+                }
+                try {
+                    // Open the streams.
+                    // Note AudioSources and AudioSinks get allocated at this point
+                    mDuplexAudioManager.buildStreams(mAudioApi, mAudioApi);
+                } finally {
+                    Globals.setMMapEnabled(Globals.isMMapSupported());
+                }
 
                 // (potentially) Adjust AudioSource parameters
                 AudioSource audioSource = mSourceProvider.getActiveSource();
@@ -549,33 +569,47 @@ public abstract class AudioDataPathsBaseActivity
                 // we can get null here if the test was cancelled
                 Locale locale = Locale.getDefault();
                 String maxMagString = String.format(
-                        locale, "mag:%.4f ", results.mMaxMagnitude);
+                        locale, "mag:%.5f ", results.mMaxMagnitude);
                 String phaseJitterString = String.format(
-                        locale, "jitter:%.4f ", results.mPhaseJitter);
+                        locale, "jitter:%.5f ", results.mPhaseJitter);
 
                 boolean passMagnitude = mAnalysisType == TYPE_SIGNAL_PRESENCE
-                        ? results.mMaxMagnitude >= mMinPassMagnitude
-                        : results.mMaxMagnitude <= mMinPassMagnitude;
+                        ? results.mMaxMagnitude >= MIN_SIGNAL_PASS_MAGNITUDE
+                        : results.mMaxMagnitude <= MAX_XTALK_PASS_MAGNITUDE;
+
+                // Do we want a threshold value for jitter in crosstalk tests?
                 boolean passJitter =
-                        results.mPhaseJitter <= mMaxPassJitter;
+                        results.mPhaseJitter <= MAX_SIGNAL_PASS_JITTER;
 
                 // Values / Criteria
+                // NOTE: The criteria is why the test passed or failed, not what
+                // was needed to pass.
+                // So, for a cross-talk test, "mag:0.01062 > 0.01000" means that the test
+                // failed, because 0.01062 > 0.01000
                 htmlFormatter.appendBreak();
-                htmlFormatter.openTextColor(passMagnitude ? "black" : "red")
-                        .appendText(maxMagString
-                                + String.format(locale,
-                                passMagnitude ? " >= %.4f " : " < %.4f ",
-                                mMinPassMagnitude))
-                        .closeTextColor();
+                htmlFormatter.openTextColor(passMagnitude ? "black" : "red");
+                if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
+                    htmlFormatter.appendText(maxMagString
+                            + String.format(locale,
+                            passMagnitude ? " >= %.5f " : " < %.5f ",
+                            MIN_SIGNAL_PASS_MAGNITUDE));
+                } else {
+                    htmlFormatter.appendText(maxMagString
+                            + String.format(locale,
+                            passMagnitude ? " <= %.5f " : " > %.5f ",
+                            MAX_XTALK_PASS_MAGNITUDE));
+                }
+                htmlFormatter.closeTextColor();
 
-                // Jitter isn't relevant to SIGNAL ABSENCE test
-                htmlFormatter.openTextColor(
-                                mAnalysisType != TYPE_SIGNAL_PRESENCE || passJitter
-                                        ? "black" : "red")
-                        .appendText(phaseJitterString
-                                + String.format(locale, passJitter ? " <= %.4f" : " > %.4f",
-                                mMaxPassJitter))
-                        .closeTextColor();
+                htmlFormatter.openTextColor(passJitter ? "black" : "red");
+                if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
+                    htmlFormatter.appendText(phaseJitterString
+                                    + String.format(locale, passJitter ? " <= %.5f" : " > %.5f",
+                                    MAX_SIGNAL_PASS_JITTER));
+                } else {
+                    htmlFormatter.appendText(phaseJitterString);
+                }
+                htmlFormatter.closeTextColor();
 
                 htmlFormatter.appendBreak();
             } // results != null
@@ -768,15 +802,23 @@ public abstract class AudioDataPathsBaseActivity
             mTestModules.add(module);
 
             if (mSupportsMMAP) {
-                TestModule moduleMMAP = module.clone();
-                moduleMMAP.setTransferType(TestModule.TRANSFER_MMAP_SHARED);
-                mTestModules.add(moduleMMAP);
+                try {
+                    TestModule moduleMMAP = module.clone();
+                    moduleMMAP.setTransferType(TestModule.TRANSFER_MMAP_SHARED);
+                    mTestModules.add(moduleMMAP);
+                } catch (CloneNotSupportedException ex) {
+                    Log.e(TAG, "Couldn't clone TestModule - TRANSFER_MMAP_SHARED");
+                }
             }
 
             if (mSupportsMMAPExclusive) {
-                TestModule moduleExclusive = module.clone();
-                moduleExclusive.setTransferType(TestModule.TRANSFER_MMAP_EXCLUSIVE);
-                mTestModules.add(moduleExclusive);
+                try {
+                    TestModule moduleExclusive = module.clone();
+                    moduleExclusive.setTransferType(TestModule.TRANSFER_MMAP_EXCLUSIVE);
+                    mTestModules.add(moduleExclusive);
+                } catch (CloneNotSupportedException ex) {
+                    Log.e(TAG, "Couldn't clone TestModule - TRANSFER_MMAP_EXCLUSIVE");
+                }
             }
         }
 
@@ -968,7 +1010,8 @@ public abstract class AudioDataPathsBaseActivity
                     mTestManager.generateReport(mHtmlFormatter);
 
                     mTestHasBeenRun = true;
-                    getPassButton().setEnabled(mIsLessThanV || calculatePass());
+                    boolean passEnabled = passBtnEnabled();
+                    getPassButton().setEnabled(passEnabled);
 
                     mHtmlFormatter.openParagraph();
                     if (!mTestCanceled) {
@@ -987,7 +1030,7 @@ public abstract class AudioDataPathsBaseActivity
                         mHtmlFormatter.openParagraph();
                     }
 
-                    if (mIsLessThanV && !calculatePass()) {
+                    if (passEnabled) {
                         mHtmlFormatter.appendText("Although not all test modules passed, "
                                 + "for this OS version you may enter a PASS.");
                         mHtmlFormatter.appendBreak();
@@ -1109,6 +1152,23 @@ public abstract class AudioDataPathsBaseActivity
         enableTestButtons(true, false);
     }
 
+    boolean passBtnEnabled() {
+        return mIsLessThanV || !mIsHandheld || mTestManager.calculatePass();
+    }
+
+    void displayNonHandheldMessage() {
+        mHtmlFormatter.clear();
+        mHtmlFormatter.openDocument();
+        mHtmlFormatter.openParagraph();
+        mHtmlFormatter.appendText(getResources().getString(R.string.audio_exempt_nonhandheld));
+        mHtmlFormatter.closeParagraph();
+
+        mHtmlFormatter.closeDocument();
+        mResultsView.loadData(mHtmlFormatter.toString(),
+                "text/html; charset=utf-8", "utf-8");
+        showResultsView();
+    }
+
     //
     // PassFailButtons Overrides
     //
@@ -1199,10 +1259,15 @@ public abstract class AudioDataPathsBaseActivity
             mTestManager.validateTestDevices();
             if (!mTestManager.calculatePass()) {
                 // if we are in a pass state, leave the report on the screen
-                showDeviceView();
-                mTestManager.displayTestDevices();
-                if (mTestHasBeenRun) {
-                    getPassButton().setEnabled(mIsLessThanV || mTestManager.calculatePass());
+                if (!mIsHandheld) {
+                    displayNonHandheldMessage();
+                    getPassButton().setEnabled(true);
+                } else {
+                    showDeviceView();
+                    mTestManager.displayTestDevices();
+                    if (mTestHasBeenRun) {
+                        getPassButton().setEnabled(passBtnEnabled());
+                    }
                 }
             }
         }

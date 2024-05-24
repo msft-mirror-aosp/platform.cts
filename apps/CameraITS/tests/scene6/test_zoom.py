@@ -93,10 +93,10 @@ class ZoomTest(its_base_test.ItsBaseTest):
       logging.debug('capture size: %s', str(size))
       logging.debug('test TOLs: %s', str(test_tols))
 
-      # determine vendor API level and test_formats to test
+      # determine first API level and test_formats to test
       test_formats = _TEST_FORMATS
-      vendor_api_level = its_session_utils.get_vendor_api_level(self.dut.serial)
-      if vendor_api_level >= its_session_utils.ANDROID14_API_LEVEL:
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+      if first_api_level >= its_session_utils.ANDROID14_API_LEVEL:
         test_formats.append(_JPEG_STR)
 
       # do captures over zoom range and find circles with cv2
@@ -109,8 +109,15 @@ class ZoomTest(its_base_test.ItsBaseTest):
         for i, z in enumerate(z_list):
           req['android.control.zoomRatio'] = z
           logging.debug('zoom ratio: %.3f', z)
-          cam.do_3a(fmt=fmt, width=size[0], height=size[1],
-                    zoom_ratio=z, reuse_session=True)
+          cam.do_3a(
+              zoom_ratio=z,
+              out_surfaces={
+                  'format': fmt,
+                  'width': size[0],
+                  'height': size[1]
+              },
+              repeat_request=None,
+          )
           cap = cam.do_capture(
               req, {'format': fmt, 'width': size[0], 'height': size[1]},
               reuse_session=True)

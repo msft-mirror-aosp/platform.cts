@@ -20,16 +20,22 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
+import android.companion.virtual.flags.Flags;
 import android.hardware.input.VirtualDpadConfig;
 import android.hardware.input.VirtualKeyboardConfig;
 import android.hardware.input.VirtualMouseConfig;
 import android.hardware.input.VirtualNavigationTouchpadConfig;
+import android.hardware.input.VirtualStylusConfig;
 import android.hardware.input.VirtualTouchscreenConfig;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,6 +61,9 @@ public class VirtualInputDeviceConfigTest {
     private static final int DISPLAY_ID = 2;
     private static final int WIDTH = 600;
     private static final int HEIGHT = 800;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private VirtualDpadConfig createVirtualDpadConfig() {
         return new VirtualDpadConfig.Builder()
@@ -92,6 +101,15 @@ public class VirtualInputDeviceConfigTest {
 
     private VirtualTouchscreenConfig createVirtualTouchscreenConfig() {
         return new VirtualTouchscreenConfig.Builder(WIDTH, HEIGHT)
+                .setInputDeviceName(DEVICE_NAME)
+                .setVendorId(VENDOR_ID)
+                .setProductId(PRODUCT_ID)
+                .setAssociatedDisplayId(DISPLAY_ID)
+                .build();
+    }
+
+    private VirtualStylusConfig createVirtualStylusConfig() {
+        return new VirtualStylusConfig.Builder(WIDTH, HEIGHT)
                 .setInputDeviceName(DEVICE_NAME)
                 .setVendorId(VENDOR_ID)
                 .setProductId(PRODUCT_ID)
@@ -203,7 +221,7 @@ public class VirtualInputDeviceConfigTest {
     }
 
     @Test
-    public void testParcel_virtualVirtualMouseConfig() {
+    public void testParcel_virtualMouseConfig() {
         VirtualMouseConfig config = createVirtualMouseConfig();
         Parcel parcel = Parcel.obtain();
         config.writeToParcel(parcel, 0);
@@ -226,7 +244,6 @@ public class VirtualInputDeviceConfigTest {
         assertThat(config.getAssociatedDisplayId()).isEqualTo(DISPLAY_ID);
         assertThat(config.getWidth()).isEqualTo(WIDTH);
         assertThat(config.getHeight()).isEqualTo(HEIGHT);
-
     }
 
     @Test
@@ -247,6 +264,36 @@ public class VirtualInputDeviceConfigTest {
         assertThat(configFromParcel.getHeight()).isEqualTo(config.getHeight());
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
+    @Test
+    public void testConstructorAndGetters_virtualStylusConfig() {
+        VirtualStylusConfig config = createVirtualStylusConfig();
+        assertThat(config.getInputDeviceName()).isEqualTo(DEVICE_NAME);
+        assertThat(config.getVendorId()).isEqualTo(VENDOR_ID);
+        assertThat(config.getProductId()).isEqualTo(PRODUCT_ID);
+        assertThat(config.getAssociatedDisplayId()).isEqualTo(DISPLAY_ID);
+        assertThat(config.getWidth()).isEqualTo(WIDTH);
+        assertThat(config.getHeight()).isEqualTo(HEIGHT);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
+    @Test
+    public void testParcel_virtualStylusConfig() {
+        VirtualStylusConfig config = createVirtualStylusConfig();
+        Parcel parcel = Parcel.obtain();
+        config.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        VirtualStylusConfig configFromParcel =
+                VirtualStylusConfig.CREATOR.createFromParcel(parcel);
+        assertThat(configFromParcel.getInputDeviceName()).isEqualTo(config.getInputDeviceName());
+        assertThat(configFromParcel.getVendorId()).isEqualTo(config.getVendorId());
+        assertThat(configFromParcel.getProductId()).isEqualTo(config.getProductId());
+        assertThat(configFromParcel.getAssociatedDisplayId()).isEqualTo(
+                config.getAssociatedDisplayId());
+        assertThat(configFromParcel.getWidth()).isEqualTo(config.getWidth());
+        assertThat(configFromParcel.getHeight()).isEqualTo(config.getHeight());
+    }
 
     @Test
     public void testConstructorAndGetters_virtualNavigationTouchpadConfig() {
@@ -257,7 +304,6 @@ public class VirtualInputDeviceConfigTest {
         assertThat(config.getAssociatedDisplayId()).isEqualTo(DISPLAY_ID);
         assertThat(config.getWidth()).isEqualTo(WIDTH);
         assertThat(config.getHeight()).isEqualTo(HEIGHT);
-
     }
 
     @Test
@@ -488,4 +534,55 @@ public class VirtualInputDeviceConfigTest {
                 () -> new VirtualTouchscreenConfig.Builder(0, 0));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
+    @Test
+    public void virtualStylusConfig_missingName_throwsException() {
+        assertThrows(NullPointerException.class,
+                () -> new VirtualStylusConfig.Builder(WIDTH, HEIGHT)
+                        .setVendorId(VENDOR_ID)
+                        .setProductId(PRODUCT_ID)
+                        .setAssociatedDisplayId(DISPLAY_ID)
+                        .build());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
+    @Test
+    public void virtualStylusConfig_nameLengthExceedsLimit_throwsException() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new VirtualStylusConfig.Builder(WIDTH, HEIGHT)
+                        .setVendorId(VENDOR_ID)
+                        .setProductId(PRODUCT_ID)
+                        .setAssociatedDisplayId(DISPLAY_ID)
+                        .setInputDeviceName(DEVICE_NAME_THAT_IS_TOO_LONG)
+                        .build());
+        assertThrows(IllegalArgumentException.class,
+                () -> new VirtualStylusConfig.Builder(WIDTH, HEIGHT)
+                        .setVendorId(VENDOR_ID)
+                        .setProductId(PRODUCT_ID)
+                        .setAssociatedDisplayId(DISPLAY_ID)
+                        .setInputDeviceName(UTF8_DEVICE_NAME_THAT_IS_TOO_LONG)
+                        .build());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
+    @Test
+    public void virtualStylusConfig_missingDisplayId_throwsException() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new VirtualStylusConfig.Builder(WIDTH, HEIGHT)
+                        .setVendorId(VENDOR_ID)
+                        .setProductId(PRODUCT_ID)
+                        .setInputDeviceName(DEVICE_NAME)
+                        .build());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
+    @Test
+    public void virtualStylusConfig_invalidDimensions_throwsException() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new VirtualStylusConfig.Builder(WIDTH, 0));
+        assertThrows(IllegalArgumentException.class,
+                () -> new VirtualStylusConfig.Builder(0, HEIGHT));
+        assertThrows(IllegalArgumentException.class,
+                () -> new VirtualStylusConfig.Builder(0, 0));
+    }
 }

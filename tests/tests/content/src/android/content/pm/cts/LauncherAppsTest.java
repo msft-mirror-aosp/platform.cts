@@ -29,7 +29,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
@@ -46,6 +45,8 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.pm.LauncherActivityInfo;
 import android.content.pm.LauncherApps;
+import android.content.pm.LauncherApps.ArchiveCompatibilityParams;
+import android.content.pm.LauncherUserInfo;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -102,8 +103,8 @@ public class LauncherAppsTest {
 
     private static final String PACKAGE_NAME = "android.content.cts";
     private static final String FULL_CLASS_NAME = "android.content.pm.cts.LauncherMockActivity";
-    private static final ComponentName FULL_COMPONENT_NAME = new ComponentName(
-            PACKAGE_NAME, FULL_CLASS_NAME);
+    private static final ComponentName FULL_COMPONENT_NAME =
+            new ComponentName(PACKAGE_NAME, FULL_CLASS_NAME);
 
     private static final String FULL_DISABLED_CLASS_NAME =
             "android.content.pm.cts.MockActivity_Disabled";
@@ -153,6 +154,9 @@ public class LauncherAppsTest {
         mIntentSender = new ArchiveIntentSender();
         sUnarchiveReceiverPackageName = new CompletableFuture<>();
         setDefaultLauncher(mInstrumentation, mTestHome);
+        ArchiveCompatibilityParams options = new ArchiveCompatibilityParams();
+        options.setEnableUnarchivalConfirmation(false);
+        mLauncherApps.setArchiveCompatibility(options);
     }
 
     @After
@@ -355,26 +359,42 @@ public class LauncherAppsTest {
     @AppModeFull(reason = "Need special permission")
     @RequiresFlagsEnabled(FLAG_ALLOW_PRIVATE_PROFILE)
     public void testLauncherUserInfo() {
-        // TODO(b/303803157): Add a permission check if we decide to support 3p launchers
-        SecurityException exception = assertThrows(SecurityException.class,
-                () -> mLauncherApps.getLauncherUserInfo(UserHandle.of(0)));
-        assertThat(exception).hasMessageThat().contains("Caller is not the recents app");
+        LauncherUserInfo info = mLauncherApps.getLauncherUserInfo(UserHandle.of(0));
+        assertThat(info).isNotNull();
     }
 
+    @Test
+    @AppModeFull(reason = "Need special permission")
+    @RequiresFlagsEnabled(FLAG_ALLOW_PRIVATE_PROFILE)
+    public void testGetMarketIntent() {
+        IntentSender intentSender =
+                mLauncherApps.getAppMarketActivityIntent(PACKAGE_NAME, UserHandle.of(0));
+        assertThat(intentSender).isNotNull();
+    }
+
+    @Test
+    @AppModeFull(reason = "Need special permission")
+    @RequiresFlagsEnabled(FLAG_ALLOW_PRIVATE_PROFILE)
+    public void testGetPreInstalledSystemPackages() {
+        List<String> packages = mLauncherApps.getPreInstalledSystemPackages(UserHandle.of(0));
+        assertThat(packages).isNotNull();
+    }
 
     @Test
     @AppModeFull(reason = "Need special permission")
     @RequiresFlagsEnabled(FLAG_ARCHIVING)
     public void testGetActivityList_targetArchivedApp()
-            throws ExecutionException, InterruptedException, PackageManager.NameNotFoundException {
+            throws PackageManager.NameNotFoundException {
         installPackage(ARCHIVE_APK_PATH);
         SystemUtil.runWithShellPermissionIdentity(
-                () ->
-                        mPackageInstaller.requestArchive(
-                                ARCHIVE_PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            ARCHIVE_PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mIntentSender));
+                    assertThat(mIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
 
         List<LauncherActivityInfo> activities =
                 mLauncherApps.getActivityList(ARCHIVE_PACKAGE_NAME, USER_HANDLE);
@@ -408,15 +428,17 @@ public class LauncherAppsTest {
     @AppModeFull(reason = "Need special permission")
     @RequiresFlagsEnabled(FLAG_ARCHIVING)
     public void testGetActivityList_allArchivedApps()
-            throws ExecutionException, InterruptedException, PackageManager.NameNotFoundException {
+            throws PackageManager.NameNotFoundException {
         installPackage(ARCHIVE_APK_PATH);
         SystemUtil.runWithShellPermissionIdentity(
-                () ->
-                        mPackageInstaller.requestArchive(
-                                ARCHIVE_PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            ARCHIVE_PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mIntentSender));
+                    assertThat(mIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
 
         List<LauncherActivityInfo> activities = mLauncherApps.getActivityList(null, USER_HANDLE);
 
@@ -464,15 +486,17 @@ public class LauncherAppsTest {
     @AppModeFull(reason = "Need special permission")
     @RequiresFlagsEnabled(FLAG_ARCHIVING)
     public void resolveActivity_archivedApp_componentNameMatches()
-            throws ExecutionException, InterruptedException, PackageManager.NameNotFoundException {
+            throws PackageManager.NameNotFoundException {
         installPackage(ARCHIVE_APK_PATH);
         SystemUtil.runWithShellPermissionIdentity(
-                () ->
-                        mPackageInstaller.requestArchive(
-                                ARCHIVE_PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            ARCHIVE_PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mIntentSender));
+                    assertThat(mIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
         ComponentName archiveAppComponentName =
                 new ComponentName(ARCHIVE_PACKAGE_NAME, ARCHIVE_ACTIVITY_NAME);
 
@@ -505,16 +529,17 @@ public class LauncherAppsTest {
     @Test
     @AppModeFull(reason = "Need special permission")
     @RequiresFlagsEnabled(FLAG_ARCHIVING)
-    public void resolveActivity_archivedApp_classNameMismatch()
-            throws ExecutionException, InterruptedException {
+    public void resolveActivity_archivedApp_classNameMismatch() {
         installPackage(ARCHIVE_APK_PATH);
         SystemUtil.runWithShellPermissionIdentity(
-                () ->
-                        mPackageInstaller.requestArchive(
-                                ARCHIVE_PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            ARCHIVE_PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mIntentSender));
+                    assertThat(mIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
 
         LauncherActivityInfo activity =
                 mLauncherApps.resolveActivity(
@@ -529,16 +554,17 @@ public class LauncherAppsTest {
     @Test
     @AppModeFull(reason = "Need special permission")
     @RequiresFlagsEnabled(FLAG_ARCHIVING)
-    public void isActivityEnabled_archivedApp_componentNameMatches()
-            throws ExecutionException, InterruptedException {
+    public void isActivityEnabled_archivedApp_componentNameMatches() {
         installPackage(ARCHIVE_APK_PATH);
         SystemUtil.runWithShellPermissionIdentity(
-                () ->
-                        mPackageInstaller.requestArchive(
-                                ARCHIVE_PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            ARCHIVE_PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mIntentSender));
+                    assertThat(mIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
         ComponentName archiveAppComponentName =
                 new ComponentName(ARCHIVE_PACKAGE_NAME, ARCHIVE_ACTIVITY_NAME);
 
@@ -551,16 +577,17 @@ public class LauncherAppsTest {
     @Test
     @AppModeFull(reason = "Need special permission")
     @RequiresFlagsEnabled(FLAG_ARCHIVING)
-    public void isActivityEnabled_archivedApp_componentNameMismatch()
-            throws ExecutionException, InterruptedException {
+    public void isActivityEnabled_archivedApp_componentNameMismatch() {
         installPackage(ARCHIVE_APK_PATH);
         SystemUtil.runWithShellPermissionIdentity(
-                () ->
-                        mPackageInstaller.requestArchive(
-                                ARCHIVE_PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            ARCHIVE_PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mIntentSender));
+                    assertThat(mIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
         ComponentName archiveAppComponentName =
                 new ComponentName(ARCHIVE_PACKAGE_NAME, "randomClassName");
 
@@ -573,15 +600,17 @@ public class LauncherAppsTest {
     @Test
     @AppModeFull(reason = "Need special permission")
     @RequiresFlagsEnabled(FLAG_ARCHIVING)
-    public void isPackageEnabled_archivedApp() throws ExecutionException, InterruptedException {
+    public void isPackageEnabled_archivedApp() {
         installPackage(ARCHIVE_APK_PATH);
         SystemUtil.runWithShellPermissionIdentity(
-                () ->
-                        mPackageInstaller.requestArchive(
-                                ARCHIVE_PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            ARCHIVE_PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mIntentSender));
+                    assertThat(mIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
 
         boolean isArchivedAppPackageEnabled =
                 mLauncherApps.isPackageEnabled(ARCHIVE_PACKAGE_NAME, USER_HANDLE);
@@ -592,16 +621,17 @@ public class LauncherAppsTest {
     @Test
     @AppModeFull(reason = "Need special permission")
     @RequiresFlagsEnabled(FLAG_ARCHIVING)
-    public void shouldHideFromSuggestions_archivedApp()
-            throws ExecutionException, InterruptedException {
+    public void shouldHideFromSuggestions_archivedApp() {
         installPackage(ARCHIVE_APK_PATH);
         SystemUtil.runWithShellPermissionIdentity(
-                () ->
-                        mPackageInstaller.requestArchive(
-                                ARCHIVE_PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            ARCHIVE_PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mIntentSender));
+                    assertThat(mIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
 
         boolean isArchivedAppPackageEnabled =
                 mLauncherApps.shouldHideFromSuggestions(ARCHIVE_PACKAGE_NAME, USER_HANDLE);
@@ -615,10 +645,13 @@ public class LauncherAppsTest {
     public void startActivityAsUser_archivedApp() throws ExecutionException, InterruptedException {
         installPackage(ARCHIVE_APK_PATH);
         SystemUtil.runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(ARCHIVE_PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(ARCHIVE_PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mIntentSender));
+                    assertThat(mIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
         LauncherUnarchiveBroadcastReceiver unarchiveReceiver =
                 new LauncherUnarchiveBroadcastReceiver();
         IntentFilter intentFilter = new IntentFilter();

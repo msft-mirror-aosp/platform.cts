@@ -16,20 +16,20 @@
 
 package android.jobscheduler.cts;
 
+import static android.jobscheduler.cts.TestAppInterface.ENFORCE_MINIMUM_TIME_WINDOWS;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED;
 import static android.text.format.DateUtils.HOUR_IN_MILLIS;
+import static android.text.format.DateUtils.MINUTE_IN_MILLIS;
 
+import android.app.compat.CompatChanges;
 import android.app.job.Flags;
 import android.app.job.JobInfo;
 import android.content.ClipData;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -48,6 +48,9 @@ import java.util.Set;
 public class JobInfoTest extends BaseJobSchedulerTest {
     private static final int JOB_ID = JobInfoTest.class.hashCode();
     private static final String TAG = JobInfoTest.class.getSimpleName();
+
+    private static final long REJECT_NEGATIVE_DELAYS_AND_DEADLINES = 323349338L;
+    private static final long THROW_ON_UNSUPPORTED_BIAS_USAGE = 300477393L;
 
     @Override
     public void tearDown() throws Exception {
@@ -100,26 +103,11 @@ public class JobInfoTest extends BaseJobSchedulerTest {
 
         JobInfo ji = builder.build();
         // Confirm JobScheduler rejects the JobInfo object.
-        final PackageManager pm = getContext().getPackageManager();
-        ApplicationInfo applicationInfo = pm.getApplicationInfo(MY_PACKAGE, 0);
-        if (applicationInfo == null) {
-            fail("Couldn't get ApplicationInfo");
-        }
-        if (isAconfigFlagEnabled(
-                "com.android.server.job.throw_on_unsupported_bias_usage")) {
-            // TODO(309023462): create separate tests for target SDK gated changes
-            boolean targetSdkIsAfterU =
-                    applicationInfo.targetSdkVersion > Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
-            if (targetSdkIsAfterU) {
-                assertScheduleFailsWithException(
-                        "Successfully scheduled a job with a modified bias",
-                        ji, SecurityException.class);
-            } else {
-                mJobScheduler.schedule(ji);
-
-                assertEquals("Bias wasn't changed to default",
-                        0, getBias(mJobScheduler.getPendingJob(JOB_ID)));
-            }
+        // TODO(309023462): create separate tests for target SDK gated changes
+        if (CompatChanges.isChangeEnabled(THROW_ON_UNSUPPORTED_BIAS_USAGE)) {
+            assertScheduleFailsWithException(
+                    "Successfully scheduled a job with a modified bias",
+                    ji, SecurityException.class);
         } else {
             mJobScheduler.schedule(ji);
 
@@ -481,6 +469,21 @@ public class JobInfoTest extends BaseJobSchedulerTest {
         mJobScheduler.schedule(ji);
     }
 
+    public void testMinimumLatency_negative() {
+        JobInfo.Builder jiBuilder = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                .setMinimumLatency(-1);
+
+        // TODO(309023462): create separate tests for target SDK gated changes
+        if (CompatChanges.isChangeEnabled(REJECT_NEGATIVE_DELAYS_AND_DEADLINES)) {
+            assertBuildFails("Successfully scheduled a job with a negative latency", jiBuilder);
+        } else {
+            // Confirm JobScheduler accepts the JobInfo object.
+            JobInfo ji = jiBuilder.build();
+            assertEquals(0, ji.getMinLatencyMillis());
+            mJobScheduler.schedule(ji);
+        }
+    }
+
     public void testOverrideDeadline() {
         JobInfo ji = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                 .setOverrideDeadline(HOUR_IN_MILLIS)
@@ -492,70 +495,53 @@ public class JobInfoTest extends BaseJobSchedulerTest {
     }
 
     public void testOverrideDeadline_minimumTimeWindows() throws Exception {
-        JobInfo.Builder jiBuilderHighBad = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setPriority(JobInfo.PRIORITY_HIGH)
-                .setMinimumLatency(HOUR_IN_MILLIS)
-                .setOverrideDeadline(2 * HOUR_IN_MILLIS - 1);
-        JobInfo.Builder jiBuilderHighGood = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setPriority(JobInfo.PRIORITY_HIGH)
-                .setMinimumLatency(HOUR_IN_MILLIS)
-                .setOverrideDeadline(2 * HOUR_IN_MILLIS);
-        JobInfo.Builder jiBuilderDefaultBad = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setPriority(JobInfo.PRIORITY_DEFAULT)
-                .setMinimumLatency(HOUR_IN_MILLIS)
-                .setOverrideDeadline(2 * HOUR_IN_MILLIS - 1);
-        JobInfo.Builder jiBuilderDefaultGood = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setPriority(JobInfo.PRIORITY_DEFAULT)
-                .setMinimumLatency(HOUR_IN_MILLIS)
-                .setOverrideDeadline(2 * HOUR_IN_MILLIS);
-        JobInfo.Builder jiBuilderLowBad = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setPriority(JobInfo.PRIORITY_LOW)
-                .setMinimumLatency(HOUR_IN_MILLIS)
-                .setOverrideDeadline(7 * HOUR_IN_MILLIS - 1);
-        JobInfo.Builder jiBuilderLowGood = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setPriority(JobInfo.PRIORITY_LOW)
-                .setMinimumLatency(HOUR_IN_MILLIS)
-                .setOverrideDeadline(7 * HOUR_IN_MILLIS);
-        JobInfo.Builder jiBuilderMinBad = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setPriority(JobInfo.PRIORITY_MIN)
-                .setMinimumLatency(HOUR_IN_MILLIS)
-                .setOverrideDeadline(13 * HOUR_IN_MILLIS - 1);
-        JobInfo.Builder jiBuilderMinGood = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
-                .setPriority(JobInfo.PRIORITY_MIN)
-                .setMinimumLatency(HOUR_IN_MILLIS)
-                .setOverrideDeadline(13 * HOUR_IN_MILLIS);
+        JobInfo.Builder jiBuilderShortFunctional = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                .setRequiresCharging(true)
+                .setMinimumLatency(MINUTE_IN_MILLIS)
+                .setOverrideDeadline(16 * MINUTE_IN_MILLIS - 1);
+        JobInfo.Builder jiBuilderShortNonfunctional =
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                        .setMinimumLatency(MINUTE_IN_MILLIS)
+                        .setOverrideDeadline(16 * MINUTE_IN_MILLIS - 1);
+        JobInfo.Builder jiBuilderLongFunctional = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                .setRequiresCharging(true)
+                .setMinimumLatency(MINUTE_IN_MILLIS)
+                .setOverrideDeadline(16 * MINUTE_IN_MILLIS);
+        JobInfo.Builder jiBuilderLongNonfunctional =
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                        .setMinimumLatency(MINUTE_IN_MILLIS)
+                        .setOverrideDeadline(16 * MINUTE_IN_MILLIS);
 
-        final PackageManager pm = getContext().getPackageManager();
-        ApplicationInfo applicationInfo = pm.getApplicationInfo(MY_PACKAGE, 0);
-        if (applicationInfo == null) {
-            fail("Couldn't get ApplicationInfo");
-        }
         // TODO(309023462): create separate tests for target SDK gated changes
-        boolean targetSdkIsAfterU =
-                applicationInfo.targetSdkVersion > Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
-        if (targetSdkIsAfterU && isAconfigFlagEnabled(
+        if (CompatChanges.isChangeEnabled(ENFORCE_MINIMUM_TIME_WINDOWS) && isAconfigFlagEnabled(
                 "android.app.job.enforce_minimum_time_windows")) {
             // Confirm JobScheduler rejects the bad JobInfo objects.
-            assertBuildFails("Successfully scheduled a high pri job with a short deadline",
-                    jiBuilderHighBad);
-            assertBuildFails("Successfully scheduled a def pri job with a short deadline",
-                    jiBuilderDefaultBad);
-            assertBuildFails("Successfully scheduled a low pri job with a short deadline",
-                    jiBuilderLowBad);
-            assertBuildFails("Successfully scheduled a min pri job with a short deadline",
-                    jiBuilderMinBad);
+            assertBuildFails(
+                    "Successfully scheduled a job with a short deadline and functional constraints",
+                    jiBuilderShortFunctional);
         } else {
             // Confirm JobScheduler accepts the JobInfo objects.
-            mJobScheduler.schedule(jiBuilderHighBad.build());
-            mJobScheduler.schedule(jiBuilderDefaultBad.build());
-            mJobScheduler.schedule(jiBuilderLowBad.build());
-            mJobScheduler.schedule(jiBuilderMinBad.build());
+            mJobScheduler.schedule(jiBuilderShortFunctional.build());
         }
         // Confirm JobScheduler accepts the good JobInfo objects.
-        mJobScheduler.schedule(jiBuilderHighGood.build());
-        mJobScheduler.schedule(jiBuilderDefaultGood.build());
-        mJobScheduler.schedule(jiBuilderLowGood.build());
-        mJobScheduler.schedule(jiBuilderMinGood.build());
+        mJobScheduler.schedule(jiBuilderShortNonfunctional.build());
+        mJobScheduler.schedule(jiBuilderLongFunctional.build());
+        mJobScheduler.schedule(jiBuilderLongNonfunctional.build());
+    }
+
+    public void testOverrideDeadline_negative() {
+        JobInfo.Builder jiBuilder = new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                .setOverrideDeadline(-1);
+
+        // TODO(309023462): create separate tests for target SDK gated changes
+        if (CompatChanges.isChangeEnabled(REJECT_NEGATIVE_DELAYS_AND_DEADLINES)) {
+            assertBuildFails("Successfully scheduled a job with a negative deadline", jiBuilder);
+        } else {
+            // Confirm JobScheduler accepts the JobInfo object.
+            JobInfo ji = jiBuilder.build();
+            assertTrue(ji.getMaxExecutionDelayMillis() >= 0);
+            mJobScheduler.schedule(ji);
+        }
     }
 
     public void testPeriodic() {

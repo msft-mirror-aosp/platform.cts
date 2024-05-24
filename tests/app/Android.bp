@@ -17,6 +17,89 @@ package {
 }
 
 android_test {
+    name: "CtsFgsBootCompletedTestCases",
+    defaults: ["cts_defaults"],
+    libs: [
+        "android.test.runner",
+        "org.apache.http.legacy",
+        "android.test.base",
+    ],
+    static_libs: [
+        "ctstestrunner-axt",
+        "cts-wm-util",
+        "mockito-target-minus-junit4",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "platform-test-annotations",
+        "flag-junit",
+        "am_flags_lib",
+        "androidx.test.core",
+        "CtsAppTestStubsShared",
+    ],
+    srcs: [
+        "src/android/app/cts/fgs/bootcompleted/BootCompletedFgsStartTest.java",
+        "src/android/app/cts/LocationBootCompletedFgs.java",
+        "app/src/android/app/stubs/BootCompletedFgs.java",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    data: [
+        ":CtsSimpleApp",
+        ":CtsAppTestDelayedStart",
+        ":CtsAppTestStubs",
+    ],
+    min_sdk_version: "21",
+    per_testcase_directory: true,
+    manifest: "src/android/app/cts/fgs/bootcompleted/AndroidManifest.xml",
+    test_config: "src/android/app/cts/fgs/bootcompleted/AndroidTest.xml",
+}
+
+android_test {
+    name: "CtsFgsBootCompletedTestCasesApi35",
+    defaults: ["cts_defaults"],
+    libs: [
+        "android.test.runner",
+        "org.apache.http.legacy",
+        "android.test.base",
+    ],
+    static_libs: [
+        "ctstestrunner-axt",
+        "cts-wm-util",
+        "mockito-target-minus-junit4",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "platform-test-annotations",
+        "flag-junit",
+        "am_flags_lib",
+        "androidx.test.core",
+        "CtsAppTestStubsShared",
+    ],
+    srcs: [
+        "src/android/app/cts/fgs/bootcompleted/BootCompletedFgsStartTest.java",
+        "src/android/app/cts/LocationBootCompletedFgs.java",
+        "app/src/android/app/stubs/BootCompletedFgs.java",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    data: [
+        ":CtsSimpleApp",
+        ":CtsAppTestDelayedStart",
+        ":CtsAppTestStubs",
+        ":CtsFgsBootCompletedTestCases",
+    ],
+    target_sdk_version: "35",
+    per_testcase_directory: true,
+    manifest: "src/android/app/cts/fgs/bootcompleted/AndroidManifest.xml",
+    test_config: "src/android/app/cts/fgs/bootcompleted/AndroidTest.xml",
+}
+
+android_test {
     name: "CtsAppTestCases",
     defaults: ["cts_defaults"],
     libs: [
@@ -37,7 +120,11 @@ android_test {
         "permission-test-util-lib",
         "CtsAppTestStubsShared",
         "android.content.pm.flags-aconfig-java",
+        "android.multiuser.flags-aconfig-java",
         "flag-junit",
+        "com.android.media.flags.bettertogether-aconfig-java",
+        "android.app.flags-aconfig-java",
+        "ravenwood-junit",
     ],
     srcs: [
         "src/**/*.java",
@@ -77,9 +164,20 @@ android_test {
         ":WallpaperTest",
     ],
     per_testcase_directory: true,
-    lint: {
-        baseline_filename: "lint-baseline.xml",
-    },
+}
+
+android_ravenwood_test {
+    name: "CtsAppTestCasesRavenwood",
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+    ],
+    srcs: [
+        "src/android/app/cts/ActivityOptionsTest.java",
+        "src/android/app/cts/BroadcastOptionsTest.java",
+    ],
+    auto_gen_config: true,
 }
 
 android_test {
@@ -114,7 +212,7 @@ android_test {
     manifest: "DownloadManagerApi28Test/AndroidManifest.xml",
     test_config: "DownloadManagerApi28Test/AndroidTest.xml",
     lint: {
-        baseline_filename: "lint-baseline-api-28.xml",
+        baseline_filename: "lint-baseline.xml",
     },
 }
 
@@ -150,7 +248,7 @@ android_test {
     manifest: "DownloadManagerInstallerTest/AndroidManifest.xml",
     test_config: "DownloadManagerInstallerTest/AndroidTest.xml",
     lint: {
-        baseline_filename: "lint-baseline-installer.xml",
+        baseline_filename: "lint-baseline.xml",
     },
 }
 
@@ -193,9 +291,6 @@ android_test {
         ":CtsAppTestStubs",
     ],
     per_testcase_directory: true,
-    lint: {
-        baseline_filename: "lint-baseline.xml",
-    },
 }
 
 android_test {
@@ -213,6 +308,8 @@ android_test {
         "CtsExternalServiceCommon",
         "cts-wm-util",
         "libprotobuf-java-lite",
+        "flag-junit",
+        "android.content.pm.flags-aconfig-java",
     ],
     aidl: {
         local_include_dirs: ["app/src"],
@@ -238,7 +335,4 @@ android_test {
         ":CtsAppTestFgsTestHelperApi33",
     ],
     per_testcase_directory: true,
-    lint: {
-        baseline_filename: "lint-baseline.xml",
-    },
 }

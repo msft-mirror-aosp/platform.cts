@@ -19,9 +19,17 @@ package android.view.cts.surfacevalidator;
 import android.os.IBinder;
 import android.view.SurfaceControlViewHost.SurfacePackage;
 import android.view.WindowManager.LayoutParams;
+import android.view.SurfaceControl;
+import android.view.cts.surfacevalidator.IMotionEventReceiver;
+import android.window.InputTransferToken;
 
 interface IAttachEmbeddedWindow {
     SurfacePackage attachEmbedded(IBinder hostToken, int width, int height, int displayId, long delayMs);
     void relayout(in LayoutParams lp);
     void sendCrash();
+    String attachEmbeddedSurfaceControl(in SurfaceControl sc, int displayId,
+            in InputTransferToken hostToken, int width, int height, boolean transferTouchToHost,
+            in @nullable IMotionEventReceiver motionEventReceiver);
+    InputTransferToken getEmbeddedInputTransferToken();
+    void tearDownEmbeddedSurfaceControl();
 }

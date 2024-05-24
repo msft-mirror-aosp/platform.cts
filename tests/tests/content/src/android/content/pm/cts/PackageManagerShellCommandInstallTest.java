@@ -76,6 +76,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -124,6 +125,7 @@ import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
 @AppModeFull
+@AppModeNonSdkSandbox
 public class PackageManagerShellCommandInstallTest {
     static final String TEST_APP_PACKAGE = "com.example.helloworld";
     static final String TEST_VERIFIER_PACKAGE = "com.example.helloverifier";
@@ -133,6 +135,7 @@ public class PackageManagerShellCommandInstallTest {
 
     private static final String TEST_APK_PATH = "/data/local/tmp/cts/content/";
     static final String TEST_HW5 = "HelloWorld5.apk";
+    static final String TEST_HW_SYSTEM_USER_ONLY = "HelloWorldSystemUserOnly.apk";
     private static final String TEST_HW5_SPLIT0 = "HelloWorld5_hdpi-v4.apk";
     private static final String TEST_HW5_SPLIT1 = "HelloWorld5_mdpi-v4.apk";
     private static final String TEST_HW5_SPLIT2 = "HelloWorld5_xhdpi-v4.apk";
@@ -687,7 +690,10 @@ public class PackageManagerShellCommandInstallTest {
     public void testDontKillWithSplit() throws Exception {
         assumeFalse(mStreaming);
         installPackage(TEST_HW5);
+        installDontKillSplit();
+    }
 
+    private void installDontKillSplit() throws Exception {
         getUiAutomation().adoptShellPermissionIdentity();
         try {
             final PackageInstaller installer = getPackageInstaller();
@@ -708,8 +714,8 @@ public class PackageManagerShellCommandInstallTest {
             session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
                 @Override
                 public void send(int code, Intent intent, String resolvedType,
-                        IBinder whitelistToken, IIntentReceiver finishedReceiver,
-                        String requiredPermission, Bundle options) throws RemoteException {
+                                 IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                                 String requiredPermission, Bundle options) throws RemoteException {
                     boolean dontKillApp =
                             (session.getInstallFlags() & PackageManager.INSTALL_DONT_KILL_APP) != 0;
                     status.complete(
@@ -727,6 +733,23 @@ public class PackageManagerShellCommandInstallTest {
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
         }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_IMPROVE_INSTALL_DONT_KILL)
+    @Test
+    public void testDontKillOldPathsArePreserved() throws Exception {
+        assumeFalse(mStreaming);
+        installPackage(TEST_HW5);
+        String oldPath =
+                getPackageManager().getApplicationInfo(TEST_APP_PACKAGE, 0).publicSourceDir;
+        installDontKillSplit();
+
+        List<String> oldPaths = getOldCodePaths(TEST_APP_PACKAGE);
+        assertNotNull(oldPaths);
+        assertEquals(1, oldPaths.size());
+        // publicSourceDir contains the full path to the APK
+        // oldPaths only contains paths to directory
+        assertTrue(oldPath.startsWith(oldPaths.get(0)));
     }
 
     @Test
@@ -2586,6 +2609,15 @@ public class PackageManagerShellCommandInstallTest {
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
         }
+    }
+
+    private List<String> getOldCodePaths(String packageName) throws IOException {
+        final String commandResult = executeShellCommand("dumpsys package " + packageName);
+        final String prefix = "      oldCodePath=";
+        return Arrays.stream(commandResult.split("\\r?\\n"))
+                .filter(line -> line.startsWith(prefix))
+                .map(s -> s.substring(prefix.length()))
+                .toList();
     }
 
     static class PackageBroadcastReceiver extends BroadcastReceiver {
