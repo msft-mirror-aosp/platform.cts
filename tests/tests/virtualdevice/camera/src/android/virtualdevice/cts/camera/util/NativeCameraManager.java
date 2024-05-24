@@ -16,7 +16,7 @@
 
 package android.virtualdevice.cts.camera.util;
 
-import android.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import java.util.Objects;
 
