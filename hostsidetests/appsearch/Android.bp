@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsAppSearchHostTestCases",
+    team: "trendy_team_appsearch",
     defaults: ["cts_defaults"],
     static_libs: [
         "cts-statsd-atom-host-test-utils",

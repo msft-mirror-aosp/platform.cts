@@ -26,8 +26,6 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-media",
-        "mcts-media",
     ],
 }
 
@@ -41,8 +39,8 @@ android_test {
     test_config: "AndroidTest-mcts.xml",
     test_suites: [
         "general-tests",
-        "cts",
         "mcts-media",
+        "mts-media",
     ],
 }
 
