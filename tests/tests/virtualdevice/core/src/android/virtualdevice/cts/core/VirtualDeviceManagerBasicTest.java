@@ -20,6 +20,7 @@ import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_DEFAULT;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_ACTIVITY;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_AUDIO;
+import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CLIPBOARD;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_RECENTS;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_SENSORS;
@@ -59,6 +60,7 @@ import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.server.wm.Condition;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -75,6 +77,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
@@ -125,6 +128,74 @@ public class VirtualDeviceManagerBasicTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_PERSISTENT_DEVICE_ID_API)
+    @Test
+    public void getDisplayNameForPersistentId_nullPersistentId_throws() {
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDeviceManager.getDisplayNameForPersistentDeviceId(null));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_PERSISTENT_DEVICE_ID_API)
+    @Test
+    public void getDisplayNameForPersistentId_nonExistentPersistentId_returnsNull() {
+        assertThat(mVirtualDeviceManager.getDisplayNameForPersistentDeviceId(
+                "nonExistentPersistentId"))
+                .isNull();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_PERSISTENT_DEVICE_ID_API)
+    @Test
+    public void getDisplayNameForPersistentId_defaultDevicePersistentId_returnsNull() {
+        assertThat(mVirtualDeviceManager.getDisplayNameForPersistentDeviceId(
+                VirtualDeviceManager.PERSISTENT_DEVICE_ID_DEFAULT))
+                .isNull();
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_PERSISTENT_DEVICE_ID_API, Flags.FLAG_VDM_PUBLIC_APIS})
+    @Test
+    public void getDisplayNameForPersistentId_validVirtualDevice_returnsCorrectId() {
+        final CharSequence virtualDeviceDisplayName =
+                mVirtualDeviceManager
+                        .getVirtualDevice(mVirtualDevice.getDeviceId())
+                        .getDisplayName();
+        final CharSequence persistentDeviceDisplayName =
+                mVirtualDeviceManager.getDisplayNameForPersistentDeviceId(
+                        mVirtualDevice.getPersistentDeviceId());
+
+        assertThat(virtualDeviceDisplayName.toString())
+                .isEqualTo(persistentDeviceDisplayName.toString());
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_PERSISTENT_DEVICE_ID_API, Flags.FLAG_VDM_PUBLIC_APIS})
+    @Test
+    public void getAllPersistentDeviceIds_empty() {
+        mRule.dropCompanionDeviceAssociation();
+        assertDeviceClosed(mVirtualDevice.getDeviceId());
+        assertThat(mVirtualDeviceManager.getAllPersistentDeviceIds()).isEmpty();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_PERSISTENT_DEVICE_ID_API)
+    @Test
+    public void getAllPersistentDeviceIds_validVirtualDevice() {
+        assertThat(mVirtualDeviceManager.getAllPersistentDeviceIds()).containsExactly(
+                mVirtualDevice.getPersistentDeviceId());
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_PERSISTENT_DEVICE_ID_API, Flags.FLAG_VDM_PUBLIC_APIS})
+    @Test
+    public void getAllPersistentDeviceIds_includesClosedVirtualDevice() {
+        final AssociationInfo associationInfo = mRule.createManagedAssociation();
+        VirtualDeviceManager.VirtualDevice secondVirtualDevice =
+                mVirtualDeviceManager.createVirtualDevice(
+                        associationInfo.getId(), VirtualDeviceRule.DEFAULT_VIRTUAL_DEVICE_PARAMS);
+        mVirtualDevice.close();
+        assertDeviceClosed(mVirtualDevice.getDeviceId());
+
+        assertThat(mVirtualDeviceManager.getAllPersistentDeviceIds()).containsExactly(
+                mVirtualDevice.getPersistentDeviceId(),
+                secondVirtualDevice.getPersistentDeviceId());
+    }
+
     @Test
     public void createVirtualDevice_shouldNotThrowException() {
         assertThat(mVirtualDevice).isNotNull();
@@ -162,7 +233,7 @@ public class VirtualDeviceManagerBasicTest {
         CompanionDeviceManager cdm = mContext.getSystemService(CompanionDeviceManager.class);
         List<AssociationInfo> associations = cdm.getMyAssociations();
         final AssociationInfo associationInfo = associations.stream()
-                .filter(a -> fakeAddress.equals(a.getDeviceMacAddressAsString()))
+                .filter(a -> fakeAddress.equals(a.getDeviceMacAddress().toString()))
                 .findAny().orElse(null);
         assertThat(associationInfo).isNotNull();
         try {
@@ -292,13 +363,20 @@ public class VirtualDeviceManagerBasicTest {
         assertThat(device.getDisplayIds()).asList().containsExactly(
                 firstDisplayId, secondDisplayId);
         assertThat(device.hasCustomSensorSupport()).isFalse();
+        assertThat(device.hasCustomAudioInputSupport()).isFalse();
+        assertThat(device.hasCustomCameraSupport()).isFalse();
 
         firstDisplay.release();
         mRule.assertDisplayDoesNotExist(firstDisplayId);
+        // The onVirtualDisplayRemoved callback is invoked asynchronously, so we add polling to
+        // remove the test flakiness.
+        // TODO(b/317872777): Remove the polling once the callback is synchronous.
+        waitForCondition("display removal", () -> device.getDisplayIds().length == 1);
         assertThat(device.getDisplayIds()).asList().containsExactly(secondDisplayId);
 
         secondDisplay.release();
         mRule.assertDisplayDoesNotExist(secondDisplayId);
+        waitForCondition("display removal", () -> device.getDisplayIds().length == 0);
         assertThat(device.getDisplayIds()).isEmpty();
     }
 
@@ -312,6 +390,30 @@ public class VirtualDeviceManagerBasicTest {
         VirtualDevice device = mVirtualDeviceManager.getVirtualDevice(virtualDevice.getDeviceId());
         assertThat(device).isNotNull();
         assertThat(device.hasCustomSensorSupport()).isTrue();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VDM_PUBLIC_APIS)
+    @Test
+    public void getVirtualDevice_hasCustomAudioInputSupport() {
+        VirtualDeviceManager.VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
+                new VirtualDeviceParams.Builder()
+                        .setDevicePolicy(POLICY_TYPE_AUDIO, DEVICE_POLICY_CUSTOM)
+                        .build());
+        VirtualDevice device = mVirtualDeviceManager.getVirtualDevice(virtualDevice.getDeviceId());
+        assertThat(device).isNotNull();
+        assertThat(device.hasCustomAudioInputSupport()).isTrue();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VDM_PUBLIC_APIS)
+    @Test
+    public void getVirtualDevice_hasCustomCameraSupport() {
+        VirtualDeviceManager.VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
+                new VirtualDeviceParams.Builder()
+                        .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
+                        .build());
+        VirtualDevice device = mVirtualDeviceManager.getVirtualDevice(virtualDevice.getDeviceId());
+        assertThat(device).isNotNull();
+        assertThat(device.hasCustomCameraSupport()).isTrue();
     }
 
     /**
@@ -345,20 +447,12 @@ public class VirtualDeviceManagerBasicTest {
         assertThat(device.getPersistentDeviceId())
                 .isEqualTo(mVirtualDevice.getPersistentDeviceId());
         assertThat(device.getName()).isNull();
-        if (Flags.vdmPublicApis()) {
-            assertThat(device.getDisplayIds()).hasLength(0);
-            assertThat(device.hasCustomSensorSupport()).isFalse();
-        }
 
         VirtualDevice anotherDevice = virtualDevices.get(1);
         assertThat(anotherDevice.getDeviceId()).isEqualTo(namedVirtualDevice.getDeviceId());
         assertThat(anotherDevice.getPersistentDeviceId())
                 .isEqualTo(namedVirtualDevice.getPersistentDeviceId());
         assertThat(anotherDevice.getName()).isEqualTo(VIRTUAL_DEVICE_NAME);
-        if (Flags.vdmPublicApis()) {
-            assertThat(anotherDevice.getDisplayIds()).hasLength(0);
-            assertThat(anotherDevice.hasCustomSensorSupport()).isFalse();
-        }
 
         // The persistent IDs must be the same as the underlying association is the same.
         assertThat(device.getPersistentDeviceId()).isEqualTo(anotherDevice.getPersistentDeviceId());
@@ -382,6 +476,8 @@ public class VirtualDeviceManagerBasicTest {
     public void createDeviceContext_defaultDeviceId() {
         Context defaultDeviceContext = mContext.createDeviceContext(DEVICE_ID_DEFAULT);
         assertThat(defaultDeviceContext.getDeviceId()).isEqualTo(DEVICE_ID_DEFAULT);
+        assertThat(defaultDeviceContext.getAttributionSource().getDeviceId()).isEqualTo(
+                DEVICE_ID_DEFAULT);
     }
 
     @Test
@@ -389,6 +485,8 @@ public class VirtualDeviceManagerBasicTest {
         Context virtualDeviceContext =
                 mContext.createDeviceContext(mVirtualDevice.getDeviceId());
         assertThat(virtualDeviceContext.getDeviceId()).isEqualTo(mVirtualDevice.getDeviceId());
+        assertThat(virtualDeviceContext.getAttributionSource().getDeviceId()).isEqualTo(
+                mVirtualDevice.getDeviceId());
 
         // The default device context should be available from the virtual device one.
         Context defaultDeviceContext = virtualDeviceContext.createDeviceContext(DEVICE_ID_DEFAULT);
@@ -650,5 +748,9 @@ public class VirtualDeviceManagerBasicTest {
     private void assertDeviceClosed(int deviceId) {
         verify(mVirtualDeviceListener, timeout(TIMEOUT_MILLIS).times(1))
                 .onVirtualDeviceClosed(deviceId);
+    }
+
+    private static void waitForCondition(String message, BooleanSupplier waitCondition) {
+        assertThat(Condition.waitFor(message, waitCondition)).isTrue();
     }
 }

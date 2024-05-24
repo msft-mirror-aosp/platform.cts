@@ -160,6 +160,11 @@ open class PackageInstallerTestBase {
         uiDevice.waitForIdle()
     }
 
+    @After
+    fun pressBack() {
+        uiDevice.pressBack()
+    }
+
     /**
      * Wait for session's install result and return it
      */

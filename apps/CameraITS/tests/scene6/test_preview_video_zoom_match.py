@@ -35,7 +35,6 @@ _CIRCLE_X = 0
 _CIRCLE_Y = 1
 _CIRCLISH_RTOL = 0.15  # contour area vs ideal circle area pi*((w+h)/4)**2
 _JPEG_STR = 'jpg'
-_LENS_FACING_FRONT = 0
 _LINE_COLOR = (255, 0, 0)  # red
 _MAX_STR = 'max'
 _MIN_STR = 'min'
@@ -175,10 +174,10 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
       z_range = props['android.control.zoomRatioRange']
 
       # Skip unless camera has zoom ability
-      vendor_api_level = its_session_utils.get_vendor_api_level(
+      first_api_level = its_session_utils.get_first_api_level(
           self.dut.serial)
       camera_properties_utils.skip_unless(
-          z_range and vendor_api_level >= its_session_utils.ANDROID14_API_LEVEL
+          z_range and first_api_level >= its_session_utils.ANDROID14_API_LEVEL
       )
       logging.debug('Testing zoomRatioRange: %s', str(z_range))
 
@@ -276,7 +275,8 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
             # If testing front camera, mirror preview image
             # Opencv expects a numpy array but np.flip generates a 'view' which
             # doesn't work with opencv. ndarray.copy forces copy instead of view
-            if props['android.lens.facing'] == _LENS_FACING_FRONT:
+            if (props['android.lens.facing'] ==
+                camera_properties_utils.LENS_FACING['FRONT']):
               # Preview are flipped on device's natural orientation
               # so for sensor orientation 90 or 270, it is up or down
               # Sensor orientation 0 or 180 is left or right

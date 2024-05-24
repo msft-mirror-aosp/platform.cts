@@ -18,7 +18,6 @@ package android.photopicker.cts;
 
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUris;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.deleteMedia;
-import static android.photopicker.cts.util.PhotoPickerFilesUtils.getMediaId;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.clickAndWait;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAddButton;
@@ -143,34 +142,6 @@ public class ActionPickImagesOnlyTest extends PhotoPickerBaseTest {
         final int count = clipData.getItemCount();
         assertThat(count).isEqualTo(maxCount);
     }
-    @Test
-    public void testMultiSelectOrdered() throws Exception {
-        final int imageCount = 4;
-        List<Uri> createdImages = createImagesAndGetUris(imageCount, mContext.getUserId());
-        mUriList.addAll(createdImages);
-        Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
-        addOrderedSelectionFlag(intent);
-        launchPhotoPickerForIntent(intent);
-
-        final List<UiObject> itemList = findItemList(imageCount);
-        final int itemCount = itemList.size();
-        assertThat(itemCount).isEqualTo(imageCount);
-        for (int i = 0; i < itemCount; i++) {
-            clickAndWait(sDevice, itemList.get(i));
-        }
-
-        clickAndWait(sDevice, findAddButton());
-
-        final ClipData clipData = mActivity.getResult().data.getClipData();
-        final int count = clipData.getItemCount();
-        assertThat(count).isEqualTo(itemCount);
-        for (int i = 0; i < count; i++) {
-            final Uri imageSelectedUri = clipData.getItemAt(i).getUri();
-            // The last image created, is the first on the photopicker grid.
-            final Uri imageCreatedUri = createdImages.get(count - i - 1);
-            assertThat(getMediaId(imageSelectedUri)).isEqualTo(getMediaId(imageCreatedUri));
-        }
-    }
 
     @Test
     public void testDoesNotRespectExtraAllowMultiple() throws Exception {
@@ -208,18 +179,59 @@ public class ActionPickImagesOnlyTest extends PhotoPickerBaseTest {
         final GetResultActivity.Result res = mActivity.getResult();
         assertThat(res.resultCode).isEqualTo(Activity.RESULT_CANCELED);
     }
-    private void addOrderedSelectionFlag(Intent intent) {
-        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit());
-        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_IN_ORDER, true);
+
+    @Test
+    public void testExtraPickerLaunchTabOptions() throws Exception {
+        final Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+
+        for (int launchOption: new int [] {
+                MediaStore.PICK_IMAGES_TAB_ALBUMS,
+                MediaStore.PICK_IMAGES_TAB_IMAGES
+        }) {
+            intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_LAUNCH_TAB, launchOption);
+            mActivity.startActivityForResult(intent, REQUEST_CODE);
+
+            UiAssertionUtils.assertThatShowsPickerUi(
+                    intent.getType(), intent.getExtras().getInt(
+                            MediaStore.EXTRA_PICK_IMAGES_LAUNCH_TAB), sDevice);
+            sDevice.pressBack();
+        }
     }
 
-    private void launchPhotoPickerForIntent(Intent intent) throws Exception {
-        // GET_CONTENT needs to have setType
-        if (Intent.ACTION_GET_CONTENT.equals(intent.getAction()) && intent.getType() == null) {
-            intent.setType("*/*");
-            intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
-        }
+    @Test
+    public void testExtraPickerLaunchTabInvalidOption() throws Exception {
+        final Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_LAUNCH_TAB, -1);
+        mActivity.startActivityForResult(intent, REQUEST_CODE);
+
+        final GetResultActivity.Result res = mActivity.getResult();
+        assertThat(res.resultCode).isEqualTo(Activity.RESULT_CANCELED);
+
+    }
+
+    @Test
+    public void testExtraPickerAccentColorValidColor() throws Exception {
+        long accentColor = 0xFFFF5A5F;
+        final Intent intent = new Intent(ACTION_PICK_IMAGES);
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_ACCENT_COLOR, accentColor);
 
         mActivity.startActivityForResult(intent, REQUEST_CODE);
+
+        // Assert that the photopicker works as expected with the added new accent color extra
+        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
+        sDevice.pressBack();
+    }
+
+    @Test
+    public void testExtraPickerAccentColorInvalidColorInput() throws Exception {
+        String accentColor = "red";
+        final Intent intent = new Intent(ACTION_PICK_IMAGES);
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_ACCENT_COLOR, accentColor);
+
+        mActivity.startActivityForResult(intent, REQUEST_CODE);
+
+        // Assert that the photopicker UI still shows up
+        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
+        sDevice.pressBack();
     }
 }

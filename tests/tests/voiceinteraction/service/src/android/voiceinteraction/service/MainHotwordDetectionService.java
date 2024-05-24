@@ -30,6 +30,7 @@ import android.os.Process;
 import android.os.SharedMemory;
 import android.os.SystemClock;
 import android.service.voice.AlwaysOnHotwordDetector;
+import android.service.voice.HotwordAudioStream;
 import android.service.voice.HotwordDetectedResult;
 import android.service.voice.HotwordDetectionService;
 import android.service.voice.HotwordRejectedResult;
@@ -44,6 +45,7 @@ import androidx.annotation.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.function.IntConsumer;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -82,6 +84,8 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
             new HotwordRejectedResult.Builder()
                     .setConfidenceLevel(HotwordRejectedResult.CONFIDENCE_LEVEL_MEDIUM)
                     .build();
+    private static final int PIPE_READ_END_INDEX = 0;
+    private static final int PIPE_WRITE_END_INDEX = 1;
 
     @NonNull
     private final Object mLock = new Object();
@@ -109,8 +113,13 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
 
     private boolean mCheckAudioDataIsNotZero;
 
-    private boolean mSendTrainingData;
-    private boolean mSendTrainingDataAfterDetect;
+    private boolean mShouldCloseExternalAudioStreamAfterRead = true;
+
+    // Only used in certain scenarios where we don't want to close it immediately after reading from
+    // it.
+    private InputStream mExternalAudioStreamReceived;
+    // Only used in certain scenarios where we want to verify whether the stream is writable.
+    private OutputStream mDetectedResultOutputStream;
 
     @Override
     public void onCreate() {
@@ -124,12 +133,6 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
     public void onDetect(@NonNull AlwaysOnHotwordDetector.EventPayload eventPayload,
             long timeoutMillis, @NonNull Callback callback) {
         Log.d(TAG, "onDetect for DSP source");
-
-        if (mSendTrainingData) {
-            Log.d(TAG, "Sending training data");
-            callback.onTrainingData(Utils.HOTWORD_TRAINING_DATA);
-            return;
-        }
 
         if (mIsNoNeedActionDuringDetection) {
             mIsNoNeedActionDuringDetection = false;
@@ -181,16 +184,10 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
                                 callback.onDetected(Utils.AUDIO_EGRESS_DETECTED_RESULT);
                             }
                         } else {
-                            Log.d(TAG, "Sending on detected");
                             callback.onDetected(hotwordDetectedResult);
                         }
                     } catch (IllegalArgumentException e) {
                         callback.onDetected(DETECTED_RESULT);
-                    }
-
-                    if (mSendTrainingDataAfterDetect) {
-                        Log.i(TAG, "Sending training data after detect");
-                        callback.onTrainingData(Utils.HOTWORD_TRAINING_DATA);
                     }
                 }, mDetectionDelayMs);
             }
@@ -216,13 +213,6 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
             Log.w(TAG, "callback is null");
             return;
         }
-
-        if (mSendTrainingData) {
-            Log.d(TAG, "Sending training data.");
-            callback.onTrainingData(Utils.HOTWORD_TRAINING_DATA);
-            return;
-        }
-
         if (audioStream == null) {
             Log.w(TAG, "audioStream is null");
             return;
@@ -233,12 +223,16 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
                 callback.onRejected(REJECTED_RESULT);
                 return;
             }
+            if (options.getBoolean(Utils.KEY_ACCEPT_DETECTION, false)) {
+                Log.d(TAG, "Accepting the detection based on options value.");
+                callback.onDetected(DETECTED_RESULT);
+                return;
+            }
         }
 
         long startTime = System.currentTimeMillis();
-        try (InputStream fis =
-                     new ParcelFileDescriptor.AutoCloseInputStream(audioStream)) {
-
+        InputStream fis = new ParcelFileDescriptor.AutoCloseInputStream(audioStream);
+        try {
             // We added the fake audio data and set "hotword!" string at the head. Then we simulated
             // to verify the audio data with "hotword!" in HotwordDetectionService. If the audio
             // data includes "hotword!", it means that the hotword is valid.
@@ -265,15 +259,29 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
                             callback.onDetected(
                                     Utils.AUDIO_EGRESS_DETECTED_RESULT_WRONG_COPY_BUFFER_SIZE);
                         } else {
-                            callback.onDetected(Utils.AUDIO_EGRESS_DETECTED_RESULT);
+                            try {
+                                ParcelFileDescriptor[] audioPipe =
+                                        ParcelFileDescriptor.createPipe();
+                                OutputStream audioPipeOutputStream =
+                                        new ParcelFileDescriptor.AutoCloseOutputStream(
+                                                audioPipe[PIPE_WRITE_END_INDEX]);
+                                audioPipeOutputStream.write(FAKE_HOTWORD_AUDIO_DATA);
+                                HotwordAudioStream resultAudioStream =
+                                        Utils.createNewHotwordAudioStream(
+                                                audioPipe[PIPE_READ_END_INDEX]);
+                                HotwordDetectedResult detectedResult =
+                                        Utils.createNewAudioEgressDetectedResult(
+                                                resultAudioStream);
+                                mExternalAudioStreamReceived = fis;
+                                mDetectedResultOutputStream = audioPipeOutputStream;
+                                callback.onDetected(detectedResult);
+                                audioPipe[PIPE_READ_END_INDEX].close();
+                            } catch (IOException ex) {
+                                Log.e(TAG, "Unexpected IOException: ", ex);
+                            }
                         }
                     } else {
                         callback.onDetected(DETECTED_RESULT);
-                    }
-
-                    if (mSendTrainingDataAfterDetect) {
-                        Log.d(TAG, "Sending training data after detect");
-                        callback.onTrainingData(Utils.HOTWORD_TRAINING_DATA);
                     }
                 };
 
@@ -284,21 +292,26 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
                         sendDetect.run();
                     }
                 }
+            } else {
+                callback.onRejected(REJECTED_RESULT);
             }
         } catch (IOException e) {
             Log.w(TAG, "Failed to read data : ", e);
+        } finally {
+            if (mShouldCloseExternalAudioStreamAfterRead) {
+                Log.d(TAG, "Closing external audio stream.");
+                try {
+                    fis.close();
+                } catch (IOException e2) {
+                    Log.e(TAG, "Unable to close external audio stream.", e2);
+                }
+            }
         }
     }
 
     @Override
     public void onDetect(@NonNull Callback callback) {
         Log.d(TAG, "onDetect for Mic source");
-
-        if (mSendTrainingData) {
-            Log.d(TAG, "Sending training data");
-            callback.onTrainingData(Utils.HOTWORD_TRAINING_DATA);
-            return;
-        }
 
         synchronized (mLock) {
             if (mDetectionJob != null) {
@@ -329,11 +342,6 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
                         }
                     } else {
                         callback.onDetected(DETECTED_RESULT_FOR_MIC_FAILURE);
-                    }
-
-                    if (mSendTrainingDataAfterDetect) {
-                        Log.d(TAG, "Sending training data after detect");
-                        callback.onTrainingData(Utils.HOTWORD_TRAINING_DATA);
                     }
                 };
                 mHandler.postDelayed(mDetectionJob, mDetectionDelayMs);
@@ -370,6 +378,7 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
         synchronized (mLock) {
             // When the service is initializing, the statusCallback will be not null.
             if (statusCallback != null) {
+                Log.i(TAG, "onUpdateState called with statusCallback");
                 if (mDetectionJob != null) {
                     Log.d(TAG, "onUpdateState mDetectionJob is not null");
                     mHandler.removeCallbacks(mDetectionJob);
@@ -445,6 +454,10 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
                 mUseIllegalAudioEgressCopyBufferSize = options.getBoolean(
                         Utils.KEY_AUDIO_EGRESS_USE_ILLEGAL_COPY_BUFFER_SIZE,
                         /* defaultValue= */ false);
+                mShouldCloseExternalAudioStreamAfterRead =
+                        options.getBoolean(
+                                Utils.KEY_AUDIO_EGRESS_CLOSE_AUDIO_STREAM_AFTER_READ,
+                                /* defaultValue= */ true);
                 Log.d(TAG, "options : Test audio egress use illegal copy buffer size = "
                         + mUseIllegalAudioEgressCopyBufferSize);
                 mIsTestAudioEgress = true;
@@ -462,17 +475,46 @@ public class MainHotwordDetectionService extends HotwordDetectionService {
                 mCheckAudioDataIsNotZero = true;
                 return;
             }
-            if (options.getInt(Utils.KEY_TEST_SCENARIO, -1)
-                    == Utils.EXTRA_HOTWORD_DETECTION_SERVICE_SEND_TRAINING_DATA) {
-                Log.d(TAG, "options: Test send training data on trigger or start.");
-                mSendTrainingData = true;
-                return;
-            }
-            if (options.getInt(Utils.KEY_TEST_SCENARIO, -1)
-                    == Utils.EXTRA_HOTWORD_DETECTION_SERVICE_SEND_TRAINING_DATA_AFTER_DETECT) {
-                Log.d(TAG, "options: Test send training data after detection on trigger or"
-                        + " start.");
-                mSendTrainingDataAfterDetect = true;
+            if (options.getBoolean(
+                    Utils.KEY_CLOSE_INPUT_AUDIO_STREAM_IF_OUTPUT_PIPE_BROKEN, false)) {
+                Log.d(TAG, "Received request to close input audio stream if output is closed");
+                if (mExternalAudioStreamReceived == null) {
+                    Log.e(TAG, "Ignored request because input stream is null");
+                    return;
+                }
+                if (mDetectedResultOutputStream == null) {
+                    Log.e(TAG, "Ignored request because result output stream is null");
+                    return;
+                }
+                try {
+                    /*
+                     * Write an arbitrary byte. This should trigger an error in the system_server
+                     * thread that copies from the result this service returns to the result
+                     * received by the test.
+                     */
+                    mDetectedResultOutputStream.write(1);
+                    /*
+                     * Wait for the copy thread mentioned above to clean up, which should close the
+                     * read-end of mDetectedResultOutputStream. Then write one more byte to trigger
+                     * an IOException here.
+                     */
+                    SystemClock.sleep(2000);
+                    mDetectedResultOutputStream.write(1);
+
+                } catch (IOException ex) {
+                    Log.d(
+                            TAG,
+                            "Output stream unwritable (which is expected), closing external audio"
+                                    + " stream received from wearable.");
+                    try {
+                        mExternalAudioStreamReceived.close();
+                    } catch (IOException ex2) {
+                        Log.e(
+                                TAG,
+                                "Unable to close external audio stream received from wearable.",
+                                ex2);
+                    }
+                }
                 return;
             }
 

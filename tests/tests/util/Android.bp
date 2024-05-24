@@ -29,12 +29,13 @@ java_defaults {
         "core-test-rules", // for libcore.dalvik.system.CloseGuardSupport
         "ravenwood-junit",
     ],
-    platform_apis: true,
     min_sdk_version: "30",
 }
 
 android_test {
     name: "CtsUtilTestCases",
+    // CtsUtilTestCasesRavenwood references the .aapt.srcjar
+    use_resource_processor: false,
     defaults: [
         "cts_defaults",
         "CtsUtilTestCasesDefaults",
@@ -42,11 +43,11 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-statsd",
     ],
     srcs: [
         "src/**/*.java",
     ],
+    platform_apis: true,
 }
 
 android_ravenwood_test {

@@ -1,5 +1,6 @@
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_storage",
 }
 
 android_test {
@@ -8,6 +9,7 @@ android_test {
         "device-tests",
         "cts",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
     ],
     compile_multilib: "both",
 

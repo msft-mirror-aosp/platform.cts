@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -33,11 +34,17 @@ import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.os.Process;
 import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.sdksandbox.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -54,6 +61,12 @@ import org.junit.runner.RunWith;
 public class ProcessTest {
     @Rule public RavenwoodRule mRavenwood = new RavenwoodRule();
 
+    // Required for RequiresFlagsEnabled and RequiresFlagsDisabled annotations to take effect.
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
+            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
+            : DeviceFlagsValueProvider.createCheckFlagsRule();
+
     public static final int THREAD_PRIORITY_HIGHEST = -20;
     private static final String NONE_EXISITENT_NAME = "abcdefcg";
     private static final String WRONG_CACHE_NAME = "cache_abcdefg";
@@ -61,6 +74,8 @@ public class ProcessTest {
     private static final String PROCESS_CACHE= "cache";
     private static final String REMOTE_SERVICE = "android.app.REMOTESERVICE";
     private static final int APP_UID = 10001;
+    private static final int FIRST_SDK_SANDBOX_UID = 20000;
+    private static final int LAST_SDK_SANDBOX_UID = 29999;
     private static final int SANDBOX_SDK_UID = 20001;
     private static final int ISOLATED_PROCESS_UID = 99037;
     private static final int APP_ZYGOTE_ISOLATED_UID = 90123;
@@ -251,18 +266,64 @@ public class ProcessTest {
     }
 
     /**
-     * Tests APIs related to sdk sandbox uids.
+     * Tests {@link Process#isSdkSandbox() (boolean)} API.
+     */
+    @Test
+    public void testIsSdkSandbox() {
+        assertFalse(Process.isSdkSandbox());
+    }
+
+    /**
+     * Tests for {@link Process#isSdkSandboxUid() (boolean)} API.
+     */
+    @Test
+    public void testIsSdkSandboxUid_UidNotSandboxUid() {
+        assertFalse(Process.isSdkSandboxUid(APP_UID));
+    }
+
+    /**
+     * Tests for the following APIs
+     * {@link Process#isSdkSandboxUid() (boolean)}
      */
     @Test
     public void testSdkSandboxUids() {
-        assertEquals(SANDBOX_SDK_UID, Process.toSdkSandboxUid(APP_UID));
-        assertEquals(APP_UID, Process.getAppUidForSdkSandboxUid(SANDBOX_SDK_UID));
-
-        assertFalse(Process.isSdkSandboxUid(APP_UID));
-        assertTrue(Process.isSdkSandboxUid(SANDBOX_SDK_UID));
-
-        assertFalse(Process.isSdkSandbox());
+        for (int i = FIRST_SDK_SANDBOX_UID; i <= LAST_SDK_SANDBOX_UID; i++) {
+            assertTrue(Process.isSdkSandboxUid(i));
+        }
     }
+
+    /**
+     * Tests for {@link Process#getAppUidForSdkSandboxUid(int) (int)} API.
+     */
+    @Test
+    public void testGetAppUidForSdkSandboxUid() {
+        assertEquals(APP_UID, Process.getAppUidForSdkSandboxUid(SANDBOX_SDK_UID));
+    }
+
+    @Test
+    public void testGetAppUidForSdkSandboxUid_invalidInput() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> Process.getAppUidForSdkSandboxUid(-1));
+        assertEquals(exception.getMessage(), "Input UID is not an SDK sandbox UID");
+    }
+
+    /**
+     * Tests for {@link Process#getSdkSandboxUidForAppUid(int) (int)} API
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SDK_SANDBOX_UID_TO_APP_UID_API)
+    public void testGetSdkSandboxUidForAppUid() {
+        assertEquals(SANDBOX_SDK_UID, Process.getSdkSandboxUidForAppUid(APP_UID));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SDK_SANDBOX_UID_TO_APP_UID_API)
+    public void testGetSdkSandboxUidForAppUid_invalidInput() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> Process.getSdkSandboxUidForAppUid(-1));
+        assertEquals(exception.getMessage(), "Input UID is not an app UID");
+    }
+
 
     /**
      * Tests that the reserved UID is not taken by an actual package.

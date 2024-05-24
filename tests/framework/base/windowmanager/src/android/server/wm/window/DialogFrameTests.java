@@ -93,9 +93,12 @@ public class DialogFrameTests extends ParentChildTestBase<DialogFrameTestActivit
 
     @Override
     void doSingleTest(ParentChildTest t) throws Exception {
-        mWmState.computeState(WaitForValidActivityState.forWindow(DIALOG_WINDOW_NAME));
-        WindowState dialog = getSingleWindow(DIALOG_WINDOW_NAME);
-        WindowState parent = getSingleWindow(getWindowName(activityName()));
+        final String mainWindowName = getWindowName(activityName());
+        mWmState.computeState(
+                WaitForValidActivityState.forWindow(DIALOG_WINDOW_NAME),
+                WaitForValidActivityState.forWindow(mainWindowName));
+        final WindowState dialog = getSingleWindow(DIALOG_WINDOW_NAME);
+        final WindowState parent = getSingleWindow(mainWindowName);
 
         t.doTest(parent, dialog);
     }

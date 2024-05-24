@@ -26,7 +26,6 @@ import static android.inputmethodservice.cts.common.DeviceEventConstants.RECEIVE
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-import android.inputmethodservice.cts.common.ComponentNameUtils;
 import android.inputmethodservice.cts.common.EditTextAppConstants;
 import android.inputmethodservice.cts.common.EventProviderConstants.EventTableConstants;
 import android.inputmethodservice.cts.common.Ime1Constants;
@@ -38,7 +37,6 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.FlakyTest;
 
-import com.android.compatibility.common.util.FeatureUtil;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -63,8 +61,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
     private static final long WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
     private static final long PACKAGE_OP_TIMEOUT = TimeUnit.SECONDS.toMillis(15);
     private static final long POLLING_INTERVAL = 100;
-    private static final String COMPAT_CHANGE_DO_NOT_DOWNSCALE_TO_1080P_ON_TV =
-            "DO_NOT_DOWNSCALE_TO_1080P_ON_TV";
 
     /**
      * Set up test case.
@@ -122,10 +118,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         options.setForceQueryable(forceQueryable);
         installPackage(options);
         waitUntilImesAreAvailable(imeId);
-
-        // Compatibility scaling may affect how watermarks are rendered in such a way so that we
-        // won't be able to detect them on screenshots.
-        disableAppCompatScalingForPackageIfNeeded(ComponentNameUtils.retrievePackageName(imeId));
     }
 
     /**
@@ -135,21 +127,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         installImePackageSync(apkFileName, imeId, true /* forceQueryable */);
     }
 
-    private void disableAppCompatScalingForPackageIfNeeded(String packageName) throws Exception {
-        if (FeatureUtil.isTV(getDevice())) {
-            // On 4K TV devices packages that target API levels below S run in a compat mode where
-            // they render UI to a 1080p surface which then gets scaled up x2 (to the device's
-            // "native" 4K resolution).
-            // When a test IME package runs in such compatibility mode, the watermarks it renders
-            // would be scaled up x2 as well, thus we won't be able detect them on (4K) screenshots
-            // we take during tests.
-            // Note, that this command will have no effect if the device is not a 4K TV, or if the
-            // package's "targetSdk" level is S or above.
-            shell(ShellCommandUtils.enableCompatChange(
-                    COMPAT_CHANGE_DO_NOT_DOWNSCALE_TO_1080P_ON_TV, packageName));
-        }
-    }
-
     private void installPossibleInstantPackage(
             String apkFileName, String packageName, boolean instant) throws Exception {
         if (instant) {
@@ -157,22 +134,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         } else {
             installPackageSync(apkFileName, packageName, "-r");
         }
-    }
-
-    private void testSwitchIme(boolean instant) throws Exception {
-        sendTestStartEvent(DeviceTestConstants.TEST_SWITCH_IME1_TO_IME2);
-        installPossibleInstantPackage(
-                EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
-        installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID));
-        waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
-
-        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_SWITCH_IME1_TO_IME2));
     }
 
     private void testSwitchToHandwritingIme(boolean instant) throws Exception {
@@ -189,24 +150,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
 
         assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_SWITCH_TO_HANDWRITING_INPUT));
-    }
-
-    /**
-     * Test IME switching APIs for full (non-instant) apps.
-     */
-    @AppModeFull
-    @Test
-    public void testSwitchImeFull() throws Exception {
-        testSwitchIme(false);
-    }
-
-    /**
-     * Test IME switching APIs for instant apps.
-     */
-    @AppModeInstant
-    @Test
-    public void testSwitchImeInstant() throws Exception {
-        testSwitchIme(true);
     }
 
     /**

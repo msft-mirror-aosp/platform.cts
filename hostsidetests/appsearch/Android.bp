@@ -35,6 +35,7 @@ java_test_host {
         "cts",
         "general-tests",
         "mts-appsearch",
+        "mcts-appsearch",
     ],
     data: [
         ":CtsAppSearchHostTestHelperA",
@@ -52,6 +53,7 @@ android_test_helper_app {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "testng",
+        "service-appsearch-for-tests",
     ],
     srcs: [
         "test-apps/AppSearchHostTestHelperA/src/**/*.java",

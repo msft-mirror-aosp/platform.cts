@@ -49,13 +49,17 @@ import android.os.Parcelable;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.test.mock.MockContext;
 import android.util.AttributeSet;
 import android.util.Xml;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -74,7 +78,13 @@ import java.util.Set;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class IntentTest {
-    @Rule public final RavenwoodRule mRavenwood = new RavenwoodRule();
+    @Rule
+    public final RavenwoodRule mRavenwood = new RavenwoodRule();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
+            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
+            : DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Intent mIntent;
     private static final String TEST_ACTION = "android.content.IntentTest_test";
@@ -92,6 +102,7 @@ public class IntentTest {
     private static final String TEST_CATEGORY = "testCategory";
     private static final String ANOTHER_TEST_CATEGORY = "testAnotherCategory";
     private static final String TEST_PACKAGE = "android.content.cts";
+    private static final String TEST_ACTIVITY = TEST_PACKAGE + ".MockActivity";
     private static final String ANOTHER_TEST_PACKAGE = "android.database.cts";
     private static final double DELTA_FLOAT = 0.0f;
     private static final double DELTA_DOUBLE = 0.0d;
@@ -103,11 +114,11 @@ public class IntentTest {
             mContext = new MockContext() {
                 @Override
                 public String getPackageName() {
-                    return "android.content.cts";
+                    return TEST_PACKAGE;
                 }
             };
         } else {
-            mContext = InstrumentationRegistry.getTargetContext();
+            mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
             mPm = mContext.getPackageManager();
         }
 
@@ -424,7 +435,8 @@ public class IntentTest {
             // expected
         }
 
-        ai = mContext.getPackageManager().getActivityInfo(mComponentName,
+        ai = mContext.getPackageManager().getActivityInfo(
+                new ComponentName(TEST_PACKAGE, TEST_ACTIVITY),
                 PackageManager.GET_META_DATA);
         parser = ai.loadXmlMetaData(mContext.getPackageManager(), "android.app.intent");
 
@@ -732,12 +744,14 @@ public class IntentTest {
     @Test
     @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
     public void testResolveActivityInfo() throws NameNotFoundException {
+        ComponentName componentName = new
+                ComponentName(TEST_PACKAGE, TEST_ACTIVITY);
         final PackageManager pm = mContext.getPackageManager();
         assertEquals(null, mIntent.resolveActivityInfo(pm, 1));
-        mIntent.setComponent(mComponentName);
+        mIntent.setComponent(componentName);
         ActivityInfo target = null;
 
-        target = pm.getActivityInfo(mComponentName, 1);
+        target = pm.getActivityInfo(componentName, 1);
         assertEquals(target.targetActivity, mIntent.resolveActivityInfo(pm, 1).targetActivity);
     }
 
@@ -781,6 +795,23 @@ public class IntentTest {
         mIntent.addFlags(flag);
         expected |= flag;
         assertEquals(expected, mIntent.getFlags());
+    }
+
+    @Test
+    public void testAddExtendedFlags() {
+        final int flag = 1;
+        long expected = 0;
+        mIntent.addExtendedFlags(flag);
+        expected |= flag;
+        assertEquals(expected, mIntent.getExtendedFlags());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_ENFORCE_INTENT_FILTER_MATCH)
+    public void testIsMismatchingFilter() {
+        assertFalse(mIntent.isMismatchingFilter());
+        mIntent.addExtendedFlags(Intent.EXTENDED_FLAG_FILTER_MISMATCH);
+        assertTrue(mIntent.isMismatchingFilter());
     }
 
     @Test
@@ -950,8 +981,8 @@ public class IntentTest {
 
         // Should only have one activity responding to narrow category
         final ComponentName target = intent.resolveActivity(mPm);
-        assertEquals("android.content.cts", target.getPackageName());
-        assertEquals("android.content.cts.MockActivity", target.getClassName());
+        assertEquals(TEST_PACKAGE, target.getPackageName());
+        assertEquals(TEST_ACTIVITY, target.getClassName());
     }
 
     @Test
@@ -959,11 +990,11 @@ public class IntentTest {
     public void testResolveActivityShortcutMatch() {
         final Intent intent = new Intent("android.content.cts.action.TEST_ACTION");
         intent.setComponent(
-                new ComponentName("android.content.cts", "android.content.cts.MockActivity2"));
+                new ComponentName(TEST_PACKAGE, "android.content.cts.MockActivity2"));
 
         // Multiple activities match, but we asked for explicit component
         final ComponentName target = intent.resolveActivity(mPm);
-        assertEquals("android.content.cts", target.getPackageName());
+        assertEquals(TEST_PACKAGE, target.getPackageName());
         assertEquals("android.content.cts.MockActivity2", target.getClassName());
     }
 
@@ -976,7 +1007,7 @@ public class IntentTest {
         // Should have multiple activities, resulting in resolver dialog
         final ComponentName target = intent.resolveActivity(mPm);
         final String pkgName = target.getPackageName();
-        assertFalse("android.content.cts".equals(pkgName));
+        assertFalse(TEST_PACKAGE.equals(pkgName));
 
         // Whoever they are must be able to set preferred activities
         if (!"android".equals(pkgName)) {
@@ -1184,6 +1215,7 @@ public class IntentTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(reason = "feature flag dependent test")
     public void testUris() {
         checkIntentUri(
                 "intent:#Intent;action=android.test.FOO;end",
@@ -1532,9 +1564,14 @@ public class IntentTest {
         IntentSender sender = PendingIntent.getActivity(
                 mContext, 0, mIntent, PendingIntent.FLAG_IMMUTABLE).getIntentSender();
         target = Intent.createChooser(mIntent, null, sender);
-        assertEquals(sender, target.getParcelableExtra(
-                Intent.EXTRA_CHOSEN_COMPONENT_INTENT_SENDER, IntentSender.class));
 
+        if (android.service.chooser.Flags.enableChooserResult()) {
+            assertEquals(sender, target.getParcelableExtra(
+                    Intent.EXTRA_CHOOSER_RESULT_INTENT_SENDER, IntentSender.class));
+        } else {
+            assertEquals(sender, target.getParcelableExtra(
+                    Intent.EXTRA_CHOSEN_COMPONENT_INTENT_SENDER, IntentSender.class));
+        }
         // Asser that setting the data URI *without* a permission granting flag *doesn't* copy
         // anything to ClipData.
         Uri data = Uri.parse("some://uri");

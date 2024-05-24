@@ -24,6 +24,7 @@ android_test {
         "cts",
         "general-tests",
         "mts-media",
+        "mcts-media",
     ],
     // Include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -31,6 +32,7 @@ android_test {
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "cts-media-common",
+        "androidx.test.rules",
     ],
     libs: [
         "android.test.runner",

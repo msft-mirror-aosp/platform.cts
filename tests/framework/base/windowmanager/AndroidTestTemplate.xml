@@ -34,6 +34,17 @@
         <option name="test-file-name" value="{MODULE}.apk"/>
         <option name="test-file-name" value="CtsPropertyCompatAllowOrientationOverrideApp.apk" />
         <option name="test-file-name" value="CtsPropertyCompatAllowDisplayOrientationOverrideApp.apk" />
+        <option name="test-file-name" value="CtsPropertyCompatAllowMinAspectRatioOverrideOptInApp.apk" />
+        <option name="test-file-name" value="CtsPropertyCompatAllowMinAspectRatioOverrideOptOutApp.apk" />
+        <option name="test-file-name" value="CtsPropertyCompatAllowIgnoringOrientationRequestWhenLoopDetectedOptInApp.apk" />
+        <option name="test-file-name" value="CtsPropertyCompatAllowIgnoringOrientationRequestWhenLoopDetectedOptOutApp.apk" />
+        <option name="test-file-name" value="CtsPropertyCompatAllowIgnoringOrientationRequestWhenLoopDetectedUnsetApp.apk" />
+        <option name="test-file-name" value="CtsPropertyCompatAllowResizeableActivityOverridesOptInApp.apk" />
+        <option name="test-file-name" value="CtsPropertyCompatAllowResizeableActivityOverridesOptOutApp.apk" />
+        <option name="test-file-name" value="CtsPropertyCompatAllowUserAspectRatioFullscreenOverrideOptInApp.apk" />
+        <option name="test-file-name" value="CtsPropertyCompatAllowUserAspectRatioFullscreenOverrideOptOutApp.apk" />
+        <option name="test-file-name" value="CtsPropertyCompatAllowUserAspectRatioOverrideOptInApp.apk" />
+        <option name="test-file-name" value="CtsPropertyCompatAllowUserAspectRatioOverrideOptOutApp.apk" />
         <option name="test-file-name" value="CtsDragAndDropSourceApp.apk"/>
         <option name="test-file-name" value="CtsDragAndDropTargetApp.apk"/>
         <option name="test-file-name" value="CtsDeviceAlertWindowTestApp.apk"/>
@@ -65,6 +76,7 @@
         <option name="test-file-name" value="CtsDeviceServicesTestShareUidAppB.apk" />
         <option name="test-file-name" value="CtsWindowManagerJetpackSecondUidApp.apk" />
         <option name="test-file-name" value="CtsBackLegacyApp.apk" />
+        <option name="test-file-name" value="CtsWindowManagerExternalApp.apk" />
     </target_preparer>
     <!-- Some older apk cannot be installed as instant, so we force them full mode -->
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -97,11 +109,17 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
         <option name="package" value="android.server.wm.cts"/>
         <option name="runtime-hint" value="1h"/>
+        <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
+        <!-- DefaultUITraceListener args -->
+        <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
+        <option name="instrumentation-arg" key="per_class" value="true"/>
     </test>
 
     <!-- Collect the files from DumpOnFailure. -->
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
+        <option name="pull-pattern-keys" value="perfetto_file_path*"/>
         <option name="directory-keys" value="/sdcard/DumpOnFailure" />
+        <option name="directory-keys" value="/data/user/0/android.server.wm.cts/files" />
         <option name="collect-on-run-ended-only" value="true" />
     </metrics_collector>
 
@@ -110,4 +128,8 @@
         <option name="cleanup" value="true" />
         <option name="push-file" key="CtsDeviceDeprecatedAbiApp.apk" value="/data/local/tmp/cts/CtsDeviceDeprecatedAbiApp.apk" />
     </target_preparer>
+    <object class="com.android.tradefed.testtype.suite.module.TestFailureModuleController" type="module_controller">
+        <!-- Take screenshot upon test failure -->
+        <option name="screenshot-on-failure" value="true" />
+    </object>
 </configuration>

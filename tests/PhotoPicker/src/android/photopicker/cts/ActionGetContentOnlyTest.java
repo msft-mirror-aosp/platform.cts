@@ -34,6 +34,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.photopicker.cts.util.PhotoPickerComponentUtils;
 import android.photopicker.cts.util.UiAssertionUtils;
+import android.provider.MediaStore;
 import android.util.Pair;
 
 import androidx.test.uiautomator.UiObject;
@@ -203,6 +204,33 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
     }
 
+    @Test
+    public void testPickerLaunchTabWithGetContent() throws Exception {
+        final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_LAUNCH_TAB, MediaStore.PICK_IMAGES_TAB_ALBUMS);
+
+        mActivity.startActivityForResult(Intent.createChooser(intent, TAG), REQUEST_CODE);
+
+        findAndClickMediaIcon();
+
+        // Should open Picker
+        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
+    }
+
+    @Test
+    public void testPickerAccentColorWithGetContent() throws Exception {
+        final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_ACCENT_COLOR, 0xFFFF5A5F);
+
+        mActivity.startActivityForResult(Intent.createChooser(intent, TAG), REQUEST_CODE);
+        sDevice.waitForIdle();
+
+        // Should open the picker
+        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
+    }
+
     private void findAndClickMediaIcon() throws Exception {
         final UiSelector appList = new UiSelector().resourceId(sDocumentsUiPackageName
                 + ":id/apps_row");
@@ -245,8 +273,9 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
     }
 
     private void findAndClickFilesInDocumentsUi(List<String> fileNameList) throws Exception {
+        final UiSelector docList = getDirectoryListSelector();
         for (String fileName : fileNameList) {
-            findAndClickFileInDocumentsUi(fileName);
+            findAndClickFileInDocumentsUi(docList, fileName);
         }
         findAndClickSelect();
     }
@@ -257,7 +286,7 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         clickAndWait(sDevice, selectButton);
     }
 
-    private void findAndClickFileInDocumentsUi(String fileName) throws Exception {
+    private UiSelector getDirectoryListSelector() throws Exception {
         final UiSelector docList = new UiSelector().resourceId(sDocumentsUiPackageName
                 + ":id/dir_list");
 
@@ -275,6 +304,11 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         } catch (UiObjectNotFoundException ignored) {
             // Do nothing, already be in list mode.
         }
+        return docList;
+    }
+
+    private void findAndClickFileInDocumentsUi(UiSelector docList, String fileName)
+            throws Exception {
 
         // Repeat swipe gesture to find our item
         // (UiScrollable#scrollIntoView does not seem to work well with SwipeRefreshLayout)

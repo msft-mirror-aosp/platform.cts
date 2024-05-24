@@ -39,6 +39,7 @@ android_test {
         "kotlin-test",
         "Nene",
         "Harrier",
+        "android.content.pm.flags-aconfig-java",
     ],
 
     test_suites: [
@@ -50,10 +51,12 @@ android_test {
         ":CtsEmptyTestAppV2",
         ":CtsEmptyInstallerApp",
         ":CtsEmptyTestApp_FullScreenIntent",
+        ":CtsEmptyTestApp_AppMetadataInApk",
     ],
     java_resources: [
         ":HelloWorldSdk1",
         ":HelloWorldUsingSdk1",
     ],
     per_testcase_directory: true,
+    platform_apis: true,
 }

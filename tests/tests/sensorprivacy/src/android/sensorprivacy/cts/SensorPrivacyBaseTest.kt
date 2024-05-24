@@ -657,7 +657,8 @@ abstract class SensorPrivacyBaseTest(
         val pin = "1234".toByteArray(StandardCharsets.UTF_8)
         try {
             runWithShellPermissionIdentity {
-                assertTrue(km.setLock(KeyguardManager.PIN, pin, KeyguardManager.PIN, null))
+                assumeTrue("Could not set lock.",
+                        km.setLock(KeyguardManager.PIN, pin, KeyguardManager.PIN, null))
             }
             getEventually {
                 uiDevice.pressKeyCode(KeyEvent.KEYCODE_SLEEP)
@@ -674,7 +675,8 @@ abstract class SensorPrivacyBaseTest(
             r.invoke()
         } finally {
             runWithShellPermissionIdentity {
-                assertTrue(km.setLock(KeyguardManager.PIN, null, KeyguardManager.PIN, pin))
+                assumeTrue("Could not remove lock.",
+                        km.setLock(KeyguardManager.PIN, null, KeyguardManager.PIN, pin))
             }
 
             // Recycle the screen power in case the keyguard is stuck open

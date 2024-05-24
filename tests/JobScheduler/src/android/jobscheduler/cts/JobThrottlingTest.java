@@ -89,7 +89,6 @@ public class JobThrottlingTest {
     private NetworkingHelper mNetworkingHelper;
     private PowerManager mPowerManager;
     private int mTestJobId;
-    private int mTestPackageUid;
     private boolean mDeviceIdleEnabled;
     private boolean mDeviceLightIdleEnabled;
     private boolean mAppStandbyEnabled;
@@ -121,10 +120,9 @@ public class JobThrottlingTest {
         mNetworkingHelper =
                 new NetworkingHelper(InstrumentationRegistry.getInstrumentation(), mContext);
         mPowerManager = mContext.getSystemService(PowerManager.class);
-        mTestPackageUid = mContext.getPackageManager().getPackageUid(TEST_APP_PACKAGE, 0);
         mTestJobId = (int) (SystemClock.uptimeMillis() / 1000);
         mTestAppInterface = new TestAppInterface(mContext, mTestJobId);
-        assertFalse("Test package already in temp whitelist", isTestAppTempWhitelisted());
+
         makeTestPackageIdle();
         mDeviceIdleEnabled = isDeviceIdleEnabled(mUiDevice);
         mDeviceLightIdleEnabled = isDeviceLightIdleEnabled(mUiDevice);
@@ -149,6 +147,10 @@ public class JobThrottlingTest {
         mDeviceConfigStateHelper.set(
                 new DeviceConfig.Properties.Builder(DeviceConfig.NAMESPACE_JOB_SCHEDULER)
                         .setInt("min_ready_non_active_jobs_count", 0)
+                        // Disable batching behavior.
+                        .setInt("min_ready_cpu_only_jobs_count", 0)
+                        .setInt("min_ready_non_active_jobs_count", 0)
+                        .setString("conn_transport_batch_threshold", "")
                         // Disable flex behavior.
                         .setInt("fc_applied_constraints", 0).build());
         mActivityManagerDeviceConfigStateHelper =
@@ -287,6 +289,24 @@ public class JobThrottlingTest {
                 mTestAppInterface.awaitJobStop(55_000L));
         assertTrue("Job did not stop after grace period ended",
                 mTestAppInterface.awaitJobStop(15_000L));
+        assertEquals(JobParameters.STOP_REASON_BACKGROUND_RESTRICTION,
+                mTestAppInterface.getLastParams().getStopReason());
+    }
+
+    @Test
+    public void testRestrictedJobAllowedInPowerAllowlist() throws Exception {
+        setTestPackageRestricted(true);
+        sendScheduleJobBroadcast(false);
+        assertFalse("Job started for restricted app",
+                mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
+
+        setPowerAllowlistState(true);
+        assertTrue("Job did not start when app was in the power allowlist",
+                mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
+
+        setPowerAllowlistState(false);
+        assertTrue("Job did not stop when the app was removed from the power allowlist",
+                mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT));
         assertEquals(JobParameters.STOP_REASON_BACKGROUND_RESTRICTION,
                 mTestAppInterface.getLastParams().getStopReason());
     }
@@ -1344,7 +1364,7 @@ public class JobThrottlingTest {
         BatteryUtils.resetBatterySaver();
         Settings.Global.putString(mContext.getContentResolver(),
                 Settings.Global.BATTERY_STATS_CONSTANTS, mInitialBatteryStatsConstants);
-        removeTestAppFromTempWhitelist();
+        setPowerAllowlistState(false);
 
         mNetworkingHelper.tearDown();
         mDeviceConfigStateHelper.restoreOriginalValues();
@@ -1370,16 +1390,6 @@ public class JobThrottlingTest {
     private void toggleAutoRestrictedBucketOnBgRestricted(boolean enable) {
         mActivityManagerDeviceConfigStateHelper.set("bg_auto_restricted_bucket_on_bg_restricted",
                 Boolean.toString(enable));
-    }
-
-    private boolean isTestAppTempWhitelisted() throws Exception {
-        final String output = mUiDevice.executeShellCommand("cmd deviceidle tempwhitelist").trim();
-        for (String line : output.split("\n")) {
-            if (line.contains("UID=" + UserHandle.getAppId(mTestPackageUid))) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private void sendScheduleJobBroadcast(boolean allowWhileIdle) throws Exception {
@@ -1417,6 +1427,11 @@ public class JobThrottlingTest {
                 + " " + TEST_APP_PACKAGE);
     }
 
+    private void setPowerAllowlistState(boolean add) throws Exception {
+        mUiDevice.executeShellCommand("cmd deviceidle whitelist " + (add ? "+" : "-")
+                + TEST_APP_PACKAGE);
+    }
+
     private void makeTestPackageIdle() throws Exception {
         mUiDevice.executeShellCommand("am make-uid-idle --user current " + TEST_APP_PACKAGE);
     }
@@ -1451,13 +1466,6 @@ public class JobThrottlingTest {
         }
         uiDevice.executeShellCommand("am set-standby-bucket " + TEST_APP_PACKAGE
                 + " " + bucketName);
-    }
-
-    private boolean removeTestAppFromTempWhitelist() throws Exception {
-        mUiDevice.executeShellCommand("cmd deviceidle tempwhitelist"
-                + " -u " + UserHandle.myUserId()
-                + " -r " + TEST_APP_PACKAGE);
-        return waitUntilTrue(SHELL_TIMEOUT, () -> !isTestAppTempWhitelisted());
     }
 
     /**

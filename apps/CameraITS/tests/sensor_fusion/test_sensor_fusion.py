@@ -124,12 +124,11 @@ def _collect_data(cam, fps, w, h, test_length, rot_rig, chart_dist,
   if rot_rig['cntl'].lower() == 'arduino':
     time.sleep(_ARDUINO_INIT_WAIT_TIME)
 
-  # Capture frames.
+  # Raise error if not FRONT or REAR facing camera.
   facing = props['android.lens.facing']
-  if (facing != camera_properties_utils.LENS_FACING_FRONT and
-      facing != camera_properties_utils.LENS_FACING_BACK):
-    raise AssertionError(f'Unknown lens facing: {facing}.')
+  camera_properties_utils.check_front_or_rear_camera(props)
 
+  # Capture frames.
   fmt = {'format': 'yuv', 'width': w, 'height': h}
   s, e, _, _, _ = cam.do_3a(get_results=True, do_af=False)
   logging.debug('3A ISO: %d, exp: %.3fms', s, e/_MSEC_TO_NSEC)
@@ -377,13 +376,13 @@ class SensorFusionTest(its_base_test.ItsBaseTest):
 
     # Validity check on gyro/camera timestamps
     cam_times = _get_cam_times(
-        events['cam'][_START_FRAME:len(events['cam'])], fps)
+        events['cam'][_START_FRAME:], fps)
     gyro_times = [e['time'] for e in events['gyro']]
     self._assert_gyro_encompasses_camera(cam_times, gyro_times)
 
     # Compute cam rotation displacement(rads) between pairs of adjacent frames.
     cam_rots = sensor_fusion_utils.get_cam_rotations(
-        frames[_START_FRAME:len(frames)], events['facing'], img_h,
+        frames[_START_FRAME:], events['facing'], img_h,
         name_with_log_path, _START_FRAME)
     logging.debug('cam_rots: %s', str(cam_rots))
     gyro_rots = sensor_fusion_utils.get_gyro_rotations(
@@ -418,6 +417,8 @@ class SensorFusionTest(its_base_test.ItsBaseTest):
     corr_dist = scipy.spatial.distance.correlation(cam_rots, gyro_rots)
     logging.debug('Best correlation of %f at shift of %.3fms',
                   corr_dist, offset_ms)
+    print(f'test_sensor_fusion_corr_dist: {corr_dist}')
+    print(f'test_sensor_fusion_offset_ms: {offset_ms:.3f}')
 
     # Assert PASS/FAIL criteria.
     if corr_dist > _CORR_DIST_THRESH_MAX:
@@ -427,7 +428,7 @@ class SensorFusionTest(its_base_test.ItsBaseTest):
       raise AssertionError('Offset too large. Measured (ms): '
                            f'{offset_ms:.3f}, TOL: {_OFFSET_MS_THRESH_MAX}.')
 
-    else: # remove frames if PASS
+    else:  # remove frames if PASS
       temp_files = []
       try:
         temp_files = os.listdir(self.log_path)

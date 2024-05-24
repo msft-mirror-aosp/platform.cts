@@ -312,7 +312,6 @@ public class VirtualAudioTest {
             }
         }
 
-
         @Override
         public void close() throws Exception {
             mRunning.set(false);

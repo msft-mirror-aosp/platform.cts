@@ -24,8 +24,10 @@ import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.TelephonyManager.CarrierPrivilegesCallback;
 import android.telephony.TelephonyRegistryManager;
+import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsCallProfile;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
@@ -39,9 +41,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -459,6 +464,53 @@ public class TelephonyRegistryManagerTest {
     }
 
 
+    private static class SimultaneousCallingListener extends TelephonyCallback implements
+            TelephonyCallback.SimultaneousCellularCallingSupportListener {
+
+        private final LinkedBlockingQueue<Set<Integer>> mQueue;
+
+        SimultaneousCallingListener(LinkedBlockingQueue<Set<Integer>> queue) {
+            mQueue = queue;
+        }
+
+        @Override
+        public void onSimultaneousCellularCallingSubscriptionsChanged(
+                @NonNull Set<Integer> simultaneousCallingSubscriptionIds) {
+            mQueue.offer(simultaneousCallingSubscriptionIds);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SIMULTANEOUS_CALLING_INDICATIONS)
+    @Test
+    public void testSimultaneousCellularCallingNotifications() throws Exception {
+        LinkedBlockingQueue<Set<Integer>> queue = new LinkedBlockingQueue<>(2);
+        SimultaneousCallingListener listener = new SimultaneousCallingListener(queue);
+        Context context = InstrumentationRegistry.getContext();
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), listener),
+                "android.permission.READ_PRIVILEGED_PHONE_STATE");
+        // get the current value
+        Set<Integer> initialVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        Set<Integer> testVal = new HashSet<>();
+        testVal.add(1000);
+        testVal.add(1100);
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifySimultaneousCellularCallingSubscriptionsChanged(testVal));
+            Set<Integer> resultVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertEquals(testVal, resultVal);
+        } finally {
+            // set back the initial value so that we do not cause an invalid value to be returned.
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifySimultaneousCellularCallingSubscriptionsChanged(initialVal));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                    (tm) -> tm.unregisterTelephonyCallback(listener));
+        }
+    }
+
+
     @Test
     public void testNotifyPreciseCallStateWithImsCall() throws Exception {
         Context context = InstrumentationRegistry.getContext();
@@ -644,15 +696,60 @@ public class TelephonyRegistryManagerTest {
                 (tm) -> tm.listen(psl, PhoneStateListener.LISTEN_NONE));
     }
 
+    @Test
+    public void testNotifyOutgoingEmergencyCall() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+        String testEmergencyNumber = "9998887776655443210";
+        EmergencyNumber emergencyNumber = new EmergencyNumber(
+                testEmergencyNumber,
+                "us",
+                "30",
+                EmergencyNumber.EMERGENCY_SERVICE_CATEGORY_UNSPECIFIED,
+                new ArrayList<>(),
+                EmergencyNumber.EMERGENCY_NUMBER_SOURCE_NETWORK_SIGNALING,
+                EmergencyNumber.EMERGENCY_CALL_ROUTING_NORMAL);
+        int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
+        int phoneId = SubscriptionManager.getSlotIndex(defaultSubId);
+
+        LinkedBlockingQueue<List<CallState>> queue = new LinkedBlockingQueue<>(1);
+        TestTelephonyCallback testCb = new TestTelephonyCallback(queue);
+
+        // Register telephony callback.
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), testCb));
+        // clear the initial result from registering the listener.
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                (trm) -> trm.notifyOutgoingEmergencyCall(phoneId, defaultSubId, emergencyNumber));
+        assertTrue(testCb.mCallbackSemaphore.tryAcquire(15, TimeUnit.SECONDS));
+        assertEquals(emergencyNumber, testCb.mLastOutgoingEmergencyNumber);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.unregisterTelephonyCallback(testCb));
+    }
+
     private class TestTelephonyCallback extends TelephonyCallback
-            implements TelephonyCallback.CallAttributesListener {
+            implements TelephonyCallback.CallAttributesListener,
+            TelephonyCallback.OutgoingEmergencyCallListener {
+        public Semaphore mCallbackSemaphore = new Semaphore(0);
         LinkedBlockingQueue<List<CallState>> mTestCallStatesQueue;
+        private EmergencyNumber mLastOutgoingEmergencyNumber;
+
         TestTelephonyCallback(LinkedBlockingQueue<List<CallState>> queue) {
             mTestCallStatesQueue = queue;
         }
         @Override
         public void onCallStatesChanged(@NonNull List<CallState> callStateList) {
             mTestCallStatesQueue.offer(callStateList);
+        }
+
+        @Override
+        public void onOutgoingEmergencyCall(EmergencyNumber placedEmergencyNumber,
+                int subscriptionId) {
+            Log.i("telecomTag", "onOutgoingEmergencyCall: telephony callback");
+            mLastOutgoingEmergencyNumber = placedEmergencyNumber;
+            mCallbackSemaphore.release();
         }
     }
 

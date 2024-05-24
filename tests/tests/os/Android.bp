@@ -42,6 +42,7 @@ android_test {
         "ravenwood-junit",
         "android.os.flags-aconfig-java",
         "backstage_power_flags_lib",
+        "sdk_sandbox_flags_lib",
     ],
     jni_uses_platform_apis: true,
     jni_libs: [
@@ -67,6 +68,7 @@ android_test {
         "general-tests",
         "sts",
         "mts-documentsui",
+        "mcts-documentsui",
     ],
     sdk_version: "test_current",
     libs: [
@@ -90,6 +92,7 @@ android_ravenwood_test {
     srcs: [
         "src/android/os/cts/BadParcelableExceptionTest.java",
         "src/android/os/cts/BinderTest.java",
+        "src/android/os/cts/BuildTest.java",
         "src/android/os/cts/BundleTest.java",
         "src/android/os/cts/DeadObjectExceptionTest.java",
         "src/android/os/cts/HandlerTest.java",
@@ -98,6 +101,9 @@ android_ravenwood_test {
         "src/android/os/cts/LooperTest.java",
         "src/android/os/cts/MessageQueueTest.java",
         "src/android/os/cts/MessageTest.java",
+        "src/android/os/cts/ParcelFileDescriptorTest.java",
+        "src/android/os/cts/ParcelFileDescriptor_AutoCloseInputStreamTest.java",
+        "src/android/os/cts/ParcelFileDescriptor_AutoCloseOutputStreamTest.java",
         "src/android/os/cts/ParcelFormatExceptionTest.java",
         "src/android/os/cts/ParcelTest.java",
         "src/android/os/cts/ParcelUuidTest.java",
@@ -105,6 +111,7 @@ android_ravenwood_test {
         "src/android/os/cts/PersistableBundleTest.java",
         "src/android/os/cts/ProcessTest.java",
         "src/android/os/cts/RemoteExceptionTest.java",
+        "src/android/os/cts/ServiceSpecificExceptionTest.java",
         "src/android/os/cts/SystemClockTest.java",
         "src/android/os/cts/UserHandleTest.java",
     ],

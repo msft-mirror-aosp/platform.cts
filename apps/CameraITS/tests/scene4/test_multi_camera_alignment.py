@@ -38,7 +38,6 @@ _CIRCLE_RTOL = 0.1  # 10%
 _CM_TO_M = 1E-2
 _FMT_CODE_RAW = 0x20
 _FMT_CODE_YUV = 0x23
-_LENS_FACING_BACK = 1  # 0: FRONT, 1: BACK, 2: EXTERNAL
 _M_TO_MM = 1E3
 _MM_TO_UM = 1E3
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -48,7 +47,7 @@ _TEST_REQUIRED_MPC = 33
 _TRANS_MATRIX_REF = np.array([0, 0, 0])  # translation matrix for ref cam is 000
 
 
-def convert_cap_and_prep_img(cap, props, fmt, img_name, debug):
+def convert_cap_and_prep_img(cap, props, fmt, img_name):
   """Convert the capture to an RGB image and prep image.
 
   Args:
@@ -56,7 +55,6 @@ def convert_cap_and_prep_img(cap, props, fmt, img_name, debug):
     props: dict of capture properties
     fmt: capture format ('raw' or 'yuv')
     img_name: name to save image as
-    debug: boolean for debug mode
 
   Returns:
     img uint8 numpy array
@@ -64,9 +62,8 @@ def convert_cap_and_prep_img(cap, props, fmt, img_name, debug):
 
   img = image_processing_utils.convert_capture_to_rgb_image(cap, props=props)
 
-  # save images if debug
-  if debug:
-    image_processing_utils.write_image(img, img_name)
+  # save image
+  image_processing_utils.write_image(img, img_name)
 
   # convert [0, 1] image to [0, 255] and cast as uint8
   img = image_processing_utils.convert_image_to_uint8(img)
@@ -178,9 +175,8 @@ def determine_valid_out_surfaces(cam, props, fmt, cap_camera_ids, sizes):
   return out_surfaces
 
 
-def take_images(cam, caps, props, fmt, cap_camera_ids, out_surfaces,
-                name_with_log_path, debug):
-  """Do image captures.
+def take_images(cam, caps, props, fmt, cap_camera_ids, out_surfaces):
+  """Capture images.
 
   Args:
     cam: obj; camera object
@@ -189,8 +185,6 @@ def take_images(cam, caps, props, fmt, cap_camera_ids, out_surfaces,
     fmt: str; capture format ('yuv' or 'raw')
     cap_camera_ids: list; camera capture ids
     out_surfaces: list; valid output surfaces for caps
-    name_with_log_path: str; file name with location to save files
-    debug: bool; determine if debug mode or not.
 
   Returns:
     caps: dict; capture information indexed by (fmt, cap_id)
@@ -212,14 +206,6 @@ def take_images(cam, caps, props, fmt, cap_camera_ids, out_surfaces,
       cam.do_3a(lock_ae=True, lock_awb=True)
       req = capture_request_utils.auto_capture_request(props=props, do_af=True)
       caps[(fmt, cap_camera_ids[i])] = cam.do_capture(req, out_surface)
-
-  # save images if debug
-  if debug:
-    for i in [0, 1]:
-      img = image_processing_utils.convert_capture_to_rgb_image(
-          caps[(fmt, cap_camera_ids[i])], props=props[cap_camera_ids[i]])
-      image_processing_utils.write_image(
-          img, f'{name_with_log_path}_{fmt}_{cap_camera_ids[i]}.jpg')
 
   return caps
 
@@ -389,7 +375,9 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
           not should_run and
           cam.is_primary_camera() and
           has_multiple_same_facing_cameras and
-          props['android.lens.facing'] == _LENS_FACING_BACK):
+          (props['android.lens.facing'] ==
+           camera_properties_utils.LENS_FACING['BACK'])
+          ):
         logging.error('Found multiple camera IDs %s facing in the same '
                       'direction as primary camera %s.',
                       cameras_facing_same_direction, self.camera_id)
@@ -403,11 +391,11 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance)
 
-      debug = self.debug_mode
       pose_reference = props['android.lens.poseReference']
 
       # Convert chart_distance for lens facing back
-      if props['android.lens.facing'] == _LENS_FACING_BACK:
+      if (props['android.lens.facing'] ==
+          camera_properties_utils.LENS_FACING['BACK']):
         # API spec defines +z is pointing out from screen
         logging.debug('lens facing BACK')
         chart_distance *= -1
@@ -464,8 +452,8 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
 
         out_surfaces = determine_valid_out_surfaces(
             cam, props, fmt, capture_cam_ids, physical_sizes)
-        caps = take_images(cam, caps, physical_props, fmt, capture_cam_ids,
-                           out_surfaces, name_with_log_path, debug)
+        caps = take_images(
+            cam, caps, physical_props, fmt, capture_cam_ids, out_surfaces)
 
     # process images for correctness
     for j, fmt in enumerate(fmts):
@@ -486,7 +474,7 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
         # convert cap and prep image
         img_name = f'{name_with_log_path}_{fmt}_{i}.jpg'
         img = convert_cap_and_prep_img(
-            caps[(fmt, i)], physical_props[i], fmt, img_name, debug)
+            caps[(fmt, i)], physical_props[i], fmt, img_name)
         size[i] = (caps[fmt, i]['width'], caps[fmt, i]['height'])
 
         # load parameters for each physical camera
@@ -508,9 +496,6 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
         # camera's coordinate, we need a translation vector of [-5, -4, -3]
         # so that: [I|[-5, -4, -3]^T] * [5, 4, 3]^T = [0,0,0]^T
         t[i] = -1.0 * np.dot(r[i], t[i])
-        if debug and j == 1:
-          logging.debug('t: %s', str(t[i]))
-          logging.debug('r: %s', str(r[i]))
 
         if (t[i] == _TRANS_MATRIX_REF).all():
           cam_reference[i] = True

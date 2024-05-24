@@ -34,6 +34,12 @@
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts"/>
         <option name="run-command" value="cmd thermalservice override-status 0" />
         <option name="teardown-command" value="cmd thermalservice reset" />
+        <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
+        <option name="run-command" value="wm dismiss-keyguard" />
+        <!-- Collapse notifications -->
+        <option name="run-command" value="cmd statusbar collapse" />
+        <!-- dismiss all system dialogs before launch test -->
+        <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
@@ -104,6 +110,10 @@
         <option name="push-file" key="HelloWorld7_xxxhdpi-v4.apk.idsig" value="/data/local/tmp/cts/content/HelloWorld7_xxxhdpi-v4.apk.idsig" />
         <option name="push-file" key="HelloWorldSystem.apk" value="/data/local/tmp/cts/content/HelloWorldSystem.apk" />
         <option name="push-file" key="HelloWorldSystem.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSystem.apk.idsig" />
+        <option name="push-file" key="HelloWorldSharedUid.apk" value="/data/local/tmp/cts/content/HelloWorldSharedUid.apk" />
+        <option name="push-file" key="HelloWorldSharedUid.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSharedUid.apk.idsig" />
+        <option name="push-file" key="HelloWorldSettings.apk" value="/data/local/tmp/cts/content/HelloWorldSettings.apk" />
+        <option name="push-file" key="HelloWorldSettings.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSettings.apk.idsig" />
         <option name="push-file" key="CtsPkgInstallTinyAppV1.apk" value="/data/local/tmp/cts/content/CtsPkgInstallTinyAppV1.apk" />
         <option name="push-file" key="CtsPkgInstallTinyAppV2V3V4.apk" value="/data/local/tmp/cts/content/CtsPkgInstallTinyAppV2V3V4.apk" />
         <option name="push-file" key="CtsPkgInstallTinyAppV2V3V4.apk.idsig" value="/data/local/tmp/cts/content/CtsPkgInstallTinyAppV2V3V4.apk.idsig" />
@@ -177,6 +187,20 @@
         <option name="push-file" key="HelloVerifierDelayedReject.apk.idsig" value="/data/local/tmp/cts/content/HelloVerifierDelayedReject.apk.idsig" />
         <option name="push-file" key="HelloVerifierDisabled.apk" value="/data/local/tmp/cts/content/HelloVerifierDisabled.apk" />
         <option name="push-file" key="HelloVerifierDisabled.apk.idsig" value="/data/local/tmp/cts/content/HelloVerifierDisabled.apk.idsig" />
+        <option name="push-file" key="HelloWorldSystemUserOnly.apk" value="/data/local/tmp/cts/content/HelloWorldSystemUserOnly.apk" />
+        <option name="push-file" key="HelloWorldSystemUserOnly.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSystemUserOnly.apk.idsig" />
+        <option name="push-file" key="CtsMultiArchApp32_arm.apk" value="/data/local/tmp/cts/content/CtsMultiArchApp32_arm.apk" />
+        <option name="push-file" key="CtsMultiArchApp32_x86.apk" value="/data/local/tmp/cts/content/CtsMultiArchApp32_x86.apk" />
+        <option name="push-file" key="CtsMultiArchApp64_arm.apk" value="/data/local/tmp/cts/content/CtsMultiArchApp64_arm.apk" />
+        <option name="push-file" key="CtsMultiArchApp64_x86.apk" value="/data/local/tmp/cts/content/CtsMultiArchApp64_x86.apk" />
+        <option name="push-file" key="CtsMultiArchAppBoth_arm.apk" value="/data/local/tmp/cts/content/CtsMultiArchAppBoth_arm.apk" />
+        <option name="push-file" key="CtsMultiArchAppBoth_x86.apk" value="/data/local/tmp/cts/content/CtsMultiArchAppBoth_x86.apk" />
+        <option name="push-file" key="CtsMultiArchApp32_targetSdk33_arm.apk" value="/data/local/tmp/cts/content/CtsMultiArchApp32_targetSdk33_arm.apk" />
+        <option name="push-file" key="CtsMultiArchApp32_targetSdk33_x86.apk" value="/data/local/tmp/cts/content/CtsMultiArchApp32_targetSdk33_x86.apk" />
+        <option name="push-file" key="CtsMultiArchApp64_targetSdk33_arm.apk" value="/data/local/tmp/cts/content/CtsMultiArchApp64_targetSdk33_arm.apk" />
+        <option name="push-file" key="CtsMultiArchApp64_targetSdk33_x86.apk" value="/data/local/tmp/cts/content/CtsMultiArchApp64_targetSdk33_x86.apk" />
+        <option name="push-file" key="CtsMultiArchAppBoth_targetSdk33_arm.apk" value="/data/local/tmp/cts/content/CtsMultiArchAppBoth_targetSdk33_arm.apk" />
+        <option name="push-file" key="CtsMultiArchAppBoth_targetSdk33_x86.apk" value="/data/local/tmp/cts/content/CtsMultiArchAppBoth_targetSdk33_x86.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

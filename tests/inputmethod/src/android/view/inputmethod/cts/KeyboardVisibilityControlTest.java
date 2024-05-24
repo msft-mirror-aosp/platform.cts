@@ -55,10 +55,14 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.AlertDialog;
 import android.app.Instrumentation;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.compat.CompatChanges;
 import android.content.Context;
 import android.content.Intent;
@@ -455,9 +459,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     getOnMainSync(() -> imm.showSoftInput(nonFocusedEditText, 0)));
             notExpectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
 
-            assertFalse("hideSoftInputFromWindow must fail if the View does not have IME focus",
-                    getOnMainSync(() -> imm.hideSoftInputFromWindow(
-                            nonFocusedEditText.getWindowToken(), 0)));
+            getOnMainSync(() -> imm.hideSoftInputFromWindow(
+                            nonFocusedEditText.getWindowToken(), 0));
+            // IME was never shown, so there should be no hideSoftInput.
             notExpectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
             expectImeInvisible(TIMEOUT);
         }
@@ -893,7 +897,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 TestUtils.waitOnMainUntil(() -> editTextRef.get().getWindowVisibility() != VISIBLE,
                         TIMEOUT);
                 expectEvent(stream, onFinishInputViewMatcher(true), TIMEOUT);
-                if (MockImeSession.isFinishInputNoFallbackConnectionEnabled()) {
+                if (imeSession.isFinishInputNoFallbackConnectionEnabled()) {
                     // When IME enabled the new app compat behavior to finish input without fallback
                     // input connection when device interactive state changed,
                     // we expect onFinishInput happens without any additional fallback input
@@ -921,7 +925,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 TestUtils.waitOnMainUntil(() -> editTextRef.get().hasWindowFocus()
                         && !editTextRef.get().hasFocus(), TIMEOUT);
                 expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
-                if (!MockImeSession.isFinishInputNoFallbackConnectionEnabled()) {
+                if (!imeSession.isFinishInputNoFallbackConnectionEnabled()) {
                     expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
                 }
                 expectImeInvisible(TIMEOUT);
@@ -1715,6 +1719,83 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
             // Rerun the test procedure to ensure it passes after exiting split-screen mode.
             testProcedureForTestActivity2.run();
+        }
+    }
+
+    /**
+     * A regression Test for Bug 226033399.
+     *
+     * <p>This test verifies that the keyboard remains visible when a notification comes.
+     * This test runs only when the screen is big enough. If the screen is small, it may make sense
+     * to dismiss the keyboard while a notification is being displayed. We also skip this test on
+     * non-phone, non-tablet form factors.
+     */
+    // Instant apps cannot post notification.
+    @AppModeFull
+    @Test
+    public void testIMEVisibleWhenNotificationComes() throws Throwable {
+        final Context targetContext = mInstrumentation.getTargetContext();
+        final PackageManager pm = targetContext.getPackageManager();
+        // Exclude major known non-phone, non-tablet form factors which have different notification
+        // UIs.
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY));
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_WATCH));
+        final NotificationManager notificationManager =
+                targetContext.getSystemService(NotificationManager.class);
+        assumeNotNull(notificationManager);
+        // Usually notification permission should be auto-granted by the test runner.
+        // Skip the test if notification is disabled for some other reason.
+        assumeTrue(notificationManager.areNotificationsEnabled());
+
+        final InputMethodManager imm = targetContext.getSystemService(InputMethodManager.class);
+        final int notificationId = 12345;
+        try (MockImeSession imeSession = MockImeSession.create(
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String marker = getTestMarker();
+            final EditText editText = launchTestActivity(marker);
+
+            // Skip the test if the screen size is small.
+            final int smallestScreenWidthDp =
+                    editText.getContext().getResources().getConfiguration().smallestScreenWidthDp;
+            Log.d(TAG, "smallestScreenWidthDp = " + smallestScreenWidthDp);
+            assumeTrue(smallestScreenWidthDp >= 400);
+
+            // 1. Show keyboard.
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            assertTrue("showSoftInput must success if the View has IME focus",
+                    getOnMainSync(() -> imm.showSoftInput(editText, 0)));
+            expectImeVisible(TIMEOUT);
+
+            // 2. Post a notification and verify that the keyboard is still visible.
+            final NotificationChannel channel = new NotificationChannel("test" /* id */,
+                    "Test Channel" /* name */, NotificationManager.IMPORTANCE_HIGH);
+            notificationManager.createNotificationChannel(channel);
+            final String notificationTitle = "notification-" + marker;
+            notificationManager.notify(
+                    notificationId,
+                    new Notification.Builder(targetContext, channel.getId())
+                            .setContentTitle(notificationTitle)
+                            .setContentText("testIMEVisibleWhenNotificationComes")
+                            .setSmallIcon(android.R.drawable.ic_info)
+                            .build());
+            UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
+            // Wait until the notification is visible. If TIMEOUT has passed and the notification
+            // is not visible, it's fine - the keyboard should remain visible in that case too.
+            uiDevice.wait(Until.hasObject(By.text(notificationTitle)), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // 3. Dismiss the notification and verify that the keyboard is still visible.
+            notificationManager.cancel(notificationId);
+            uiDevice.wait(Until.gone(By.text(notificationTitle)), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+        } finally {
+            // Make sure to dismiss the notification even if the test failed.
+            notificationManager.cancel(notificationId);
         }
     }
 

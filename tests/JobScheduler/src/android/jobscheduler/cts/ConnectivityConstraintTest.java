@@ -349,21 +349,16 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             Log.d(TAG, "App standby not enabled");
             return;
         }
-        // We're skipping this test because we can't make the ethernet connection metered.
-        if (hasEthernetConnection()) {
-            Log.d(TAG, "Skipping test since ethernet is connected.");
-            return;
-        }
         if (mHasWifi) {
-            setWifiMeteredState(true);
-        } else if (checkDeviceSupportsMobileData()) {
-            disconnectWifiToConnectToMobile();
-        } else {
-            Log.d(TAG, "Skipping test that requires a metered network.");
+            setWifiMeteredState(false);
+        } else if (!hasEthernetConnection()) {
+            // We're skipping this test because we can't force cellular or other networks to be
+            // unmetered. For now, we assume ethernet is always unmetered.
+            Log.d(TAG, "Skipping test that requires an unmetered network.");
             return;
         }
 
-        mDeviceConfigStateHelper.set("qc_max_session_count_restricted", "0");
+        setDeviceConfigFlag("qc_max_session_count_restricted", "0", true);
         SystemUtil.runShellCommand("am set-standby-bucket "
                 + kJobServiceComponent.getPackageName() + " restricted");
         BatteryUtils.runDumpsysBatteryUnplug();
@@ -624,13 +619,15 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
             // Deadline passed with no network satisfied.
             mNetworkingHelper.setAllNetworksEnabled(false);
 
-            SystemUtil.runWithShellPermissionIdentity(
-                    () -> CompatChanges.putPackageOverrides(
-                            TestAppInterface.TEST_APP_PACKAGE,
-                            Map.of(TestAppInterface.ENFORCE_MINIMUM_TIME_WINDOWS,
-                                    new PackageOverride.Builder().setEnabled(false).build())
-                    ),
-                    OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD, INTERACT_ACROSS_USERS_FULL);
+            if (CompatChanges.isChangeEnabled(TestAppInterface.ENFORCE_MINIMUM_TIME_WINDOWS)) {
+                SystemUtil.runWithShellPermissionIdentity(
+                        () -> CompatChanges.putPackageOverrides(
+                                TestAppInterface.TEST_APP_PACKAGE,
+                                Map.of(TestAppInterface.ENFORCE_MINIMUM_TIME_WINDOWS,
+                                        new PackageOverride.Builder().setEnabled(false).build())
+                        ),
+                        OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD, INTERACT_ACROSS_USERS_FULL);
+            }
             mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
             mTestAppInterface.scheduleJob(
                     Collections.emptyMap(),

@@ -40,7 +40,7 @@ import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
 import com.android.bedstead.harrier.annotations.enterprise.MostImportantCoexistenceTest;
 import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnDeviceOwnerUser;
+import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser;
 import com.android.bedstead.harrier.policies.AffiliatedProfileOwnerOnlyUserRestrictions;
 import com.android.bedstead.harrier.policies.UserRestrictions;
@@ -157,7 +157,8 @@ public final class UserRestrictionsTest {
             CommonUserRestrictions.DISALLOW_WIFI_TETHERING,
             CommonUserRestrictions.DISALLOW_SHARING_ADMIN_CONFIGURED_WIFI,
             CommonUserRestrictions.DISALLOW_WIFI_DIRECT,
-            CommonUserRestrictions.DISALLOW_ADD_WIFI_CONFIG
+            CommonUserRestrictions.DISALLOW_ADD_WIFI_CONFIG,
+            CommonUserRestrictions.DISALLOW_SIM_GLOBALLY
     })
     @Retention(RetentionPolicy.RUNTIME)
     private @interface AllUserRestrictions {
@@ -178,7 +179,7 @@ public final class UserRestrictionsTest {
     public static final DeviceState sDeviceState = new DeviceState();
 
     @Test
-    @IncludeRunOnDeviceOwnerUser
+    @IncludeRunOnSystemDeviceOwnerUser
     @IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser
     @Postsubmit(reason = "new test")
     public void getUserRestrictions_allDefaultUserRestrictions_returnFalse(

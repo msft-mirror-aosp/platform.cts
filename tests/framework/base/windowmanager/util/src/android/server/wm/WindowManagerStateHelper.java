@@ -41,8 +41,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.graphics.Rect;
+import android.server.wm.WindowManagerTestBase.FocusableActivity;
 import android.util.SparseArray;
 import android.view.InputEvent;
 

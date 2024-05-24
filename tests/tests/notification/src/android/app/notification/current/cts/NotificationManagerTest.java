@@ -51,6 +51,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationChannelGroup;
 import android.app.NotificationManager;
+import android.app.NotificationManager.CallNotificationEventListener;
 import android.app.PendingIntent;
 import android.app.compat.CompatChanges;
 import android.app.role.RoleManager;
@@ -85,6 +86,8 @@ import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 import android.service.notification.Flags;
 import android.service.notification.NotificationListenerService;
@@ -103,6 +106,7 @@ import androidx.test.uiautomator.UiDevice;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
+import com.android.modules.utils.build.SdkLevel;
 import com.android.test.notificationlistener.INLSControlService;
 import com.android.test.notificationlistener.INotificationUriAccessService;
 
@@ -221,6 +225,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     private static final int MESSAGE_BROADCAST_NOTIFICATION = 1;
     private static final int MESSAGE_SERVICE_NOTIFICATION = 2;
     private static final int MESSAGE_CLICK_NOTIFICATION = 3;
+    private static final int MESSAGE_CANCEL_ALL_NOTIFICATIONS = 4;
 
     private String mId;
     private INotificationUriAccessService mNotificationUriAccessService;
@@ -350,8 +355,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     private int getCancellationReason(String key) {
         for (int tries = 3; tries-- > 0; ) {
-            if (mListener.mRemoved.containsKey(key)) {
-                return mListener.mRemoved.get(key);
+            if (mListener.mRemovedReasons.containsKey(key)) {
+                return mListener.mRemovedReasons.get(key);
             }
             try {
                 Thread.sleep(1000);
@@ -418,6 +423,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             assertEquals(expected.getAudioAttributes(), actual.getAudioAttributes());
         }
         assertTrue(Arrays.equals(expected.getVibrationPattern(), actual.getVibrationPattern()));
+        if (android.app.Flags.notificationChannelVibrationEffectApi()) {
+            assertEquals(expected.getVibrationEffect(), actual.getVibrationEffect());
+        }
         assertEquals(expected.getGroup(), actual.getGroup());
         assertEquals(expected.getConversationId(), actual.getConversationId());
         assertEquals(expected.getParentChannelId(), actual.getParentChannelId());
@@ -994,6 +1002,16 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     /**
+     * Sends a cancellation message for the specified notificationId to the serviceConnection.
+     */
+    public void sendCancelAll(FutureServiceConnection serviceConnection,
+                           Handler callback) throws Exception {
+        Messenger service = new Messenger(serviceConnection.get(40000));
+        service.send(Message.obtain(null, MESSAGE_CANCEL_ALL_NOTIFICATIONS, -1, -1,
+                new Messenger(callback)));
+    }
+
+    /**
      *  Function to identify if the device is a cuttlefish instance.
      *  The testRankingUpdateSentWithPressure CTS test verifies device behavior that requires large
      *  numbers of notifications sent in a short period of time, which non-production devices like
@@ -1029,6 +1047,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @RequiresDevice
     @Test
     public void testRankingUpdateSentWithPressure() throws Exception {
+        // Test should only be run for build in V
+        if (!SdkLevel.isAtLeastV()) {
+            return;
+        }
+
         if (onCuttlefish()) {
             return;
         }
@@ -1038,7 +1061,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             return;
         }
 
-        int notificationsPerApp = 50;
+        int notificationsPerApp = 40;
         int totalNotificationsSent = notificationsPerApp * 8; // 8 apps total
 
         FutureServiceConnection pressureService00 = bindServiceConnection(PRESSURE_SERVICE_00);
@@ -1096,27 +1119,15 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             fail("Interrupted before notifications received or ranking updates received.");
         }
 
-        mNotificationManager.cancelAll();
-
-        // Clean up. We add sleep to give low ram devices a chance to unbind the service
-        // successfully without overwhelming the device.
-        mContext.unbindService(pressureService00);
-        Thread.sleep(900);
-        mContext.unbindService(pressureService01);
-        Thread.sleep(900);
-        mContext.unbindService(pressureService02);
-        Thread.sleep(900);
-        mContext.unbindService(pressureService03);
-        Thread.sleep(900);
-        mContext.unbindService(pressureService04);
-        Thread.sleep(900);
-        mContext.unbindService(pressureService05);
-        Thread.sleep(900);
-        mContext.unbindService(pressureService06);
-        Thread.sleep(900);
-        mContext.unbindService(pressureService07);
-        Thread.sleep(900);
-
+        // For each app, send a message to cancel all the current notifications.
+        sendCancelAll(pressureService00, callback);
+        sendCancelAll(pressureService01, callback);
+        sendCancelAll(pressureService02, callback);
+        sendCancelAll(pressureService03, callback);
+        sendCancelAll(pressureService04, callback);
+        sendCancelAll(pressureService05, callback);
+        sendCancelAll(pressureService06, callback);
+        sendCancelAll(pressureService07, callback);
 
         // Ensure all notifications get removed.
         try {
@@ -1130,14 +1141,52 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         assertTrue(notificationRankingUpdates);
         assertTrue(notificationsRemoved);
 
-        mListener.removeTestPackage(PRESSURE_APP_00);
-        mListener.removeTestPackage(PRESSURE_APP_01);
-        mListener.removeTestPackage(PRESSURE_APP_02);
-        mListener.removeTestPackage(PRESSURE_APP_03);
-        mListener.removeTestPackage(PRESSURE_APP_04);
-        mListener.removeTestPackage(PRESSURE_APP_05);
-        mListener.removeTestPackage(PRESSURE_APP_06);
-        mListener.removeTestPackage(PRESSURE_APP_07);
+        // Clean up. We add sleep to give low ram devices a chance to unbind the service
+        // successfully without overwhelming the device.
+        if (pressureService00 != null) {
+            mContext.unbindService(pressureService00);
+            pressureService00 = null;
+            Thread.sleep(900);
+        }
+        if (pressureService01 != null) {
+            mContext.unbindService(pressureService01);
+            Thread.sleep(900);
+        }
+        if (pressureService02 != null) {
+            mContext.unbindService(pressureService02);
+            Thread.sleep(900);
+        }
+        if (pressureService03 != null) {
+            mContext.unbindService(pressureService03);
+            Thread.sleep(900);
+        }
+        if (pressureService04 != null) {
+            mContext.unbindService(pressureService04);
+            Thread.sleep(900);
+        }
+        if (pressureService05 != null) {
+            mContext.unbindService(pressureService05);
+            Thread.sleep(900);
+        }
+        if (pressureService06 != null) {
+            mContext.unbindService(pressureService06);
+            Thread.sleep(900);
+        }
+        if (pressureService07 != null) {
+            mContext.unbindService(pressureService07);
+            Thread.sleep(900);
+        }
+
+        if (mListener != null) {
+            mListener.removeTestPackage(PRESSURE_APP_00);
+            mListener.removeTestPackage(PRESSURE_APP_01);
+            mListener.removeTestPackage(PRESSURE_APP_02);
+            mListener.removeTestPackage(PRESSURE_APP_03);
+            mListener.removeTestPackage(PRESSURE_APP_04);
+            mListener.removeTestPackage(PRESSURE_APP_05);
+            mListener.removeTestPackage(PRESSURE_APP_06);
+            mListener.removeTestPackage(PRESSURE_APP_07);
+        }
     }
 
     @Test
@@ -1526,8 +1575,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         assertAllPostedNotificationsAutogrouped();
     }
 
-    @Test
-    public void testAutogrouping_autogroupStaysUntilAllNotificationsCanceled() throws Exception {
+    private void testAutogrouping_autogroupStaysUntilAllNotificationsCanceled_common(
+            final int numExpectedUpdates) throws Exception {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(5);
@@ -1547,8 +1596,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         // Assert all notis stay in the same autogroup until all children are canceled
         CountDownLatch removedLatch;
         for (int i = 704; i > 701; i--) {
-            rerankLatch = mListener.setRankingUpdateCountDown(1);
-            removedLatch = mListener.setRemovedCountDown(1);
+            rerankLatch = mListener.setRankingUpdateCountDown(numExpectedUpdates);
+            removedLatch = mListener.setRemovedCountDown(numExpectedUpdates);
 
             cancelAndPoll(i);
 
@@ -1565,8 +1614,20 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    public void testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup()
+    @RequiresFlagsDisabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
+    public void testAutogrouping_autogroupStaysUntilAllNotificationsCanceled() throws Exception {
+        testAutogrouping_autogroupStaysUntilAllNotificationsCanceled_common(1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
+    public void testAutogrouping_autogroupStaysUntilAllNotificationsCanceled_summaryUpdated()
             throws Exception {
+        testAutogrouping_autogroupStaysUntilAllNotificationsCanceled_common(2);
+    }
+
+    private void testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup_common(
+            final int numExpectedUpdates) throws Exception {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(5);
@@ -1592,8 +1653,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         // Assert all notis stay in the same autogroup until all children are canceled
         for (int i = 904; i > 901; i--) {
-            postingLatch = mListener.setPostedCountDown(1);
-            rerankLatch = mListener.setRankingUpdateCountDown(1);
+            postingLatch = mListener.setPostedCountDown(numExpectedUpdates);
+            rerankLatch = mListener.setRankingUpdateCountDown(numExpectedUpdates);
 
             sendNotification(i, newGroup, R.drawable.blue);
             postedIds.remove(postedIds.size() - 1);
@@ -1615,8 +1676,21 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    public void testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled()
+    @RequiresFlagsDisabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
+    public void testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup()
             throws Exception {
+        testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup_common(1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
+    public void testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup_summaryUpdated()
+            throws Exception {
+        testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup_common(2);
+    }
+
+    private void testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled_common(
+                final int numExpectedUpdates) throws Exception {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch postingLatch = mListener.setPostedCountDown(5);
@@ -1642,8 +1716,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         // regroup all but one of the children
         for (int i = postedIds.size() - 1; i > 0; i--) {
-            postingLatch = mListener.setPostedCountDown(1);
-            rerankLatch = mListener.setRankingUpdateCountDown(1);
+            postingLatch = mListener.setPostedCountDown(numExpectedUpdates);
+            rerankLatch = mListener.setRankingUpdateCountDown(numExpectedUpdates);
 
             int id = postedIds.remove(i);
             sendNotification(id, newGroup, R.drawable.blue);
@@ -1656,14 +1730,29 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         // send a new non-grouped notification. since the autogroup summary still exists,
         // the notification should be added to it
-        rerankLatch = mListener.setRankingUpdateCountDown(1);
-        postingLatch = mListener.setPostedCountDown(1);
+        rerankLatch = mListener.setRankingUpdateCountDown(numExpectedUpdates);
+        postingLatch = mListener.setPostedCountDown(numExpectedUpdates);
         sendNotification(950, R.drawable.blue);
         postedIds.add(950);
 
         postingLatch.await(400, TimeUnit.MILLISECONDS);
         rerankLatch.await(400, TimeUnit.MILLISECONDS);
         assertOnlySomeNotificationsAutogrouped(postedIds);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
+    public void testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled()
+            throws Exception {
+        testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled_common(1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.server.notification.Flags.FLAG_AUTOGROUP_SUMMARY_ICON_UPDATE)
+    public void testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled_summaryUpdated()
+            throws Exception {
+        // The autogroup summary should update as well => wait for 2 notification updates
+        testNewNotificationsAddedToAutogroup_ifOriginalNotificationsCanceled_common(2);
     }
 
     @Test
@@ -2906,6 +2995,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testMediaStyle_setNoClearFlag() {
+        // Test should only be run for build in V
+        if (!SdkLevel.isAtLeastV()) {
+            return;
+        }
         if (!CompatChanges.isChangeEnabled(ENFORCE_NO_CLEAR_FLAG_ON_MEDIA_NOTIFICATION)) {
             Log.d(TAG, "Skipping testMediaStyle_setNoClearFlag(), SDK_INT="
                     + Build.VERSION.SDK_INT);
@@ -2928,6 +3021,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testCustomMediaStyle_setNoClearFlag() {
+        // Test should only be run for build in V
+        if (!SdkLevel.isAtLeastV()) {
+            return;
+        }
         if (!CompatChanges.isChangeEnabled(ENFORCE_NO_CLEAR_FLAG_ON_MEDIA_NOTIFICATION)) {
             Log.d(TAG, "Skipping testCustomMediaStyle_setNoClearFlag(), SDK_INT="
                     + Build.VERSION.SDK_INT);
@@ -3153,6 +3250,181 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 "testFlagUserInitiatedJobNeedsRealUij", 1, SEARCH_TYPE.POSTED);
 
         assertFalse(sbn.getNotification().isUserInitiatedJob());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_CALLSTYLE_CALLBACK_API)
+    public void testCallNotificationListener_registerCallback_noPermission() throws Exception {
+        try {
+            PermissionUtils.revokePermission(mContext.getPackageName(),
+                    android.Manifest.permission.INTERACT_ACROSS_USERS);
+            PermissionUtils.revokePermission(mContext.getPackageName(),
+                    android.Manifest.permission.ACCESS_NOTIFICATIONS);
+
+            mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
+                    UserHandle.SYSTEM, mContext.getMainExecutor(),
+                    new CallNotificationEventListener() {
+                    @Override
+                    public void onCallNotificationPosted(String packageName, UserHandle user) {
+                    }
+                    @Override
+                    public void onCallNotificationRemoved(String packageName, UserHandle user) {
+                    }
+                });
+            fail("registerCallNotificationListener should not succeed - privileged call");
+        } catch (SecurityException e) {
+            // Expected SecurityException
+        } finally {
+            PermissionUtils.grantPermission(mContext.getPackageName(),
+                    android.Manifest.permission.INTERACT_ACROSS_USERS);
+            PermissionUtils.setAppOp(mContext.getPackageName(),
+                    android.Manifest.permission.ACCESS_NOTIFICATIONS, MODE_ALLOWED);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_CALLSTYLE_CALLBACK_API)
+    public void testCallNotificationListener_registerCallback_withPermission()
+            throws Exception {
+        try {
+            mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
+                    UserHandle.SYSTEM, mContext.getMainExecutor(),
+                    new CallNotificationEventListener() {
+                        @Override
+                        public void onCallNotificationPosted(@NonNull String packageName,
+                                UserHandle user) {
+                        }
+                        @Override
+                        public void onCallNotificationRemoved(@NonNull String packageName,
+                                UserHandle user) {
+                        }
+                    });
+        } catch (SecurityException e) {
+            fail("registerCallNotificationListener should succeed " + e);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_CALLSTYLE_CALLBACK_API)
+    public void testCallNotificationListener_callstyleNotificationPosted() throws Exception {
+        mNotificationManager.cancelAll();
+        final Semaphore semaphore = new Semaphore(0);
+        try {
+            mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
+                    UserHandle.CURRENT, mContext.getMainExecutor(),
+                    new CallNotificationEventListener() {
+                    @Override
+                    public void onCallNotificationPosted(String packageName, UserHandle userH) {
+                        semaphore.release();
+                    }
+                    @Override
+                    public void onCallNotificationRemoved(String packageName, UserHandle user) {
+                        semaphore.release();
+                    }
+                });
+        } catch (SecurityException e) {
+            fail("registerCallNotificationListener should succeed " + e);
+        }
+
+        // Post a CallStyle notification
+        final int id = 4242;
+        mNotificationManager.notify(id, getCallStyleNotification(id)
+                .setFullScreenIntent(getPendingIntent(), false).build());
+
+        // Check that onCallNotificationPosted is called
+        try {
+            if (!semaphore.tryAcquire(5, TimeUnit.SECONDS)) {
+                fail("onCallNotificationPosted notification callback failed");
+            }
+        } catch (InterruptedException e) {
+            fail("notification callback failed " + e);
+        }
+
+        // Check that onCallNotificationRemoved is called
+        semaphore.release();
+        mNotificationManager.cancel(id);
+        try {
+            if (!semaphore.tryAcquire(5, TimeUnit.SECONDS)) {
+                fail("onCallNotificationRemoved notification callback failed");
+            }
+        } catch (InterruptedException e) {
+            fail("notification callback failed " + e);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_CALLSTYLE_CALLBACK_API)
+    public void testCallNotificationListener_nonCallStyleNotificationPosted()
+            throws Exception {
+        final Semaphore semaphore = new Semaphore(0);
+        try {
+            mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
+                    UserHandle.CURRENT, mContext.getMainExecutor(),
+                    new CallNotificationEventListener() {
+                    @Override
+                        public void onCallNotificationPosted(String packageName, UserHandle user) {
+                            semaphore.release();
+                        }
+                        @Override
+                        public void onCallNotificationRemoved(String packageName, UserHandle user) {
+                        }
+                    });
+        } catch (SecurityException e) {
+            fail("registerCallNotificationListener should succeed " + e);
+        }
+
+        // Post a non-CallStyle (conversation) notification
+        final int id = 4242;
+        mNotificationManager.notify(id, getConversationNotification().build());
+
+        // Check that CallNotificationListener is not called
+        try {
+            if (semaphore.tryAcquire(5, TimeUnit.SECONDS)) {
+                fail("notification callback should fail!");
+            }
+        } catch (InterruptedException e) {
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_CALLSTYLE_CALLBACK_API)
+    public void testCallNotificationListener_unregisterListener() throws Exception {
+        final Semaphore semaphore = new Semaphore(0);
+        final CallNotificationEventListener listener = new CallNotificationEventListener() {
+                @Override
+                public void onCallNotificationPosted(String packageName, UserHandle user) {
+                    semaphore.release();
+                }
+                @Override
+                public void onCallNotificationRemoved(String packageName, UserHandle user) {
+                }
+        };
+
+        try {
+            mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
+                    UserHandle.CURRENT, mContext.getMainExecutor(), listener);
+        } catch (SecurityException e) {
+            fail("registerCallNotificationListener should succeed " + e);
+        }
+
+        try {
+            mNotificationManager.unregisterCallNotificationEventListener(listener);
+        } catch (SecurityException e) {
+            fail("unregisterCallNotificationListener should succeed " + e);
+        }
+
+        // Post a CallStyle notification
+        final int id = 4242;
+        mNotificationManager.notify(id, getCallStyleNotification(id)
+                .setFullScreenIntent(getPendingIntent(), false).build());
+
+        // Check that onCallNotificationPosted is not called
+        try {
+            if (semaphore.tryAcquire(5, TimeUnit.SECONDS)) {
+                fail("notification callback should fail!");
+            }
+        } catch (InterruptedException e) {
+        }
     }
 
     private static class EventCallback extends Handler {

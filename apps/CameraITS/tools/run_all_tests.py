@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import glob
+import json
 import logging
 import os
 import os.path
@@ -27,10 +27,12 @@ import types
 import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
+import its_device_utils
 import its_session_utils
+import lighting_control_utils
 import numpy as np
 import yaml
-import lighting_control_utils
+
 
 YAML_FILE_DIR = os.environ['CAMERA_ITS_TOP']
 CONFIG_FILE = os.path.join(YAML_FILE_DIR, 'config.yml')
@@ -46,10 +48,10 @@ RESULT_FAIL = 'FAIL'
 RESULT_NOT_EXECUTED = 'NOT_EXECUTED'
 RESULT_KEY = 'result'
 METRICS_KEY = 'mpc_metrics'
+PERFORMANCE_KEY = 'performance_metrics'
 SUMMARY_KEY = 'summary'
 RESULT_VALUES = (RESULT_PASS, RESULT_FAIL, RESULT_NOT_EXECUTED)
 CTS_VERIFIER_PACKAGE_NAME = 'com.android.cts.verifier'
-ITS_TEST_ACTIVITY = 'com.android.cts.verifier/.camera.its.ItsTestActivity'
 ACTION_ITS_RESULT = 'com.android.cts.verifier.camera.its.ACTION_ITS_RESULT'
 EXTRA_VERSION = 'camera.its.extra.VERSION'
 CURRENT_ITS_VERSION = '1.0'  # version number to sync with CtsVerifier
@@ -72,9 +74,10 @@ _PROPERTIES_TO_MATCH = (
 #   scene*_a/b/... are similar scenes that share one or more tests
 _TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
-    'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6',
+    'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6', 'scene7',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_night'),
+    'scene_video',
 )
 
 # Scenes that use the 'sensor_fusion' test rig
@@ -123,6 +126,8 @@ _SCENE_REQ = types.MappingProxyType({
               'for more details',
     'scene6': 'A grid of black circles on a white background. '
               'See tests/scene6/scene6.png',
+    'scene7': 'The picture with 4 different colors, slanted edge and'
+              '4 ArUco markers. See tests/scene7/scene7.png',
     # Use os.path to avoid confusion on other platforms
     os.path.join('scene_extensions', 'scene_hdr'): (
         'A tablet displayed scene with a face on the left '
@@ -140,6 +145,9 @@ _SCENE_REQ = types.MappingProxyType({
                      'instructions.\nNote that this test will be skipped '
                      'on devices not supporting REALTIME camera timestamp.',
     'scene_flash': 'A checkerboard pattern chart with lights off.',
+    'scene_video': 'A tablet displayed scene with a series of circles moving '
+                   'at different simulated frame rates. '
+                   'See tests/scene_video/scene_video.mp4',
 })
 
 SUB_CAMERA_TESTS = types.MappingProxyType({
@@ -173,6 +181,9 @@ SUB_CAMERA_TESTS = types.MappingProxyType({
     'scene4': (
         'test_aspect_ratio_and_crop',
     ),
+    'scene_video': (
+        'test_preview_frame_drop',
+    ),
     'sensor_fusion': (
         'test_sensor_fusion',
     ),
@@ -190,28 +201,6 @@ _DST_SCENE_DIR = '/sdcard/Download/'
 MOBLY_TEST_SUMMARY_TXT_FILE = 'test_mobly_summary.txt'
 
 
-def run(cmd):
-  """Replaces os.system call, while hiding stdout+stderr messages."""
-  with open(os.devnull, 'wb') as devnull:
-    subprocess.check_call(cmd.split(), stdout=devnull, stderr=subprocess.STDOUT)
-
-
-def check_cts_apk_installed(device_id):
-  """Verifies that CtsVerifer.apk is installed on a given device."""
-  verify_cts_cmd = (
-      f'adb -s {device_id} shell pm list packages | '
-      f'grep {CTS_VERIFIER_PACKAGE_NAME}'
-  )
-  raw_output = subprocess.check_output(
-      verify_cts_cmd, stderr=subprocess.STDOUT, shell=True
-  )
-  output = str(raw_output.decode('utf-8')).strip()
-  if CTS_VERIFIER_PACKAGE_NAME not in output:
-    raise AssertionError(
-        f"{CTS_VERIFIER_PACKAGE_NAME} not in {device_id}'s list of packages!"
-    )
-
-
 def report_result(device_id, camera_id, results):
   """Sends a pass/fail result to the device, via an intent.
 
@@ -222,15 +211,7 @@ def report_result(device_id, camera_id, results):
             current ITS run. See test_report_result unit test for an example.
   """
   adb = f'adb -s {device_id}'
-  initialization_cmds = (
-      f'{adb} shell input keyevent KEYCODE_WAKEUP',
-      f'{adb} shell input keyevent KEYCODE_MENU',
-      (f'{adb} shell am start -n {ITS_TEST_ACTIVITY} '
-       '--activity-brought-to-front')
-  )
-  # Awaken if necessary and start ItsTestActivity to receive test results
-  for cmd in initialization_cmds:
-    run(cmd)
+  its_device_utils.start_its_test_activity(device_id)
   time.sleep(ACTIVITY_START_WAIT)
 
   # Validate/process results argument
@@ -241,15 +222,15 @@ def report_result(device_id, camera_id, results):
       raise ValueError(f'Unknown ITS result for {scene}: {results[RESULT_KEY]}')
     if SUMMARY_KEY in results[scene]:
       device_summary_path = f'/sdcard/its_camera{camera_id}_{scene}.txt'
-      run('%s push %s %s' %
-          (adb, results[scene][SUMMARY_KEY], device_summary_path))
+      its_device_utils.run(
+          f'{adb} push {results[scene][SUMMARY_KEY]} {device_summary_path}')
       results[scene][SUMMARY_KEY] = device_summary_path
 
   json_results = json.dumps(results)
   cmd = (f"{adb} shell am broadcast -a {ACTION_ITS_RESULT} --es {EXTRA_VERSION}"
          f" {CURRENT_ITS_VERSION} --es {EXTRA_CAMERA_ID} {camera_id} --es "
          f"{EXTRA_RESULTS} \'{json_results}\'")
-  run(cmd)
+  its_device_utils.run(cmd)
 
 
 def write_result(testbed_index, device_id, camera_id, results):
@@ -337,7 +318,7 @@ def load_scenes_on_tablet(scene, tablet_id):
   scene_dir = os.listdir(
       os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene))
   for file_name in scene_dir:
-    if file_name.endswith('.png'):
+    if file_name.endswith('.png') or file_name.endswith('.mp4'):
       src_scene_file = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests',
                                     scene, file_name)
       cmd = f'adb -s {tablet_id} push {src_scene_file} {_DST_SCENE_DIR}'
@@ -471,7 +452,7 @@ def enable_external_storage(device_id):
   """
   cmd = (f'adb -s {device_id} shell appops '
          'set com.android.cts.verifier MANAGE_EXTERNAL_STORAGE allow')
-  run(cmd)
+  its_device_utils.run(cmd)
 
 
 def get_available_cameras(device_id, camera_id):
@@ -630,7 +611,7 @@ def main():
   enable_external_storage(device_id)
 
   # Verify that CTS Verifier is installed
-  check_cts_apk_installed(device_id)
+  its_session_utils.check_apk_installed(device_id, CTS_VERIFIER_PACKAGE_NAME)
   # Check whether the dut is foldable or not
   testing_foldable_device = True if test_params_content[
       'foldable_device'] == 'True' else False
@@ -801,6 +782,7 @@ def main():
     for s in per_camera_scenes:
       results[s]['TEST_STATUS'] = []
       results[s][METRICS_KEY] = []
+      results[s][PERFORMANCE_KEY] = []
 
       # unit is millisecond for execution time record in CtsVerifier
       scene_start_time = int(round(time.time() * 1000))
@@ -889,12 +871,14 @@ def main():
             output = subprocess.run(cmd, stdout=fp)
           # pylint: enable=subprocess-run-check
 
-          # Parse mobly logs to determine PASS/FAIL/SKIP & socket FAILs
+          # Parse mobly logs to determine PASS/FAIL(*)/SKIP & socket FAILs
           with open(
               os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE), 'r') as file:
             test_code = output.returncode
             test_skipped = False
+            test_not_yet_mandated = False
             test_mpc_req = ''
+            perf_test_metrics = ''
             content = file.read()
 
             # Find media performance class logging
@@ -910,10 +894,26 @@ def main():
                 test_mpc_req = one_line
                 break
 
+            for one_line in lines:
+              # regular expression pattern must match in ItsTestActivity.java.
+              perf_metrics_string_match = re.search(
+                  '^test.*:',
+                  one_line)
+              if perf_metrics_string_match:
+                perf_test_metrics = one_line
+                # each test can add multiple metrics
+                results[s][PERFORMANCE_KEY].append(perf_test_metrics)
+
             if 'Test skipped' in content:
               return_string = 'SKIP '
               num_skip += 1
               test_skipped = True
+              break
+
+            if its_session_utils.NOT_YET_MANDATED_MESSAGE in content:
+              return_string = 'FAIL*'
+              num_not_mandated_fail += 1
+              test_not_yet_mandated = True
               break
 
             if test_code == 0 and not test_skipped:
@@ -921,7 +921,7 @@ def main():
               num_pass += 1
               break
 
-            if test_code == 1:
+            if test_code == 1 and not test_not_yet_mandated:
               return_string = 'FAIL '
               if 'Problem with socket' in content and num_try != NUM_TRIES-1:
                 logging.info('Retry %s/%s', s, test)
@@ -988,6 +988,7 @@ def main():
     # Log results per camera
     if num_testbeds is None or testbed_index == _MAIN_TESTBED:
       logging.info('Reporting camera %s ITS results to CtsVerifier', camera_id)
+      logging.info('ITS results to CtsVerifier: %s', results)
       report_result(device_id, camera_id, results)
     else:
       write_result(testbed_index, device_id, camera_id, results)
@@ -1003,11 +1004,11 @@ def main():
   lighting_cntl = test_params_content.get('lighting_cntl', 'None')
   lighting_ch = test_params_content.get('lighting_ch', 'None')
   arduino_serial_port = lighting_control_utils.lighting_control(
-    lighting_cntl, lighting_ch)
+      lighting_cntl, lighting_ch)
 
   # turn OFF lights
   lighting_control_utils.set_lighting_state(
-    arduino_serial_port, lighting_ch, 'OFF')
+      arduino_serial_port, lighting_ch, 'OFF')
 
   if num_testbeds is not None:
     if testbed_index == _MAIN_TESTBED:
