@@ -154,10 +154,6 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
             try {
                 mQueue.forEach(this::releaseImage);
                 mQueue.clear();
-                Image image = mReader.acquireLatestImage();
-                if (image != null) {
-                    image.close();
-                }
             } finally {
                 mReader.close();
                 mReader = null;
