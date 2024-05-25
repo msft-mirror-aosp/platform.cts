@@ -35,11 +35,6 @@ import com.android.bedstead.nene.exceptions.AdbParseException
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.packages.Package
-import com.android.bedstead.permissions.CommonPermissions
-import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
-import com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_STORAGE_LIMIT
-import com.android.bedstead.permissions.CommonPermissions.NOTIFY_PENDING_SYSTEM_UPDATE
-import com.android.bedstead.permissions.CommonPermissions.QUERY_ADMIN_POLICY
 import com.android.bedstead.nene.roles.RoleContext
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.Poll
@@ -47,6 +42,11 @@ import com.android.bedstead.nene.utils.Retry
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.ShellCommandUtils
 import com.android.bedstead.nene.utils.Versions
+import com.android.bedstead.permissions.CommonPermissions
+import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
+import com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_STORAGE_LIMIT
+import com.android.bedstead.permissions.CommonPermissions.NOTIFY_PENDING_SYSTEM_UPDATE
+import com.android.bedstead.permissions.CommonPermissions.QUERY_ADMIN_POLICY
 import com.android.bedstead.permissions.CommonPermissions.READ_NEARBY_STREAMING_POLICY
 import java.lang.reflect.InvocationTargetException
 import java.time.Duration
@@ -93,8 +93,8 @@ object DevicePolicy {
                 .run()
         } catch (e: Throwable) {
             throw NeneException(
-                "Could not set profile owner for user "
-                        + user + " component " + profileOwnerComponent, e
+                "Could not set profile owner for user: $user, component: $profileOwnerComponent",
+                e
             )
         }
         Poll.forValue("Profile Owner") { TestApis.devicePolicy().getProfileOwner(user) }
@@ -105,7 +105,8 @@ object DevicePolicy {
             user,
             TestApis.packages().find(
                 profileOwnerComponent.packageName
-            ), profileOwnerComponent
+            ),
+            profileOwnerComponent
         )
     }
 
@@ -144,7 +145,10 @@ object DevicePolicy {
      * Set the device owner.
      */
     @JvmOverloads
-    fun setDeviceOwner(deviceOwnerComponent: ComponentName, user: UserReference = TestApis.users().system()): DeviceOwner {
+    fun setDeviceOwner(
+        deviceOwnerComponent: ComponentName,
+        user: UserReference = TestApis.users().system()
+    ): DeviceOwner {
         if (!Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.S)) {
             return setDeviceOwnerPreS(deviceOwnerComponent)
         } else if (!Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
@@ -159,7 +163,8 @@ object DevicePolicy {
                 Manifest.permission.CREATE_USERS
             ).use {
                 val command = ShellCommand.builderForUser(
-                    user, "dpm set-device-owner --device-owner-only"
+                    user,
+                    "dpm set-device-owner --device-owner-only"
                 )
                     .addOperand(deviceOwnerComponent.flattenToShortString())
                     .validate { ShellCommandUtils.startsWithSuccess(it) }
@@ -170,7 +175,7 @@ object DevicePolicy {
                     .terminalException { e: Throwable ->
                         checkForTerminalDeviceOwnerFailures(
                             user,
-                            deviceOwnerComponent,  /* allowAdditionalUsers= */
+                            deviceOwnerComponent, /* allowAdditionalUsers= */
                             false,
                             e
                         )
@@ -200,7 +205,8 @@ object DevicePolicy {
      * some circumstances.
      */
     private fun setDeviceOwnerOnly(
-        component: ComponentName, deviceOwnerUserId: Int
+        component: ComponentName,
+        deviceOwnerUserId: Int
     ) {
         if (Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)) {
             devicePolicyManager.setDeviceOwnerOnly(component, deviceOwnerUserId)
@@ -256,9 +262,26 @@ object DevicePolicy {
         reason: CommonDevicePolicy.OperationSafetyReason
     ) {
         TestApis.permissions().withPermission(
-            CommonPermissions.MANAGE_DEVICE_ADMINS, Manifest.permission.INTERACT_ACROSS_USERS
+            CommonPermissions.MANAGE_DEVICE_ADMINS,
+            Manifest.permission.INTERACT_ACROSS_USERS
         ).use { devicePolicyManager.setNextOperationSafety(operation.value, reason.value) }
     }
+
+    /**
+     * See [DevicePolicyManager.isSafeOperation].
+     */
+    @SuppressLint("NewApi") // isSafeOperation introduced in API 31
+    fun isSafeOperation(reason: CommonDevicePolicy.OperationSafetyReason): Boolean =
+        if (!Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.S)) {
+            Thread.sleep(ONE_TIME_SAFETY_CHECKER_SELF_DESTRUCT_TIMEOUT_MS)
+            true
+        }
+        else {
+            TestApis.permissions().withPermission(
+                CommonPermissions.MANAGE_DEVICE_ADMINS,
+                Manifest.permission.INTERACT_ACROSS_USERS
+            ).use { devicePolicyManager.isSafeOperation(reason.value) }
+        }
 
     /**
      * See [DevicePolicyManager.lockNow].
@@ -268,9 +291,12 @@ object DevicePolicy {
     }
 
     private fun devicePolicyManager(user: UserReference): DevicePolicyManager =
-        if (user == TestApis.users().instrumented()) devicePolicyManager
-        else TestApis.context().androidContextAsUser(user)
+        if (user == TestApis.users().instrumented()) {
+            devicePolicyManager
+        } else {
+            TestApis.context().androidContextAsUser(user)
             .getSystemService(DevicePolicyManager::class.java)!!
+        }
 
     private fun setDeviceOwnerPreU(deviceOwnerComponent: ComponentName): DeviceOwner {
         val user = TestApis.users().system()
@@ -290,7 +316,7 @@ object DevicePolicy {
                     //  to be allowed to set it again
                     Retry.logic {
                         devicePolicyManager.setActiveAdmin(
-                            deviceOwnerComponent,  /* refreshing= */
+                            deviceOwnerComponent, /* refreshing= */
                             true,
                             user.id()
                         )
@@ -299,7 +325,7 @@ object DevicePolicy {
                         .terminalException { e: Throwable ->
                             checkForTerminalDeviceOwnerFailures(
                                 user,
-                                deviceOwnerComponent,  /* allowAdditionalUsers= */
+                                deviceOwnerComponent, /* allowAdditionalUsers= */
                                 true,
                                 e
                             )
@@ -327,7 +353,8 @@ object DevicePolicy {
     private fun setDeviceOwnerPreS(deviceOwnerComponent: ComponentName): DeviceOwner {
         val user = TestApis.users().system()
         val command = ShellCommand.builderForUser(
-            user, "dpm set-device-owner"
+            user,
+            "dpm set-device-owner"
         )
             .addOperand(deviceOwnerComponent.flattenToShortString())
             .validate { ShellCommandUtils.startsWithSuccess(it) }
@@ -339,7 +366,7 @@ object DevicePolicy {
                 .terminalException { e: Throwable ->
                     checkForTerminalDeviceOwnerFailures(
                         user,
-                        deviceOwnerComponent,  /* allowAdditionalUsers= */
+                        deviceOwnerComponent, /* allowAdditionalUsers= */
                         false,
                         e
                     )
@@ -353,7 +380,8 @@ object DevicePolicy {
             user,
             TestApis.packages().find(
                 deviceOwnerComponent.packageName
-            ), deviceOwnerComponent
+            ),
+            deviceOwnerComponent
         )
     }
 
@@ -405,7 +433,9 @@ object DevicePolicy {
         TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)
             .use {
                 val r = packageManager.queryBroadcastReceiversAsUser(
-                    intent,  /* flags= */0, user.userHandle()
+                    intent, /* flags= */
+                    0,
+                    user.userHandle()
                 )
                 return r.isNotEmpty()
             }
@@ -499,20 +529,23 @@ object DevicePolicy {
     @TargetApi(Build.VERSION_CODES.TIRAMISU)
     @Experimental
     @JvmOverloads
-    fun setDevicePolicyManagementRoleHolder(pkg: Package, user: UserReference = TestApis.users().instrumented()): RoleContext {
+    fun setDevicePolicyManagementRoleHolder(
+        pkg: Package,
+        user: UserReference = TestApis.users().instrumented()
+    ): RoleContext {
         Versions.requireMinimumVersion(Build.VERSION_CODES.TIRAMISU)
         if (!Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
             if (TestApis.users().all().size > 1) {
                 throw NeneException(
-                    "Could not set device policy management role holder as"
-                            + " more than one user is on the device"
+                    "Could not set device policy management role holder as" +
+                            " more than one user is on the device"
                 )
             }
         }
         if (nonTestNonPrecreatedUsersExist()) {
             throw NeneException(
-                "Could not set device policy management role holder as"
-                        + " non-test users already exist"
+                "Could not set device policy management role holder as" +
+                        " non-test users already exist"
             )
         }
         TestApis.roles().setBypassingRoleQualification(true)
@@ -532,7 +565,10 @@ object DevicePolicy {
     @TargetApi(Build.VERSION_CODES.TIRAMISU)
     @Experimental
     @JvmOverloads
-    fun unsetDevicePolicyManagementRoleHolder(pkg: Package, user: UserReference = TestApis.users().instrumented()) {
+    fun unsetDevicePolicyManagementRoleHolder(
+        pkg: Package,
+        user: UserReference = TestApis.users().instrumented()
+    ) {
         Versions.requireMinimumVersion(Build.VERSION_CODES.TIRAMISU)
         pkg.removeAsRoleHolder(RoleManager.ROLE_DEVICE_POLICY_MANAGEMENT, user)
     }
@@ -550,7 +586,9 @@ object DevicePolicy {
      */
     @JvmOverloads
     @Experimental
-    fun isNewUserDisclaimerAcknowledged(user: UserReference = TestApis.users().instrumented()): Boolean =
+    fun isNewUserDisclaimerAcknowledged(
+        user: UserReference = TestApis.users().instrumented()
+    ): Boolean =
         TestApis.permissions().withPermission(CommonPermissions.INTERACT_ACROSS_USERS).use {
             devicePolicyManager(user).isNewUserDisclaimerAcknowledged
         }
@@ -568,7 +606,9 @@ object DevicePolicy {
      * Get active admins on the given user.
      */
     @JvmOverloads
-    fun getActiveAdmins(user: UserReference = TestApis.users().instrumented()): Set<ComponentReference> {
+    fun getActiveAdmins(
+        user: UserReference = TestApis.users().instrumented()
+    ): Set<ComponentReference> {
         TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)
             .use {
                 val activeAdmins = devicePolicyManager(user).activeAdmins ?: return setOf()
@@ -625,7 +665,9 @@ object DevicePolicy {
     fun canAdminGrantSensorsPermissions(): Boolean {
         return if (!Versions.meetsMinimumSdkVersionRequirement(31)) {
             true
-        } else devicePolicyManager.canAdminGrantSensorsPermissions()
+        } else {
+            devicePolicyManager.canAdminGrantSensorsPermissions()
+        }
     }
 
     /**
@@ -688,7 +730,8 @@ object DevicePolicy {
     @Experimental
     @JvmOverloads
     fun getTrustAgentConfiguration(
-        trustAgent: ComponentName, user: UserReference = TestApis.users().instrumented()
+        trustAgent: ComponentName,
+        user: UserReference = TestApis.users().instrumented()
     ): Set<PersistableBundle> {
         TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS).use {
             val configurations = devicePolicyManager(user)
@@ -696,7 +739,6 @@ object DevicePolicy {
             return if (configurations == null) setOf() else java.util.Set.copyOf(configurations)
         }
     }
-
 
     // TODO(276248451): Make user handle aware so it'll work cross-user
     /**
@@ -709,8 +751,8 @@ object DevicePolicy {
         devicePolicyManager(user).isAffiliatedUser
 
     /** See [DevicePolicyManager#permittedInputMethods]. */
-    @Experimental
     // TODO: This doesn't currently work cross-user
+    @Experimental
     fun getPermittedInputMethods(): List<String>? =
             TestApis.permissions().withPermission(CommonPermissions.QUERY_ADMIN_POLICY)
                 .use { devicePolicyManager.permittedInputMethodsForCurrentUser }
@@ -736,13 +778,17 @@ object DevicePolicy {
      */
     @JvmOverloads
     @SuppressLint("NewApi")
-    fun getBluetoothContactSharingDisabled(user: UserReference = TestApis.users().instrumented()): Boolean =
+    fun getBluetoothContactSharingDisabled(
+        user: UserReference = TestApis.users().instrumented()
+    ): Boolean =
         devicePolicyManager.getBluetoothContactSharingDisabled(user.userHandle())
 
     /** See [DevicePolicyManager.getPermittedAccessibilityServices]  */
     @Experimental
     @JvmOverloads
-    fun getPermittedAccessibilityServices(user: UserReference = TestApis.users().instrumented()): Set<Package>? =
+    fun getPermittedAccessibilityServices(
+        user: UserReference = TestApis.users().instrumented()
+    ): Set<Package>? =
         TestApis.permissions().withPermission(
             Manifest.permission.INTERACT_ACROSS_USERS,
             CommonPermissions.QUERY_ADMIN_POLICY
@@ -807,8 +853,13 @@ object DevicePolicy {
     @JvmOverloads
     @Experimental
     @TargetApi(Build.VERSION_CODES.S)
-    fun getNearbyNotificationStreamingPolicy(user: UserReference = TestApis.users().instrumented()): NearbyNotificationStreamingPolicy {
-        return TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL, READ_NEARBY_STREAMING_POLICY).use {
+    fun getNearbyNotificationStreamingPolicy(
+        user: UserReference = TestApis.users().instrumented()
+    ): NearbyNotificationStreamingPolicy {
+        return TestApis.permissions().withPermission(
+            INTERACT_ACROSS_USERS_FULL,
+            READ_NEARBY_STREAMING_POLICY
+        ).use {
             val intDef = devicePolicyManager(user).nearbyNotificationStreamingPolicy
             NearbyNotificationStreamingPolicy.entries.first { it.intDef == intDef }
         }
@@ -823,7 +874,7 @@ object DevicePolicy {
 
     /** See [DevicePolicyManager#getPolicySizeForAdmin]. */
     @Experimental
-    fun getPolicySizeForAdmin(admin: EnforcingAdmin) : Int =
+    fun getPolicySizeForAdmin(admin: EnforcingAdmin): Int =
             TestApis.permissions().withPermission(MANAGE_DEVICE_POLICY_STORAGE_LIMIT).use {
                 devicePolicyManager.getPolicySizeForAdmin(admin)
             }
@@ -839,8 +890,8 @@ object DevicePolicy {
         SameManagedAccountOnly(3)
     }
 
-
     private const val LOG_TAG = "DevicePolicy"
+    private const val ONE_TIME_SAFETY_CHECKER_SELF_DESTRUCT_TIMEOUT_MS: Long = 10_000L
 
     private val devicePolicyManager: DevicePolicyManager by lazy { TestApis.context().instrumentedContext()
             .getSystemService(DevicePolicyManager::class.java)!! }

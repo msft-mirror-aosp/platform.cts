@@ -61,6 +61,8 @@ public class MockConnection extends Connection {
     private PhoneAccountHandle mPhoneAccountHandle;
     private RemoteConnection mRemoteConnection = null;
     private RttTextStream mRttTextStream;
+    private final TestUtils.InvokeCounter mConnectionOnCallEndpointChangedCounter =
+            new TestUtils.InvokeCounter("ConnectionOnCallEndpointChanged");;
     private boolean mAutoDestroy = true;
 
     private SparseArray<InvokeCounter> mInvokeCounterMap = new SparseArray<>(13);
@@ -182,6 +184,7 @@ public class MockConnection extends Connection {
     @Override
     public void onCallEndpointChanged(CallEndpoint callendpoint) {
         super.onCallEndpointChanged(callendpoint);
+        mConnectionOnCallEndpointChangedCounter.invoke(callendpoint);
     }
 
     @Override
@@ -391,6 +394,10 @@ public class MockConnection extends Connection {
 
     public RttTextStream getRttTextStream() {
         return mRttTextStream;
+    }
+
+    public TestUtils.InvokeCounter getConnectionOnCallEndpointChangedCounter() {
+        return mConnectionOnCallEndpointChangedCounter;
     }
 
     private static String getCounterLabel(int counterIndex) {

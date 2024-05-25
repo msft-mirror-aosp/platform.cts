@@ -23,6 +23,7 @@ android_test {
     static_libs: [
         "compatibility-device-util-axt",
         "telephony-cts-utils",
+        "platform-test-annotations",
     ],
     srcs: [
         "src/**/*.java",

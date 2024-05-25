@@ -467,7 +467,6 @@ public class BlurTests extends WindowManagerTestBase {
             super.onCreate(savedInstanceState);
             setContentView(R.layout.blur_activity);
             getWindow().setDecorFitsSystemWindows(false);
-            getWindow().getInsetsController().hide(systemBars());
         }
 
         @Override
@@ -533,7 +532,6 @@ public class BlurTests extends WindowManagerTestBase {
             super.onCreate(savedInstanceState);
             setContentView(R.layout.blur_activity);
             getWindow().setDecorFitsSystemWindows(false);
-            getWindow().getInsetsController().hide(systemBars());
         }
     }
 

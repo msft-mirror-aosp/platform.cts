@@ -51,9 +51,9 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(
           camera_properties_utils.zoom_ratio_range(props))
 
-      # Load scene
-      its_session_utils.load_scene(cam, props, self.scene, self.tablet,
-                                   its_session_utils.CHART_DISTANCE_NO_SCALING)
+      # Load chart for scene
+      its_session_utils.load_scene(
+          cam, props, self.scene, self.tablet, self.chart_distance)
 
       # Raise error if not FRONT or REAR facing camera
       camera_properties_utils.check_front_or_rear_camera(props)
@@ -68,6 +68,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         for fl in fls:
           test_tols[fl] = (zoom_capture_utils.RADIUS_RTOL,
                            zoom_capture_utils.OFFSET_RTOL)
+      logging.debug('Threshold levels to be used for testing: %s', test_tols)
 
       # get max preview size
       preview_size = preview_processing_utils.get_max_preview_test_size(
@@ -138,12 +139,13 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         )
 
         logging.debug('test_data[%d] = %s', test_data_index,
-                      str(test_data[test_data_index]))
+                      test_data[test_data_index])
         test_data_index = test_data_index + 1
 
       its_session_utils.remove_frame_files(log_path)
-      if not zoom_capture_utils.verify_zoom_results(
-          test_data, size, z_max, z_min):
+
+      if not zoom_capture_utils.verify_preview_zoom_results(
+          test_data, size, z_max, z_min, z_step_size):
         raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')
 
 if __name__ == '__main__':
