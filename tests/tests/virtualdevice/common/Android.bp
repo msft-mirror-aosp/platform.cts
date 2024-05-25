@@ -34,6 +34,8 @@ android_library {
         "flag-junit",
         "android.companion.virtual.flags-aconfig-java",
         "android.companion.virtualdevice.flags-aconfig-java",
+        "android.media.audiopolicy-aconfig-java",
+        "android.permission.flags-aconfig-java-export",
     ],
     manifest: "AndroidManifest.xml",
     lint: {

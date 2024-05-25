@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -289,10 +290,12 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 || mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
-                || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
-                || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+                || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
             assertTrue("components that support mediaType: " + mMediaType
                     + " must generate CodecPrivateData \n" + mTestConfig + mTestEnv, mGotCSD);
+        } else if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+            assertFalse("components that support mediaType: " + mMediaType
+                    + " must not generate CodecPrivateData \n" + mTestConfig + mTestEnv, mGotCSD);
         }
     }
 

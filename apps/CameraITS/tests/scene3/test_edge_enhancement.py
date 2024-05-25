@@ -85,8 +85,8 @@ def do_capture_and_determine_sharpness(
   req['android.edge.mode'] = edge_mode
 
   sharpness_list = []
-  for n in range(_NUM_SAMPLES):
-    cap = cam.do_capture(req, out_surface, repeat_request=req)
+  caps = cam.do_capture([req]*_NUM_SAMPLES, [out_surface], repeat_request=req)
+  for n, cap in enumerate(caps):
     y, _, _ = image_processing_utils.convert_capture_to_planes(cap)
     chart.img = image_processing_utils.get_image_patch(
         y, chart.xnorm, chart.ynorm, chart.wnorm, chart.hnorm)

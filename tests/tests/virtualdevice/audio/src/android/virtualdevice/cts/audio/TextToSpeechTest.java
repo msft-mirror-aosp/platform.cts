@@ -29,8 +29,6 @@ import static com.google.common.util.concurrent.Uninterruptibles.getUninterrupti
 
 import static org.junit.Assume.assumeNotNull;
 
-import android.annotation.NonNull;
-import android.annotation.Nullable;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
 import android.content.Context;
@@ -42,6 +40,8 @@ import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.google.common.util.concurrent.ListenableFuture;

@@ -114,6 +114,7 @@ public class HeifWriterTest extends Camera2AndroidTestCase {
                     OutputConfiguration outConfig = null;
                     Surface latestSurface = null;
                     CaptureRequest.Builder reqStill = null;
+                    SurfaceTexture preview = null;
                     int width = sz.getWidth();
                     int height = sz.getHeight();
                     for (int cap = 0; cap < NUM_HEIC_CAPTURE_TESTED; cap++) {
@@ -157,7 +158,7 @@ public class HeifWriterTest extends Camera2AndroidTestCase {
                                 new ArrayList<OutputConfiguration>();
                             configs.add(outConfig);
 
-                            SurfaceTexture preview = new SurfaceTexture(/*random int*/ 1);
+                            preview = new SurfaceTexture(/*random int*/ 1);
                             Surface previewSurface = new Surface(preview);
                             preview.setDefaultBufferSize(640, 480);
                             configs.add(new OutputConfiguration(previewSurface));
@@ -209,6 +210,10 @@ public class HeifWriterTest extends Camera2AndroidTestCase {
                                     config.mRotation, config.mUseGrid,
                                     Math.min(numImages, config.mMaxNumImages));
                         } finally {
+                            if (preview != null) {
+                                preview.release();
+                                preview = null;
+                            }
                             if (heifWriter != null) {
                                 heifWriter.close();
                                 heifWriter = null;

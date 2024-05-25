@@ -194,7 +194,7 @@ public class InputMethodManagerTest {
             focusedFakeEditText.requestFocus();
             return layout;
         });
-        assertTrue(latch.await(TIMEOUT, TimeUnit.MICROSECONDS));
+        assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
         assertFalse("InputMethodManager#isAcceptingText() must return false "
                 + "if target View returns null from onCreateInputConnection().",
                 getOnMainSync(() -> mImManager.isAcceptingText()));

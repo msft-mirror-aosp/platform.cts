@@ -33,4 +33,5 @@ interface ITestExternalImsService {
     void onDeregistered(in ImsReasonInfo reason);
     void onRegistering(int registrationTech);
     void onRegistered(int registrationTech);
+    void addCapabilities(long capabilities);
 }

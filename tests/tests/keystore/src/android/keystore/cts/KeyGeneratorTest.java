@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import android.content.Context;
+import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyInfo;
@@ -266,6 +267,7 @@ public class KeyGeneratorTest {
     private void testDefaultKeySize(boolean useStrongbox) throws Exception {
         for (String algorithm :
             (useStrongbox ? EXPECTED_STRONGBOX_ALGORITHMS : EXPECTED_ALGORITHMS)) {
+            StrictModeDetector strict = new StrictModeDetector(getContext());
             try {
                 int expectedSizeBits = DEFAULT_KEY_SIZES.get(algorithm);
                 KeyGenerator keyGenerator = getKeyGenerator(algorithm);
@@ -275,6 +277,7 @@ public class KeyGeneratorTest {
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
+            strict.check(algorithm + " key generation on " + (useStrongbox ? "StrongBox" : "TEE"));
         }
     }
 

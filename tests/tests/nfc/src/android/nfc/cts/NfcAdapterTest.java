@@ -389,6 +389,40 @@ public class NfcAdapterTest {
         }
         resetMockedInstance();
     }
+
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testDefaultObserveModeOnlyWithServiceChange() {
+        NfcAdapter adapter = getDefaultAdapter();
+        assumeTrue(adapter.isObserveModeSupported());
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        cardEmulation.setShouldDefaultToObserveModeForService(new ComponentName(mContext,
+                CtsMyHostApduService.class), true);
+        WalletRoleTestUtils.runWithRole(mContext, WalletRoleTestUtils.CTS_PACKAGE_NAME, () -> {
+            CardEmulationTest.ensurePreferredService(CtsMyHostApduService.class, mContext);
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            Assert.assertTrue(adapter.setObserveModeEnabled(false));
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+            try {
+                Activity activity = createAndResumeActivity();
+                Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                        new ComponentName(mContext, CtsMyHostApduService.class)));
+                CardEmulationTest.ensurePreferredService(CtsMyHostApduService.class, mContext);
+                Assert.assertFalse(adapter.isObserveModeEnabled());
+                Assert.assertTrue(adapter.setObserveModeEnabled(true));
+                Assert.assertTrue(adapter.isObserveModeEnabled());
+                Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                        new ComponentName(mContext, CustomHostApduService.class)));
+                CardEmulationTest.ensurePreferredService(CustomHostApduService.class, mContext);
+                Assert.assertFalse(adapter.isObserveModeEnabled());
+            } finally {
+                cardEmulation.setShouldDefaultToObserveModeForService(new ComponentName(mContext,
+                        CustomHostApduService.class), false);
+            }
+        });
+        resetMockedInstance();
+    }
+
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)

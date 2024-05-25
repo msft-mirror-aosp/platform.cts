@@ -16,14 +16,17 @@
 
 package android.cts.statsdatom.powermanager;
 
+import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_RESULT_TIDS;
+import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_UID;
+
 import static com.android.server.power.hint.Flags.FLAG_POWERHINT_THREAD_CLEANUP;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
@@ -74,9 +77,8 @@ import java.util.List;
 public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final String DEVICE_TEST_PKG = "com.android.server.cts.device.statsdatom";
     private static final String DEVICE_TEST_CLASS = ".PowerManagerTests";
-
-    private static final String KEY_RESULT_TIDS = "result_tids";
-    private static final String KEY_UID = "result_uid";
+    private static final String ADPF_ATOM_APP_PKG = "com.android.server.cts.device.statsdatom";
+    private static final String ADPF_ATOM_APP_APK = "CtsStatsdAdpfApp.apk";
 
     private IBuildInfo mCtsBuild;
 
@@ -90,6 +92,7 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
+        DeviceUtils.installTestApp(getDevice(), ADPF_ATOM_APP_APK, ADPF_ATOM_APP_PKG, mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
@@ -223,9 +226,9 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         AdpfExtensionAtoms.registerAllExtensions(registry);
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
                 registry);
-        assumeTrue(data.size() == 1);
-        String tidsStr = result.getMetrics().get(KEY_RESULT_TIDS);
-        int uid = Integer.parseInt(result.getMetrics().get(KEY_UID));
+        assertFalse(data.isEmpty());
+        String tidsStr = result.getMetrics().get(CONTENT_KEY_RESULT_TIDS);
+        int uid = Integer.parseInt(result.getMetrics().get(CONTENT_KEY_UID));
         List<Integer> tids = Arrays.stream(tidsStr.split(",")).map(Integer::parseInt).toList();
         boolean found = false;
         for (StatsLog.EventMetricData event : data) {

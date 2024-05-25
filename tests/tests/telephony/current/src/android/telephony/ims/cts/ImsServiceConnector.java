@@ -556,13 +556,22 @@ public class ImsServiceConnector {
     /**
      * Connect the ImsService hosted in a different test app using the given config
      */
-    public boolean connectDeviceImsService(ImsFeatureConfiguration config) throws Exception {
+    public boolean connectDeviceImsService(long capabilities,
+            ImsFeatureConfiguration config) throws Exception {
         if (!setupExternalImsService()) {
             Log.w(TAG, "connectDeviceImsService: couldn't set up service.");
             return false;
         }
         mExternalService.resetState();
+        if (capabilities != 0) {
+            mExternalService.addCapabilities(capabilities);
+            Log.d(TAG, "connectDeviceImsService: added capabilities = " + capabilities);
+        }
         return mDeviceServiceConnection.overrideService(config);
+    }
+
+    public boolean connectDeviceImsService(ImsFeatureConfiguration config) throws Exception {
+        return connectDeviceImsService(0, config);
     }
 
     boolean setDefaultSmsApp() throws Exception {

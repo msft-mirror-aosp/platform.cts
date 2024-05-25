@@ -22,10 +22,12 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_1;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_2;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_3;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_4;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_1_ROUTE_5;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_1;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_2;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_3;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_4;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_5;
 
 import android.media.MediaRoute2Info;
 
@@ -47,6 +49,8 @@ public final class FakeMediaRoute2ProviderService1 extends BaseFakeRouteProvider
                         MediaRoute2Info.TYPE_UNKNOWN,
                         /* deduplicationIds...= */ ROUTE_DEDUPLICATION_ID_2),
                 createPublicRoute(
-                        ROUTE_ID_APP_1_ROUTE_4, ROUTE_NAME_4, MediaRoute2Info.TYPE_UNKNOWN));
+                        ROUTE_ID_APP_1_ROUTE_4, ROUTE_NAME_4, MediaRoute2Info.TYPE_UNKNOWN),
+                createActiveScanOnlyRoute(
+                        ROUTE_ID_APP_1_ROUTE_5, ROUTE_NAME_5, MediaRoute2Info.TYPE_UNKNOWN));
     }
 }

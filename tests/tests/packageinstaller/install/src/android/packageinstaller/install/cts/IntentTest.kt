@@ -29,6 +29,7 @@ import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.runner.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
+import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
 import com.android.compatibility.common.util.SystemUtil
@@ -38,6 +39,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
@@ -61,6 +63,11 @@ class IntentTest : PackageInstallerTestBase() {
         const val DISABLED_LAUNCHER_ACTIVITY_PKG_NAME =
                 "android.packageinstaller.disabledlauncheractivity.cts"
         const val INSTALL_SUCCESS_TEXT = "App installed."
+
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
     }
 
     @After
@@ -201,7 +208,7 @@ class IntentTest : PackageInstallerTestBase() {
     }
 
     @Test
-    @RequireAdbRoot(reason = "b/322830652 Required for TestApis() to set user restriction")
+    @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
     fun disallowInstallApps_installFails() {
         try {
             TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, true)

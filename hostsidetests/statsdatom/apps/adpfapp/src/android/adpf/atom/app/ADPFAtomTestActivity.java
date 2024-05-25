@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-package com.android.server.cts.device.statsdatom;
+package android.adpf.atom.app;
+
+import static android.adpf.atom.common.ADPFAtomTestConstants.ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND;
+import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_RESULT_TIDS;
+import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_UID;
+import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_URI_STRING;
+import static android.adpf.atom.common.ADPFAtomTestConstants.INTENT_ACTION_KEY;
 
 import static org.junit.Assert.assertNotNull;
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.PerformanceHintManager;
 import android.os.Process;
@@ -32,14 +40,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** An activity which performs ADPF actions. */
-public class ADPFActivity extends Activity {
-    private static final String TAG = ADPFActivity.class.getSimpleName();
+public class ADPFAtomTestActivity extends Activity {
+    private static final String TAG = ADPFAtomTestActivity.class.getSimpleName();
 
-    public static final String KEY_ACTION = "action";
-    public static final String ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND =
-            "action.create_dead_tids";
-    public static final String KEY_RESULT_TIDS = "result_tids";
-    public static final String KEY_UID = "result_uid";
 
     private final Map<String, Bundle> mResult = new ArrayMap<>();
 
@@ -48,29 +51,27 @@ public class ADPFActivity extends Activity {
         super.onCreate(bundle);
 
         final Intent intent = this.getIntent();
-        if (intent == null) {
-            Log.e(TAG, "Intent is null.");
-            finish();
-        }
-        final String action = intent.getStringExtra(KEY_ACTION);
+        assertNotNull(intent);
+        final String action = intent.getStringExtra(INTENT_ACTION_KEY);
+        assertNotNull(action);
         switch (action) {
             case ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND:
                 try {
                     final int[] tids = createHintSessionWithExitedThreads();
-                    final Bundle retBundle = new Bundle();
                     final StringJoiner sb = new StringJoiner(",");
                     for (int tid : tids) {
                         sb.add(String.valueOf(tid));
                     }
-                    retBundle.putString(KEY_RESULT_TIDS, sb.toString());
-                    retBundle.putString(KEY_UID, String.valueOf(Process.myUid()));
-                    synchronized (mResult) {
-                        mResult.put(ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND, retBundle);
-                    }
+                    ContentValues values = new ContentValues();
+                    values.put(CONTENT_KEY_RESULT_TIDS, sb.toString());
+                    values.put(CONTENT_KEY_UID, String.valueOf(Process.myUid()));
+                    assertNotNull(
+                            getContentResolver().insert(Uri.parse(CONTENT_URI_STRING), values));
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
                 moveTaskToBack(true);
+                Log.i(TAG, "Moved task ADPFHintSessionDeviceActivity to back");
                 break;
         }
     }

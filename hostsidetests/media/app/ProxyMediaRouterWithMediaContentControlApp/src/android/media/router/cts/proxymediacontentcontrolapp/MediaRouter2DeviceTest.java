@@ -16,11 +16,13 @@
 
 package android.media.router.cts.proxymediacontentcontrolapp;
 
+import static android.media.cts.MediaRouterTestConstants.FEATURE_ACTIVE_SCAN_ONLY;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_SECONDARY_USER_HELPER_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.TARGET_USER_ID_KEY;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
 
@@ -111,7 +113,7 @@ public class MediaRouter2DeviceTest {
                 mExecutor,
                 placeholderCallback,
                 new RouteDiscoveryPreference.Builder(
-                                List.of(FEATURE_SAMPLE), /* isActiveScan */ false)
+                                List.of(FEATURE_ACTIVE_SCAN_ONLY), /* isActiveScan */ false)
                         .build());
 
         MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
@@ -123,17 +125,22 @@ public class MediaRouter2DeviceTest {
                     @Override
                     public void onRoutesUpdated(@NonNull List<MediaRoute2Info> routes) {
                         if (routes.stream()
-                                .anyMatch(r -> r.getFeatures().contains(FEATURE_SAMPLE))) {
+                                .anyMatch(
+                                        r -> r.getFeatures().contains(FEATURE_ACTIVE_SCAN_ONLY))) {
                             latch.countDown();
                         }
                     }
                 };
 
+        // RouteDiscoveryPreference set by proxy routers are always ignored. They receive callbacks
+        // based on the target router's RDP.
         instance.registerRouteCallback(mExecutor, onRoutesUpdated, RouteDiscoveryPreference.EMPTY);
 
         MediaRouter2.ScanToken token = instance.requestScan(new ScanRequest.Builder().build());
         try {
-            assertThat(latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            assertWithMessage("Could not find matching routes.")
+                    .that(latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .isTrue();
         } finally {
             instance.cancelScanRequest(token);
             localInstance.unregisterRouteCallback(placeholderCallback);

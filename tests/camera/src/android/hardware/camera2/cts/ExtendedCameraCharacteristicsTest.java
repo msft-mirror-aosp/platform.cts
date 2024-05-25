@@ -3821,6 +3821,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     public void testCameraUPerfClassCharacteristics() throws Exception {
         assumeFalse("Media performance class tests not applicable if shell permission is adopted",
                 mAdoptShellPerm);
+        assumeTrue("Media performance class tests not applicable when test is restricted "
+                + "to single camera by specifying camera id override.", mOverrideCameraId == null);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         CameraRequirement.DynamicRangeTenBitsRequirement dynamicRangeTenBitsReq = pce.addR7_5__H_1_16();
@@ -3885,6 +3887,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     public void testCameraUPerfClassExtensionCharacteristics() throws Exception {
         assumeFalse("Media performance class tests not applicable if shell permission is adopted",
                 mAdoptShellPerm);
+        assumeTrue("Media performance class tests not applicable when test is restricted "
+                + "to single camera by specifying camera id override.", mOverrideCameraId == null);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         CameraRequirement.CameraExtensionRequirement cameraExtensionReq = pce.addR7_5__H_1_15();

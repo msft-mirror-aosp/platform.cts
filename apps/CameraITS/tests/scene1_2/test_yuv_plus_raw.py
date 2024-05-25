@@ -161,9 +161,9 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
         lsc_maps, 'metadata', plot_name_stem_with_log_path
     )
     lsc_map_fs_r = populate_lens_shading_map(r.shape, lsc_maps[:, :, 0])
-    lsc_map_fs_gr = populate_lens_shading_map(r.shape, lsc_maps[:, :, 1])
-    lsc_map_fs_gb = populate_lens_shading_map(r.shape, lsc_maps[:, :, 2])
-    lsc_map_fs_b = populate_lens_shading_map(r.shape, lsc_maps[:, :, 3])
+    lsc_map_fs_gr = populate_lens_shading_map(gr.shape, lsc_maps[:, :, 1])
+    lsc_map_fs_gb = populate_lens_shading_map(gb.shape, lsc_maps[:, :, 2])
+    lsc_map_fs_b = populate_lens_shading_map(b.shape, lsc_maps[:, :, 3])
     image_processing_utils.plot_lsc_maps(
         np.dstack((lsc_map_fs_r, lsc_map_fs_gr, lsc_map_fs_gb, lsc_map_fs_b)),
         'fullscale', plot_name_stem_with_log_path

@@ -367,6 +367,7 @@ def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
 
   return preview_test_size
 
+
 def get_max_extension_preview_test_size(cam, camera_id, extension):
   """Finds the max preview size for an extension to be tested.
 

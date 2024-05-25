@@ -5692,6 +5692,40 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     }
 
     /**
+     * Tests {@link WifiAvailableChannel#getChannelWidth()}.
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @RequiresFlagsEnabled(Flags.FLAG_GET_CHANNEL_WIDTH_API)
+    @ApiTest(apis = {"android.net.wifi.WifiAvailableChannel#getChannelWidth"})
+    @Test
+    public void testGetAllowedChannelsWidth() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            final List<Integer> valid24GhzFreqs = Arrays.asList(2412, 2417, 2422, 2427, 2432, 2437,
+                    2442, 2447, 2452, 2457, 2462, 2467, 2472, 2484);
+            uiAutomation.adoptShellPermissionIdentity();
+            List<WifiAvailableChannel> allowedChannels = sWifiManager.getAllowedChannels(
+                    WIFI_BAND_24_GHZ, OP_MODE_STA);
+            assertNotNull(allowedChannels);
+            for (WifiAvailableChannel ch : allowedChannels) {
+                //Must contain a valid 2.4GHz frequency
+                assertTrue(valid24GhzFreqs.contains(ch.getFrequencyMhz()));
+                if (ch.getFrequencyMhz() <= 2462) {
+                    //Channels 1-11 are supported for STA in all countries
+                    assertEquals(ch.getOperationalModes() & OP_MODE_STA, OP_MODE_STA);
+                    assertEquals(ch.getChannelWidth(), ScanResult.CHANNEL_WIDTH_20MHZ);
+                }
+            }
+        } catch (UnsupportedOperationException ex) {
+            //expected if the device does not support this API
+        } catch (Exception ex) {
+            fail("getAllowedChannels unexpected Exception " + ex);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
      * Tests {@link WifiManager#getUsableChannels(int, int))} does not crash
      * and returns at least one 2G channel in STA and WFD GO modes (if WFD is supported)
      */

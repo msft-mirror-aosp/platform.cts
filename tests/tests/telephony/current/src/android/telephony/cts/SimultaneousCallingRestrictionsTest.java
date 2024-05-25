@@ -47,6 +47,7 @@ import android.telephony.ims.ImsManager;
 import android.telephony.ims.ImsMmTelManager;
 import android.telephony.ims.ImsReasonInfo;
 import android.telephony.ims.ImsRegistrationAttributes;
+import android.telephony.ims.ImsService;
 import android.telephony.ims.RegistrationManager;
 import android.telephony.ims.cts.ImsServiceConnector;
 import android.telephony.ims.cts.ImsUtils;
@@ -788,10 +789,17 @@ public class SimultaneousCallingRestrictionsTest {
     private void triggerFrameworkConnectToCarrierImsService(ImsServiceConnector serviceConnector,
             int slotId) throws Exception {
         Log.i(TAG, "triggerFrameworkConnectToCarrierImsService: slotId = " + slotId);
+
+        // Add the simultaneous calling capability to the ImsService.
+        assertTrue(serviceConnector.connectCarrierImsServiceLocally());
+        serviceConnector.getCarrierService().addCapabilities(
+                ImsService.CAPABILITY_SUPPORTS_SIMULTANEOUS_CALLING);
+
         // Connect to the ImsService with the MmTel feature.
-        assertTrue(serviceConnector.connectCarrierImsService(new ImsFeatureConfiguration.Builder()
-                .addFeature(slotId, ImsFeature.FEATURE_MMTEL)
-                .build()));
+        assertTrue(serviceConnector.triggerFrameworkConnectionToCarrierImsService(
+                new ImsFeatureConfiguration.Builder()
+                        .addFeature(slotId, ImsFeature.FEATURE_MMTEL)
+                        .build()));
         // The MmTelFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
         assertTrue("Did not receive createMmTelFeature", serviceConnector.getCarrierService()
@@ -809,8 +817,11 @@ public class SimultaneousCallingRestrictionsTest {
     private void triggerFrameworkConnectToDeviceImsService(ImsServiceConnector serviceConnector,
             int slotId) throws Exception {
         Log.i(TAG, "triggerFrameworkConnectToDeviceImsService: slotId = " + slotId);
-        // Connect to Device the ImsService with the MmTel feature.
-        assertTrue(serviceConnector.connectDeviceImsService(new ImsFeatureConfiguration.Builder()
+
+        // Connect to Device the ImsService with the MmTel feature and simultaneous call cap.
+        assertTrue(serviceConnector.connectDeviceImsService(
+                ImsService.CAPABILITY_SUPPORTS_SIMULTANEOUS_CALLING,
+                new ImsFeatureConfiguration.Builder()
                 .addFeature(slotId, ImsFeature.FEATURE_MMTEL)
                 .build()));
         //First MMTEL feature is created on device ImsService.

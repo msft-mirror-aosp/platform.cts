@@ -174,7 +174,6 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
         self.tablet.adb.shell(
             f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
-
       # Set tablet brightness to darken scene
       props = cam.get_camera_properties()
       if (props['android.lens.facing'] ==
@@ -201,8 +200,9 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
 
       if is_low_light_boost_supported:
         # Determine preview width and height to test
-        target_preview_size = preview_processing_utils.get_max_preview_test_size(
-            cam, self.camera_id)
+        target_preview_size = (
+            preview_processing_utils.get_max_preview_test_size(
+                cam, self.camera_id))
         logging.debug('target_preview_size: %s', target_preview_size)
 
         logging.debug('capture frame using camera2')
@@ -213,9 +213,9 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
 
       if is_low_light_boost_supported_night:
         # Determine preview width and height to test
-        target_preview_size = preview_processing_utils \
-            .get_max_extension_preview_test_size(
-                cam, self.camera_id, _EXTENSION_NIGHT)
+        target_preview_size = (
+            preview_processing_utils.get_max_extension_preview_test_size(
+                cam, self.camera_id, _EXTENSION_NIGHT))
         logging.debug('target_preview_size: %s', target_preview_size)
 
         logging.debug('capture frame using night mode extension')

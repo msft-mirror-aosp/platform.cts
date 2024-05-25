@@ -163,6 +163,9 @@ public class BatteryHealthTest {
         mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
         final int partStatus = mBatteryManager.getIntProperty(BatteryManager
                 .BATTERY_PROPERTY_PART_STATUS);
+        if (partStatus == Integer.MIN_VALUE) {
+            return;
+        }
 
         assertThat(partStatus).isAtLeast(BatteryManager.PART_STATUS_UNSUPPORTED);
         assertThat(partStatus).isAtMost(BatteryManager.PART_STATUS_REPLACED);

@@ -32,7 +32,8 @@ per-file CarBluetoothTest.java=salsavage@google.com
 per-file CarOccupantZoneManagerTest.java=xiangw@google.com
 
 # Comms API CTS files
-per-file CarOccupantConnectionManagerTest.java=xiangw@google.com
+per-file CarOccupantConnectionManagerTest.java=yabinh@google.com,xiangw@google.com
+per-file CarRemoteDeviceManagerTest.java=yabinh@google.com
 
 # EV CTS files
 per-file EvChargeStateTest.java=changyeon@google.com
@@ -56,7 +57,6 @@ per-file CarPackageManagerTest.java=gauravbhola@google.com,gargmayank@google.com
 
 # Remote Access related CTS files
 per-file CarRemoteAccessManagerTest.java=ericjeong@google.com,shanyu@google.com
-per-file CarRemoteDeviceManagerTest.java=ericjeong@google.com,shanyu@google.com
 
 # Car Watchdog related CTS files
 per-file CarWatchdogDaemonTest.java=lakshmana@google.com,jahdiel@google.com
