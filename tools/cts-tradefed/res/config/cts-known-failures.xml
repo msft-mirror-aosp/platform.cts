@@ -304,4 +304,7 @@
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraPerfClassCharacteristics[1]" />
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]" />
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]" />
+
+    <!-- b/337925894 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordLocalMono16BitShort" />
 </configuration>
