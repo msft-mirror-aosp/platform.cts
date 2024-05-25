@@ -30,7 +30,7 @@ public class TestService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         getSystemService(NotificationManager.class).createNotificationChannel(
                 new NotificationChannel(NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_ID,
-                        NotificationManager.IMPORTANCE_DEFAULT));
+                        NotificationManager.IMPORTANCE_HIGH));
         Notification status = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setWhen(System.currentTimeMillis())
