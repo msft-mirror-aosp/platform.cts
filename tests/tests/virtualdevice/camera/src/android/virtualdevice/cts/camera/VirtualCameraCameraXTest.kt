@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package android.virtualdevice.cts.camera
 
 import android.Manifest
@@ -25,7 +26,6 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.ImageFormat
-import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.platform.test.annotations.RequiresFlagsEnabled
@@ -33,6 +33,7 @@ import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.Surface
 import android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID
+import android.virtualdevice.cts.camera.VirtualCameraUtils.INFO_DEVICE_ID
 import android.virtualdevice.cts.camera.VirtualCameraUtils.assertImagesSimilar
 import android.virtualdevice.cts.camera.VirtualCameraUtils.loadGolden
 import android.virtualdevice.cts.common.VirtualDeviceRule
@@ -206,9 +207,9 @@ class VirtualCameraCameraXTest {
         assertThat(ids).containsExactly(BACK_CAMERA_ID)
         assertThat(
             cameraManager.getCameraCharacteristics(BACK_CAMERA_ID)
-                .get(CameraCharacteristics.INFO_DEVICE_ID)
+                .get(INFO_DEVICE_ID)
         ).isEqualTo(virtualDevice!!.deviceId)
-        assertThat(camera2Infos[0].getCameraCharacteristic(CameraCharacteristics.INFO_DEVICE_ID))
+        assertThat(camera2Infos[0].getCameraCharacteristic(INFO_DEVICE_ID))
             .isEqualTo(virtualDevice!!.deviceId)
     }
 

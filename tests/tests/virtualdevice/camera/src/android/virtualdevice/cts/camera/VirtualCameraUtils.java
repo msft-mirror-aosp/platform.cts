@@ -59,9 +59,9 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ImageDecoder;
-import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.cts.rs.BitmapUtils;
-import android.hardware.graphics.common.PixelFormat;
 import android.media.Image;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -86,6 +86,8 @@ import java.util.function.Consumer;
 public final class VirtualCameraUtils {
     static final String BACK_CAMERA_ID = "0";
     static final String FRONT_CAMERA_ID = "1";
+    static final CameraCharacteristics.Key<Integer> INFO_DEVICE_ID =
+            new CameraCharacteristics.Key<Integer>("android.info.deviceId", int.class);
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final float EPSILON = 0.3f;
     private static final double BITMAP_MAX_DIFF = 0.1;
@@ -205,7 +207,7 @@ public final class VirtualCameraUtils {
         };
     }
 
-    static @ImageFormat.Format int toFormat(String str) {
+    static int toFormat(String str) {
         if (str.equals("YUV_420_888")) {
             return YUV_420_888;
         }
@@ -217,7 +219,7 @@ public final class VirtualCameraUtils {
         }
 
         fail("Unknown pixel format string: " + str);
-        return PixelFormat.UNSPECIFIED;
+        return PixelFormat.UNKNOWN;
     }
 
     /**
