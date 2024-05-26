@@ -2558,6 +2558,25 @@ public class AudioManagerTest {
     }
 
     @Test
+    public void testVolumeGroupHashCode() throws Exception {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        List<AudioVolumeGroup> audioVolumeGroups = mAudioManager.getAudioVolumeGroups();
+        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+
+        List<AudioVolumeGroup> copyVolumeGroups = List.copyOf(audioVolumeGroups);
+        for (AudioVolumeGroup avg : audioVolumeGroups) {
+            final AudioVolumeGroup copiedGroup = copyVolumeGroups.stream().filter(
+                    group -> group.getId() == avg.getId()).findFirst().get();
+            assertTrue(avg.equals(copiedGroup));
+            assertEquals("hashCode doesn't return the same value twice for id "
+                    + avg.getId(), avg.hashCode(), avg.hashCode());
+            assertEquals("hashCode on the copied group doesn't return the same value for id "
+                    + avg.getId(), avg.hashCode(), copiedGroup.hashCode());
+        }
+    }
+
+    @Test
     public void testAdjustVolumeGroupVolume() {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED,

@@ -68,6 +68,7 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
@@ -570,6 +571,7 @@ public class MediaCodecTest {
      */
     @ApiTest(apis = "MediaCodec#createInputSurface")
     @Test
+    @FrameworkSpecificTest // tests only the first MIME_TYPE codec, which is usually hardware
     @NonMainlineTest // tests only the first MIME_TYPE codec, which is usually hardware
     public void testCreateInputSurfaceErrors() {
         if (!supportsCodec(MIME_TYPE, true)) {
@@ -623,6 +625,7 @@ public class MediaCodecTest {
      */
     @ApiTest(apis = "MediaCodec#signalEndOfInputStream")
     @Test
+    @FrameworkSpecificTest // tests only the first MIME_TYPE codec, which is usually hardware
     @NonMainlineTest // tests only the first MIME_TYPE codec, which is usually hardware
     public void testSignalSurfaceEOS() {
         if (!supportsCodec(MIME_TYPE, true)) {
@@ -683,6 +686,7 @@ public class MediaCodecTest {
      */
     @ApiTest(apis = "MediaCodec#stop")
     @Test
+    @FrameworkSpecificTest // tests only the first MIME_TYPE codec, which is usually hardware
     @NonMainlineTest // tests only the first MIME_TYPE codec, which is usually hardware
     public void testAbruptStop() {
         if (!supportsCodec(MIME_TYPE, true)) {
@@ -1142,6 +1146,7 @@ public class MediaCodecTest {
      */
     @ApiTest(apis = {"MediaCodec#dequeueInputBuffer", "MediaCodec#getMetrics"})
     @Test
+    @FrameworkSpecificTest // tests only the first MIME_TYPE codec, which is usually hardware
     @NonMainlineTest // tests only the first MIME_TYPE codec, which is usually hardware
     public void testDequeueSurface() {
         if (!supportsCodec(MIME_TYPE, true)) {
@@ -1204,6 +1209,7 @@ public class MediaCodecTest {
     @ApiTest(apis = {"MediaCodec#configure", "MediaCodec#signalEndOfInputStream",
             "MediaCodec#getMetrics"})
     @Test
+    @FrameworkSpecificTest // tests only the first MIME_TYPE codec, which is usually hardware
     @NonMainlineTest // tests only the first MIME_TYPE codec, which is usually hardware
     public void testReconfigureWithoutSurface() {
         if (!supportsCodec(MIME_TYPE, true)) {
@@ -1736,6 +1742,7 @@ public class MediaCodecTest {
 
     @ApiTest(apis = {"MediaCodec#CryptoInfo", "MediaCodec#CryptoInfo#Pattern"})
     @Test
+    @FrameworkSpecificTest // media mainline doesn't update crypto
     @NonMainlineTest // media mainline doesn't update crypto
     public void testCryptoInfoPattern() {
         CryptoInfo info = new CryptoInfo();
@@ -2038,6 +2045,7 @@ public class MediaCodecTest {
      */
     @ApiTest(apis = "MediaCodec#CryptoException")
     @Test
+    @FrameworkSpecificTest // media mainline doesn't update crypto
     @NonMainlineTest // media mainline doesn't update crypto
     public void testCryptoException() {
         int errorCode = CryptoException.ERROR_KEY_EXPIRED;
@@ -2531,7 +2539,7 @@ public class MediaCodecTest {
             MediaCodec codec = null;
             if (!TestUtils.isTestableCodecInCurrentMode(info.getName())) {
                 Log.d(TAG, "skip testing codec " + info.getName() + " in current mode:"
-                                + (TestUtils.isMtsMode() ? " MTS" : " CTS"));
+                                + TestUtils.currentTestModeName());
                 continue;
             }
             try {
