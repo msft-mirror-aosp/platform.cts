@@ -33,6 +33,7 @@ import static java.util.stream.Collectors.joining;
 
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
 import android.os.Environment;
@@ -422,7 +423,11 @@ public class StorageManagerTest {
         mStorageManager.registerStorageVolumeCallback(mContext.getMainExecutor(), callback);
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .executeShellCommand("sm unmount emulated;" + UserHandle.myUserId());
-        assertTrue(unmounted.await(30, TimeUnit.SECONDS));
+        if (isAutomotive(mContext)) {
+            assertTrue(unmounted.await(45, TimeUnit.SECONDS));
+        } else {
+            assertTrue(unmounted.await(30, TimeUnit.SECONDS));
+        }
 
         // Now unregister and verify we don't hear future events
         mStorageManager.unregisterStorageVolumeCallback(callback);
@@ -1084,6 +1089,11 @@ public class StorageManagerTest {
         if (expectedState == OnObbStateChangeListener.UNMOUNTED) {
             assertFalse("OBB should not be mounted", mStorageManager.isObbMounted(file.getPath()));
         }
+    }
+
+    private boolean isAutomotive(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     @Test

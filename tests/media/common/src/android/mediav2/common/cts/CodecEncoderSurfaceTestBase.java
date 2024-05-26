@@ -342,7 +342,9 @@ public class CodecEncoderSurfaceTestBase {
                     mTrackID = mMuxer.addTrack(mEncoder.getOutputFormat());
                     mMuxer.start();
                 }
-                mMuxer.writeSampleData(mTrackID, buf, info);
+                if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                    mMuxer.writeSampleData(mTrackID, buf, info);
+                }
             }
             if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
                 mOutputBuff.saveOutPTS(info.presentationTimeUs);
@@ -546,6 +548,14 @@ public class CodecEncoderSurfaceTestBase {
     protected void encodeToMemory(boolean isAsync, boolean signalEOSWithLastFrame,
             boolean saveToMem, OutputManager outBuff, boolean muxOutput, String outPath)
             throws IOException, InterruptedException {
+        encodeToMemory(isAsync, signalEOSWithLastFrame, saveToMem, outBuff, muxOutput, outPath,
+                Integer.MAX_VALUE);
+    }
+
+    @TargetApi(33)
+    protected void encodeToMemory(boolean isAsync, boolean signalEOSWithLastFrame,
+            boolean saveToMem, OutputManager outBuff, boolean muxOutput, String outPath,
+            int frameLimit) throws IOException, InterruptedException {
         mSaveToMem = saveToMem;
         mOutputBuff = outBuff;
         mOutputBuff.reset();
@@ -565,7 +575,7 @@ public class CodecEncoderSurfaceTestBase {
         }
         mEncoder.start();
         mDecoder.start();
-        doWork(Integer.MAX_VALUE);
+        doWork(frameLimit);
         queueEOS();
         waitForAllEncoderOutputs();
         if (muxOutput) {

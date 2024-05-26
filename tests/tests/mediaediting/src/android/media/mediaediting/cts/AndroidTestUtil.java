@@ -628,7 +628,9 @@ public final class AndroidTestUtil {
         if (image == null) {
           break;
         }
-        bitmaps.add(BitmapPixelTestUtil.createGrayscaleArgb8888BitmapFromYuv420888Image(image));
+        bitmaps.add(
+            BitmapPixelTestUtil.createGrayscaleBitmapFromYuv420888Image(
+                image, Bitmap.Config.ARGB_8888));
         image.close();
       }
     }

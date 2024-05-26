@@ -19,6 +19,7 @@ package android.media.cujcommon.cts;
 import static org.junit.Assert.assertEquals;
 
 import android.app.Activity;
+import android.app.ActivityTaskManager;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -90,6 +91,13 @@ public class CujTestBase {
    */
   public static boolean deviceSupportPipMode(final Activity activity) {
     return activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE);
+  }
+
+  /**
+   * Whether the device supports split-screen feature.
+   */
+  public static boolean deviceSupportSplitScreenMode(final Activity activity) {
+    return ActivityTaskManager.supportsSplitScreenMultiWindow(activity);
   }
 
   /**

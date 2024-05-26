@@ -46,6 +46,9 @@ public class ApiMethod implements Comparable<ApiMethod> {
     // A list of test APKs (aka CTS modules) that use this method.
     private final Map<String, Boolean> mCoveredWith = new ConcurrentHashMap<>();
 
+    // A list of CTS test methods that call this API method.
+    private final Map<String, Boolean> mCoveredTests = new ConcurrentHashMap<>();
+
     public ApiMethod(
             String name,
             List<String> parameterTypes,
@@ -110,11 +113,20 @@ public class ApiMethod implements Comparable<ApiMethod> {
         return mCoveredWith.keySet();
     }
 
+    public Set<String> getCoveredTests() {
+        return mCoveredTests.keySet();
+    }
+
     public void setCovered(String coveredWithModule) {
         if (coveredWithModule.endsWith(".apk")) {
             coveredWithModule = coveredWithModule.substring(0, coveredWithModule.length() - 4);
         }
 
         mCoveredWith.put(coveredWithModule, true);
+    }
+
+    /** Adds a test method that is calling this API. */
+    public void setCoveredTest(String coveredTest) {
+        mCoveredTests.put(coveredTest, true);
     }
 }

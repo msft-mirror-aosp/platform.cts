@@ -16,17 +16,22 @@
 
 package android.cts;
 
+import static android.cts.FileChannelInterProcessLockTest.ChannelType;
+import static android.cts.FileChannelInterProcessLockTest.LockType;
+
 import android.app.Service;
 import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.util.Log;
 
 import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.util.concurrent.ExecutionException;
-
-import static android.cts.FileChannelInterProcessLockTest.ChannelType;
-import static android.cts.FileChannelInterProcessLockTest.LockType;
 
 /**
  * A Service that listens for commands from the FileChannelInterProcessLockTest to acquire locks of
@@ -51,16 +56,6 @@ public class LockHoldingService extends Service {
     static final String NOTIFICATION_KEY = "notification";
 
     /**
-     * The value for the notification sent to the test after the service starts.
-     */
-    static final String NOTIFICATION_START = "onStart";
-
-    /**
-     * The value for the notification sent to the test just before the service stops.
-     */
-    static final String NOTIFICATION_STOP = "onStop";
-
-    /**
      * The value for the notification sent to the test after the lock is acquired.
      */
     static final String NOTIFICATION_LOCK_HELD = "lockHeld";
@@ -69,6 +64,11 @@ public class LockHoldingService extends Service {
      * The value for the notification sent to the test after the lock is released
      */
     static final String NOTIFICATION_LOCK_RELEASED = "lockReleased";
+
+    /**
+     * The value for the notification sent to the test after the lock is released for shutdown
+     */
+    static final String NOTIFICATION_READY_FOR_SHUTDOWN = "readyForShutdown";
 
     /**
      * The key of the Bundle extra used to send time for which the service should wait before
@@ -87,72 +87,86 @@ public class LockHoldingService extends Service {
     static final String CHANNEL_TYPE_KEY = "channelType";
 
     /**
-     * The key of the Bundle extra used to let he service know whether to release the lock after
-     * some time.
+     * The message code used to let he service know to release the lock after some time.
      */
-    static final String LOCK_BEHAVIOR_RELEASE_AND_NOTIFY_KEY = "releaseAndNotify";
+    static final int LOCK_BEHAVIOR_RELEASE_AND_NOTIFY = 1;
 
-    static final String ACTION_TYPE_FOR_INTENT_COMMUNICATION
-            = "android.cts.CtsLibcoreFileIOTestCases";
+    /**
+     * The message code used to let he service know to lock without releasing.
+     */
+    static final int LOCK_BEHAVIOUR_ACQUIRE_ONLY_AND_NOTIFY = 2;
+
+    /**
+     * The message code used to let the service know to release the lock before test end, if still
+     * held.
+     */
+    static final int PREPARE_FOR_SHUTDOWN = 3;
 
     final String LOG_MESSAGE_TAG = "CtsLibcoreFileIOTestCases";
 
     private FileLock fileLock = null;
 
-    public IBinder onBind(Intent intent) {
-        return null;
+    private class LockHoldingHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            try {
+                switch (msg.what) {
+                    case LOCK_BEHAVIOR_RELEASE_AND_NOTIFY:
+                        acquireLockAndThenWaitThenRelease(msg);
+                        break;
+                    case LOCK_BEHAVIOUR_ACQUIRE_ONLY_AND_NOTIFY:
+                        acquireLock(msg);
+                        break;
+                    case PREPARE_FOR_SHUTDOWN:
+                        prepareForShutdown(msg);
+                        break;
+                    default:
+                        super.handleMessage(msg);
+                }
+            } catch (Exception e) {
+                Log.e(LOG_MESSAGE_TAG, "Exception acquire lock", e);
+            }
+        }
     }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startID) {
-        try {
-            if (intent.getBooleanExtra(LOCK_BEHAVIOR_RELEASE_AND_NOTIFY_KEY, false)) {
-                acquireLockAndThenWaitThenRelease(intent);
-            } else {
-                acquireLock(intent);
-            }
-        } catch (Exception e) {
-            Log.e(LOG_MESSAGE_TAG, "Exception acquire lock", e);
-        }
-        return START_STICKY;
+    private Messenger messenger;
+
+    public IBinder onBind(Intent intent) {
+        messenger = new Messenger(new LockHoldingHandler());
+        return messenger.getBinder();
     }
 
     /**
      * Acquires the lock asked by the test indefinitely.
      */
-    private void acquireLock(Intent intent) throws IOException,
-            InterruptedException, ExecutionException {
-        LockType lockType = (LockType) intent.getSerializableExtra(LOCK_TYPE_KEY);
-        ChannelType channelType = (ChannelType) intent.getSerializableExtra(CHANNEL_TYPE_KEY);
+    private void acquireLock(Message msg) throws IOException,
+            InterruptedException, ExecutionException, RemoteException {
+        Bundle bundle = msg.getData();
+        LockType lockType = (LockType) bundle.get(LOCK_TYPE_KEY);
+        ChannelType channelType = (ChannelType) bundle.get(CHANNEL_TYPE_KEY);
 
         // Acquire the lock based on the information contained in the intent received.
         this.fileLock = FileChannelInterProcessLockTest.acquire(this, lockType, channelType);
-        Intent responseIntent = new Intent()
-                .setPackage("android.libcorefileio.cts")
-                .putExtra(NOTIFICATION_KEY, NOTIFICATION_LOCK_HELD)
-                .setAction(ACTION_TYPE_FOR_INTENT_COMMUNICATION);
-        sendBroadcast(responseIntent);
+
+        notifyLockHeld(msg);
     }
 
     /**
-     * Acquires and holds the lock for a time specified by the test. Sends a broadcast message after
+     * Acquires and holds the lock for a time specified by the test. Sends a response message after
      * releasing the lock.
      */
-    private void acquireLockAndThenWaitThenRelease(Intent intent)
-            throws IOException, InterruptedException, ExecutionException {
-        long lockHoldTimeMillis = intent.getLongExtra(TIME_TO_HOLD_LOCK_KEY, 0);
+    private void acquireLockAndThenWaitThenRelease(Message msg)
+            throws IOException, InterruptedException, ExecutionException, RemoteException {
+        Bundle bundle = msg.getData();
+        long lockHoldTimeMillis = bundle.getLong(TIME_TO_HOLD_LOCK_KEY, 0);
+        LockType lockType = (LockType) bundle.get(LOCK_TYPE_KEY);
+        ChannelType channelType = (ChannelType) bundle.get(CHANNEL_TYPE_KEY);
 
         // Acquire the lock.
-        LockType lockType = (LockType) intent.getSerializableExtra(LOCK_TYPE_KEY);
-        ChannelType channelType = (ChannelType) intent.getSerializableExtra(CHANNEL_TYPE_KEY);
         this.fileLock = FileChannelInterProcessLockTest.acquire(this, lockType, channelType);
 
         // Signal the lock is now held.
-        Intent heldIntent = new Intent()
-                .setPackage("android.libcorefileio.cts")
-                .putExtra(NOTIFICATION_KEY, NOTIFICATION_LOCK_HELD)
-                .setAction(ACTION_TYPE_FOR_INTENT_COMMUNICATION);
-        sendBroadcast(heldIntent);
+        notifyLockHeld(msg);
 
         Thread.sleep(lockHoldTimeMillis);
 
@@ -164,17 +178,35 @@ public class LockHoldingService extends Service {
         long lockReleasedTimestamp = System.currentTimeMillis();
 
         // Signal the lock is released and some information about timing.
-        Intent releaseIntent = new Intent()
-                .setPackage("android.libcorefileio.cts")
-                .putExtra(NOTIFICATION_KEY, NOTIFICATION_LOCK_RELEASED)
-                .putExtra(LOCK_NOT_YET_RELEASED_TIMESTAMP, lockNotReleasedTimestamp)
-                .putExtra(LOCK_DEFINITELY_RELEASED_TIMESTAMP, lockReleasedTimestamp)
-                .setAction(ACTION_TYPE_FOR_INTENT_COMMUNICATION);
-        sendBroadcast(releaseIntent);
+        notifyLockReleased(msg, lockNotReleasedTimestamp, lockReleasedTimestamp);
     }
 
-    @Override
-    public void onDestroy() {
+    private void notifyLockHeld(Message msg) throws RemoteException {
+        Message rsp = msg.obtain();
+        Bundle rspBundle = rsp.getData();
+        rspBundle.putBoolean(NOTIFICATION_LOCK_HELD, true);
+        msg.replyTo.send(rsp);
+    }
+
+    private void notifyLockReleased(Message msg, long lockNotReleasedTimestamp,
+            long lockReleasedTimestamp) throws RemoteException {
+        Message rsp = msg.obtain();
+        Bundle rspBundle = rsp.getData();
+        rspBundle.putBoolean(NOTIFICATION_LOCK_RELEASED, true);
+        rspBundle.putLong(LOCK_NOT_YET_RELEASED_TIMESTAMP, lockNotReleasedTimestamp);
+        rspBundle.putLong(LOCK_DEFINITELY_RELEASED_TIMESTAMP, lockReleasedTimestamp);
+        msg.replyTo.send(rsp);
+    }
+
+    private void prepareForShutdown(Message msg) throws RemoteException {
+        doReleaseLock();
+        Message rsp = msg.obtain();
+        Bundle rspBundle = rsp.getData();
+        rspBundle.putBoolean(NOTIFICATION_READY_FOR_SHUTDOWN, true);
+        msg.replyTo.send(rsp);
+    }
+
+    private void doReleaseLock() {
         try {
             if (fileLock != null) {
                 fileLock.release();
@@ -182,10 +214,11 @@ public class LockHoldingService extends Service {
         } catch (IOException e) {
             Log.e(LOG_MESSAGE_TAG, e.getMessage());
         }
-        Intent intent = new Intent()
-                .setPackage("android.libcorefileio.cts")
-                .putExtra(NOTIFICATION_KEY, NOTIFICATION_STOP)
-                .setAction(ACTION_TYPE_FOR_INTENT_COMMUNICATION);
-        sendBroadcast(intent);
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        doReleaseLock();
+        return false;
     }
 }

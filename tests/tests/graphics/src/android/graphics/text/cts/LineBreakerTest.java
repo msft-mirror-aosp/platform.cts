@@ -72,7 +72,7 @@ public class LineBreakerTest {
     }
 
     @Test
-    public void testSetBreakStrategy_shoulNotThrowExceptions() {
+    public void testSetBreakStrategy_shouldNotThrowExceptions() {
         assertNotNull(new LineBreaker.Builder().setBreakStrategy(BREAK_STRATEGY_SIMPLE).build());
         assertNotNull(new LineBreaker.Builder().setBreakStrategy(BREAK_STRATEGY_HIGH_QUALITY)
                 .build());

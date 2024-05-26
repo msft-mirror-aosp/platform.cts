@@ -35,6 +35,9 @@ public class ApiConstructor implements Comparable<ApiConstructor> {
     // A list of test APKs (aka CTS modules) that use this method.
     private final Map<String, Boolean> mCoveredWith = new ConcurrentHashMap<>();
 
+    // A list of CTS test methods that call this API constructor.
+    private final Map<String, Boolean> mCoveredTests = new ConcurrentHashMap<>();
+
     public ApiConstructor(String name, List<String> parameterTypes, boolean deprecated) {
         mName = name;
         mParameterTypes = new ArrayList<String>(parameterTypes);
@@ -69,7 +72,16 @@ public class ApiConstructor implements Comparable<ApiConstructor> {
         mCoveredWith.put(coveredWithModule, true);
     }
 
+    /** Adds a test method that is calling this API. */
+    public void setCoveredTest(String testMethod) {
+        mCoveredTests.put(testMethod, true);
+    }
+
     public Set<String> getCoveredWith() {
         return mCoveredWith.keySet();
+    }
+
+    public Set<String> getCoveredTests() {
+        return mCoveredTests.keySet();
     }
 }
