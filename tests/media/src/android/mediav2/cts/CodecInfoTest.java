@@ -329,7 +329,7 @@ public class CodecInfoTest {
 
     /**
      * Components advertising support for compression technologies that were introduced after 2002
-     * must support a smallest width/height alignment allowed by the video standard.
+     * must support 1x1 alignment for vp8, av1 and 2x2 for avc, hevc and vp9.
      */
     @VsrTest(requirements = {"VSR-4.2-004.001"})
     @Test
@@ -348,13 +348,13 @@ public class CodecInfoTest {
         switch (mMediaType) {
             case MediaFormat.MIMETYPE_VIDEO_AVC:
             case MediaFormat.MIMETYPE_VIDEO_HEVC:
+            case MediaFormat.MIMETYPE_VIDEO_VP9:
                 assertTrue(mCodecName + ", width alignment = " + widthAlignment
                         + " should be <= 2 ", widthAlignment <= 2);
                 assertTrue(mCodecName + ", height alignment = " + heightAlignment
                         + " should be <= 2 ", heightAlignment <= 2);
                 break;
             case MediaFormat.MIMETYPE_VIDEO_VP8:
-            case MediaFormat.MIMETYPE_VIDEO_VP9:
             case MediaFormat.MIMETYPE_VIDEO_AV1:
                 assertEquals(mCodecName + ", width alignment = " + widthAlignment
                         + "  should be equal to 1 ", 1, widthAlignment);

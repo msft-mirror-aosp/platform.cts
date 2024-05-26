@@ -364,7 +364,13 @@ public class CodecInitializationLatencyTest {
                 Requirements.addR5_1__H_1_8(pce).setCodecInitializationLatencyMs(
                         initializationLatency);
             } else {
-                pce.addR5_1__H_1_7(mMime).setCodecInitLatencyMs(initializationLatency);
+                if (mMime.equals(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)) {
+                    Requirements.addR5_1__H_1_7Dolby(pce).setCodecInitializationLatencyMs(
+                            initializationLatency);
+                } else {
+                    Requirements.addR5_1__H_1_7(pce).setCodecInitializationLatencyMs(
+                            initializationLatency);
+                }
             }
         } else {
             if (isAudio) {
