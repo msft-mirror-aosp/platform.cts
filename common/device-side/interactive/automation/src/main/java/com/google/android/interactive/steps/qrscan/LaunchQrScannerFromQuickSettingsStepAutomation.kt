@@ -38,7 +38,11 @@ class LaunchQrScannerFromQuickSettingsStepAutomation : Automation<Nothing> {
         }
         if (tile == null) {
             TestApis.ui().device().pressHome()
-            throw IllegalStateException("Quick settings QR code scanner tile not found.")
+            throw IllegalStateException(
+                "QR code scanner tile not found among active tiles in Quick settings. " +
+                        "Try manually by searching the QR code scanner in extra tiles and " +
+                        "add it to active Quick setting tiles."
+            )
         }
         // Launch the tile.
         tile.click()

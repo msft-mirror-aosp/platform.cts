@@ -19,12 +19,14 @@ package android.accessibilityservice.cts;
 import static android.accessibilityservice.MagnificationConfig.MAGNIFICATION_MODE_FULLSCREEN;
 import static android.accessibilityservice.MagnificationConfig.MAGNIFICATION_MODE_WINDOW;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.content.pm.PackageManager.FEATURE_WINDOW_MAGNIFICATION;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyFloat;
 import static org.mockito.Mockito.eq;
@@ -146,6 +148,8 @@ public class AccessibilityMagnificationTest {
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        assumeFalse("Magnification is not supported on Automotive.",
+                isAutomotive(mInstrumentation.getTargetContext()));
         ShellCommandBuilder.create(sUiAutomation)
                 .deleteSecureSetting(ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED)
                 .run();
@@ -1231,9 +1235,7 @@ public class AccessibilityMagnificationTest {
 
     private static boolean isWindowModeSupported(Context context) {
         PackageManager pm = context.getPackageManager();
-        // TODO(b/285201744): remove automotive check
-        boolean isAuto = pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
-        return pm.hasSystemFeature(FEATURE_WINDOW_MAGNIFICATION) && !isAuto;
+        return pm.hasSystemFeature(FEATURE_WINDOW_MAGNIFICATION);
     }
 
     private static MagnificationConfig.Builder obtainConfigBuilder(MagnificationConfig config) {
