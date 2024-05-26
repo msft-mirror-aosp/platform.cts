@@ -18,6 +18,7 @@ import static android.accessibility.cts.common.InstrumentedAccessibilityService.
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
 import static android.accessibilityservice.cts.utils.AsyncUtils.awaitCancellation;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.GestureUtils.IS_ACTION_CANCEL;
 import static android.accessibilityservice.cts.utils.GestureUtils.IS_ACTION_DOWN;
 import static android.accessibilityservice.cts.utils.GestureUtils.IS_ACTION_MOVE;
@@ -44,6 +45,7 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -363,6 +365,8 @@ public class AccessibilityGestureDispatchTest {
         if (!mHasTouchScreen) {
             return;
         }
+        assumeFalse("Magnification is not supported on Automotive.",
+                isAutomotive(sInstrumentation.getTargetContext()));
 
         int displayId = mActivity.getWindow().getDecorView().getDisplay().getDisplayId();
         if (displayId != Display.DEFAULT_DISPLAY) {
