@@ -33,6 +33,9 @@ android_test {
 
     jni_libs: ["libvirtualsensortest-jni"],
 
+    // include both the 32 and 64 bit versions
+    compile_multilib: "both",
+
     srcs: [
         "src/**/*.java",
     ],
