@@ -16,11 +16,13 @@
 
 package com.android.bedstead.harrier;
 
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
+
 import java.util.Set;
 
 /**
  * This class must be extended for any
- * {@link com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy}
+ * {@link EnterprisePolicy}
  * that needs to specify specific arguments for the test they are used on.
  */
 public abstract class PolicyArguments<T> {
@@ -28,7 +30,7 @@ public abstract class PolicyArguments<T> {
 
     /**
      * Arguments valid to the
-     * {@link com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy}
+     * {@link EnterprisePolicy}
      */
     public abstract Set<T> validArguments();
 }
