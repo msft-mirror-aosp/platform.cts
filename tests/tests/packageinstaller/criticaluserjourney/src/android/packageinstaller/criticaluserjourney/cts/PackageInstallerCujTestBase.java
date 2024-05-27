@@ -29,6 +29,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
 
+import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -91,10 +92,12 @@ public class PackageInstallerCujTestBase {
             "android.packageinstaller.cts.cujinstaller";
     private static final String TEST_INSTALLER_APK_NAME = "CtsCujInstallerTestApp.apk";
     private static final String TEST_APK_LOCATION = "/data/local/tmp/cts/packageinstaller/cuj";
+    private static final String APP_INSTALLED_LABEL = "App installed";
     private static final String BUTTON_CANCEL_LABEL = "Cancel";
-    private static final String BUTTON_INSTALL_LABEL = "Install";
+    private static final String BUTTON_DONE_LABEL = "Done";
     private static final String BUTTON_GPP_MORE_DETAILS_LABEL = "More details";
     private static final String BUTTON_GPP_INSTALL_ANYWAY_LABEL = "Install anyway";
+    private static final String BUTTON_INSTALL_LABEL = "Install";
     private static final String BUTTON_SETTINGS_LABEL = "Settings";
     private static final String BUTTON_UPDATE_LABEL = "Update";
     private static final String TOGGLE_ALLOW_FROM_LABEL = "Allow from";
@@ -115,7 +118,13 @@ public class PackageInstallerCujTestBase {
 
     private static final int EVENT_REQUEST_INSTALLER_CLEAN_UP = -1;
     private static final int EVENT_REQUEST_INSTALLER_SESSION = 0;
+    private static final int EVENT_REQUEST_INSTALLER_INTENT = 1;
+    private static final int EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT = 2;
+    private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI = 3;
+    private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT = 4;
+
     private static final int STATUS_CUJ_INSTALLER_READY = 1000;
+    private static final int STATUS_CUJ_INSTALLER_START_ACTIVITY_READY = 1001;
 
     private static final long FIND_OBJECT_TIMEOUT_MS = 30 * 1000L;
     private static final long WAIT_OBJECT_GONE_TIMEOUT_MS = 3 * 1000L;
@@ -262,6 +271,55 @@ public class PackageInstallerCujTestBase {
         sendRequestInstallerBroadcast(event, /* useV2= */ false);
     }
 
+    /**
+     * Start the installation via startActivity.
+     */
+    public static void startInstallationViaIntent() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
+     * Start the installation to update the test apk to label V2 version via startActivity.
+     */
+    public static void startInstallationUpdateViaIntent() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT, /* useV2= */ true);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
+     * Start the installation via startActivity with Package uri.
+     */
+    public static void startInstallationViaIntentWithPackageUri() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
+     * Start the installation via startActivityForResult.
+     */
+    public static void startInstallationViaIntentForResult() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
+     * Start the installation to update the test apk to label V2 version via startActivityForResult.
+     */
+    public static void startInstallationUpdateViaIntentForResult() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT,
+                /* useV2= */ true);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
+     * Start the installation via startActivityForResult with Package uri.
+     */
+    public static void startInstallationViaIntentWithPackageUriForResult() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT);
+        assertCUJInstallerStartActivityReady();
+    }
+
     private static void sendRequestInstallerBroadcast(int event, boolean useV2) throws Exception {
         final Intent intent = new Intent(ACTION_REQUEST_INSTALLER);
         intent.setPackage(TEST_INSTALLER_PACKAGE_NAME);
@@ -273,6 +331,22 @@ public class PackageInstallerCujTestBase {
 
     private static int getInstallerResponseResult() throws Exception {
         return sInstallerResponseReceiver.getInstallerResponseResult();
+    }
+
+    /**
+     * Assert the install status is Activity#RESULT_OK).
+     */
+    public static void assertInstallerResponseActivityResultOK() throws Exception {
+        assertThat(getInstallerResponseResult()).isEqualTo(Activity.RESULT_OK);
+        sInstallerResponseReceiver.resetResult();
+    }
+
+    /**
+     * Assert the install status is Activity#RESULT_CANCELED.
+     */
+    public static void assertInstallerResponseActivityResultCanceled() throws Exception {
+        assertThat(getInstallerResponseResult()).isEqualTo(Activity.RESULT_CANCELED);
+        sInstallerResponseReceiver.resetResult();
     }
 
     /**
@@ -298,6 +372,12 @@ public class PackageInstallerCujTestBase {
 
     private static void assertCUJInstallerReady() throws Exception {
         assertThat(getInstallerResponseResult()).isEqualTo(STATUS_CUJ_INSTALLER_READY);
+        sInstallerResponseReceiver.resetResult();
+    }
+
+    private static void assertCUJInstallerStartActivityReady() throws Exception {
+        assertThat(getInstallerResponseResult()).isEqualTo(
+                STATUS_CUJ_INSTALLER_START_ACTIVITY_READY);
         sInstallerResponseReceiver.resetResult();
     }
 
@@ -356,6 +436,15 @@ public class PackageInstallerCujTestBase {
                 waitUntilObjectGone(installAnyWaySelector);
             }
         }
+        waitForUiIdle();
+    }
+
+    /**
+     * Assert the install success dialog and click the Done button.
+     */
+    public static void assertInstallSuccessDialogAndClickDoneButton() throws Exception {
+        findObject(By.textContains(APP_INSTALLED_LABEL), /* checkNull= */ true);
+        findObject(BUTTON_DONE_LABEL).click();
         waitForUiIdle();
     }
 

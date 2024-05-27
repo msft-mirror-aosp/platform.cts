@@ -37,6 +37,8 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
 
+import androidx.core.content.FileProvider;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -52,6 +54,9 @@ public class MainActivity extends Activity {
     private static final String TEST_APK_NAME = "CtsEmptyTestApp.apk";
     private static final String TEST_APK_V2_NAME = "CtsEmptyTestAppV2.apk";
 
+    private static final String CONTENT_AUTHORITY =
+            "android.packageinstaller.cts.cujinstaller.fileprovider";
+
     private static final String TEST_PACKAGE_NAME =
             "android.packageinstaller.criticaluserjourney.cts";
     private static final String ACTION_REQUEST_INSTALLER =
@@ -64,8 +69,15 @@ public class MainActivity extends Activity {
     private static final String EXTRA_USE_APK_V2 = "extra_use_apk_v2";
 
     private static final int STATUS_CUJ_INSTALLER_READY = 1000;
+    private static final int STATUS_CUJ_INSTALLER_START_ACTIVITY_READY = 1001;
     private static final int EVENT_REQUEST_INSTALLER_CLEAN_UP = -1;
     private static final int EVENT_REQUEST_INSTALLER_SESSION = 0;
+    private static final int EVENT_REQUEST_INSTALLER_INTENT = 1;
+    private static final int EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT = 2;
+    private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI = 3;
+    private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT = 4;
+    private static final int REQUEST_CODE = 311;
+
 
     private PackageInstaller mPackageInstaller;
     private InstallResultReceiver mInstallResultReceiver;
@@ -109,6 +121,16 @@ public class MainActivity extends Activity {
             } catch (Exception ignored) {
                 // do nothing
             }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d(TAG, "onActivityResult requestCode: " + requestCode + ", resultCode: " + resultCode
+                + ", data: " + data);
+
+        if (requestCode == REQUEST_CODE) {
+            sendInstallerResponseBroadcast(getApplicationContext(), resultCode);
         }
     }
 
@@ -160,6 +182,35 @@ public class MainActivity extends Activity {
 
         mInstallResultReceiver = new InstallResultReceiver();
         session.commit(mInstallResultReceiver.getIntentSender(getApplicationContext()));
+    }
+
+    private void startInstallationViaIntent(boolean getResult, String apkName) {
+        final File apkFile = new File(getFilesDir(), apkName);
+        final Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+        intent.setData(FileProvider.getUriForFile(this, CONTENT_AUTHORITY, apkFile));
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.putExtra(Intent.EXTRA_RETURN_RESULT, getResult);
+        if (getResult) {
+            startActivityForResult(intent, REQUEST_CODE);
+        } else {
+            startActivity(intent);
+        }
+        sendInstallerResponseBroadcast(getApplicationContext(),
+                STATUS_CUJ_INSTALLER_START_ACTIVITY_READY);
+    }
+
+    private void startInstallationViaIntentWithPackageUri(boolean getResult) {
+        final Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+        intent.setData(Uri.fromParts("package", TEST_APK_PACKAGE_NAME, null));
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.putExtra(Intent.EXTRA_RETURN_RESULT, getResult);
+        if (getResult) {
+            startActivityForResult(intent, REQUEST_CODE);
+        } else {
+            startActivity(intent);
+        }
+        sendInstallerResponseBroadcast(getApplicationContext(),
+                STATUS_CUJ_INSTALLER_START_ACTIVITY_READY);
     }
 
     private static void writeFullStream(InputStream inputStream, OutputStream outputStream)
@@ -227,6 +278,38 @@ public class MainActivity extends Activity {
                     } else {
                         startInstallationViaPackageInstallerSession(TEST_APK_NAME);
                     }
+                } catch (Exception ex) {
+                    Log.e(TAG, "Exception event:" + event, ex);
+                }
+            } else if (event == EVENT_REQUEST_INSTALLER_INTENT) {
+                try {
+                    if (useTestApkV2) {
+                        startInstallationViaIntent(/* getResult= */ false, TEST_APK_V2_NAME);
+                    } else {
+                        startInstallationViaIntent(/* getResult= */ false, TEST_APK_NAME);
+                    }
+                } catch (Exception ex) {
+                    Log.e(TAG, "Exception event:" + event, ex);
+                }
+            } else if (event == EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT) {
+                try {
+                    if (useTestApkV2) {
+                        startInstallationViaIntent(/* getResult= */ true, TEST_APK_V2_NAME);
+                    } else {
+                        startInstallationViaIntent(/* getResult= */ true, TEST_APK_NAME);
+                    }
+                } catch (Exception ex) {
+                    Log.e(TAG, "Exception event:" + event, ex);
+                }
+            } else if (event == EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI) {
+                try {
+                    startInstallationViaIntentWithPackageUri(/* getResult= */ false);
+                } catch (Exception ex) {
+                    Log.e(TAG, "Exception event:" + event, ex);
+                }
+            } else if (event == EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT) {
+                try {
+                    startInstallationViaIntentWithPackageUri(/* getResult= */ true);
                 } catch (Exception ex) {
                     Log.e(TAG, "Exception event:" + event, ex);
                 }
