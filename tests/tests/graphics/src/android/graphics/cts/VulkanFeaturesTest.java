@@ -105,11 +105,17 @@ public class VulkanFeaturesTest {
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_V,
                 new String[] {
+                    "VK_KHR_calibrated_timestamps",
                     "VK_KHR_cooperative_matrix",
+                    "VK_KHR_index_type_uint8",
                     "VK_KHR_line_rasterization",
+                    "VK_KHR_load_store_op_none",
                     "VK_KHR_maintenance5",
+                    "VK_KHR_maintenance6",
                     "VK_KHR_map_memory2",
                     "VK_KHR_ray_tracing_position_fetch",
+                    "VK_KHR_shader_expect_assume",
+                    "VK_KHR_shader_quad_control",
                     "VK_KHR_vertex_attribute_divisor",
                     "VK_ANDROID_external_format_resolve"});
         DEQP_EXTENSIONS_MAP.put(

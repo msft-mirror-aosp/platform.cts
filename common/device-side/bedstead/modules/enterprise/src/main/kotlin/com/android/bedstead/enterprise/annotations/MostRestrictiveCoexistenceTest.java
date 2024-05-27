@@ -23,8 +23,6 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.annotations.StringQuery;
 
-import org.junit.Ignore;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -33,7 +31,7 @@ import java.lang.annotation.Target;
 /**
  * Mark that a test is testing a most restrictive coexistence policy.
  *
- * <p>Tests can use {@code sDeviceState.testApp(DPC_1} and {@code sDeviceState.testApp(DPC_2} to
+ * <p>Tests can use {@code sDeviceState.testApp(DPC_1)} and {@code sDeviceState.testApp(DPC_2)} to
  * get the different test apps to set the policy.
  *
  * <p>You can use {@code DeviceState} to ensure that the device enters the correct state for the
