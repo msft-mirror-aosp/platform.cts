@@ -129,6 +129,7 @@ if [ "$USE_ATS" == "true" ]; then
       --adb=$(type -P adb 2>/dev/null) \
       --ats_console_olc_server_path=${ATS_OLC_SERVER_JAR} \
       --enable_xts_dynamic_downloader=true \
+      --xts_res_dir_root=$HOME/xts \
       --public_dir=/tmp \
       --simplified_log_format=true \
       --tmp_dir_root=/tmp \
