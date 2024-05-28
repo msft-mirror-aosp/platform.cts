@@ -187,12 +187,6 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
                     : BOTTOM_RIGHT_LAYOUT_ACTIVITY;
         }
 
-        // Launch in freeform stack
-        launchActivity(activityName, WINDOWING_MODE_FREEFORM);
-
-        getDisplayAndWindowState(activityName, true);
-
-        final Rect parentFrame = mWindowState.getParentFrame();
         final WindowMetrics windowMetrics = mWm.getMaximumWindowMetrics();
         final Rect stableBounds = new Rect(windowMetrics.getBounds());
         stableBounds.inset(windowMetrics.getWindowInsets().getInsetsIgnoringVisibility(
@@ -209,6 +203,13 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
             expectedWidthPx = dpToPx(DEFAULT_WIDTH_DP, densityDpi);
             expectedHeightPx = dpToPx(DEFAULT_HEIGHT_DP, densityDpi);
         }
+
+        // Launch in freeform stack
+        launchActivity(activityName, WINDOWING_MODE_FREEFORM);
+
+        getDisplayAndWindowState(activityName, true);
+
+        final Rect parentFrame = mWindowState.getParentFrame();
 
         verifyFrameSizeAndPosition(vGravity, hGravity, expectedWidthPx, expectedHeightPx,
                 parentFrame, stableBounds);

@@ -288,7 +288,7 @@ android_test_helper_app {
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
     sdk_version: "system_current",
-    target_sdk_version: "34",
+    target_sdk_version: "35",
 }
 
 android_test_helper_app {

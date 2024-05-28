@@ -21,15 +21,12 @@ import static android.server.wm.app.Components.LOG_CONFIGURATION_ACTIVITY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.RotationSession;
-
-import com.android.window.flags.Flags;
 
 import org.junit.Test;
 
@@ -42,11 +39,6 @@ public class OverrideConfigTests extends ActivityManagerTestBase {
 
     @Test
     public void testReceiveOverrideConfigFromRelayout() {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
         assumeTrue("Device doesn't support freeform. Skipping test.", supportsFreeform());
 
         launchActivity(LOG_CONFIGURATION_ACTIVITY, WINDOWING_MODE_FREEFORM);
