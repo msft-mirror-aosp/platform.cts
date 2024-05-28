@@ -6863,13 +6863,16 @@ You should be prompted to select credentials; choose the ones you just installed
     <!-- Add bubble from overflow -->
     <string name="bubbles_test_add_from_overflow_title">Add bubble from overflow</string>
     <string name="bubbles_test_add_from_overflow_verify">1. Expand the stack and open the bubble
-        overflow.\n\n 2. Tap on a bubble in the overflow, pass this test if that bubble is opened
-        and removed from the overflow.</string>
+        overflow.\n\n 2. Tap on a bubble in the overflow, pass this test if that bubble is opened.
+    </string>
     <!-- Cancel removes bubbles in overflow -->
     <string name="bubbles_test_cancel_overflow_title">Cancel removes overflowed bubbles</string>
     <string name="bubbles_test_cancel_overflow_verify">1. Press the button below, it will cancel all
         previous bubble notifications and post one more.\n\n
         2. Expand that bubble, navigate to the overflow and ensure that it is empty.</string>
+    <string name="bubbles_test_cancel_overflow_verify2">1. Press the button below, it will cancel
+        all previous bubble notifications and post one more.\n\n
+        2. Expand that bubble, observe that there is no overflow button.</string>
     <string name="bubbles_test_cancel_overflow_button">Cancel previous bubbles and post a
         single bubble</string>
     <!-- Tap on notification with bubble in the overflow -->
