@@ -33,6 +33,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.keystore.cts.util.EmptyArray;
 import android.keystore.cts.util.ImportedKey;
+import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
@@ -1195,6 +1196,7 @@ public class CipherTest {
 
     @Test
     public void testKat() throws Exception {
+        StrictModeDetector strict = new StrictModeDetector(getContext());
         Provider provider = Security.getProvider(EXPECTED_PROVIDER_NAME);
         assertNotNull(provider);
         for (String algorithm : EXPECTED_ALGORITHMS) {
@@ -1204,10 +1206,12 @@ public class CipherTest {
                         true);
                 KatVector testVector = KAT_VECTORS.get(algorithm);
                 assertNotNull(testVector);
+                strict.clear();
                 Cipher cipher = Cipher.getInstance(algorithm, provider);
                 Key decryptionKey = key.getKeystoreBackedDecryptionKey();
                 cipher.init(Cipher.DECRYPT_MODE, decryptionKey, testVector.params);
                 byte[] actualPlaintext = cipher.doFinal(testVector.ciphertext);
+                strict.check("decryption with " + algorithm);
                 byte[] expectedPlaintext = testVector.plaintext;
                 if ("RSA/ECB/NoPadding".equalsIgnoreCase(algorithm)) {
                     // RSA decryption without padding left-pads resulting plaintext with NUL bytes

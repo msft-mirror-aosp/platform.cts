@@ -29,6 +29,7 @@ import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.getActi
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.dispatchGesture;
 import static android.accessibilityservice.cts.utils.RunOnMainUtils.getOnMain;
@@ -50,6 +51,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -522,11 +524,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                     " - Watches have different notification system.");
             return;
         }
-        if (pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
-            Log.i(LOG_TAG, "Skipping: testTypeNotificationStateChangedAccessibilityEvent" +
-                    " - Automotive handle notifications differently.");
-            return;
-        }
+        assumeFalse("Skipping - Automotive handle notifications differently.",
+                isAutomotive(sInstrumentation.getTargetContext()));
 
         String message = mActivity.getString(R.string.notification_message);
 
@@ -1784,6 +1783,12 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {
             "android.view.accessibility.AccessibilityNodeInfo#setQueryFromAppProcessEnabled"})
     public void testDirectAccessibilityConnection_UsesCurrentWindowSpec() throws Throwable {
+        if (isAutomotive(sInstrumentation.getTargetContext())) {
+            Log.i(LOG_TAG, "Skipping: testDirectAccessibilityConnection_UsesCurrentWindowSpec"
+                    + " - Automotive does not support magnification.");
+            return;
+        }
+
         // Store the initial bounds of the ANI.
         final View layoutView = mActivity.findViewById(R.id.buttonLayout);
         final AccessibilityNodeInfo layoutNode = layoutView.createAccessibilityNodeInfo();
