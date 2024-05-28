@@ -80,10 +80,15 @@ public final class ShellCommand {
         }
 
         /**
-         * Run command as root by adding {@code su root} as prefix.
+         * Run command as root by adding {@code su root} as prefix if needed.
+         * <br><br>
+         * Note: If shell has access to root but {@code su} is not available the {@code su root}
+         * prefix will not be added as shell is probably running as root. This can be checked
+         * using {@code ShellCommandUtils.isRunningAsRoot}.
          */
         public Builder asRoot(boolean shouldRunAsRoot) {
             mShouldRunAsRootWithSuperUser = shouldRunAsRoot &&
+                    !ShellCommandUtils.isRunningAsRoot() &&
                     ShellCommandUtils.isSuperUserAvailable();
             return this;
         }

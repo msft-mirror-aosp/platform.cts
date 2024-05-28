@@ -23,8 +23,12 @@ import com.google.auto.value.AutoAnnotation
 /**
  * Mark that a test method requires adb to be able to access root capabilities.
  *
- * You can use `DeviceState` to ensure that the device enters
- * the correct state for the method.
+ * The implementation would consider that the shell has root available if any of the following
+ * conditions are true:
+ * 1. The [su] command is available and shell can run commands as root with the substitute user.
+ * 2. The [su] command is not available but shell has access to root.
+ *
+ * You can use `DeviceState` to ensure that the device enters the correct state for the method.
  */
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS, AnnotationTarget.ANNOTATION_CLASS)
 @Retention(AnnotationRetention.RUNTIME)
