@@ -1126,7 +1126,7 @@ public final class DeviceState extends HarrierRule {
                         resolveUserTypeToUser(requireHasDefaultBrowser.forUser());
 
                 checkFailOrSkip("User: " + user + " does not have a default browser",
-                        TestApis.packages().defaultBrowser(user) != null,
+                        TestApis.roles().hasBrowserRoleHolderAsUser(user),
                         requireHasDefaultBrowser.failureMode());
                 continue;
             }

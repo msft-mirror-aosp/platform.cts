@@ -31,7 +31,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
-import com.android.bedstead.nene.utils.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -69,6 +68,7 @@ public final class ShellCommandUtils {
     private ShellCommandUtils() { }
 
     private static Boolean sRootAvailable = null;
+    private static Boolean sIsRunningAsRoot = null;
     private static Boolean sSuperUserAvailable = null;
 
     /**
@@ -363,9 +363,42 @@ public final class ShellCommandUtils {
         }
 
         return sSuperUserAvailable;
-
-
     }
+
+    /**
+     * Check if the test instrumentation is running as root.
+     */
+    public static boolean isRunningAsRoot() {
+        if (sIsRunningAsRoot != null) {
+            return sIsRunningAsRoot;
+        }
+
+        try {
+            // We run a basic command to check if the device is running as root.
+            // If the command can be executed without the su root prefix, the device is running
+            // as root.
+            String output = ShellCommand.builder("cat /system/build.prop")
+                    .withTimeout(Duration.of(1, SECONDS)).execute();
+            System.out.println("output >> " + output);
+            if (output.contains("ro.build")) {
+                sIsRunningAsRoot = true;
+            }
+        } catch (AdbException e) {
+            Log.i(LOG_TAG, "Exception when checking if test instrumentation is running as root.", e);
+        }
+
+        if (sIsRunningAsRoot == null) {
+            Log.i(LOG_TAG,
+                    "Unable to run shell commands as root without the su root prefix. " +
+                            "The device is of type: " + Build.TYPE + ".\n However, the " +
+                            "super user may be available. You can check with " +
+                            "ShellCommandUtils.isRootAvailable.");
+            sIsRunningAsRoot = false;
+        }
+
+        return sIsRunningAsRoot;
+    }
+
     /**
      * Check if the device can run commands as root.
      */
@@ -374,16 +407,8 @@ public final class ShellCommandUtils {
             return sRootAvailable;
         }
 
-        try {
-            // We run a basic command to check if the device can run it as root.
-            //TODO(b/301478821): Remove the timeout once b/303377922 is fixed.
-            String output = ShellCommand.builder("cat /system/build.prop").asRoot(true)
-                    .withTimeout(Duration.of(1, SECONDS)).execute();
-            if (output.contains("ro.build")) {
-                sRootAvailable = true;
-            }
-        } catch (AdbException e) {
-            Log.i(LOG_TAG, "Exception when checking for super user.", e);
+        if (isRunningAsRoot() || canRunAsRootWithSuperUser()) {
+            sRootAvailable = true;
         }
 
         if (sRootAvailable == null) {
@@ -394,6 +419,21 @@ public final class ShellCommandUtils {
         }
 
         return sRootAvailable;
+    }
+
+    private static boolean canRunAsRootWithSuperUser() {
+        try {
+            // We run a basic command to check if the device can run it as root.
+            //TODO(b/301478821): Remove the timeout once b/303377922 is fixed.
+            String output = ShellCommand.builder("cat /system/build.prop").asRoot(true)
+                    .withTimeout(Duration.of(1, SECONDS)).execute();
+            if (output.contains("ro.build")) {
+                return true;
+            }
+        } catch (AdbException e) {
+            Log.i(LOG_TAG, "Exception when checking for super user.", e);
+        }
+        return false;
     }
 
     /** Wrapper around {@link Stream} of lines output from a shell command. */

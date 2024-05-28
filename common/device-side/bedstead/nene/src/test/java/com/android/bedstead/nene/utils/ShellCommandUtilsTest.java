@@ -26,6 +26,7 @@ import static org.testng.Assert.assertThrows;
 import android.os.Build;
 
 import com.android.bedstead.nene.exceptions.AdbException;
+import com.android.xts.root.annotations.RequireAdbRoot;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -107,5 +108,16 @@ public class ShellCommandUtilsTest {
     @Test
     public void startsWithSuccess_doesNotStartWithSuccess_returnsFalse() {
         assertThat(ShellCommandUtils.startsWithSuccess("not success...")).isFalse();
+    }
+
+    @Test
+    @RequireAdbRoot(reason = "To be picked up by btest --root")
+    public void isRunningAsRoot_true_returnsTrue() {
+        assertThat(ShellCommandUtils.isRunningAsRoot()).isTrue();
+    }
+
+    @Test
+    public void isRunningAsRoot_false_returnsFalse() {
+        assertThat(ShellCommandUtils.isRunningAsRoot()).isFalse();
     }
 }
