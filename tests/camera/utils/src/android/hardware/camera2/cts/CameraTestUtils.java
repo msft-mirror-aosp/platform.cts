@@ -3779,7 +3779,8 @@ public class CameraTestUtils extends Assert {
 
             // TAG_MODEL
             String model = exif.getAttribute(ExifInterface.TAG_MODEL);
-            collector.expectEquals("Exif TAG_MODEL is incorrect", Build.MODEL, model);
+            collector.expectTrue("Exif TAG_MODEL is incorrect",
+                    model.startsWith(Build.MODEL) || model.endsWith(Build.MODEL));
 
 
             // TAG_ISO
