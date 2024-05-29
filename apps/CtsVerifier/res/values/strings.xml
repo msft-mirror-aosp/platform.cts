@@ -5751,6 +5751,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_invalid_transfer">Invalid Transfer Type</string>
 
     <string name="audio_datapaths_calibrate">Calibrate Audio</string>
+    <string name="audio_datapaths_devices">Audio Devices</string>
     <string name="audio_datapaths_calibratetitle">Calibrate Loopback Audio</string>
 
     <string name="audio_devicesupport_title">Audio Devices</string>

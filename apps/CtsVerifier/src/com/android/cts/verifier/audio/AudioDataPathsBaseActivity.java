@@ -28,6 +28,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.android.compatibility.common.util.ResultType;
@@ -78,6 +79,9 @@ public abstract class AudioDataPathsBaseActivity
     protected View mStartBtn;
     protected View mCancelButton;
     protected View mClearResultsBtn;
+
+    private Button mCalibrateButton;
+    private Button mDevicesButton;
 
     private TextView mRoutesTx;
     private WebView mResultsView;
@@ -138,7 +142,11 @@ public abstract class AudioDataPathsBaseActivity
 
         mIsLessThanV = Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
-        findViewById(R.id.audio_datapaths_calibrate_button).setOnClickListener(this);
+        mCalibrateButton = findViewById(R.id.audio_datapaths_calibrate_button);
+        mCalibrateButton.setOnClickListener(this);
+
+        mDevicesButton = findViewById(R.id.audio_datapaths_devices_button);
+        mDevicesButton.setOnClickListener(this);
 
         mStartBtn = findViewById(R.id.audio_datapaths_start);
         mStartBtn.setOnClickListener(this);
@@ -1172,6 +1180,9 @@ public abstract class AudioDataPathsBaseActivity
             mTestStep = TESTSTEP_NONE;
             mTestCanceled = false;
 
+            mCalibrateButton.setEnabled(false);
+            mDevicesButton.setEnabled(false);
+
             (mTimer = new Timer()).scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
@@ -1246,6 +1257,9 @@ public abstract class AudioDataPathsBaseActivity
                     mResultsView.loadData(mHtmlFormatter.toString(),
                             "text/html; charset=utf-8", "utf-8");
                     showResultsView();
+
+                    mCalibrateButton.setEnabled(true);
+                    mDevicesButton.setEnabled(true);
                 }
             });
         }
@@ -1440,9 +1454,9 @@ public abstract class AudioDataPathsBaseActivity
             showDeviceView();
             mTestManager.displayTestDevices();
         } else if (id == R.id.audio_datapaths_calibrate_button) {
-            AudioLoopbackCalibrationDialog calibrationDialog =
-                    new AudioLoopbackCalibrationDialog(this);
-            calibrationDialog.show();
+            (new AudioLoopbackCalibrationDialog(this)).show();
+        } else if (id == R.id.audio_datapaths_devices_button) {
+            (new AudioDevicesDialog(this)).show();
         }
     }
 
