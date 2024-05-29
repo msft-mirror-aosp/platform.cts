@@ -40,8 +40,7 @@ import java.util.List;
 
 public class AppSearchSchemaCtsTest {
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testInvalidEnums() {
@@ -476,7 +475,7 @@ public class AppSearchSchemaCtsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)  // setDescription
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS) // setDescription
     public void testEquals_failure_differentDescription() {
         AppSearchSchema.Builder schemaBuilder =
                 new AppSearchSchema.Builder("Email")
@@ -496,7 +495,7 @@ public class AppSearchSchemaCtsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)  // setDescription
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS) // setDescription
     public void testEquals_failure_differentPropertyDescription() {
         AppSearchSchema schema1 =
                 new AppSearchSchema.Builder("Email")
@@ -582,7 +581,7 @@ public class AppSearchSchemaCtsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS)  // setDescription
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS) // setDescription
     public void testAppSearchSchema_toString() {
         AppSearchSchema schema =
                 new AppSearchSchema.Builder("testSchema")
@@ -906,5 +905,130 @@ public class AppSearchSchemaCtsTest {
                 .contains(
                         "DocumentIndexingConfig#shouldIndexNestedProperties is required to be false"
                                 + " when one or more indexableNestedProperties are provided.");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
+    public void testEmbeddingPropertyConfig() {
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Test")
+                        .addProperty(
+                                new AppSearchSchema.StringPropertyConfig.Builder("string")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_REQUIRED)
+                                        .setIndexingType(
+                                                AppSearchSchema.StringPropertyConfig
+                                                        .INDEXING_TYPE_EXACT_TERMS)
+                                        .setTokenizerType(
+                                                AppSearchSchema.StringPropertyConfig
+                                                        .TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.LongPropertyConfig.Builder("indexableLong")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                AppSearchSchema.LongPropertyConfig
+                                                        .INDEXING_TYPE_RANGE)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "document1", AppSearchEmail.SCHEMA_TYPE)
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_REPEATED)
+                                        .setShouldIndexNestedProperties(true)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_NONE)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder(
+                                                "indexableEmbedding")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+
+        assertThat(schema.getSchemaType()).isEqualTo("Test");
+        List<AppSearchSchema.PropertyConfig> properties = schema.getProperties();
+        assertThat(properties).hasSize(5);
+
+        assertThat(properties.get(0).getName()).isEqualTo("string");
+        assertThat(properties.get(0).getCardinality())
+                .isEqualTo(AppSearchSchema.PropertyConfig.CARDINALITY_REQUIRED);
+        assertThat(((AppSearchSchema.StringPropertyConfig) properties.get(0)).getIndexingType())
+                .isEqualTo(AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS);
+        assertThat(((AppSearchSchema.StringPropertyConfig) properties.get(0)).getTokenizerType())
+                .isEqualTo(AppSearchSchema.StringPropertyConfig.TOKENIZER_TYPE_PLAIN);
+
+        assertThat(properties.get(1).getName()).isEqualTo("indexableLong");
+        assertThat(properties.get(1).getCardinality())
+                .isEqualTo(AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL);
+        assertThat(((AppSearchSchema.LongPropertyConfig) properties.get(1)).getIndexingType())
+                .isEqualTo(AppSearchSchema.LongPropertyConfig.INDEXING_TYPE_RANGE);
+
+        assertThat(properties.get(2).getName()).isEqualTo("document1");
+        assertThat(properties.get(2).getCardinality())
+                .isEqualTo(AppSearchSchema.PropertyConfig.CARDINALITY_REPEATED);
+        assertThat(((AppSearchSchema.DocumentPropertyConfig) properties.get(2)).getSchemaType())
+                .isEqualTo(AppSearchEmail.SCHEMA_TYPE);
+        assertThat(
+                        ((AppSearchSchema.DocumentPropertyConfig) properties.get(2))
+                                .shouldIndexNestedProperties())
+                .isEqualTo(true);
+
+        assertThat(properties.get(3).getName()).isEqualTo("embedding");
+        assertThat(properties.get(3).getCardinality())
+                .isEqualTo(AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL);
+        assertThat(((AppSearchSchema.EmbeddingPropertyConfig) properties.get(3)).getIndexingType())
+                .isEqualTo(AppSearchSchema.EmbeddingPropertyConfig.INDEXING_TYPE_NONE);
+
+        assertThat(properties.get(4).getName()).isEqualTo("indexableEmbedding");
+        assertThat(properties.get(4).getCardinality())
+                .isEqualTo(AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL);
+        assertThat(((AppSearchSchema.EmbeddingPropertyConfig) properties.get(4)).getIndexingType())
+                .isEqualTo(AppSearchSchema.EmbeddingPropertyConfig.INDEXING_TYPE_SIMILARITY);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
+    public void testEmbeddingPropertyConfig_defaultValues() {
+        AppSearchSchema.EmbeddingPropertyConfig builder =
+                new AppSearchSchema.EmbeddingPropertyConfig.Builder("test").build();
+        assertThat(builder.getIndexingType())
+                .isEqualTo(AppSearchSchema.EmbeddingPropertyConfig.INDEXING_TYPE_NONE);
+        assertThat(builder.getCardinality())
+                .isEqualTo(AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
+    public void testEmbeddingPropertyConfig_setIndexingType() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new AppSearchSchema.EmbeddingPropertyConfig.Builder("titleEmbedding")
+                                .setIndexingType(5)
+                                .build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new AppSearchSchema.EmbeddingPropertyConfig.Builder("titleEmbedding")
+                                .setIndexingType(2)
+                                .build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new AppSearchSchema.EmbeddingPropertyConfig.Builder("titleEmbedding")
+                                .setIndexingType(-1)
+                                .build());
     }
 }

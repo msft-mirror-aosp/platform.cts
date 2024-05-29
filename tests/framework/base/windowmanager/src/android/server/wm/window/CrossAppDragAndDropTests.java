@@ -29,7 +29,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
@@ -369,47 +368,23 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
 
     @Test
     public void testCancelSoon() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(CANCEL_SOON, REQUEST_NONE, RESULT_MISSING);
     }
 
     @Test
     public void testDisallowGlobal() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         // Verify that dragging to another window doesn't work without FLAG_DRAG_GLOBAL
         assertNoGlobalDragEvents(DRAG_SOURCE, DISALLOW_GLOBAL, DROP_TARGET, RESULT_OK);
     }
 
     @Test
     public void testDisallowGlobalBelowSdk24() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertNoGlobalDragEvents(DRAG_SOURCE, GRANT_NONE, DROP_TARGET_SDK23, RESULT_OK);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DELEGATE_UNHANDLED_DRAGS)
     public void testDisallowGlobalSameAppWithDifferentUids() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         // Verify that dragging to another window from a different app doesn't work with
         // FLAG_DRAG_GLOBAL_SAME_APP
         assertNoGlobalDragEvents(DRAG_SOURCE, GLOBAL_SAME_APP, DROP_TARGET, RESULT_OK);
@@ -418,12 +393,6 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DELEGATE_UNHANDLED_DRAGS)
     public void testGlobalSameAppWithSameUids() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         // Verify that dragging to another window from the same app works with
         // FLAG_DRAG_GLOBAL_SAME_APP
         assertDragAndDropResults(DRAG_SOURCE, GLOBAL_SAME_APP, DRAG_SOURCE_DROP_TARGET,
@@ -432,234 +401,108 @@ public class CrossAppDragAndDropTests extends ActivityManagerTestBase {
 
     @Test
     public void testFileUriLocal() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertNoGlobalDragEvents(DRAG_SOURCE, FILE_LOCAL, DROP_TARGET, RESULT_OK);
     }
 
     @Test
     public void testFileUriGlobal() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertNoGlobalDragEvents(DRAG_SOURCE, FILE_GLOBAL, DROP_TARGET, RESULT_EXCEPTION);
     }
 
     @Test
     public void testGrantNoneRequestNone() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_NONE, REQUEST_NONE, RESULT_EXCEPTION);
     }
 
     @Test
     public void testGrantNoneRequestRead() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_NONE, REQUEST_READ, RESULT_NULL_DROP_PERMISSIONS);
     }
 
     @Test
     public void testGrantNoneRequestWrite() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_NONE, REQUEST_WRITE, RESULT_NULL_DROP_PERMISSIONS);
     }
 
     @Test
     public void testGrantReadRequestNone() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_READ, REQUEST_NONE, RESULT_EXCEPTION);
     }
 
     @Test
     public void testGrantReadRequestRead() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_READ, REQUEST_READ, RESULT_OK);
     }
 
     @Test
     public void testGrantReadRequestWrite() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_READ, REQUEST_WRITE, RESULT_EXCEPTION);
     }
 
     @Test
     public void testGrantReadNoPrefixRequestReadNested() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_READ_NOPREFIX, REQUEST_READ_NESTED, RESULT_EXCEPTION);
     }
 
     @Test
     public void testGrantReadPrefixRequestReadNested() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_READ_PREFIX, REQUEST_READ_NESTED, RESULT_OK);
     }
 
     @Test
     public void testGrantPersistableRequestTakePersistable() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_READ_PERSISTABLE, REQUEST_TAKE_PERSISTABLE, RESULT_OK);
     }
 
     @Test
     public void testGrantReadRequestTakePersistable() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_READ, REQUEST_TAKE_PERSISTABLE, RESULT_EXCEPTION);
     }
 
     @Test
     public void testGrantWriteRequestNone() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_WRITE, REQUEST_NONE, RESULT_EXCEPTION);
     }
 
     @Test
     public void testGrantWriteRequestRead() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_WRITE, REQUEST_READ, RESULT_EXCEPTION);
     }
 
     @Test
     public void testGrantWriteRequestWrite() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_WRITE, REQUEST_WRITE, RESULT_OK);
     }
 
     @Test
     public void testOnReceiveContentListener_TextView_GrantRead() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_READ, TARGET_ON_RECEIVE_CONTENT_LISTENER_TEXT_VIEW, RESULT_OK);
     }
 
     @Test
     public void testOnReceiveContentListener_TextView_GrantNone() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_NONE, TARGET_ON_RECEIVE_CONTENT_LISTENER_TEXT_VIEW,
                 RESULT_EXCEPTION);
     }
 
     @Test
     public void testOnReceiveContentListener_EditText_GrantRead() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_READ, TARGET_ON_RECEIVE_CONTENT_LISTENER_EDIT_TEXT, RESULT_OK);
     }
 
     @Test
     public void testOnReceiveContentListener_EditText_GrantNone() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_NONE, TARGET_ON_RECEIVE_CONTENT_LISTENER_EDIT_TEXT,
                 RESULT_EXCEPTION);
     }
 
     @Test
     public void testOnReceiveContentListener_LinearLayout_GrantRead() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_READ, TARGET_ON_RECEIVE_CONTENT_LISTENER_LINEAR_LAYOUT, RESULT_OK);
     }
 
     @Test
     public void testOnReceiveContentListener_LinearLayout_GrantNone() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         assertDropResult(GRANT_NONE, TARGET_ON_RECEIVE_CONTENT_LISTENER_LINEAR_LAYOUT,
                 RESULT_EXCEPTION);
     }

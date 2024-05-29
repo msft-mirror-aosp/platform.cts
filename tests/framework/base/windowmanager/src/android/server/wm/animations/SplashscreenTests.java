@@ -97,7 +97,6 @@ import android.window.SplashScreen;
 import androidx.core.graphics.ColorUtils;
 
 import com.android.compatibility.common.util.TestUtils;
-import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -189,11 +188,6 @@ public class SplashscreenTests extends ActivityManagerTestBase {
 
     @Test
     public void testSplashscreenContent_FreeformWindow() {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
         // TODO(b/192431448): Allow Automotive to skip this test until Splash Screen is properly
         // applied insets by system bars in AAOS.
         assumeFalse(isCar());
@@ -458,11 +452,6 @@ public class SplashscreenTests extends ActivityManagerTestBase {
 
     @Test
     public void testSetBackgroundColorActivity_FreeformWindow() {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
         // TODO(b/192431448): Allow Automotive to skip this test until Splash Screen is properly
         // applied insets by system bars in AAOS.
         assumeFalse(isCar());

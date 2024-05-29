@@ -106,7 +106,7 @@ public class VirtualCameraCaptureTest {
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
-            GRANT_RUNTIME_PERMISSIONS);
+            GRANT_RUNTIME_PERMISSIONS).withVirtualCameraSupportCheck();
 
     @Mock
     private VirtualCameraCallback mVirtualCameraCallback;

@@ -343,7 +343,7 @@ public final class ForceStopTest {
                 ApplicationStartInfo.START_REASON_SERVICE, startReason);
 
         // Check bindService after stop-app
-        executeShellCommand("am stop-app " + APP_PACKAGE);
+        executeShellCommand("am stop-app --user " + mTargetContext.getUserId() + " " + APP_PACKAGE);
         startReason = getStartReasonFromAppPackageService();
         assertNotEquals("ForceStop reason should not be returned, should be -ve",
                 ApplicationStartInfo.START_REASON_SERVICE, startReason);

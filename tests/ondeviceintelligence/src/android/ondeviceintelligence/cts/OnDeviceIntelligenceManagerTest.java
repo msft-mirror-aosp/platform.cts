@@ -53,6 +53,7 @@ import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.PersistableBundle;
 import android.os.Process;
+import android.os.UserHandle;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -915,8 +916,7 @@ public class OnDeviceIntelligenceManagerTest {
     public void updateProcessingStateReturnsSuccessfully() throws Exception {
         // When targets run as a different user than 0, it is not possible to get service
         // instance from user 0 in this test.
-        assumeTrue(isSystemUser(
-                getInstrumentation().getContext()));
+        assumeTrue(isSystemUser());
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
@@ -985,6 +985,7 @@ public class OnDeviceIntelligenceManagerTest {
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
     public void broadcastsMustBeSentOnModelUpdates() throws Exception {
+        assumeTrue(isSystemUser());
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
@@ -1037,8 +1038,7 @@ public class OnDeviceIntelligenceManagerTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE,
                         Manifest.permission.WRITE_SECURE_SETTINGS);
-        assumeTrue(isSystemUser(
-                getInstrumentation().getContext()));
+        assumeTrue(isSystemUser());
         updateSecureSettings();
         // Feature Id to ensure no callbacks are invoked
         Feature feature = new Feature.Builder(3).build();
@@ -1080,8 +1080,7 @@ public class OnDeviceIntelligenceManagerTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE,
                         Manifest.permission.WRITE_SECURE_SETTINGS);
-        assumeTrue(isSystemUser(
-                getInstrumentation().getContext()));
+        assumeTrue(isSystemUser());
         updateSecureSettings();
         CtsIntelligenceService.initServiceConnectionLatch();
         CtsIntelligenceService.initUnbindLatch();
@@ -1182,9 +1181,8 @@ public class OnDeviceIntelligenceManagerTest {
                 intelligenceServiceComponentName);
     }
 
-    private static boolean isSystemUser(Context context) {
-        UserManager um = context.getSystemService(UserManager.class);
-        return um != null && um.isSystemUser();
+    private static boolean isSystemUser() {
+        return Process.myUserHandle().equals(UserHandle.SYSTEM);
     }
 
     public static void setTestableBroadcastKeys(String[] broadcastKeys, String packageName) {

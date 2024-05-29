@@ -29,11 +29,9 @@ import static android.virtualdevice.cts.camera.VirtualCameraUtils.getMaximumText
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeNoException;
 
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.camera.VirtualCamera;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.os.Parcel;
@@ -67,7 +65,8 @@ public class VirtualCameraConfigTest {
     private static final int CAMERA_LENS_FACING = LENS_FACING_FRONT;
 
     @Rule
-    public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
+    public VirtualDeviceRule mRule =
+            VirtualDeviceRule.createDefault().withVirtualCameraSupportCheck();
 
     @Mock
     private VirtualCameraCallback mCallback;
@@ -114,7 +113,6 @@ public class VirtualCameraConfigTest {
 
     @Test
     public void virtualCameraConfig_largestWidth_succeeds() throws Exception {
-        assumeVirtualCameraIsSupported();
         mVirtualDevice.createVirtualCamera(
             new VirtualCameraConfig.Builder(CAMERA_NAME)
                     .addStreamConfig(mMaximumTextureSize, CAMERA_HEIGHT, CAMERA_FORMAT,
@@ -126,7 +124,6 @@ public class VirtualCameraConfigTest {
 
     @Test
     public void virtualCameraConfig_tooLargeWidth_throwsException() throws Exception {
-        assumeVirtualCameraIsSupported();
         assertThrows(ServiceSpecificException.class,
                 () -> mVirtualDevice.createVirtualCamera(
                         new VirtualCameraConfig.Builder(CAMERA_NAME)
@@ -150,7 +147,6 @@ public class VirtualCameraConfigTest {
 
     @Test
     public void virtualCameraConfig_largestHeight_succeeds() throws Exception {
-        assumeVirtualCameraIsSupported();
         mVirtualDevice.createVirtualCamera(
                 new VirtualCameraConfig.Builder(CAMERA_NAME)
                         .addStreamConfig(CAMERA_WIDTH, mMaximumTextureSize, CAMERA_FORMAT,
@@ -162,7 +158,6 @@ public class VirtualCameraConfigTest {
 
     @Test
     public void virtualCameraConfig_tooLargeHeight_throwsException() throws Exception {
-        assumeVirtualCameraIsSupported();
         assertThrows(ServiceSpecificException.class,
                 () -> mVirtualDevice.createVirtualCamera(
                         new VirtualCameraConfig.Builder(CAMERA_NAME)
@@ -271,15 +266,5 @@ public class VirtualCameraConfigTest {
 
         assertVirtualCameraConfig(recreated, CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FORMAT,
                 CAMERA_MAX_FPS, CAMERA_SENSOR_ORIENTATION, CAMERA_LENS_FACING, CAMERA_NAME);
-    }
-
-    private void assumeVirtualCameraIsSupported() {
-        VirtualCameraConfig config = createVirtualCameraConfig(CAMERA_WIDTH, CAMERA_HEIGHT,
-                CAMERA_FORMAT, CAMERA_MAX_FPS, CAMERA_SENSOR_ORIENTATION, CAMERA_LENS_FACING,
-                CAMERA_NAME, mExecutor, mCallback);
-        try (VirtualCamera ignored = mVirtualDevice.createVirtualCamera(config)) {
-        } catch (Exception e) {
-            assumeNoException("Virtual camera is not available on this device", e);
-        }
     }
 }

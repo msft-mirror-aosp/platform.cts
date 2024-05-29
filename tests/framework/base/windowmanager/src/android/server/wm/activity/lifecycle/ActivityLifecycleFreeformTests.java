@@ -18,6 +18,7 @@ package android.server.wm.activity.lifecycle;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.content.pm.PackageManager.FEATURE_PC;
 import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.server.wm.ComponentNameUtils.getWindowName;
@@ -71,11 +72,11 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
 
     @Test
     public void testLaunchInFreeform() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+        // TODO(b/341891289): Remove check once activity lifecycle sequence is relaxed.
+        // Ignore test if desktop windowing is enabled on tablets as sequence of lifecycle events
+        // for activity has changed.
+        assumeFalse(Flags.enableDesktopWindowingMode()
+                && (isTablet() && !hasDeviceFeature(FEATURE_PC)));
 
         // Launch a fullscreen activity, mainly to prevent setting pending due to task switching.
         launchActivityInFullscreenAndWait(CallbackTrackingActivity.class);
@@ -98,11 +99,11 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
 
     @Test
     public void testMultiLaunchInFreeform() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+        // TODO(b/341891289): Remove check once activity lifecycle sequence is relaxed.
+        // Ignore test if desktop windowing is enabled on tablets as sequence of lifecycle events
+        // for activity has changed.
+        assumeFalse(Flags.enableDesktopWindowingMode()
+                && (isTablet() && !hasDeviceFeature(FEATURE_PC)));
 
         // Launch a fullscreen activity, mainly to prevent setting pending due to task switching.
         launchActivityInFullscreenAndWait(CallbackTrackingActivity.class);
@@ -142,11 +143,11 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
 
     @Test
     public void testLaunchOccludingInFreeform() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+        // TODO(b/341891289): Remove check once activity lifecycle sequence is relaxed.
+        // Ignore test if desktop windowing is enabled on tablets as sequence of lifecycle events
+        // for activity has changed.
+        assumeFalse(Flags.enableDesktopWindowingMode()
+                && (isTablet() && !hasDeviceFeature(FEATURE_PC)));
 
         // Launch a fullscreen activity, mainly to prevent setting pending due to task switching.
         launchActivityInFullscreenAndWait(CallbackTrackingActivity.class);
@@ -205,11 +206,11 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
 
     @Test
     public void testLaunchTranslucentInFreeform() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
+        // TODO(b/341891289): Remove check once activity lifecycle sequence is relaxed.
+        // Ignore test if desktop windowing is enabled on tablets as sequence of lifecycle events
+        // for activity has changed.
+        assumeFalse(Flags.enableDesktopWindowingMode()
+                && (isTablet() && !hasDeviceFeature(FEATURE_PC)));
 
         // Launch a fullscreen activity, mainly to prevent setting pending due to task switching.
         launchActivityInFullscreenAndWait(CallbackTrackingActivity.class);
@@ -274,12 +275,6 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
 
     @Test
     public void testPreQTopProcessResumedActivityInFreeform() throws Exception {
-        // TODO(b/330152508): Remove check once legacy freeform windows can coexist with desktop
-        // windowing mode
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         // Resume app switches, so the activities that we are going to launch won't be deferred
         // since Home activity was started in #setUp().
         resumeAppSwitches();

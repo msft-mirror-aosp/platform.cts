@@ -29,8 +29,6 @@ import android.graphics.ImageFormat
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.CheckFlagsRule
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.Surface
 import android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID
 import android.virtualdevice.cts.camera.VirtualCameraUtils.INFO_DEVICE_ID
@@ -91,10 +89,7 @@ class VirtualCameraCameraXTest {
     @get:Rule
     val virtualDeviceRule: VirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
         Manifest.permission.GRANT_RUNTIME_PERMISSIONS
-    )
-
-    @get:Rule
-    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    ).withVirtualCameraSupportCheck()
 
     @Before
     fun setUp() {

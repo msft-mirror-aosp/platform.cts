@@ -77,28 +77,6 @@ def _check_orientation_and_flip(props, uw_img, w_img, img_name_stem):
   return uw_img, w_img
 
 
-def _do_af_check(uw_img, w_img, log_path):
-  """Checks the AF behavior between the uw and w img.
-
-  Args:
-    uw_img: image captured using UW lens.
-    w_img: image captured using W lens.
-    log_path: path to save the image.
-  """
-  file_stem = f'{os.path.join(log_path, _NAME)}_slanted_edge'
-  sharpness_uw = _compute_slanted_edge_sharpness(uw_img, f'{file_stem}_uw.png')
-  logging.debug('Sharpness for UW patch: %.2f', sharpness_uw)
-
-  sharpness_w = _compute_slanted_edge_sharpness(w_img, f'{file_stem}_w.png')
-  logging.debug('Sharpness for W patch: %.2f', sharpness_w)
-
-  if not math.isclose(sharpness_w, sharpness_uw, abs_tol=_AF_ATOL):
-    raise AssertionError('Sharpness change is greater than the threshold value.'
-                         f' ATOL: {_AF_ATOL} '
-                         f'sharpness_w: {sharpness_w} '
-                         f'sharpness_uw: {sharpness_uw}')
-
-
 def _compute_slanted_edge_sharpness(input_img, file_name):
   """Computes sharpness of the slanted edge image.
 
@@ -118,55 +96,6 @@ def _compute_slanted_edge_sharpness(input_img, file_name):
   image_processing_utils.write_image(
       slanted_edge_patch/_CH_FULL_SCALE, file_name)
   return image_processing_utils.compute_image_sharpness(slanted_edge_patch)
-
-
-def _do_awb_check(uw_img, w_img):
-  """Checks the ratio of R/G and B/G for UW and W img.
-
-  Args:
-    uw_img: image captured using UW lens.
-    w_img: image captured using W lens.
-  """
-  uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img, 'UW')
-  w_r_g_ratio, w_b_g_ratio = _get_color_ratios(w_img, 'W')
-
-  if not math.isclose(uw_r_g_ratio, w_r_g_ratio,
-                      abs_tol=_AWB_ATOL):
-    raise AssertionError(f'R/G change is greater than the threshold value: '
-                         f'ATOL: {_AWB_ATOL} '
-                         f'uw_r_g_ratio: {uw_r_g_ratio:.4f} '
-                         f'w_r_g_ratio: {w_r_g_ratio:.4f}')
-  if not math.isclose(uw_b_g_ratio, w_b_g_ratio,
-                      abs_tol=_AWB_ATOL):
-    raise AssertionError(f'B/G change is greater than the threshold value: '
-                         f'ATOL: {_AWB_ATOL} '
-                         f'uw_b_g_ratio: {uw_b_g_ratio:.4f} '
-                         f'w_b_g_ratio: {w_b_g_ratio:.4f}')
-
-
-def _get_color_ratios(img, identifier):
-  """Computes the ratios of R/G and B/G for img.
-
-  Args:
-    img: RGB img in numpy format.
-    identifier: str; identifier for logging statement. ie. 'UW' or 'W'
-
-  Returns:
-    r_g_ratio: Ratio of R and G channel means.
-    b_g_ratio: Ratio of B and G channel means.
-  """
-  img_means = image_processing_utils.compute_image_means(img)
-  r = img_means[0]
-  g = img_means[1]
-  b = img_means[2]
-  logging.debug('%s R mean: %.4f', identifier, r)
-  logging.debug('%s G mean: %.4f', identifier, g)
-  logging.debug('%s B mean: %.4f', identifier, b)
-  r_g_ratio = r/g
-  b_g_ratio = b/g
-  logging.debug('%s R/G ratio: %.4f', identifier, r_g_ratio)
-  logging.debug('%s B/G ratio: %.4f', identifier, b_g_ratio)
-  return r_g_ratio, b_g_ratio
 
 
 def _do_ae_check(uw_img, w_img, log_path, suffix):
@@ -199,23 +128,50 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
                          f'uw_y_avg: {uw_y_avg:.4f} '
                          f'w_y_avg: {w_y_avg:.4f} ')
 
-
-def _extract_y(img_uint8, file_name):
-  """Converts an RGB uint8 image to YUV and returns Y.
-
-  The Y img is saved with file_name in the test dir.
+def _do_af_check(uw_img, w_img, log_path):
+  """Checks the AF behavior between the uw and w img.
 
   Args:
-    img_uint8: An openCV image in RGB order.
-    file_name: file name along with the path to save the image.
-
-  Returns:
-    An openCV image converted to Y.
+    uw_img: image captured using UW lens.
+    w_img: image captured using W lens.
+    log_path: path to save the image.
   """
-  y_uint8 = opencv_processing_utils.convert_to_y(img_uint8, 'RGB')
-  y_uint8 = np.expand_dims(y_uint8, axis=2)  # add plane to save image
-  image_processing_utils.write_image(y_uint8/_CH_FULL_SCALE, file_name)
-  return y_uint8
+  file_stem = f'{os.path.join(log_path, _NAME)}_slanted_edge'
+  sharpness_uw = _compute_slanted_edge_sharpness(uw_img, f'{file_stem}_uw.png')
+  logging.debug('Sharpness for UW patch: %.2f', sharpness_uw)
+
+  sharpness_w = _compute_slanted_edge_sharpness(w_img, f'{file_stem}_w.png')
+  logging.debug('Sharpness for W patch: %.2f', sharpness_w)
+
+  if not math.isclose(sharpness_w, sharpness_uw, abs_tol=_AF_ATOL):
+    raise AssertionError('Sharpness change is greater than the threshold value.'
+                         f' ATOL: {_AF_ATOL} '
+                         f'sharpness_w: {sharpness_w} '
+                         f'sharpness_uw: {sharpness_uw}')
+
+
+def _do_awb_check(uw_img, w_img):
+  """Checks the ratio of R/G and B/G for UW and W img.
+
+  Args:
+    uw_img: image captured using UW lens.
+    w_img: image captured using W lens.
+  """
+  uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img, 'UW')
+  w_r_g_ratio, w_b_g_ratio = _get_color_ratios(w_img, 'W')
+
+  if not math.isclose(uw_r_g_ratio, w_r_g_ratio,
+                      abs_tol=_AWB_ATOL):
+    raise AssertionError(f'R/G change is greater than the threshold value: '
+                         f'ATOL: {_AWB_ATOL} '
+                         f'uw_r_g_ratio: {uw_r_g_ratio:.4f} '
+                         f'w_r_g_ratio: {w_r_g_ratio:.4f}')
+  if not math.isclose(uw_b_g_ratio, w_b_g_ratio,
+                      abs_tol=_AWB_ATOL):
+    raise AssertionError(f'B/G change is greater than the threshold value: '
+                         f'ATOL: {_AWB_ATOL} '
+                         f'uw_b_g_ratio: {uw_b_g_ratio:.4f} '
+                         f'w_b_g_ratio: {w_b_g_ratio:.4f}')
 
 
 def _extract_main_patch(corners, ids, img_rgb, img_path, lens_suffix):
@@ -243,6 +199,24 @@ def _extract_main_patch(corners, ids, img_rgb, img_path, lens_suffix):
   return rectangle_patch
 
 
+def _extract_y(img_uint8, file_name):
+  """Converts an RGB uint8 image to YUV and returns Y.
+
+  The Y img is saved with file_name in the test dir.
+
+  Args:
+    img_uint8: An openCV image in RGB order.
+    file_name: file name along with the path to save the image.
+
+  Returns:
+    An openCV image converted to Y.
+  """
+  y_uint8 = opencv_processing_utils.convert_to_y(img_uint8, 'RGB')
+  y_uint8 = np.expand_dims(y_uint8, axis=2)  # add plane to save image
+  image_processing_utils.write_image(y_uint8/_CH_FULL_SCALE, file_name)
+  return y_uint8
+
+
 def _find_aruco_markers(img, img_path, lens_suffix):
   """Detect ArUco markers in the input image.
 
@@ -262,6 +236,31 @@ def _find_aruco_markers(img, img_path, lens_suffix):
     raise AssertionError(
         f'{_ARUCO_MARKERS_COUNT} ArUco markers should be detected.')
   return corners, ids
+
+
+def _get_color_ratios(img, identifier):
+  """Computes the ratios of R/G and B/G for img.
+
+  Args:
+    img: RGB img in numpy format.
+    identifier: str; identifier for logging statement. ie. 'UW' or 'W'
+
+  Returns:
+    r_g_ratio: Ratio of R and G channel means.
+    b_g_ratio: Ratio of B and G channel means.
+  """
+  img_means = image_processing_utils.compute_image_means(img)
+  r = img_means[0]
+  g = img_means[1]
+  b = img_means[2]
+  logging.debug('%s R mean: %.4f', identifier, r)
+  logging.debug('%s G mean: %.4f', identifier, g)
+  logging.debug('%s B mean: %.4f', identifier, b)
+  r_g_ratio = r/g
+  b_g_ratio = b/g
+  logging.debug('%s R/G ratio: %.4f', identifier, r_g_ratio)
+  logging.debug('%s B/G ratio: %.4f', identifier, b_g_ratio)
+  return r_g_ratio, b_g_ratio
 
 
 def _get_four_quadrant_patches(img, img_path, lens_suffix):

@@ -249,6 +249,12 @@ public class AutoPrivacySettingsTest {
         final Intent intent = new Intent(ACTION_SETTINGS);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         mContext.startActivityAsUser(intent, mContext.getUser());
+        // wait for settings UI to come into focus, test is auto specific
+        mDevice.wait(
+            Until.hasObject(
+                By.res("com.android.car.settings:id/car_settings_activity_wrapper")
+                .focused(true)),
+              10000L);
     }
 
     private void goHome() {

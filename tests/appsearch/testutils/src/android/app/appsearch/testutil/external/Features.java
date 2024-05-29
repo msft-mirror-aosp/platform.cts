@@ -118,11 +118,30 @@ public interface Features {
     String LIST_FILTER_HAS_PROPERTY_FUNCTION = FeatureConstants.LIST_FILTER_HAS_PROPERTY_FUNCTION;
 
     /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers the use of the
+     * "tokenize" function in query expressions.
+     *
+     * <p>For details on the "tokenize" function in the query language, see {@link
+     * AppSearchSession#search}.
+     */
+    String LIST_FILTER_TOKENIZE_FUNCTION = "LIST_FILTER_TOKENIZE_FUNCTION";
+
+    /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers whether or not the
      * AppSearch backend can store the descriptions returned by {@link
      * AppSearchSchema#getDescription} and {@link AppSearchSchema.PropertyConfig#getDescription}.
      */
     String SCHEMA_SET_DESCRIPTION = "SCHEMA_SET_DESCRIPTION";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * AppSearchSchema.EmbeddingPropertyConfig}.
+     *
+     * <p>For details on the embedding search expressions, see {@link AppSearchSession#search} for
+     * the query language and {@link SearchSpec.Builder#setRankingStrategy(String)} for the ranking
+     * language.
+     */
+    String SCHEMA_EMBEDDING_PROPERTY_CONFIG = "SCHEMA_EMBEDDING_PROPERTY_CONFIG";
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
@@ -204,6 +223,13 @@ public interface Features {
      * EnterpriseGlobalSearchSession}
      */
     String ENTERPRISE_GLOBAL_SEARCH_SESSION = "ENTERPRISE_GLOBAL_SEARCH_SESSION";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * SearchSpec.Builder#addInformationalRankingExpressions}.
+     */
+    String SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS =
+            "SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS";
 
     /**
      * Returns whether a feature is supported at run-time. Feature support depends on the feature in
