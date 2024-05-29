@@ -1029,6 +1029,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @AsbSecurityTest(cveBugId = {243378132})
     @Test
     public void testUninstallPackage_DisablesMultipleServices() throws Exception {
+        AccessibilityManager manager = mActivity.getSystemService(AccessibilityManager.class);
         final String apkPath =
                 "/data/local/tmp/cts/content/CtsAccessibilityMultipleServicesApp.apk";
         final String packageName = "foo.bar.multipleservices";
@@ -1044,15 +1045,21 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             // allow repeated --iterations of the test.
             com.google.common.truth.Truth.assertThat(
                     ShellUtils.runShellCommand("pm install " + apkPath)).startsWith("Success");
+            TestUtils.waitUntil(
+                    "Failed to install services from " + apkPath,
+                    (int) TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            manager.getInstalledAccessibilityServiceList().stream()
+                                            .filter(info -> info.getId().startsWith(packageName))
+                                            .count()
+                                    == 2);
 
             // Enable the two services and wait until AccessibilityManager reports them as enabled.
-            final String servicesToEnable = getEnabledServicesSetting() + componentNameSeparator
-                    + service1.flattenToShortString() + componentNameSeparator
-                    + service2.flattenToShortString();
+            final String servicesToEnable = service1.flattenToShortString()
+                    + componentNameSeparator + service2.flattenToShortString();
             ShellCommandBuilder.create(sInstrumentation)
                     .putSecureSetting(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
                             servicesToEnable)
-                    .putSecureSetting(Settings.Secure.ACCESSIBILITY_ENABLED, "1")
                     .run();
             TestUtils.waitUntil("Failed to enable 2 services from package " + packageName,
                     (int) TIMEOUT_SERVICE_ENABLE / 1000,
