@@ -7543,7 +7543,7 @@ You should be prompted to select credentials; choose the ones you just installed
         1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
         \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
-        \n4. Take a screenshot of CtsVerifier App, and verify there is no content in screenshot".
+        \n4. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
         \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
     </string>
     <string name="notif_hiding_shade_partial_test_instructions">
@@ -7575,7 +7575,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="notif_hiding_app_local_screen_recorder_test_instructions">
         1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
-        \n3. Take a screenshot of CtsVerifier App, and verify there is content in screenshot".
+        \n3. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" appears in the screenshot".
         \n4. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
     </string>
     <string name="notif_hiding_shade_disable_protections_test_instructions">
