@@ -30,6 +30,9 @@ import android.hardware.SensorPrivacyManager.Sensors.MICROPHONE
 import android.hardware.SensorPrivacyManager.Sources.OTHER
 import android.hardware.SensorPrivacyManager.TOGGLE_TYPE_HARDWARE
 import android.hardware.SensorPrivacyManager.TOGGLE_TYPE_SOFTWARE
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CameraMetadata
 import android.os.PowerManager
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.AsbSecurityTest
@@ -429,6 +432,9 @@ abstract class SensorPrivacyBaseTest(
     @AppModeFull(reason = "Uses secondary app, instant apps have no visibility")
     fun testOpGetsRecordedAfterStartedWithSensorPrivacyEnabled() {
         assumeSensorToggleSupport()
+        if (sensor == CAMERA) {
+            assumeTrue(supportsCameraMute())
+        }
         setSensor(true)
         // Retry camera connection because external cameras are disconnected
         // if sensor privacy is enabled (b/182204067)
@@ -612,6 +618,23 @@ abstract class SensorPrivacyBaseTest(
         return callWithShellPermissionIdentity {
             spm.areAnySensorPrivacyTogglesEnabled(sensor)
         }
+    }
+
+    private fun supportsCameraMute(): Boolean {
+        val cameraManager = context.getSystemService(CameraManager::class.java)!!
+        val cameraIdList = cameraManager.cameraIdList
+        assumeFalse(cameraIdList.isEmpty())
+
+        val cameraId = cameraManager.cameraIdList[0]
+        val availableTestPatternModes = cameraManager.getCameraCharacteristics(cameraId)
+                .get(CameraCharacteristics.SENSOR_AVAILABLE_TEST_PATTERN_MODES) ?: return false
+        for (mode in availableTestPatternModes) {
+            if ((mode == CameraMetadata.SENSOR_TEST_PATTERN_MODE_SOLID_COLOR) ||
+                    (mode == CameraMetadata.SENSOR_TEST_PATTERN_MODE_BLACK)) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun getOpForSensor(sensor: Int): String? {
