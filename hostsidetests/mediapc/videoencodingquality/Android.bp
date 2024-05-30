@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsVideoEncodingQualityHostTestCases",
+    team: "trendy_team_android_media_codec_framework",
     srcs: ["src/*.java"],
     static_libs: [
         "compatibility-host-util",

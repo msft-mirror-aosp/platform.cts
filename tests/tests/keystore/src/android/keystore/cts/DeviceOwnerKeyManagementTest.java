@@ -87,6 +87,7 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DeviceOwnerKeyManagementTest {
     private static final Context sContext = TestApis.context().instrumentedContext();
@@ -250,7 +251,10 @@ public class DeviceOwnerKeyManagementTest {
                                                             boolean useStrongbox)
             throws CertificateParsingException, IOException {
         ParsedAttestationRecord parsedAttestationRecord =
-                createParsedAttestationRecord(Arrays.asList((X509Certificate[]) certs));
+                createParsedAttestationRecord(
+                    Arrays.stream(certs)
+                    .map(certificate -> (X509Certificate) certificate)
+                    .collect(Collectors.toList()));
 
         com.google.android.attestation.AuthorizationList teeAttestation =
                 parsedAttestationRecord.teeEnforced;
@@ -413,7 +417,7 @@ public class DeviceOwnerKeyManagementTest {
             List<Certificate> attestation = generated.getAttestationRecord();
             validateAttestationRecord(attestation, attestationChallenge);
             validateSignatureChain(attestation, keyPair.getPublic());
-            return (Certificate[]) attestation.toArray();
+            return attestation.toArray(new Certificate[0]);
         } catch (UnsupportedOperationException ex) {
             assertWithMessage(
                     String.format(
