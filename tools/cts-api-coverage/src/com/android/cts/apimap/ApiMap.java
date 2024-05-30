@@ -137,12 +137,30 @@ public final class ApiMap {
         ExecutorService service = Executors.newFixedThreadPool(parallelism);
         List<Future<CallGraphManager>> tasks = new ArrayList<>();
 
+        XmlWriter xmlWriter = new XmlWriter();
         for (Path module : jars) {
             tasks.add(scanJarFile(
                     service, module, module.getFileName().toString(), apiCoverage));
+            // Clear tasks when there are too many in the blocking queue to avoid memory issue.
+            if (tasks.size() > parallelism * 5) {
+                executeTasks(tasks, xmlWriter);
+                tasks.clear();
+            }
         }
+        executeTasks(tasks, xmlWriter);
+        service.shutdown();
 
-        XmlWriter xmlWriter = new XmlWriter();
+        xmlWriter.generateApiMapData(apiCoverage);
+        FileOutputStream output = new FileOutputStream(outputFile);
+        if (format == FORMAT_XML) {
+            xmlWriter.dumpXml(output);
+        } else {
+            HtmlWriter.printHtmlReport(xmlWriter, output);
+        }
+    }
+
+    /** Executes given tasks. */
+    private static void executeTasks(List<Future<CallGraphManager>> tasks, XmlWriter xmlWriter) {
         for (Future<CallGraphManager> task : tasks) {
             try {
                 CallGraphManager callGraphManager = task.get();
@@ -153,15 +171,6 @@ public final class ApiMap {
                 Thread.currentThread().interrupt();
                 System.out.println("Thread was interrupted before the task completed.");
             }
-        }
-        service.shutdown();
-
-        xmlWriter.generateApiMapData(apiCoverage);
-        FileOutputStream output = new FileOutputStream(outputFile);
-        if (format == FORMAT_XML) {
-            xmlWriter.dumpXml(output);
-        } else {
-            HtmlWriter.printHtmlReport(xmlWriter, output);
         }
     }
 
