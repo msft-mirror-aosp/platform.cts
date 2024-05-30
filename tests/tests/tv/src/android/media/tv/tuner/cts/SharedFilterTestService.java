@@ -19,9 +19,8 @@ package android.media.tv.tuner.cts;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.media.tv.tuner.dvr.DvrPlayback;
 import android.media.tv.tuner.Tuner;
-import android.media.tv.tuner.cts.ISharedFilterTestServer;
+import android.media.tv.tuner.dvr.DvrPlayback;
 import android.media.tv.tuner.dvr.OnPlaybackStatusChangedListener;
 import android.media.tv.tuner.filter.Filter;
 import android.media.tv.tuner.filter.FilterCallback;
@@ -31,7 +30,6 @@ import android.media.tv.tuner.filter.SharedFilterCallback;
 import android.os.IBinder;
 import android.util.Log;
 
-import java.util.List;
 import java.util.concurrent.Executor;
 
 public class SharedFilterTestService extends Service {
