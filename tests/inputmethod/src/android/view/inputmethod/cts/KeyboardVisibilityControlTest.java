@@ -1401,6 +1401,10 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeInvisible(TIMEOUT);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
+            assumeFalse("onEvaluateFullscreenMode() should be false for portrait",
+                    expectCommand(
+                            stream, imeSession.callGetOnEvaluateFullscreenMode(), TIMEOUT)
+                            .getReturnBooleanValue());
 
             // Call ShowSoftInput() implicitly
             assertTrue("showSoftInput must success if the View has IME focus",
