@@ -961,6 +961,15 @@ public abstract class CodecTestBase {
                     selectCodecs(mediaType, null /* formats */, features, isEncoder, selectSwitch);
             ArrayList<String> listOfCodecs = new ArrayList<>();
 
+            // when mustTestAllCodecs, verify that we start with a non-empty list of
+            // codecs to test.  If there are no codecs, the system is broken. We will
+            // usually trim that list (e.g. as part of CTS/MCTS partitioning) to get the
+            // set of codecs that we will actually run in this mode.
+            //
+            if (mustTestAllCodecs && totalListOfCodecs.size() == 0) {
+                listOfCodecs.add(INVALID_CODEC + mediaType);
+            }
+
             for (String codec : totalListOfCodecs) {
                 // general mode exclusions
                 if (!TestUtils.isTestableCodecInCurrentMode(codec)) {
@@ -981,9 +990,14 @@ public abstract class CodecTestBase {
                 listOfCodecs.add(codec);
             }
 
-            if (mustTestAllCodecs && listOfCodecs.size() == 0 && codecPrefix == null) {
-                listOfCodecs.add(INVALID_CODEC + mediaType);
+            // we excluded eligible codecs all the way down to nothing.
+            // So we don't need to mess with adding to argsList.
+            // we trimmed the candidates down to an empty list; go look at the
+            // next mediatype
+            if (listOfCodecs.size() == 0) {
+                continue;
             }
+
             boolean miss = true;
             for (Object[] arg : exhaustiveArgsList) {
                 if (mediaType.equals(arg[0])) {
@@ -997,20 +1011,31 @@ public abstract class CodecTestBase {
                     miss = false;
                 }
             }
+
+            // when we're testing exhaustively... see if we are looking at a media type
+            // that has no test vectors.
+            // This means
+            // -- we're looking at an optional or new media type.
+            // -- our test suite is broken, we *should* have an asset for this type.
+            //
             if (miss && mustTestAllCodecs) {
                 if (!cddRequiredMediaTypesList.contains(mediaType)) {
                     Log.w(LOG_TAG, "no test vectors available for optional mediaType type "
                             + mediaType);
                     continue;
                 }
-                for (String codec : listOfCodecs) {
-                    Object[] argUpdate = new Object[argLength + 2];
-                    argUpdate[0] = codec;
-                    argUpdate[1] = mediaType;
-                    System.arraycopy(exhaustiveArgsList.get(0), 1, argUpdate, 2, argLength - 1);
-                    argUpdate[argLength + 1] = paramToString(argUpdate);
-                    argsList.add(argUpdate);
-                }
+
+                // create a fake codec name that indicates the
+                // brokenness of this particular test case
+                // (since it's painful to fail within the parameterization calculation)
+                //
+                Object[] argUpdate = new Object[argLength + 2];
+                argUpdate[0] = "No.Test.Assets.Exist.For." + mediaType;
+                argUpdate[1] = mediaType;
+                // skipping the initial 'mediatype' slot in the args list
+                System.arraycopy(exhaustiveArgsList.get(0), 1, argUpdate, 2, argLength - 1);
+                argUpdate[argLength + 1] = paramToString(argUpdate);
+                argsList.add(argUpdate);
             }
         }
         return argsList;
