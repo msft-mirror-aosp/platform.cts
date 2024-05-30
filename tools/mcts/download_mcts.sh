@@ -34,7 +34,7 @@
 #    ./download_mcts.sh  --abi arm64 --year 2024 --month 01
 
 # All the files will be downloaded to
-# /tmp/mcts_dynamic_download/android/xts/mcts/android_version/abi/
+# $HOME/xts/mcts_dynamic_download/android/xts/mcts/android_version/abi/
 
 set -e
 
