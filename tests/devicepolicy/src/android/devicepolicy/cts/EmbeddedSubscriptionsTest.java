@@ -38,6 +38,7 @@ import com.android.bedstead.nene.utils.BlockingPendingIntent;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -79,6 +80,7 @@ public final class EmbeddedSubscriptionsTest {
                 () -> sDeviceState.dpc().devicePolicyManager().getSubscriptionIds());
     }
 
+    @Ignore("Re-enable this after b/343259674 is fixed")
     @ApiTest(apis = "android.telephony.euicc.EuiccManager#downloadSubscription")
     @CanSetPolicyTest(policy = EmbeddedSubscription.class)
     @RequireFlagsEnabled(Flags.FLAG_ESIM_MANAGEMENT_ENABLED)
@@ -99,6 +101,7 @@ public final class EmbeddedSubscriptionsTest {
                 0)).isEqualTo(EuiccManager.ERROR_INVALID_ACTIVATION_CODE);
     }
 
+    @Ignore("Re-enable this after b/343259674 is fixed")
     @ApiTest(apis = "android.telephony.euicc.EuiccManager#downloadSubscription")
     @CanSetPolicyTest(policy = EmbeddedSubscriptionSwitchAfterDownload.class)
     @RequireFlagsEnabled(Flags.FLAG_ESIM_MANAGEMENT_ENABLED)
