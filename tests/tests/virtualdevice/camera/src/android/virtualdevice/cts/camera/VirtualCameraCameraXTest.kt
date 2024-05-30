@@ -35,7 +35,7 @@ import android.view.Surface
 import android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID
 import android.virtualdevice.cts.camera.VirtualCameraUtils.INFO_DEVICE_ID
 import android.virtualdevice.cts.camera.VirtualCameraUtils.assertImagesSimilar
-import android.virtualdevice.cts.camera.VirtualCameraUtils.loadGolden
+import android.virtualdevice.cts.camera.VirtualCameraUtils.loadBitmapFromRaw
 import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.camera2.Camera2Config
@@ -149,7 +149,7 @@ class VirtualCameraCameraXTest {
 
     @Test
     fun virtualDeviceContext_takePicture() {
-        val golden = loadGolden(R.raw.golden_camerax_virtual_camera)
+        val golden = loadBitmapFromRaw(R.raw.golden_camerax_virtual_camera)
 
         createVirtualCamera(
             lensFacing = CameraMetadata.LENS_FACING_BACK
