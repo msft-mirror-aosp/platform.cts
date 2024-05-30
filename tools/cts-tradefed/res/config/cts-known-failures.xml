@@ -87,6 +87,9 @@
     <!-- b/63916274 -->
     <option name="compatibility:exclude-filter" value="CtsTelecomTestCases android.telecom.cts.WiredHeadsetTest" />
 
+    <!-- b/340793169 -->
+    <option name="compatibility:exclude-filter" value="CtsTelecomTestCases android.telecom.cts.ExtendedInCallServiceTest#testSwitchCallEndpoint" />
+
     <!-- b/62302163 -->
     <option name="compatibility:exclude-filter" value="CtsSecurityBulletinHostTestCases android.security.cts.Poc17_04#testPocCVE_2017_0564" />
 
