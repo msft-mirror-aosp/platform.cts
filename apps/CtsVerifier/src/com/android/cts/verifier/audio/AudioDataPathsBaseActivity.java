@@ -327,7 +327,7 @@ public abstract class AudioDataPathsBaseActivity
 
             String buildErrorString(TestModule testModule) {
                 StringBuilder sb = new StringBuilder();
-                sb.append(" BAD MMAP MODE");
+                sb.append(" Didn't get MMAP");
                 sb.append(" - ");
                 if (mPlayerFailed) {
                     sb.append("Player");
@@ -395,8 +395,11 @@ public abstract class AudioDataPathsBaseActivity
         public static final int TESTSTATUS_BAD_START = -1;
         public static final int TESTSTATUS_BAD_ROUTING = -2;
         public static final int TESTSTATUS_BAD_ANALYSIS_CHANNEL = -3;
-        public static final int TESTSTATUS_BAD_MMAP = -4;
+        public static final int TESTSTATUS_CANT_SET_MMAP = -4;
         public static final int TESTSTATUS_BAD_SHARINGMODE = -5;
+        public static final int TESTSTATUS_MISMATCH_MMAP = -6;  // we didn't get the MMAP mode
+                                                                // we asked for
+        public static final int TESTSTATUS_BAD_BUILD = -7;
 
         void clearTestState(int api) {
             mTestStateCode[api] = TESTSTATUS_NOT_RUN;
@@ -566,12 +569,15 @@ public abstract class AudioDataPathsBaseActivity
                         return hasPassed(api) ? " PASS" : " FAIL";
                     }
                 case TESTSTATUS_BAD_START:
-                    return " BAD START";
+                    return " BAD START - Couldn't start streams";
+                case TESTSTATUS_BAD_BUILD:
+                    return " BAD BUILD - Couldn't open streams";
                 case TESTSTATUS_BAD_ROUTING:
                     return " BAD ROUTE";
                 case TESTSTATUS_BAD_ANALYSIS_CHANNEL:
                     return " BAD ANALYSIS CHANNEL";
-                case TESTSTATUS_BAD_MMAP: {
+                case TESTSTATUS_CANT_SET_MMAP:
+                case TESTSTATUS_MISMATCH_MMAP: {
                     BadMMAPTestState errorData = (BadMMAPTestState) mTestStateData[api];
                     return errorData.buildErrorString(this);
                 }
@@ -626,14 +632,20 @@ public abstract class AudioDataPathsBaseActivity
                 if (Globals.isMMapEnabled() != enableMMAP) {
                     Log.d(TAG, "  Invalid MMAP request - " + getDescription());
                     Globals.setMMapEnabled(Globals.isMMapSupported());
-                    return setTestState(api, TESTSTATUS_BAD_MMAP,
+                    return setTestState(api, TESTSTATUS_CANT_SET_MMAP,
                             new BadMMAPTestState(this, false, false));
                 }
                 try {
                     // Open the streams.
                     // Note AudioSources and AudioSinks get allocated at this point
-                    mDuplexAudioManager.buildStreams(mAudioApi, mAudioApi);
+                    int errorCode = mDuplexAudioManager.buildStreams(mAudioApi, mAudioApi);
+                    if (errorCode != StreamBase.OK) {
+                        Log.e(TAG, "  mDuplexAudioManager.buildStreams() failed error:"
+                                + errorCode);
+                        return setTestState(api, TESTSTATUS_BAD_BUILD, null);
+                    }
                 } finally {
+                    // handle the failure here...
                     Globals.setMMapEnabled(Globals.isMMapSupported());
                 }
 
@@ -650,17 +662,6 @@ public abstract class AudioDataPathsBaseActivity
 
                 mWaveView.setNumChannels(mInChannelCount);
 
-                if (mDuplexAudioManager.start() != StreamBase.OK) {
-                    Log.e(TAG, "  Couldn't start duplex streams - " + getDescription());
-                    return setTestState(api, TESTSTATUS_BAD_START, null);
-                }
-
-                // Validate routing
-                if (!mDuplexAudioManager.validateRouting()) {
-                    Log.w(TAG, "  Invalid Routing - " + getDescription());
-                    return setTestState(api, TESTSTATUS_BAD_ROUTING, null);
-                }
-
                 // Validate Sharing Mode
                 boolean playerSharingModeVerified =
                         mDuplexAudioManager.isSpecifiedPlayerSharingMode();
@@ -675,19 +676,39 @@ public abstract class AudioDataPathsBaseActivity
                 }
 
                 // Validate MMAP
+                boolean playerIsMMap = false;
+                boolean recorderIsMMap = false;
                 if (mTransferType != TRANSFER_LEGACY) {
                     // This is (should be) an MMAP stream
-                    boolean playerIsMMap = mDuplexAudioManager.isPlayerStreamMMap();
-                    boolean recorderIsMMap = mDuplexAudioManager.isRecorderStreamMMap();
+                    playerIsMMap = mDuplexAudioManager.isPlayerStreamMMap();
+                    recorderIsMMap = mDuplexAudioManager.isRecorderStreamMMap();
 
-                    if (!playerIsMMap || !recorderIsMMap) {
-                        Log.w(TAG, "  Couldn't set MMAP Mode - " + getDescription());
-                        return setTestState(api, TESTSTATUS_BAD_MMAP,
+                    if (!playerIsMMap && !recorderIsMMap) {
+                        Log.w(TAG, "  Neither stream is MMAP - " + getDescription());
+                        return setTestState(api, TESTSTATUS_MISMATCH_MMAP,
                                 new BadMMAPTestState(this, !playerIsMMap, !recorderIsMMap));
                     }
                 }
 
-                return setTestState(api, TESTSTATUS_RUN, null);
+                if (mDuplexAudioManager.start() != StreamBase.OK) {
+                    Log.e(TAG, "  Couldn't start duplex streams - " + getDescription());
+                    return setTestState(api, TESTSTATUS_BAD_START, null);
+                }
+
+                // Validate routing
+                if (!mDuplexAudioManager.validateRouting()) {
+                    Log.w(TAG, "  Invalid Routing - " + getDescription());
+                    return setTestState(api, TESTSTATUS_BAD_ROUTING, null);
+                }
+
+                BadMMAPTestState mmapState = null;
+                if (mTransferType != TRANSFER_LEGACY && (!playerIsMMap || !recorderIsMMap)) {
+                    // asked for MMAP, but at least one route is Legacy
+                    Log.w(TAG, "  Both streams aren't MMAP - " + getDescription());
+                    mmapState = new BadMMAPTestState(this, !playerIsMMap, !recorderIsMMap);
+                }
+
+                return setTestState(api, TESTSTATUS_RUN, mmapState);
             }
 
             return setTestState(api, TESTSTATUS_NOT_RUN, null);
@@ -709,26 +730,47 @@ public abstract class AudioDataPathsBaseActivity
                         .openBold()
                         .appendText(getTestStateString(api))
                         .closeBold();
-            } else {
-                boolean isErrorState = hasError(api);
-                if (isErrorState) {
-                    htmlFormatter.openTextColor("red");
-                }
 
-                if (isErrorState) {
+                TestStateData stateData = mTestStateData[api];
+                if (stateData != null) {
+                    htmlFormatter.appendBreak()
+                            .openTextColor("blue")
+                            .appendText(stateData.buildErrorString(this))
+                            .closeTextColor();
+                }
+            } else {
+                if (hasError(api)) {
                     htmlFormatter.appendBreak();
-                    htmlFormatter.appendText("Cancelled : ");
                     switch (mTestStateCode[api]) {
                         case TESTSTATUS_BAD_START:
-                            htmlFormatter.appendText("Couldn't Start Stream");
+                            htmlFormatter.openTextColor("red");
+                            htmlFormatter.appendText("Error : Couldn't Start Stream");
+                            htmlFormatter.closeTextColor();
+                            break;
+                        case TESTSTATUS_BAD_BUILD:
+                            htmlFormatter.openTextColor("red");
+                            htmlFormatter.appendText("Error : Couldn't Open Stream");
+                            htmlFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_BAD_ROUTING:
-                            htmlFormatter.appendText("Invalid Route");
+                            htmlFormatter.openTextColor("red");
+                            htmlFormatter.appendText("Error : Invalid Route");
+                            htmlFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_BAD_ANALYSIS_CHANNEL:
-                            htmlFormatter.appendText("Invalid Analysis Channel");
+                            htmlFormatter.openTextColor("red");
+                            htmlFormatter.appendText("Error : Invalid Analysis Channel");
+                            htmlFormatter.closeTextColor();
                             break;
-                        case TESTSTATUS_BAD_MMAP: {
+                        case TESTSTATUS_CANT_SET_MMAP:
+                            htmlFormatter.openTextColor("red");
+                            htmlFormatter.appendText("Error : Did not set MMAP mode - "
+                                    + transferTypeToSharingString(mTransferType));
+                            htmlFormatter.closeTextColor();
+                            break;
+                        case TESTSTATUS_MISMATCH_MMAP: {
+                            htmlFormatter.openTextColor("blue");
+                            htmlFormatter.appendText("Note : ");
                             BadMMAPTestState errorData = (BadMMAPTestState) mTestStateData[api];
                             String transferTypeString = transferTypeToSharingString(mTransferType);
                             if (errorData.mPlayerFailed) {
@@ -738,29 +780,34 @@ public abstract class AudioDataPathsBaseActivity
                                 htmlFormatter.appendText(formatOutputAttributes());
                             }
                             if (errorData.mRecorderFailed) {
+                                if (errorData.mPlayerFailed) {
+                                    htmlFormatter.appendBreak();
+                                }
                                 htmlFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
                                         + transferTypeString);
                                 htmlFormatter.appendBreak();
                                 htmlFormatter.appendText(formatInputAttributes());
                             }
+                            htmlFormatter.closeTextColor();
                         }
                             break;
                         case TESTSTATUS_BAD_SHARINGMODE:
+                            htmlFormatter.openTextColor("blue");
+                            htmlFormatter.appendText("Note : ");
                             BadSharingTestState errorData =
                                     (BadSharingTestState) mTestStateData[api];
                             String transferTypeString = transferTypeToSharingString(mTransferType);
                             if (errorData.mPlayerFailed) {
                                 htmlFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
                                         + transferTypeString);
-                                htmlFormatter.appendBreak();
-                                htmlFormatter.appendText(formatOutputAttributes());
                             }
                             if (errorData.mRecorderFailed) {
                                 htmlFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
                                         + transferTypeString);
-                                htmlFormatter.appendBreak();
-                                htmlFormatter.appendText(formatInputAttributes());
                             }
+                            htmlFormatter.appendBreak();
+                            htmlFormatter.appendText(formatOutputAttributes());
+                            htmlFormatter.closeTextColor();
                             break;
                     }
                     htmlFormatter.closeTextColor();
@@ -815,8 +862,11 @@ public abstract class AudioDataPathsBaseActivity
                 htmlFormatter.closeTextColor();
 
                 htmlFormatter.appendBreak();
-            } // results != null
-
+            } else {
+                // results == null
+                htmlFormatter.appendBreak();
+                htmlFormatter.appendText("No Results.");
+            }
             htmlFormatter.closeParagraph();
 
             return htmlFormatter;
@@ -1080,7 +1130,11 @@ public abstract class AudioDataPathsBaseActivity
         public int countValidTestModules() {
             int numValid = 0;
             for (TestModule testModule : mTestModules) {
-                if (testModule.mOutDeviceInfo != null && testModule.mInDeviceInfo != null) {
+                if (testModule.mOutDeviceInfo != null && testModule.mInDeviceInfo != null
+                        // ignore MMAP Failures
+                        && testModule.mTestStateCode[mApi] != TestModule.TESTSTATUS_MISMATCH_MMAP
+                        && testModule.mTestStateCode[mApi]
+                            != TestModule.TESTSTATUS_BAD_SHARINGMODE) {
                     numValid++;
                 }
             }
@@ -1148,7 +1202,14 @@ public abstract class AudioDataPathsBaseActivity
             int numFailed = 0;
             for (TestModule module : mTestModules) {
                 if (module.canRun() && (module.hasError(api) || !module.hasPassed(api))) {
-                    numFailed++;
+                    // Ignore MMAP "Inconsistencies"
+                    // (we didn't get an MMAP stream so we skipped the test)
+                    if (module.mTestStateCode[api]
+                                != TestModule.TESTSTATUS_MISMATCH_MMAP
+                            && module.mTestStateCode[api]
+                                != TestModule.TESTSTATUS_BAD_SHARINGMODE) {
+                        numFailed++;
+                    }
                 }
             }
             return numFailed;
