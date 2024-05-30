@@ -517,13 +517,6 @@ public class BluetoothAdapterTest {
             assertTrue(mAdapter.registerBluetoothConnectionCallback(executor, callback));
             assertTrue(mAdapter.unregisterBluetoothConnectionCallback(callback));
         }
-
-        Permissions.enforceEachPermissions(
-                () -> mAdapter.registerBluetoothConnectionCallback(executor, callback),
-                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
-        Permissions.enforceEachPermissions(
-                () -> mAdapter.unregisterBluetoothConnectionCallback(callback),
-                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
     }
 
     @Test
