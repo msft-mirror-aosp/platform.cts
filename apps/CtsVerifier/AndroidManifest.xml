@@ -4806,7 +4806,7 @@
 
         <activity android:name=".multidevice.MultiDeviceTestsActivity"
                 android:exported="true"
-                android:label="@string/multi_device_tests_title">
+                android:label="@string/nfc_tests_title">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
