@@ -50,15 +50,16 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.test.ActivityInstrumentationTestCase2;
-import android.tv.cts.R;
 import android.util.Log;
 import android.view.Surface;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.Ignore;
+import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
@@ -72,6 +73,7 @@ import java.util.concurrent.Executor;
 /**
  * Test for {@link android.media.tv.TvInputManager}.
  */
+@RunWith(AndroidJUnit4.class)
 public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewStubActivity> {
     private static final String TAG = "TvInputManagerTest";
 
