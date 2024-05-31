@@ -314,7 +314,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         toggleAllowFromSource();
 
-        clickUpdateButton();
+        clickUpdateButton(/* checkGPPDialog= */ false);
 
         assertInstallSuccessDialogAndClickDoneButton();
         assertTestPackageInstalled();
@@ -397,7 +397,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         waitForUiIdle();
 
-        clickUpdateButton();
+        clickUpdateButton(/* checkGPPDialog= */ false);
 
         assertInstallSuccessDialogAndClickDoneButton();
         assertTestPackageInstalled();
