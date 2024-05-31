@@ -1268,11 +1268,8 @@
     <string name="nfc_result_message">Written data:\n%1$s\n\nRead data:\n%2$s</string>
     <string name="nfc_ndef_content">Id: %1$s\nMime: %2$s\nPayload: %3$s</string>
 
-    <string name="nfc_hce">Host-based card emulation</string>
     <string name="nfc_hce_f">Host-based Felica card emulation</string>
-    <string name="nfc_hce_reader_tests">HCE reader tests</string>
     <string name="nfc_hce_f_reader_tests">HCE Felica reader tests</string>
-    <string name="nfc_hce_emulator_tests">HCE emulator tests</string>
     <string name="nfc_hce_f_emulator_tests">HCE Felica emulator tests</string>
     <string name="nfc_hce_f_emulator">HCE Felica emulator</string>
     <string name="nfc_hce_f_reader">HCE Felica reader</string>
@@ -1291,111 +1288,9 @@
         in the "HCE reader tests" section. The "reader test" acts as a NFC terminal/POS
         and makes sure the device-under-test implements card emulation correctly.
     </string>
-    <string name="nfc_hce_type_selection">By default HCE applications must run on type A. If your device is restricted to type B (for example, because of a type B only UICC), select "Type B" from the drop-down box above. Note that all tests must be completed in the same mode (either "Type A" or "Type B").</string>
-    <string name="nfc_hce_please_wait">Please wait</string>
-    <string name="nfc_hce_setting_up">Setting up card emulation services...</string>
 
-    <string name="nfc_hce_default_route_emulator">Default route (Emulator)</string>
-    <string name="nfc_hce_default_route_reader">Default route (Reader)</string>
-    <string name="nfc_hce_default_route_emulator_help">This test verifies that the default route for ISO-DEP (ISO14443-4) frames is the host CPU. It does this by selecting an AID that any Android HCE phone will respond to if the select command is routed to the host. Please verify that there is no rule in the routing table that points this AID to the host. This test may be passed if the "PASS" button on the reader side lights up after tapping the devices together.</string>
-
-    <string name="nfc_hce_protocol_params_emulator">Protocol parameters (Emulator)</string>
-    <string name="nfc_hce_protocol_params_reader">Protocol parameters (Reader)</string>
-    <string name="nfc_hce_protocol_params_emulator_help">This test verifies that the Nfc-A and ISO-DEP protocol parameters are being set correctly. The test may be passed when no FAIL entries show up in the results below. Note that the reader device may be different from the device under test - the DUT itself does not need to be able to act as the reader for this test. \n\n Note that for each test there are 3 possible outcomes:\n1) OK -> test has passed;\n2) FAIL -> test has failed and this must be fixed;\n3) FAIL EMVCO -> this protocol parameter is deviating from the requirements in the EMV Contactless Communication Protocol specification.\n\nWhile it is allowed to ship a HCE implementation with EMVCo failures, it may not perform optimal when EMVco based payment HCE apps are run on the device.</string>
-
-    <string name="nfc_hce_single_payment_emulator">Single payment (Emulator)</string>
-    <string name="nfc_hce_single_payment_reader">Single payment (Reader)</string>
-
-    <string name="nfc_hce_dual_payment_emulator">Two payment services (Emulator)</string>
-    <string name="nfc_hce_dual_payment_reader">Two payment services (Reader)</string>
-
-    <string name="nfc_hce_change_default_emulator">Change default payment service (Emulator)</string>
-    <string name="nfc_hce_change_default_reader">Change default payment service (Reader)</string>
-
-    <string name="nfc_hce_tap_reader_title">Tap reader</string>
-    <string name="nfc_hce_tap_reader_message">Select the corresponding reader test on the remote device, click OK on this dialog, and tap devices together. The pass button will be enabled if the test passes.</string>
-
-    <string name="nfc_hce_single_non_payment_emulator">Single non-payment (Emulator)</string>
-    <string name="nfc_hce_single_non_payment_reader">Single non-payment (Reader)</string>
-
-    <string name="nfc_hce_dual_non_payment_emulator">Two non-payment services (Emulator)</string>
-    <string name="nfc_hce_dual_non_payment_reader">Two non-payment services (Reader)</string>
-
-    <string name="nfc_hce_conflicting_non_payment_emulator">Two conflicting non-payment services (Emulator)</string>
-    <string name="nfc_hce_conflicting_non_payment_reader">Two conflicting non-payment services (Reader)</string>
-
-    <string name="nfc_hce_foreground_non_payment_emulator">Foreground override non-payment services (Emulator)</string>
-    <string name="nfc_hce_foreground_non_payment_reader">Foreground override non-payment services (Reader)</string>
-    <string name="nfc_hce_foreground_non_payment_help">This test enables two non-payment services with conflicting AIDs. It then uses Androids API to allow the foreground app to set a preference for a specific service. This should prevent a popup dialog from showing. If you see a popup dialog during this asking you to select an app, this test has failed.</string>
-
-    <string name="nfc_hce_foreground_payment_emulator">Foreground override payment services (Emulator)</string>
-    <string name="nfc_hce_foreground_payment_reader">Foreground override payment services (Reader)</string>
-    <string name="nfc_hce_foreground_payment_help">This test enables two payment services, and asks you to set one as the default service. It then uses Androids API to allow the foreground app to set a preference for the non-default service. This will cause the non-default payment service to be invoked.</string>
-    <string name="nfc_hce_change_favor_foreground">This test requires the \"Use default\" setting to be set to \"Except when another payment app is open\". Tap OK to go to Tap and Pay settings and make sure the \"Use default\" setting is set to \"Except when another payment app is open\".</string>
-    <string name="nfc_hce_offhost_service_emulator">Off-host service (Emulator)</string>
-    <string name="nfc_hce_offhost_service_reader">Off-host service (Reader)</string>
-    <string name="nfc_hce_offhost_emulator_help">This test enables a service that declares some AIDs to reside off-host. This test only needs to be passed if your device has a secure element (either embedded or UICC.). The responses from the secure element are not verified by the test - it is up to the tester to verify the responses are as expected.</string>
-
-    <string name="nfc_hce_on_and_offhost_service_emulator">On and off-host services (Emulator)</string>
-    <string name="nfc_hce_on_and_offhost_service_reader">On and off-host services (Reader)</string>
-    <string name="nfc_hce_on_and_offhost_emulator_help">This test enables a service that declares some AIDs to reside off-host, and another service that runs on host. It then first sends an APDU sequence that goes off-host, and subsequently some APDUs that should go to the on-host service. This test only needs to be passed if your device has a secure element (either embedded or UICC.). The pass button will be enabled if the on-host sequence is performed as expected. The responses from the secure element are not verified by the test - it is up to the tester to verify the responses are as expected. </string>
-
-    <string name="nfc_hce_tap_test_emulator">50 successful taps test (Emulator)</string>
-    <string name="nfc_hce_tap_test_reader">50 successful taps test (Reader)</string>
-    <string name="nfc_hce_tap_test_emulator_help">This test requires you to complete at least 50 HCE taps, to ensure stability of the HCE feature. The NFC service and controller should not crash or hang during any of the 50 taps.</string>
-    <string name="nfc_hce_throughput_emulator">HCE throughput test (Emulator)</string>
-    <string name="nfc_hce_throughput_reader">HCE throughput test (Reader)</string>
-    <string name="nfc_hce_throughput_emulator_help">This test verifies that your HCE implementation can reach a decent throughput. While Android does not have any requirements on HCE performance, many HCE applications such as transport and payment apps do. If the average APDU roundtrip time is more than 50ms, please take a look at your implementation to see where the delay is coming from.</string>
-    <string name="nfc_hce_change_preinstalled_wallet">The device has an installed payment application that is currently set as default. To complete the test, you will be asked whether you want to make another app the default app. Select yes.</string>
-    <string name="nfc_hce_change_default_wallet">The device has an installed Wallet application that is currently set as default. To complete the test, you will be asked whether you want to make another app the default Wallet app. Select yes. Then make sure to select CTSVerifier app. Then hit OK. </string>
-    <string name="nfc_hce_change_default_help">You will now be asked whether you want to make Payment Service #1 the default app. Select yes.</string>
-    <string name="nfc_hce_conflicting_non_payment_help">When tapping the first time, you will be shown a dialog that asks you to choose between TransportService #1 and TransportService #2. Select TransportService #2. Verify a dialog is shown that asks you to tap again to complete. Now tap again, and if communication with TransportService #2 is successfull the pass button will be enabled."</string>
-
-    <string name="nfc_hce_payment_dynamic_aids_emulator">Dynamic payment AIDs (Emulator)</string>
-    <string name="nfc_hce_payment_dynamic_aids_reader">Dynamic payment AIDs (Reader)</string>
-    <string name="nfc_hce_payment_dynamic_aids_help">This test tries to register dynamic AIDs for a payment service.</string>
-
-    <string name="nfc_hce_large_num_aids_emulator">Large number of AIDs (Emulator)</string>
-    <string name="nfc_hce_large_num_aids_reader">Large number of AIDs (Reader)</string>
-    <string name="nfc_hce_large_num_aids_help">This test tries to register a large number of different AIDs, to make sure there are no limitations on the maximum amount of HCE apps on the device. Note that this test may take a few seconds to complete; please be patient.</string>
-
-    <string name="nfc_hce_payment_prefix_aids_emulator">Payment prefix AIDs (Emulator)</string>
-    <string name="nfc_hce_payment_prefix_aids_reader">Payment prefix AIDs (Reader)</string>
-    <string name="nfc_hce_payment_prefix_aids_help">This test statically registers prefix AIDs for a payment service.</string>
-
-    <string name="nfc_hce_payment_prefix_aids_emulator_2">Payment prefix AIDs 2 (Emulator)</string>
-    <string name="nfc_hce_payment_prefix_aids_reader_2">Payment prefix AIDs 2 (Reader)</string>
-
-    <string name="nfc_hce_other_prefix_aids_emulator">Other prefix AIDs (Emulator)</string>
-    <string name="nfc_hce_other_prefix_aids_reader">Other prefix AIDs (Reader)</string>
-    <string name="nfc_hce_other_prefix_aids_help">This test dynamically registers prefix AIDs for a non-payment service.</string>
-
-    <string name="nfc_hce_other_conflicting_prefix_aids_emulator">Conflicting non-payment prefix AIDs (Emulator)</string>
-    <string name="nfc_hce_other_conflicting_prefix_aids_reader">Conflicting non-payment prefix AIDs (Reader)</string>
-    <string name="nfc_hce_other_conflicting_prefix_aids_help">This test registers conflicting prefix AIDs and makes sure AID conflict detection with prefix AIDs works properly. When tapping the first time, you will be shown a dialog that asks you to choose between TransportService #1 and TransportService #2. Select TransportService #2. Verify a dialog is shown that asks you to tap again to complete. Now tap again, and if communication with TransportService #2 is successfull the pass button will be enabled."</string>
-
-    <string name="nfc_screen_on_only_offhost_emulator">Screen on only Off-host Service (Emulator)</string>
-    <string name="nfc_screen_on_only_offhost_reader">Screen on only Off-host Service (Reader)</string>
-    <string name="nfc_screen_on_only_offhost_help">This test enables a service that declares some AIDs to reside off-host. This test only needs to be passed if your device has a secure element. The responses from the secure element are not verified by the test - it is up to the tester to verify the responses are as expected. The expected behavior is the AID can be selected only when the device is in screen on state.</string>
-
-    <string name="nfc_screen_off_hce_payment_emulator">Screen off HCE Payment (Emulator)</string>
-    <string name="nfc_screen_off_hce_payment_reader">Screen off HCE Payment (Reader)</string>
-    <string name="nfc_screen_off_hce_payment_help">This test verifies emulator responds when device is in screen off state. Please put the emulator to screen off state.</string>
-
-    <string name="nfc_payment_service_desc">NFC Payment service</string>
-    <string name="ppse">PPSE</string>
-    <string name="mastercard">MasterCard</string>
-    <string name="visa">Visa</string>
-    <string name="paymentService1">Payment Service #1</string>
-    <string name="paymentService2">Payment Service #2</string>
-    <string name="transportService1">TransportService #1</string>
-    <string name="transportService2">TransportService #2</string>
-    <string name="accessService">AccessService</string>
-    <string name="offhostService">OffhostService</string>
     <string name="felicaservice">Felica Service</string>
     <string name="UiccTransactionEventService">Uicc Transaction Event Service</string>
-    <string name="screenOffPaymentService">Screen Off Payment Service</string>
-    <string name="screenOnOnlyOffHostService">Screen On Only OffHost Service</string>
 
     <string name="nfc_offhost_uicc">Offhost UICC-based card emulation</string>
     <string name="nfc_offhost_uicc_emulator_tests">Offhost card emulation emulator tests</string>
