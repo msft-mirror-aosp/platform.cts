@@ -213,16 +213,8 @@ public abstract class ActivityTestBase {
          */
         public final Point surfaceOffset;
 
-        /**
-         * Position of capture area in screen space - use this offset for e.g.
-         * {@code getInstrumentation().getUiAutomation().takeScreenshot()},
-         * since those screenshots are captured in screen space.
-         */
-        public final Point screenOffset;
-
-        public TestPositionInfo(Point surfaceOffset, Point screenOffset) {
+        public TestPositionInfo(Point surfaceOffset) {
             this.surfaceOffset = surfaceOffset;
-            this.screenOffset = screenOffset;
         }
     }
 
