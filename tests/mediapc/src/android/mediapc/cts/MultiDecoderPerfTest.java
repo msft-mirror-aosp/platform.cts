@@ -137,7 +137,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
             "2.2.7.1/5.1/H-1-2",
             "2.2.7.1/5.1/H-1-9",})
     public void test4k() throws Exception {
-        Assume.assumeTrue(Utils.isUPerfClass() || !Utils.isPerfClass());
+        Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
 
         if (isSecureSupportedCodec(mDecoderName, mMime)) {
             testCodec(m2160pPc14WidevineTestFiles, 2160, 3840,
@@ -156,7 +156,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-9"})
     public void test4kHbd() throws Exception {
-        Assume.assumeTrue(Utils.isUPerfClass() || !Utils.isPerfClass());
+        Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
         Assume.assumeTrue("Skipping regular performance tests for non-secure codecs",
                 isSecureSupportedCodec(mDecoderName, mMime));
         testCodec(m2160pPc1410bitWidevineTestFiles, 2160, 3840,
