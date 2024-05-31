@@ -39,6 +39,7 @@ import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.media.cts.TestUtils;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PersistableBundle;
@@ -959,16 +960,27 @@ public abstract class CodecTestBase {
             ArrayList<String> totalListOfCodecs =
                     selectCodecs(mediaType, null /* formats */, features, isEncoder, selectSwitch);
             ArrayList<String> listOfCodecs = new ArrayList<>();
-            if (codecPrefix != null || codecFilter != null) {
-                for (String codec : totalListOfCodecs) {
-                    if ((codecPrefix != null && codec.startsWith(codecPrefix))
-                            || (codecFilter != null && codecFilter.matcher(codec).matches())) {
-                        listOfCodecs.add(codec);
-                    }
+
+            for (String codec : totalListOfCodecs) {
+                // general mode exclusions
+                if (!TestUtils.isTestableCodecInCurrentMode(codec)) {
+                    Log.v(LOG_TAG, "codec " + codec + " skipped in mode "
+                                    + TestUtils.currentTestModeName());
+                    continue;
                 }
-            } else {
-                listOfCodecs = totalListOfCodecs;
+                // and then prefix checking exclusions
+                if (codecPrefix != null && !codec.startsWith(codecPrefix)) {
+                    Log.v(LOG_TAG, "codec " + codec + " skipped, doesn't match prefix "
+                                    + codecPrefix);
+                    continue;
+                }
+                if (codecFilter != null && !codecFilter.matcher(codec).matches()) {
+                    Log.v(LOG_TAG, "codec " + codec + " skipped, doesn't match pattern");
+                    continue;
+                }
+                listOfCodecs.add(codec);
             }
+
             if (mustTestAllCodecs && listOfCodecs.size() == 0 && codecPrefix == null) {
                 listOfCodecs.add(INVALID_CODEC + mediaType);
             }
