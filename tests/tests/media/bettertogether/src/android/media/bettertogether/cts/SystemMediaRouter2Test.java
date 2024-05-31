@@ -66,6 +66,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.media.flags.Flags;
@@ -95,6 +96,7 @@ import java.util.function.Consumer;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "The system should be able to bind to StubMediaRoute2ProviderService")
 @LargeTest
+@FrameworkSpecificTest
 @NonMainlineTest
 public class SystemMediaRouter2Test {
     private static final String TAG = "SystemMR2Test";
