@@ -131,31 +131,6 @@ public class HceEmulatorTestActivity extends PassFailButtons.TestListActivity {
                             new Intent(this, ConflictingNonPaymentPrefixEmulatorActivity.class), null));
                 }
             }
-            if (nfcAdapter.isObserveModeSupported()) {
-                adapter.add(TestListItem.newTest(this, R.string.nfc_observe_mode_emulator,
-                        ObserveModeEmulatorActivity.class.getName(),
-                        new Intent(this, ObserveModeEmulatorActivity.class), null));
-                adapter.add(TestListItem.newTest(this, R.string.nfc_polling_loop_a_emulator,
-                        getString(R.string.nfc_polling_loop_a_emulator),
-                        PollingLoopEmulatorActivity.buildEmulatorIntent(this,
-                                NfcAdapter.FLAG_READER_NFC_A),
-                        null));
-                adapter.add(TestListItem.newTest(this, R.string.nfc_polling_loop_b_emulator,
-                        getString(R.string.nfc_polling_loop_b_emulator),
-                        PollingLoopEmulatorActivity.buildEmulatorIntent(this,
-                                NfcAdapter.FLAG_READER_NFC_B),
-                        null));
-                adapter.add(TestListItem.newTest(this, R.string.nfc_polling_loop_ab_emulator,
-                        getString(R.string.nfc_polling_loop_ab_emulator),
-                        PollingLoopEmulatorActivity.buildEmulatorIntent(this,
-                                NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_NFC_B),
-                        null));
-                adapter.add(TestListItem.newTest(this, R.string.nfc_polling_loop_custom_emulator,
-                        getString(R.string.nfc_polling_loop_custom_emulator),
-                        PollingLoopEmulatorActivity.buildEmulatorIntent(this,
-                                NfcAdapter.FLAG_READER_NFC_A, "48656c6c6f20776f726c64"),
-                        null));
-            }
 
             int firstSdk =
                     SystemProperties.getInt("ro.product.first_api_level", Build.VERSION_CODES.S);

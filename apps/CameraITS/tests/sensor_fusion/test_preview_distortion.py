@@ -13,9 +13,9 @@
 # limitations under the License.
 """Verify that frames from UW and W cameras are not distorted."""
 
+import collections
 import logging
 import os
-import copy
 import cv2
 import math
 import numpy as np
@@ -28,13 +28,13 @@ import camera_properties_utils
 import image_processing_utils
 import its_session_utils
 import preview_processing_utils
-import zoom_capture_utils
 
 _ACCURACY = 0.001
 _ARUCO_COUNT = 8
 _ARUCO_DIST_TOL = 0.15
 _ARUCO_SIZE = (3, 3)
 _ASPECT_RATIO_4_3 = 4/3
+_CH_FULL_SCALE = 255
 _CHESSBOARD_CORNERS = 24
 _CHKR_DIST_TOL = 0.05
 _CROSS_SIZE = 6
@@ -43,12 +43,13 @@ _FONT_SCALE = 0.3
 _FONT_THICKNESS = 1
 _GREEN_LIGHT = (80, 255, 80)
 _GREEN_DARK = (0, 190, 0)
-_MAX_ZOOM = 2.0  # UW and W camera covered by 2x zoom
 _MAX_ITER = 30
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_STEPS = 10
 _RED = (255, 0, 0)
 _WIDE_ZOOM = 1
+_ZOOM_STEP = 0.5
+_ZOOM_STEP_REDUCTION = 0.1
+_ZOOM_TOL = 0.1
 
 
 def get_chart_coverage(image, corners):
@@ -275,6 +276,8 @@ def aruco_distortion_error(image):
   logging.debug('corners: %s', corners)
   logging.debug('ids: %s', ids)
 
+  # Don't change print to logging. Used for KPI.
+  print(f'{_NAME}_aruco_ids: ', ids)
   if ids is None:
     logging.debug('ArUco markers are not found')
     return None, None
@@ -319,6 +322,91 @@ def aruco_distortion_error(image):
   return normalized_distortion_error_percentage, chart_coverage
 
 
+def get_preview_frame(dut, cam, preview_size, zoom, log_path):
+  """Captures preview frame at given zoom ratio.
+
+  Args:
+    dut: device under test
+    cam: camera object
+    preview_size: str; preview resolution. ex. '1920x1080'
+    zoom: zoom ratio
+    log_path: str; path for video file directory
+
+  Returns:
+    img_name: the filename of the first captured image
+    capture_result: total capture results of the preview frame
+  """
+  # Define zoom fields such that preview recording is at only one zoom level
+  z_min = zoom
+  z_max = z_min + _ZOOM_STEP - _ZOOM_STEP_REDUCTION
+
+  # Capture preview images over zoom range
+  # TODO: b/343200676 - use do_preview_recording instead of
+  #                     preview_over_zoom_range
+  capture_results, file_list = preview_processing_utils.preview_over_zoom_range(
+      dut, cam, preview_size, z_min, z_max, _ZOOM_STEP, log_path
+  )
+
+  # Get first captured image
+  img_name = file_list[0]
+  capture_result = capture_results[0]
+
+  return img_name, capture_result
+
+
+def add_update_to_filename(file_name, update_str='_update'):
+  """Adds the provided update string to the base name of a file.
+
+  Args:
+    file_name (str): The full path to the file to be modified.
+    update_str (str, optional): The string to insert before the extension
+
+  Returns:
+    file_name: The full path to the new file with the update string added.
+  """
+
+  directory, file_with_ext = os.path.split(file_name)
+  base_name, ext = os.path.splitext(file_with_ext)
+
+  new_file_name = os.path.join(directory, f'{base_name}_{update_str}{ext}')
+
+  return new_file_name
+
+
+def get_distortion_errors(img_name):
+  """Calculates the distortion error using checkerboard and ArUco markers.
+
+  Args:
+    img_name: image name including complete file path
+
+  Returns:
+    chkr_chart_coverage: normalized distortion error percentage for chessboard
+      corners. None if all corners based on pattern_size not found.
+    chkr_chart_coverage: percentage of the image covered by chessboard chart
+    arc_distortion_error: normalized distortion error percentage for ArUco
+      corners. None if all corners based on pattern_size not found.
+    arc_chart_coverage: percentage of the image covered by ArUco corners
+
+  """
+  image = cv2.imread(img_name)
+
+  pattern_size = (_CHESSBOARD_CORNERS, _CHESSBOARD_CORNERS)
+
+  chkr_distortion_error, chkr_chart_coverage = (
+      chessboard_distortion_error(pattern_size, image)
+  )
+
+  arc_distortion_error, arc_chart_coverage = (
+      aruco_distortion_error(image)
+  )
+
+  img_name_update = add_update_to_filename(img_name)
+  image_processing_utils.write_image(image / _CH_FULL_SCALE, img_name_update)
+
+  return (chkr_distortion_error, chkr_chart_coverage,
+          arc_distortion_error, arc_chart_coverage)
+
+
 class PreviewDistortionTest(its_base_test.ItsBaseTest):
   """Test that frames from UW and W cameras are not distorted.
 
@@ -351,95 +439,91 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f'You must use the arduino controller for {_NAME}.')
 
+      # Determine preview size
       preview_size = preview_processing_utils.get_max_preview_test_size(
           cam, self.camera_id, _ASPECT_RATIO_4_3)
       logging.debug('preview_size: %s', preview_size)
 
-      # Determine test zoom range and step size
+      # Determine test zoom range
       z_range = props['android.control.zoomRatioRange']
       logging.debug('z_range: %s', z_range)
 
-      # Distortion testing needed for UW and W camera. Reduce zoom range enough
-      # such that UW and W camera is covered.
-      reduced_z_range = copy.deepcopy(z_range)  # deepcopy to prevent updating
-                                                # camera properties
-      if reduced_z_range[1] > _MAX_ZOOM:
-        reduced_z_range[1] = _MAX_ZOOM
-      logging.debug('new_z_range = %s', reduced_z_range)
-
-      z_min, z_max, z_step_size = zoom_capture_utils.get_zoom_params(
-          reduced_z_range, _NUM_STEPS)
-      camera_properties_utils.skip_unless(z_max > z_min)
-
-      # recording preview
-      capture_results, file_list = (
-          preview_processing_utils.preview_over_zoom_range(
-              self.dut, cam, preview_size, z_min, z_max, z_step_size, log_path)
+      # Collect preview frames and associated capture results
+      PreviewFrameData = collections.namedtuple(
+          'PreviewFrameData', ['img_name', 'capture_result', 'z_level']
       )
+      preview_frames = []
+      z_levels = [z_range[0]]  # Min zoom
+      if z_range[0] < _WIDE_ZOOM:
+        z_levels.append(_WIDE_ZOOM)
 
-      pattern_size = (_CHESSBOARD_CORNERS, _CHESSBOARD_CORNERS)
-      processed_camera_ids = set()
-      failure_msg = None
-      for capture_result, img_name in zip(capture_results, file_list):
-        zoom = float(capture_result['android.control.zoomRatio'])
-        cam_id = capture_result['android.logicalMultiCamera.activePhysicalId']
+      for z in z_levels:
+        img_name, capture_result = get_preview_frame(
+            self.dut, cam, preview_size, z, log_path
+        )
+        if img_name:
+          frame_data = PreviewFrameData(img_name, capture_result, z)
+          preview_frames.append(frame_data)
+
+      # Determine distortion error and chart coverage for each frames
+      for frame in preview_frames:
+        img_full_name = f'{os.path.join(log_path, frame.img_name)}'
+        (chkr_distortion_error, chkr_chart_coverage, arc_distortion_error,
+         arc_chart_coverage) = get_distortion_errors(img_full_name)
+
+        zoom = float(frame.capture_result['android.control.zoomRatio'])
+        if camera_properties_utils.logical_multi_camera(props):
+          cam_id = frame.capture_result[
+              'android.logicalMultiCamera.activePhysicalId'
+          ]
+        else:
+          cam_id = None
         logging.debug('Zoom: %.2f, cam_id: %s, img_name: %s',
                       zoom, cam_id, img_name)
-        img_name = f'{os.path.join(log_path, img_name)}'
+        # Don't change print to logging. Used for KPI.
+        print(f'{_NAME}_zoom: ', zoom)
+        print(f'{_NAME}_camera_id: ', cam_id)
+        print(f'{_NAME}_chkr_distortion_error: ', chkr_distortion_error)
+        print(f'{_NAME}_chkr_chart_coverage: ', chkr_chart_coverage)
+        print(f'{_NAME}_aruco_distortion_error: ', arc_distortion_error)
+        print(f'{_NAME}_aruco_chart_coverage: ', arc_chart_coverage)
+        logging.debug(f'{_NAME}_zoom: %s', zoom)
+        logging.debug(f'{_NAME}_camera_id: %s', cam_id)
+        logging.debug(
+            f'{_NAME}_chkr_distortion_error: %s', chkr_distortion_error
+        )
+        logging.debug(f'{_NAME}_chkr_chart_coverage: %s', chkr_chart_coverage)
+        logging.debug(
+            f'{_NAME}_aruco_distortion_error: %s', arc_distortion_error
+        )
+        logging.debug(f'{_NAME}_aruco_chart_coverage: %s', arc_chart_coverage)
 
-        if cam_id in processed_camera_ids:
-          os.remove(img_name)
+        failure_msg = None
+
+        if arc_distortion_error is None:
+          if zoom < _WIDE_ZOOM:
+            failure_msg = (f'Unable to find all ArUco markers in {img_name}')
+            logging.debug(failure_msg)
         else:
-          image = cv2.imread(img_name)
-          chkr_distortion_error, chkr_chart_coverage = (
-              chessboard_distortion_error(pattern_size, image)
-          )
+          if arc_distortion_error > _ARUCO_DIST_TOL:
+            failure_msg = (f'Distortion error {chkr_distortion_error} '
+                           f'is greater than tolerance {_CHKR_DIST_TOL}')
+            logging.debug(failure_msg)
 
-          if chkr_distortion_error is None:
-            logging.debug('Unable to find checkerboard pattern in %s', img_name)
-          else:
-            if zoom < _WIDE_ZOOM:
-              arc_distortion_error, arc_chart_coverage = (
-                  aruco_distortion_error(image)
-              )
-              if arc_distortion_error is None:
-                logging.debug('Unable to find all ArUco markers in %s',
-                              img_name)
-              else:
-                processed_camera_ids.add(cam_id)
-                # Don't change print to logging. Used for KPI.
-                print(f'{_NAME}_zoom: ', zoom)
-                print(f'{_NAME}_camera_id: ', cam_id)
-                print(f'{_NAME}_distortion_error: ', chkr_distortion_error)
-                print(f'{_NAME}_chart_coverage: ', chkr_chart_coverage)
-                print(f'{_NAME}_aruco_distortion_error: ', arc_distortion_error)
-                print(f'{_NAME}_aruco_chart_coverage: ', arc_chart_coverage)
-                if arc_distortion_error > _ARUCO_DIST_TOL:
-                  failure_msg = (f'Distortion error {chkr_distortion_error} '
-                                 f'is greater than tolerance {_CHKR_DIST_TOL}')
-                  logging.debug(failure_msg)
-            else:
-              processed_camera_ids.add(cam_id)
-              # Don't change print to logging. Used for KPI.
-              print(f'{_NAME}_zoom: ', zoom)
-              print(f'{_NAME}_camera_id: ', cam_id)
-              print(f'{_NAME}_distortion_error: ', chkr_distortion_error)
-              print(f'{_NAME}_chart_coverage: ', chkr_chart_coverage)
+        if chkr_distortion_error is None:
+          # Checkerboard corners shall be detected at minimum zoom level
+          if math.isclose(zoom, z_levels[0], rel_tol=_ZOOM_TOL):
+            failure_msg = (f'Unable to find full checker board in {img_name}')
+            logging.debug(failure_msg)
+        else:
+          if chkr_distortion_error > _CHKR_DIST_TOL:
+            failure_msg = (f'Distortion error {chkr_distortion_error} '
+                           f'is greater than tolerance {_CHKR_DIST_TOL}')
+            logging.debug(failure_msg)
 
-            if chkr_distortion_error > _CHKR_DIST_TOL:
-              failure_msg = (f'Distortion error {chkr_distortion_error} '
-                             f'is greater than tolerance {_CHKR_DIST_TOL}')
-              logging.debug(failure_msg)
-
-          image_processing_utils.write_image(image / 255.0, img_name)
-
-      if not processed_camera_ids:
-        raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
-                             '\n\nUnable to find corners in the chessboard.')
-      if failure_msg is not None:
-        raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
-                             f'\n\n{failure_msg}')
-
+        if failure_msg is not None:
+          raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                               f'\n\n{failure_msg}')
 
 if __name__ == '__main__':
   test_runner.main()

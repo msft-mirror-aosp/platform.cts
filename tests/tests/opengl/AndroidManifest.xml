@@ -30,16 +30,20 @@
          android:hardwareAccelerated="false">
 
          <activity android:label="@string/app_name"
-              android:name="android.opengl.cts.OpenGLES20ActivityOne">
+              android:name="android.opengl.cts.OpenGLES20ActivityOne"
+              android:exported="true">
          </activity>
           <activity android:label="@string/app_name"
-               android:name="android.opengl.cts.OpenGLES20ActivityTwo">
+               android:name="android.opengl.cts.OpenGLES20ActivityTwo"
+               android:exported="true">
          </activity>
          <uses-library android:name="android.test.runner"/>
          <activity android:name="android.opengl.cts.OpenGLES20NativeActivityOne"
-              android:label="@string/app_name"/>
+              android:label="@string/app_name"
+              android:exported="true"/>
          <activity android:name="android.opengl.cts.OpenGLES20NativeActivityTwo"
-              android:label="@string/app_name"/>
+              android:label="@string/app_name"
+              android:exported="true"/>
 
          <activity android:name="android.opengl.cts.CompressedTextureCtsActivity"
               android:label="CompressedTextureCtsActivity"
@@ -54,14 +58,17 @@
 
         <activity android:name="android.opengl.cts.EglConfigCtsActivity"
              android:configChanges="keyboardHidden|orientation|screenSize|uiMode"
-             android:hardwareAccelerated="true"/>
+             android:hardwareAccelerated="true"
+             android:exported="true"/>
 
         <activity android:name="android.opengl.cts.GLSurfaceViewCtsActivity"
              android:label="GLSurfaceViewCts"
-             android:hardwareAccelerated="true"/>
+             android:hardwareAccelerated="true"
+             android:exported="true"/>
 
         <activity android:name="android.opengl.cts.OpenGlEsVersionCtsActivity"
-             android:hardwareAccelerated="true"/>
+             android:hardwareAccelerated="true"
+             android:exported="true"/>
 
     </application>
 

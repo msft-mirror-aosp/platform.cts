@@ -439,6 +439,38 @@ public class CardEmulationTest {
 
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+    public void testSetShouldDefaultToObserveModeShouldDefaultToObserveMode()
+            throws InterruptedException {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        adapter.notifyHceDeactivated();
+        Activity activity = createAndResumeActivity();
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        try {
+            ComponentName ctsService = new ComponentName(mContext, CtsMyHostApduService.class);
+            Assert.assertTrue(cardEmulation.setShouldDefaultToObserveModeForService(ctsService,
+                    false));
+
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, ctsService));
+            ensurePreferredService(CtsMyHostApduService.class);
+
+            Assert.assertFalse(adapter.isObserveModeEnabled());
+            Assert.assertTrue(cardEmulation.setShouldDefaultToObserveModeForService(ctsService,
+                    true));
+            // Observe mode is set asynchronously, so just wait a bit to let it happen.
+            try {
+                CommonTestUtils.waitUntil("Observe mode hasnn't been set", 1,
+                        () -> adapter.isObserveModeEnabled());
+            } catch (InterruptedException ie) { }
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+        } finally {
+            Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
+            activity.finish();
+            adapter.notifyHceDeactivated();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testTypeAOneLoopPollingLoopToForeground() {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();

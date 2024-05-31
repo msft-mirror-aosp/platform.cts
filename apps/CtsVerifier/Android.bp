@@ -89,6 +89,7 @@ android_library {
         "ctsmediautil",
         "DpmWrapper",
         "MediaPerformanceClassCommon",
+        "com_android_wm_shell_flags_lib",
     ],
 
     libs: [

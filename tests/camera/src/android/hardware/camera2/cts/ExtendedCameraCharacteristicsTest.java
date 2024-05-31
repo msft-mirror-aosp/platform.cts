@@ -28,8 +28,11 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -101,10 +104,6 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.internal.camera.flags.Flags;
 
 import com.google.common.util.concurrent.ListenableFuture;
-
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
-import static org.mockito.Mockito.*;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -3354,6 +3353,11 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 continue;
             }
 
+            Integer facing = c.get(CameraCharacteristics.LENS_FACING);
+            if (facing == CameraCharacteristics.LENS_FACING_EXTERNAL) {
+                // CDD "7.5.5/C-1-1" only applies to front and back cameras
+                continue;
+            }
             // Camera size adjusted for device native orientation.
             Size adjustedSensorSize;
             if (sensorOrientation == 90 || sensorOrientation == 270) {

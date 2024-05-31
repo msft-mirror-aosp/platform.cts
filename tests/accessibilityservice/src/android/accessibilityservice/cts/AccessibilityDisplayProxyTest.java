@@ -31,6 +31,7 @@ import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.getActi
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.supportsMultiDisplay;
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.dispatchGesture;
 import static android.accessibilityservice.cts.utils.MultiProcessUtils.ACCESSIBILITY_SERVICE_STATE;
@@ -1366,6 +1367,8 @@ public class AccessibilityDisplayProxyTest {
     @RequiresFlagsEnabled(Flags.FLAG_PROXY_USE_APPS_ON_VIRTUAL_DEVICE_LISTENER)
     public void testOnA11yServicesStateChanged_moveAppToVirtualDisplay_notifiesApp()
             throws TimeoutException, InterruptedException {
+        // TODO: b/336552993 - Investigate and re-enable this test on Android Auto.
+        assumeFalse(isAutomotive(sInstrumentation.getTargetContext()));
         try {
             mA11yProxy = new MyA11yProxy(mVirtualDisplayId, Executors.newSingleThreadExecutor(),
                     getTestAccessibilityServiceInfoAsList());

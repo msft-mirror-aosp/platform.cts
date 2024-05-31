@@ -15,7 +15,10 @@
  */
 package android.opengl.cts;
 
+import android.Manifest;
 import android.test.ActivityInstrumentationTestCase2;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 public class NativeColorBufferTest extends ActivityInstrumentationTestCase2<OpenGLES20NativeActivityTwo> {
     private static final long SLEEP_TIME = 500l;
@@ -33,7 +36,8 @@ public class NativeColorBufferTest extends ActivityInstrumentationTestCase2<Open
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mActivity = getActivity();
+        mActivity = SystemUtil.runWithShellPermissionIdentity(
+                () -> getActivity(), Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
     }
 
     public void test_RGBA_1001() throws Throwable {

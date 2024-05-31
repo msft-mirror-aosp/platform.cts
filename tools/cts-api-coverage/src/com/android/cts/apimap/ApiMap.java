@@ -34,14 +34,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -60,18 +59,23 @@ public final class ApiMap {
 
     private static final int FORMAT_HTML = 2;
 
-    private static final Set<String> IGNORE_PACKAGES = new HashSet<>();
+    private static final Set<String> IGNORE_PACKAGES = new HashSet<>(
+            List.of("androidx.", "javax", "kotlinx.")
+    );
 
     private static void printUsage() {
         System.out.println("Usage: api-map [OPTION]... [jar]...");
         System.out.println();
         System.out.println("Generates a report about what Android framework methods are called ");
-        System.out.println("from the given jars.");
+        System.out.println("from the given jars. Jars can be listed in a file in case there are ");
+        System.out.println("too many jars to be dealt with.");
         System.out.println();
         System.out.println("Options:");
         System.out.println("  -o FILE                output file");
         System.out.println("  -f [xml|html]          format of output");
         System.out.println("  -a PATH                path to the API XML file");
+        System.out.println("  -i PATH                path to the file containing a list of jars: "
+                + "Jars must be split by a whitespace, e.g. {jar1} {jar2}.");
         System.out.println("  -j PARALLELISM         number of tasks to run in parallel, defaults"
                 + " to number of cpus");
         System.out.println();
@@ -81,14 +85,12 @@ public final class ApiMap {
     /** Entry of the CTS-M automation tool. */
     public static void main(String[] args)
             throws IOException, TransformerException, ParserConfigurationException, SAXException {
-        List<Path> jars = new ArrayList<>();
+        Map<String, Path> jars = new HashMap<>();
         File outputFile = null;
         int format = FORMAT_XML;
         String apiXmlPath = "";
         int parallelism = Runtime.getRuntime().availableProcessors();
 
-        List<Path> notFoundJars = new ArrayList<>();
-        int numJars = 0;
         for (int i = 0; i < args.length; i++) {
             if (args[i].startsWith("-")) {
                 if ("-o".equals(args[i])) {
@@ -107,16 +109,17 @@ public final class ApiMap {
                 } else if ("-j".equals(args[i])) {
                     parallelism = Integer.parseInt(
                             Objects.requireNonNull(getExpectedArg(args, ++i)));
+                } else if ("-i".equals(args[i])) {
+                    for (Path jar : FileUtils.getJarFilesFromFile(getExpectedArg(args, ++i))) {
+                        jars.putIfAbsent(jar.getFileName().toString(), jar);
+                    }
                 } else {
                     printUsage();
                 }
             } else {
-                Path file = Paths.get(args[i]);
-                numJars++;
-                if (Files.exists(file)) {
-                    jars.add(file);
-                } else {
-                    notFoundJars.add(file);
+                Path jar = FileUtils.getJarFile(args[i]);
+                if (jar != null) {
+                    jars.putIfAbsent(jar.getFileName().toString(), jar);
                 }
             }
         }
@@ -126,23 +129,35 @@ public final class ApiMap {
             throw new IllegalArgumentException("missing output file");
         }
 
-        if (!notFoundJars.isEmpty()) {
-            String msg = String.format(Locale.US, "%d/%d jars not found: %s",
-                    notFoundJars.size(), numJars, notFoundJars);
-            throw new IllegalArgumentException(msg);
-        }
-
         ApiCoverage apiCoverage = getApiCoverage(apiXmlPath);
         apiCoverage.resolveSuperClasses();
         ExecutorService service = Executors.newFixedThreadPool(parallelism);
         List<Future<CallGraphManager>> tasks = new ArrayList<>();
 
-        for (Path module : jars) {
-            tasks.add(scanJarFile(
-                    service, module, module.getFileName().toString(), apiCoverage));
-        }
-
         XmlWriter xmlWriter = new XmlWriter();
+        for (Map.Entry<String, Path> jar : jars.entrySet()) {
+            tasks.add(scanJarFile(
+                    service, jar.getValue(), jar.getKey(), apiCoverage));
+            // Clear tasks when there are too many in the blocking queue to avoid memory issue.
+            if (tasks.size() > parallelism * 5) {
+                executeTasks(tasks, xmlWriter);
+                tasks.clear();
+            }
+        }
+        executeTasks(tasks, xmlWriter);
+        service.shutdown();
+
+        xmlWriter.generateApiMapData(apiCoverage);
+        FileOutputStream output = new FileOutputStream(outputFile);
+        if (format == FORMAT_XML) {
+            xmlWriter.dumpXml(output);
+        } else {
+            HtmlWriter.printHtmlReport(xmlWriter, output);
+        }
+    }
+
+    /** Executes given tasks. */
+    private static void executeTasks(List<Future<CallGraphManager>> tasks, XmlWriter xmlWriter) {
         for (Future<CallGraphManager> task : tasks) {
             try {
                 CallGraphManager callGraphManager = task.get();
@@ -153,15 +168,6 @@ public final class ApiMap {
                 Thread.currentThread().interrupt();
                 System.out.println("Thread was interrupted before the task completed.");
             }
-        }
-        service.shutdown();
-
-        xmlWriter.generateApiMapData(apiCoverage);
-        FileOutputStream output = new FileOutputStream(outputFile);
-        if (format == FORMAT_XML) {
-            xmlWriter.dumpXml(output);
-        } else {
-            HtmlWriter.printHtmlReport(xmlWriter, output);
         }
     }
 

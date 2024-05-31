@@ -23,11 +23,25 @@
 
         <include layout="@layout/audio_java_native_api_buttons" />
 
-        <Button
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/audio_datapaths_calibrate"
-            android:id="@+id/audio_datapaths_calibrate_button"/>
+            android:orientation="horizontal"
+            style="?android:attr/buttonBarStyle">
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="?android:attr/buttonBarButtonStyle"
+                android:text="@string/audio_datapaths_calibrate"
+                android:id="@+id/audio_datapaths_calibrate_button"/>
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="?android:attr/buttonBarButtonStyle"
+                android:text="@string/audio_datapaths_devices"
+                android:id="@+id/audio_datapaths_devices_button"/>
+        </LinearLayout>
 
         <!-- Player Controls -->
         <LinearLayout

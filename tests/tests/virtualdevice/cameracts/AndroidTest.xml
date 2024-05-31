@@ -18,6 +18,7 @@
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk34ModuleController" />
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.CommandSuccessModuleController" >
         <!-- Skip the test if we're not able to execute virtual_camera commands on device. -->
+        <option name="run-command" value="which virtual_camera" />
         <option name="run-command" value="cmd -w virtual_camera" />
         <!-- Skip the test if currently required EGL extension is not supported on device. -->
         <option name="run-command" value="dumpsys SurfaceFlinger | grep GL_EXT_YUV_target" />
@@ -54,10 +55,13 @@
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="throw-if-cmd-fail" value="true" />
+        <option name="run-command-timeout" value="5000"/>
         <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
         <option name="run-command" value="wm dismiss-keyguard" />
+        <option name="run-command" value="which virtual_camera" />
         <option name="run-command" value="cmd -w virtual_camera enable_test_camera --camera_id=637473" />
         <option name="teardown-command" value="cmd virtual_camera disable_test_camera" />
+        <option name="teardown-command-timeout" value="5000"/>
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

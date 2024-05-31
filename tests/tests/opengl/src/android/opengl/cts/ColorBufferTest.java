@@ -15,7 +15,10 @@
  */
 package android.opengl.cts;
 
+import android.Manifest;
 import android.test.ActivityInstrumentationTestCase2;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 public class ColorBufferTest extends ActivityInstrumentationTestCase2<OpenGLES20ActivityTwo> {
     private static final long SLEEP_TIME = 500l;
@@ -32,7 +35,8 @@ public class ColorBufferTest extends ActivityInstrumentationTestCase2<OpenGLES20
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mActivity = getActivity();
+        mActivity = SystemUtil.runWithShellPermissionIdentity(
+                () -> getActivity(), Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
     }
     /**
      *Test: Attach an two valid shaders to a program
