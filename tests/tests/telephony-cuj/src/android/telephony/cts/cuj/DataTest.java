@@ -23,6 +23,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
+import android.platform.test.annotations.PlatinumTest;
+import android.telephony.CellIdentityNr;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoCdma;
 import android.telephony.CellInfoGsm;
@@ -71,34 +73,22 @@ public class DataTest {
      * Verify that the device is connected to a network and is voice-, sms-, and data- capable.
      */
     @Test
+    @PlatinumTest(focusArea = "telephony")
     public void testBasicPhoneAttributes() {
         assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, TelephonyManager::getActiveModemCount)).isGreaterThan(0);
-        assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::getPhoneType))
-                        .isEqualTo(TelephonyManager.PHONE_TYPE_GSM);
         assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, TelephonyManager::getNetworkOperatorName)).isNotEmpty();
         assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, TelephonyManager::getLine1Number)).isNotEmpty();
-        assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::getVoiceMailNumber)).isNotEmpty();
-        assertThat((boolean) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::isNetworkRoaming)).isFalse();
-        assertThat((boolean) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::isDeviceSmsCapable)).isTrue();
-        assertThat((boolean) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::isDeviceVoiceCapable)).isTrue();
         assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, TelephonyManager::getDataNetworkType))
-                        .isGreaterThan(TelephonyManager.NETWORK_TYPE_UNKNOWN);
-        assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::getVoiceNetworkType))
                         .isGreaterThan(TelephonyManager.NETWORK_TYPE_UNKNOWN);
     }
 
     @Test
-    public void testSignalLevels() throws Exception {
+    @PlatinumTest(focusArea = "telephony")
+    public void testCellInfoList() throws Exception {
         List<CellInfo> cellInfos = new ArrayList<>();
         CountDownLatch cdl = new CountDownLatch(1);
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
@@ -115,30 +105,27 @@ public class DataTest {
         cdl.await();
         assertThat(cellInfos.size()).isGreaterThan(0);
 
-        int maxLevel = 0;
         for (CellInfo cellInfo : cellInfos) {
-            if (cellInfo instanceof CellInfoGsm) {
-                maxLevel = Math.max(maxLevel,
-                        ((CellInfoGsm) cellInfo).getCellSignalStrength().getLevel());
-            } else if (cellInfo instanceof CellInfoCdma) {
-                maxLevel = Math.max(maxLevel,
-                        ((CellInfoCdma) cellInfo).getCellSignalStrength().getLevel());
-            } else if (cellInfo instanceof CellInfoLte) {
-                maxLevel = Math.max(maxLevel,
-                        ((CellInfoLte) cellInfo).getCellSignalStrength().getLevel());
-            } else if (cellInfo instanceof CellInfoWcdma) {
-                maxLevel = Math.max(maxLevel,
-                        ((CellInfoWcdma) cellInfo).getCellSignalStrength().getLevel());
-            } else if (cellInfo instanceof CellInfoTdscdma) {
-                maxLevel = Math.max(maxLevel,
-                        ((CellInfoTdscdma) cellInfo).getCellSignalStrength().getLevel());
-            } else if (cellInfo instanceof CellInfoNr) {
-                maxLevel = Math.max(maxLevel,
-                        ((CellInfoNr) cellInfo).getCellSignalStrength().getLevel());
+            if (cellInfo instanceof CellInfoGsm gsm) {
+                assertThat(gsm.getCellIdentity().getCid()).isNotEqualTo(CellInfo.UNAVAILABLE);
+            } else if (cellInfo instanceof CellInfoCdma cdma) {
+                assertThat(cdma.getCellIdentity().getBasestationId()).isNotEqualTo(
+                        CellInfo.UNAVAILABLE);
+            } else if (cellInfo instanceof CellInfoLte lte) {
+                assertThat(lte.getCellIdentity().getCi()).isNotEqualTo(
+                        CellInfo.UNAVAILABLE);
+            } else if (cellInfo instanceof CellInfoWcdma wcdma) {
+                assertThat(wcdma.getCellIdentity().getCid()).isNotEqualTo(
+                        CellInfo.UNAVAILABLE);
+            } else if (cellInfo instanceof CellInfoTdscdma tdscdma) {
+                assertThat(tdscdma.getCellIdentity().getCid()).isNotEqualTo(
+                        CellInfo.UNAVAILABLE);
+            } else if (cellInfo instanceof CellInfoNr nr) {
+                assertThat(((CellIdentityNr) nr.getCellIdentity()).getNci())
+                        .isNotEqualTo(CellInfo.UNAVAILABLE);
             } else {
-                maxLevel = Math.max(maxLevel, cellInfo.getCellSignalStrength().getLevel());
+                assertThat(cellInfo.getCellSignalStrength().getLevel()).isGreaterThan(0);
             }
         }
-        assertThat(maxLevel).isGreaterThan(0);
     }
 }

@@ -2412,54 +2412,6 @@
                                       android.nfc.tech.NfcA#transceive" />
         </activity>
 
-        <activity android:name=".nfc.hce.ObserveModeReaderActivity"
-                android:label="@string/nfc_observe_mode_reader">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction"/>
-        </activity>
-
-        <activity android:name=".nfc.hce.ObserveModeEmulatorActivity"
-                android:label="@string/nfc_observe_mode_emulator">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction|
-                                      android.nfc.NfcAdapter#allowTransaction|
-                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_A|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
-        </activity>
-
-        <activity android:name=".nfc.hce.PollingLoopReaderActivity"
-                android:label="@string/nfc_polling_loop_a_reader">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction|
-                                      android.nfc.NfcAdapter#allowTransaction|
-                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_B|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
-        </activity>
-
-        <activity android:name=".nfc.hce.PollingLoopEmulatorActivity"
-                android:label="@string/nfc_polling_loop_a_emulator">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction|
-                                      android.nfc.NfcAdapter#allowTransaction|
-                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_A|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_B|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
-        </activity>
-
         <activity android:name=".nfc.hce.DualPaymentEmulatorActivity"
                 android:label="@string/nfc_hce_dual_payment_emulator"
                 android:configChanges="keyboardHidden|orientation|screenSize" >
@@ -2828,15 +2780,6 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/screen_off_payment_aid_list"/>
-        </service>
-        <service android:name=".nfc.hce.PollingLoopService" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/access_aid_list"/>
         </service>
 
         <service
@@ -3546,9 +3489,11 @@
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_notifications" />
+            <meta-data android:name="test_excluded_features"
+                       android:value="android.hardware.type.watch:android.software.leanback:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                 android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="9.8.2/C-3-1" />
+            <meta-data android:name="CddTest" android:value="9.8.2/C-0-6,C-3-1,C-3-2,C-3-3" />
         </activity>
         <service android:name=".notifications.NotificationHidingVerifierActivity$MediaProjectionService"
             android:exported="false"
@@ -3578,7 +3523,7 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_notifications" />
             <meta-data android:name="test_excluded_features"
-                android:value="android.hardware.type.automotive:android.hardware.type.television:android.hardware.type.watch" />
+                android:value="android.hardware.type.automotive:android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="CddTest" android:value="3.8.3.1/C-2-1" />
         </activity>

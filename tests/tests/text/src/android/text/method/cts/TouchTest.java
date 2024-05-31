@@ -41,7 +41,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
-import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -79,7 +78,6 @@ public class TouchTest {
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mActivity = mActivityRule.getActivity();
-        WindowUtil.waitForFocus(mActivity);
         mTextView = new TextViewNoIme(mActivity);
         mTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         mTextView.setEllipsize(null);

@@ -31,6 +31,7 @@ import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.hardware.camera2.params.SessionConfiguration.SESSION_REGULAR;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
+import static android.virtualdevice.cts.camera.VirtualCameraUtils.INFO_DEVICE_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.assertVirtualCameraConfig;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
 
@@ -58,7 +59,6 @@ import android.companion.virtual.camera.VirtualCameraConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraCaptureSession;
@@ -112,12 +112,10 @@ public class VirtualCameraTest {
     private static final int CAMERA_SENSOR_ORIENTATION = SENSOR_ORIENTATION_0;
     private static final int CAMERA_LENS_FACING = LENS_FACING_FRONT;
     private static final int IMAGE_READER_MAX_IMAGES = 2;
-    private static final CameraCharacteristics.Key<Integer> INFO_DEVICE_ID =
-            new CameraCharacteristics.Key<Integer>("android.info.deviceId", int.class);
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
-            GRANT_RUNTIME_PERMISSIONS);
+            GRANT_RUNTIME_PERMISSIONS).withVirtualCameraSupportCheck();
 
     @Mock
     private CameraManager.AvailabilityCallback mMockDefaultContextCameraAvailabilityCallback;
@@ -910,7 +908,7 @@ public class VirtualCameraTest {
                 List.of(outputConfiguration), mExecutor, mSessionStateCallback);
     }
 
-    private static ImageReader createImageReader(@ImageFormat.Format int pixelFormat) {
+    private static ImageReader createImageReader(int pixelFormat) {
         return ImageReader.newInstance(CAMERA_WIDTH, CAMERA_HEIGHT,
                 pixelFormat, IMAGE_READER_MAX_IMAGES);
     }

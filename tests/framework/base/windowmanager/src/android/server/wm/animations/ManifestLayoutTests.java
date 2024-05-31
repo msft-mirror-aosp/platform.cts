@@ -33,7 +33,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
@@ -45,8 +44,6 @@ import android.server.wm.WindowManagerState.WindowState;
 import android.util.DisplayMetrics;
 import android.view.DisplayCutout;
 import android.view.WindowMetrics;
-
-import com.android.window.flags.Flags;
 
 import org.junit.Test;
 
@@ -79,45 +76,21 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
 
     @Test
     public void testGravityAndDefaultSizeTopLeft() throws Exception {
-        // TODO(b/340172101): Remove check once desktopmode windows support activity layout
-        //  declaring gravity, minWidth/minHeight, and defaultWidth/defaultHeight.
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         testLayout(GRAVITY_VER_TOP, GRAVITY_HOR_LEFT, false /*fraction*/);
     }
 
     @Test
     public void testGravityAndDefaultSizeTopRight() throws Exception {
-        // TODO(b/340172101): Remove check once desktopmode windows support activity layout
-        //  declaring gravity, minWidth/minHeight, and defaultWidth/defaultHeight.
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         testLayout(GRAVITY_VER_TOP, GRAVITY_HOR_RIGHT, true /*fraction*/);
     }
 
     @Test
     public void testGravityAndDefaultSizeBottomLeft() throws Exception {
-        // TODO(b/340172101): Remove check once desktopmode windows support activity layout
-        //  declaring gravity, minWidth/minHeight, and defaultWidth/defaultHeight.
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         testLayout(GRAVITY_VER_BOTTOM, GRAVITY_HOR_LEFT, true /*fraction*/);
     }
 
     @Test
     public void testGravityAndDefaultSizeBottomRight() throws Exception {
-        // TODO(b/340172101): Remove check once desktopmode windows support activity layout
-        //  declaring gravity, minWidth/minHeight, and defaultWidth/defaultHeight.
-        // Ignore test if desktop windowing is enabled on tablets as legacy freeform window
-        // behaviour will not be respected
-        assumeFalse(Flags.enableDesktopWindowingMode() && isTablet());
-
         testLayout(GRAVITY_VER_BOTTOM, GRAVITY_HOR_RIGHT, false /*fraction*/);
     }
 
@@ -187,12 +160,6 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
                     : BOTTOM_RIGHT_LAYOUT_ACTIVITY;
         }
 
-        // Launch in freeform stack
-        launchActivity(activityName, WINDOWING_MODE_FREEFORM);
-
-        getDisplayAndWindowState(activityName, true);
-
-        final Rect parentFrame = mWindowState.getParentFrame();
         final WindowMetrics windowMetrics = mWm.getMaximumWindowMetrics();
         final Rect stableBounds = new Rect(windowMetrics.getBounds());
         stableBounds.inset(windowMetrics.getWindowInsets().getInsetsIgnoringVisibility(
@@ -209,6 +176,13 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
             expectedWidthPx = dpToPx(DEFAULT_WIDTH_DP, densityDpi);
             expectedHeightPx = dpToPx(DEFAULT_HEIGHT_DP, densityDpi);
         }
+
+        // Launch in freeform stack
+        launchActivity(activityName, WINDOWING_MODE_FREEFORM);
+
+        getDisplayAndWindowState(activityName, true);
+
+        final Rect parentFrame = mWindowState.getParentFrame();
 
         verifyFrameSizeAndPosition(vGravity, hGravity, expectedWidthPx, expectedHeightPx,
                 parentFrame, stableBounds);

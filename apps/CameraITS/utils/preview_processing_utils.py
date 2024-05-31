@@ -367,6 +367,7 @@ def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
 
   return preview_test_size
 
+
 def get_max_extension_preview_test_size(cam, camera_id, extension):
   """Finds the max preview size for an extension to be tested.
 
@@ -456,6 +457,8 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
     capture_results: total capture results of each frame
     file_list: file name for each frame
   """
+  logging.debug('z_min : %.2f, z_max = %.2f, z_step_size = %.2f',
+                z_min, z_max, z_step_size)
 
   # Converge 3A
   cam.do_3a()

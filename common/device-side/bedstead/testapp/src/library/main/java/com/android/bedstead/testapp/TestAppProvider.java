@@ -88,6 +88,17 @@ public final class TestAppProvider {
         mTestApps.addAll(mTestAppsSnapshot);
     }
 
+    /**
+     * Release resources.
+     * <br><br>
+     * Note: This method is intended for internal use and should <b>not</b> be called outside core
+     * Bedstead infrastructure.
+     */
+    public void releaseResources() {
+        mTestApps.clear();
+        mTestAppsSnapshot.clear();
+    }
+
     private void initTestApps() {
         if (mTestAppsInitialised) {
             return;

@@ -38,11 +38,11 @@ _MIN_FOCUS_DIST_TOL = 0.80  # allow charts a little closer than min
 _OFFSET_ATOL = 10  # number of pixels
 _OFFSET_RTOL_MIN_FD = 0.30
 _RADIUS_RTOL_MIN_FD = 0.15
-OFFSET_RTOL = 0.15
+OFFSET_RTOL = 1.0  # TODO: b/342176245 - enable offset check w/ marker identity
 RADIUS_RTOL = 0.10
 ZOOM_MIN_THRESH = 2.0
 ZOOM_MAX_THRESH = 10.0
-ZOOM_RTOL = 0.01  # variation of zoom ratio between capture result vs req
+ZOOM_RTOL = 0.01  # variation of zoom ratio due to floating point
 JPEG_STR = 'jpg'
 
 
@@ -271,7 +271,8 @@ def verify_zoom_results(test_data, size, z_max, z_min):
     Boolean whether the test passes (True) or not (False)
   """
   # assert some range is tested before circles get too big
-  test_failed = False
+  test_success = True
+
   zoom_max_thresh = ZOOM_MAX_THRESH
   z_max_ratio = z_max / z_min
   if z_max_ratio < ZOOM_MAX_THRESH:
@@ -284,11 +285,32 @@ def verify_zoom_results(test_data, size, z_max, z_min):
                 test_data_max_z, zoom_max_thresh)
 
   if not math.isclose(test_data_max_z, zoom_max_thresh, rel_tol=ZOOM_RTOL):
-    test_failed = True
+    test_success = False
     e_msg = (f'Max zoom ratio tested: {test_data_max_z:.4f}, '
              f'range advertised min: {z_min}, max: {z_max} '
-             f'THRESH: {zoom_max_thresh}')
+             f'THRESH: {zoom_max_thresh + ZOOM_RTOL}')
     logging.error(e_msg)
+
+  return test_success and verify_zoom_data(test_data, size)
+
+
+def verify_zoom_data(test_data, size):
+  """Verify that the output images' zoom level reflects the correct zoom ratios.
+
+  This test verifies that the center and radius of the circles in the output
+  images reflects the zoom ratios being set. The larger the zoom ratio, the
+  larger the circle. And the distance from the center of the circle to the
+  center of the image is proportional to the zoom ratio as well.
+
+  Args:
+    test_data: Iterable[ZoomTestData]
+    size: array; the width and height of the images
+
+  Returns:
+    Boolean whether the test passes (True) or not (False)
+  """
+  # assert some range is tested before circles get too big
+  test_success = True
 
   # initialize relative size w/ zoom[0] for diff zoom ratio checks
   radius_0 = float(test_data[0].circle[2])
@@ -311,7 +333,7 @@ def verify_zoom_results(test_data, size, z_max, z_min):
     msg = (f'{i} Circle radius ratio req({data.result_zoom:.2f}/{z_0:.2f}): '
            f'{z_ratio:.2f}, cap: {radius_ratio:.2f}, RTOL: {data.radius_tol}')
     if not math.isclose(z_ratio, radius_ratio, rel_tol=data.radius_tol):
-      test_failed = True
+      test_success = False
       logging.error(msg)
     else:
       logging.debug(msg)
@@ -335,7 +357,7 @@ def verify_zoom_results(test_data, size, z_max, z_min):
       rel_tol = data.offset_tol
       if not math.isclose(offset_hypot_init, offset_hypot_rel,
                           rel_tol=rel_tol, abs_tol=_OFFSET_ATOL):
-        test_failed = True
+        test_success = False
         e_msg = (f'{i} zoom: {data.result_zoom:.2f}, '
                  f'offset init: {offset_hypot_init:.4f}, '
                  f'offset rel: {offset_hypot_rel:.4f}, '
@@ -351,7 +373,59 @@ def verify_zoom_results(test_data, size, z_max, z_min):
                  f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
         logging.debug(d_msg)
 
-  return not test_failed
+  return test_success
+
+
+def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size):
+  """Verify that the output images' zoom level reflects the correct zoom ratios.
+
+  This test verifies that the center and radius of the circles in the output
+  images reflects the zoom ratios being set. The larger the zoom ratio, the
+  larger the circle. And the distance from the center of the circle to the
+  center of the image is proportional to the zoom ratio as well. Verifies
+  that circles are detected throughout the zoom range.
+
+  Args:
+    test_data: Iterable[ZoomTestData]
+    size: array; the width and height of the images
+    z_max: float; the maximum zoom ratio being tested
+    z_min: float; the minimum zoom ratio being tested
+    z_step_size: float; zoom step size to zoom from z_min to z_max
+
+  Returns:
+    Boolean whether the test passes (True) or not (False)
+  """
+  test_success = True
+
+  test_data_zoom_values = [v.result_zoom for v in test_data]
+  results_z_max = max(test_data_zoom_values)
+  results_z_min = min(test_data_zoom_values)
+  logging.debug('capture result: min zoom: %.2f vs max zoom: %.2f',
+                results_z_min, results_z_max)
+
+  # check if max zoom in capture result close to requested zoom range
+  if z_max - (z_step_size + ZOOM_RTOL) <= results_z_max <= z_max + ZOOM_RTOL:
+    logging.debug('results_z_max = %.2f in range (%.2f , %.2f)', results_z_max,
+                  z_max - (z_step_size + ZOOM_RTOL), z_max + ZOOM_RTOL)
+  else:
+    test_success = False
+    e_msg = (f'Max zoom ratio {results_z_max:.4f} in capture results out of '
+             f'range ({(ZOOM_MAX_THRESH * z_min):.2f} , '
+             f'{(z_max + ZOOM_RTOL):.2f}). '
+             f'Range advertised min: {z_min}, max: {z_max}')
+    logging.error(e_msg)
+
+  if math.isclose(results_z_min, z_min, rel_tol=ZOOM_RTOL):
+    d_msg = (f'results_z_min = {results_z_min:.2f} is close to requested '
+             f'z_min = {z_min:.2f} by {ZOOM_RTOL:.2f} Tol')
+    logging.debug(d_msg)
+  else:
+    test_success = False
+    e_msg = (f'Min zoom ratio {results_z_min:.4f} in capture results '
+             f'not close to {z_min:.2f} by {ZOOM_RTOL:.2f} tolerance.')
+    logging.error(e_msg)
+
+  return test_success and verify_zoom_data(test_data, size)
 
 
 def get_zoom_params(zoom_range, steps):

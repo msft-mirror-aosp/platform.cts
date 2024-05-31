@@ -639,7 +639,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mOnHandoverFailedCounter = new TestUtils.InvokeCounter("mOnHandoverFailedCounter");
         mOnPhoneAccountChangedCounter = new TestUtils.InvokeCounter(
                 "mOnPhoneAccountChangedCounter");
-        mOnCallEndpointChangedCounter = new TestUtils.InvokeCounter("OnCallEndpointChanged");
+        mOnCallEndpointChangedCounter = new TestUtils.InvokeCounter("IcsOnCallEndpointChanged");
         mOnAvailableEndpointsChangedCounter = new TestUtils.InvokeCounter(
                 "OnAvailableEndpointsChanged");
         mOnMuteStateChangedCounter = new TestUtils.InvokeCounter("OnMuteStateChanged");

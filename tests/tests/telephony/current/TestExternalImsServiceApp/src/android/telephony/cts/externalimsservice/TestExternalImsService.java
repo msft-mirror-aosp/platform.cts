@@ -73,6 +73,10 @@ public class TestExternalImsService extends TestImsService {
         public void onRegistered(int registrationTech) {
             getImsRegistration().onRegistered(registrationTech);
         }
+
+        public void addCapabilities(long capabilities) {
+            TestExternalImsService.this.addCapabilities(capabilities);
+        }
     }
 
     @Override

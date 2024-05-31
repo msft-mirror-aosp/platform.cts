@@ -57,7 +57,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -107,7 +106,7 @@ public class VirtualCameraCaptureTest {
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
-            GRANT_RUNTIME_PERMISSIONS);
+            GRANT_RUNTIME_PERMISSIONS).withVirtualCameraSupportCheck();
 
     @Mock
     private VirtualCameraCallback mVirtualCameraCallback;
@@ -257,13 +256,12 @@ public class VirtualCameraCaptureTest {
         return null;
     }
 
-    private static ImageReader createImageReader(@ImageFormat.Format int pixelFormat) {
+    private static ImageReader createImageReader(int pixelFormat) {
         return ImageReader.newInstance(CAMERA_WIDTH, CAMERA_HEIGHT,
                 pixelFormat, IMAGE_READER_MAX_IMAGES);
     }
 
-    private static ImageReader createImageReader(
-            @ImageFormat.Format int pixelFormat, int width, int height) {
+    private static ImageReader createImageReader(int pixelFormat, int width, int height) {
         return ImageReader.newInstance(width, height,
                 pixelFormat, IMAGE_READER_MAX_IMAGES);
     }
