@@ -149,12 +149,8 @@ class DrawActivity : Activity() {
             val location = IntArray(2)
             mTestContainer.getLocationInWindow(location)
             val surfaceOffset = Point(location[0], location[1])
-            mTestContainer.getLocationOnScreen(location)
-            val screenOffset = Point(location[0], location[1])
             synchronized(mLock) {
-                mPositionInfo = ActivityTestBase.TestPositionInfo(
-                    surfaceOffset, screenOffset
-                )
+                mPositionInfo = ActivityTestBase.TestPositionInfo(surfaceOffset)
                 mLock.notify()
             }
         }
