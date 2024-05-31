@@ -16,6 +16,7 @@
 package android.telecom.cts;
 
 import android.app.Instrumentation;
+import android.app.role.RoleManager;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.ContentProviderOperation;
@@ -442,6 +443,15 @@ public class TestUtils {
         final PackageManager pm = context.getPackageManager();
         return (pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) && pm.hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_CALLING));
+    }
+
+    /**
+     * @param context the context
+     * @return {@code true} if the device supports a dialer on it, {@code false} otherwise.
+     */
+    public static boolean hasDialerRole(Context context) {
+        final RoleManager rm = context.getSystemService(RoleManager.class);
+        return (rm.isRoleAvailable(RoleManager.ROLE_DIALER));
     }
 
     public static String setCallDiagnosticService(Instrumentation instrumentation,
