@@ -38,7 +38,7 @@ import org.junit.AssumptionViolatedException
  * contains state and logic for managing users in context of DeviceState
  * this class shouldn't be used by tests directly
  */
-class DeviceStateUsers(private val deviceState: DeviceState) : DeviceStateComponent {
+class UsersComponent(private val deviceState: DeviceState) : DeviceStateComponent {
 
     private val context = context().instrumentedContext()
     private val createdUsers: MutableList<UserReference> = mutableListOf()
@@ -528,8 +528,8 @@ private class RemovedUser(
 )
 
 /**
- * See [DeviceStateUsers.user]
+ * See [UsersComponent.user]
  */
 fun DeviceState.user(userType: String): UserReference {
-    return getDependency(DeviceStateUsers::class.java).user(userType)
+    return getDependency(UsersComponent::class.java).user(userType)
 }
