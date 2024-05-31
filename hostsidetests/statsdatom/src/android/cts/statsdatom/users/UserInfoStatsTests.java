@@ -39,6 +39,7 @@ public class UserInfoStatsTests extends DeviceTestCase implements IBuildReceiver
     public static final int ATOM_ID = 10152;
     protected IBuildInfo mCtsBuild;
     protected List<Integer> mUsersToRemove = new ArrayList();
+    private int mInitialUser = 0;
 
     @Override
     protected void setUp() throws Exception {
@@ -47,11 +48,12 @@ public class UserInfoStatsTests extends DeviceTestCase implements IBuildReceiver
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         RunUtil.getDefault().sleep(WAIT_TIME_LONG);
+        mInitialUser = getDevice().getCurrentUser();
     }
 
     @Override
     protected void tearDown() throws Exception {
-        getDevice().switchUser(0);
+        getDevice().switchUser(mInitialUser);
         for (Integer userId : mUsersToRemove) {
             getDevice().removeUser(userId);
         }
