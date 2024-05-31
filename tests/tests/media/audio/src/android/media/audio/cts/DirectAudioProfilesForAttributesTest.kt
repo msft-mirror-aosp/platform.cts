@@ -110,7 +110,9 @@ class DirectAudioProfilesForAttributesTest {
 
     // Utils
     private fun AudioProfile.getAllAudioFormats() =
-        sampleRates.map { sampleRate ->
+        sampleRates.filter {
+            it <= AudioFormat.SAMPLE_RATE_HZ_MAX
+        }.map { sampleRate ->
             channelMasks.map { channelMask ->
                 AudioFormat.Builder()
                     .setEncoding(format)
