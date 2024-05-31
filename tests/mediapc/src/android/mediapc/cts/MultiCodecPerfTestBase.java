@@ -67,7 +67,7 @@ public class MultiCodecPerfTestBase {
     static final int REQUIRED_MIN_CONCURRENT_1080_ENCODER_INSTANCES =
             REQUIRED_MIN_CONCURRENT_INSTANCES - REQUIRED_MIN_CONCURRENT_4K_ENCODER_INSTANCES;
 
-    static ArrayList<String> mMimeList = new ArrayList<>();
+    static ArrayList<String> mMediaTypeList = new ArrayList<>();
     static Map<String, String> mTestFiles = new HashMap<>();
     static Map<String, String> m720pTestFiles = new HashMap<>();
     static Map<String, String> m1080pTestFiles = new HashMap<>();
@@ -78,16 +78,16 @@ public class MultiCodecPerfTestBase {
     static Map<String, String> m2160pPc1410bitWidevineTestFiles = new HashMap<>();
 
     static {
-        mMimeList.add(MediaFormat.MIMETYPE_VIDEO_AVC);
-        mMimeList.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
+        mMediaTypeList.add(MediaFormat.MIMETYPE_VIDEO_AVC);
+        mMediaTypeList.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
 
         m720pTestFiles.put(MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_1280x720_3mbps_30fps_avc.mp4");
         m720pTestFiles.put(MediaFormat.MIMETYPE_VIDEO_HEVC, "bbb_1280x720_3mbps_30fps_hevc.mp4");
 
         // Test VP9 and AV1 as well when performance class is other than Build.VERSION_CODES.R
         if (Utils.getPerfClass() != Build.VERSION_CODES.R) {
-            mMimeList.add(MediaFormat.MIMETYPE_VIDEO_VP9);
-            mMimeList.add(MediaFormat.MIMETYPE_VIDEO_AV1);
+            mMediaTypeList.add(MediaFormat.MIMETYPE_VIDEO_VP9);
+            mMediaTypeList.add(MediaFormat.MIMETYPE_VIDEO_AV1);
 
             m720pTestFiles.put(MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_1280x720_3mbps_30fps_vp9.webm");
             m720pTestFiles.put(MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_1280x720_3mbps_30fps_av1.mp4");
@@ -141,7 +141,7 @@ public class MultiCodecPerfTestBase {
                 "bbb_1920x1080_4mbps_30fps_av1_10bit_cenc.mp4");
     }
 
-    String mMime;
+    String mMediaType;
     String mTestFile;
     final boolean mIsAsync;
 
@@ -150,27 +150,28 @@ public class MultiCodecPerfTestBase {
         Utils.assumeDeviceMeetsPerformanceClassPreconditions();
     }
 
-    public MultiCodecPerfTestBase(String mime, String testFile, boolean isAsync) {
-        mMime = mime;
+    public MultiCodecPerfTestBase(String mediaType, String testFile, boolean isAsync) {
+        mMediaType = mediaType;
         mTestFile = testFile;
         mIsAsync = isAsync;
     }
 
-    // Returns the list of hardware codecs for given mime
-    public static ArrayList<String> getHardwareCodecsForMime(String mime, boolean isEncoder) {
-        return getHardwareCodecsForMime(mime, isEncoder, false);
+    // Returns the list of hardware codecs for given mediaType
+    public static ArrayList<String> getHardwareCodecsForMediaTypes(String mediaType,
+                                       boolean isEncoder) {
+        return getHardwareCodecsForMediaTypes(mediaType, isEncoder, false);
     }
 
-    public static ArrayList<String> getHardwareCodecsForMime(String mime, boolean isEncoder,
-            boolean allCodecs) {
+    public static ArrayList<String> getHardwareCodecsForMediaTypes(String mediaType,
+            boolean isEncoder, boolean allCodecs) {
         // All the multi-instance tests are limited to codecs that support at least 1280x720 @ 30fps
         // This will exclude hevc constant quality encoders that are limited to max resolution of
         // 512x512
-        MediaFormat fmt = MediaFormat.createVideoFormat(mime, 1280, 720);
+        MediaFormat fmt = MediaFormat.createVideoFormat(mediaType, 1280, 720);
         fmt.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
         ArrayList<MediaFormat> formatsList = new ArrayList<>();
         formatsList.add(fmt);
-        return selectHardwareCodecs(mime, formatsList, null, isEncoder, allCodecs);
+        return selectHardwareCodecs(mediaType, formatsList, null, isEncoder, allCodecs);
     }
 
     protected CodecMetrics invokeWithThread(int maxInstances, Collection<? extends
@@ -191,17 +192,17 @@ public class MultiCodecPerfTestBase {
         return getMetrics(measuredParams, framesDroppedPerSecond);
     }
 
-    // Returns the max number of 30 fps instances that the given list of mimeCodecPairs
+    // Returns the max number of 30 fps instances that the given list of mediaTypeCodecPairs
     // supports. It also checks that the each codec supports a PerformancePoint that covers
     // required number of 30 fps instances.
     public int checkAndGetMaxSupportedInstancesForCodecCombinations(int height, int width,
-            ArrayList<Pair<String, String>> mimeCodecPairs, boolean isEncoder,
+            ArrayList<Pair<String, String>> mediaTypeCodecPairs, boolean isEncoder,
             int requiredMinInstances) throws IOException {
-        int[] maxInstances = new int[mimeCodecPairs.size()];
-        int[] maxFrameRates = new int[mimeCodecPairs.size()];
-        int[] maxMacroBlockRates = new int[mimeCodecPairs.size()];
-        int[] maxFrameRates1080p = new int[mimeCodecPairs.size()];
-        int[] maxMacroBlockRates1080p = new int[mimeCodecPairs.size()];
+        int[] maxInstances = new int[mediaTypeCodecPairs.size()];
+        int[] maxFrameRates = new int[mediaTypeCodecPairs.size()];
+        int[] maxMacroBlockRates = new int[mediaTypeCodecPairs.size()];
+        int[] maxFrameRates1080p = new int[mediaTypeCodecPairs.size()];
+        int[] maxMacroBlockRates1080p = new int[mediaTypeCodecPairs.size()];
         int required4kInstances = isEncoder ? REQUIRED_MIN_CONCURRENT_4K_ENCODER_INSTANCES :
                 REQUIRED_MIN_CONCURRENT_4K_DECODER_INSTANCES;
         // when testing secure codecs limit 4k to 2 instances
@@ -210,14 +211,14 @@ public class MultiCodecPerfTestBase {
         }
         int required1080pInstances = requiredMinInstances - required4kInstances;
         int loopCount = 0;
-        for (Pair<String, String> mimeCodecPair : mimeCodecPairs) {
-            MediaCodec codec = MediaCodec.createByCodecName(mimeCodecPair.second);
+        for (Pair<String, String> mediaTypeCodecPair : mediaTypeCodecPairs) {
+            MediaCodec codec = MediaCodec.createByCodecName(mediaTypeCodecPair.second);
             MediaCodecInfo.CodecCapabilities cap = codec.getCodecInfo()
-                    .getCapabilitiesForType(mimeCodecPair.first);
+                    .getCapabilitiesForType(mediaTypeCodecPair.first);
             List<PerformancePoint> pps = cap.getVideoCapabilities().getSupportedPerformancePoints();
             assertTrue(pps.size() > 0);
 
-            boolean hasAV1 = mimeCodecPair.first.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
+            boolean hasAV1 = mediaTypeCodecPair.first.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
             int requiredFrameRate =
                     height > 1080 ? required4kInstances * 30 : requiredMinInstances * 30;
             int requiredFrameRate1080p = required1080pInstances * 30;
@@ -255,12 +256,12 @@ public class MultiCodecPerfTestBase {
             codec.release();
             if (!supportsResolutionPerformance) {
                 Log.e(LOG_TAG,
-                        "Codec " + mimeCodecPair.second + " doesn't support " + height + "p/" +
-                                requiredFrameRate + " performance point");
+                        "Codec " + mediaTypeCodecPair.second + " doesn't support " + height + "p/"
+                                + requiredFrameRate + " performance point");
                 return 0;
             }
             if (height > 1080 && !supportsResolutionPerformance1080p) {
-                Log.e(LOG_TAG, "Codec " + mimeCodecPair.second + " doesn't support 1080p/"
+                Log.e(LOG_TAG, "Codec " + mediaTypeCodecPair.second + " doesn't support 1080p/"
                         + requiredFrameRate1080p + " performance point");
                 return 0;
             }
@@ -271,8 +272,8 @@ public class MultiCodecPerfTestBase {
         // amd maxMacroBlockRate. (assuming 16x16 macroblocks)
         if (height > 1080) {
             int i = 0;
-            for (Pair<String, String> mimeCodecPair : mimeCodecPairs) {
-                boolean hasAV1 = mimeCodecPair.first.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
+            for (Pair<String, String> mediaTypeCodecPair : mediaTypeCodecPairs) {
+                boolean hasAV1 = mediaTypeCodecPair.first.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
 
                 // Limit AV1 4k to 1920x1080 as per PC14 requirements
                 int blocksIn4k = hasAV1 ? (1920 / 16) * (1088 / 16) : (3840 / 16) * (2160 / 16);
@@ -326,11 +327,12 @@ public class MultiCodecPerfTestBase {
         return REQUIRED_MIN_CONCURRENT_INSTANCES;
     }
 
-    boolean isSecureSupportedCodec(String codecName, String mime) throws IOException {
+    boolean isSecureSupportedCodec(String codecName, String mediaType) throws IOException {
         boolean isSecureSupported;
         MediaCodec codec = MediaCodec.createByCodecName(codecName);
-        isSecureSupported = codec.getCodecInfo().getCapabilitiesForType(mime).isFeatureSupported(
-                FEATURE_SecurePlayback);
+        isSecureSupported =
+                codec.getCodecInfo().getCapabilitiesForType(mediaType).isFeatureSupported(
+                        FEATURE_SecurePlayback);
         codec.release();
         return isSecureSupported;
     }
