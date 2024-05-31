@@ -3281,11 +3281,11 @@ You should be prompted to select credentials; choose the ones you just installed
         \nThen click the \"Change password\" button to change it. You should be prompted for the current password first. If you are not, then mark the test as failed.
     </string>
 
-    <!-- Strings for MultiDeviceTests. -->
-    <string name="multi_device_tests_title">Multi-device Tests</string>
-    <string name="multi_device_tests_dialog_title">Multi-device Tests Dialog</string>
-    <string name="multi_device_tests_dialog_content">
-        All multi-device host-side tests.\n
+    <!-- Strings for NFC Tests. -->
+    <string name="nfc_tests_title">NFC Tests</string>
+    <string name="nfc_tests_dialog_title">NFC Tests Dialog</string>
+    <string name="nfc_tests_dialog_content">
+        The NFC tests.\n
         The DUT \"must\" be connected to a host to run these tests.\n
         Please follow the detailed instruction of the tests to execute scripts and get results.
     </string>
