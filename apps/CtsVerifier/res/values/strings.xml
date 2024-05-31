@@ -7391,22 +7391,33 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nIf the sharesheet indicates that it\'s an album being shared, pass the test, otherwise fail.</string>
 
     <!-- Sharesheet ChooserResult test -->
-    <string name="sharesheet_result_test">Sharesheet Chooser Result Test</string>
-    <string name="sharesheet_result_test_info">This test verifies an app is notified of actions taken when sharing content.</string>
-    <string name="sharesheet_result_test_instructions">For each step, tap the \"Share\" button below and then take the requested action within the Sharing UI.</string>
-    <string name="sharesheet_result_test_app_instructions">Tap the icon for \'CtsVerifier\'.
-        \n\nIf it does not appear, dismiss the Share UI. </string>
-    <string name="sharesheet_result_test_copy_instructions">Press the \"Copy\" button.
-        \n\nIf there is no \'Copy\' button, dismiss the Share UI. </string>
-    <string name="sharesheet_result_test_edit_instructions">Press the \"Edit\" button.
-        \n\nIf there is no \'Edit\' button, dismiss the Share UI. </string>
+    <string name="sharesheet_result_test_edit">Chooser Result: Edit</string>
+    <string name="sharesheet_result_test_edit_info">This test verifies an app is notified taken the EDIT action is invoked within the Sharing UI.</string>
+    <string name="sharesheet_result_test_edit_instructions">Tap the \"Share\" button below.\nWhen the Share UI opens, press the EDIT button.\n\nIf an EDIT button cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_edit_instructions_short">Press Edit.</string>
+    <string name="sharesheet_result_test_edit_pressed">The EDIT button was pressed</string>
+    <string name="sharesheet_result_test_edit_not_found">The EDIT button could not be found</string>
+
+    <string name="sharesheet_result_test_copy">Chooser Result: Copy</string>
+    <string name="sharesheet_result_test_copy_info">This test verifies an app is notified taken the COPY action is invoked within the Sharing UI.</string>
+    <string name="sharesheet_result_test_copy_instructions">Tap the \"Share\" button below.\nWhen the Share UI open, press the COPY button.\n\nIf a COPY button cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_copy_instructions_short">Press Copy .</string>
+    <string name="sharesheet_result_test_copy_pressed">The COPY button was pressed</string>
+    <string name="sharesheet_result_test_copy_not_found">The COPY button could not be found</string>
+
+   <string name="sharesheet_result_test_component">Chooser Result: Component</string>
+    <string name="sharesheet_result_test_component_info">This test verifies an app is notified when a target component (APP) is selected in the Sharing UI.</string>
+    <string name="sharesheet_result_test_component_instructions">Tap the \"Share\" button below.\nWhen the Share UI opens, tap the icon labeled \""CtsVerifier\".\n\nIf the \"CtsVerifier\" icon cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_component_instructions_short">Tap the CtsVerifier Icon</string>
+    <string name="sharesheet_result_test_component_selected">The CtsVerifier icon was selected</string>
+    <string name="sharesheet_result_test_component_not_found">The CtsVerifier icon could not be found</string>
+
     <string name="sharesheet_result_test_instructions_after_share">Choose from the options below:</string>
-    <string name="sharesheet_result_test_pressed">I pressed the button</string>
-    <string name="sharesheet_result_test_not_found">I couldn\'t locate the button</string>
+
     <string name="sharesheet_result_test_try_again">Try again</string>
     <string name="sharesheet_result_test_no_result_message">No result received - test failed</string>
-    <string name="sharesheet_result_test_no_button">Some actions not available - test passed</string>
-    <string name="sharesheet_result_test_passed">Test passed.</string>
+    <string name="sharesheet_result_test_incorrect_result">Incorrect result received - test failed</string>
+    <string name="sharesheet_result_test_no_button">Action not available - test passed</string>
 
     <!-- Strings for CaptureContentForNotes test -->
     <string name="ccfn_tests">Capture Content For Notes Tests</string>
