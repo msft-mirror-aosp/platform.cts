@@ -17,12 +17,19 @@
 package android.app.stubs;
 
 import android.app.Application;
+import android.os.Handler;
 import android.os.SystemClock;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class DelayedApplication extends Application {
+    public AtomicBoolean mHasPendingMessageInQueue = new AtomicBoolean();
+
     @Override
     public void onCreate() {
         super.onCreate();
+        mHasPendingMessageInQueue.set(true);
+        new Handler().post(() -> mHasPendingMessageInQueue.set(false));
         // Sleep for a while
         SystemClock.sleep(3000);
     }
