@@ -27,7 +27,8 @@ import video_processing_utils
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 # 1080P with 16:9 aspect ratio, 720P and VGA resolutions
 _TARGET_PREVIEW_SIZES = ('1920x1080', '1280x720', '640x480')
-_TEST_REQUIRED_MPC = 33
+_TEST_REQUIRED_MPC_FRONT = 34
+_TEST_REQUIRED_MPC_REAR = 33
 _ZOOM_RATIO_UW = 0.9
 _ZOOM_RATIO_W = 1.0
 
@@ -91,9 +92,17 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
                     supported_stabilization_modes)
       media_performance_class = its_session_utils.get_media_performance_class(
           self.dut.serial)
-      if media_performance_class >= _TEST_REQUIRED_MPC and not should_run:
-        its_session_utils.raise_mpc_assertion_error(
-            _TEST_REQUIRED_MPC, _NAME, media_performance_class)
+      if (props['android.lens.facing'] ==
+          camera_properties_utils.LENS_FACING['FRONT']):
+        if (media_performance_class >= _TEST_REQUIRED_MPC_FRONT
+            and not should_run):
+          its_session_utils.raise_mpc_assertion_error(
+              _TEST_REQUIRED_MPC_FRONT, _NAME, media_performance_class)
+      else:
+        if (media_performance_class >= _TEST_REQUIRED_MPC_REAR
+            and not should_run):
+          its_session_utils.raise_mpc_assertion_error(
+              _TEST_REQUIRED_MPC_REAR, _NAME, media_performance_class)
 
       camera_properties_utils.skip_unless(should_run)
 
@@ -159,4 +168,3 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
 
 if __name__ == '__main__':
   test_runner.main()
-

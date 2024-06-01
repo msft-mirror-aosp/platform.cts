@@ -291,6 +291,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   @Test
   @PlatinumTest(focusArea = "media")
   public void testVideoPlayback() throws Exception {
+    /* TODO(b/339628718, b/338342633) */
+    Assume.assumeFalse("Split screen test is skipped",
+        mCujTestParam.playerListener().isSplitScreenTest());
     if (mCujTestParam.playerListener().isOrientationTest()) {
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support orientation change.",
           !OrientationTestPlayerListener.getIgnoreOrientationRequest()

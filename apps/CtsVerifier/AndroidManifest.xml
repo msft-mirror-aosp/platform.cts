@@ -2412,54 +2412,6 @@
                                       android.nfc.tech.NfcA#transceive" />
         </activity>
 
-        <activity android:name=".nfc.hce.ObserveModeReaderActivity"
-                android:label="@string/nfc_observe_mode_reader">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction"/>
-        </activity>
-
-        <activity android:name=".nfc.hce.ObserveModeEmulatorActivity"
-                android:label="@string/nfc_observe_mode_emulator">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction|
-                                      android.nfc.NfcAdapter#allowTransaction|
-                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_A|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
-        </activity>
-
-        <activity android:name=".nfc.hce.PollingLoopReaderActivity"
-                android:label="@string/nfc_polling_loop_a_reader">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction|
-                                      android.nfc.NfcAdapter#allowTransaction|
-                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_B|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
-        </activity>
-
-        <activity android:name=".nfc.hce.PollingLoopEmulatorActivity"
-                android:label="@string/nfc_polling_loop_a_emulator">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction|
-                                      android.nfc.NfcAdapter#allowTransaction|
-                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_A|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_B|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
-        </activity>
-
         <activity android:name=".nfc.hce.DualPaymentEmulatorActivity"
                 android:label="@string/nfc_hce_dual_payment_emulator"
                 android:configChanges="keyboardHidden|orientation|screenSize" >
@@ -2828,15 +2780,6 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/screen_off_payment_aid_list"/>
-        </service>
-        <service android:name=".nfc.hce.PollingLoopService" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/access_aid_list"/>
         </service>
 
         <service
@@ -4806,7 +4749,7 @@
 
         <activity android:name=".multidevice.MultiDeviceTestsActivity"
                 android:exported="true"
-                android:label="@string/multi_device_tests_title">
+                android:label="@string/nfc_tests_title">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
@@ -7155,9 +7098,30 @@
 
         <!-- Components for Sharesheet tests -->
        <activity
-            android:name=".sharesheet.SharesheetChooserResultActivity"
+            android:name=".sharesheet.SharesheetChooserResultEditActivity"
             android:exported="true"
-            android:label="@string/sharesheet_result_test">
+            android:label="@string/sharesheet_result_test_edit"
+            android:launchMode="singleTask">
+           <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
+                    |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetChooserResultCopyActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_result_test_copy"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
@@ -7172,6 +7136,27 @@
                     |android.service.chooser.ChooserResult#getResult" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetChooserResultComponentActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_result_test_component"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
+                    |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
 
         <activity
             android:name=".sharesheet.SharesheetPayloadToggleActivity"

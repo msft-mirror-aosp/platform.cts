@@ -128,6 +128,7 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
                          f'uw_y_avg: {uw_y_avg:.4f} '
                          f'w_y_avg: {w_y_avg:.4f} ')
 
+
 def _do_af_check(uw_img, w_img, log_path):
   """Checks the AF behavior between the uw and w img.
 
@@ -217,11 +218,11 @@ def _extract_y(img_uint8, file_name):
   return y_uint8
 
 
-def _find_aruco_markers(img, img_path, lens_suffix):
+def _find_aruco_markers(img_bw, img_path, lens_suffix):
   """Detect ArUco markers in the input image.
 
   Args:
-    img: input img in numpy array with ArUco markers.
+    img_bw: input img in black and white with ArUco markers.
     img_path: path to save the image.
     lens_suffix: suffix used to save the image.
   Returns:
@@ -231,7 +232,7 @@ def _find_aruco_markers(img, img_path, lens_suffix):
   aruco_path = img_path.with_name(
       f'{img_path.stem}_{lens_suffix}_aruco{img_path.suffix}')
   corners, ids, _ = opencv_processing_utils.find_aruco_markers(
-      img, aruco_path)
+      img_bw, aruco_path)
   if len(ids) != _ARUCO_MARKERS_COUNT:
     raise AssertionError(
         f'{_ARUCO_MARKERS_COUNT} ArUco markers should be detected.')
@@ -415,9 +416,17 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
             props, uw_img, w_img, img_name_stem
         )
 
+      # Convert UW and W img to black and white
+      uw_img_bw = (
+          opencv_processing_utils.convert_image_to_high_contrast_black_white(
+              uw_img))
+      w_img_bw = (
+          opencv_processing_utils.convert_image_to_high_contrast_black_white(
+              w_img))
+
       # Find ArUco markers in the image with UW lens
       # and extract the outer box patch
-      corners, ids = _find_aruco_markers(uw_img, uw_path, 'uw')
+      corners, ids = _find_aruco_markers(uw_img_bw, uw_path, 'uw')
       uw_chart_patch = _extract_main_patch(
           corners, ids, uw_img, uw_path, 'uw')
       uw_four_patches = _get_four_quadrant_patches(
@@ -425,7 +434,7 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # Find ArUco markers in the image with W lens
       # and extract the outer box patch
-      corners, ids = _find_aruco_markers(w_img, w_path, 'w')
+      corners, ids = _find_aruco_markers(w_img_bw, w_path, 'w')
       w_chart_patch = _extract_main_patch(
           corners, ids, w_img, w_path, 'w')
       w_four_patches = _get_four_quadrant_patches(
