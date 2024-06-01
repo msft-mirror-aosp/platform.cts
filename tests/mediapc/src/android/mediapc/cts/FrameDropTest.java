@@ -40,24 +40,24 @@ import java.util.Collection;
 public class FrameDropTest extends FrameDropTestBase {
     private static final String LOG_TAG = FrameDropTest.class.getSimpleName();
 
-    public FrameDropTest(String mimeType, String decoderName, boolean isAsync) {
-        super(mimeType, decoderName, isAsync);
+    public FrameDropTest(String mediaType, String decoderName, boolean isAsync) {
+        super(mediaType, decoderName, isAsync);
     }
 
     @Rule
     public final TestName mTestName = new TestName();
 
-    // Returns the list of parameters with mimeTypes and their hardware decoders
+    // Returns the list of parameters with mediaTypes and their hardware decoders
     // combining with sync and async modes.
-    // Parameters {0}_{1}_{2} -- Mime_DecoderName_isAsync
+    // Parameters {0}_{1}_{2} -- MediaType_DecoderName_isAsync
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
     public static Collection<Object[]> inputParams() {
         return prepareArgumentsList(null);
     }
 
     private int testDecodeToSurface(int frameRate, String[] testFiles) throws Exception {
-        PlaybackFrameDrop playbackFrameDrop = new PlaybackFrameDrop(mMime, mDecoderName, testFiles,
-                mSurface, frameRate, mIsAsync);
+        PlaybackFrameDrop playbackFrameDrop = new PlaybackFrameDrop(mMediaType, mDecoderName,
+                testFiles, mSurface, frameRate, mIsAsync);
         return playbackFrameDrop.getFrameDropCount();
     }
 
@@ -78,7 +78,7 @@ public class FrameDropTest extends FrameDropTestBase {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.FrameDropRequirement r5_3__H_1_1_R = pce.addR5_3__H_1_1_R();
 
-        String[] testFiles = new String[]{m1080p30FpsTestFiles.get(mMime)};
+        String[] testFiles = new String[]{m1080p30FpsTestFiles.get(mMediaType)};
         int framesDropped = testDecodeToSurface(frameRate, testFiles);
 
         r5_3__H_1_1_R.setFramesDropped(framesDropped);
@@ -104,7 +104,7 @@ public class FrameDropTest extends FrameDropTestBase {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.FrameDropRequirement r5_3__H_1_1_ST = pce.addR5_3__H_1_1_ST();
 
-        String[] testFiles = new String[]{m1080p60FpsTestFiles.get(mMime)};
+        String[] testFiles = new String[]{m1080p60FpsTestFiles.get(mMediaType)};
         int framesDropped = testDecodeToSurface(frameRate, testFiles);
 
         r5_3__H_1_1_ST.setFramesDropped(framesDropped);
@@ -130,7 +130,7 @@ public class FrameDropTest extends FrameDropTestBase {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.FrameDropRequirement r5_3__H_1_1_U = pce.addR5_3__H_1_1_U();
 
-        String[] testFiles = new String[]{m2160p60FpsTestFiles.get(mMime)};
+        String[] testFiles = new String[]{m2160p60FpsTestFiles.get(mMediaType)};
         int framesDropped = testDecodeToSurface(frameRate, testFiles);
 
         r5_3__H_1_1_U.setFramesDropped(framesDropped);

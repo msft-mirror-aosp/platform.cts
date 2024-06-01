@@ -32,6 +32,11 @@
         android:text=""
         android:textAlignment="center"
         android:textColor="?android:textColorPrimary" />
+    <ListView
+        android:id="@+id/list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+    </ListView>
     <GridLayout
         android:id="@+id/buttons"
         android:layout_width="match_parent"

@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
@@ -890,6 +891,10 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected boolean setDeviceOwner(String componentName, int userId, boolean expectFailure)
             throws DeviceNotAvailableException {
+        if (isHeadlessSystemUserMode()) {
+            assumeNotNull("Devices in headles system user mode require a main user to set a device "
+                    + "owner.", getDevice().getMainUserId());
+        }
         String command = "dpm set-device-owner --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
         boolean success = commandOutput.startsWith("Success:");

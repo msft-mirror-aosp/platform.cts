@@ -54,32 +54,32 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
 
     private final String mEncoderName;
 
-    public MultiEncoderPerfTest(String mimeType, String encoderName, boolean isAsync) {
-        super(mimeType, null, isAsync);
+    public MultiEncoderPerfTest(String mediaType, String encoderName, boolean isAsync) {
+        super(mediaType, null, isAsync);
         mEncoderName = encoderName;
     }
 
     @Rule
     public final TestName mTestName = new TestName();
 
-    // Returns the params list with the mime and their hardware encoders in
+    // Returns the params list with the mediaType and their hardware encoders in
     // both sync and async modes.
-    // Parameters {0}_{2}_{3} -- Mime_EncoderName_isAsync
+    // Parameters {0}_{2}_{3} -- MediaType_EncoderName_isAsync
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
     public static Collection<Object[]> inputParams() {
         final List<Object[]> argsList = new ArrayList<>();
-        for (String mime : mMimeList) {
-            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+        for (String mediaType : mMediaTypeList) {
+            if (mediaTypePrefix != null && !mediaType.startsWith(mediaTypePrefix)) {
                 continue;
             }
-            ArrayList<String> listOfEncoders = getHardwareCodecsForMime(mime, true);
+            ArrayList<String> listOfEncoders = getHardwareCodecsForMediaTypes(mediaType, true);
             for (String encoder : listOfEncoders) {
                 if ((codecPrefix != null && !encoder.startsWith(codecPrefix))
                         || (codecFilter != null && !codecFilter.matcher(encoder).matches())) {
                     continue;
                 }
                 for (boolean isAsync : boolStates) {
-                    argsList.add(new Object[]{mime, encoder, isAsync});
+                    argsList.add(new Object[]{mediaType, encoder, isAsync});
                 }
             }
         }
@@ -96,7 +96,7 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
     public void test720p() throws Exception {
         Assume.assumeTrue(Utils.isSPerfClass() || Utils.isRPerfClass() || !Utils.isPerfClass());
 
-        boolean hasVP9 = mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP9);
+        boolean hasVP9 = mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9);
         int requiredMinInstances = getRequiredMinConcurrentInstances720p(hasVP9);
         testCodec(720, 1280, 4000000, requiredMinInstances);
     }
@@ -128,13 +128,13 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
 
     private void testCodec(int height, int width, int bitrate, int requiredMinInstances)
             throws Exception {
-        ArrayList<Pair<String, String>> mimeEncoderPairs = new ArrayList<>();
-        mimeEncoderPairs.add(Pair.create(mMime, mEncoderName));
+        ArrayList<Pair<String, String>> mediaTypeEncoderPairs = new ArrayList<>();
+        mediaTypeEncoderPairs.add(Pair.create(mMediaType, mEncoderName));
         int maxInstances = checkAndGetMaxSupportedInstancesForCodecCombinations(height, width,
-                mimeEncoderPairs, true, requiredMinInstances);
+                mediaTypeEncoderPairs, true, requiredMinInstances);
         double achievedFrameRate = 0.0;
         double frameDropsPerSec = 0.0;
-        boolean hasAV1 = mMime.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
+        boolean hasAV1 = mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
         if (maxInstances >= requiredMinInstances) {
             List<Encode> testList = new ArrayList<>();
             if (height > 1080) {
@@ -142,21 +142,23 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
                 int instances1080p = maxInstances - instances4k;
                 for (int i = 0; i < instances4k; i++) {
                     if (hasAV1) {
-                        testList.add(new Encode(mMime, mEncoderName, mIsAsync, 1080, 1920, 30,
+                        testList.add(new Encode(mMediaType, mEncoderName, mIsAsync, 1080, 1920, 30,
                                 10000000));
                     } else {
-                        testList.add(new Encode(mMime, mEncoderName, mIsAsync, height, width, 30,
-                                bitrate));
+                        testList.add(new Encode(mMediaType, mEncoderName, mIsAsync, height, width,
+                                30, bitrate));
                     }
                 }
                 for (int i = 0; i < instances1080p; i++) {
                     testList.add(
-                            new Encode(mMime, mEncoderName, mIsAsync, 1080, 1920, 30, 10000000));
+                            new Encode(mMediaType, mEncoderName, mIsAsync, 1080, 1920, 30,
+                                    10000000));
                 }
             } else {
                 for (int i = 0; i < maxInstances; i++) {
                     testList.add(
-                            new Encode(mMime, mEncoderName, mIsAsync, height, width, 30, bitrate));
+                            new Encode(mMediaType, mEncoderName, mIsAsync, height, width, 30,
+                                    bitrate));
                 }
             }
             CodecMetrics result = invokeWithThread(maxInstances, testList);
@@ -179,7 +181,7 @@ public class MultiEncoderPerfTest extends MultiCodecPerfTestBase {
             r5_1__H_1_3.setConcurrentInstances(maxInstances);
             r5_1__H_1_4.setConcurrentFps(achievedFrameRate);
         } else {
-            r5_1__H_1_3 = pce.addR5_1__H_1_3_720p(mMime, mMime, height);
+            r5_1__H_1_3 = pce.addR5_1__H_1_3_720p(mMediaType, mMediaType, height);
             r5_1__H_1_4 = pce.addR5_1__H_1_4_720p();
             r5_1__H_1_3.setConcurrentInstances(maxInstances);
             r5_1__H_1_4.setConcurrentFps(achievedFrameRate);

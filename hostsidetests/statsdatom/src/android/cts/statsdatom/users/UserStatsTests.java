@@ -36,6 +36,7 @@ public abstract class UserStatsTests<T> extends DeviceTestCase implements IBuild
     protected IBuildInfo mCtsBuild;
     protected List<Integer> mUsersToRemove = new ArrayList();
     protected int mAtomId;
+    private int mInitialUser = 0;
 
     public UserStatsTests(int atomId) {
         mAtomId = atomId;
@@ -49,11 +50,12 @@ public abstract class UserStatsTests<T> extends DeviceTestCase implements IBuild
         ReportUtils.clearReports(getDevice());
         RunUtil.getDefault().sleep(WAIT_TIME_LONG);
         getDevice().executeShellCommand("adb logcat -c");
+        mInitialUser = getDevice().getCurrentUser();
     }
 
     @Override
     protected void tearDown() throws Exception {
-        getDevice().switchUser(0);
+        getDevice().switchUser(mInitialUser);
         for (Integer userId : mUsersToRemove) {
             getDevice().removeUser(userId);
         }

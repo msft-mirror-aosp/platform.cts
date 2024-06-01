@@ -37,8 +37,9 @@ class AudioPlaybackLoad extends CodecDecoderTestBase {
     private long mMaxPts;
     private AudioTrack mTrack;
 
-    AudioPlaybackLoad(String mime, String testFile, String decoderName, LoadStatus loadStatus) {
-        super(mime, testFile);
+    AudioPlaybackLoad(String mediaType, String testFile, String decoderName,
+            LoadStatus loadStatus) {
+        super(mediaType, testFile);
         mDecoderName = decoderName;
         mLoadStatus = loadStatus;
         mBasePts = 0;

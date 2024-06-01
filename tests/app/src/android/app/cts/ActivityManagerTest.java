@@ -22,6 +22,7 @@ import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_MICROPHO
 import static android.app.ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_RESTRICTED;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_COMPLETE;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL;
@@ -1853,6 +1854,8 @@ public final class ActivityManagerTest {
         final WatchUidRunner[] watchers = initWatchUidRunners(packageNames, WAITFOR_MSEC * 2);
 
         try {
+            mInstrumentation.getUiAutomation().revokeRuntimePermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.ACCESS_BACKGROUND_LOCATION);
             // Set the PACKAGE_NAME_APP1 into rare bucket
             runShellCommand(mInstrumentation, "am set-standby-bucket "
                     + PACKAGE_NAME_APP1 + " rare");
@@ -1893,8 +1896,15 @@ public final class ActivityManagerTest {
             // Restrict the PACKAGE_NAME_APP1
             runShellCommand(mInstrumentation, "am set-standby-bucket "
                     + PACKAGE_NAME_APP1 + " restricted");
-            // Sleep a while to let it take effect.
-            Thread.sleep(WAITFOR_MSEC);
+            waitUntilTrue(WAITFOR_MSEC, () -> {
+                try {
+                    final int bucket = Integer.getInteger(runShellCommand(mInstrumentation,
+                            "am get-standby-bucket " + PACKAGE_NAME_APP1));
+                    return bucket == STANDBY_BUCKET_RESTRICTED;
+                } catch (Exception e) {
+                    return false;
+                }
+            });
 
             final Intent intent = new Intent();
             final CountDownLatch[] latch = new CountDownLatch[] {new CountDownLatch(1)};
@@ -1939,6 +1949,8 @@ public final class ActivityManagerTest {
                     () -> mActivityManager.forceStopPackage(packageName)));
 
             forEach(watchers, watcher -> watcher.finish());
+            mInstrumentation.getUiAutomation().grantRuntimePermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.ACCESS_BACKGROUND_LOCATION);
         }
     }
 

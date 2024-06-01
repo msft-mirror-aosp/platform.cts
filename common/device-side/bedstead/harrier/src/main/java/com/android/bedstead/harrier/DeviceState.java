@@ -120,6 +120,7 @@ import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsuppor
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
 import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
+import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled;
 import com.android.bedstead.harrier.annotations.RequireUserSupported;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
@@ -791,6 +792,11 @@ public final class DeviceState extends HarrierRule {
                 requireFeature(
                         requireFeatureAnnotation.value(),
                         requireFeatureAnnotation.failureMode());
+                continue;
+            }
+
+            if (annotation instanceof RequireUsbDataSignalingCanBeDisabled requireUsbDataSignalingCanBeDisabledAnnotation) {
+                requireUsbDataSignalingCanBeDisabled();
                 continue;
             }
 
@@ -1507,6 +1513,11 @@ public final class DeviceState extends HarrierRule {
     private void requireFeature(String feature, FailureMode failureMode) {
         checkFailOrSkip("Device must have feature " + feature,
                 TestApis.packages().features().contains(feature), failureMode);
+    }
+
+    private void requireUsbDataSignalingCanBeDisabled() {
+        assumeTrue("device must be able to control usb data signaling",
+                TestApis.devicePolicy().canUsbDataSignalingBeDisabled());
     }
 
     private void requireDoesNotHaveFeature(String feature, FailureMode failureMode) {

@@ -20,4 +20,5 @@ import android.accessibility.cts.common.InstrumentedAccessibilityService;
  * A stub accessibility service to install for testing gesture dispatch
  */
 public class StubMagnificationAccessibilityService extends InstrumentedAccessibilityService {
+
 }

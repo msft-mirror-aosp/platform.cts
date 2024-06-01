@@ -56,10 +56,10 @@ public final class AdbProvisioningTest {
     @Postsubmit(reason = "new test")
     @Test
     public void setDeviceOwnerUsingAdb_isLogged() throws Exception {
-        try (TestAppInstance testApp = sRemoteDpcTestApp.install()) {
+        try (TestAppInstance testApp = sRemoteDpcTestApp.install(TestApis.users().system())) {
             try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
                 ShellCommand.builderForUser(
-                            TestApis.users().instrumented(), "dpm set-device-owner")
+                            TestApis.users().system(), "dpm set-device-owner")
                         .addOperand(sComponentName.flattenToShortString())
                         .execute();
 

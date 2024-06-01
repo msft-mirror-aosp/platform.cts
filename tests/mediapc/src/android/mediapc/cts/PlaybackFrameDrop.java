@@ -131,9 +131,9 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
         }
     }
 
-    PlaybackFrameDrop(String mime, String decoderName, String[] testFiles, Surface surface,
+    PlaybackFrameDrop(String mediaType, String decoderName, String[] testFiles, Surface surface,
             int frameRate, boolean isAsync) {
-        super(mime, null);
+        super(mediaType, null);
         mDecoderName = decoderName;
         mTestFiles = testFiles;
         mSurface = surface;
@@ -146,7 +146,7 @@ public class PlaybackFrameDrop extends CodecDecoderTestBase {
         mFrameDropCount = 0;
         mBufferInfos = new ArrayList<>();
         // When testing AV1, because of super frames, we allow initial few frames to be delayed.
-        mInitialDelay = mime.equals(MediaFormat.MIMETYPE_VIDEO_AV1) ? AV1_INITIAL_DELAY : 0;
+        mInitialDelay = mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1) ? AV1_INITIAL_DELAY : 0;
         // Decode for 30 seconds
         mMaxNumFrames = frameRate * 30 + mInitialDelay + 1;
         mOutputHandler = new OutputHandler();

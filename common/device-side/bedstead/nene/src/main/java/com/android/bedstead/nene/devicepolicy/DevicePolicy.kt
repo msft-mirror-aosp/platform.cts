@@ -883,6 +883,12 @@ object DevicePolicy {
     fun dump(): String =
         ShellCommand.builder("dumpsys device_policy").validate(String::isNotEmpty).execute()
 
+    /** Returns true if device can control UsbDataSignaling. */
+    @TargetApi(Build.VERSION_CODES.S)
+    fun canUsbDataSignalingBeDisabled(): Boolean {
+        return devicePolicyManager.canUsbDataSignalingBeDisabled()
+    }
+
     enum class NearbyNotificationStreamingPolicy(val intDef: Int) {
         NotManaged(0),
         Disabled(1),
