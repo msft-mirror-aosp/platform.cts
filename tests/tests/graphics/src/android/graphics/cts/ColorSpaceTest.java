@@ -25,21 +25,33 @@ import static org.junit.Assert.fail;
 
 import android.graphics.ColorSpace;
 import android.hardware.DataSpace;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.graphics.flags.Flags;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.function.DoubleUnaryOperator;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-
 @SmallTest
 @RunWith(JUnitParamsRunner.class)
 public class ColorSpaceTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     // Column-major RGB->XYZ transform matrix for the sRGB color space
     private static final float[] SRGB_TO_XYZ = {
             0.412391f, 0.212639f, 0.019331f,
@@ -75,8 +87,17 @@ public class ColorSpaceTest {
 
     @Test
     public void testNamedColorSpaces() {
-        for (ColorSpace.Named named : ColorSpace.Named.values()) {
+        ColorSpace.Named[] values = ColorSpace.Named.values();
+        int numColorSpaces;
+        if (Flags.okLabColorspace()) {
+            numColorSpaces = values.length;
+        } else {
+            numColorSpaces = values.length - 1;
+        }
+        for (int i = 0; i < numColorSpaces; i++) {
+            ColorSpace.Named named = values[i];
             ColorSpace colorSpace = ColorSpace.get(named);
+            Log.v("ResolvedColorSpace", "ColorSpace: " + colorSpace);
             assertNotNull(colorSpace.getName());
             assertNotNull(colorSpace);
             assertEquals(named.ordinal(), colorSpace.getId());
@@ -198,6 +219,26 @@ public class ColorSpaceTest {
         assertEquals(2.0f, m1, 1e-9f);
         assertEquals(2.0f, m2, 1e-9f);
         assertEquals(2.0f, m3, 1e-9f);
+
+        if (Flags.okLabColorspace()) {
+            cs = ColorSpace.get(ColorSpace.Named.OK_LAB);
+
+            m1 = cs.getMinValue(0);
+            m2 = cs.getMinValue(1);
+            m3 = cs.getMinValue(2);
+
+            assertEquals(0f, m1, 1e-9f);
+            assertEquals(-0.5f, m2, 1e-9f);
+            assertEquals(-0.5f, m3, 1e-9f);
+
+            m1 = cs.getMaxValue(0);
+            m2 = cs.getMaxValue(1);
+            m3 = cs.getMaxValue(2);
+
+            assertEquals(1f, m1, 1e-9f);
+            assertEquals(0.5f, m2, 1e-9f);
+            assertEquals(0.5f, m3, 1e-9f);
+        }
     }
 
     @Test
@@ -313,16 +354,24 @@ public class ColorSpaceTest {
         assertEquals(3, ColorSpace.get(ColorSpace.Named.DISPLAY_P3).getComponentCount());
         assertEquals(3, ColorSpace.get(ColorSpace.Named.CIE_LAB).getComponentCount());
         assertEquals(3, ColorSpace.get(ColorSpace.Named.CIE_XYZ).getComponentCount());
+        if (Flags.okLabColorspace()) {
+            assertEquals(3, ColorSpace.get(ColorSpace.Named.OK_LAB).getComponentCount());
+        }
     }
 
     @Test
     public void testIsSRGB() {
         for (ColorSpace.Named e : ColorSpace.Named.values()) {
             ColorSpace colorSpace = ColorSpace.get(e);
-            if (e == ColorSpace.Named.SRGB) {
+            // ColorSpace.get is guaranteed to return non-null. So if this is queried with
+            // a ColorSpace that is flagged, this falls back ot return SRGB as a default.
+            // The values method of an enum will always return the full set of enum values
+            // regardless if they are flagged out or not
+            boolean isSrgbFallback = (colorSpace.getId() == 0 && !Flags.okLabColorspace());
+            if (e == ColorSpace.Named.SRGB || isSrgbFallback) {
                 assertTrue(colorSpace.isSrgb());
             } else {
-                assertFalse("Incorrectly treating " + colorSpace + " as SRGB!",
+                assertFalse("Incorrectly treating " + e + " as SRGB!",
                             colorSpace.isSrgb());
             }
         }
@@ -342,6 +391,9 @@ public class ColorSpaceTest {
         assertTrue(ColorSpace.get(ColorSpace.Named.ACES).isWideGamut());
         assertTrue(ColorSpace.get(ColorSpace.Named.CIE_LAB).isWideGamut());
         assertTrue(ColorSpace.get(ColorSpace.Named.CIE_XYZ).isWideGamut());
+        if (Flags.okLabColorspace()) {
+            assertTrue(ColorSpace.get(ColorSpace.Named.OK_LAB).isWideGamut());
+        }
     }
 
     @Test
@@ -666,6 +718,48 @@ public class ColorSpaceTest {
 
         source = new float[] { 100.0f, 0.0f, 54.0f };
         expected = new float[] { 1.0f, 0.9853f, 0.4652f };
+
+        r2 = connector.transform(source[0], source[1], source[2]);
+        assertNotNull(r2);
+        assertEquals(3, r2.length);
+        assertArrayEquals(expected, r2, 1e-3f);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_OK_LAB_COLORSPACE)
+    @Test
+    public void testOkLab() {
+        ColorSpace.Connector connector = ColorSpace.connect(
+                ColorSpace.get(ColorSpace.Named.OK_LAB));
+
+        float[] source = { 100.0f, 0.0f, 0.0f };
+        float[] expected = { 1.0f, 1.0f, 1.0f };
+
+        float[] r1 = connector.transform(source[0], source[1], source[2]);
+        assertNotNull(r1);
+        assertEquals(3, r1.length);
+        assertArrayEquals(expected, r1, 1e-3f);
+
+        source = new float[] { 100.0f, 0.0f, 54.0f };
+        expected = new float[] { 1.0f, 0.8137f, 0f };
+
+        float[] r2 = connector.transform(source[0], source[1], source[2]);
+        assertNotNull(r2);
+        assertEquals(3, r2.length);
+        assertArrayEquals(expected, r2, 1e-3f);
+
+        connector = ColorSpace.connect(
+                ColorSpace.get(ColorSpace.Named.OK_LAB), ColorSpace.RenderIntent.ABSOLUTE);
+
+        source = new float[] { 100.0f, 0.0f, 0.0f };
+        expected = new float[] { 1.0f, 0.9910f, 0.8651f };
+
+        r1 = connector.transform(source[0], source[1], source[2]);
+        assertNotNull(r1);
+        assertEquals(3, r1.length);
+        assertArrayEquals(expected, r1, 1e-3f);
+
+        source = new float[] { 100.0f, 0.0f, 54.0f };
+        expected = new float[] { 1.0f, 0.80465f, 0.0f };
 
         r2 = connector.transform(source[0], source[1], source[2]);
         assertNotNull(r2);
