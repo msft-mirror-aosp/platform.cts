@@ -82,6 +82,9 @@ android_library {
         "src/main/java/**/*.kt",
         // TODO(329826539): Move this into a separate target
         ":bedstead-permissions-harrier-srcs",
+
+        //TODO(b/336991736) below lines are temporary for compatibility with other repositories
+        ":bedstead-enterprise-harrier-temporary-srcs",
     ],
 
     static_libs: [

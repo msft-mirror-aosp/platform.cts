@@ -23,6 +23,7 @@ import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -41,6 +42,7 @@ import java.lang.annotation.Target;
 @RequireFeature(FEATURE_DEVICE_ADMIN)
 // TODO(b/206441366): Add instant app support
 @RequireNotInstantApp(reason = "Instant Apps cannot run Enterprise Tests")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 public @interface RequireHasPolicyExemptApps {
 
     /** Behaviour if there are no policy exempt apps. */

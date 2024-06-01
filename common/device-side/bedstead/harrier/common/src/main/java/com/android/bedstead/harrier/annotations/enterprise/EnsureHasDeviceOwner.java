@@ -25,6 +25,7 @@ import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
 import com.android.bedstead.harrier.annotations.RequireNotWatch;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.queryable.annotations.Query;
 
@@ -43,6 +44,7 @@ import java.lang.annotation.Target;
 // TODO(b/206441366): Add instant app support
 @RequireNotInstantApp(reason = "Instant Apps cannot run Enterprise Tests")
 @RequireNotWatch(reason = "b/270121483 Watches get marked as paired which means we can't change Device Owner")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 @Deprecated
 public @interface EnsureHasDeviceOwner {
 
