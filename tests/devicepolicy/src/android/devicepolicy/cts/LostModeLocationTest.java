@@ -47,6 +47,7 @@ import com.android.bedstead.permissions.PermissionContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
@@ -103,6 +104,8 @@ public final class LostModeLocationTest {
         }
     }
 
+    @Ignore("b/343884479: Fake FUSED provider returns null location due to which we are "
+            + "getting the location from the default fallback i.e. the GPS provider")
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = LostMode.class)
     public void sendLostModeLocationUpdate_returnTrueAndSendLocationUpdate()
@@ -126,6 +129,8 @@ public final class LostModeLocationTest {
         }
     }
 
+    @Ignore("b/343884479: Fake FUSED provider returns null location due to which we are "
+            + "getting the location from the default fallback i.e. the GPS provider")
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = LostMode.class)
     public void sendLostModeLocationUpdate_sendMostRecentLocation() throws Exception {
