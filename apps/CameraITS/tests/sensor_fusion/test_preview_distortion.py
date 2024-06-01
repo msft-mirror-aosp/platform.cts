@@ -85,7 +85,7 @@ def plot_corners(image, corners, cross_color=_RED, text_color=_RED):
 
   Args:
     image: image
-    corners: point in the image
+    corners: points in the image
     cross_color: color of cross
     text_color: color of text
 
@@ -143,15 +143,20 @@ def get_ideal_points(pattern_size):
   return ideal_points
 
 
-def get_distortion_error(image, corners, ideal_points):
+def get_distortion_error(image, corners, ideal_points, rotation_vector,
+                         translation_vector, camera_matrix):
   """Get distortion error by comparing corners and ideal points.
 
   compare corners and ideal points to derive the distortion error
 
   Args:
     image: image containing chessboard and ArUco
-    corners: corners of the chart
-    ideal_points: corners at unit interval.
+    corners: corners of the chart. Shape = (number of corners, 1, 2)
+    ideal_points: corners at unit interval. Shape = (number of corners, 3)
+    rotation_vector: rotation vector based on chart's rotation. Shape = (3, 1)
+    translation_vector: translation vector based on chart's rotation.
+                        Shape = (3, 1)
+    camera_matrix: camera intrinsic matrix. Shape = (3, 3)
 
   Returns:
     normalized_distortion_error_percentage: normalized distortion error
@@ -161,31 +166,8 @@ def get_distortion_error(image, corners, ideal_points):
   chart_coverage, chart_diagonal_pixels = get_chart_coverage(image, corners)
   logging.debug('Chart coverage: %s', chart_coverage)
 
-  # Calculate the distortion error
-  # Do this by:
-  # 1) Calibrate the camera from the detected checkerboard points
-  # 2) Project the ideal points, using the camera calibration data.
-  # 3) Except, do not use distortion coefficients so we model ideal pinhole
-  # 4) Calculate the error of the detected corners relative to the ideal
-  # 5) Normalize the average error by the size of the chart
-  calib_flags = (
-      cv2.CALIB_FIX_K1
-      + cv2.CALIB_FIX_K2
-      + cv2.CALIB_FIX_K3
-      + cv2.CALIB_FIX_K4
-      + cv2.CALIB_FIX_K5
-      + cv2.CALIB_FIX_K6
-      + cv2.CALIB_ZERO_TANGENT_DIST
-  )
-
-  ret, matrix, dist_coeffs, rotation_vector, translation_vector = (
-      cv2.calibrateCamera([ideal_points], [corners], image.shape[:2],
-                          None, None, flags=calib_flags)
-  )
-  logging.debug('Projection error: %s dist_coeffs: %s', ret, dist_coeffs)
-
-  projected_points = cv2.projectPoints(ideal_points, rotation_vector[0],
-                                       translation_vector[0], matrix, None)
+  projected_points = cv2.projectPoints(ideal_points, rotation_vector,
+                                       translation_vector, camera_matrix, None)
   # Reshape projected points to 2D array
   projected = projected_points[0].reshape(-1, 2)
   corners_reshaped = corners.reshape(-1, 2)
@@ -214,17 +196,17 @@ def get_distortion_error(image, corners, ideal_points):
   return normalized_distortion_error_percentage, chart_coverage
 
 
-def chessboard_distortion_error(pattern_size, image):
-  """Calculates the distortion error of the chessboard image.
+def get_chessboard_corners(pattern_size, image):
+  """Find chessboard corners from image.
 
   Args:
     pattern_size: (int, int) chessboard corners.
-    image: image containing chessboard and ArUco markers
+    image: image containing chessboard
 
   Returns:
-    normalized_distortion_error_percentage: normalized distortion error
-      percentage. None if all corners based on pattern_size not found.
-    chart_coverage: percentage of the image covered by chessboard chart
+    corners: corners of the chessboard chart
+    ideal_points: ideal pattern of chessboard corners
+                  i.e. points at unit intervals
   """
   # Convert the image to grayscale
   gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -236,7 +218,7 @@ def chessboard_distortion_error(pattern_size, image):
   logging.debug('corners_pass1: %s', corners_pass1)
 
   if not found_corners:
-    logging.debug('Checker pattern not found.')
+    logging.debug('Chessboard pattern not found.')
     return None, None
 
   # Refine corners
@@ -251,23 +233,20 @@ def chessboard_distortion_error(pattern_size, image):
   ideal_points = get_ideal_points(pattern_size)
   logging.debug('ideal_points: %s', ideal_points)
 
-  normalized_distortion_error_percentage, chart_coverage = (
-      get_distortion_error(image, corners, ideal_points)
-  )
-
-  return normalized_distortion_error_percentage, chart_coverage
+  return corners, ideal_points
 
 
-def aruco_distortion_error(image):
-  """Calculates the distortion drror of the image covered by ArUco.
+def get_aruco_corners(image):
+  """Find ArUco corners from image.
 
   Args:
     image: image containing ArUco markers
 
   Returns:
-    normalized_distortion_error_percentage: normalized distortion error
-      percentage. None if all corners based on pattern_size not found.
-    chart_coverage: percentage of the image covered by ArUco corners
+    corners: First corner of each ArUco markers in the image.
+             None if expected ArUco corners are not found.
+    ideal_points: ideal pattern of the ArUco marker corners.
+                  None if expected ArUco corners are not found.
   """
   # Detect ArUco markers
   aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
@@ -315,11 +294,7 @@ def aruco_distortion_error(image):
   ideal_points = np.delete(ideal_points, middle_index, axis=0)
   logging.debug('ideal_points: %s', ideal_points)
 
-  normalized_distortion_error_percentage, chart_coverage = (
-      get_distortion_error(image, corners, ideal_points)
-  )
-
-  return normalized_distortion_error_percentage, chart_coverage
+  return corners, ideal_points
 
 
 def get_preview_frame(dut, cam, preview_size, zoom, log_path):
@@ -392,13 +367,58 @@ def get_distortion_errors(img_name):
 
   pattern_size = (_CHESSBOARD_CORNERS, _CHESSBOARD_CORNERS)
 
+  chess_corners, chess_ideal_points = get_chessboard_corners(pattern_size,
+                                                             image)
+  aruco_corners, aruco_ideal_points = get_aruco_corners(image)
+
+  if chess_corners is None:
+    return None, None, None, None
+
+  ideal_points = [chess_ideal_points]
+  image_corners = [chess_corners]
+
+  if aruco_corners is not None:
+    ideal_points.append(aruco_ideal_points)
+    image_corners.append(aruco_corners)
+
+  # Calculate the distortion error
+  # Do this by:
+  # 1) Calibrate the camera from the detected checkerboard points
+  # 2) Project the ideal points, using the camera calibration data.
+  # 3) Except, do not use distortion coefficients so we model ideal pinhole
+  # 4) Calculate the error of the detected corners relative to the ideal
+  # 5) Normalize the average error by the size of the chart
+  calib_flags = (
+      cv2.CALIB_FIX_K1
+      + cv2.CALIB_FIX_K2
+      + cv2.CALIB_FIX_K3
+      + cv2.CALIB_FIX_K4
+      + cv2.CALIB_FIX_K5
+      + cv2.CALIB_FIX_K6
+      + cv2.CALIB_ZERO_TANGENT_DIST
+  )
+  ret, camera_matrix, dist_coeffs, rotation_vectors, translation_vectors = (
+      cv2.calibrateCamera(ideal_points, image_corners, image.shape[:2],
+                          None, None, flags=calib_flags)
+  )
+  logging.debug('Projection error: %s dist_coeffs: %s', ret, dist_coeffs)
+  logging.debug('rotation_vector: %s', rotation_vectors)
+  logging.debug('translation_vector: %s', translation_vectors)
+  logging.debug('matrix: %s', camera_matrix)
+
   chkr_distortion_error, chkr_chart_coverage = (
-      chessboard_distortion_error(pattern_size, image)
+      get_distortion_error(image, chess_corners, chess_ideal_points,
+                           rotation_vectors[0], translation_vectors[0],
+                           camera_matrix)
   )
 
-  arc_distortion_error, arc_chart_coverage = (
-      aruco_distortion_error(image)
-  )
+  if aruco_corners is not None:
+    arc_distortion_error, arc_chart_coverage = get_distortion_error(
+        image, aruco_corners, aruco_ideal_points, rotation_vectors[1],
+        translation_vectors[1], camera_matrix
+    )
+  else:
+    arc_distortion_error, arc_chart_coverage = None, None
 
   img_name_update = add_update_to_filename(img_name)
   image_processing_utils.write_image(image / _CH_FULL_SCALE, img_name_update)
