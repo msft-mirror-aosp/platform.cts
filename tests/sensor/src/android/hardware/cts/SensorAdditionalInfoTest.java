@@ -15,17 +15,14 @@
  */
 
 package android.hardware.cts;
-
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorAdditionalInfo;
 import android.hardware.SensorEventCallback;
 import android.hardware.SensorManager;
 import android.hardware.cts.helpers.SensorCtsHelper;
-import android.util.Log;
-import android.content.pm.PackageManager;
 
-import java.lang.Math;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -99,10 +96,11 @@ public class SensorAdditionalInfoTest extends SensorTestCase {
                 mSensorManager.registerListener(verifier, s, SensorManager.SENSOR_DELAY_NORMAL));
         try {
             assertTrue("Missing additional info at registration: (" + verifier.getState() + ")",
-                    verifier.verify());
-
-            assertFalse("Duplicate TYPE_FRAME_BEGIN at: (" +
-                    verifier.getState() + ")", verifier.beginFrameDuplicate());
+                        verifier.verify());
+            assertFalse("Out of order TYPE_FRAME_BEGIN at: ("
+                        + verifier.getState() + ")", verifier.outOfOrderBeginFrame());
+            assertFalse("Found out of order data frame", verifier.outOfOrderDataFrame());
+            assertFalse("Found out of order end frame", verifier.outOfOrderEndFrame());
 
             if (verifier.internalTemperature()) {
                 assertFalse("Duplicate TYPE_INTERNAL_TEMPERATURE at: (" +
@@ -119,8 +117,8 @@ public class SensorAdditionalInfoTest extends SensorTestCase {
                     hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
                 assertTrue("Missing TYPE_SENSOR_PLACEMENT at: (" + verifier.getState() + ")",
                         verifier.sensorPlacement());
-
             }
+
             if(verifier.sensorPlacement()) {
                 assertFalse("Duplicate TYPE_SENSOR_PLACEMENT at: (" +
                         verifier.getState() + ")", verifier.sensorPlacementDuplicate());
@@ -163,9 +161,14 @@ public class SensorAdditionalInfoTest extends SensorTestCase {
     }
 
     private class AdditionalInfoVerifier extends SensorEventCallback {
+        // The additional info should be delivered in the following order:
+        // [TYPE_FRAME_BEGIN, each data type can be delivered only once
+        // (TYPE_INTERNAL_TEMPERATURE, TYPE_SAMPLING, TYPE_SENSOR_PLACEMENT,
+        // TYPE_UNTRACKED_DELAY, TYPE_VEC3_CALIBRATION), TYPE_FRAME_END]
         private boolean mBeginFrame = false;
-        private boolean mBeginFrameDuplicate = false;
-        private boolean mEndFrame = false;
+        private boolean mOufOfOrderBeginFrame = false;
+        private boolean mOufOfOrderEndFrame = false;
+        private boolean mOutOfOrderData = false;
         private boolean mFlushPending = false;
         private boolean mInternalTemperature = false;
         private boolean mInternalTemperatureDuplicate = false;
@@ -181,9 +184,19 @@ public class SensorAdditionalInfoTest extends SensorTestCase {
         private boolean mVec3CalibrationDuplicate = false;
         private CountDownLatch mDone;
         private final Sensor mSensor;
-
         public AdditionalInfoVerifier(Sensor s) {
             mSensor = s;
+        }
+
+        private boolean isOutOfOrderDataType(int type) {
+            if ((type == SensorAdditionalInfo.TYPE_INTERNAL_TEMPERATURE
+                    || type == SensorAdditionalInfo.TYPE_SAMPLING
+                    || type == SensorAdditionalInfo.TYPE_SENSOR_PLACEMENT
+                    || type == SensorAdditionalInfo.TYPE_UNTRACKED_DELAY
+                    || type == SensorAdditionalInfo.TYPE_VEC3_CALIBRATION) && !mBeginFrame) {
+                return true;
+            }
+            return false;
         }
 
         @Override
@@ -196,56 +209,75 @@ public class SensorAdditionalInfoTest extends SensorTestCase {
         @Override
         public void onSensorAdditionalInfo(SensorAdditionalInfo info) {
             if (info.sensor == mSensor && !mFlushPending) {
-                if (info.type == SensorAdditionalInfo.TYPE_FRAME_BEGIN) {
+                if (isOutOfOrderDataType(info.type)) {
+                    mOutOfOrderData = true;
+                    return;
+                } else if (info.type == SensorAdditionalInfo.TYPE_FRAME_BEGIN) {
                     if (mBeginFrame) {
-                        mBeginFrameDuplicate = true;
+                        mOufOfOrderBeginFrame = true;
                         return;
                     }
                     mBeginFrame = true;
-                } else if (mBeginFrame &&
-                            info.type == SensorAdditionalInfo.TYPE_INTERNAL_TEMPERATURE) {
+                } else if (info.type == SensorAdditionalInfo.TYPE_FRAME_END) {
+                    if (!mBeginFrame) {
+                        mOufOfOrderEndFrame = true;
+                        return;
+                    }
+                    mBeginFrame = false;
+                    mDone.countDown();
+                } else if (info.type == SensorAdditionalInfo.TYPE_INTERNAL_TEMPERATURE) {
                     if (mInternalTemperature) {
                         mInternalTemperatureDuplicate = true;
                         return;
                     }
                     mInternalTemperature = true;
-                } else if (mBeginFrame && info.type == SensorAdditionalInfo.TYPE_SAMPLING) {
+                } else if (info.type == SensorAdditionalInfo.TYPE_SAMPLING) {
                     if (mSampling) {
                         mSamplingDuplicate = true;
                         return;
                     }
                     mSampling = true;
-                } else if (mBeginFrame && info.type == SensorAdditionalInfo.TYPE_SENSOR_PLACEMENT) {
+                } else if (info.type == SensorAdditionalInfo.TYPE_SENSOR_PLACEMENT) {
                     if (mSensorPlacement) {
                         mSensorPlacementDuplicate = true;
                         return;
                     }
                     mSensorPlacement = true;
                     verifySensorPlacementData(info.floatValues);
-                } else if (mBeginFrame && info.type == SensorAdditionalInfo.TYPE_UNTRACKED_DELAY) {
+                } else if (info.type == SensorAdditionalInfo.TYPE_UNTRACKED_DELAY) {
                     if (mUntrackedDelay) {
                         mUntrackedDelayDuplicate = true;
                         return;
                     }
                     mUntrackedDelay = true;
-                } else if (mBeginFrame && info.type == SensorAdditionalInfo.TYPE_VEC3_CALIBRATION) {
+                } else if (info.type == SensorAdditionalInfo.TYPE_VEC3_CALIBRATION) {
                     if (mVec3Calibration) {
                         mVec3CalibrationDuplicate = true;
                         return;
                     }
                     mVec3Calibration = true;
-                } else if (info.type == SensorAdditionalInfo.TYPE_FRAME_END && mBeginFrame) {
-                    mEndFrame = true;
-                    mDone.countDown();
                 }
             }
         }
 
         public void reset(boolean flushPending) {
-            mFlushPending = flushPending;
             mBeginFrame = false;
-            mEndFrame = false;
+            mOufOfOrderBeginFrame = false;
+            mOufOfOrderEndFrame = false;
+            mOutOfOrderData = false;
+            mFlushPending = false;
+            mInternalTemperature = false;
+            mInternalTemperatureDuplicate = false;
+            mSampling = false;
+            mSamplingDuplicate = false;
             mSensorPlacement = false;
+            mSensorPlacementDuplicate = false;
+            mIsSensorPlacementSizeValid = false;
+            mIsSensorPlacementRotationValid = false;
+            mUntrackedDelay = false;
+            mUntrackedDelayDuplicate = false;
+            mVec3Calibration = false;
+            mVec3CalibrationDuplicate = false;
             mDone = new CountDownLatch(1);
         }
 
@@ -260,7 +292,7 @@ public class SensorAdditionalInfoTest extends SensorTestCase {
         }
 
         public String getState() {
-            return "fp=" + mFlushPending +", b=" + mBeginFrame + ", e=" + mEndFrame;
+            return "fp=" + mFlushPending + ", b=" + mBeginFrame;
         }
 
         // Checks sensor placement data length and determinant of rotation matrix is 1.
@@ -276,24 +308,27 @@ public class SensorAdditionalInfoTest extends SensorTestCase {
             mIsSensorPlacementRotationValid = (Math.abs(determinant - 1) < EPSILON);
         }
 
-        public boolean beginFrameDuplicate() {
-            return mBeginFrameDuplicate;
+        public boolean outOfOrderBeginFrame() {
+            return mOufOfOrderBeginFrame;
         }
-
+        public boolean outOfOrderDataFrame() {
+            return mOutOfOrderData;
+        }
+        public boolean outOfOrderEndFrame() {
+            return mOufOfOrderEndFrame;
+        }
         public boolean internalTemperature() {
             return mInternalTemperature;
         }
         public boolean internalTemperatureDuplicate() {
             return mInternalTemperatureDuplicate;
         }
-
         public boolean sampling() {
             return mSampling;
         }
         public boolean samplingDuplicate() {
             return mSamplingDuplicate;
         }
-
         public boolean sensorPlacement() {
             return mSensorPlacement;
         }
@@ -306,14 +341,12 @@ public class SensorAdditionalInfoTest extends SensorTestCase {
         public boolean sensorPlacementRotationValid() {
             return mIsSensorPlacementRotationValid;
         }
-
         public boolean untrackedDelay() {
             return mUntrackedDelay;
         }
         public boolean untrackedDelayDuplicate() {
             return mUntrackedDelayDuplicate;
         }
-
         public boolean vec3Calibration() {
             return mVec3Calibration;
         }
