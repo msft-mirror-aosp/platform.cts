@@ -16,6 +16,8 @@
 
 package android.accessibilityservice.cts.utils;
 
+import android.content.Context;
+import android.content.pm.PackageManager;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -41,5 +43,11 @@ public class CtsTestUtils {
 
     public static <T> void runIfNotNull(T callee, Consumer<T> action) {
         Optional.ofNullable(callee).ifPresent(action);
+    }
+
+    /** Returns {@code true} if run on an Automotive device */
+    public static boolean isAutomotive(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm != null && pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }
