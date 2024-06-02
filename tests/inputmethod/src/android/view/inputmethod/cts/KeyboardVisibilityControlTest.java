@@ -39,6 +39,7 @@ import static android.widget.PopupWindow.INPUT_METHOD_NOT_NEEDED;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEventWithKeyValue;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.hideSoftInputMatcher;
@@ -1339,6 +1340,10 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeInvisible(TIMEOUT);
             assertTrue("isActive() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.isActive(editText)));
+            assumeFalse("onEvaluateFullscreenMode() should be false for portrait",
+                    expectCommand(
+                            stream, imeSession.callGetOnEvaluateFullscreenMode(), TIMEOUT)
+                            .getReturnBooleanValue());
 
             // Call ShowSoftInput() implicitly
             assertTrue("showSoftInput must success if the View has IME focus",
