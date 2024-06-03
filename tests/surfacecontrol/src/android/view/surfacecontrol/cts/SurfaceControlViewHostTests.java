@@ -32,13 +32,18 @@ import static android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withFlags;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withMotionAction;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -1305,14 +1310,13 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         waitForStableWindowGeometry(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
         globalTapOnViewCenter(mSurfaceView);
 
-        PollingCheck.waitFor(() -> {
-            try {
-                return mTestService.getViewIsTouchedAndObscured();
-            } catch (RemoteException exception) {
-                fail("Got exception " + exception);
-                return false;
-            }
-        });
+        MotionEvent motionEvent = mTestService.getMotionEvent();
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                withFlags(MotionEvent.FLAG_WINDOW_IS_OBSCURED)));
+        motionEvent = mTestService.getMotionEvent();
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_UP),
+                withFlags(MotionEvent.FLAG_WINDOW_IS_OBSCURED)));
+
     }
 
     @Test
@@ -1336,7 +1340,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         globalTapOnViewCenter(mSurfaceView);
 
-        assertFalse(mTestService.getViewIsTouched());
+        assertNull(mTestService.getMotionEvent());
     }
 
     @Test
