@@ -2542,12 +2542,17 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         AutomaticZenRule result = mNotificationManager.getAutomaticZenRule(ruleId);
         assertThat(result.getType()).isEqualTo(appUpdate.getType());
         assertThat(result.getTriggerDescription()).isEqualTo(appUpdate.getTriggerDescription());
-        assertThat(result.getIconResId()).isEqualTo(appUpdate.getIconResId());
+        if (!Flags.modesUi()) {
+            assertThat(result.getIconResId()).isEqualTo(appUpdate.getIconResId());
+        }
         assertThat(result.isEnabled()).isEqualTo(appUpdate.isEnabled());
 
         // ... but nothing else should (even though those fields were not _specifically_ modified by
         // the user).
         assertThat(result.getName()).isEqualTo(userUpdate.getName());
+        if (Flags.modesUi()) {
+            assertThat(result.getIconResId()).isEqualTo(userUpdate.getIconResId());
+        }
         assertThat(doPoliciesMatchWithDefaults(result.getZenPolicy(), original.getZenPolicy()))
                 .isTrue();
         assertThat(result.getDeviceEffects()).isEqualTo(original.getDeviceEffects());
