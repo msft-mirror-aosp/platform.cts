@@ -108,7 +108,7 @@ class AssociateTest : CoreTestBase() {
         }
 
         // Only the package that own the association is able to set the tag.
-        assertFailsWith(IllegalArgumentException::class) {
+        assertFailsWith(SecurityException::class) {
             cdm.setAssociationTag(association.id, ASSOCIATION_TAG)
         }
 
