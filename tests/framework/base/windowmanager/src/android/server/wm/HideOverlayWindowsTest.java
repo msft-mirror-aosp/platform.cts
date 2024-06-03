@@ -21,6 +21,7 @@ import static android.server.wm.app.Components.HideOverlayWindowsActivity.ACTION
 import static android.server.wm.app.Components.HideOverlayWindowsActivity.PONG;
 import static android.view.Gravity.LEFT;
 import static android.view.Gravity.TOP;
+import static android.view.WindowManager.LayoutParams.FIRST_SUB_WINDOW;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -56,8 +57,9 @@ import org.junit.Test;
 @Presubmit
 public class HideOverlayWindowsTest extends ActivityManagerTestBase {
 
-    private final static String WINDOW_NAME_EXTRA = "window_name";
-    private final static String SYSTEM_APPLICATION_OVERLAY_EXTRA = "system_application_overlay";
+    private static final String POP_UP_WINDOW = "POP_UP_WINDOW";
+    private static final String WINDOW_NAME_EXTRA = "window_name";
+    private static final String SYSTEM_APPLICATION_OVERLAY_EXTRA = "system_application_overlay";
     private PongReceiver mPongReceiver;
 
     @Before
@@ -168,6 +170,37 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
         mWmState.waitAndAssertWindowSurfaceShown(windowName, false);
     }
 
+    @Test
+    public void testApplicationOverlayWithPopUpHiddenWhenRequested() {
+        String windowName = "SYSTEM_ALERT_WINDOW";
+        ComponentName componentName = new ComponentName(
+                mContext, SystemWindowActivity.class);
+
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            launchActivity(componentName,
+                    CliIntentExtra.extraString(WINDOW_NAME_EXTRA, windowName));
+            mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
+        }, Manifest.permission.SYSTEM_ALERT_WINDOW);
+
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            launchActivity(componentName,
+                    CliIntentExtra.extraString(WINDOW_NAME_EXTRA, POP_UP_WINDOW));
+            mWmState.waitAndAssertWindowSurfaceShown(POP_UP_WINDOW, true);
+        }, Manifest.permission.SYSTEM_ALERT_WINDOW);
+
+        launchActivity(HIDE_OVERLAY_WINDOWS_ACTIVITY);
+        mWmState.waitAndAssertWindowSurfaceShown(POP_UP_WINDOW, true);
+        mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
+
+        setHideOverlayWindowsAndWaitForPong(true);
+        mWmState.waitAndAssertWindowSurfaceShown(windowName, false);
+        mWmState.waitAndAssertWindowSurfaceShown(POP_UP_WINDOW, false);
+
+        setHideOverlayWindowsAndWaitForPong(false);
+        mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
+        mWmState.waitAndAssertWindowSurfaceShown(POP_UP_WINDOW, true);
+    }
+
     void setHideOverlayWindowsAndWaitForPong(boolean hide) {
         Intent intent = new Intent(ACTION);
         intent.putExtra(Components.HideOverlayWindowsActivity.SHOULD_HIDE, hide);
@@ -178,6 +211,7 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
     public static class BaseSystemWindowActivity extends Activity {
 
         TextView mTextView;
+        TextView mSubWindow;
 
         @Override
         protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -204,8 +238,35 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
         }
 
         @Override
+        protected void onNewIntent(Intent intent) {
+            super.onNewIntent(intent);
+            if (POP_UP_WINDOW.equals(intent.getStringExtra(WINDOW_NAME_EXTRA))) {
+                final Point size = new Point();
+                getDisplay().getRealSize(size);
+
+                WindowManager.LayoutParams params =
+                        new WindowManager.LayoutParams(FIRST_SUB_WINDOW,
+                                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+                params.width = size.x / 3;
+                params.height = size.y / 6;
+                params.gravity = TOP | LEFT;
+                params.setTitle(POP_UP_WINDOW);
+                params.token = mTextView.getWindowToken();
+
+                mSubWindow = new TextView(this);
+                mSubWindow.setText(POP_UP_WINDOW + "   type=" + FIRST_SUB_WINDOW);
+                mSubWindow.setBackgroundColor(Color.RED);
+
+                getWindowManager().addView(mSubWindow, params);
+            }
+        }
+
+        @Override
         protected void onDestroy() {
             super.onDestroy();
+            if (mSubWindow != null) {
+                getWindowManager().removeView(mSubWindow);
+            }
             getWindowManager().removeView(mTextView);
         }
     }
