@@ -135,8 +135,7 @@ public class ASurfaceControlInputReceiverTest {
         assertWindowAndGetBounds(mActivity.getDisplayId(), bounds);
         final Point tapCoord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(InstrumentationRegistry.getInstrumentation(), tapCoord,
-                false /* useGlobalInjection */);
+        sendTap(InstrumentationRegistry.getInstrumentation(), tapCoord);
 
         assertMotionEventOnWindowCenter(motionEvents, bounds);
     }
@@ -189,8 +188,7 @@ public class ASurfaceControlInputReceiverTest {
 
         final Point coord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(InstrumentationRegistry.getInstrumentation(), coord,
-                false /* useGlobalInjection */);
+        sendTap(InstrumentationRegistry.getInstrumentation(), coord);
 
         assertMotionEventOnWindowCenter(motionEvents, bounds);
     }
@@ -231,8 +229,7 @@ public class ASurfaceControlInputReceiverTest {
         assertWindowAndGetBounds(mActivity.getDisplayId(), bounds);
         final Point coord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(InstrumentationRegistry.getInstrumentation(), coord,
-                false /* useGlobalInjection */);
+        sendTap(InstrumentationRegistry.getInstrumentation(), coord);
 
         assertTrue("Failed to receive touch event on host",
                 hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
@@ -272,8 +269,7 @@ public class ASurfaceControlInputReceiverTest {
         assertWindowAndGetBounds(mActivity.getDisplayId(), bounds);
         final Point coord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(InstrumentationRegistry.getInstrumentation(), coord,
-                false /* useGlobalInjection */);
+        sendTap(InstrumentationRegistry.getInstrumentation(), coord);
 
         assertTrue("Failed to receive touch event on host",
                 hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
@@ -314,8 +310,7 @@ public class ASurfaceControlInputReceiverTest {
         assertWindowAndGetBounds(mActivity.getDisplayId(), bounds);
         final Point coord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(InstrumentationRegistry.getInstrumentation(), coord,
-                false /* useGlobalInjection */);
+        sendTap(InstrumentationRegistry.getInstrumentation(), coord);
 
         assertTrue("Failed to receive touch event on embedded",
                 embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
@@ -349,8 +344,7 @@ public class ASurfaceControlInputReceiverTest {
         assertWindowAndGetBounds(mActivity.getDisplayId(), bounds);
         final Point coord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(InstrumentationRegistry.getInstrumentation(), coord,
-                false /* useGlobalInjection */);
+        sendTap(InstrumentationRegistry.getInstrumentation(), coord);
 
         assertTrue("Failed to receive touch event on embedded",
                 embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
