@@ -24,6 +24,12 @@ package android.security.cts;
  * to generate this file.
  */
 class CertificateData {
+  static final String[] OPTIONAL_CERTIFICATE_DATA = {
+      "F4:27:86:EB:6E:B8:6D:88:31:67:02:FB:BA:66:A4:53:00:AA:7A:A6",
+      "D5:EC:8D:7B:4C:BA:79:F4:E7:E8:CB:9D:6B:AE:77:83:10:03:21:6A",
+      "D6:DA:A8:20:8D:09:D2:15:4D:24:B5:2F:CB:34:6E:B2:58:B2:8A:58",
+  };
+
   static final String[] CERTIFICATE_DATA = {
       "99:9A:64:C3:7F:F4:7D:9F:AB:95:F1:47:69:89:14:60:EE:C4:C3:C5",
       "D1:CB:CA:5D:B2:D5:2A:7F:69:3B:67:4D:E5:F0:5A:1D:0C:95:7D:F0",
@@ -77,7 +83,6 @@ class CertificateData {
       "4C:DD:51:A3:D1:F5:20:32:14:B0:C6:C5:32:23:03:91:C7:46:42:6D",
       "0D:44:DD:8C:3C:8C:1A:1A:58:75:64:81:E9:0F:2E:2A:FF:B3:D2:6E",
       "CA:3A:FB:CF:12:40:36:4B:44:B2:16:20:88:80:48:39:19:93:7C:F7",
-      "F4:27:86:EB:6E:B8:6D:88:31:67:02:FB:BA:66:A4:53:00:AA:7A:A6",
       "5F:B7:EE:06:33:E2:59:DB:AD:0C:4C:9A:E6:D3:8F:1A:61:C7:DC:25",
       "49:0A:75:74:DE:87:0A:47:FE:58:EE:F6:C7:6B:EB:C6:0B:12:40:99",
       "89:D4:83:03:4F:9E:9A:48:80:5F:72:37:D4:A9:A6:EF:CB:7C:1F:D1",
@@ -159,7 +164,6 @@ class CertificateData {
       "5A:8C:EF:45:D7:A6:98:59:76:7A:8C:8B:44:96:B5:78:CF:47:4B:1A",
       "8D:A7:F9:65:EC:5E:FC:37:91:0F:1C:6E:59:FD:C1:CC:6A:6E:DE:16",
       "B1:2E:13:63:45:86:A4:6F:1A:B2:60:68:37:58:2D:C4:AC:FD:94:97",
-      "D5:EC:8D:7B:4C:BA:79:F4:E7:E8:CB:9D:6B:AE:77:83:10:03:21:6A",
   };
 
   static final String[] WFA_CERTIFICATE_DATA = {
