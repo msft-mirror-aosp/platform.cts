@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.text.ClipboardManager;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -36,6 +37,7 @@ import org.junit.runner.RunWith;
  * Test {@link ClipboardManager}.
  */
 @RunWith(AndroidJUnit4.class)
+@AppModeNonSdkSandbox(reason = "SDK sandboxes cannot access ClipboardManager.")
 public class ClipboardManagerTest {
     private ClipboardManager mClipboardManager;
 

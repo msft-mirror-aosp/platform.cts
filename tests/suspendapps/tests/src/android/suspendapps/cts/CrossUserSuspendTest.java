@@ -19,8 +19,8 @@ package android.suspendapps.cts;
 import static android.content.Intent.ACTION_PACKAGE_UNSUSPENDED_MANUALLY;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.permissions.CommonPermissions.SUSPEND_APPS;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.SUSPEND_APPS;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
@@ -40,18 +40,18 @@ import androidx.test.filters.LargeTest;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -62,7 +62,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(BedsteadJUnit4.class)
 @LargeTest
-@RequiresFlagsEnabled(Flags.FLAG_CROSS_USER_SUSPENSION_ENABLED)
+@RequiresFlagsEnabled(Flags.FLAG_CROSS_USER_SUSPENSION_ENABLED_RO)
 public class CrossUserSuspendTest {
     @ClassRule
     public static final DeviceState sDeviceState = new DeviceState();

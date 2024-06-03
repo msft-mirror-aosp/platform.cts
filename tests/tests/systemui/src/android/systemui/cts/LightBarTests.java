@@ -331,9 +331,13 @@ public class LightBarTests extends LightBarTestBase {
                     (float) sameHuePixels / (float) s.foregroundPixels(),
                     "Are the bar icons " + expected + "?");
 
-            assertLessThan("Too many pixels with a changed hue", 0.05f,
-                    (float) s.unexpectedHuePixels / (float) s.foregroundPixels(),
-                    "Are the bar icons color-free?");
+            // New status bar icons introduce color into the battery icon more regularly. This
+            // value can't be asserted in this way anymore
+            if (!Flags.newStatusBarIcons()) {
+                assertLessThan("Too many pixels with a changed hue", 0.05f,
+                        (float) s.unexpectedHuePixels / (float) s.foregroundPixels(),
+                        "Are the bar icons color-free?");
+            }
 
             success = true;
         } finally {

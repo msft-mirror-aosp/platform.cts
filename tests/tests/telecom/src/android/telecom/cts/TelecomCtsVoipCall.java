@@ -127,6 +127,8 @@ public class TelecomCtsVoipCall {
 
         @Override
         public void onVideoStateChanged(int videoState) {
+            Log.i(TAG, String.format("onVideoStateChanged: callId=[%s], videoState=[%d]", mCallId,
+                    mVideoState));
             mVideoState = videoState;
             mWasVideoStateChangedCalled = true;
         }

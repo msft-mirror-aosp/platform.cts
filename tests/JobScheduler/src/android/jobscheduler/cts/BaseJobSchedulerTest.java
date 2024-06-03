@@ -52,6 +52,7 @@ import java.io.IOException;
 
 /**
  * Common functionality from which the other test case classes derive.
+ * TODO: b/338305140 - Move to JUnit4.
  */
 @TargetApi(21)
 public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {

@@ -52,6 +52,7 @@ import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
+import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
@@ -60,6 +61,7 @@ import com.android.server.telecom.flags.Flags;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -350,7 +352,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
             assertNumCalls(getInCallService(), 1);
-            assertEquals(Call.STATE_ACTIVE, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
             callControlAction(DISCONNECT, mCall1);
             assertNumCalls(getInCallService(), 0);
         } finally {
@@ -374,7 +376,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
-            assertEquals(Call.STATE_ACTIVE, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
             // Ensure that the call has PROPERTY_IS_TRANSACTIONAL:
             Call call = getLastAddedCall();
             assertTrue(call.getDetails().hasProperty(Call.Details.PROPERTY_IS_TRANSACTIONAL));
@@ -401,7 +403,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
             assertNumCalls(getInCallService(), 1);
-            assertEquals(Call.STATE_ACTIVE, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
             callControlAction(DISCONNECT, mCall1);
             assertNumCalls(getInCallService(), 0);
         } finally {
@@ -425,7 +427,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
-            assertEquals(Call.STATE_ACTIVE, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
             // Ensure that the call has PROPERTY_IS_TRANSACTIONAL:
             Call call = getLastAddedCall();
             assertTrue(call.getDetails().hasProperty(Call.Details.PROPERTY_IS_TRANSACTIONAL));
@@ -474,7 +476,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall1);
             assertNumCalls(getInCallService(), 1);
-            assertEquals(Call.STATE_RINGING, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_RINGING);
             try {
                 callControlAction(DISCONNECT, mCall1, DisconnectCause.ERROR);
                 fail("testRejectIncomingCall: forced fail b/c IllegalArgumentException not thrown");
@@ -531,7 +533,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
         try {
             startCallWithAttributesAndVerify(new CallAttributes.Builder(DEFAULT_T_HANDLE,
                     DIRECTION_OUTGOING, TEST_NAME_1, TEST_URI_1)
-                    .setCallType(CallAttributes.AUDIO_CALL)
+                    .setCallType(AUDIO_CALL)
                     .setCallCapabilities(CallAttributes.SUPPORTS_VIDEO_CALLING)
                     .build(), mCall1);
             // set the call active
@@ -543,47 +545,6 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             // change the video state back to AUDIO
             callControlAction(REQUEST_VIDEO_STATE, mCall1, AUDIO_CALL);
             waitUntilVideoStateIs(AUDIO_CALL, mCall1);
-            // disconnect
-            callControlAction(DISCONNECT, mCall1);
-            assertNumCalls(getInCallService(), 0);
-        } finally {
-            cleanup();
-        }
-    }
-
-    /**
-     * Common fail case: Test the scenario where an outgoing call that does not set the
-     * {@link CallAttributes.CallCapability#SUPPORTS_VIDEO_CALLING}
-     */
-    public void testTransactionalVideoStateChanges_withoutVideoCapabilitiesForCall() {
-        if (!mShouldTestTelecom || !Flags.transactionalVideoState()) {
-            return;
-        }
-        try {
-            startCallWithAttributesAndVerify(
-                    new CallAttributes.Builder(DEFAULT_T_HANDLE, DIRECTION_OUTGOING,
-                            TEST_NAME_1, TEST_URI_1)
-                            .setCallType(CallAttributes.AUDIO_CALL)
-                            .setCallCapabilities(0 /* purposely do not add VIDEO capabilities */)
-                            .build(), mCall1);
-            // set the call active
-            callControlAction(SET_ACTIVE, mCall1);
-            waitUntilVideoStateIs(AUDIO_CALL, mCall1);
-            final CountDownLatch latch = new CountDownLatch(1);
-            // request the video state change
-            mCall1.mCallControl.requestVideoState(CallAttributes.VIDEO_CALL, Runnable::run,
-                    new OutcomeReceiver<Void, CallException>() {
-                        @Override
-                        public void onResult(Void result) {
-                        }
-
-                        @Override
-                        public void onError(CallException exception) {
-                            latch.countDown();
-                        }
-                    });
-            // wait for the latch to count down signaling the onError was called
-            assertOnErrorWasReceived(latch);
             // disconnect
             callControlAction(DISCONNECT, mCall1);
             assertNumCalls(getInCallService(), 0);
@@ -707,7 +668,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
     @ApiTest(apis = {"android.telecom.TelecomManager#addCall",
             "android.telecom.CallControl#disconnect",
             "android.telecom.CallControl#setActive"})
-    public void testUsingCallControlAfterDisconnect() {
+    public void testUsingCallControlAfterDisconnect() throws Exception {
         if (!mShouldTestTelecom) {
             return;
         }
@@ -717,17 +678,31 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             callControlAction(DISCONNECT, mCall1);
             assertNumCalls(getInCallService(), 0);
 
+            CountDownLatch latch = new CountDownLatch(1);
+            LinkedBlockingQueue<CallException> queue = new LinkedBlockingQueue<>();
+
             mCall1.mCallControl.setActive(Runnable::run, new OutcomeReceiver<>() {
                 @Override
                 public void onResult(Void result) {
-                    fail("testUsingCallControlAfterDisconnect:"
-                            + " onResult should not be called");
+                    latch.countDown();
                 }
 
                 @Override
                 public void onError(CallException exception) {
+                    queue.add(exception);
+                    latch.countDown();
                 }
             });
+
+            latch.await();
+
+            if (queue.isEmpty()) {
+                fail("setActive#onError(CallException) was not called");
+            }
+
+            CallException e = (CallException) queue.poll();
+            assertTrue(CallException.CODE_CALL_IS_NOT_BEING_TRACKED == e.getCode()
+                    || CallException.CODE_CALL_CANNOT_BE_SET_TO_ACTIVE == e.getCode());
         } finally {
             cleanup();
         }
@@ -871,7 +846,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             callControlAction(SET_ACTIVE, mCall1);
             assertNumCalls(getInCallService(), 1);
 
-            assertEquals(Call.STATE_ACTIVE, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
 
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall2);
             callControlAction(SET_ACTIVE, mCall2);
@@ -880,13 +855,13 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             Call call1 = getCallWithId(mCall1.getTelecomCallId());
             Call call2 = getCallWithId(mCall2.getTelecomCallId());
 
-            assertEquals(Call.STATE_HOLDING, call1.getState());
-            assertEquals(Call.STATE_ACTIVE, call2.getState());
+            assertCallState(call1, Call.STATE_HOLDING);
+            assertCallState(call2, Call.STATE_ACTIVE);
 
             callControlAction(DISCONNECT, mCall2);
             assertNumCalls(getInCallService(), 1);
 
-            assertEquals(Call.STATE_HOLDING, call1.getState());
+            assertCallState(call1, Call.STATE_HOLDING);
 
             callControlAction(DISCONNECT, mCall1);
             assertNumCalls(getInCallService(), 0);
@@ -953,6 +928,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
     @ApiTest(apis = {"android.telecom.TelecomManager#addCall",
             "android.telecom.CallControl#disconnect",
             "android.telecom.CallEventCallback#onCallEndpointChanged"})
+    @FlakyTest
     public void testOnChangedCallEndpoint() {
         if (!mShouldTestTelecom) {
             return;

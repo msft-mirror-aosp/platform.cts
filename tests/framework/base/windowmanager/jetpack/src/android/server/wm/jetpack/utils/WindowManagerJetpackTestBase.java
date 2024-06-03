@@ -83,7 +83,8 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
     private static final Set<Activity> sVisibleActivities = new HashSet<>();
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         mInstrumentation = getInstrumentation();
         assertNotNull(mInstrumentation);
         mContext = getApplicationContext();
@@ -268,28 +269,22 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
         if (activity.isInPictureInPictureMode()) {
             throw new IllegalStateException("Activity must not be in PiP");
         }
-        activity.resetLayoutCounter();
+        activity.resetOnConfigurationChangeCounter();
         // Change the orientation
         PictureInPictureParams params = (new PictureInPictureParams.Builder()).build();
         activity.enterPictureInPictureMode(params);
-        // Wait for the activity to layout, which will happen after the orientation change
-        assertTrue(activity.waitForLayout());
-        // Check that orientation matches
-        assertTrue(activity.isInPictureInPictureMode());
+        activity.waitForConfigurationChange();
     }
 
     public static void exitPipActivityHandlesConfigChanges(TestActivity activity) {
         if (!activity.isInPictureInPictureMode()) {
             throw new IllegalStateException("Activity must be in PiP");
         }
-        activity.resetLayoutCounter();
+        activity.resetOnConfigurationChangeCounter();
         Intent intent = new Intent(activity, activity.getClass());
         intent.addFlags(FLAG_ACTIVITY_SINGLE_TOP);
         activity.startActivity(intent);
-        // Wait for the activity to layout, which will happen after the orientation change
-        assertTrue(activity.waitForLayout());
-        // Check that orientation matches
-        assertFalse(activity.isInPictureInPictureMode());
+        activity.waitForConfigurationChange();
     }
 
     public static void setActivityOrientationActivityDoesNotHandleOrientationChanges(

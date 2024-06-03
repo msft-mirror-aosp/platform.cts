@@ -27,6 +27,8 @@ import static com.android.server.biometrics.nano.BiometricServiceStateProto.STAT
 import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_AUTH_STARTED_UI_SHOWING;
 import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_SHOWING_DEVICE_CREDENTIAL;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -44,6 +46,7 @@ import android.hardware.biometrics.BiometricManager.Authenticators;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.PromptContentView;
+import android.hardware.biometrics.PromptVerticalListContentView;
 import android.hardware.biometrics.SensorProperties;
 import android.os.Bundle;
 import android.os.CancellationSignal;
@@ -104,12 +107,14 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
     protected static final String BUTTON_ID_TRY_AGAIN = "button_try_again";
 
     // Biometric text contents
+    protected static final String SCROLL_PARENT_VIEW = "scrollView";
     protected static final String LOGO_VIEW = "logo";
     protected static final String LOGO_DESCRIPTION_VIEW = "logo_description";
     protected static final String TITLE_VIEW = "title";
     protected static final String SUBTITLE_VIEW = "subtitle";
     protected static final String DESCRIPTION_VIEW = "description";
-    protected static final String CONTENT_CONTAINER_VIEW = "customized_view_container";
+    protected static final String CONTENT_VIEW = "customized_view";
+    protected static final String CONTENT_DESCRIPTION_VIEW  = "customized_view_description";
 
     protected static final String VIEW_ID_PASSWORD_FIELD = "lockPassword";
     protected static final String KEY_ENTER = "key_enter";
@@ -152,16 +157,16 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
         return BiometricServiceState.parseFrom(proto);
     }
 
-
-    @Nullable
-    protected String getCurrentPackageName() {
-        return mDevice.getCurrentPackageName();
-    }
-
     @Nullable
     protected UiObject2 findView(String id) {
         Log.d(TAG, "Finding view: " + id);
         return mDevice.findObject(By.res(mBiometricManager.getUiPackage(), id));
+    }
+
+    @Nullable
+    protected UiObject2 findViewByText(String text) {
+        Log.d(TAG, "Finding view by text: " + text);
+        return mDevice.findObject(By.text(text));
     }
 
     @Nullable
@@ -228,6 +233,25 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
             }
         }
         return false;
+    }
+
+    protected void setUpNonConvenienceSensorEnrollment(SensorProperties props,
+            BiometricTestSession session) throws Exception {
+        waitForAllUnenrolled();
+        final int authenticatorStrength =
+                Utils.testApiStrengthToAuthenticatorStrength(props.getSensorStrength());
+
+        assertWithMessage("Sensor: " + props.getSensorId()
+                + ", strength: " + props.getSensorStrength()).that(
+                mBiometricManager.canAuthenticate(authenticatorStrength)).isEqualTo(
+                BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED);
+
+        enrollForSensor(session, props.getSensorId());
+
+        assertWithMessage("Sensor: " + props.getSensorId()
+                + ", strength: " + props.getSensorStrength()).that(
+                mBiometricManager.canAuthenticate(authenticatorStrength)).isEqualTo(
+                BiometricManager.BIOMETRIC_SUCCESS);
     }
 
     private void successfullyAuthenticate(@NonNull BiometricTestSession session, int userId)
@@ -359,7 +383,7 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
 
         prompt.authenticate(cancellationSignal, executor, callback);
 
-        waitForCredentialIdle(shouldShow, contentView == null);
+        waitForCredentialIdle(shouldShow, contentView instanceof PromptVerticalListContentView);
     }
 
     /**
@@ -382,14 +406,14 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
 
         prompt.authenticate(cancellationSignal, executor, callback);
 
-        waitForCredentialIdle(shouldShow, true /* isContentViewNull */);
+        waitForCredentialIdle(shouldShow, false /* isContentViewWithMoreOptionsButton */);
     }
 
     protected BiometricPrompt showDefaultBiometricPrompt(int sensorId,
             @NonNull BiometricPrompt.AuthenticationCallback callback,
             @NonNull CancellationSignal cancellationSignal) throws Exception {
         return showDefaultBiometricPromptWithLogo(sensorId, callback, cancellationSignal,
-                -1 /* logoRes */, null /* logoBitmap */, null /* logoDescription */);
+                -1 /* logoRes */, null /* logoBitmap */, "logo" /* logoDescription */);
     }
 
     protected BiometricPrompt showDefaultBiometricPromptWithLogo(int sensorId,
@@ -601,17 +625,12 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
                         .get(sensorId).getUserStates().get(userId).numEnrolled);
     }
 
-    protected void waitForCredentialIdle(boolean shouldShow, boolean isContentViewNull)
+    protected void waitForCredentialIdle(boolean shouldShow,
+            boolean isVerticalContentView)
             throws Exception {
         boolean shouldShowBpWithoutIconForCredential = Utils.shouldShowBpWithoutIconForCredential(
-                isContentViewNull, false /*isBiometricAllowed*/);
+                isVerticalContentView, false /*isBiometricAllowed*/);
         mInstrumentation.waitForIdleSync();
-
-        // Wait for any animations to complete. Ideally, this should be reflected in
-        // STATE_SHOWING_DEVICE_CREDENTIAL, but SysUI and BiometricService are different processes
-        // so we'd need to add some additional plumbing. We can improve this in the future.
-        // TODO(b/152240892)
-        Thread.sleep(1000);
 
         if (shouldShow) {
             if (shouldShowBpWithoutIconForCredential) {
@@ -619,6 +638,12 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
                 findAndPressButton(BUTTON_ID_USE_CREDENTIAL);
                 waitForState(STATE_SHOWING_DEVICE_CREDENTIAL);
             }
+            // Wait for any animations to complete. Ideally, this should be reflected in
+            // STATE_SHOWING_DEVICE_CREDENTIAL, but SysUI and BiometricService are different
+            // processes so we'd need to add some additional plumbing. We can improve this in the
+            // future.
+            // TODO(b/152240892)
+            Thread.sleep(1000);
             waitForState(STATE_SHOWING_DEVICE_CREDENTIAL);
             BiometricServiceState state = getCurrentState();
             assertEquals(state.toString(), STATE_SHOWING_DEVICE_CREDENTIAL, state.mState);

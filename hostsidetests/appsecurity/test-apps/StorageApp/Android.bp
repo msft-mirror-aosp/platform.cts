@@ -47,3 +47,20 @@ android_test_helper_app {
     ],
     manifest: "AndroidManifestB.xml",
 }
+
+android_test_helper_app {
+    name: "CtsStorageAppC",
+    defaults: ["cts_support_defaults"],
+    sdk_version: "test_current",
+    static_libs: [
+        "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
+    ],
+    libs: ["android.test.base"],
+    srcs: ["src/**/*.java"],
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    manifest: "AndroidManifestC.xml",
+}

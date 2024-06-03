@@ -13,11 +13,13 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_enterprise",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test {
     name: "CtsDevicePolicySimTestCases",
+    team: "trendy_team_enterprise",
     defaults: ["cts_defaults"],
     min_sdk_version: "29",
     target_sdk_version: "29",

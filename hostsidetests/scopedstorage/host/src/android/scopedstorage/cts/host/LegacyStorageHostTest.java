@@ -18,6 +18,8 @@ package android.scopedstorage.cts.host;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.tradefed.device.contentprovider.ContentProviderHandler;
@@ -86,6 +88,9 @@ public class LegacyStorageHostTest extends BaseHostTestCase {
 
     @Before
     public void setup() throws Exception {
+        // Ignore tests on automotive devices b/319785789
+        assumeFalse(hasDeviceFeature("android.hardware.type.automotive"));
+
         mContentProviderHandler = new ContentProviderHandler(getDevice());
         mContentProviderHandler.setUp();
         setupExternalStorage();
@@ -98,7 +103,9 @@ public class LegacyStorageHostTest extends BaseHostTestCase {
 
     @After
     public void tearDown() throws Exception {
-        mContentProviderHandler.tearDown();
+        if (mContentProviderHandler != null) {
+            mContentProviderHandler.tearDown();
+        }
         revokePermissions("android.permission.WRITE_EXTERNAL_STORAGE",
                 "android.permission.READ_EXTERNAL_STORAGE");
     }

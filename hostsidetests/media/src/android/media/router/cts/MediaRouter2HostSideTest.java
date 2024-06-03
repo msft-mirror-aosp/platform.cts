@@ -33,6 +33,7 @@ import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_PACKA
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_PACKAGE;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.platform.test.annotations.AppModeFull;
@@ -55,6 +56,7 @@ import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 
 import com.google.common.truth.Expect;
 
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,6 +67,13 @@ import java.io.FileNotFoundException;
 /** Installs route provider apps and runs tests in {@link MediaRouter2DeviceTest}. */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
+
+    private static final String[] ROUTE_PROVIDER_PACKAGES = {
+        MEDIA_ROUTER_PROVIDER_1_PACKAGE,
+        MEDIA_ROUTER_PROVIDER_2_PACKAGE,
+        MEDIA_ROUTER_PROVIDER_3_PACKAGE,
+        MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_PACKAGE
+    };
 
     /** The maximum period of time to wait for a scan request to take effect, in milliseconds. */
     private static final long WAIT_MS_SCAN_PROPAGATION = 3000;
@@ -96,6 +105,13 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         expect.that(device.uninstallPackage(MEDIA_ROUTER_TEST_PACKAGE)).isNull();
         expect.that(device.uninstallPackage(MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_PACKAGE))
                 .isNull();
+    }
+
+    @Before
+    public void setUp() throws Throwable {
+        // We must kill previously bound route providers to avoid unrelated scan requests
+        // interfering with tests.
+        forceStopAllRouteProviders();
     }
 
     @Test
@@ -318,32 +334,42 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_KEEP_ALIVE_ROUTE_PROVIDERS)
     @Test
     public void providerService_doesNotAutoBindAfterCrashing() throws Throwable {
-        String startActivityCommand =
-                "am start %s/.ScanningActivity".formatted(MEDIA_ROUTER_TEST_PACKAGE);
-        getDevice().executeShellCommand(startActivityCommand);
+        try {
+            // We should make sure that the route provider isn't running to avoid race conditions
+            // with the provider process's lifecycle.
+            assertWithMessage("Setup failed. Provider must not be running before test is run.")
+                    .that(forceStopAndWaitForRunningStatus(MEDIA_ROUTER_PROVIDER_1_PACKAGE))
+                    .isTrue();
 
-        boolean providerStarted =
-                waitForPackageRunningStatus(
-                        MEDIA_ROUTER_PROVIDER_1_PACKAGE, /* isPackageExpectedToRun= */ true);
-        assertWithMessage("Provider did not start after starting the scanning activity.")
-                .that(providerStarted)
-                .isTrue();
+            String startActivityCommand =
+                    "am start %s/.ScanningActivity".formatted(MEDIA_ROUTER_TEST_PACKAGE);
+            getDevice().executeShellCommand(startActivityCommand);
 
-        getDevice().executeShellCommand("am force-stop " + MEDIA_ROUTER_PROVIDER_1_PACKAGE);
+            boolean providerStarted =
+                    waitForPackageRunningStatus(
+                            MEDIA_ROUTER_PROVIDER_1_PACKAGE, /* isPackageExpectedToRun= */ true);
+            assertWithMessage("Provider did not start after starting the scanning activity.")
+                    .that(providerStarted)
+                    .isTrue();
 
-        boolean providerStopped =
-                waitForPackageRunningStatus(
-                        MEDIA_ROUTER_PROVIDER_1_PACKAGE, /* isPackageExpectedToRun= */ false);
-        assertWithMessage("Provider did not stop after force-stopping it.")
-                .that(providerStopped)
-                .isTrue();
+            getDevice().executeShellCommand("am force-stop " + MEDIA_ROUTER_PROVIDER_1_PACKAGE);
 
-        boolean providerRestarted =
-                waitForPackageRunningStatus(
-                        MEDIA_ROUTER_PROVIDER_1_PACKAGE, /* isPackageExpectedToRun= */ true);
-        assertWithMessage("Provider restarted after force-stopping it.")
-                .that(providerRestarted)
-                .isFalse();
+            boolean providerStopped =
+                    waitForPackageRunningStatus(
+                            MEDIA_ROUTER_PROVIDER_1_PACKAGE, /* isPackageExpectedToRun= */ false);
+            assertWithMessage("Provider did not stop after force-stopping it.")
+                    .that(providerStopped)
+                    .isTrue();
+
+            boolean providerRestarted =
+                    waitForPackageRunningStatus(
+                            MEDIA_ROUTER_PROVIDER_1_PACKAGE, /* isPackageExpectedToRun= */ true);
+            assertWithMessage("Provider restarted after force-stopping it.")
+                    .that(providerRestarted)
+                    .isFalse();
+        } finally {
+            expect.that(forceStopAndWaitForRunningStatus(MEDIA_ROUTER_TEST_PACKAGE)).isTrue();
+        }
     }
 
     @ApiTest(apis = {"android.media.MediaRouter2ProviderService#onBind"})
@@ -351,7 +377,7 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @RequiresDevice
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_KEEP_ALIVE_ROUTE_PROVIDERS)
     @Test
-    public void packageManagerSpammingProviderService_doesnNotAutoBindAfterCrashing()
+    public void packageManagerSpammingProviderService_doesNotAutoBindAfterCrashing()
             throws Throwable {
         // Note that this apk is not installed with the other apks in this test, and this should not
         // change. This apk messes up with the proxy watcher by spamming PACKAGE_CHANGED events, so
@@ -392,8 +418,31 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                     .that(providerRestarted)
                     .isFalse();
         } finally {
-            uninstallPackage(MEDIA_ROUTER_PROVIDER_WITH_PACKAGE_MANAGER_SPAM_PACKAGE);
+            expect.that(uninstallPackage(MEDIA_ROUTER_PROVIDER_WITH_PACKAGE_MANAGER_SPAM_PACKAGE))
+                    .isNull();
+            expect.that(forceStopAndWaitForRunningStatus(MEDIA_ROUTER_TEST_PACKAGE)).isTrue();
         }
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @Test
+    public void activeScanRouteDiscoveryPreference_scansOnSelfScanProvider() throws Exception {
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                DEVICE_SIDE_TEST_CLASS,
+                "activeScanRouteDiscoveryPreference_scansOnSelfScanProvider");
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_MANAGER_SCANS_WHEN_NO_APPS_SCAN)
+    @Test
+    public void managerScan_withNoAppsScanning_doesNotWakeUpProvider() throws Exception {
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                DEVICE_SIDE_TEST_CLASS,
+                "managerScan_withNoAppsScanning_doesNotWakeUpProvider");
     }
 
     private void setPermissionEnabled(String packageName, String permission, boolean enabled)
@@ -407,6 +456,18 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
             assertWithMessage("Setting permission %s failed: %s".formatted(permission, result))
                     .fail();
         }
+    }
+
+    private void forceStopAllRouteProviders() throws Throwable {
+        for (String providerPackage : ROUTE_PROVIDER_PACKAGES) {
+            assertThat(forceStopAndWaitForRunningStatus(providerPackage)).isTrue();
+        }
+    }
+
+    private boolean forceStopAndWaitForRunningStatus(String packageName) throws Throwable {
+        getDevice().executeShellCommand("am force-stop " + packageName);
+        return waitForPackageRunningStatus(
+                MEDIA_ROUTER_TEST_PACKAGE, /* isPackageExpectedToRun= */ false);
     }
 
     /**

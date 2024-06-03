@@ -364,13 +364,6 @@ public class ImageReaderDecoderTest {
 
         mediaFormat = mExtractor.getTrackFormat(0);
         mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
-        if (mMime.equals(MediaFormat.MIMETYPE_VIDEO_VP9) && video.contains("10bit")) {
-            // TODO: b/295804596 - parse color profiles in vp9
-            // In some cases, webm extractor may not signal
-            // profile for 10-bit VP9 clips. In such cases, set profile to a
-            // 10-bit compatible profile.
-            mediaFormat.setInteger(MediaFormat.KEY_PROFILE, CodecProfileLevel.VP9Profile2);
-        }
 
         MediaCodecInfo info = mDecoder.getCodecInfo();
         CodecCapabilities caps = info.getCapabilitiesForType(mMime);

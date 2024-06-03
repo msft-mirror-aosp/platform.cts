@@ -18,14 +18,17 @@ package {
 
 android_test {
     name: "CtsAppSearchTestCases",
+    team: "trendy_team_appsearch",
     defaults: ["cts_defaults"],
     static_libs: [
-        "CtsAppSearchTestUtils",
         "androidx.test.ext.junit",
         "androidx.test.rules",
-        "compatibility-device-util-axt",
-        "testng",
         "appsearch_flags_java_lib",
+        "compatibility-device-util-axt",
+        "CtsAppSearchTestUtils",
+        "flag-junit",
+        "Harrier",
+        "testng",
     ],
     srcs: [
         "src/**/*.java",

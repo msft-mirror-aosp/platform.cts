@@ -23,6 +23,7 @@ import android.os.Bundle;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
@@ -32,6 +33,7 @@ import org.junit.runner.RunWith;
  * Tests for MediaMetrics item handling.
  */
 
+@FrameworkSpecificTest
 @NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 public class MediaMetricsTest {

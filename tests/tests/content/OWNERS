@@ -10,3 +10,4 @@ zyy@google.com
 per-file ContextTest.java = jacobhobbie@google.com,mpgroover@google.com
 per-file ClipboardAutoClearTest.java = olekarg@google.com,ashfall@google.com
 per-file ActivityRequireContentUriPermissionFromCallerTest.java = mpgroover@google.com,azharaa@google.com
+per-file SaferIntentTest.java = topjohnwu@google.com

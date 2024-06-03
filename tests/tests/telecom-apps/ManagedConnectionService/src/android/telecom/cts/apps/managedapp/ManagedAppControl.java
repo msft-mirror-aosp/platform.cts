@@ -25,10 +25,9 @@ import static android.telecom.cts.apps.AssertOutcome.assertCountDownLatchWasCall
 import static android.telecom.cts.apps.AttributesUtil.getExtrasWithPhoneAccount;
 import static android.telecom.cts.apps.AttributesUtil.hasSetInactiveCapabilities;
 import static android.telecom.cts.apps.AttributesUtil.isOutgoing;
-import static android.telecom.cts.apps.TelecomTestApp.CONTROL_INTERFACE_ACTION;
-import static android.telecom.cts.apps.NotificationUtils.isTargetNotificationPosted;
 import static android.telecom.cts.apps.StackTraceUtil.appendStackTraceList;
 import static android.telecom.cts.apps.StackTraceUtil.createStackTraceList;
+import static android.telecom.cts.apps.TelecomTestApp.CONTROL_INTERFACE_ACTION;
 import static android.telecom.cts.apps.WaitUntil.waitUntilAvailableEndpointsIsSet;
 import static android.telecom.cts.apps.WaitUntil.waitUntilCallAudioStateIsSet;
 import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionIsNonNull;
@@ -51,7 +50,6 @@ import android.telecom.cts.apps.AvailableEndpointsTransaction;
 import android.telecom.cts.apps.BooleanTransaction;
 import android.telecom.cts.apps.CallEndpointTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
-import android.telecom.cts.apps.CallResources;
 import android.telecom.cts.apps.IAppControl;
 import android.telecom.cts.apps.LatchedEndpointOutcomeReceiver;
 import android.telecom.cts.apps.ManagedConnection;
@@ -366,6 +364,11 @@ public class ManagedAppControl extends Service {
             }
             return mIdToConnection.get(id);
         }
+
+        @Override
+        public void cleanup() {
+            cleanupImplementation();
+        }
     };
 
     @Nullable
@@ -381,16 +384,23 @@ public class ManagedAppControl extends Service {
         return null;
     }
 
-    @Override
-    public boolean onUnbind(Intent intent) {
-        Log.i(TAG, "ManagedAppControl: onUnbind");
-        // disconnect all ongoing calls
+    private void disconnectAndDestroyAllCalls() {
         for (ManagedConnection connection : mIdToConnection.values()) {
             connection.setCallToDisconnected(getApplicationContext(),
                     new DisconnectCause(DisconnectCause.LOCAL, "Managed-App is Unbinding"));
+            connection.destroy();
         }
-        // clear containers
         mIdToConnection.clear();
+    }
+
+    private void cleanupImplementation() {
+        disconnectAndDestroyAllCalls();
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.i(TAG, "ManagedAppControl: onUnbind");
+        cleanupImplementation();
         // complete unbind
         mIsBound = false;
         return super.onUnbind(intent);

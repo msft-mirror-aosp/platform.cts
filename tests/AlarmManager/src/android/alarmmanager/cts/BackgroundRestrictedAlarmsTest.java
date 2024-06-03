@@ -80,8 +80,6 @@ public class BackgroundRestrictedAlarmsTest {
     private AlarmManagerDeviceConfigHelper mConfigHelper = new AlarmManagerDeviceConfigHelper();
     private DeviceConfigStateHelper mActivityManagerDeviceConfigStateHelper =
             new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER);
-    private DeviceConfigStateHelper mTareDeviceConfigStateHelper =
-            new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_TARE);
 
     private volatile int mAlarmCount;
     private volatile String mFgsResult;
@@ -169,7 +167,6 @@ public class BackgroundRestrictedAlarmsTest {
     @Ignore("Feature auto_restricted_bucket_on_bg_restricted is disabled right now")
     @Test
     public void testRepeatingAlarmAllowedWhenAutoRestrictedBucketFeatureOn() throws Exception {
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0"); // Test requires app standby
         final long interval = MIN_REPEATING_INTERVAL;
         final long triggerElapsed = SystemClock.elapsedRealtime() + interval;
         toggleAutoRestrictedBucketOnBgRestricted(false);
@@ -212,7 +209,6 @@ public class BackgroundRestrictedAlarmsTest {
         deleteAlarmManagerConstants();
         AppOpsUtils.reset(TEST_APP_PACKAGE);
         mActivityManagerDeviceConfigStateHelper.restoreOriginalValues();
-        mTareDeviceConfigStateHelper.restoreOriginalValues();
         // Cancel any leftover alarms
         final Intent cancelAlarmsIntent = new Intent(TestAlarmScheduler.ACTION_CANCEL_ALL_ALARMS);
         cancelAlarmsIntent.setComponent(mAlarmScheduler);

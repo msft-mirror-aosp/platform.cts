@@ -25,6 +25,7 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.util.Log;
+import android.util.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,8 +34,20 @@ import java.util.concurrent.TimeUnit;
 
 public class BindUtils {
     private static final String TAG = BindUtils.class.getSimpleName();
-    private static final Map<TelecomTestApp, TelecomAppServiceConnection> sTelecomAppToService =
-            new HashMap<>();
+    private static final Map<TelecomTestApp, Pair<TelecomAppServiceConnection, AppControlWrapper>>
+            sTelecomAppToService = new HashMap<>();
+
+    public static boolean hasBoundTestApp() {
+        // If the sTelecomAppToService is NOT empty, that means that an app has not unbound yet
+        return !sTelecomAppToService.isEmpty();
+    }
+
+    public static void printBoundTestApps() {
+        for (TelecomTestApp testAppName : sTelecomAppToService.keySet()) {
+            Log.i(TAG, String.format("printBoundTestApps: [%s] is currently bound", testAppName));
+
+        }
+    }
 
     private static class TelecomAppServiceConnection implements ServiceConnection {
         private static final String TAG = TelecomAppServiceConnection.class.getSimpleName();
@@ -64,9 +77,11 @@ public class BindUtils {
      */
     public AppControlWrapper bindToApp(Context context, TelecomTestApp appName)
             throws Exception {
-        final AppControlWrapper appControl;
-        IAppControl binder = waitOnBindForApp(context, appName);
-        appControl = new AppControlWrapper(binder, appName);
+        // if a test app is already bound, return the existing binding
+        if (sTelecomAppToService.containsKey(appName)) {
+            return sTelecomAppToService.get(appName).second;
+        }
+        final AppControlWrapper appControl = waitOnBindForApp(context, appName);
         // For debugging purposes, it is good to know how much time for an app to signal it bound!
         Log.i(TAG, String.format("bindToApp: wait for %s to signal onBind is complete ", appName));
         long startTimeMillis = SystemClock.elapsedRealtime();
@@ -100,9 +115,9 @@ public class BindUtils {
         if (!sTelecomAppToService.containsKey(name)) {
             fail(String.format("cannot find the service binder for application=[%s]", name));
         }
-        TelecomAppServiceConnection serviceConnection = sTelecomAppToService.get(name);
-        context.unbindService(serviceConnection);
         try {
+            TelecomAppServiceConnection serviceConnection = sTelecomAppToService.get(name).first;
+            context.unbindService(serviceConnection);
             long startTimeMillis = SystemClock.elapsedRealtime();
             Log.i(TAG, String.format("unbindFromApp: wait for %s to signal onUnbind is complete ",
                     name));
@@ -122,10 +137,13 @@ public class BindUtils {
             long elapsedMs = SystemClock.elapsedRealtime() - startTimeMillis;
             Log.i(TAG, String.format("unbindFromApp: %s took %d milliseconds to signal it was "
                     + "unbound", name, elapsedMs));
-            sTelecomAppToService.remove(name);
         } catch (Exception e) {
-            // Note: Avoid throwing the exception or else the test will fail
+            // Note: Do not throw the UnBind Exception! Otherwise, the test will fail with an unbind
+            // error instead of a potential underlying cause.
             Log.e(TAG, String.format("unbindFromApplication: app=[%s], e=[%s]", name, e));
+        }
+        finally {
+            sTelecomAppToService.remove(name);
         }
     }
 
@@ -151,7 +169,7 @@ public class BindUtils {
                 String.format("%s doesn't have a <CONTROL_INTERFACE> mapping." + app));
     }
 
-    private String getPackageNameFromApplicationName(TelecomTestApp app) throws Exception {
+    private static String getPackageNameFromApplicationName(TelecomTestApp app) throws Exception {
         switch (app) {
             case TransactionalVoipAppMain -> {
                 return TelecomTestApp.TRANSACTIONAL_PACKAGE_NAME;
@@ -173,7 +191,7 @@ public class BindUtils {
                 String.format("%s doesn't have a <PACKAGE_NAME> mapping.", app));
     }
 
-    private IAppControl waitOnBindForApp(Context context, TelecomTestApp appName)
+    private AppControlWrapper waitOnBindForApp(Context context, TelecomTestApp appName)
             throws Exception {
         CompletableFuture<IAppControl> f = new CompletableFuture<>();
         final TelecomAppServiceConnection serviceConnection = new TelecomAppServiceConnection(f);
@@ -187,7 +205,9 @@ public class BindUtils {
         if (!success) {
             fail("Failed to get control interface -- bind error");
         }
-        sTelecomAppToService.put(appName, serviceConnection);
-        return f.get(WaitUntil.DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        IAppControl iAppControl = f.get(WaitUntil.DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        AppControlWrapper wrapper = new AppControlWrapper(iAppControl, appName);
+        sTelecomAppToService.put(appName, new Pair<>(serviceConnection, wrapper));
+        return wrapper;
     }
 }

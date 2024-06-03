@@ -41,6 +41,7 @@ import android.view.InputDevice;
 import android.view.KeyCharacterMap;
 import android.view.KeyCharacterMap.KeyData;
 import android.view.KeyEvent;
+import android.view.cts.util.NativeHeapLeakDetector;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -63,7 +64,14 @@ public class KeyEventTest {
     private long mDownTime;
     private long mEventTime;
 
+    // Underestimated from ~112 B to breach threshold when leaked
+    private static final int APPROX_KEY_EVENT_SIZE_BYTES = 100;
+    private static final int NUM_KEY_EVENT_ALLOCATIONS =
+            NativeHeapLeakDetector.MEMORY_LEAK_THRESHOLD_KB * 1024 / APPROX_KEY_EVENT_SIZE_BYTES;
+
     private static native void nativeKeyEventTest(KeyEvent event);
+
+    private static native void obtainNativeKeyEventCopyFromJava(KeyEvent event);
 
     private static native KeyEvent obtainKeyEventCopyFromNative(KeyEvent event);
 
@@ -839,7 +847,7 @@ public class KeyEventTest {
         KeyEvent javaKeyEvent = new KeyEvent(mDownTime, mEventTime,
                 KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A, 1, 0,
                 KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
-                InputDevice.SOURCE_KEYBOARD);
+                        InputDevice.SOURCE_KEYBOARD);
         KeyEvent keyEventFromNative = obtainKeyEventCopyFromNative(javaKeyEvent);
         assertNotNull(keyEventFromNative);
         assertNotSame(javaKeyEvent, keyEventFromNative);
@@ -853,6 +861,28 @@ public class KeyEventTest {
         assertEquals(javaKeyEvent.getScanCode(), keyEventFromNative.getScanCode());
         assertEquals(javaKeyEvent.getFlags(), keyEventFromNative.getFlags());
         assertEquals(javaKeyEvent.getSource(), keyEventFromNative.getSource());
+    }
+
+    @Test
+    public void testNativeToJavaConverterMemoryLeak() {
+        final KeyEvent javaKeyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A);
+
+        try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
+            for (int iteration = 0; iteration < NUM_KEY_EVENT_ALLOCATIONS; ++iteration) {
+                obtainKeyEventCopyFromNative(javaKeyEvent);
+            }
+        }
+    }
+
+    @Test
+    public void testJavaToNativeConverterMemoryLeak() {
+        final KeyEvent javaKeyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A);
+
+        try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
+            for (int iteration = 0; iteration < NUM_KEY_EVENT_ALLOCATIONS; ++iteration) {
+                obtainNativeKeyEventCopyFromJava(javaKeyEvent);
+            }
+        }
     }
 
     // Parcel a KeyEvent, then create a new KeyEvent from this parcel. Return the new KeyEvent

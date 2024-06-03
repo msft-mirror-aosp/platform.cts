@@ -25,6 +25,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -176,24 +177,10 @@ public class BiometricSimpleTests extends BiometricTestBase {
             try (BiometricTestSession session =
                          mBiometricManager.createTestSession(props.getSensorId())) {
 
-                final int authenticatorStrength =
-                        Utils.testApiStrengthToAuthenticatorStrength(props.getSensorStrength());
-
-                assertEquals("Sensor: " + props.getSensorId()
-                                + ", strength: " + props.getSensorStrength(),
-                        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
-                        mBiometricManager.canAuthenticate(authenticatorStrength));
-
-                enrollForSensor(session, props.getSensorId());
-
-                assertEquals("Sensor: " + props.getSensorId()
-                                + ", strength: " + props.getSensorStrength(),
-                        BiometricManager.BIOMETRIC_SUCCESS,
-                        mBiometricManager.canAuthenticate(authenticatorStrength));
+                setUpNonConvenienceSensorEnrollment(props, session);
 
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
-
                 BiometricPrompt prompt = showDefaultBiometricPrompt(props.getSensorId(), callback,
                         new CancellationSignal());
 
@@ -385,6 +372,8 @@ public class BiometricSimpleTests extends BiometricTestBase {
     @Test
     public void testWhenCredentialEnrolled() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
+        //TODO: b/331955301 need to update Auto biometric UI
+        assumeFalse(isCar());
         try (CredentialSession session = new CredentialSession()) {
             session.setCredential();
 
@@ -512,20 +501,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
             try (BiometricTestSession session =
                          mBiometricManager.createTestSession(props.getSensorId())) {
 
-                final int authenticatorStrength =
-                        Utils.testApiStrengthToAuthenticatorStrength(props.getSensorStrength());
-
-                assertEquals("Sensor: " + props.getSensorId()
-                                + ", strength: " + props.getSensorStrength(),
-                        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
-                        mBiometricManager.canAuthenticate(authenticatorStrength));
-
-                enrollForSensor(session, props.getSensorId());
-
-                assertEquals("Sensor: " + props.getSensorId()
-                                + ", strength: " + props.getSensorStrength(),
-                        BiometricManager.BIOMETRIC_SUCCESS,
-                        mBiometricManager.canAuthenticate(authenticatorStrength));
+                setUpNonConvenienceSensorEnrollment(props, session);
 
                 final Random random = new Random();
                 final String randomTitle = String.valueOf(random.nextInt(10000));
@@ -535,7 +511,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
-
                 showDefaultBiometricPromptWithContents(props.getSensorId(), 0 /* userId */,
                         true /* requireConfirmation */, callback, randomTitle, randomSubtitle,
                         randomDescription, null /* contentView */, randomNegativeButtonText);
@@ -576,6 +551,8 @@ public class BiometricSimpleTests extends BiometricTestBase {
     @Test
     public void testSimpleCredentialAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
+        //TODO: b/331955301 need to update Auto biometric UI
+        assumeFalse(isCar());
         try (CredentialSession session = new CredentialSession()) {
             session.setCredential();
 

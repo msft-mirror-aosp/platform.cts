@@ -27,6 +27,9 @@
 
     <application
         android:name="android.app.cts.fgstimeouttesthelper.MyApplication">
+        <activity android:name=".MyActivity"
+                  android:exported="true">
+        </activity>
         <receiver android:name=".FgsTimeoutMessageReceiver"
             android:exported="true">
             <intent-filter>

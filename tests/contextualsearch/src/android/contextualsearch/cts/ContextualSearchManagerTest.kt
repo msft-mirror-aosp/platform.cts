@@ -16,26 +16,28 @@
 
 package android.contextualsearch.cts
 
+import android.app.contextualsearch.CallbackToken
 import android.app.contextualsearch.ContextualSearchManager
 import android.app.contextualsearch.ContextualSearchState
 import android.app.contextualsearch.flags.Flags
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.OutcomeReceiver
+import android.os.SystemClock
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.RequiredServiceRule
 import com.android.compatibility.common.util.SystemUtil
+import com.google.common.collect.Range
 import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -43,20 +45,19 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ContextualSearchManagerTest {
 
-    @get:Rule
-    val mRequiredServiceRule: RequiredServiceRule =
-        RequiredServiceRule(Context.CONTEXTUAL_SEARCH_SERVICE)
-
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
 
-    private var mManager: ContextualSearchManager =
-        context.getSystemService(ContextualSearchManager::class.java)
+    private lateinit var mManager: ContextualSearchManager
 
     private var mWatcher: CtsContextualSearchActivity.Watcher? = null
 
     @Before
     fun setup() {
+        val manager = context.getSystemService(ContextualSearchManager::class.java)
+        Assume.assumeNotNull(manager)
+        mManager = manager
+
         setTemporaryPackage(TEMPORARY_PACKAGE)
         mWatcher = CtsContextualSearchActivity.Watcher()
         CtsContextualSearchActivity.WATCHER = mWatcher
@@ -80,6 +81,7 @@ class ContextualSearchManagerTest {
 
     @Test
     fun testContextualSearchExtras() {
+        val beforeMs = SystemClock.uptimeMillis()
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
             mWatcher?.created,
@@ -105,6 +107,8 @@ class ContextualSearchManagerTest {
             ContextualSearchManager.EXTRA_VISIBLE_PACKAGE_NAMES,
             String::class.java
         )).isNotEmpty()
+        assertThat(extras.getLong(EXTRA_INVOCATION_TIME_MS))
+            .isIn(Range.closed(beforeMs, SystemClock.uptimeMillis()))
         assertThat(extras.containsKey(ContextualSearchManager.EXTRA_TOKEN)).isTrue()
     }
 
@@ -116,15 +120,16 @@ class ContextualSearchManagerTest {
             "Waiting for CtsContextualSearchActivity.onCreate to be called."
         )
         // Now that the activity has launched, we can get the token and register our callback.
-        val token = mWatcher!!.launchExtras!!.getBinder(ContextualSearchManager.EXTRA_TOKEN)!!
+        val token = mWatcher!!.launchExtras!!
+                .getParcelable(ContextualSearchManager.EXTRA_TOKEN, CallbackToken::class.java)!!
         val callback = TestOutcomeReceiver()
-        mManager.getContextualSearchState(token, context.mainExecutor, callback)
+        token.getContextualSearchState(context.mainExecutor, callback)
         // Waiting for the service to post data.
         await(callback.resultLatch, "Waiting for the service to post data.")
         // Verifying that the data posted is as expected.
-        assertThat(callback.result!!.extras.keySet().size).isEqualTo(0)
-        assertThat(callback.result!!.structure).isNull()
-        assertThat(callback.result!!.content).isNull()
+        assertThat(callback.result!!.structure).isNotNull()
+        assertThat(callback.result!!.content).isNotNull()
+        assertThat(callback.result!!.extras).isNotNull()
     }
 
     @Test
@@ -135,12 +140,13 @@ class ContextualSearchManagerTest {
             "Waiting for CtsContextualSearchActivity.onCreate to be called."
         )
         // Now that the activity has launched, we can get the token and register our callback.
-        val token = mWatcher!!.launchExtras!!.getBinder(ContextualSearchManager.EXTRA_TOKEN)!!
+        val token = mWatcher!!.launchExtras!!
+                .getParcelable(ContextualSearchManager.EXTRA_TOKEN, CallbackToken::class.java)!!
         val callback = TestOutcomeReceiver()
-        mManager.getContextualSearchState(token, context.mainExecutor, callback)
+        token.getContextualSearchState(context.mainExecutor, callback)
         await(callback.resultLatch, "Waiting for the service to post data.")
         // The token should now be expired. Using it again should invoke failure in the callback.
-        mManager.getContextualSearchState(token, context.mainExecutor, callback)
+        token.getContextualSearchState(context.mainExecutor, callback)
         await(callback.errorLatch, "Waiting for the service to throw error.")
         // Make sure no more results were posted.
         assertThat(callback.resultLatch.count).isEqualTo(0)
@@ -165,6 +171,10 @@ class ContextualSearchManagerTest {
         private const val TEST_LIFECYCLE_TIMEOUT_MS: Long = 5000
         private val TAG = ContextualSearchManagerTest::class.java.simpleName
         private const val TEMPORARY_PACKAGE = "android.contextualsearch.cts"
+
+        // TODO: remove in W
+        private const val EXTRA_INVOCATION_TIME_MS =
+            "android.app.contextualsearch.extra.INVOCATION_TIME_MS"
 
         private fun setTemporaryPackage(packageName: String? = null) {
             if (packageName != null) {

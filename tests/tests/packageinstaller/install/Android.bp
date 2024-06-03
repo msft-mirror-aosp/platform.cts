@@ -40,8 +40,10 @@ android_test {
         "kotlin-test",
         "Nene",
         "Harrier",
+        "bedstead-root",
         "android.content.pm.flags-aconfig-java",
         "android.security.flags-aconfig-java",
+        "platform-test-rules",
     ],
 
     test_suites: [
@@ -55,6 +57,7 @@ android_test {
         ":CtsEmptyTestApp_FullScreenIntent",
         ":CtsDisabledLauncherActivityApp",
         ":CtsEmptyTestApp_AppMetadataInApk",
+        ":CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit",
     ],
     java_resources: [
         ":HelloWorldSdk1",

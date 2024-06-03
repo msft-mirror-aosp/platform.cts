@@ -24,14 +24,12 @@ import static android.app.ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NE
 import static android.app.ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
 import static android.app.stubs.LocalForegroundService.ACTION_START_FGS_RESULT;
 import static android.app.stubs.LocalForegroundServiceLocation.ACTION_START_FGSL_RESULT;
-import static android.content.Context.WINDOW_SERVICE;
 import static android.os.PowerExemptionManager.REASON_PUSH_MESSAGING;
 import static android.os.PowerExemptionManager.REASON_PUSH_MESSAGING_OVER_QUOTA;
 import static android.os.PowerExemptionManager.REASON_UNKNOWN;
 import static android.os.PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_FOREGROUND_SERVICE_ALLOWED;
 import static android.os.PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_FOREGROUND_SERVICE_NOT_ALLOWED;
 import static android.os.PowerExemptionManager.TEMPORARY_ALLOW_LIST_TYPE_NONE;
-import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
@@ -76,8 +74,6 @@ import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.server.wm.settings.SettingsSession;
 import android.util.Log;
-import android.view.View;
-import android.view.WindowManager;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -1193,35 +1189,12 @@ public class ActivityManagerFgsBgStartTest {
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            // STOPSHIP(b/296558535): Update to test with a system alert overlay
             try {
                 waiter.doWait(WAITFOR_MSEC);
                 fail("Service should not enter foreground service state");
             } catch (Exception e) {
             }
-            // Now createa a System Alert Window
-            View mContent;
-            WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                    TYPE_SYSTEM_OVERLAY);
-            params.width = WindowManager.LayoutParams.MATCH_PARENT;
-            params.height = WindowManager.LayoutParams.MATCH_PARENT;
-            mContent = new View(mContext);
-            WindowManager wm = (WindowManager) mContext.getSystemService(WINDOW_SERVICE);
-            wm.addView(mContent, params);
-            // Start the FGS
-            waiter = new WaitForBroadcast(mInstrumentation.getTargetContext());
-            waiter.prepare(ACTION_START_FGS_RESULT);
-            // Now it can start FGS.
-            CommandReceiver.sendCommand(mContext,
-                    CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
-            uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
-            waiter.doWait(WAITFOR_MSEC);
-            // Stop the FGS.
-            CommandReceiver.sendCommand(mContext,
-                    CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE,
-                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
-            uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
-            wm.removeView(mContent);
         } finally {
             uid1Watcher.finish();
         }

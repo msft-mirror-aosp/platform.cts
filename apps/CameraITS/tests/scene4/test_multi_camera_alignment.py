@@ -29,15 +29,13 @@ import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
 
-_ALIGN_TOL_MM = 5.0  # mm
-_ALIGN_TOL = 0.01  # multiplied by sensor diagonal to convert to pixels
+_ALIGN_ATOL_MM = 5.0  # mm
+_ALIGN_RTOL = 0.01  # 1% of sensor diagonal in pixels
 _CHART_DISTANCE_RTOL = 0.1
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_MIN_AREA = 0.005  # multiplied by image size
 _CIRCLE_RTOL = 0.1  # 10%
 _CM_TO_M = 1E-2
-_FMT_CODE_RAW = 0x20
-_FMT_CODE_YUV = 0x23
 _M_TO_MM = 1E3
 _MM_TO_UM = 1E3
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -437,10 +435,10 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       for i, fmt in enumerate(fmts):
         physical_sizes = {}
         capture_cam_ids = physical_ids
-        fmt_code = _FMT_CODE_YUV
+        fmt_code = capture_request_utils.FMT_CODE_YUV
         if fmt == 'raw':
           capture_cam_ids = physical_raw_ids
-          fmt_code = _FMT_CODE_RAW
+          fmt_code = capture_request_utils.FMT_CODE_RAW
         for physical_id in capture_cam_ids:
           configs = physical_props[physical_id][
               'android.scaler.streamConfigurationMap'][
@@ -481,7 +479,7 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
         if j == 0:
           logging.debug('Camera %s', i)
         k[i] = camera_properties_utils.get_intrinsic_calibration(
-            physical_props[i], j == 0)
+            physical_props[i], caps[fmt, i]['metadata'], j == 0)
         r[i] = camera_properties_utils.get_rotation_matrix(
             physical_props[i], j == 0)
         t[i] = camera_properties_utils.get_translation_matrix(
@@ -504,7 +502,7 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
 
         # Correct lens distortion to image (if available) and save before/after
         if (camera_properties_utils.distortion_correction(physical_props[i]) and
-            camera_properties_utils.intrinsic_calibration(physical_props[i]) and
+            caps[fmt, i]['metadata'] and
             fmt == 'raw'):
           cv2_distort = camera_properties_utils.get_distortion_matrix(
               physical_props[i])
@@ -566,17 +564,17 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       err_mm = np.linalg.norm(np.array([x_w[i_ref], y_w[i_ref]]) -
                               np.array([x_w[i_2nd], y_w[i_2nd]])) * _M_TO_MM
       logging.debug('Center location err (mm): %.2f', err_mm)
-      if err_mm > _ALIGN_TOL_MM:
+      if err_mm > _ALIGN_ATOL_MM:
         raise AssertionError(
             f'Centers {i_ref} <-> {i_2nd} too different! '
-            f'val={err_mm:.2f}, ATOL={_ALIGN_TOL_MM} mm')
+            f'val={err_mm:.2f}, ATOL={_ALIGN_ATOL_MM} mm')
 
       # Check projections back into pixel space
       for i in [i_ref, i_2nd]:
         err = np.linalg.norm(np.array([circle[i]['x'], circle[i]['y']]) -
                              np.array([x_p[i], y_p[i]]).reshape(1, -1))
         logging.debug('Camera %s projection error (pixels): %.1f', i, err)
-        tol = _ALIGN_TOL * sensor_diag[i]
+        tol = _ALIGN_RTOL * sensor_diag[i]
         if err >= tol:
           raise AssertionError(f'Camera {i} project location too different! '
                                f'diff={err:.2f}, ATOL={tol:.2f} pixels')

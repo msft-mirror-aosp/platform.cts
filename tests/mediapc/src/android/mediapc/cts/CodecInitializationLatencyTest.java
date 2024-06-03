@@ -22,7 +22,7 @@ import static android.mediapc.cts.CodecTestBase.SELECT_HARDWARE;
 import static android.mediapc.cts.CodecTestBase.SELECT_VIDEO;
 import static android.mediapc.cts.CodecTestBase.codecFilter;
 import static android.mediapc.cts.CodecTestBase.codecPrefix;
-import static android.mediapc.cts.CodecTestBase.getMimesOfAvailableCodecs;
+import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
 import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
@@ -40,6 +40,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Utils;
 import android.os.SystemClock;
 import android.util.Log;
@@ -116,7 +117,7 @@ public class CodecInitializationLatencyTest {
         mTestFiles.put(MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_1920x1080_4mbps_30fps_vp9.webm");
     }
 
-    private final String mMime;
+    private final String mMediaType;
     private final String mCodecName;
 
     private LoadStatus mTranscodeLoadStatus = null;
@@ -156,8 +157,8 @@ public class CodecInitializationLatencyTest {
         releaseSurface();
     }
 
-    public CodecInitializationLatencyTest(String mimeType, String codecName) {
-        mMime = mimeType;
+    public CodecInitializationLatencyTest(String mediaType, String codecName) {
+        mMediaType = mediaType;
         mCodecName = codecName;
     }
 
@@ -166,36 +167,36 @@ public class CodecInitializationLatencyTest {
             new ActivityTestRule<>(TestActivity.class);
 
     /**
-     * Returns the list of parameters with mimetype and their codecs(for audio - all codecs,
+     * Returns the list of parameters with mediaType and their codecs(for audio - all codecs,
      * video - hardware codecs).
      *
-     * @return Collection of Parameters {0}_{1} -- MIME_CodecName
+     * @return Collection of Parameters {0}_{1} -- MediaType_CodecName
      */
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
     public static Collection<Object[]> inputParams() {
         // Prepares the params list with the required Hardware video codecs and all available
         // audio codecs present in the device.
         final List<Object[]> argsList = new ArrayList<>();
-        Set<String> mimeSet = getMimesOfAvailableCodecs(SELECT_VIDEO, SELECT_HARDWARE);
-        mimeSet.addAll(getMimesOfAvailableCodecs(SELECT_AUDIO, SELECT_ALL));
-        for (String mime : mimeSet) {
-            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+        Set<String> mediaTypeSet = getMediaTypesOfAvailableCodecs(SELECT_VIDEO, SELECT_HARDWARE);
+        mediaTypeSet.addAll(getMediaTypesOfAvailableCodecs(SELECT_AUDIO, SELECT_ALL));
+        for (String mediaType : mediaTypeSet) {
+            if (mediaTypePrefix != null && !mediaType.startsWith(mediaTypePrefix)) {
                 continue;
             }
             ArrayList<String> listOfCodecs;
-            if (mime.startsWith("audio/")) {
-                listOfCodecs = selectCodecs(mime, null, null, true);
-                listOfCodecs.addAll(selectCodecs(mime, null, null, false));
+            if (mediaType.startsWith("audio/")) {
+                listOfCodecs = selectCodecs(mediaType, null, null, true);
+                listOfCodecs.addAll(selectCodecs(mediaType, null, null, false));
             } else {
-                listOfCodecs = selectHardwareCodecs(mime, null, null, true);
-                listOfCodecs.addAll(selectHardwareCodecs(mime, null, null, false));
+                listOfCodecs = selectHardwareCodecs(mediaType, null, null, true);
+                listOfCodecs.addAll(selectHardwareCodecs(mediaType, null, null, false));
             }
             for (String codec : listOfCodecs) {
                 if ((codecPrefix != null && !codec.startsWith(codecPrefix))
                         || (codecFilter != null && !codecFilter.matcher(codec).matches())) {
                     continue;
                 }
-                argsList.add(new Object[]{mime, codec});
+                argsList.add(new Object[]{mediaType, codec});
             }
         }
         return argsList;
@@ -208,7 +209,7 @@ public class CodecInitializationLatencyTest {
         mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
         mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-        mediaRecorder.setVideoEncoder(mMime.equalsIgnoreCase(HEVC) ?
+        mediaRecorder.setVideoEncoder(mMediaType.equalsIgnoreCase(HEVC) ?
                 MediaRecorder.VideoEncoder.HEVC : MediaRecorder.VideoEncoder.H264);
         mediaRecorder.setOutputFile(mTempRecordedFile);
         mediaRecorder.setVideoSize(1920, 1080);
@@ -299,7 +300,7 @@ public class CodecInitializationLatencyTest {
     public void testInitializationLatency() throws Exception {
         MediaCodec codec = MediaCodec.createByCodecName(mCodecName);
         boolean isEncoder = codec.getCodecInfo().isEncoder();
-        boolean isAudio = mMime.startsWith("audio/");
+        boolean isAudio = mMediaType.startsWith("audio/");
         codec.release();
         final int NUM_MEASUREMENTS = 5;
         // Test gathers initialization latency for a number of iterations and
@@ -317,17 +318,17 @@ public class CodecInitializationLatencyTest {
                 long latency;
                 if (isEncoder) {
                     EncoderInitializationLatency encoderInitializationLatency =
-                            new EncoderInitializationLatency(mMime, mCodecName, isAsync);
+                            new EncoderInitializationLatency(mMediaType, mCodecName, isAsync);
                     latency = encoderInitializationLatency.calculateInitLatency();
                     codecInitializationLatencyMs[count] = latency;
                     sumOfCodecInitializationLatencyMs += latency;
                     count++;
                 } else {
-                    String testFile = mTestFiles.get(mMime);
-                    assumeTrue("Add test vector for media type: " + mMime, testFile != null);
+                    String testFile = mTestFiles.get(mMediaType);
+                    assumeTrue("Add test vector for media type: " + mMediaType, testFile != null);
                     if (isAudio) {
                         DecoderInitializationLatency decoderInitializationLatency =
-                                new DecoderInitializationLatency(mMime, mCodecName, testFile,
+                                new DecoderInitializationLatency(mMediaType, mCodecName, testFile,
                                         isAsync, false);
                         latency = decoderInitializationLatency.calculateInitLatency();
                         codecInitializationLatencyMs[count] = latency;
@@ -336,7 +337,7 @@ public class CodecInitializationLatencyTest {
                     } else {
                         for (boolean surfaceMode : boolStates) {
                             DecoderInitializationLatency decoderInitializationLatency =
-                                    new DecoderInitializationLatency(mMime, mCodecName,
+                                    new DecoderInitializationLatency(mMediaType, mCodecName,
                                             testFile,
                                             isAsync, surfaceMode);
                             latency = decoderInitializationLatency.calculateInitLatency();
@@ -350,20 +351,35 @@ public class CodecInitializationLatencyTest {
         }
         Arrays.sort(codecInitializationLatencyMs);
 
-        String statsLog = String.format("CodecInitialization latency for mime: %s, " +
-                "Codec: %s, in Ms :: ", mMime, mCodecName);
+        String statsLog = String.format("CodecInitialization latency for mediaType: %s, " +
+                "Codec: %s, in Ms :: ", mMediaType, mCodecName);
         Log.i(LOG_TAG, "Min " + statsLog + codecInitializationLatencyMs[0]);
         Log.i(LOG_TAG, "Max " + statsLog + codecInitializationLatencyMs[count - 1]);
         Log.i(LOG_TAG, "Avg " + statsLog + (sumOfCodecInitializationLatencyMs / count));
         long initializationLatency = codecInitializationLatencyMs[percentile * count / 100];
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.CodecInitLatencyRequirement r5_1__H_1_Latency =
-                isEncoder ? isAudio ? pce.addR5_1__H_1_8() : pce.addR5_1__H_1_7(mMime)
-                    : isAudio ? pce.addR5_1__H_1_13() : pce.addR5_1__H_1_12();
-
-        r5_1__H_1_Latency.setCodecInitLatencyMs(initializationLatency);
-
+        if (isEncoder) {
+            if (isAudio) {
+                Requirements.addR5_1__H_1_8(pce).setCodecInitializationLatencyMs(
+                        initializationLatency);
+            } else {
+                if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION)) {
+                    Requirements.addR5_1__H_1_7Dolby(pce).setCodecInitializationLatencyMs(
+                            initializationLatency);
+                } else {
+                    Requirements.addR5_1__H_1_7(pce).setCodecInitializationLatencyMs(
+                            initializationLatency);
+                }
+            }
+        } else {
+            if (isAudio) {
+                Requirements.addR5_1__H_1_13(pce).setCodecInitializationLatencyMs(
+                        initializationLatency);
+            } else {
+                pce.addR5_1__H_1_12().setCodecInitLatencyMs(initializationLatency);
+            }
+        }
         pce.submitAndCheck();
     }
 
@@ -382,8 +398,8 @@ public class CodecInitializationLatencyTest {
         private final String mEncoderName;
         private final boolean mIsAsync;
 
-        EncoderInitializationLatency(String mime, String encoderName, boolean isAsync) {
-            super(mime);
+        EncoderInitializationLatency(String mediaType, String encoderName, boolean isAsync) {
+            super(mediaType);
             mEncoderName = encoderName;
             mIsAsync = isAsync;
             mSampleRate = 8000;
@@ -392,9 +408,9 @@ public class CodecInitializationLatencyTest {
 
         private MediaFormat setUpFormat() throws IOException {
             MediaFormat format = new MediaFormat();
-            format.setString(MediaFormat.KEY_MIME, mMime);
+            format.setString(MediaFormat.KEY_MIME, mMediaType);
             if (mIsAudio) {
-                if (mMime.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)) {
+                if (mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)) {
                     format.setInteger(MediaFormat.KEY_FLAC_COMPRESSION_LEVEL, 10000);
                 } else {
                     format.setInteger(MediaFormat.KEY_BIT_RATE, 128000);
@@ -404,7 +420,7 @@ public class CodecInitializationLatencyTest {
             } else {
                 MediaCodec codec = MediaCodec.createByCodecName(mEncoderName);
                 MediaCodecInfo.CodecCapabilities codecCapabilities =
-                        codec.getCodecInfo().getCapabilitiesForType(mMime);
+                        codec.getCodecInfo().getCapabilitiesForType(mMediaType);
                 if (codecCapabilities.getVideoCapabilities().isSizeSupported(1920, 1080)) {
                     format.setInteger(MediaFormat.KEY_WIDTH, 1920);
                     format.setInteger(MediaFormat.KEY_HEIGHT, 1080);
@@ -499,16 +515,16 @@ public class CodecInitializationLatencyTest {
             waitForAllOutputs();
             mCodec.stop();
             mCodec.release();
-            Log.d(LOG_TAG, "Encode Mime: " + mMime + " Encoder: " + mEncoderName +
+            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mEncoderName +
                     " Time for (create + configure) in ns: " +
                     (configureTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Encode Mime: " + mMime + " Encoder: " + mEncoderName +
+            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mEncoderName +
                     " Time for (create + configure + start) in ns: " +
                     (startTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Encode Mime: " + mMime + " Encoder: " + mEncoderName +
+            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mEncoderName +
                     " Time for (create + configure + start + first frame to enqueue) in ns: " +
                     (enqueueTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Encode Mime: " + mMime + " Encoder: " + mEncoderName +
+            Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mEncoderName +
                     " Time for (create + configure + start + first frame to dequeue) in ns: " +
                     (dequeueTimeStamp - baseTimeStamp));
             long timeToConfigureMs = (configureTimeStamp - baseTimeStamp) / 1000000;
@@ -605,16 +621,16 @@ public class CodecInitializationLatencyTest {
             if (mSurface != null) {
                 mSurface.release();
             }
-            Log.d(LOG_TAG, "Decode Mime: " + mMime + " Decoder: " + mDecoderName +
+            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mDecoderName +
                     " Time for (create + configure) in ns: " +
                     (configureTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Decode Mime: " + mMime + " Decoder: " + mDecoderName +
+            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mDecoderName +
                     " Time for (create + configure + start) in ns: " +
                     (startTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Decode Mime: " + mMime + " Decoder: " + mDecoderName +
+            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mDecoderName +
                     " Time for (create + configure + start + first frame to enqueue) in ns: " +
                     (enqueueTimeStamp - baseTimeStamp));
-            Log.d(LOG_TAG, "Decode Mime: " + mMime + " Decoder: " + mDecoderName +
+            Log.d(LOG_TAG, "Decode MediaType: " + mMediaType + " Decoder: " + mDecoderName +
                     " Time for (create + configure + start + first frame to dequeue) in ns: " +
                     (dequeueTimeStamp - baseTimeStamp));
             long timeToConfigureMs = (configureTimeStamp - baseTimeStamp) / 1000000;

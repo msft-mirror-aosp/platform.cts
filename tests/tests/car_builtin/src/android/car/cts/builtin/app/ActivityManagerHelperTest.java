@@ -229,7 +229,6 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
         assertThat(doesTaskExist(taskId)).isFalse();
     }
 
-    @FlakyTest(bugId = 329451653)
     @Test
     public void testProcessObserverCallback() throws Exception {
         // setup

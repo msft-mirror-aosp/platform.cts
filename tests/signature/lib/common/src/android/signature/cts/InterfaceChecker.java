@@ -79,6 +79,7 @@ class InterfaceChecker {
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract boolean android.view.WindowInsetsAnimationController.hasZeroInsetsIme()");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.WindowInsetsController.setCaptionInsetsHeight(int)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.WindowInsetsController.setSystemDrivenInsetsAnimationLoggingListener(android.view.WindowInsetsAnimationControlListener)");
+        HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.WindowInsetsController.setSystemBarsAppearanceFromResource(int,int)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.inputmethod.InputMethod.setCurrentHideInputToken(android.os.IBinder)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.inputmethod.InputMethod.setCurrentShowInputToken(android.os.IBinder)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.inputmethod.InputMethodSession.notifyImeHidden()");
@@ -87,6 +88,7 @@ class InterfaceChecker {
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract android.bluetooth.BluetoothAdapter android.bluetooth.BluetoothProfile.getAdapter()");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.bluetooth.BluetoothProfile.onServiceConnected(android.os.IBinder)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.bluetooth.BluetoothProfile.onServiceDisconnected()");
+        HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.telephony.satellite.SatelliteTransmissionUpdateCallback.onSendDatagramStateChanged(int,int,int,int)");
     }
 
     private final ResultObserver resultObserver;

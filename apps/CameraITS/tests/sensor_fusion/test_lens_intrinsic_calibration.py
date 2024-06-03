@@ -25,49 +25,15 @@ import matplotlib.pyplot
 import its_base_test
 import camera_properties_utils
 import its_session_utils
-import preview_stabilization_utils
+import preview_processing_utils
 import sensor_fusion_utils
-import video_processing_utils
 
-_HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
+_INTRINSICS_SAMPLES = 'android.statistics.lensIntrinsicsSamples'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
 _PRINCIPAL_POINT_THRESH = 1  # Threshold for principal point changes in pixels.
 _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
-
-
-def _get_preview_test_size(cam, camera_id):
-  """Finds the max preview size to be tested.
-
-  If the device supports the _HIGH_RES_SIZE preview size then
-  it uses that for testing, otherwise uses the max supported
-  preview size.
-
-  Args:
-    cam: camera object
-    camera_id: str; camera device id under test
-
-  Returns:
-    preview_test_size: str; wxh resolution of the size to be tested
-  """
-
-  lowest_res_area = video_processing_utils.LOWEST_RES_TESTED_AREA
-  resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
-  supported_preview_sizes = cam.get_supported_preview_sizes(camera_id)
-  supported_preview_sizes = [size for size in supported_preview_sizes
-                             if resolution_to_area(size)
-                             >= lowest_res_area]
-  logging.debug('Supported preview resolutions: %s', supported_preview_sizes)
-
-  if _HIGH_RES_SIZE in supported_preview_sizes:
-    preview_test_size = _HIGH_RES_SIZE
-  else:
-    preview_test_size = supported_preview_sizes[-1]
-
-  logging.debug('Selected preview resolution: %s', preview_test_size)
-
-  return preview_test_size
 
 
 def calculate_principal_point(f_x, f_y, c_x, c_y, s):
@@ -152,11 +118,7 @@ def verify_lens_intrinsics(recording_obj, gyro_events, test_name, log_path):
     intrinsic_calibration = capture_result['android.lens.intrinsicCalibration']
     logging.debug('IntrinsicCalibration = %s', str(intrinsic_calibration))
 
-    principal_point = calculate_principal_point(intrinsic_calibration[0],
-                                                intrinsic_calibration[1],
-                                                intrinsic_calibration[2],
-                                                intrinsic_calibration[3],
-                                                intrinsic_calibration[4])
+    principal_point = calculate_principal_point(*intrinsic_calibration[:5])
     principal_points.append(principal_point)
 
   # Calculate variations in principal points
@@ -202,6 +164,85 @@ def verify_lens_intrinsics(recording_obj, gyro_events, test_name, log_path):
           'failure': failure_msg}
 
 
+def verify_lens_intrinsics_sample(recording_obj):
+  """Verify principal points changes in intrinsics samples.
+
+  Validate if principal points changes in at least one intrinsics samples.
+  Validate if timestamp changes in each intrinsics samples.
+
+  Args:
+    recording_obj: Camcorder recording object.
+
+  Returns:
+    a failure message if principal point doesn't change.
+    a failure message if timestamps doesn't change
+    None: either test passes or capture results doesn't include
+          intrinsics samples
+  """
+
+  file_name = recording_obj['recordedOutputPath'].split('/')[-1]
+  logging.debug('recorded file name: %s', file_name)
+  video_size = recording_obj['videoSize']
+  logging.debug('video size: %s', video_size)
+
+  capture_results = recording_obj['captureMetadata']
+
+  # Extract Lens Intrinsics Samples from capture result
+  intrinsics_samples_list = []
+  for capture_result in capture_results:
+    if _INTRINSICS_SAMPLES in capture_result:
+      samples = capture_result[_INTRINSICS_SAMPLES]
+      intrinsics_samples_list.append(samples)
+
+  if not intrinsics_samples_list:
+    logging.debug('Lens Intrinsic Samples are not reported')
+    # Don't change print to logging. Used for KPI.
+    print(f'{_NAME}_samples_principal_points_diff_detected: false')
+    return None
+
+  failure_msg = ''
+
+  max_samples_pp_diffs = []
+  max_samples_timestamp_diffs = []
+  for samples in intrinsics_samples_list:
+    pp_diffs = []
+    timestamp_diffs = []
+
+    # Evaluate intrinsics samples
+    first_sample = samples[0]
+    first_instrinsics = first_sample['lensIntrinsics']
+    first_ts = first_sample['timestamp']
+    first_point = calculate_principal_point(*first_instrinsics[:5])
+
+    for sample in samples:
+      samples_intrinsics = sample['lensIntrinsics']
+      timestamp = sample['timestamp']
+      principal_point = calculate_principal_point(*samples_intrinsics[:5])
+      distance = math.dist(first_point, principal_point)
+      pp_diffs.append(distance)
+      timestamp_diffs.append(timestamp-first_ts)
+
+    max_samples_pp_diffs.append(max(pp_diffs))
+    max_samples_timestamp_diffs.append(max(timestamp_diffs))
+
+  if any(value != 0 for value in max_samples_pp_diffs):
+    # Don't change print to logging. Used for KPI.
+    print(f'{_NAME}_samples_principal_points_diff_detected: true')
+    logging.debug('Principal points variations found in at lease one sample')
+  else:
+    # Don't change print to logging. Used for KPI.
+    print(f'{_NAME}_samples_principal_points_diff_detected: false')
+    failure_msg = failure_msg + (
+        'No variation of principal points found in any samples.\n\n'
+    )
+  if all(diff > 0 for diff in max_samples_timestamp_diffs[1:]):
+    logging.debug('Timestamps variations found in all samples')
+  else:
+    failure_msg = failure_msg + 'Timestamps in samples did not change. \n\n'
+
+  return failure_msg if failure_msg else None
+
+
 class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
   """Tests if lens intrinsics changes when OIS is triggered.
 
@@ -238,10 +279,12 @@ class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f'You must use the arduino controller for {_NAME}.')
 
-      preview_test_size = _get_preview_test_size(cam, self.camera_id)
+      preview_size = preview_processing_utils.get_max_preview_test_size(
+          cam, self.camera_id)
+      logging.debug('preview_test_size: %s', preview_size)
 
-      recording_obj = preview_stabilization_utils.collect_data(
-          cam, self.tablet_device, preview_test_size, False,
+      recording_obj = preview_processing_utils.collect_data(
+          cam, self.tablet_device, preview_size, False,
           rot_rig=rot_rig, ois=True)
 
       # Get gyro events
@@ -268,6 +311,9 @@ class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
           raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
                                f'\n\n{failure_msg}')
 
+      failure_msg = verify_lens_intrinsics_sample(recording_obj)
+      if failure_msg:
+        raise AssertionError(failure_msg)
 
 if __name__ == '__main__':
   test_runner.main()

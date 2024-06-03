@@ -16,6 +16,10 @@
 
 package android.keystore.cts.util;
 
+import static android.security.keystore.KeyProperties.DIGEST_NONE;
+import static android.security.keystore.KeyProperties.DIGEST_SHA256;
+import static android.security.keystore.KeyProperties.DIGEST_SHA512;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -121,6 +125,20 @@ public class TestUtils {
         return getFeatureVersionKeystore(appContext);
     }
 
+    /**
+     * This function returns the valid digest algorithms supported for a Strongbox or default
+     * KeyMint implementation. The isStrongbox parameter specifies the underlying KeyMint
+     * implementation. If true, it indicates Strongbox KeyMint, otherwise TEE/Software KeyMint
+     * is assumed.
+     */
+    public static @KeyProperties.DigestEnum String[] getDigestsForKeyMintImplementation(
+            boolean isStrongbox) {
+        if (isStrongbox) {
+            return new String[]{DIGEST_NONE, DIGEST_SHA256};
+        }
+        return new String[]{DIGEST_NONE, DIGEST_SHA256, DIGEST_SHA512};
+    }
+
     // Returns 0 if not implemented. Otherwise returns the feature version.
     //
     public static int getFeatureVersionKeystore(Context appContext) {
@@ -219,10 +237,30 @@ public class TestUtils {
     }
 
     /**
-     * Returns ro.vendor.api_level.
+     * Returns VSR API level.
      */
     public static int getVendorApiLevel() {
-        return SystemProperties.getInt("ro.vendor.api_level", 0);
+        int vendorApiLevel = SystemProperties.getInt("ro.vendor.api_level", -1);
+        if (vendorApiLevel != -1) {
+            return vendorApiLevel;
+        }
+
+        // Android S and older devices do not define ro.vendor.api_level
+        vendorApiLevel = SystemProperties.getInt("ro.board.api_level", -1);
+        if (vendorApiLevel == -1) {
+            vendorApiLevel = SystemProperties.getInt("ro.board.first_api_level", -1);
+        }
+
+        int productApiLevel = SystemProperties.getInt("ro.product.first_api_level", -1);
+        if (productApiLevel == -1) {
+            productApiLevel = Build.VERSION.SDK_INT;
+        }
+
+        // VSR API level is the minimum of vendorApiLevel and productApiLevel.
+        if (vendorApiLevel == -1 || vendorApiLevel > productApiLevel) {
+            return productApiLevel;
+        }
+        return vendorApiLevel;
     }
 
     /**
@@ -1232,5 +1270,15 @@ public class TestUtils {
     public static boolean isGsiImage() {
         final File initGsiRc = new File("/system/system_ext/etc/init/init.gsi.rc");
         return initGsiRc.exists();
+    }
+
+    /**
+     * Ed25519 algorithm name is added in Android V. So CTS using this algorithm
+     * name should check SDK_INT for Android V/preview.
+     * @return true if current SDK_INT is 34 and PREVIEW_SDK_INT >= 1 or SDK_INT >= 35
+     */
+    public static boolean isEd25519AlgorithmExpectedToSupport() {
+        return ((Build.VERSION.SDK_INT == 34 && Build.VERSION.PREVIEW_SDK_INT >= 1)
+                || Build.VERSION.SDK_INT >= 35);
     }
 }

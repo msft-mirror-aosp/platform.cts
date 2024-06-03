@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * Represents a virtual UINPUT device registered through /dev/uinput.
  */
-public final class UinputDevice extends VirtualInputDevice {
+public class UinputDevice extends VirtualInputDevice {
     private static final String TAG = "UinputDevice";
     // uinput executable expects "-" argument to read from stdin instead of a file
     private static final String UINPUT_COMMAND = "uinput -";
@@ -69,22 +69,8 @@ public final class UinputDevice extends VirtualInputDevice {
         }
     }
 
-    public UinputDevice(Instrumentation instrumentation, int id, int vendorId, int productId,
-            int sources, String registerCommand) {
-        super(instrumentation, id, vendorId, productId, sources, registerCommand);
-    }
-
-    /**
-     * Create Uinput device using the provided resourceId.
-     */
-    public static UinputDevice create(Instrumentation instrumentation, int resourceId,
-            int sources) {
-        final InputJsonParser parser = new InputJsonParser(instrumentation.getTargetContext());
-        final int resourceDeviceId = parser.readDeviceId(resourceId);
-        final String registerCommand = parser.readRegisterCommand(resourceId);
-        return new UinputDevice(instrumentation, resourceDeviceId,
-                parser.readVendorId(resourceId), parser.readProductId(resourceId),
-                sources, registerCommand);
+    public UinputDevice(Instrumentation instrumentation, int sources, UinputRegisterCommand cmd) {
+        super(instrumentation, cmd.getId(), cmd.getVid(), cmd.getPid(), sources, cmd);
     }
 
     /**
@@ -157,5 +143,4 @@ public final class UinputDevice extends VirtualInputDevice {
         }
         writeCommands(json.toString().getBytes());
     }
-
 }

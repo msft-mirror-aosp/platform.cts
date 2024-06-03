@@ -18,15 +18,18 @@ package com.android.cts.devicepolicy;
 
 import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.permission.flags.Flags;
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 import android.stats.devicepolicy.EventId;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.TemporarilyIgnoreOnHeadlessSystemUserMode;
@@ -39,6 +42,7 @@ import com.android.tradefed.util.RunUtil;
 import com.google.common.collect.ImmutableMap;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -162,6 +166,10 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     // ID of the user all tests are run as. For device owner this will be the current user, for
     // profile owner it is the user id of the created profile.
     protected int mUserId;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @Override
     public void tearDown() throws Exception {
@@ -655,6 +663,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
 
     @LargeTest
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_SERVER_ROLE_CONTROLLER_ENABLED)
     public void testLockTaskAfterReboot() throws Exception {
         try {
             // Just start kiosk mode
@@ -757,37 +766,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     @Test
     public void testPasswordSufficientInitially() throws Exception {
         executeDeviceTestClass(".PasswordSufficientInitiallyTest");
-    }
-
-    @Test
-    public void testGetCurrentFailedPasswordAttempts() throws Exception {
-        assumeHasSecureLockScreenFeature();
-
-        final String wrongPassword = TEST_PASSWORD + "5";
-
-        changeUserCredential(TEST_PASSWORD, null /*oldCredential*/, mUserId);
-        try {
-            // Test that before trying an incorrect password there are 0 failed attempts.
-            executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-                    "testNoFailedPasswordAttempts");
-            // Try an incorrect password.
-            assertFalse(verifyUserCredentialIsCorrect(wrongPassword, mUserId));
-            // Test that now there is one failed attempt.
-            executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-                    "testOneFailedPasswordAttempt");
-            // Try an incorrect password.
-            assertFalse(verifyUserCredentialIsCorrect(wrongPassword, mUserId));
-            // Test that now there are two failed attempts.
-            executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-                    "testTwoFailedPasswordAttempts");
-            // TODO: re-enable the test below when b/110945754 is fixed.
-            // Try the correct password and check the failed attempts number has been reset to 0.
-            // assertTrue(verifyUserCredentialIsCorrect(testPassword, mUserId));
-            // executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-            //         "testNoFailedPasswordAttempts");
-        } finally {
-            changeUserCredential(null /*newCredential*/, TEST_PASSWORD, mUserId);
-        }
     }
 
     @Test

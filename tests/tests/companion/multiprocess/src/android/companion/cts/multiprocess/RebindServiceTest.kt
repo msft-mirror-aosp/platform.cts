@@ -16,6 +16,9 @@
 package android.companion.cts.multiprocess
 
 import android.Manifest
+import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
+import android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+import android.Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
 import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
 import android.companion.Flags
 import android.companion.ObservingDevicePresenceRequest
@@ -52,7 +55,9 @@ class RebindServiceTest : TestBase() {
         // Create a self-managed association.
         val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
         // Publish device's presence and wait for callback.
-        cdm.notifyDeviceAppeared(associationId)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(associationId)
+        }
         assertApplicationBinds(cdm)
         // Wait for secondary service to start.
         SystemClock.sleep(2000)
@@ -66,7 +71,9 @@ class RebindServiceTest : TestBase() {
         assertServiceNotBound("PrimaryCompanionService")
         assertServiceNotBound("SecondaryCompanionService")
         // Recall notifyDeviceAppeared, primary and secondary services should be bound.
-        cdm.notifyDeviceAppeared(associationId)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(associationId)
+        }
 
         assertApplicationBinds(cdm)
         assertServiceBound("PrimaryCompanionService")
@@ -79,7 +86,9 @@ class RebindServiceTest : TestBase() {
         val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
 
         // Publish device's presence and wait for callback.
-        cdm.notifyDeviceAppeared(associationId)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(associationId)
+        }
 
         assertApplicationBinds(cdm)
         // Wait for secondary service to start.
@@ -102,8 +111,10 @@ class RebindServiceTest : TestBase() {
         val idB = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_B)
 
         // Publish device's presence and wait for callback.
-        cdm.notifyDeviceAppeared(idA)
-        cdm.notifyDeviceAppeared(idB)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idA)
+            cdm.notifyDeviceAppeared(idB)
+        }
 
         assertApplicationBinds(cdm)
         // Wait for secondary service to start.
@@ -115,8 +126,10 @@ class RebindServiceTest : TestBase() {
         assertServiceNotBound("PrimaryCompanionService")
 
         // Rebind by the application
-        cdm.notifyDeviceAppeared(idA)
-        cdm.notifyDeviceAppeared(idB)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idA)
+            cdm.notifyDeviceAppeared(idB)
+        }
 
         // Primary service should be bound again.
         assertServiceBound("PrimaryCompanionService")
@@ -127,8 +140,10 @@ class RebindServiceTest : TestBase() {
     fun test_ObservingDeviceUuidPresence_rebind() {
         val request = ObservingDevicePresenceRequest.Builder().setUuid(UUID_A).build()
         withShellPermissionIdentity(
-            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
         ) {
             cdm.startObservingDevicePresence(request)
         }
@@ -151,8 +166,10 @@ class RebindServiceTest : TestBase() {
         assertServiceBound("PrimaryCompanionService")
 
         withShellPermissionIdentity(
-            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
+            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN
         ) {
             cdm.stopObservingDevicePresence(request)
         }

@@ -4,7 +4,7 @@ package {
 
 android_library {
     name: "RemoteFrameworkClasses",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
     srcs: [
         "src/types/main/java/**/*.java",
         "src/types/main/java/**/*.kt",
@@ -13,10 +13,12 @@ android_library {
         "RemoteFrameworkClasses_Annotations",
         "ConnectedAppsSDK_Annotations",
         "ConnectedAppsSDK",
+        "TestApisReflection",
     ],
     manifest: "src/types/main/AndroidManifest.xml",
     min_sdk_version: "29",
     plugins: [
+        "TestApisReflection_Processor",
         "ConnectedAppsSDK_Processor",
         "RemoteFrameworkClasses_Processor",
     ],
@@ -44,9 +46,10 @@ java_library_host {
         "auto_service_annotations",
         "RemoteFrameworkClasses_Annotations",
         "ConnectedAppsSDK_Annotations",
+        "TestApisReflection_Annotations",
     ],
     java_resource_dirs: [
-        "src/processor/res",
+        "java/",
     ],
     plugins: ["auto_service_plugin"],
 }

@@ -20,7 +20,8 @@ java_library_host {
     name: "api-coverage",
 
     srcs: [
-        "**/*.java",
+        "src/com/android/cts/apicommon/**/*.java",
+        "src/com/android/cts/apicoverage/**/*.java",
         "proto/**/*.proto",
     ],
 
@@ -54,4 +55,27 @@ java_binary_host {
     wrapper: "etc/ndk-api-report",
     static_libs: ["api-coverage"],
     manifest: "MANIFEST.mf",
+}
+
+java_library_host {
+    name: "api-map",
+    srcs: [
+        "src/com/android/cts/apicommon/**/*.java",
+        "src/com/android/cts/apimap/**/*.java",
+        "src/com/android/cts/ctsprofiles/**/*.java",
+    ],
+    static_libs: [
+        "apache-commons-math3",
+        "jsr305",
+        "ow2-asm",
+        "ow2-asm-analysis",
+        "ow2-asm-commons",
+        "ow2-asm-tree",
+    ],
+}
+
+java_binary_host {
+    name: "cts-api-map",
+    static_libs: ["api-map"],
+    manifest: "api_map_manifest.txt",
 }

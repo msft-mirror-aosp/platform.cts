@@ -80,6 +80,8 @@ public class HeartbeatActivity extends Activity {
                 } catch (RemoteException e) {
                     Log.e(TAG, "Failed to trigger Heartbeat service");
                 }
+                Log.d(TAG, "Finishing heartbeat activity");
+                finish();
             }
 
             @Override

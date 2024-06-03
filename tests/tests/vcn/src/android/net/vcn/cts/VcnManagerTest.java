@@ -17,8 +17,12 @@
 package android.net.vcn.cts;
 
 import static android.content.pm.PackageManager.FEATURE_TELEPHONY;
+import static android.content.pm.PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION;
 import static android.ipsec.ike.cts.IkeTunUtils.PortPair;
 import static android.net.ConnectivityDiagnosticsManager.DataStallReport.DETECTION_METHOD_DNS_EVENTS;
+import static android.net.ConnectivitySettingsManager.CAPTIVE_PORTAL_MODE_PROMPT;
+import static android.net.ConnectivitySettingsManager.getCaptivePortalMode;
+import static android.net.ConnectivitySettingsManager.setCaptivePortalMode;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_CBS;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED;
@@ -38,12 +42,13 @@ import static android.telephony.SubscriptionManager.INVALID_SUBSCRIPTION_ID;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+import static com.android.compatibility.common.util.TestUtils.waitUntil;
 import static com.android.internal.util.HexDump.hexStringToByteArray;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -116,6 +121,8 @@ public class VcnManagerTest extends VcnTestBase {
     private static final int TIMEOUT_MS = 500;
     private static final long SAFEMODE_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(35);
 
+    private static final int ACTIVE_SUB_ID_TIMEOUT_SECONDS = 60;
+
     private static final Executor INLINE_EXECUTOR = Runnable::run;
 
     private static final int TEST_NETWORK_MTU = 1500;
@@ -136,6 +143,7 @@ public class VcnManagerTest extends VcnTestBase {
     private final TelephonyManager mTelephonyManager;
     private final ConnectivityManager mConnectivityManager;
     private final CarrierConfigManager mCarrierConfigManager;
+    private final int mOldCaptivePortalMode;
 
     public VcnManagerTest() {
         mContext = InstrumentationRegistry.getContext();
@@ -144,17 +152,40 @@ public class VcnManagerTest extends VcnTestBase {
         mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
         mConnectivityManager = mContext.getSystemService(ConnectivityManager.class);
         mCarrierConfigManager = mContext.getSystemService(CarrierConfigManager.class);
+
+        mOldCaptivePortalMode = getCaptivePortalMode(mContext, CAPTIVE_PORTAL_MODE_PROMPT);
     }
 
     @Before
     public void setUp() throws Exception {
-        assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_TELEPHONY));
+        final boolean hasFeatureTelephony =
+                mContext.getPackageManager().hasSystemFeature(FEATURE_TELEPHONY);
+        final boolean hasFeatureTelSubscription =
+                mContext.getPackageManager().hasSystemFeature(FEATURE_TELEPHONY_SUBSCRIPTION);
+        final boolean hasTelephonyFlag = hasFeatureTelephony || hasFeatureTelSubscription;
+
+        // Before V, only devices with FEATURE_TELEPHONY are required to run the tests. Starting
+        // from V, tests are also required on following cases:
+        //
+        // Device that has a non-null VcnManager even if it has neither of FEATURE_TELEPHONY or
+        // FEATURE_TELEPHONY_SUBSCRIPTION.
+        //
+        // Device that has FEATURE_TELEPHONY_SUBSCRIPTION. This should not be a new requirement
+        // since before V devices with FEATURE_TELEPHONY_SUBSCRIPTION are already enforced to have
+        // FEATURE_TELEPHONY.
+        assumeTrue(hasTelephonyFlag || mVcnManager != null);
 
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity();
+
+        // Ensure Internet probing check will be performed on VCN networks
+        setCaptivePortalMode(mContext, CAPTIVE_PORTAL_MODE_PROMPT);
+
+        runShellCommand("cmd connectivity airplane-mode disable");
     }
 
     @After
     public void tearDown() throws Exception {
+        setCaptivePortalMode(mContext, mOldCaptivePortalMode);
         getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
     }
 
@@ -183,13 +214,17 @@ public class VcnManagerTest extends VcnTestBase {
         return buildVcnConfigBase().setIsTestModeProfile().build();
     }
 
-    private int verifyAndGetValidDataSubId() {
-        final int dataSubId = SubscriptionManager.getDefaultDataSubscriptionId();
-        assertNotEquals(
+    private int verifyAndGetValidDataSubId() throws Exception {
+        // Wait for an active sub ID to mitigate the cuttlefish test issue where the CTS will
+        // start before a valid data subId is ready. In most cases this should return immediately
+        // without needing to wait.
+        waitUntil(
                 "There must be an active data subscription to complete CTS",
-                INVALID_SUBSCRIPTION_ID,
-                dataSubId);
-        return dataSubId;
+                ACTIVE_SUB_ID_TIMEOUT_SECONDS,
+                () ->
+                        SubscriptionManager.getDefaultDataSubscriptionId()
+                                != INVALID_SUBSCRIPTION_ID);
+        return SubscriptionManager.getDefaultDataSubscriptionId();
     }
 
     @Test(expected = SecurityException.class)
@@ -1285,8 +1320,7 @@ public class VcnManagerTest extends VcnTestBase {
                         timeoutMillis);
 
                 // Verify that VCN Network is also lost in safemode
-                final Network lostVcnNetwork = cellNetworkCb.waitForLost();
-                assertEquals(vcnSetupResult.vcnNetwork, lostVcnNetwork);
+                cellNetworkCb.waitForLostNetwork(vcnSetupResult.vcnNetwork);
 
                 verifyVcnStatus(subGrp, VCN_STATUS_CODE_SAFE_MODE);
 

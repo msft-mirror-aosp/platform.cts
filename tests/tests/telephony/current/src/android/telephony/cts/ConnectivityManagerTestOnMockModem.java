@@ -19,6 +19,7 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -61,6 +62,7 @@ import java.util.concurrent.TimeUnit;
 public class ConnectivityManagerTestOnMockModem {
     private static final String TAG = "ConnectivityManagerTestOnMockModem";
     private static final int TIMEOUT_NETWORK_VALIDATION = 20000;
+    private static final int TIMEOUT_ACTIVATE_NETWORK = 20000;
     private static final int WAIT_MSEC = 500;
     private static final int NETWORK_AVAILABLE_SEC = 60;
     private static boolean sIsValidate;
@@ -384,6 +386,9 @@ public class ConnectivityManagerTestOnMockModem {
 
         // Remove the SIM
         sMockModemManager.removeSimCard(slotId);
+
+        waitForNullActiveNetwork(TIMEOUT_ACTIVATE_NETWORK);
+        assertNull(sConnectivityManager.getActiveNetwork());
     }
 
     private static void waitForExpectedValidationState(boolean validated, long timeout)
@@ -461,6 +466,25 @@ public class ConnectivityManagerTestOnMockModem {
         // Remove the SIM
         sMockModemManager.removeSimCard(slotId_0);
         sMockModemManager.removeSimCard(slotId_1);
+
+        waitForNullActiveNetwork(TIMEOUT_ACTIVATE_NETWORK);
+        assertNull(sConnectivityManager.getActiveNetwork());
+    }
+
+    private static void waitForNullActiveNetwork(long timeout)
+            throws InterruptedException {
+        Log.d(
+                TAG,
+                "Wait For Null ActiveNetwork: "
+                        + "timeout: "
+                        + timeout
+                        + " ms");
+        long expectedTimeout = System.currentTimeMillis() + timeout;
+        while (System.currentTimeMillis() < expectedTimeout
+                && sConnectivityManager.getActiveNetwork() != null) {
+            TimeUnit.SECONDS.sleep(1);
+            Log.d(TAG, "ActiveNetwork: " + sConnectivityManager.getActiveNetwork());
+        }
     }
 }
 

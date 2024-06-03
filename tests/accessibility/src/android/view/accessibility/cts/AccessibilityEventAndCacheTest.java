@@ -97,7 +97,7 @@ public class AccessibilityEventAndCacheTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_FIX_MERGED_CONTENT_CHANGE_EVENT)
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_FIX_MERGED_CONTENT_CHANGE_EVENT_V2)
     public void testSimultaneousChangesUpdatesAllChildNodes() throws Exception {
         // Makes sure that all nodes are fetched in client side.
         final List<AccessibilityNodeInfo> nodes = sUiAutomation.getRootInActiveWindow()

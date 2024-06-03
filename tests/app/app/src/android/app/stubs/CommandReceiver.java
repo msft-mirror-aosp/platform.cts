@@ -22,10 +22,14 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.IActivityManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.IContentProvider;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -74,11 +78,17 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final int COMMAND_EMPTY = 22;
     public static final int COMMAND_START_FOREGROUND_SERVICE_SPOOF_PACKAGE_NAME = 23;
     public static final int COMMAND_CREATE_ACTIVE_MEDIA_SESSION = 24;
-    public static final int COMMAND_CREATE_ACTIVE_MEDIA_SESSION_FGS_DELEGATE = 25;
+    public static final int COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE = 25;
     public static final int COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE = 26;
     public static final int COMMAND_DEACTIVATE_MEDIA_SESSION_FGS_DELEGATE = 27;
     public static final int COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE = 28;
     public static final int COMMAND_SEND_STICKY_BROADCAST = 29;
+    public static final int COMMAND_SET_MEDIA_SESSION_TO_PLAYING = 30;
+    public static final int COMMAND_SET_MEDIA_SESSION_TO_PAUSED = 31;
+    public static final int COMMAND_SET_MEDIA_SESSION_TO_STOPPED = 32;
+    public static final int COMMAND_CREATE_MEDIA_NOTIFICATION = 33;
+    public static final int COMMAND_ACQUIRE_CONTENT_PROVIDER = 34;
+    public static final int COMMAND_RELEASE_CONTENT_PROVIDER = 35;
 
     public static final String KEY_PENDING_INTENT = "android.app.stubs.key.PENDING_INTENT";
     public static final String KEY_STICKY_BROADCAST_FILTER =
@@ -95,6 +105,7 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final String EXTRA_CHILD_CMDLINE = "android.app.stubs.extra.child_cmdline";
     public static final String EXTRA_TIMEOUT = "android.app.stubs.extra.child_cmdline";
     public static final String EXTRA_MESSENGER = "android.app.stubs.extra.EXTRA_MESSENGER";
+    public static final String EXTRA_URI = "android.app.stubs.extra.EXTRA_URI";
 
     public static final String SERVICE_NAME = "android.app.stubs.LocalService";
     public static final String FG_SERVICE_NAME = "android.app.stubs.LocalForegroundService";
@@ -117,6 +128,13 @@ public class CommandReceiver extends BroadcastReceiver {
     private static Process sChildProcess;
 
     private static MediaSession mMediaSession = null;
+
+    private String mNotificationChannelId;
+    private static final String NOTIFICATION_CHANNEL_ID = "com.example.android.media.channel";
+
+    private int mNotificationId = 6003;
+
+    private static ArrayMap<Uri, IContentProvider> sContentProviders = new ArrayMap<>();
 
     /**
      * Handle the different types of binding/unbinding requests.
@@ -204,24 +222,50 @@ public class CommandReceiver extends BroadcastReceiver {
                 doStartMediaPlayback(context, intent.getParcelableExtra(
                         Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
                 break;
-            case COMMAND_CREATE_ACTIVE_MEDIA_SESSION_FGS_DELEGATE:
-                doStartMediaPlaybackFgsDelegate(context, intent.getParcelableExtra(
-                        Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
+            case COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE:
+                doCreateMediaSession(
+                        context,
+                        intent.getParcelableExtra(
+                                Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
                 break;
             case COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE:
-                doChangeMediaPlaybackIsActiveFgsDelegate(
+                doChangeMediaSessionActiveState(
                         /* isActive= */ true,
                         intent.getParcelableExtra(
                                 Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
                 break;
             case COMMAND_DEACTIVATE_MEDIA_SESSION_FGS_DELEGATE:
-                doChangeMediaPlaybackIsActiveFgsDelegate(
+                doChangeMediaSessionActiveState(
                         /* isActive= */ false,
                         intent.getParcelableExtra(
                                 Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
                 break;
             case COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE:
-                doReleaseMediaPlaybackFgsDelegate(
+                doReleaseMediaSession(
+                        intent.getParcelableExtra(
+                                Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
+                break;
+            case COMMAND_SET_MEDIA_SESSION_TO_PLAYING:
+                doSetMediaSessionPlaybackState(
+                        PlaybackState.STATE_PLAYING,
+                        intent.getParcelableExtra(
+                                Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
+                break;
+            case COMMAND_SET_MEDIA_SESSION_TO_PAUSED:
+                doSetMediaSessionPlaybackState(
+                        PlaybackState.STATE_PAUSED,
+                        intent.getParcelableExtra(
+                                Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
+                break;
+            case COMMAND_SET_MEDIA_SESSION_TO_STOPPED:
+                doSetMediaSessionPlaybackState(
+                        PlaybackState.STATE_STOPPED,
+                        intent.getParcelableExtra(
+                                Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
+                break;
+            case COMMAND_CREATE_MEDIA_NOTIFICATION:
+                doCreateMediaNotification(
+                        context,
                         intent.getParcelableExtra(
                                 Intent.EXTRA_REMOTE_CALLBACK, RemoteCallback.class));
                 break;
@@ -231,6 +275,12 @@ public class CommandReceiver extends BroadcastReceiver {
                 if (intentFilter != null) {
                     resultExtras.putParcelable(KEY_STICKY_BROADCAST_FILTER, intentFilter);
                 }
+                break;
+            case COMMAND_ACQUIRE_CONTENT_PROVIDER:
+                doAcquireProvider(context, intent);
+                break;
+            case COMMAND_RELEASE_CONTENT_PROVIDER:
+                doReleaseProvider(context, intent);
                 break;
         }
         if (resultExtras != null) {
@@ -525,10 +575,8 @@ public class CommandReceiver extends BroadcastReceiver {
         callback.sendResult(null);
     }
 
-    /**
-     * Use FGS delegate to promote the app's procstate and provide keep-alive.
-     */
-    private void doStartMediaPlaybackFgsDelegate(Context context, RemoteCallback callback) {
+    /** Use FGS delegate to promote the app's procstate and provide keep-alive. */
+    private void doCreateMediaSession(Context context, RemoteCallback callback) {
         mMediaSession = new MediaSession(context, TAG);
         mMediaSession.setCallback(
                 new MediaSession.Callback() {
@@ -550,19 +598,17 @@ public class CommandReceiver extends BroadcastReceiver {
                         setPlaybackState(PlaybackState.STATE_STOPPED, mMediaSession);
                     }
                 });
-        mMediaSession.setActive(true);
         callback.sendResult(null);
     }
 
-    private void doChangeMediaPlaybackIsActiveFgsDelegate(
-            boolean isActive, RemoteCallback callback) {
+    private void doChangeMediaSessionActiveState(boolean isActive, RemoteCallback callback) {
         if (mMediaSession != null) {
             mMediaSession.setActive(isActive);
         }
         callback.sendResult(null);
     }
 
-    private void doReleaseMediaPlaybackFgsDelegate(RemoteCallback callback) {
+    private void doReleaseMediaSession(RemoteCallback callback) {
         if (mMediaSession != null) {
             mMediaSession.release();
         }
@@ -586,6 +632,60 @@ public class CommandReceiver extends BroadcastReceiver {
             return null;
         }
         return intentFilter;
+
+    }
+
+    private void doCreateMediaNotification(Context context, RemoteCallback callback) {
+        NotificationManager notificationManager =
+                context.getSystemService(NotificationManager.class);
+        maybeCreateNotificationChannel(notificationManager);
+        Notification notification =
+                new Notification.Builder(context, mNotificationChannelId)
+                        .setContentTitle("Track title")
+                        .setSmallIcon(R.drawable.ic_call_answer)
+                        .setContentText("Artist - Album")
+                        .setStyle(
+                                new Notification.MediaStyle()
+                                        .setMediaSession(mMediaSession.getSessionToken()))
+                        .setAutoCancel(false)
+                        .build();
+
+        notificationManager.notify(mNotificationId++, notification);
+        callback.sendResult(null);
+    }
+
+    private void maybeCreateNotificationChannel(NotificationManager notificationManager) {
+        if (mNotificationChannelId != null) {
+            return;
+        }
+        mNotificationChannelId = NOTIFICATION_CHANNEL_ID;
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        CharSequence name = "Channel";
+        String description = "Description";
+        int importance = NotificationManager.IMPORTANCE_LOW;
+        NotificationChannel channel =
+                new NotificationChannel(mNotificationChannelId, name.toString(), importance);
+        channel.setDescription(description);
+
+        // Register the channel with the system; you can't change the importance
+        // or other notification behaviors after this
+        notificationManager.createNotificationChannel(channel);
+    }
+
+    private void doAcquireProvider(Context context, Intent intent) {
+        final Bundle extras = intent.getExtras();
+        final Uri uri = extras.getParcelable(EXTRA_URI, Uri.class);
+        final IContentProvider provider = context.getContentResolver().acquireProvider(uri);
+        sContentProviders.put(uri, provider);
+    }
+
+    private void doReleaseProvider(Context context, Intent intent) {
+        final Bundle extras = intent.getExtras();
+        final Uri uri = extras.getParcelable(EXTRA_URI, Uri.class);
+        final IContentProvider provider = sContentProviders.remove(uri);
+        if (provider == null) return;
+        context.getContentResolver().releaseProvider(provider);
     }
 
     private void setPlaybackState(int state, MediaSession mediaSession) {
@@ -596,6 +696,14 @@ public class CommandReceiver extends BroadcastReceiver {
         PlaybackState playbackState = new PlaybackState.Builder().setActions(allActions)
                 .setState(state, 0L, 0.0f).build();
         mediaSession.setPlaybackState(playbackState);
+    }
+
+    private void doSetMediaSessionPlaybackState(
+            @PlaybackState.State int state, RemoteCallback callback) {
+        if (mMediaSession != null) {
+            setPlaybackState(state, mMediaSession);
+        }
+        callback.sendResult(null);
     }
 
     private String getTargetPackage(Intent intent) {

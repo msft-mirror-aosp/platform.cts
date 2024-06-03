@@ -19,7 +19,6 @@ package android.server.biometrics;
 import static com.android.systemui.Flags.FLAG_CONSTRAINT_BP;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
@@ -27,7 +26,6 @@ import static org.mockito.Mockito.mock;
 
 import android.Manifest;
 import android.graphics.Bitmap;
-import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.Flags;
@@ -42,14 +40,12 @@ import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Basic test cases for logo on biometric prompt.
  */
 @Presubmit
-@Ignore("Unignore after implementation")
 public class BiometricPromptLogoTests extends BiometricTestBase {
     private static final String TAG = "BiometricTests/Logo";
 
@@ -170,20 +166,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
             try (BiometricTestSession session =
                          mBiometricManager.createTestSession(props.getSensorId())) {
 
-                final int authenticatorStrength =
-                        Utils.testApiStrengthToAuthenticatorStrength(props.getSensorStrength());
-
-                assertWithMessage("Sensor: " + props.getSensorId()
-                        + ", strength: " + props.getSensorStrength()).that(
-                        mBiometricManager.canAuthenticate(authenticatorStrength)).isEqualTo(
-                        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED);
-
-                enrollForSensor(session, props.getSensorId());
-
-                assertWithMessage("Sensor: " + props.getSensorId()
-                        + ", strength: " + props.getSensorStrength()).that(
-                        mBiometricManager.canAuthenticate(authenticatorStrength)).isEqualTo(
-                        BiometricManager.BIOMETRIC_SUCCESS);
+                setUpNonConvenienceSensorEnrollment(props, session);
 
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
@@ -215,26 +198,13 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
             try (BiometricTestSession session =
                          mBiometricManager.createTestSession(props.getSensorId())) {
 
-                final int authenticatorStrength =
-                        Utils.testApiStrengthToAuthenticatorStrength(props.getSensorStrength());
-
-                assertWithMessage("Sensor: " + props.getSensorId()
-                        + ", strength: " + props.getSensorStrength()).that(
-                        mBiometricManager.canAuthenticate(authenticatorStrength)).isEqualTo(
-                        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED);
-
-                enrollForSensor(session, props.getSensorId());
-
-                assertWithMessage("Sensor: " + props.getSensorId()
-                        + ", strength: " + props.getSensorStrength()).that(
-                        mBiometricManager.canAuthenticate(authenticatorStrength)).isEqualTo(
-                        BiometricManager.BIOMETRIC_SUCCESS);
+                setUpNonConvenienceSensorEnrollment(props, session);
 
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
                 if (withPermission) {
                     showBiometricPromptWithLogo(testLogoRes, props.getSensorId(), callback);
-                    final UiObject2 actualLogo = findView(LOGO_VIEW);
+                    final UiObject2 actualLogo = waitForView(LOGO_VIEW);
                     final UiObject2 actualLogoDescription = findView(LOGO_DESCRIPTION_VIEW);
 
                     assertThat(actualLogo.getVisibleBounds()).isNotNull();

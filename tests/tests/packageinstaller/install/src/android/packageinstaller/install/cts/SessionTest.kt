@@ -35,6 +35,7 @@ import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SdkSuppress
 import androidx.test.runner.AndroidJUnit4
@@ -55,6 +56,7 @@ import org.junit.runner.RunWith
  */
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
+@ScreenRecord
 class SessionTest : PackageInstallerTestBase() {
 
     @get:Rule
@@ -97,7 +99,7 @@ class SessionTest : PackageInstallerTestBase() {
         assertInstalled()
 
         // Even when the install succeeds the install confirm dialog returns 'canceled'
-        assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
 
         assertTrue(AppOpsUtils.allowedOperationLogged(context.packageName, APP_OP_STR))
     }
@@ -121,7 +123,7 @@ class SessionTest : PackageInstallerTestBase() {
         assertInstalled()
 
         // Even when the install succeeds the install confirm dialog returns 'canceled'
-        assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
 
         assertTrue(AppOpsUtils.allowedOperationLogged(context.packageName, APP_OP_STR))
     }
@@ -150,7 +152,7 @@ class SessionTest : PackageInstallerTestBase() {
      */
     @Test
     fun setApplicationEnabledSettingPersistent() {
-        installWithApplicationEnabledSetting()
+        installPackage(TEST_APK_NAME)
         assertEquals(
             COMPONENT_ENABLED_STATE_DEFAULT,
                 pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
@@ -163,7 +165,7 @@ class SessionTest : PackageInstallerTestBase() {
         )
 
         // enabled setting should be reset to default after reinstall
-        installWithApplicationEnabledSetting()
+        installPackage(TEST_APK_NAME)
         assertEquals(
             COMPONENT_ENABLED_STATE_DEFAULT,
                 pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
@@ -176,7 +178,7 @@ class SessionTest : PackageInstallerTestBase() {
         )
 
         // enabled setting should now be persisted after reinstall
-        installWithApplicationEnabledSetting(true)
+        installPackage(TEST_APK_NAME, "--skip-enable")
         assertEquals(
             COMPONENT_ENABLED_STATE_DISABLED,
             pm.getApplicationEnabledSetting(TEST_APK_PACKAGE_NAME)
@@ -196,7 +198,7 @@ class SessionTest : PackageInstallerTestBase() {
         val result = getInstallSessionResult()
         assertEquals(STATUS_FAILURE_ABORTED, result.status)
         assertEquals(false, result.preapproval)
-        assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertNotInstalled()
     }
 
@@ -275,22 +277,6 @@ class SessionTest : PackageInstallerTestBase() {
         val sessionInfo = pi.getSessionInfo(sessionId)
         assertNull(sessionInfo!!.resolvedBaseApkPath)
         clickInstallerUIButton(CANCEL_BUTTON_ID)
-    }
-
-    private fun installWithApplicationEnabledSetting(setEnabledSettingPersistent: Boolean = false) {
-        val sessionParam = PackageInstaller.SessionParams(MODE_FULL_INSTALL)
-        if (setEnabledSettingPersistent) {
-            sessionParam.setApplicationEnabledSettingPersistent()
-        }
-        val sessionId = pi.createSession(sessionParam)
-        val session = pi.openSession(sessionId)
-        assertEquals(setEnabledSettingPersistent, session.isApplicationEnabledSettingPersistent())
-        writeSession(session, TEST_APK_NAME)
-        commitSession(session)
-        clickInstallerUIButton(INSTALL_BUTTON_ID)
-
-        // Wait for installation to finish
-        getInstallSessionResult()
     }
 
     private fun disablePackage() {

@@ -21,7 +21,9 @@ import android.cts.host.utils.DeviceJUnit4Parameterized;
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.ddmlib.IDevice;
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
+import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.config.OptionClass;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -97,8 +99,6 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
 
     // Variables related to device-side of the test. These need to kept in sync with definitions of
     // VideoEncodingApp.apk
-    private static final String DEVICE_IN_DIR = "/sdcard/veq/input/";
-    private static final String DEVICE_OUT_DIR = "/sdcard/veq/output/";
     private static final String DEVICE_SIDE_TEST_PACKAGE = "android.videoencoding.app";
     private static final String DEVICE_SIDE_TEST_CLASS =
             "android.videoencoding.app.VideoTranscoderTest";
@@ -134,82 +134,129 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
     @Option(name = "quick-check", description = "Run a quick check.")
     private boolean mQuickCheck = false;
 
-    public CtsVideoEncodingQualityHostTest(String jsonName) {
+    public CtsVideoEncodingQualityHostTest(String jsonName,
+            @SuppressWarnings("unused") String testLabel) {
         mJsonName = jsonName;
     }
 
-    private static final List<String> AVC_VBR_B0_PARAMS = Arrays.asList(
-            "AVICON-MOBILE-Beach-SO04-CRW02-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0.json",
-            "AVICON-MOBILE-BirthdayHalfway-SI17-CRUW03-L-420-8bit-SDR-1080p"
-                    + "-30fps_hw_avc_vbr_b0.json",
-            "AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
-                    + "-30fps_hw_avc_vbr_b0.json",
-            "AVICON-MOBILE-Waterfall-SO05-CRW01-P-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0.json",
-            "AVICON-MOBILE-SelfieFamily-SF14-CF01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0"
+    private static final List<Object[]> AVC_VBR_B0_PARAMS = Arrays.asList(new Object[][]{
+            {"AVICON-MOBILE-Beach-SO04-CRW02-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0.json",
+                    "Beach_SO04_CRW02_L_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b0"},
+            {"AVICON-MOBILE-BirthdayHalfway-SI17-CRUW03-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0"
                     + ".json",
-            "AVICON-MOBILE-River-SO03-CRW01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0.json",
-            "AVICON-MOBILE-SelfieGroupGarden-SF15-CF01-P-420-8bit-SDR-1080p"
+                    "BirthdayHalfway_SI17_CRUW03_L_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b0"},
+            {"AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
                     + "-30fps_hw_avc_vbr_b0.json",
-            "AVICON-MOBILE-ConcertNear-SI10-CRW01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0"
+                    "SelfieTeenKitchenSocialMedia_SS01_CF01_P_420_8bit_SDR_1080p_30fps_hw_avc_"
+                            + "vbr_b0"},
+            {"AVICON-MOBILE-Waterfall-SO05-CRW01-P-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0.json",
+                    "Waterfall_SO05_CRW01_P_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b0"},
+            {"AVICON-MOBILE-SelfieFamily-SF14-CF01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0.json"
+                    , "SelfieFamily_SF14_CF01_L_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b0"},
+            {"AVICON-MOBILE-River-SO03-CRW01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0.json",
+                    "River_SO03_CRW01_L_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b0"},
+            {"AVICON-MOBILE-SelfieGroupGarden-SF15-CF01-P-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0"
                     + ".json",
-            "AVICON-MOBILE-SelfieCoupleCitySocialMedia-SS02-CF01-P-420-8bit-SDR-1080p"
-                    + "-30fps_hw_avc_vbr_b0.json");
+                    "SelfieGroupGarden_SF15_CF01_P_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b0"},
+            {"AVICON-MOBILE-ConcertNear-SI10-CRW01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b0.json"
+                    , "ConcertNear_SI10_CRW01_L_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b0"},
+            {"AVICON-MOBILE-SelfieCoupleCitySocialMedia-SS02-CF01-P-420-8bit-SDR"
+                    + "-1080p-30fps_hw_avc_vbr_b0.json",
+                    "SelfieCoupleCitySocialMedia_SS02_CF01_P_420_8bit_SDR_1080p_30fps_hw_avc_"
+                            + "vbr_b0"}});
 
-    private static final List<String> AVC_VBR_B3_PARAMS = Arrays.asList(
-            "AVICON-MOBILE-Beach-SO04-CRW02-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3.json",
-            "AVICON-MOBILE-BirthdayHalfway-SI17-CRUW03-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3"
+    private static final List<Object[]> AVC_VBR_B3_PARAMS = Arrays.asList(new Object[][]{
+            {"AVICON-MOBILE-Beach-SO04-CRW02-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3.json",
+                    "Beach_SO04_CRW02_L_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b3"},
+            {"AVICON-MOBILE-BirthdayHalfway-SI17-CRUW03-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3"
                     + ".json",
-            "AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
+                    "BirthdayHalfway_SI17_CRUW03_L_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b3"},
+            {"AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
                     + "-30fps_hw_avc_vbr_b3.json",
-            "AVICON-MOBILE-Waterfall-SO05-CRW01-P-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3.json",
-            "AVICON-MOBILE-SelfieFamily-SF14-CF01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3.json",
-            "AVICON-MOBILE-River-SO03-CRW01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3.json",
-            "AVICON-MOBILE-SelfieGroupGarden-SF15-CF01-P-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3"
+                    "SelfieTeenKitchenSocialMedia_SS01_CF01_P_420_8bit_SDR_1080p_30fps_hw_avc_"
+                            + "vbr_b3"},
+            {"AVICON-MOBILE-Waterfall-SO05-CRW01-P-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3.json",
+                    "Waterfall_SO05_CRW01_P_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b3"},
+            {"AVICON-MOBILE-SelfieFamily-SF14-CF01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3.json"
+                    , "SelfieFamily_SF14_CF01_L_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b3"},
+            {"AVICON-MOBILE-River-SO03-CRW01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3.json",
+                    "River_SO03_CRW01_L_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b3"},
+            {"AVICON-MOBILE-SelfieGroupGarden-SF15-CF01-P-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3"
                     + ".json",
-            "AVICON-MOBILE-ConcertNear-SI10-CRW01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3.json",
-            "AVICON-MOBILE-SelfieCoupleCitySocialMedia-SS02-CF01-P-420-8bit-SDR-1080p"
-                    + "-30fps_hw_avc_vbr_b3.json");
+                    "SelfieGroupGarden_SF15_CF01_P_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b3"},
+            {"AVICON-MOBILE-ConcertNear-SI10-CRW01-L-420-8bit-SDR-1080p-30fps_hw_avc_vbr_b3.json"
+                    , "ConcertNear_SI10_CRW01_L_420_8bit_SDR_1080p_30fps_hw_avc_vbr_b3"},
+            {"AVICON-MOBILE-SelfieCoupleCitySocialMedia-SS02-CF01-P-420-8bit-SDR"
+                    + "-1080p-30fps_hw_avc_vbr_b3.json",
+                    "SelfieCoupleCitySocialMedia_SS02_CF01_P_420_8bit_SDR_1080p_30fps_hw_avc_"
+                            + "vbr_b3"}});
 
-    private static final List<String> HEVC_VBR_B0_PARAMS = Arrays.asList(
-            "AVICON-MOBILE-Beach-SO04-CRW02-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0.json",
-            "AVICON-MOBILE-BirthdayHalfway-SI17-CRUW03-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0"
+    private static final List<Object[]> HEVC_VBR_B0_PARAMS = Arrays.asList(new Object[][]{
+            {"AVICON-MOBILE-Beach-SO04-CRW02-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0.json",
+                    "Beach_SO04_CRW02_L_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b0"},
+            {"AVICON-MOBILE-BirthdayHalfway-SI17-CRUW03-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0"
                     + ".json",
-            "AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
+                    "BirthdayHalfway_SI17_CRUW03_L_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b0"},
+            {"AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
                     + "-30fps_hw_hevc_vbr_b0.json",
-            "AVICON-MOBILE-Waterfall-SO05-CRW01-P-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0.json",
-            "AVICON-MOBILE-SelfieFamily-SF14-CF01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0.json",
-            "AVICON-MOBILE-River-SO03-CRW01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0.json",
-            "AVICON-MOBILE-SelfieGroupGarden-SF15-CF01-P-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0"
+                    "SelfieTeenKitchenSocialMedia_SS01_CF01_P_420_8bit_SDR_1080p_30fps_hw_hevc_"
+                            + "vbr_b0"},
+            {"AVICON-MOBILE-Waterfall-SO05-CRW01-P-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0.json",
+                    "Waterfall_SO05_CRW01_P_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b0"},
+            {"AVICON-MOBILE-SelfieFamily-SF14-CF01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0.json"
+                    , "SelfieFamily_SF14_CF01_L_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b0"},
+            {"AVICON-MOBILE-River-SO03-CRW01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0.json",
+                    "River_SO03_CRW01_L_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b0"},
+            {"AVICON-MOBILE-SelfieGroupGarden-SF15-CF01-P-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0"
                     + ".json",
-            "AVICON-MOBILE-ConcertNear-SI10-CRW01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0.json",
-            "AVICON-MOBILE-SelfieCoupleCitySocialMedia-SS02-CF01-P-420-8bit-SDR-1080p"
-                    + "-30fps_hw_hevc_vbr_b0.json");
+                    "SelfieGroupGarden_SF15_CF01_P_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b0"},
+            {"AVICON-MOBILE-ConcertNear-SI10-CRW01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b0.json"
+                    , "ConcertNear_SI10_CRW01_L_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b0"},
+            {"AVICON-MOBILE-SelfieCoupleCitySocialMedia-SS02-CF01-P-420-8bit-SDR"
+                    + "-1080p-30fps_hw_hevc_vbr_b0.json",
+                    "SelfieCoupleCitySocialMedia_SS02_CF01_P_420_8bit_SDR_1080p_30fps_hw_hevc_"
+                            + "vbr_b0"}});
 
-    private static final List<String> HEVC_VBR_B3_PARAMS = Arrays.asList(
-            "AVICON-MOBILE-Beach-SO04-CRW02-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3.json",
-            "AVICON-MOBILE-BirthdayHalfway-SI17-CRUW03-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3"
+    private static final List<Object[]> HEVC_VBR_B3_PARAMS = Arrays.asList(new Object[][]{
+            {"AVICON-MOBILE-Beach-SO04-CRW02-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3.json",
+                    "Beach_SO04_CRW02_L_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b3"},
+            {"AVICON-MOBILE-BirthdayHalfway-SI17-CRUW03-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3"
                     + ".json",
-            "AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
+                    "BirthdayHalfway_SI17_CRUW03_L_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b3"},
+            {"AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
                     + "-30fps_hw_hevc_vbr_b3.json",
-            "AVICON-MOBILE-Waterfall-SO05-CRW01-P-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3.json",
-            "AVICON-MOBILE-SelfieFamily-SF14-CF01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3.json",
-            "AVICON-MOBILE-River-SO03-CRW01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3.json",
+                    "SelfieTeenKitchenSocialMedia_SS01_CF01_P_420_8bit_SDR_1080p_30fps_hw_hevc_"
+                            + "vbr_b3"},
+            {"AVICON-MOBILE-Waterfall-SO05-CRW01-P-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3.json",
+                    "Waterfall_SO05_CRW01_P_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b3"},
+            {"AVICON-MOBILE-SelfieFamily-SF14-CF01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3.json"
+                    , "SelfieFamily_SF14_CF01_L_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b3"},
+            {"AVICON-MOBILE-River-SO03-CRW01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3.json",
+                    "River_SO03_CRW01_L_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b3"},
             // Abnormal curve, not monotonically increasing.
-            /*"AVICON-MOBILE-SelfieGroupGarden-SF15-CF01-P-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3"
-                    + ".json",*/
-            "AVICON-MOBILE-ConcertNear-SI10-CRW01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3.json",
-            "AVICON-MOBILE-SelfieCoupleCitySocialMedia-SS02-CF01-P-420-8bit-SDR-1080p"
-                    + "-30fps_hw_hevc_vbr_b3.json");
+            /*{"AVICON-MOBILE-SelfieGroupGarden-SF15-CF01-P-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3"
+                    + ".json",
+                    "SelfieGroupGarden_SF15_CF01_P_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b3"},*/
+            {"AVICON-MOBILE-ConcertNear-SI10-CRW01-L-420-8bit-SDR-1080p-30fps_hw_hevc_vbr_b3.json"
+                    , "ConcertNear_SI10_CRW01_L_420_8bit_SDR_1080p_30fps_hw_hevc_vbr_b3"},
+            {"AVICON-MOBILE-SelfieCoupleCitySocialMedia-SS02-CF01-P-420-8bit-SDR"
+                    + "-1080p-30fps_hw_hevc_vbr_b3.json",
+                    "SelfieCoupleCitySocialMedia_SS02_CF01_P_420_8bit_SDR_1080p_30fps_hw_hevc_"
+                            + "vbr_b3"}});
 
-    private static final List<String> QUICK_RUN_PARAMS = Arrays.asList(
-            "AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
+    private static final List<Object[]> QUICK_RUN_PARAMS = Arrays.asList(new Object[][]{
+            {"AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
                     + "-30fps_hw_avc_vbr_b0.json",
-            "AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
-                    + "-30fps_hw_hevc_vbr_b0.json");
+                    "SelfieTeenKitchenSocialMedia_SS01_CF01_P_420_8bit_SDR_1080p_30fps_hw_avc_" +
+                            "vbr_b0"},
+            {"AVICON-MOBILE-SelfieTeenKitchenSocialMedia-SS01-CF01-P-420-8bit-SDR-1080p"
+                    + "-30fps_hw_hevc_vbr_b0.json",
+                    "SelfieTeenKitchenSocialMedia_SS01_CF01_P_420_8bit_SDR_1080p_30fps_hw_hevc_"
+                            + "vbr_b0"}});
 
-    @Parameterized.Parameters(name = "{index}_{0}")
-    public static List<String> input() {
-        final List<String> args = new ArrayList<>();
+    @Parameterized.Parameters(name = "{index}_{1}")
+    public static List<Object[]> input() {
+        final List<Object[]> args = new ArrayList<>();
         args.addAll(AVC_VBR_B0_PARAMS);
         args.addAll(AVC_VBR_B3_PARAMS);
         args.addAll(HEVC_VBR_B0_PARAMS);
@@ -280,15 +327,30 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
         Assert.assertEquals("Failed to untar " + fileName, 0, result);
 
         // Push input files to device
-        Assert.assertNotNull("Failed to create directory " + DEVICE_IN_DIR + " on device ",
-                getDevice().executeAdbCommand("shell", "mkdir", "-p", DEVICE_IN_DIR));
-        Assert.assertTrue("Failed to push json files to " + DEVICE_IN_DIR + " on device ",
-                getDevice().syncFiles(new File(sHostWorkDir.getPath() + "/json/"), DEVICE_IN_DIR));
-        Assert.assertTrue("Failed to push mp4 files to " + DEVICE_IN_DIR + " on device ",
-                getDevice().syncFiles(new File(sHostWorkDir.getPath() + "/samples/"),
-                        DEVICE_IN_DIR));
+        String deviceInDir = getDevice().getMountPoint(IDevice.MNT_EXTERNAL_STORAGE)
+                + "/veq/input/";
+        String deviceJsonDir = deviceInDir + "json/";
+        String deviceSamplesDir = deviceInDir + "samples/";
+        Assert.assertNotNull("Failed to create directory " + deviceJsonDir + " on device ",
+                getDevice().executeAdbCommand("shell", "mkdir", "-p", deviceJsonDir));
+        Assert.assertNotNull("Failed to create directory " + deviceSamplesDir + " on device ",
+                getDevice().executeAdbCommand("shell", "mkdir", "-p", deviceSamplesDir));
+        Assert.assertTrue("Failed to push json files to " + deviceJsonDir + " on device ",
+                getDevice().pushDir(new File(sHostWorkDir.getPath() + "/json/"), deviceJsonDir));
+        Assert.assertTrue("Failed to push mp4 files to " + deviceSamplesDir + " on device ",
+                getDevice().pushDir(new File(sHostWorkDir.getPath() + "/samples/"),
+                        deviceSamplesDir));
 
         sIsTestSetUpDone = true;
+    }
+
+    public static boolean containsJson(String jsonName, List<Object[]> params) {
+        for (Object[] param : params) {
+            if (param[0].equals(jsonName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -298,19 +360,19 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
     @Test
     public void testEncoding() throws Exception {
         Assume.assumeFalse("Skipping due to quick run mode",
-                mQuickCheck && !QUICK_RUN_PARAMS.contains(mJsonName));
+                mQuickCheck && !containsJson(mJsonName, QUICK_RUN_PARAMS));
         Assume.assumeFalse("Skipping avc encoder tests",
-                mSkipAvc && (AVC_VBR_B0_PARAMS.contains(mJsonName) || AVC_VBR_B3_PARAMS.contains(
-                        mJsonName)));
+                mSkipAvc && (containsJson(mJsonName, AVC_VBR_B0_PARAMS) || containsJson(mJsonName,
+                        AVC_VBR_B3_PARAMS)));
         Assume.assumeFalse("Skipping hevc encoder tests",
-                mSkipHevc && (HEVC_VBR_B0_PARAMS.contains(mJsonName) || HEVC_VBR_B3_PARAMS.contains(
-                        mJsonName)));
+                mSkipHevc && (containsJson(mJsonName, HEVC_VBR_B0_PARAMS) || containsJson(mJsonName,
+                        HEVC_VBR_B3_PARAMS)));
         Assume.assumeFalse("Skipping b-frame tests",
-                mSkipB && (AVC_VBR_B3_PARAMS.contains(mJsonName) || HEVC_VBR_B3_PARAMS.contains(
-                        mJsonName)));
+                mSkipB && (containsJson(mJsonName, AVC_VBR_B3_PARAMS) || containsJson(mJsonName,
+                        HEVC_VBR_B3_PARAMS)));
         Assume.assumeFalse("Skipping non b-frame tests",
-                mSkipP && (AVC_VBR_B0_PARAMS.contains(mJsonName) || HEVC_VBR_B0_PARAMS.contains(
-                        mJsonName)));
+                mSkipP && (containsJson(mJsonName, AVC_VBR_B0_PARAMS) || containsJson(mJsonName,
+                        HEVC_VBR_B0_PARAMS)));
 
         // set up test environment
         sLock.lock();
@@ -335,7 +397,8 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
         } catch (SecurityException e) {
             LogUtil.CLog.e("Unable to establish output host directory : " + outHostPath.getPath());
         }
-        String outDevPath = DEVICE_OUT_DIR + outDir;
+        String outDevPath = getDevice().getMountPoint(IDevice.MNT_EXTERNAL_STORAGE) + "/veq/output/"
+                + outDir;
         Assert.assertTrue("Failed to pull mp4 files from " + outDevPath
                 + " to " + outHostPath.getPath(), getDevice().pullDir(outDevPath, outHostPath));
         getDevice().deleteFile(outDevPath);
@@ -498,17 +561,24 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
                     + testRunResult.getName() + ": " + testRunResult.getRunFailureMessage());
         }
         if (testRunResult.getNumTests() != testRunResult.getPassedTests().size()) {
-            StringBuilder errorBuilder = new StringBuilder("On-device tests failed:\n");
             for (Map.Entry<TestDescription, TestResult> resultEntry :
                     testRunResult.getTestResults().entrySet()) {
-                if (!resultEntry.getValue().getStatus()
-                        .equals(com.android.ddmlib.testrunner.TestResult.TestStatus.PASSED)) {
+                if (resultEntry.getValue().getStatus().equals(TestStatus.FAILURE)) {
+                    StringBuilder errorBuilder = new StringBuilder("On-device tests failed:\n");
                     errorBuilder.append(resultEntry.getKey().toString());
                     errorBuilder.append(":\n");
                     errorBuilder.append(resultEntry.getValue().getStackTrace());
+                    throw new AssertionError(errorBuilder.toString());
+                }
+                if (resultEntry.getValue().getStatus().equals(TestStatus.ASSUMPTION_FAILURE)) {
+                    StringBuilder errorBuilder =
+                            new StringBuilder("On-device tests assumption failed:\n");
+                    errorBuilder.append(resultEntry.getKey().toString());
+                    errorBuilder.append(":\n");
+                    errorBuilder.append(resultEntry.getValue().getStackTrace());
+                    Assume.assumeTrue(errorBuilder.toString(), false);
                 }
             }
-            throw new AssertionError(errorBuilder.toString());
         }
     }
 }

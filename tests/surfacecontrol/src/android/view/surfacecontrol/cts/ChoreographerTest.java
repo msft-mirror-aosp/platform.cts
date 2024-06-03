@@ -396,27 +396,45 @@ public class ChoreographerTest {
         awaitCountDown(callbackComplete);
     }
 
-    @Test
-    public void testPostVsyncCallbackFrameDataDeadlineInFuture() {
-        CountDownLatch callbackComplete = new CountDownLatch(1);
-        long postTimeNanos = System.nanoTime();
-        mChoreographer.postVsyncCallback(frameData -> {
-            assertTrue("Number of frame timelines should be greater than 0",
+    private static class DeadlineInFutureVsyncCallback implements Choreographer.VsyncCallback {
+        CountDownLatch mCallbackComplete = new CountDownLatch(1);
+        boolean mDeadlineAssertPassed = true;
+        final long mPostTimeNanos = System.nanoTime();
+
+        @Override
+        public void onVsync(Choreographer.FrameData frameData) {
+            assertTrue("Number of frame timelines " + frameData.getFrameTimelines().length
+                            + " should be greater than 0",
                     frameData.getFrameTimelines().length > 0);
             long lastValue = frameData.getFrameTimeNanos();
             for (Choreographer.FrameTimeline frameTimeline : frameData.getFrameTimelines()) {
                 long deadline = frameTimeline.getDeadlineNanos();
-                assertTrue("Deadline must be after start time", deadline > postTimeNanos);
-                assertTrue("Deadline must be after frame time",
-                        deadline > frameData.getFrameTimeNanos());
-                assertTrue(
-                        "Deadline must be after the previous frame deadline", deadline > lastValue);
+                assertTrue("Deadline " + deadline + " must be after start time " + mPostTimeNanos,
+                        deadline > mPostTimeNanos);
+                mDeadlineAssertPassed = mDeadlineAssertPassed
+                        && deadline > frameData.getFrameTimeNanos();
+                assertTrue("Deadline " + deadline + " must be after the previous frame deadline "
+                                + lastValue,
+                        deadline > lastValue);
                 lastValue = deadline;
             }
-            callbackComplete.countDown();
-        });
+            mCallbackComplete.countDown();
+        }
+    }
 
-        awaitCountDown(callbackComplete);
+    @Test
+    public void testPostVsyncCallbackFrameDataDeadlineInFuture() {
+        // Run multiple attempts in case the system calls the choreographer callback too late, which
+        // may cause the frame time to be later than the frame deadline.
+        for (int i = 0; i < 5; i++) {
+            DeadlineInFutureVsyncCallback callback = new DeadlineInFutureVsyncCallback();
+            mChoreographer.postVsyncCallback(callback);
+            awaitCountDown(callback.mCallbackComplete);
+            if (callback.mDeadlineAssertPassed) {
+                return; // Pass
+            }
+        }
+        fail("Deadline must be after frame time");
     }
 
     @Test

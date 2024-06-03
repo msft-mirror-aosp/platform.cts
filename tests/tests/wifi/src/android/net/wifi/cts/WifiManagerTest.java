@@ -27,6 +27,7 @@ import static android.net.wifi.WifiConfiguration.INVALID_NETWORK_ID;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_SOFTAP;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_AWARE;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_DIRECT;
+import static android.net.wifi.WifiManager.WIFI_AP_STATE_FAILED;
 import static android.net.wifi.WifiScanner.WIFI_BAND_24_GHZ;
 import static android.os.Process.myUid;
 
@@ -1018,6 +1019,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             synchronized (mSoftApLock) {
                 mCurrentSoftApState = state;
                 mOnSoftApStateChangedCalled = true;
+                onStateChanged(state.getState(),
+                        state.getState() == WIFI_AP_STATE_FAILED ? state.getFailureReason() : 0);
             }
         }
 
@@ -1211,19 +1214,19 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         if (!sWifiManager.isPortableHotspotSupported()) {
             return;
         }
+        boolean wifiEnabled = sWifiManager.isWifiEnabled();
+        if (wifiEnabled) {
+            // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's
+            // no STA+AP concurrency.
+            ShellIdentityUtils.invokeWithShellPermissions(() ->
+                    sWifiManager.setWifiEnabled(false));
+            PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                    () -> !sWifiManager.isWifiEnabled());
+            SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
+            PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                    () -> sWifiManager.isWifiEnabled());
+        }
         runWithScanning(() -> {
-            boolean wifiEnabled = sWifiManager.isWifiEnabled();
-            if (wifiEnabled) {
-                // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's
-                // no STA+AP concurrency.
-                ShellIdentityUtils.invokeWithShellPermissions(() ->
-                        sWifiManager.setWifiEnabled(false));
-                PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> !sWifiManager.isWifiEnabled());
-                SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
-                PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> sWifiManager.isWifiEnabled());
-            }
             TestLocalOnlyHotspotCallback callback = startLocalOnlyHotspot();
 
             // add sleep to avoid calling stopLocalOnlyHotspot before TetherController
@@ -1995,23 +1998,21 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     public void testStartLocalOnlyHotspotSingleRequestByApps() throws Exception {
         // check that softap mode is supported by the device
         assumeTrue(sWifiManager.isPortableHotspotSupported());
-
+        boolean wifiEnabled = sWifiManager.isWifiEnabled();
+        if (wifiEnabled) {
+            // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's
+            // no STA+AP concurrency.
+            ShellIdentityUtils.invokeWithShellPermissions(() ->
+                    sWifiManager.setWifiEnabled(false));
+            PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                    () -> !sWifiManager.isWifiEnabled());
+            SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
+            PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                    () -> sWifiManager.isWifiEnabled());
+        }
 
         runWithScanning(() -> {
             boolean caughtException = false;
-            boolean wifiEnabled = sWifiManager.isWifiEnabled();
-            if (wifiEnabled) {
-                // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's
-                // no STA+AP concurrency.
-                ShellIdentityUtils.invokeWithShellPermissions(() ->
-                        sWifiManager.setWifiEnabled(false));
-                PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> !sWifiManager.isWifiEnabled());
-                SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
-                PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> sWifiManager.isWifiEnabled());
-            }
-
             TestLocalOnlyHotspotCallback callback = startLocalOnlyHotspot();
 
             // now make a second request - this should fail.
@@ -2817,8 +2818,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                         testSoftApConfig.getMaxChannelBandwidth());
             }
             if (Flags.androidVWifiApi()
-                    && (ApiLevelUtil.codenameEquals("VanillaIceCream")
-                    || ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM))) {
+                    && SdkLevel.isAtLeastV()) {
                 assertTrue(Objects.equals(
                         currentConfig.getVendorData(), testSoftApConfig.getVendorData()));
             }
@@ -3131,50 +3131,16 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             return;
         }
         runWithScanning(() -> {
-            UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation();
             TestExecutor executor = new TestExecutor();
             TestSoftApCallback callback = new TestSoftApCallback(mLock);
             try {
-                uiAutomation.adoptShellPermissionIdentity();
-
-                // start tethering which used to verify startTetheredHotspot
                 TetheringManager.TetheringRequest request =
                         new TetheringManager.TetheringRequest.Builder(
                                 TetheringManager.TETHERING_WIFI).build();
-                sWifiManager.startTetheredHotspotRequest(request);
-                PollingCheck.check("startTetheredHotspot turn on failed!", TEST_WAIT_DURATION_MS,
-                        () -> {
-                            executor.runAll();
-                            return callback.getOnSoftApStateChangedCalled()
-                                    && callback.getCurrentSoftApState().getState()
-                                    == WifiManager.WIFI_AP_STATE_ENABLED;
-                        });
-                if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM)) {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest())
-                            .isEqualTo(request);
-                } else {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest()).isNull();
-                }
-
-                // stop tethering which used to verify stopSoftAp
-                sTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
-                PollingCheck.check("startTetheredHotspot turn on failed!", TEST_WAIT_DURATION_MS,
-                        () -> {
-                            executor.runAll();
-                            return callback.getOnSoftApStateChangedCalled()
-                                    && callback.getCurrentSoftApState().getState()
-                                    == WifiManager.WIFI_AP_STATE_DISABLED;
-                        });
-                if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM)) {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest())
-                            .isEqualTo(request);
-                } else {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest()).isNull();
-                }
-            } finally {
-                sWifiManager.unregisterSoftApCallback(callback);
-                uiAutomation.dropShellPermissionIdentity();
+                sWifiManager.startTetheredHotspot(request, executor, callback);
+                fail("startTetheredHotspot succeeded even without NETWORK_STACK permission!");
+            } catch (SecurityException e) {
+                // Expected to fail without NETWORK_STACK
             }
         }, false /* run with disabled */);
     }
@@ -3226,8 +3192,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             }
 
             if (Flags.androidVWifiApi()
-                    && (ApiLevelUtil.codenameEquals("VanillaIceCream")
-                    || ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM))) {
+                    && SdkLevel.isAtLeastV()) {
                 OuiKeyedData vendorDataElement =
                         new OuiKeyedData.Builder(0x00112233, new PersistableBundle()).build();
                 softApConfigBuilder.setVendorData(Arrays.asList(vendorDataElement));
@@ -3388,8 +3353,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                         ScanResult.WIFI_STANDARD_UNKNOWN);
             }
             if (Flags.androidVWifiApi()
-                    && (ApiLevelUtil.codenameEquals("VanillaIceCream")
-                    || ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM))
+                    && SdkLevel.isAtLeastV()
                     && callback.getOnSoftapInfoChangedCalledCount() > 1) {
                 assertNotNull(callback.getCurrentSoftApInfo().getVendorData());
             }
@@ -3824,16 +3788,15 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     public void testIsStaApConcurrencySupported() throws Exception {
         // check that softap mode is supported by the device
         assumeTrue(sWifiManager.isPortableHotspotSupported());
+        // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's no
+        // STA+AP concurrency.
+        ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.setWifiEnabled(false));
+        PollingCheck.check("Wifi turn off failed!", 2_000, () -> !sWifiManager.isWifiEnabled());
+        SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
+        PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                () -> sWifiManager.isWifiEnabled());
 
         runWithScanning(() -> {
-            // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's no
-            // STA+AP concurrency.
-            ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.setWifiEnabled(false));
-            PollingCheck.check("Wifi turn off failed!", 2_000, () -> !sWifiManager.isWifiEnabled());
-            SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
-            PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                    () -> sWifiManager.isWifiEnabled());
-
             boolean isStaApConcurrencySupported = sWifiManager.isStaApConcurrencySupported();
             // start local only hotspot.
             TestLocalOnlyHotspotCallback callback = startLocalOnlyHotspot();
@@ -5719,6 +5682,40 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             }
             //Channels 1-11 are supported for STA in all countries
             assertEquals(supported24GhzFreqs.size(), 11);
+        } catch (UnsupportedOperationException ex) {
+            //expected if the device does not support this API
+        } catch (Exception ex) {
+            fail("getAllowedChannels unexpected Exception " + ex);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests {@link WifiAvailableChannel#getChannelWidth()}.
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @RequiresFlagsEnabled(Flags.FLAG_GET_CHANNEL_WIDTH_API)
+    @ApiTest(apis = {"android.net.wifi.WifiAvailableChannel#getChannelWidth"})
+    @Test
+    public void testGetAllowedChannelsWidth() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            final List<Integer> valid24GhzFreqs = Arrays.asList(2412, 2417, 2422, 2427, 2432, 2437,
+                    2442, 2447, 2452, 2457, 2462, 2467, 2472, 2484);
+            uiAutomation.adoptShellPermissionIdentity();
+            List<WifiAvailableChannel> allowedChannels = sWifiManager.getAllowedChannels(
+                    WIFI_BAND_24_GHZ, OP_MODE_STA);
+            assertNotNull(allowedChannels);
+            for (WifiAvailableChannel ch : allowedChannels) {
+                //Must contain a valid 2.4GHz frequency
+                assertTrue(valid24GhzFreqs.contains(ch.getFrequencyMhz()));
+                if (ch.getFrequencyMhz() <= 2462) {
+                    //Channels 1-11 are supported for STA in all countries
+                    assertEquals(ch.getOperationalModes() & OP_MODE_STA, OP_MODE_STA);
+                    assertEquals(ch.getChannelWidth(), ScanResult.CHANNEL_WIDTH_20MHZ);
+                }
+            }
         } catch (UnsupportedOperationException ex) {
             //expected if the device does not support this API
         } catch (Exception ex) {

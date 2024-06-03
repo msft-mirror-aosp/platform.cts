@@ -57,6 +57,10 @@ public class FgsTimeoutHelper {
     public static ComponentName FGS1 = new ComponentName(HELPER_PACKAGE, Fgs1.class.getName());
     public static ComponentName FGS2 = new ComponentName(HELPER_PACKAGE, Fgs2.class.getName());
 
+    /** Component names of {@link android.app.cts.fgstimeouttesthelper.MyActivity}. */
+    public static ComponentName ACTIVITY =
+            new ComponentName(HELPER_PACKAGE, MyActivity.class.getName());
+
     public static String ensureNotificationChannel() {
         sContext.getSystemService(NotificationManager.class)
                 .createNotificationChannel(

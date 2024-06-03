@@ -16,12 +16,19 @@
 
 package android.cts;
 
-import android.content.BroadcastReceiver;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.Debug;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Looper;
+import android.os.Message;
+import android.os.Messenger;
 import android.test.AndroidTestCase;
 
 import java.io.File;
@@ -32,8 +39,6 @@ import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 @SuppressWarnings("deprecation")
 public class FileChannelInterProcessLockTest extends AndroidTestCase {
@@ -55,11 +60,11 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
      * the service. This provides ample amount of time for the service to receive the request from
      * the test, then act, and respond back.
      */
-    final static int MAX_WAIT_TIME = 20;
+    final static int MAX_WAIT_TIME = 10;
 
     @Override
     public void tearDown() throws Exception {
-        stopService();
+        IpcChannel.unbindService();
         super.tearDown();
     }
 
@@ -419,15 +424,12 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             ChannelType localChannelType, ChannelType remoteChannelType,
             boolean expectToGetLock) throws Exception {
         try {
-            IntentReceiver.resetReceiverState();
-
             // Request that the remote lock be obtained.
-            getContext().startService(new Intent(getContext(), LockHoldingService.class)
-                    .putExtra(LockHoldingService.LOCK_TYPE_KEY, remoteLockType)
-                    .putExtra(LockHoldingService.CHANNEL_TYPE_KEY, remoteChannelType));
+            IpcChannel.bindService(getContext());
+            IpcChannel.requestRemoteLock(remoteLockType, remoteChannelType);
 
             // Wait for a signal that the remote lock is definitely held.
-            assertTrue(IntentReceiver.lockHeldLatch.await(MAX_WAIT_TIME, SECONDS));
+            assertTrue(IpcChannel.lockHeldLatch.await(MAX_WAIT_TIME, SECONDS));
 
             // Try to acquire the local lock in all cases and check whether it could be acquired or
             // not as expected.
@@ -440,7 +442,7 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             }
             // Release the remote lock.
         } finally {
-            stopService();
+            IpcChannel.unbindService();
         }
     }
 
@@ -458,30 +460,24 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             ChannelType localChannelType, ChannelType remoteChannelType,
             boolean expectToWait) throws Exception {
         try {
-            IntentReceiver.resetReceiverState();
-
             // The amount of time the remote service should hold lock.
-            long remoteLockHoldTimeMillis = 7000;
+            long remoteLockHoldTimeMillis = 5000;
 
             // The amount of time test should get to try to acquire the lock.
             long sufficientOverlappingTimeInMillis = 2000;
 
             // This is the allowable delta in the time between the time recorded after the service
             // released the lock and the time recorded after the test obtained the lock.
-            long lockReleasedAndReacquiredTimeDeltaInMillis = 1000;
+            long lockReleasedAndReacquiredTimeDeltaInMillis = 500;
 
             // Tell the service to acquire a remote lock.
-            Intent sendIntent = new Intent(getContext(), LockHoldingService.class)
-                    .putExtra(LockHoldingService.TIME_TO_HOLD_LOCK_KEY, remoteLockHoldTimeMillis)
-                    .putExtra(LockHoldingService.LOCK_TYPE_KEY, remoteLockType)
-                    .putExtra(LockHoldingService.CHANNEL_TYPE_KEY, remoteChannelType)
-                    .putExtra(LockHoldingService.LOCK_BEHAVIOR_RELEASE_AND_NOTIFY_KEY, true);
-
-            getContext().startService(sendIntent);
+            IpcChannel.bindService(getContext());
+            IpcChannel.requestRemoteLockAndRelease(remoteLockType,
+                    remoteChannelType, remoteLockHoldTimeMillis);
 
             // Wait for the service to hold the lock and notify for the same.
             assertTrue("No remote lock held notification",
-                    IntentReceiver.lockHeldLatch.await(MAX_WAIT_TIME, SECONDS));
+                    IpcChannel.lockHeldLatch.await(MAX_WAIT_TIME, SECONDS));
 
             long localLockNotObtainedTime = System.currentTimeMillis();
 
@@ -491,9 +487,9 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
 
             // Wait until the remote lock has definitely been released.
             assertTrue("No remote lock release notification",
-                    IntentReceiver.lockReleasedLatch.await(MAX_WAIT_TIME, SECONDS));
+                    IpcChannel.lockReleasedLatch.await(MAX_WAIT_TIME, SECONDS));
 
-            Bundle remoteLockReleasedBundle = IntentReceiver.lockReleasedBundle;
+            Bundle remoteLockReleasedBundle = IpcChannel.lockReleasedBundle;
             long remoteLockNotReleasedTime =
                     remoteLockReleasedBundle.getLong(LockHoldingService.LOCK_NOT_YET_RELEASED_TIMESTAMP);
             long remoteLockReleasedTime =
@@ -506,11 +502,10 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             // but we can't be sure and the test may not be valid. This is why we hold the lock
             // remotely for a long time compared to the delays we expect for intents to propagate
             // between processes.
-            assertTrue(String.format("Remote lock release start (%d), " +
-                        "too soon after local lock notification time (%d). " +
+            assertTrue(String.format("Remote lock release start " +
+                        "too soon (%d ms) after lock notification time. " +
                         "Need at least %d ms",
-                        remoteLockReleasedTime,
-                        localLockNotObtainedTime,
+                        remoteLockNotReleasedTime - localLockNotObtainedTime,
                         sufficientOverlappingTimeInMillis
                     ),
                     remoteLockNotReleasedTime - localLockNotObtainedTime >
@@ -522,10 +517,10 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
                 // service. The localLockObtainedTime is captured after the lock was obtained by this
                 // thread. Therefore, there is a degree of slop inherent in the two times. We assert
                 // that they are "close" to each other, but we cannot assert any ordering.
-                assertTrue(String.format("Local lock obtained (%d) too long " +
-                            "from remote lock release time (%d). " +
+                assertTrue(String.format("Local lock obtained too long (%d ms) " +
+                            "from remote lock release time. " +
                             "Expected at most %d ms.",
-                            localLockObtainedTime, remoteLockReleasedTime,
+                            localLockObtainedTime - remoteLockReleasedTime,
                             lockReleasedAndReacquiredTimeDeltaInMillis),
                     Math.abs(localLockObtainedTime - remoteLockReleasedTime) <
                         lockReleasedAndReacquiredTimeDeltaInMillis);
@@ -545,22 +540,8 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
             // Asserting if the fileLock is valid.
             assertTrue(fileLock.isValid());
         } finally {
-            stopService();
+            IpcChannel.unbindService();
         }
-    }
-
-    /**
-     * Requests and waits for the service to stop
-     */
-    void stopService() throws Exception {
-        getContext().stopService(new Intent(getContext(), LockHoldingService.class));
-        // onStopLatch can be null if we never start the service, possibly because of
-        // an earlier failure in the test.
-        if (IntentReceiver.onStopLatch != null) {
-            assertTrue(IntentReceiver.onStopLatch.await(MAX_WAIT_TIME, SECONDS));
-        }
-
-        deleteDir(getContext());
     }
 
     static enum LockType {
@@ -748,57 +729,136 @@ public class FileChannelInterProcessLockTest extends AndroidTestCase {
     }
 
     /**
-     * Listens to broadcasts sent by the LockHoldingService and records information / provides
-     * latches so the test code can synchronize until it is informed the service has acted on
-     * requests it has sent.
+     * Handles the comms with the LockHoldingService.
+     *
+     * Binds to the service and sends requests and receives callbacks from it.
+     *
+     * It records information / provides latches so the test code can synchronize until it is
+     * informed the service has acted on requests it has sent.
      */
-    public static class IntentReceiver extends BroadcastReceiver {
+    public static class IpcChannel {
 
-        static CountDownLatch onStartLatch;
+        static Context context;
 
-        static CountDownLatch onStopLatch;
-
+        static CountDownLatch onBindLatch;
+        static CountDownLatch onUnbindLatch;
         static CountDownLatch lockHeldLatch;
-
         static volatile Bundle lockHeldBundle;
-
         static CountDownLatch lockReleasedLatch;
-
         static volatile Bundle lockReleasedBundle;
 
+        static volatile boolean bound = false;
+        static Messenger messenger;
+        static Messenger responseMessenger;
+        static ServiceConnection serviceConnection;
+
+        static Handler responseMessageHandler;
+
+        private static Context getContext() {
+            return context;
+        }
+
         /**
-         * Reset the IntentReceiver for a new test. Assumes no intents will be received from prior
-         *  tests.
+         * Reset the IpcChannel for a new test. Assumes no intents will be received from prior
+         * tests.
          */
-        public static synchronized void resetReceiverState() {
-            onStartLatch = new CountDownLatch(1);
-            onStopLatch = new CountDownLatch(1);
+        static synchronized void resetReceiverState(Context testContext) {
+            context = testContext;
+            bound = false;
+            onBindLatch = new CountDownLatch(1);
+            onUnbindLatch = new CountDownLatch(1);
             lockHeldLatch = new CountDownLatch(1);
             lockReleasedLatch = new CountDownLatch(1);
             lockHeldBundle = null;
             lockReleasedBundle = null;
+
+            responseMessageHandler = new Handler(Looper.getMainLooper()) {
+                @Override
+                public void handleMessage(Message msg) {
+                    Bundle bundle = msg.getData();
+                    if (bundle.getBoolean(LockHoldingService.NOTIFICATION_LOCK_HELD)) {
+                        lockHeldBundle = bundle;
+                        lockHeldLatch.countDown();
+                    } else if (bundle.getBoolean(LockHoldingService.NOTIFICATION_LOCK_RELEASED)) {
+                        lockReleasedBundle = bundle;
+                        lockReleasedLatch.countDown();
+                    } else if (bundle.getBoolean(LockHoldingService.NOTIFICATION_READY_FOR_SHUTDOWN)) {
+                        onUnbindLatch.countDown();
+                    } else {
+                        super.handleMessage(msg);
+                    }
+                }
+            };
+            responseMessenger = new Messenger(responseMessageHandler);
+
+            serviceConnection = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName className, IBinder service) {
+                    messenger = new Messenger(service);
+                    bound = true;
+                    onBindLatch.countDown();
+                }
+
+                @Override
+                public void onBindingDied(ComponentName className) {
+                    getContext().unbindService(this);
+                    bound = false;
+                }
+
+                @Override
+                public void onServiceDisconnected(ComponentName className) {
+                    getContext().unbindService(this);
+                    bound = false;
+                }
+            };
         }
 
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String msg = intent.getStringExtra(LockHoldingService.NOTIFICATION_KEY);
-            switch (msg) {
-                case LockHoldingService.NOTIFICATION_START:
-                    onStartLatch.countDown();
-                    break;
-                case LockHoldingService.NOTIFICATION_STOP:
-                    onStopLatch.countDown();
-                    break;
-                case LockHoldingService.NOTIFICATION_LOCK_HELD:
-                    lockHeldBundle = intent.getExtras();
-                    lockHeldLatch.countDown();
-                    break;
-                case LockHoldingService.NOTIFICATION_LOCK_RELEASED:
-                    lockReleasedBundle = intent.getExtras();
-                    lockReleasedLatch.countDown();
-                    break;
+        static void bindService(Context testContext) throws Exception {
+            resetReceiverState(testContext);
+            getContext().bindService(new Intent(getContext(), LockHoldingService.class),
+                    serviceConnection, Context.BIND_AUTO_CREATE);
+            assertTrue(onBindLatch.await(MAX_WAIT_TIME, SECONDS));
+        }
+
+        static void requestRemoteLock(LockType lockType, ChannelType channelType) throws Exception {
+            Message msg = Message.obtain(null,
+                    LockHoldingService.LOCK_BEHAVIOUR_ACQUIRE_ONLY_AND_NOTIFY, 0, 0);
+            Bundle bundle = msg.getData();
+            bundle.putSerializable(LockHoldingService.LOCK_TYPE_KEY, lockType);
+            bundle.putSerializable(LockHoldingService.CHANNEL_TYPE_KEY, channelType);
+            msg.replyTo = responseMessenger;
+            messenger.send(msg);
+        }
+
+        static void requestRemoteLockAndRelease(LockType lockType, ChannelType channelType,
+                long lockHoldTimeMillis) throws Exception {
+            Message msg = Message.obtain(null,
+                    LockHoldingService.LOCK_BEHAVIOR_RELEASE_AND_NOTIFY, 0, 0);
+            Bundle bundle = msg.getData();
+            bundle.putSerializable(LockHoldingService.LOCK_TYPE_KEY, lockType);
+            bundle.putSerializable(LockHoldingService.CHANNEL_TYPE_KEY, channelType);
+            bundle.putLong(LockHoldingService.TIME_TO_HOLD_LOCK_KEY, lockHoldTimeMillis);
+            msg.replyTo = responseMessenger;
+            messenger.send(msg);
+        }
+
+        /**
+         * Requests and waits for the service to stop
+         */
+        static void unbindService() throws Exception {
+            if (bound) {
+                Message msg = Message.obtain(null, LockHoldingService.PREPARE_FOR_SHUTDOWN, 0, 0);
+                msg.replyTo = responseMessenger;
+                messenger.send(msg);
+
+                assertTrue(onUnbindLatch.await(MAX_WAIT_TIME, SECONDS));
+                getContext().unbindService(serviceConnection);
+                bound = false;
             }
+            messenger = null;
+            deleteDir(getContext());
         }
     }
+
 }
 

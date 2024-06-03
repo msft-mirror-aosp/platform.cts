@@ -14,7 +14,6 @@
 """Verify image and inertial sensor events are well synchronized."""
 
 
-import fnmatch
 import json
 import logging
 import math
@@ -42,7 +41,7 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _ARDUINO_INIT_WAIT_TIME = 3.0  # Seconds to wait for Arduino comm
 _NUM_ROTATIONS = 10
 _START_FRAME = 1
-_FRAME_DELTA_TOL = 1.5  # 50% margin over nominal FPS of captures
+_FRAME_DELTA_RTOL = 1.5  # 50% margin over nominal FPS of captures
 _POLYFIT_DEGREES_LEGACY = (2, 3)
 _POLYFIT_DEGREES = (3,)
 
@@ -204,7 +203,7 @@ def _get_cam_times(cam_events, fps):
   max_frame_delta_ms = (np.amax(np.subtract(starts[1:], starts[0:-1])) /
                         _MSEC_TO_NSEC)
   logging.debug('Maximum frame delta: %.3f ms', max_frame_delta_ms)
-  frame_delta_tol_ms = _FRAME_DELTA_TOL * (1 / fps) * _SEC_TO_MSEC
+  frame_delta_tol_ms = _FRAME_DELTA_RTOL * (1 / fps) * _SEC_TO_MSEC
   if max_frame_delta_ms > frame_delta_tol_ms:
     raise AssertionError(f'Frame drop! Max delta: {max_frame_delta_ms:.3f}ms, '
                          f'ATOL: {frame_delta_tol_ms}ms')
@@ -423,25 +422,13 @@ class SensorFusionTest(its_base_test.ItsBaseTest):
     # Assert PASS/FAIL criteria.
     if corr_dist > _CORR_DIST_THRESH_MAX:
       raise AssertionError(f'Poor gyro/camera correlation: {corr_dist:.6f}, '
-                           f'TOL: {_CORR_DIST_THRESH_MAX}.')
+                           f'ATOL: {_CORR_DIST_THRESH_MAX}.')
     if abs(offset_ms) > _OFFSET_MS_THRESH_MAX:
       raise AssertionError('Offset too large. Measured (ms): '
-                           f'{offset_ms:.3f}, TOL: {_OFFSET_MS_THRESH_MAX}.')
+                           f'{offset_ms:.3f}, ATOL: {_OFFSET_MS_THRESH_MAX}.')
 
     else:  # remove frames if PASS
-      temp_files = []
-      try:
-        temp_files = os.listdir(self.log_path)
-      except FileNotFoundError:
-        logging.debug('/tmp directory: %s not found', self.log_path)
-      for file in temp_files:
-        if fnmatch.fnmatch(file, f'{_NAME}_frame*.png'):
-          file_to_remove = os.path.join(self.log_path, file)
-          try:
-            os.remove(file_to_remove)
-          except FileNotFoundError:
-            logging.debug('File not found: %s', str(file))
-      logging.debug('Test passes, frame images have been removed')
+      its_session_utils.remove_tmp_files(self.log_path, f'{_NAME}_frame*.png')
 
 if __name__ == '__main__':
   test_runner.main()

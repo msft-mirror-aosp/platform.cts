@@ -16,14 +16,15 @@
 
 package com.android.bedstead.nene.roles;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A context that, when closed, will remove the package from the role.
@@ -39,7 +40,7 @@ public final class RoleContext implements AutoCloseable {
         mRole = role;
         mPackage = pkg;
         mUser = user;
-        mPreviousRoleHolders = TestApis.roles().getRoleHoldersAsUser(role, user);
+        mPreviousRoleHolders = TestApis.roles().getRoleHoldersAsUser(user, role);
     }
 
     @Override
@@ -48,13 +49,13 @@ public final class RoleContext implements AutoCloseable {
                 INTERACT_ACROSS_USERS_FULL)) {
             mPackage.removeAsRoleHolder(mRole, mUser);
 
-            Set<String> currentRoleHolders = TestApis.roles().getRoleHoldersAsUser(mRole, mUser);
+            Set<String> currentRoleHolders = TestApis.roles().getRoleHoldersAsUser(mUser, mRole);
             // Re-adding previous role holder just for exclusive role as we would have overridden
             // the previous role holder in this case, for non exclusive roles it's not a problem
             // as we just add as one of the role holder so just removing them is fine.
             if (currentRoleHolders.isEmpty() && mPreviousRoleHolders.size() == 1) {
                 Package roleHolderPackage = Package.of(
-                        mPreviousRoleHolders.stream().toList().get(0));
+                        mPreviousRoleHolders.stream().collect(Collectors.toList()).get(0));
                 roleHolderPackage.setAsRoleHolder(mRole, mUser);
             }
         }

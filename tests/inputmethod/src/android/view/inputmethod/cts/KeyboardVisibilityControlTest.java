@@ -39,6 +39,7 @@ import static android.widget.PopupWindow.INPUT_METHOD_NOT_NEEDED;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEventWithKeyValue;
@@ -118,6 +119,7 @@ import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
+import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeLayoutInfo;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
@@ -158,15 +160,14 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     private static final String ENABLE_AUTO_ROTATE_CMD =
             "settings put system accelerometer_rotation 1";
 
+    private static final String FIXED_TO_USER_ROTATION_CMD = "cmd window fixed-to-user-rotation";
+
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
     @Rule
     public final RequireImeCompatFlagRule mRequireImeCompatFlagRule = new RequireImeCompatFlagRule(
             FINISH_INPUT_NO_FALLBACK_CONNECTION, true);
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.KeyboardVisibilityControlTest";
 
     private Instrumentation mInstrumentation;
     private CtsTouchUtils mCtsTouchUtils;
@@ -177,11 +178,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
     }
 
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
-
-    private static Predicate<ImeEvent> onFinishInputViewMatcher(boolean expectedFinishingInput) {
+    private static DescribedPredicate<ImeEvent> onFinishInputViewMatcher(boolean expectedFinishingInput) {
         Predicate<ImeEvent> matcher = event -> {
             if (!TextUtils.equals("onFinishInputView", event.getEventName())) {
                 return false;
@@ -219,7 +216,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     }
 
     private EditText launchTestActivity(@NonNull String marker) {
-        return launchTestActivity(marker, getTestMarker()).first;
+        return launchTestActivity(marker, getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG)).first;
     }
 
     private EditText launchTestActivity2(@NonNull String marker) {
@@ -250,7 +247,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -312,7 +309,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                         .setOnBackCallbackEnabled(imeRequestsBackCallback)
         )) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final AtomicInteger backCallbackInvocationCount = new AtomicInteger();
 
             if (appRequestsBackCallback) {
@@ -443,8 +440,8 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String nonFocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String nonFocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, EditText> editTextPair =
                     launchTestActivity(focusedMarker, nonFocusedMarker);
             final EditText nonFocusedEditText = editTextPair.second;
@@ -478,7 +475,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -538,7 +535,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
             expectImeInvisible(TIMEOUT);
 
@@ -577,7 +574,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -673,11 +670,11 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // clear SHOW_FOCED flag. Otherwise, keeping the legacy behavior of SHOW_FOCED that
             // soft-keyboard remains visible if there is no explicit hiding request.
             if (isClearShowForcedFlagEnabled(testActivity.getPackageName())) {
-                notExpectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
+                notExpectEvent(stream, eventMatcher("showSoftInput"),
                         NOT_EXPECT_TIMEOUT);
                 expectImeInvisible(TIMEOUT);
             } else {
-                expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+                expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
                 expectImeVisible(TIMEOUT);
             }
         }
@@ -694,7 +691,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 instrumentation.getContext(), instrumentation.getUiAutomation(),
                 getFloatingImeSettings(Color.BLACK))) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -772,7 +769,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             TestUtils.waitOnMainUntil(() -> dialogRef.get().isShowing()
                     && editTextRef.get().hasFocus(), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
                     View.VISIBLE, TIMEOUT);
@@ -799,8 +796,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // focused unless avoidable keyboard startup is desired,
             // in which case, no fallback will be started.
             if (!isPreventImeStartup()) {
-                final ImeEvent onStart = expectEvent(stream,
-                        event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+                final ImeEvent onStart = expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
                 assertTrue(onStart.getEnterState().hasFallbackInputConnection());
             }
             TestUtils.waitOnMainUntil(testActivity::hasWindowFocus, TIMEOUT);
@@ -882,7 +878,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 TestUtils.waitOnMainUntil(() -> dialogRef.get().isShowing()
                         && editTextRef.get().hasFocus(), TIMEOUT);
                 expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-                expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+                expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
                 // Copy the event stream to verify both events in case expectEvent missed the
                 // event verification if the actual event sequence has flipped.
                 expectEvent(stream.copy(), editorMatcher("onStartInputView", marker), TIMEOUT);
@@ -902,9 +898,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     // input connection when device interactive state changed,
                     // we expect onFinishInput happens without any additional fallback input
                     // connection started and no showShowSoftInput requested.
-                    expectEvent(stream, event -> "onFinishInput".equals(event.getEventName()),
+                    expectEvent(stream, eventMatcher("onFinishInput"),
                             TIMEOUT);
-                    notExpectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
+                    notExpectEvent(stream, eventMatcher("showSoftInput"),
                             NOT_EXPECT_TIMEOUT);
                 } else {
                     // For legacy IME, the fallback input connection will started after screen-off.
@@ -912,7 +908,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
                     // Expect showSoftInput comes when system notify InsetsController to apply
                     // show IME insets after IME input target updated.
-                    expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
+                    expectEvent(stream, eventMatcher("showSoftInput"),
                             TIMEOUT);
                     notExpectEvent(stream, hideSoftInputMatcher(), NOT_EXPECT_TIMEOUT);
                 }
@@ -1094,7 +1090,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 instrumentation.getContext(), instrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String markerForActivity1 = getTestMarker();
+            final String markerForActivity1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
             // Launch a test activity with focusing editText to show keyboard
             new TestActivity.Starter().withWindowingMode(
@@ -1133,7 +1129,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
             if (mode == TestSoftInputMode.HIDDEN_WITH_FORWARD_NAV) {
                 // Start new TestActivity on the same task with STATE_HIDDEN softInputMode.
-                final String markerForActivity2 = getTestMarker();
+                final String markerForActivity2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
                 new TestActivity.Starter().asSameTaskAndClearTop().withWindowingMode(
                         WINDOWING_MODE_FULLSCREEN).startSync(activity -> {
                             final LinearLayout layout = new LinearLayout(activity);
@@ -1196,7 +1192,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                                 return layout;
                             }, TestActivity.class);
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
                     View.VISIBLE, TIMEOUT);
@@ -1268,7 +1264,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 // Request showSoftInput, expect the request is valid and soft-keyboard visible.
                 MockTestActivityUtil.sendBroadcastAction(
                         MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT);
-                expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+                expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
                 expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
                 expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
                         View.VISIBLE, TIMEOUT);
@@ -1297,7 +1293,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
 
             // Launch the first activity
             final EditText editText = launchTestActivity(marker);
@@ -1374,6 +1370,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         final PackageManager pm = mInstrumentation.getTargetContext().getPackageManager();
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_PORTRAIT));
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE));
+        final boolean isFixedToUserRotation =
+                "enabled".equals(SystemUtil.runShellCommand(FIXED_TO_USER_ROTATION_CMD).trim());
+        assumeFalse("Device shouldn't have fixed rotation.", isFixedToUserRotation);
 
         final InputMethodManager imm = mInstrumentation
                 .getTargetContext().getSystemService(InputMethodManager.class);
@@ -1401,6 +1400,10 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeInvisible(TIMEOUT);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
+            assumeFalse("onEvaluateFullscreenMode() should be false for portrait",
+                    expectCommand(
+                            stream, imeSession.callGetOnEvaluateFullscreenMode(), TIMEOUT)
+                            .getReturnBooleanValue());
 
             // Call ShowSoftInput() implicitly
             assertTrue("showSoftInput must success if the View has IME focus",
@@ -1519,7 +1522,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                         activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_HIDDEN);
                         return new LinearLayout(activity);
                     }, TestActivity2.class);
-            notExpectEvent(stream, event -> "onStartInputView".equals(event.getEventName()),
+            notExpectEvent(stream, eventMatcher("onStartInputView"),
                     NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
@@ -1607,7 +1610,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation,
                         null, splitPrimaryActivity.getWindow().getDecorView());
 
-                notExpectEvent(stream, event -> "onStartInputView".equals(event.getEventName()),
+                notExpectEvent(stream, eventMatcher("onStartInputView"),
                         NOT_EXPECT_TIMEOUT);
                 expectImeInvisible(TIMEOUT);
 
@@ -1652,8 +1655,8 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // Launch another test activity in split-screen with 2 editor views
             final AtomicReference<EditText> editText1Ref = new AtomicReference<>();
             final AtomicReference<EditText> editText2Ref = new AtomicReference<>();
-            final String editText1Marker = getTestMarker();
-            final String editText2Marker = getTestMarker();
+            final String editText1Marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
+            final String editText2Marker = getTestMarker(SECOND_EDIT_TEXT_TAG);
             final TestActivity testActivity2 = new TestActivity.Starter()
                     .asMultipleTask()
                     .withAdditionalFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
@@ -1676,7 +1679,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                         return layout;
                     }, TestActivity2.class);
 
-            notExpectEvent(stream, event -> "onStartInputView".equals(event.getEventName()),
+            notExpectEvent(stream, eventMatcher("onStartInputView"),
                     NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 

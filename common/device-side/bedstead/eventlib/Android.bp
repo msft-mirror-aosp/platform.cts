@@ -1,10 +1,11 @@
 package {
+    default_team: "trendy_team_enterprise",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_library {
     name: "EventLib",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
     srcs: [
         "src/main/java/**/*.java",
         "src/main/java/**/*.kt",

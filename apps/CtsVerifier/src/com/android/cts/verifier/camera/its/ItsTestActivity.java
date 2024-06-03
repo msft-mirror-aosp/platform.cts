@@ -28,6 +28,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.cts.helpers.CameraUtils;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
+import android.mediapc.cts.common.CameraRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.net.Uri;
 import android.os.Bundle;
@@ -112,14 +113,18 @@ public class ItsTestActivity extends DialogTestListActivity {
             Pattern.compile("camera_launch_time_ms:(\\d+(\\.\\d+)?)");
     private static final Pattern MPC12_JPEG_CAPTURE_PATTERN =
             Pattern.compile("1080p_jpeg_capture_time_ms:(\\d+(\\.\\d+)?)");
+    private static final Pattern MPC15_ULTRA_HDR_PATTERN =
+            Pattern.compile("has_gainmap.*");
     private static final int AVAILABILITY_TIMEOUT_MS = 10;
 
     private static final Pattern PERF_METRICS_YUV_PLUS_JPEG_PATTERN =
             Pattern.compile("test_yuv_plus_jpeg_rms_diff:(\\d+(\\.\\d+)?)");
     private static final Pattern PERF_METRICS_YUV_PLUS_RAW_PATTERN =
-            Pattern.compile("test_yuv_plus_raw_rms_diff:(\\d+(\\.\\d+)?)");
+            Pattern.compile("test_yuv_plus_(raw|raw10|raw12)_rms_diff:(\\d+(\\.\\d+)?)");
     private static final Pattern PERF_METRICS_IMU_DRIFT_PATTERN =
             Pattern.compile("test_imu_drift_.*");
+    private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
+            Pattern.compile("test_burst_capture_.*");
 
     private static final String REPORT_LOG_NAME = "CtsCameraItsTestCases";
 
@@ -180,10 +185,10 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene8",
             "scene9",
             "scene_extensions/scene_hdr",
-            "scene_extensions/scene_night",
-            "scene_extensions/scene_low_light_boost",
+            "scene_extensions/scene_low_light",
             "scene_video",
             "sensor_fusion",
+            "feature_combination",
             "scene_flash");
 
     // This must match scenes of SUB_CAMERA_TESTS in tools/run_all_tests.py
@@ -192,7 +197,6 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene1_1",
             "scene1_2",
             "scene2_a",
-            "scene2_b",
             "scene4",
             "scene_video",
             "sensor_fusion");
@@ -207,12 +211,15 @@ public class ItsTestActivity extends DialogTestListActivity {
     private Set<ResultKey> mExecutedMpcTests = null;
     private static final String MPC_LAUNCH_REQ_NUM = "2.2.7.2/7.5/H-1-6";
     private static final String MPC_JPEG_CAPTURE_REQ_NUM = "2.2.7.2/7.5/H-1-5";
+    private static final String MPC_ULTRA_HDR_REQ_NUM = "2.2.7.2/7.5/H-1-20";
     // Performance class evaluator used for writing test result
     PerformanceClassEvaluator mPce = new PerformanceClassEvaluator(mTestName);
-    PerformanceClassEvaluator.CameraLatencyRequirement mJpegLatencyReq =
+    CameraRequirement.CameraLatencyRequirement mJpegLatencyReq =
             mPce.addR7_5__H_1_5();
-    PerformanceClassEvaluator.CameraLatencyRequirement mLaunchLatencyReq =
+    CameraRequirement.CameraLatencyRequirement mLaunchLatencyReq =
             mPce.addR7_5__H_1_6();
+    CameraRequirement.CameraUltraHdrRequirement mUltraHdrReq =
+            mPce.addR7_5__H_1_20();
     private CtsVerifierReportLog mReportLog;
     // Json Array to store all jsob objects with ITS metrics information
     // stored in the report log
@@ -495,7 +502,11 @@ public class ItsTestActivity extends DialogTestListActivity {
             Matcher jpegMatcher = MPC12_JPEG_CAPTURE_PATTERN.matcher(mpcResult);
             boolean jpegMatches = jpegMatcher.matches();
 
-            if (!launchMatches && !jpegMatches) {
+            Matcher gainmapMatcher = MPC15_ULTRA_HDR_PATTERN.matcher(mpcResult);
+            boolean gainmapMatches = gainmapMatcher.matches();
+            Log.i(TAG, "mpcResult: " + mpcResult);
+
+            if (!launchMatches && !jpegMatches && !gainmapMatches) {
                 return false;
             }
             if (!cameraId.equals(mPrimaryRearCameraId) &&
@@ -511,7 +522,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                     mLaunchLatencyReq.setFrontCameraLatency(latency);
                 }
                 mExecutedMpcTests.add(new ResultKey(cameraId, MPC_LAUNCH_REQ_NUM));
-            } else {
+            } else if (jpegMatches) {
                 float latency = Float.parseFloat(jpegMatcher.group(1));
                 if (cameraId.equals(mPrimaryRearCameraId)) {
                     mJpegLatencyReq.setRearCameraLatency(latency);
@@ -519,6 +530,19 @@ public class ItsTestActivity extends DialogTestListActivity {
                     mJpegLatencyReq.setFrontCameraLatency(latency);
                 }
                 mExecutedMpcTests.add(new ResultKey(cameraId, MPC_JPEG_CAPTURE_REQ_NUM));
+            } else {
+                Log.i(TAG, "Gainmap pattern matches");
+                String result = mpcResult.split(":")[1];
+                boolean hasGainMap = false;
+                if (result.equals("true")) {
+                    hasGainMap = true;
+                }
+                if (cameraId.equals(mPrimaryRearCameraId)) {
+                    mUltraHdrReq.setRearCameraUltraHdrSupported(hasGainMap);
+                } else {
+                    mUltraHdrReq.setFrontCameraUltraHdrSupported(hasGainMap);
+                }
+                mExecutedMpcTests.add(new ResultKey(cameraId, MPC_ULTRA_HDR_REQ_NUM));
             }
 
             // Save MPC info once both front primary and rear primary data are collected.
@@ -541,6 +565,10 @@ public class ItsTestActivity extends DialogTestListActivity {
                         perfMetricsResult);
             boolean imuDriftMetricsMatches = imuDriftMetricsMatcher.matches();
 
+            Matcher burstCaptureMetricsMatcher = PERF_METRICS_BURST_CAPTURE_PATTERN.matcher(
+                        perfMetricsResult);
+            boolean burstCaptureMetricsMatches = burstCaptureMetricsMatcher.matches();
+
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
                         && !imuDriftMetricsMatches) {
                 return false;
@@ -555,8 +583,10 @@ public class ItsTestActivity extends DialogTestListActivity {
 
                 if (yuvPlusRawMetricsMatches) {
                     Log.i(TAG, "raw pattern  matches");
-                    float diff = Float.parseFloat(yuvPlusRawMetricsMatcher.group(1));
-                    obj.put("yuv_plus_raw_rms_diff", diff);
+                    String fmtMatcher = yuvPlusRawMetricsMatcher.group(1); // "raw", "raw10", etc.
+                    float diff = Float.parseFloat(yuvPlusRawMetricsMatcher.group(2));
+                    String keyname = "yuv_plus_" + fmtMatcher + "_rms_diff";
+                    obj.put(keyname, diff);
                 }
 
                 if (imuDriftMetricsMatches) {
@@ -571,6 +601,12 @@ public class ItsTestActivity extends DialogTestListActivity {
                         String value = result.split(":")[1].strip();
                         obj.put(resultKey, value);
                     }
+                }
+
+                if (burstCaptureMetricsMatches) {
+                    Log.i(TAG, "burst capture  matches");
+                    float value = Float.parseFloat(burstCaptureMetricsMatcher.group(1));
+                    obj.put("burst_capture_max_frame_time_minus_frameDuration_ns", value);
                 }
             } catch (org.json.JSONException e) {
                 Log.e(TAG, "Error when serializing the metrics into a JSONObject" , e);

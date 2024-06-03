@@ -47,6 +47,7 @@ aidl_interface {
 
 android_test {
     name: "CtsHardwareTestCases",
+    team: "trendy_team_input_framework",
     defaults: ["cts_defaults"],
     // Tag this module as a cts test artifact
     test_suites: [

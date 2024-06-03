@@ -52,6 +52,8 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
@@ -67,6 +69,9 @@ import android.graphics.Insets;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.MockImeHelper;
 import android.server.wm.WindowManagerTestBase;
 import android.util.Log;
@@ -83,7 +88,9 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeEventStream;
@@ -123,6 +130,9 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
 
     @Rule
     public final ErrorCollector mErrorCollector = new ErrorCollector();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testHide() {
@@ -760,6 +770,84 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         for (WindowInsets windowInsets : windowInsetsList) {
             assertFalse(windowInsets.isVisible(statusBars()));
             assertFalse(windowInsets.isVisible(navigationBars()));
+        }
+    }
+
+    @Test
+    @FlakyTest
+    @RequiresFlagsDisabled(android.view.inputmethod.Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    public void testImeInsetsWithDifferentControlTarget() throws Exception {
+        final Instrumentation instrumentation = getInstrumentation();
+        assumeThat(MockImeSession.getUnavailabilityReason(instrumentation.getContext()),
+                nullValue());
+        try (MockImeSession ignored = MockImeSession.create(instrumentation.getContext(),
+                instrumentation.getUiAutomation(), new ImeSettings.Builder())) {
+            final TestActivity activity =
+                    startActivityInWindowingModeFullScreen(TestActivity.class);
+            final View rootView = activity.getWindow().getDecorView();
+
+            // Storing all new insets that the activity's rootView is receiving
+            final ArrayList<WindowInsets> windowInsetsList = new ArrayList<>();
+            final Window[] dialogWindow = new Window[1];
+            instrumentation.runOnMainSync(() -> {
+                rootView.setOnApplyWindowInsetsListener((view, insets) -> {
+                    windowInsetsList.add(insets);
+                    return view.onApplyWindowInsets(insets);
+                });
+                EditText editText = new EditText(activity);
+                editText.setText("editText");
+                final AlertDialog dialog = new AlertDialog.Builder(activity)
+                        .setTitle("Dialog with Ime Control")
+                        .setView(editText)
+                        .create();
+                dialogWindow[0] = dialog.getWindow();
+                dialog.show();
+                dialogWindow[0].clearFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
+                editText.requestFocus();
+
+                dialogWindow[0].getDecorView().getWindowInsetsController().show(ime());
+            });
+            instrumentation.waitForIdleSync();
+            PollingCheck.waitFor(TIMEOUT,
+                    () -> activity.getWindow().getDecorView().getRootWindowInsets().isVisible(
+                            ime()));
+
+            // IME is now showing, IME insets should be visible
+            assertNotEquals(0, windowInsetsList.size());
+            assertTrue(windowInsetsList.getLast().isVisible(ime()));
+            windowInsetsList.clear();
+
+            // During the hiding animation, the window behind the dialog should already get zero
+            // insets for the IME, otherwise there will be a blank space. The
+            // OnApplyWindowInsetsListener stores all new insets of the rootView of the activity
+            // behind the dialog. During the hiding animation, the IME insets should already be
+            // hidden / zero.
+            WindowInsets[] firstWindowInsetsDuringAnimation = new WindowInsets[1];
+            instrumentation.runOnMainSync(() -> {
+                dialogWindow[0].getDecorView().setWindowInsetsAnimationCallback(
+                        new WindowInsetsAnimation.Callback(
+                                WindowInsetsAnimation.Callback.DISPATCH_MODE_STOP) {
+                            @NonNull
+                            @Override
+                            public WindowInsets onProgress(@NonNull WindowInsets insets,
+                                    @NonNull List<WindowInsetsAnimation> runningAnimations) {
+                                if (!windowInsetsList.isEmpty()
+                                        && firstWindowInsetsDuringAnimation[0] == null) {
+                                    firstWindowInsetsDuringAnimation[0] =
+                                            windowInsetsList.getLast();
+                                }
+                                return insets;
+                            }
+                        });
+                dialogWindow[0].getDecorView().getWindowInsetsController().hide(ime());
+            });
+
+            PollingCheck.waitFor(TIMEOUT, () -> !rootView.getRootWindowInsets().isVisible(ime()));
+
+            assertNotNull(firstWindowInsetsDuringAnimation[0]);
+            assertFalse(firstWindowInsetsDuringAnimation[0].isVisible(ime()));
+            assertNotNull(firstWindowInsetsDuringAnimation[0].getInsets(ime()));
+            assertEquals(0, firstWindowInsetsDuringAnimation[0].getInsets(ime()).bottom);
         }
     }
 

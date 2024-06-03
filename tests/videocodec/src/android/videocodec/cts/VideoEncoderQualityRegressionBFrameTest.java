@@ -103,7 +103,7 @@ public class VideoEncoderQualityRegressionBFrameTest extends VideoEncoderQuality
             ArrayList<MediaFormat> fmts = new ArrayList<>();
             for (int j = 0; j < cfgs.length; j++) {
                 cfgs[j] = getVideoEncoderCfgParams(mMediaType, WIDTH, HEIGHT, BIT_RATES[j],
-                        mBitRateMode, KEY_FRAME_INTERVAL, FRAME_RATE, B_FRAMES[i]);
+                        mBitRateMode, KEY_FRAME_INTERVAL, FRAME_RATE, B_FRAMES[i], null);
                 fmts.add(cfgs[j].getFormat());
             }
             Assume.assumeTrue("Encoder: " + mCodecName + " doesn't support formats.",
@@ -112,7 +112,7 @@ public class VideoEncoderQualityRegressionBFrameTest extends VideoEncoderQuality
         }
         Predicate<Double> predicate = bdRate -> bdRate < 0.000001d;
         getQualityRegressionForCfgs(cfgsUnion, testInstances, encoderNames, res, FRAME_LIMIT,
-                FRAME_RATE, true, predicate);
+                FRAME_RATE, null, true, predicate);
     }
 
     @ApiTest(apis = {"android.media.MediaFormat#KEY_BITRATE",

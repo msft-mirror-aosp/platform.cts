@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeNotNull;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -61,6 +62,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.RequiredFeatureRule;
 
 import org.junit.After;
@@ -75,6 +77,7 @@ import java.util.Map;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@CddTest(requirements = {"3/T-1-1"})
 public class TunerFrontendTest {
     private static final String TAG = "MediaTunerFrontendTest";
 
@@ -1121,6 +1124,7 @@ public class TunerFrontendTest {
     @Test
     public void testFrontendInfoWithLongFrequency() throws Exception {
         List<Integer> ids = mTuner.getFrontendIds();
+        assumeNotNull(ids);
         List<FrontendInfo> infos = mTuner.getAvailableFrontendInfos();
         Map<Integer, FrontendInfo> infoMap = new HashMap<>();
         for (FrontendInfo info : infos) {

@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
@@ -124,15 +125,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     private static final long DEFAULT_TEST_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(10);
 
     /**
-     * The amount of milliseconds to wait for the remove user calls in {@link #tearDown}.
-     * This is a temporary measure until b/114057686 is fixed.
-     */
-    private static final long USER_REMOVE_WAIT = TimeUnit.SECONDS.toMillis(5);
-
-    /**
      * The amount of milliseconds to wait for the switch user calls in {@link #tearDown}.
      */
-    private static final long USER_SWITCH_WAIT = TimeUnit.SECONDS.toMillis(5);
+    private static final long USER_SWITCH_WAIT = TimeUnit.SECONDS.toMillis(1);
 
     // From the UserInfo class
     protected static final int FLAG_GUEST = 0x00000004;
@@ -225,14 +220,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             mInitialUserId = getDevice().getCurrentUser();
         }
 
-        if (!isHeadlessSystemUserMode()) {
-            mDeviceOwnerUserId = mPrimaryUserId = getMainUser();
-        } else {
-            // For headless system user, all tests will be executed on current user
-            // and therefore, initial user is set as primary user for test purpose.
-            mPrimaryUserId = mInitialUserId;
-            mDeviceOwnerUserId = USER_SYSTEM;
-        }
+        mDeviceOwnerUserId = mPrimaryUserId = getMainUser();
 
         mFixedUsers.add(mPrimaryUserId);
         if (mPrimaryUserId != USER_SYSTEM) {
@@ -327,7 +315,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         extraArgs.add("-t");
         // Make the test app queryable by other apps via PackageManager APIs.
         extraArgs.add("--force-queryable");
-        extraArgs.add("--bypass-low-target-sdk-block");
+        if (getDevice().isBypassLowTargetSdkBlockSupported()) {
+            extraArgs.add("--bypass-low-target-sdk-block");
+        }
         if (dontKillApp) extraArgs.add("--dont-kill");
         String result = getDevice().installPackageForUser(
                 buildHelper.getTestFile(appFileName), true, grantPermissions, userId,
@@ -355,13 +345,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected void installDeviceOwnerApp(String apk) throws Exception {
         installAppAsUser(apk, mDeviceOwnerUserId);
-
-        if (isHeadlessSystemUserMode()) {
-            // Need to explicitly install the device owner app for the current user (rather than
-            // relying on DPMS) so it has the same privileges (like INTERACT_ACROSS_USERS) as the
-            // app running on system user, otherwise some tests might fail
-            installAppAsUser(apk, mPrimaryUserId);
-        }
     }
 
     protected void removeDeviceOwnerAdmin(String componentName) throws DeviceNotAvailableException {
@@ -427,7 +410,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
      */
     protected void switchUser(int userId) throws Exception {
         // TODO Move this logic to ITestDevice
-        int retries = 10;
+        int retries = 15;
         CLog.i("switching to user %d", userId);
         executeShellCommand("am switch-user " + userId);
         RunUtil.getDefault().sleep(USER_SWITCH_WAIT);
@@ -528,12 +511,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             String stopUserCommand = "am stop-user -w -f " + userId;
             CLog.d("stopping and removing user " + userId);
             getDevice().executeShellCommand(stopUserCommand);
-            // TODO: Remove both sleeps and USER_REMOVE_WAIT constant when b/114057686 is fixed.
-            RunUtil.getDefault().sleep(USER_REMOVE_WAIT);
             // Ephemeral users may have already been removed after being stopped.
             if (listUsers().contains(userId)) {
                 assertTrue("Couldn't remove user", getDevice().removeUser(userId));
-                RunUtil.getDefault().sleep(USER_REMOVE_WAIT);
             }
         }
     }
@@ -911,6 +891,10 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected boolean setDeviceOwner(String componentName, int userId, boolean expectFailure)
             throws DeviceNotAvailableException {
+        if (isHeadlessSystemUserMode()) {
+            assumeNotNull("Devices in headles system user mode require a main user to set a device "
+                    + "owner.", getDevice().getMainUserId());
+        }
         String command = "dpm set-device-owner --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
         boolean success = commandOutput.startsWith("Success:");

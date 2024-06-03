@@ -18,7 +18,7 @@ package android.scopedstorage.cts.device;
 
 import static android.app.AppOpsManager.permissionToOp;
 import static android.os.SystemProperties.getBoolean;
-import static android.scopedstorage.cts.device.FileCreationUtils.createContentFromResource;
+import static android.scopedstorage.cts.device.DeviceTestUtils.createContentFromResource;
 import static android.scopedstorage.cts.lib.TestUtils.allowAppOpsToUid;
 import static android.scopedstorage.cts.lib.TestUtils.getPicturesDir;
 import static android.scopedstorage.cts.lib.TestUtils.readMaximumRowIdFromDatabaseAs;

@@ -19,6 +19,7 @@ message AndroidApp {
   string label = 10;
   bool cross_profile = 11;
   repeated Receiver receivers = 12;
+  repeated ActivityAlias activityAliases = 13;
 }
 
 message UsesSdk {
@@ -32,6 +33,13 @@ message Permission {
 }
 
 message Activity {
+  string name = 1;
+  bool exported = 2;
+  repeated IntentFilter intent_filters = 3;
+  string permission = 4;
+}
+
+message ActivityAlias {
   string name = 1;
   bool exported = 2;
   repeated IntentFilter intent_filters = 3;

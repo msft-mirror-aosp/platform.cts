@@ -42,5 +42,17 @@
         <option name="package" value="android.graphics.pdf.cts.module"/>
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner"/>
     </test>
+    <object type="module_controller"
+            class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
+        <option name="mainline-module-package-name" value="com.google.android.mediaprovider"/>
+    </object>
+
+    <!-- Only run tests if the device under test is SDK version 31 (Android 12) or above. -->
+    <object type="module_controller"
+            class="com.android.tradefed.testtype.suite.module.Sdk31ModuleController"/>
+
+    <option
+        name="device-listeners"
+        value="com.android.modules.utils.testing.NativeCoverageHackInstrumentationListener"/>
 
 </configuration>

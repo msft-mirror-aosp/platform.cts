@@ -22,14 +22,15 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010
 import static android.mediav2.common.cts.CodecEncoderTestBase.ACCEPTABLE_WIRELESS_TX_QUALITY;
 import static android.mediav2.common.cts.CodecEncoderTestBase.colorFormatToString;
 import static android.mediav2.common.cts.CodecEncoderTestBase.getTempFilePath;
-import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_BEFORE_U;
+import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_BEFORE_U;
 import static android.mediav2.common.cts.CodecTestBase.isDefaultCodec;
 import static android.mediav2.common.cts.CodecTestBase.isVendorCodec;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.media.MediaFormat;
@@ -82,6 +83,7 @@ import java.util.Objects;
 public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
     private static final String LOG_TAG = CodecEncoderSurfaceTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
+    private final int mFrameLimit;
 
     private final ArrayList<String> mTmpFiles = new ArrayList<>();
 
@@ -98,6 +100,7 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
             @SuppressWarnings("unused") String testLabel, String allTestParams) {
         super(encoder, mediaType, decoder, testFileMediaType, MEDIA_DIR + testFile, encCfgParams,
                 colorFormat, isOutputToneMapped, usePersistentSurface, allTestParams);
+        mFrameLimit = Math.max(encCfgParams.mFrameRate, 30);
     }
 
     private static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int bitRate,
@@ -257,6 +260,12 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
         final List<Object[]> expandedArgsList =
                 CodecTestBase.prepareParamList(argsList, isEncoder, needAudio, needVideo, true);
 
+        // Prior to Android U, this test was not testing persistent surface. While this has
+        // been expected behavior for a long time, we only started testing it in Android U, so
+        // some older devices might not pass this test in persistent surface mode for some
+        // combination of codecs. These may show up as failures when running MTS tests for s/w
+        // encoders with h/w decoders in such cases.
+
         // Prior to Android U, this test was using the first decoder for a given mediaType.
         // In Android U, this was updated to test the encoders with all decoders for the
         // given mediaType. There are some vendor encoders in older versions of Android
@@ -313,12 +322,14 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
                 mTmpFiles.add(tmpPath);
             }
             encodeToMemory(isAsync, false, saveToMem, (count == 0 ? ref : test), muxOutput,
-                    tmpPath);
-            /* TODO(b/153127506) - Currently disabling all encoder output checks */
-            /*if (count != 0 && !ref.equals(test)) {
-                fail("Encoder output is not consistent across runs \n" + mTestConfig + mTestEnv
-                        + test.getErrMsg());
-            }*/
+                    tmpPath, mFrameLimit);
+            // TODO:(b/149027258) Remove false once output is validated across runs
+            if (false) {
+                if (count != 0 && !ref.equals(test)) {
+                    fail("Encoder output is not consistent across runs \n" + mTestConfig + mTestEnv
+                            + test.getErrMsg());
+                }
+            }
             count++;
         }
         // Skip stream validation as there is no reference for tone mapped input
@@ -330,8 +341,9 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
     }
 
     private native boolean nativeTestSimpleEncode(String encoder, String decoder, String mediaType,
-            String testFile, String muxFile, int colorFormat, boolean usePersistentSurface,
-            String cfgParams, String separator, StringBuilder retMsg);
+            String testFile, String testFileMediaType, String muxFile, int colorFormat,
+            boolean usePersistentSurface, String cfgParams, String separator, StringBuilder retMsg,
+            int frameLimit);
 
     /**
      * Test is similar to {@link #testSimpleEncodeFromSurface()} but uses ndk api
@@ -352,9 +364,9 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
         }
         int colorFormat = mDecoderFormat.getInteger(MediaFormat.KEY_COLOR_FORMAT, -1);
         boolean isPass = nativeTestSimpleEncode(mEncoderName, mDecoderName, mEncMediaType,
-                mTestFile, tmpPath, colorFormat, mUsePersistentSurface,
+                mTestFile, mTestFileMediaType, tmpPath, colorFormat, mUsePersistentSurface,
                 EncoderConfigParams.serializeMediaFormat(mEncoderFormat),
-                EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig);
+                EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig, mFrameLimit);
         assertTrue(mTestConfig.toString(), isPass);
         if (tmpPath != null) {
             if (mEncCfgParams.mInputBitDepth > 8 && !VNDK_IS_AT_LEAST_T) return;

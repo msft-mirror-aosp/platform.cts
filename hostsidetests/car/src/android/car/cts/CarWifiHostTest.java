@@ -56,8 +56,6 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
             "dumpsys car_service --services CarWifiService";
     private static final String CMD_DUMPSYS_WIFI_PROTO =
             "dumpsys car_service --services CarWifiService --proto";
-    private static final String GET_TETHERING_CAPABILITY =
-            "cmd car_service get-tethering-capability";
     private static final String WIFI_HOTSPOT_ON = "cmd wifi start-softap CarWifiService open";
     private static final String WIFI_HOTSPOT_OFF = "cmd wifi stop-softap";
     private static boolean sTetheringStatusBefore;
@@ -147,8 +145,7 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
-    @ApiTest(apis = {"android.car.wifi.CarWifiManager#canControlPersistTetheringSettings",
-            "android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
+    @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_withCapabilityTetheringEnabled_tetheringOnReboot()
             throws Exception {
         assumeTrue("Skipping test: tethering capability disabled",
@@ -162,8 +159,7 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
-    @ApiTest(apis = {"android.car.wifi.CarWifiManager#canControlPersistTetheringSettings",
-            "android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
+    @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_withCapabilityTetheringDisabled_noTetheringOnReboot()
             throws Exception {
         assumeTrue("Skipping test: tethering capability disabled",
@@ -178,8 +174,7 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
-    @ApiTest(apis = {"android.car.wifi.CarWifiManager#canControlPersistTetheringSettings",
-            "android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
+    @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_noCapabilityTetheringEnabled_noTetheringOnReboot()
             throws Exception {
         assumeFalse("Skipping test: tethering capability enabled",
@@ -205,8 +200,9 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
     }
 
     private boolean isPersistTetheringCapabilityEnabled() throws Exception {
-        String output = executeCommand(GET_TETHERING_CAPABILITY);
-        return output.contains("true");
+        CarWifiDumpProto carWifiDump = ProtoUtils.getProto(getDevice(),
+                CarWifiDumpProto.parser(), CMD_DUMPSYS_WIFI_PROTO);
+        return carWifiDump.getPersistTetheringCapabilitiesEnabled();
     }
 
     private void enablePersistTetheringAndReboot(boolean enableTethering) throws Exception {

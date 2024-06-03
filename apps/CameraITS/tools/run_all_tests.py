@@ -76,27 +76,25 @@ _TABLET_SCENES = (
     'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6', 'scene7',
     'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
-    os.path.join('scene_extensions', 'scene_night'),
-    os.path.join('scene_extensions', 'scene_low_light_boost'),
+    os.path.join('scene_extensions', 'scene_low_light'),
     'scene_video',
 )
 
 # Scenes that use the 'sensor_fusion' test rig
-_MOTION_SCENES = ('sensor_fusion',)
+_MOTION_SCENES = ('sensor_fusion', 'feature_combination',)
 
 # Scenes that uses lighting control
 _FLASH_SCENES = ('scene_flash',)
 
 # Scenes that uses checkerboard as chart
-_CHECKERBOARD_SCENES = ('sensor_fusion', 'scene_flash',)
+_CHECKERBOARD_SCENES = ('sensor_fusion', 'scene_flash', 'feature_combination',)
 
 # Scenes that have to be run manually regardless of configuration
 _MANUAL_SCENES = ('scene5',)
 
 # Scene extensions
 _EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
-                      os.path.join('scene_extensions', 'scene_night'),
-                      os.path.join('scene_extensions', 'scene_low_light_boost'),
+                      os.path.join('scene_extensions', 'scene_low_light'),
                       )
 
 # All possible scenes
@@ -140,21 +138,18 @@ _SCENE_REQ = types.MappingProxyType({
         'and a low-contrast QR code on the right. '
         'See tests/scene_extensions/scene_hdr/scene_hdr.png'
     ),
-    os.path.join('scene_extensions', 'scene_night'): (
-        'A tablet displayed scene with a white circle '
-        'and four smaller circles inside of it. '
-        'See tests/scene_extensions/scene_night/scene_night.png'
-    ),
-    os.path.join('scene_extensions', 'scene_low_light_boost'): (
+    os.path.join('scene_extensions', 'scene_low_light'): (
         'A tablet displayed scene with a grid of squares of varying '
         'brightness. See '
-        'tests/scene_extensions/scene_low_light_boost/scene_low_light_boost.png'
+        'tests/scene_extensions/scene_low_light/scene_low_light.png'
     ),
     'sensor_fusion': 'A checkerboard pattern for phone to rotate in front of '
                      'in tests/sensor_fusion/checkerboard.pdf\n'
                      'See tests/sensor_fusion/SensorFusion.pdf for detailed '
                      'instructions.\nNote that this test will be skipped '
                      'on devices not supporting REALTIME camera timestamp.',
+    'feature_combination': 'The same scene as sensor_fusion, '
+                           'separated for easier testing.',
     'scene_flash': 'A checkerboard pattern chart with lights off.',
     'scene_video': 'A tablet displayed scene with a series of circles moving '
                    'at different simulated frame rates. '
@@ -180,14 +175,10 @@ SUB_CAMERA_TESTS = types.MappingProxyType({
     'scene1_2': (
         'test_raw_exposure',
         'test_raw_sensitivity',
-        'test_yuv_jpeg_all',
         'test_yuv_plus_raw',
     ),
     'scene2_a': (
         'test_num_faces',
-    ),
-    'scene2_b': (
-        'test_yuv_jpeg_capture_sameness',
     ),
     'scene4': (
         'test_aspect_ratio_and_crop',
@@ -211,8 +202,7 @@ _LIGHTING_CONTROL_TESTS = (
 
 _EXTENSION_NAMES = (
     'hdr',
-    'low_light_boost',
-    'night',
+    'low_light',
 )
 
 _DST_SCENE_DIR = '/sdcard/Download/'
@@ -579,7 +569,7 @@ def main():
   for i, s in enumerate(scenes):
     if (not s.startswith('scene') and
         not s.startswith(('checkerboard', 'sensor_fusion',
-                          'flash', '<scene-name>'))):
+                          'flash', 'feature_combination', '<scene-name>'))):
       scenes[i] = f'scene{s}'
     if s.startswith('flash') or s.startswith('extensions'):
       scenes[i] = f'scene_{s}'
@@ -594,8 +584,10 @@ def main():
   config_file_contents = get_config_file_contents()
   if testbed_index is None:
     for i in config_file_contents['TestBeds']:
-      if (scenes == ['sensor_fusion'] or scenes == ['checkerboard'] or
-          scenes == ['scene_flash']):
+      if scenes in (
+          ['sensor_fusion'], ['checkerboard'], ['scene_flash'],
+          ['feature_combination']
+      ):
         if TEST_KEY_SENSOR_FUSION not in i['Name'].lower():
           config_file_contents['TestBeds'].remove(i)
       else:
@@ -637,13 +629,13 @@ def main():
   logging.info('Saving %s output files to: %s', config_file_test_key, topdir)
   if TEST_KEY_TABLET in config_file_test_key:
     tablet_id = get_device_serial_number('tablet', config_file_contents)
-    tablet_name_cmd = f'adb -s {tablet_id} shell getprop ro.build.product'
+    tablet_name_cmd = f'adb -s {tablet_id} shell getprop ro.product.device'
     raw_output = subprocess.check_output(
         tablet_name_cmd, stderr=subprocess.STDOUT, shell=True)
     tablet_name = str(raw_output.decode('utf-8')).strip()
     logging.debug('Tablet name: %s', tablet_name)
     brightness = test_params_content['brightness']
-    its_session_utils.validate_tablet_brightness(tablet_name, brightness)
+    its_session_utils.validate_tablet(tablet_name, brightness, tablet_id)
   else:
     tablet_id = None
 
@@ -867,6 +859,7 @@ def main():
               '-c',
               f'{new_yml_file_name}'
           ]
+        return_string = ''
         for num_try in range(NUM_TRIES):
           # Handle manual lighting control redirected stdout in test
           if (test in _LIGHTING_CONTROL_TESTS and
@@ -887,6 +880,7 @@ def main():
             test_not_yet_mandated = False
             test_mpc_req = ''
             perf_test_metrics = ''
+            hdr_mpc_req = ''
             content = file.read()
 
             # Find media performance class logging
@@ -900,6 +894,13 @@ def main():
                   one_line)
               if mpc_string_match:
                 test_mpc_req = one_line
+                break
+
+            for one_line in lines:
+              # regular expression pattern must match in ItsTestActivity.java.
+              gainmap_string_match = re.search('^has_gainmap:', one_line)
+              if gainmap_string_match:
+                hdr_mpc_req = one_line
                 break
 
             for one_line in lines:
@@ -947,6 +948,8 @@ def main():
             'status': return_string.strip()})
         if test_mpc_req:
           results[s][METRICS_KEY].append(test_mpc_req)
+        if hdr_mpc_req:
+          results[s][METRICS_KEY].append(hdr_mpc_req)
         msg_short = f'{return_string} {test}'
         scene_test_summary += msg_short + '\n'
         if (test in _LIGHTING_CONTROL_TESTS and

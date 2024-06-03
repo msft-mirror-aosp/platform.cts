@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_enterprise",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -37,6 +38,9 @@ java_test_host {
     ],
     static_libs: [
         "cts-statsd-atom-host-test-utils",
+        "flag-junit-host",
+        "device_policy_aconfig_flags_lib_host",
+        "android.permission.flags-aconfig-java-host",
     ],
     java_resource_dirs: ["res"],
     data: [
@@ -99,4 +103,45 @@ java_test_host {
         ":TestIme",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_Permissions",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["com.android.cts.devicepolicy.annotations.PermissionsTest"],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_Permissions_NoFlakes",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["com.android.cts.devicepolicy.annotations.PermissionsTest"],
+    exclude_annotations: ["android.platform.test.annotations.FlakyTest"],
+}
+
+// Currently, there are no tests marked flaky or large in CtsDevicePolicyManagerTestCases
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_NoFlakes_NoLarge",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: [
+        "android.platform.test.annotations.FlakyTest",
+        "android.platform.test.annotations.LargeTest",
+    ],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_LockSettings_NoFlakes",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["com.android.cts.devicepolicy.annotations.LockSettingsTest"],
+    exclude_annotations: ["android.platform.test.annotations.FlakyTest"],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_ParentProfileApiDisabled",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["com.android.cts.devicepolicy.ManagedProfileTest#testParentProfileApiDisabled"],
 }

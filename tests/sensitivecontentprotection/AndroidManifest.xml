@@ -46,6 +46,7 @@
 
         <activity android:name=".SensitiveContentActivity"
             android:label="SensitiveContentActivity"
+            android:theme="@android:style/Theme.NoTitleBar"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -55,6 +56,7 @@
 
         <activity android:name=".SimpleActivity"
             android:label="SimpleActivity"
+            android:theme="@android:style/Theme.NoTitleBar"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -62,26 +64,18 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".UserNameAutofillHintActivity"
-                  android:label="UserNameActivity"
-                  android:exported="true">
+        <activity android:name=".SimpleFlagSecureActivity"
+            android:label="SimpleFlagSecureActivity"
+            android:theme="@android:style/Theme.NoTitleBar"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
-        <activity android:name=".PasswordAutofillHintActivity"
-                  android:label="UserNameActivity"
-                  android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-
-        <activity android:name=".InputTypePasswordActivity"
-                  android:label="UserNameActivity"
+        <activity android:name=".SensitiveAutofillHintActivity"
+                  android:label="SensitiveAutofillHintActivity"
                   android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

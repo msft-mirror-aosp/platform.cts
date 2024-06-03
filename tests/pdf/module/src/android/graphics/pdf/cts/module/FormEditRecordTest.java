@@ -20,12 +20,15 @@ import static android.graphics.pdf.models.FormEditRecord.EDIT_TYPE_CLICK;
 import static android.graphics.pdf.models.FormEditRecord.EDIT_TYPE_SET_INDICES;
 import static android.graphics.pdf.models.FormEditRecord.EDIT_TYPE_SET_TEXT;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
 import android.graphics.Point;
 import android.graphics.pdf.models.FormEditRecord;
+import android.os.Parcel;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -90,6 +93,195 @@ public class FormEditRecordTest {
         // Inapplicable properties
         assertNull(setTextRecord.getClickPoint());
         assertEquals(0, setTextRecord.getSelectedIndices().length);
+    }
+
+    @Test
+    public void parcelable_textType() {
+        String text = "The quick brown fox jumped over the lazy dog";
+        FormEditRecord in = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_TEXT,
+                /* pageNumber= */ 0,
+                /* widgetIndex= */ 2).setText(text).build();
+
+        Parcel parcel = Parcel.obtain();
+        in.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        FormEditRecord out = FormEditRecord.CREATOR.createFromParcel(parcel);
+
+        assertEquals(in.getType(), out.getType());
+        assertEquals(in.getPageNumber(), out.getPageNumber());
+        assertEquals(in.getWidgetIndex(), out.getWidgetIndex());
+        assertEquals(in.getText(), out.getText());
+    }
+
+    @Test
+    public void parcelable_indicesType() {
+        int[] selectedIndices = new int[]{12, 13, 15};
+        FormEditRecord in = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_INDICES,
+                /* pageNumber= */ 44,
+                /* widgetIndex= */ 13).setSelectedIndices(selectedIndices).build();
+
+        Parcel parcel = Parcel.obtain();
+        in.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        FormEditRecord out = FormEditRecord.CREATOR.createFromParcel(parcel);
+
+        assertEquals(in.getType(), out.getType());
+        assertEquals(in.getPageNumber(), out.getPageNumber());
+        assertEquals(in.getWidgetIndex(), out.getWidgetIndex());
+        assertArrayEquals(in.getSelectedIndices(), out.getSelectedIndices());
+    }
+
+    @Test
+    public void parcelable_clickType() {
+        Point clickPoint = new Point(153, 256);
+        FormEditRecord in = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_CLICK,
+                /* pageNumber= */ 5,
+                /* widgetIndex= */ 6).setClickPoint(clickPoint).build();
+
+        Parcel parcel = Parcel.obtain();
+        in.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        FormEditRecord out = FormEditRecord.CREATOR.createFromParcel(parcel);
+
+        assertEquals(in.getType(), out.getType());
+        assertEquals(in.getPageNumber(), out.getPageNumber());
+        assertEquals(in.getWidgetIndex(), out.getWidgetIndex());
+        assertEquals(in.getClickPoint(), out.getClickPoint());
+    }
+
+    @Test
+    public void creator_newArray() {
+        FormEditRecord[] records = FormEditRecord.CREATOR.newArray(3);
+
+        assertEquals(3, records.length);
+    }
+
+    @Test
+    public void describeContents() {
+        Point clickPoint = new Point(153, 256);
+        FormEditRecord record = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_CLICK,
+                /* pageNumber= */ 5,
+                /* widgetIndex= */ 6).setClickPoint(clickPoint).build();
+
+        assertEquals(0, record.describeContents());
+    }
+
+    @Test
+    public void equalsHashCode_textType_matchingProperties() {
+        String text = "The quick brown fox jumped over the lazy dog";
+        FormEditRecord one = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_TEXT,
+                /* pageNumber= */ 0,
+                /* widgetIndex= */ 2).setText(text).build();
+        FormEditRecord two = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_TEXT,
+                /* pageNumber= */ 0,
+                /* widgetIndex= */ 2).setText(text).build();
+
+        assertEquals(one, two);
+        assertEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void equalsHashCode_clickType_matchingProperties() {
+        Point clickPoint = new Point(153, 256);
+        FormEditRecord one = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_CLICK,
+                /* pageNumber= */ 5,
+                /* widgetIndex= */ 6).setClickPoint(clickPoint).build();
+        FormEditRecord two = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_CLICK,
+                /* pageNumber= */ 5,
+                /* widgetIndex= */ 6).setClickPoint(clickPoint).build();
+
+        assertEquals(one, two);
+        assertEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void equalsHashCode_indicesType_matchingProperties() {
+        int[] selectedIndices = new int[]{12, 13, 15};
+        FormEditRecord one = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_INDICES,
+                /* pageNumber= */ 44,
+                /* widgetIndex= */ 13).setSelectedIndices(selectedIndices).build();
+        FormEditRecord two = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_INDICES,
+                /* pageNumber= */ 44,
+                /* widgetIndex= */ 13).setSelectedIndices(selectedIndices).build();
+
+        assertEquals(one, two);
+        assertEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void equalsHashCode_clickType_notMatchingProperties() {
+        FormEditRecord one = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_CLICK,
+                /* pageNumber= */ 5,
+                /* widgetIndex= */ 6).setClickPoint(new Point(153, 256)).build();
+        FormEditRecord two = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_CLICK,
+                /* pageNumber= */ 5,
+                /* widgetIndex= */ 6).setClickPoint(new Point(153, 250)).build();
+
+        assertNotEquals(one, two);
+        assertNotEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void equalsHashCode_indicesType_notMatchingProperties() {
+        FormEditRecord one = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_INDICES,
+                /* pageNumber= */ 44,
+                /* widgetIndex= */ 13).setSelectedIndices(new int[]{12, 13, 15}).build();
+        FormEditRecord two = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_INDICES,
+                /* pageNumber= */ 44,
+                /* widgetIndex= */ 13).setSelectedIndices(new int[]{140, 256, 981}).build();
+
+        assertNotEquals(one, two);
+        assertNotEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void equalsHashCode_textType_notMatchingProperties() {
+        FormEditRecord one = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_TEXT,
+                /* pageNumber= */ 0,
+                /* widgetIndex= */ 2).setText("We ran together").build();
+        FormEditRecord two = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_TEXT,
+                /* pageNumber= */ 0,
+                /* widgetIndex= */ 2).setText("My grandmother is Polish").build();
+
+        assertNotEquals(one, two);
+        assertNotEquals(one.hashCode(), two.hashCode());
+    }
+
+    @Test
+    public void equals_notFormEditRecord() {
+        FormEditRecord record = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_TEXT,
+                /* pageNumber= */ 0,
+                /* widgetIndex= */ 2).setText("We ran together").build();
+
+        assertNotEquals(record, new Object());
+    }
+
+
+    @Test
+    public void equals_self() {
+        FormEditRecord record = new FormEditRecord.Builder(
+                /* type= */ EDIT_TYPE_SET_TEXT,
+                /* pageNumber= */ 0,
+                /* widgetIndex= */ 2).setText("We ran together").build();
+
+        assertEquals(record, record);
     }
 
     @Test

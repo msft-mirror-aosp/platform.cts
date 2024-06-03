@@ -1,3 +1,5 @@
+# Bug component: 526266
+
 # Vehicle property related CTS files
 per-file CarPropertyManagerTest.java=shanyu@google.com,tylertrephan@google.com
 per-file VehiclePropertyIdsTest.java=shanyu@google.com,tylertrephan@google.com
@@ -7,11 +9,11 @@ per-file CarAudioManagerTest.java=oscarazu@google.com
 per-file CarAudioFocusTest.java=oscarazu@google.com
 
 # Input related CTS files
-per-file CarInputManagerSystemTest.java=kanant@google.com,ycheo@google.com
-per-file CarInputTest.java=kanant@google.com,ycheo@google.com
+per-file CarInputManagerSystemTest.java=kanant@google.com
+per-file CarInputTest.java=kanant@google.com
 
 # Display related CTS files
-per-file CarDisplayInputLockTest.java=ycheo@google.com
+per-file CarDisplayInputLockTest.java=gauravbhola@google.com,xiangw@google.com
 
 # Mainline CTS files
 per-file ApiVersionTest.java=gargmayank@google.com
@@ -27,10 +29,11 @@ per-file CarRotaryImeTest.java=yabinh@google.com
 per-file CarBluetoothTest.java=salsavage@google.com
 
 # Occupant Zone CTS files
-per-file CarOccupantZoneManagerTest.java=xiangw@google.com,ycheo@google.com
+per-file CarOccupantZoneManagerTest.java=xiangw@google.com
 
 # Comms API CTS files
-per-file CarOccupantConnectionManagerTest.java=xiangw@google.com,ycheo@google.com
+per-file CarOccupantConnectionManagerTest.java=yabinh@google.com,xiangw@google.com
+per-file CarRemoteDeviceManagerTest.java=yabinh@google.com
 
 # EV CTS files
 per-file EvChargeStateTest.java=changyeon@google.com
@@ -50,12 +53,10 @@ per-file CarPerformanceManagerTest.java=lakshmana@google.com,shanyu@google.com
 per-file CarMediaManagerTest.java=bkchoi@google.com
 
 # PackageManager related CTS files
-# TODO(b/282199666): Find an owner for CarPackageManagerTest
-# per-file CarPackageManagerTest.java=
+per-file CarPackageManagerTest.java=gauravbhola@google.com,gargmayank@google.com
 
 # Remote Access related CTS files
 per-file CarRemoteAccessManagerTest.java=ericjeong@google.com,shanyu@google.com
-per-file CarRemoteDeviceManagerTest.java=ericjeong@google.com,shanyu@google.com
 
 # Car Watchdog related CTS files
 per-file CarWatchdogDaemonTest.java=lakshmana@google.com,jahdiel@google.com

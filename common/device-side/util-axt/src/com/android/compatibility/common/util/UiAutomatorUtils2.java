@@ -95,6 +95,11 @@ public class UiAutomatorUtils2 {
                 + "ms");
     }
 
+    // Will wrap any asserting exceptions thrown by the parameter with a UI dump
+    public static void assertWithUiDump(ThrowingRunnable assertion) {
+        ExceptionUtils.wrappingExceptions(UiDumpUtils::wrapWithUiDump, assertion);
+    }
+
     public static UiObject2 waitFindObject(BySelector selector) throws UiObjectNotFoundException {
         return waitFindObject(selector, 20_000);
     }
@@ -168,6 +173,17 @@ public class UiAutomatorUtils2 {
                         if (isWearCompose) {
                             // TODO(b/306483780): Removed the condition once the scrollForward is
                             //  fixed.
+                            if (!wasScrolledUpAlready) {
+                                // TODO(b/306483780): scrollForward() always returns false. Thus
+                                // `isAtEnd` will never be false for Wear Compose, because
+                                // `scrollAtStartOrEnd` is set to false, and the value of `isAtEnd`
+                                // is an && combination of that value. To avoid skipping Views
+                                // that exist above the start-point of the search, we will first
+                                // scroll up before doing a downward search and scroll.
+                                scrollable.scrollToBeginning(Integer.MAX_VALUE);
+                                wasScrolledUpAlready = true;
+                                continue;
+                            }
                             scrollable.scrollForward();
                             scrollAtStartOrEnd = false;
                         } else {

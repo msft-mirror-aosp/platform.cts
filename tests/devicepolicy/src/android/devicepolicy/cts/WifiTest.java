@@ -46,10 +46,10 @@ import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.DisallowAddWifiConfig;
 import com.android.bedstead.harrier.policies.DisallowChangeWifiState;
 import com.android.bedstead.harrier.policies.DisallowConfigTethering;
@@ -106,8 +106,7 @@ public final class WifiTest {
     private static final String TEST_ALIAS = "test_alias";
     private static final String TEST_SSID = "\"test_ssid\"";
     private static final PrivateKey PRIVATE_KEY =
-            TestApis.certificates().generatePrivateKey(FakeKeys.FAKE_RSA_1.privateKey,
-                    Certificates.KeyAlgorithmType.RSA);
+            TestApis.certificates().generateRSAPrivateKey(FakeKeys.FAKE_RSA_1.privateKey);
     private static final Certificate CERTIFICATE =
             TestApis.certificates().generateCertificate(FakeKeys.FAKE_RSA_1.caCertificate);
     private static final Certificate[] CERTIFICATES = new Certificate[]{CERTIFICATE};

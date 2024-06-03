@@ -16,7 +16,7 @@
 
 package com.android.bedstead.nene.device;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.DISABLE_KEYGUARD;
+import static com.android.bedstead.permissions.CommonPermissions.DISABLE_KEYGUARD;
 
 import android.app.KeyguardManager;
 import android.content.pm.PackageManager;
@@ -28,7 +28,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
 
@@ -73,13 +73,13 @@ public final class Device {
      * Turn the screen on.
      */
     public void wakeUp() {
-        ShellCommand.builder("input keyevent")
+        String unused1 = ShellCommand.builder("input keyevent")
                 .addOperand("KEYCODE_WAKEUP")
                 .allowEmptyOutput(true)
                 .validate(String::isEmpty)
                 .executeOrThrowNeneException("Error waking up device");
 
-        Poll.forValue("isScreenOn", this::isScreenOn)
+        Boolean unused2 = Poll.forValue("isScreenOn", this::isScreenOn)
                 .toBeEqualTo(true)
                 .errorOnFail()
                 .await();
@@ -89,7 +89,7 @@ public final class Device {
      * Dismiss the keyguard.
      */
     public void unlock() {
-        ShellCommand.builder("wm dismiss-keyguard")
+        String unused = ShellCommand.builder("wm dismiss-keyguard")
                 .allowEmptyOutput(true)
                 .validate(String::isEmpty)
                 .executeOrThrowNeneException("Error dismissing keyguard");
@@ -104,7 +104,7 @@ public final class Device {
     public void keepScreenOn(boolean stayOn) {
         // one day vs default
         TestApis.settings().system().putInt("screen_off_timeout", stayOn ? 86400000 : 121000);
-        ShellCommand.builder("svc power stayon")
+        String unused = ShellCommand.builder("svc power stayon")
                 .addOperand(stayOn ? "true" : "false")
                 .allowEmptyOutput(true)
                 .validate(String::isEmpty)

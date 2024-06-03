@@ -450,7 +450,8 @@
         <!-- Used for PackageManager test, don't delete this MockContentProvider provider -->
         <provider android:name="android.content.cts.MockContentProvider"
              android:authorities="ctstest"
-             android:multiprocess="false">
+             android:multiprocess="false"
+             android:exported="true">
             <!-- Provider level metadata -->
             <meta-data android:name="android.content.cts.string"
                        android:value="foo"/>
@@ -582,15 +583,26 @@
                  android:resource="@xml/always_syncable_account_access_adapter"/>
         </service>
 
-	<activity android:name="com.android.cts.content.StubCameraIntentHandlerActivity"
-    	 android:exported="true">
-           <intent-filter>
+        <activity android:name="com.android.cts.content.StubCameraIntentHandlerActivity"
+            android:exported="true">
+            <intent-filter>
                 <action android:name="android.media.action.IMAGE_CAPTURE"/>
                 <action android:name="android.media.action.IMAGE_CAPTURE_SECURE"/>
                 <action android:name="android.media.action.VIDEO_CAPTURE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
-	</activity>
+        </activity>
+
+        <activity-alias
+            android:name="android.content.pm.cts.mimeGroupActivity"
+            android:targetActivity="android.content.pm.cts.LauncherMockActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <data android:mimeGroup="mime_group"/>
+            </intent-filter>
+        </activity-alias>
 
         <!-- The test module disables manifest merging, so manually include AndroidX Activities -->
         <activity

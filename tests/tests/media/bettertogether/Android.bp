@@ -19,6 +19,7 @@ package {
 
 android_test {
     name: "CtsMediaBetterTogetherTestCases",
+    team: "trendy_team_android_media_solutions",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.truth",
@@ -42,8 +43,40 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-media",
+    ],
+    host_required: ["cts-dynamic-config"],
+    min_sdk_version: "29",
+    target_sdk_version: "31",
+}
+
+android_test {
+    name: "MctsMediaBetterTogetherTestCases",
+    team: "trendy_team_android_media_solutions",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "androidx.test.ext.truth",
+        "ctstestrunner-axt",
+        "cts-media-common",
+        "flag-junit",
+        "truth",
+        "Harrier",
+    ],
+    resource_dirs: ["res"],
+    aaptflags: [
+        "--auto-add-overlay",
+    ],
+    srcs: [
+        "src/**/*.java",
+        "aidl/**/*.aidl",
+    ],
+    // This test uses private APIs
+    platform_apis: true,
+    test_config: "AndroidTest-mcts.xml",
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
         "mcts-media",
+        "mts-media",
     ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",

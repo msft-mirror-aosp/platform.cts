@@ -42,6 +42,7 @@ public class ShellCommandExecutor {
     public static final String COMMAND_CLEANUP_STUCK_CALLS = "cmd telecom cleanup-stuck-calls";
     public static final String COMMAND_SET_DEFAULT_PHONE_ACCOUNT =
             "cmd telecom set-user-selected-outgoing-phone-account ";
+    public static final String COMMAND_DUMP_TELECOM = "dumpsys telecom";
 
     /**
      * Executes the given shell command and returns the output in a string. Note that even
@@ -79,6 +80,10 @@ public class ShellCommandExecutor {
                 Log.w(sTAG, "closeQuietly: exception thrown: e=" + ignored);
             }
         }
+    }
+
+    public static void dumpTelecom(Instrumentation instrumentation) throws Exception {
+        executeShellCommand(instrumentation, COMMAND_DUMP_TELECOM);
     }
 
     public static String setDefaultDialer(Instrumentation instrumentation, String packageName)

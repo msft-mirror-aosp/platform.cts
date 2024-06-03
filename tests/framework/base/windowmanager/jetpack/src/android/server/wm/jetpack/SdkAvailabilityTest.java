@@ -18,16 +18,16 @@ package android.server.wm.jetpack;
 
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
 import static com.android.window.flags.Flags.FLAG_ENABLE_WM_EXTENSIONS_FOR_ALL_FLAG;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityTaskManager;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -78,8 +78,10 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
 
     @Before
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
+        assumeFalse("Skip Watch for WM Jetpack/Extensions availability",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
         assumeTrue("Device's default display doesn't support multi window",
                 ActivityTaskManager.supportsMultiWindow(mContext));
     }
@@ -179,9 +181,6 @@ public class SdkAvailabilityTest extends WindowManagerJetpackTestBase {
     }
 
     private void assumeHasLargeScreenDisplayOrExtensionEnabled() {
-        assumeTrue("Device does not support multi window, so window extensions features are"
-                + " not enabled",
-                ActivityTaskManager.supportsMultiWindow(getInstrumentation().getContext()));
         assumeTrue("Device does not has a minimum screen dimension greater than or equal to "
                         + WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP + "dp and window "
                         + "extensions are not enabled.",

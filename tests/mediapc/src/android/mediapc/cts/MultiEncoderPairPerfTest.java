@@ -21,6 +21,7 @@ import static android.mediapc.cts.CodecTestBase.codecPrefix;
 import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 
 import android.media.MediaFormat;
+import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Utils;
 import android.util.Pair;
@@ -39,13 +40,10 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * The following test class calculates the maximum number of concurrent encode sessions that it can
- * support by the two hardware (mime - encoder) pair calculated via the
+ * support by the two hardware (mediaType - encoder) pair calculated via the
  * CodecCapabilities.getMaxSupportedInstances() and
  * VideoCapabilities.getSupportedPerformancePoints() methods. Splits the maximum supported instances
  * between the two pairs and ensures that all the supported sessions succeed in encoding.
@@ -68,30 +66,30 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
     @Rule
     public final TestName mTestName = new TestName();
 
-    // Returns the list of params with two hardware (mime - encoder) pairs in both
+    // Returns the list of params with two hardware (mediaType - encoder) pairs in both
     // sync and async modes.
-    // Parameters {0}_{1}_{2} -- Pair(Mime EncoderName)_Pair(Mime EncoderName)_isAsync
+    // Parameters {0}_{1}_{2} -- Pair(MediaType EncoderName)_Pair(MediaType EncoderName)_isAsync
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
     public static Collection<Object[]> inputParams() {
         final List<Object[]> argsList = new ArrayList<>();
-        ArrayList<Pair<String, String>> mimeTypeEncoderPairs = new ArrayList<>();
-        for (String mime : mMimeList) {
-            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+        ArrayList<Pair<String, String>> mediaTypeEncoderPairs = new ArrayList<>();
+        for (String mediaType : mMediaTypeList) {
+            if (mediaTypePrefix != null && !mediaType.startsWith(mediaTypePrefix)) {
                 continue;
             }
-            ArrayList<String> listOfEncoders = getHardwareCodecsForMime(mime, true);
+            ArrayList<String> listOfEncoders = getHardwareCodecsForMediaTypes(mediaType, true);
             for (String encoder : listOfEncoders) {
                 if ((codecPrefix != null && !encoder.startsWith(codecPrefix))
                         || (codecFilter != null && !codecFilter.matcher(encoder).matches())) {
                     continue;
                 }
-                mimeTypeEncoderPairs.add(Pair.create(mime, encoder));
+                mediaTypeEncoderPairs.add(Pair.create(mediaType, encoder));
             }
         }
-        for (int i = 0; i < mimeTypeEncoderPairs.size(); i++) {
-            for (int j = i + 1; j < mimeTypeEncoderPairs.size(); j++) {
-                Pair<String, String> pair1 = mimeTypeEncoderPairs.get(i);
-                Pair<String, String> pair2 = mimeTypeEncoderPairs.get(j);
+        for (int i = 0; i < mediaTypeEncoderPairs.size(); i++) {
+            for (int j = i + 1; j < mediaTypeEncoderPairs.size(); j++) {
+                Pair<String, String> pair1 = mediaTypeEncoderPairs.get(i);
+                Pair<String, String> pair2 = mediaTypeEncoderPairs.get(j);
                 for (boolean isAsync : boolStates) {
                     argsList.add(new Object[]{pair1, pair2, isAsync});
                 }
@@ -102,8 +100,8 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test calculates the number of 720p 30 fps encoder instances that the given two
-     * (mime - encoder) pairs can support. Assigns the same number of instances to the two pairs
-     * (if max instances are even), or one more to one pair (if odd) and ensures that all the
+     * (mediaType - encoder) pairs can support. Assigns the same number of instances to the two
+     * pairs (if max instances are even), or one more to one pair (if odd) and ensures that all the
      * concurrent sessions succeed in encoding.
      */
     @LargeTest
@@ -120,8 +118,8 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test calculates the number of 1080p 30 fps encoder instances that the given two
-     * (mime - encoder) pairs can support. Assigns the same number of instances to the two pairs
-     * (if max instances are even), or one more to one pair (if odd) and ensures that all the
+     * (mediaType - encoder) pairs can support. Assigns the same number of instances to the two
+     * pairs (if max instances are even), or one more to one pair (if odd) and ensures that all the
      * concurrent sessions succeed in encoding.
      */
     @LargeTest
@@ -134,8 +132,8 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test calculates the number of 4k 30 fps encoder instances that the given two
-     * (mime - encoder) pairs can support. Assigns the same number of instances to the two pairs
-     * (if max instances are even), or one more to one pair (if odd) and ensures that all the
+     * (mediaType - encoder) pairs can support. Assigns the same number of instances to the two
+     * pairs (if max instances are even), or one more to one pair (if odd) and ensures that all the
      * concurrent sessions succeed in encoding.
      */
     @LargeTest
@@ -148,12 +146,13 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
 
     private void testCodec(int height, int width, int bitrate, int requiredMinInstances)
             throws Exception {
-        ArrayList<Pair<String, String>> mimeEncoderPairs = new ArrayList<>();
-        mimeEncoderPairs.add(mFirstPair);
-        mimeEncoderPairs.add(mSecondPair);
+        ArrayList<Pair<String, String>> mediaTypeEncoderPairs = new ArrayList<>();
+        mediaTypeEncoderPairs.add(mFirstPair);
+        mediaTypeEncoderPairs.add(mSecondPair);
         int maxInstances = checkAndGetMaxSupportedInstancesForCodecCombinations(height, width,
-                mimeEncoderPairs, true, requiredMinInstances);
+                mediaTypeEncoderPairs, true, requiredMinInstances);
         double achievedFrameRate = 0.0;
+        double frameDropsPerSec = 0.0;
         boolean firstPairAV1 = mFirstPair.first.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
         boolean secondPairAV1 = mSecondPair.first.equals(MediaFormat.MIMETYPE_VIDEO_AV1);
         if (maxInstances >= requiredMinInstances) {
@@ -161,7 +160,6 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
             int firstPairInstances = maxInstances - secondPairInstances;
             int secondPairInstances1080p = 2 * secondPairInstances / 3;
             int firstPairInstances1080p = 2 * firstPairInstances / 3;
-            ExecutorService pool = Executors.newFixedThreadPool(maxInstances);
             List<Encode> testList = new ArrayList<>();
             if (height > 1080) {
                 for (int i = 0; i < firstPairInstances1080p; i++) {
@@ -193,11 +191,9 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
                             width, 30, bitrate));
                 }
             }
-            List<Future<Double>> resultList = pool.invokeAll(testList);
-            for (Future<Double> result : resultList) {
-                achievedFrameRate += result.get();
-            }
-            pool.shutdown();
+            CodecMetrics result = invokeWithThread(maxInstances, testList);
+            achievedFrameRate = result.fps();
+            frameDropsPerSec = result.fdps();
         }
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_3;
@@ -208,6 +204,7 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
             r5_1__H_1_4 = pce.addR5_1__H_1_4_4k();
             r5_1__H_1_3.setConcurrentInstances(maxInstances);
             r5_1__H_1_4.setConcurrentFps(achievedFrameRate);
+            r5_1__H_1_4.setFrameDropsPerSecond(frameDropsPerSec);
         } else if (height == 1080) {
             r5_1__H_1_3 = pce.addR5_1__H_1_3_1080p();
             r5_1__H_1_4 = pce.addR5_1__H_1_4_1080p();

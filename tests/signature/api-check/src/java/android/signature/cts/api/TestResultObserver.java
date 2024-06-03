@@ -64,6 +64,7 @@ class TestResultObserver implements ResultObserver {
             mErrorString.append("    ").append(classLoader.toString()).append("\n");
             classLoader = classLoader.getParent();
         }
+        mErrorString.append(String.valueOf(failures)).append("failures");
     }
 
     public void onTestComplete() {

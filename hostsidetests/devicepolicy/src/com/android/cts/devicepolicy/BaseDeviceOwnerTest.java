@@ -17,6 +17,7 @@
 package com.android.cts.devicepolicy;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNotNull;
 
 import com.android.tradefed.log.LogUtil.CLog;
 
@@ -42,6 +43,10 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
     public void setUp() throws Exception {
         super.setUp();
 
+        if (isHeadlessSystemUserMode()) {
+            assumeNotNull("Devices in headles system user mode require a main user to set a device "
+                    + "owner.", getDevice().getMainUserId());
+        }
         installDeviceOwnerApp(DEVICE_OWNER_APK);
 
         mDeviceOwnerSet = setDeviceOwner(DEVICE_OWNER_COMPONENT, mDeviceOwnerUserId,
@@ -51,10 +56,6 @@ abstract class BaseDeviceOwnerTest extends BaseDevicePolicyTest {
             removeAdmin(DEVICE_OWNER_COMPONENT, mDeviceOwnerUserId);
             getDevice().uninstallPackage(DEVICE_OWNER_PKG);
             fail("Failed to set device owner on user " + mDeviceOwnerUserId);
-        }
-
-        if (isHeadlessSystemUserMode()) {
-            affiliateUsers(DEVICE_OWNER_PKG, mDeviceOwnerUserId, mPrimaryUserId);
         }
 
         // Enable the notification listener

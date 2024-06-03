@@ -126,22 +126,6 @@ public class HceReaderTestActivity extends PassFailButtons.TestListActivity {
                         ConflictingNonPaymentPrefixEmulatorActivity.buildReaderIntent(this), null));
             }
 
-            adapter.add(TestListItem.newTest(this, R.string.nfc_observe_mode_reader,
-                    ObserveModeReaderActivity.class.getName(),
-                    new Intent(this, ObserveModeReaderActivity.class), null));
-            adapter.add(TestListItem.newTest(this, R.string.nfc_polling_loop_a_reader,
-                    getString(R.string.nfc_polling_loop_a_reader),
-                    PollingLoopEmulatorActivity.buildReaderIntent(this,
-                            NfcAdapter.FLAG_READER_NFC_A), null));
-            adapter.add(TestListItem.newTest(this, R.string.nfc_polling_loop_b_reader,
-                    getString(R.string.nfc_polling_loop_b_reader),
-                    PollingLoopEmulatorActivity.buildReaderIntent(this,
-                            NfcAdapter.FLAG_READER_NFC_B), null));
-            adapter.add(TestListItem.newTest(this, R.string.nfc_polling_loop_ab_reader,
-                    getString(R.string.nfc_polling_loop_ab_reader),
-                    PollingLoopEmulatorActivity.buildReaderIntent(this,
-                            NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_NFC_B), null));
-
             int firstSdk =
                     SystemProperties.getInt("ro.product.first_api_level", Build.VERSION_CODES.S);
             if (firstSdk >= Build.VERSION_CODES.S) {

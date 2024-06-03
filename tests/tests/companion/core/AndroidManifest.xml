@@ -18,6 +18,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.companion.cts.core">
 
+    <uses-permission android:name="android.permission.DELIVER_COMPANION_MESSAGES" />
+
     <instrumentation
         android:name="androidx.test.runner.AndroidJUnitRunner"
         android:targetPackage="android.companion.cts.core"

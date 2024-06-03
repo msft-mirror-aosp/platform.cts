@@ -17,6 +17,7 @@
 package android.settings.cts;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.Context;
 import android.content.Intent;
@@ -60,6 +61,12 @@ public class SettingsIntentsTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void settingActivity_launchSatelliteSettingIntent() {
+        assumeFalse(
+                "Skipping test: Satellite settings are not supported in AAOS",
+                SettingsTestUtils.isAutomotive());
+        assumeFalse(
+                "Skipping test: Satellite settings are not supported in Wear",
+                SettingsTestUtils.isWatch());
         Context targetContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
         final Intent intent = new Intent(Settings.ACTION_SATELLITE_SETTING).addFlags(

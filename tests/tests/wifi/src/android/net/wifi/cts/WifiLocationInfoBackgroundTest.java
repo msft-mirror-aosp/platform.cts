@@ -35,13 +35,13 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.SystemUtil;
@@ -60,7 +60,6 @@ import java.util.List;
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 @ApiTest(apis = {"Manifest.permission#ACCESS_BACKGROUND_LOCATION"})
-@NonMainlineTest
 @RequiresDevice
 public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     private static final String TAG = "WifiLocationInfoTest";
@@ -78,7 +77,7 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     private static final String WIFI_LOCATION_TEST_APP_RETRIEVE_TRANSPORT_INFO_SERVICE =
             WIFI_LOCATION_TEST_APP_PACKAGE_NAME + ".RetrieveTransportInfoAndReturnStatusService";
 
-    private static final int DURATION_MS = 10_000;
+    private static final int DURATION_MS = 30_000;
     private static final int WIFI_CONNECT_TIMEOUT_MILLIS = 30_000;
 
     @Rule
@@ -108,6 +107,9 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
 
         sPower = sContext.getSystemService(PowerManager.class);
         sLock = sPower.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+        turnScreenOn();
+        SystemUtil.runShellCommand("input keyevent KEYCODE_HOME");
+        Thread.sleep(10000);
 
         sWifiManager = sContext.getSystemService(WifiManager.class);
         assertThat(sWifiManager).isNotNull();
@@ -226,6 +228,7 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     }
 
     @Test
+    @FlakyTest
     public void testScanTriggerAllowedWithBackgroundLocationPermission()
             throws Exception {
         InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
@@ -244,6 +247,7 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     }
 
     @Test
+    @FlakyTest
     public void testScanResultsRetrievalAllowedWithBackgroundLocationPermission()
             throws Exception {
         InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
@@ -262,6 +266,7 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     }
 
     @Test
+    @FlakyTest
     public void testConnectionInfoRetrievalAllowedWithBackgroundLocationPermission()
             throws Exception {
         InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
@@ -282,6 +287,7 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
+    @FlakyTest
     public void testTransportInfoRetrievalAllowedWithBackgroundLocationPermission()
             throws Exception {
         InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(

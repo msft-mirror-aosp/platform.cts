@@ -82,6 +82,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
@@ -550,9 +551,7 @@ public class PackageInstallerArchiveTest {
     @Test
     public void unarchiveApp_missingPermissions() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm archive %s", PACKAGE_NAME))).isEqualTo(
-                "Success\n");
+        archivePackageWithShellCommand(PACKAGE_NAME);
 
         SecurityException e =
                 assertThrows(
@@ -687,9 +686,8 @@ public class PackageInstallerArchiveTest {
     public void archiveApp_shellCommand() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
 
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm archive %s", PACKAGE_NAME))).isEqualTo(
-                "Success\n");
+        archivePackageWithShellCommand(PACKAGE_NAME);
+
         assertThat(mPackageManager.getPackageInfo(PACKAGE_NAME,
                 PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived).isTrue();
     }
@@ -697,13 +695,8 @@ public class PackageInstallerArchiveTest {
     @Test
     public void unarchiveApp_shellCommand() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm archive %s", PACKAGE_NAME))).isEqualTo(
-                "Success\n");
-
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm request-unarchive %s", PACKAGE_NAME)))
-                .isEqualTo("Success\n");
+        archivePackageWithShellCommand(PACKAGE_NAME);
+        unarchivePackageWithShellCommand(PACKAGE_NAME);
 
         assertThat(sUnarchiveReceiverPackageName.get(5, TimeUnit.SECONDS)).isEqualTo(PACKAGE_NAME);
         assertThat(sUnarchiveReceiverAllUsers.get(1, TimeUnit.MILLISECONDS)).isFalse();
@@ -714,19 +707,30 @@ public class PackageInstallerArchiveTest {
         installPackage(PACKAGE_NAME, APK_PATH);
 
         int currentUser = ActivityManager.getCurrentUser();
-        PackageBroadcastReceiver
+        final PackageBroadcastReceiver
                 addedBroadcastReceiver = new PackageBroadcastReceiver(
                 PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_ADDED
         );
-        PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
+        final PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
                 PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REMOVED
+        );
+        final PackageBroadcastReceiver fullyRemovedBroadcastReceiver = new PackageBroadcastReceiver(
+                PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_FULLY_REMOVED
+        );
+        final PackageBroadcastReceiver uidRemovedBroadcastReceiver = new PackageBroadcastReceiver(
+                PACKAGE_NAME, currentUser, Intent.ACTION_UID_REMOVED
         );
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
         intentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
+        intentFilter.addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED);
         intentFilter.addDataScheme("package");
+
+        final IntentFilter intentFilterForUidRemoved = new IntentFilter(Intent.ACTION_UID_REMOVED);
         try {
             mContext.registerReceiver(removedBroadcastReceiver, intentFilter);
+            mContext.registerReceiver(fullyRemovedBroadcastReceiver, intentFilter);
+            mContext.registerReceiver(uidRemovedBroadcastReceiver, intentFilterForUidRemoved);
 
             runWithShellPermissionIdentity(
                     () -> {
@@ -737,6 +741,8 @@ public class PackageInstallerArchiveTest {
                     },
                     Manifest.permission.DELETE_PACKAGES);
 
+            fullyRemovedBroadcastReceiver.assertBroadcastNotReceived();
+            uidRemovedBroadcastReceiver.assertBroadcastNotReceived();
             removedBroadcastReceiver.assertBroadcastReceived();
             Intent removedIntent = removedBroadcastReceiver.getBroadcastResult();
             assertNotNull(removedIntent);
@@ -753,6 +759,8 @@ public class PackageInstallerArchiveTest {
         } finally {
             try {
                 mContext.unregisterReceiver(removedBroadcastReceiver);
+                mContext.unregisterReceiver(uidRemovedBroadcastReceiver);
+                mContext.unregisterReceiver(fullyRemovedBroadcastReceiver);
                 mContext.unregisterReceiver(addedBroadcastReceiver);
             } catch (Exception e) {
                 // Already unregistered.
@@ -874,6 +882,18 @@ public class PackageInstallerArchiveTest {
                         () -> mContext.startActivity(callingIntent));
 
         assertThat(e).hasMessageThat().contains("Not allowed to start activity Intent");
+    }
+
+    private static void archivePackageWithShellCommand(@NonNull String packageName) {
+        final String command = String.format(
+                "pm archive --user %d %s", ActivityManager.getCurrentUser(), packageName);
+        assertThat(SystemUtil.runShellCommand(command)).isEqualTo("Success\n");
+    }
+
+    private static void unarchivePackageWithShellCommand(@NonNull String packageName) {
+        final String command = String.format("pm request-unarchive --user %d %s",
+                ActivityManager.getCurrentUser(), packageName);
+        assertThat(SystemUtil.runShellCommand(command)).isEqualTo("Success\n");
     }
 
     private void launchTestActivity() {

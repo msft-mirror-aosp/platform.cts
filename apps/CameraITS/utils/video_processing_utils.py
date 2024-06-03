@@ -26,7 +26,6 @@ import error_util
 import image_processing_utils
 
 
-AREA_720P_VIDEO = 1280*720
 COLORSPACE_HDR = 'bt2020'
 HR_TO_SEC = 3600
 INDEX_FIRST_SUBGROUP = 1
@@ -66,44 +65,7 @@ VIDEO_QUALITY_SIZE = {
 }
 
 
-def get_720p_or_above_size(supported_preview_sizes):
-  """Returns the smallest size above or equal to 720p in preview and video.
-
-  If the largest preview size is under 720P, returns the largest value.
-
-  Args:
-    supported_preview_sizes: list; preview sizes.
-      e.g. ['1920x960', '1600x1200', '1920x1080']
-  Returns:
-    smallest size >= 720p video format
-  """
-
-  size_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
-  smallest_area = float('inf')
-  smallest_720p_or_above_size = ''
-  largest_supported_preview_size = ''
-  largest_area = 0
-  for size in supported_preview_sizes:
-    area = size_to_area(size)
-    if smallest_area > area >= AREA_720P_VIDEO:
-      smallest_area = area
-      smallest_720p_or_above_size = size
-    else:
-      if area > largest_area:
-        largest_area = area
-        largest_supported_preview_size = size
-
-  if largest_area > AREA_720P_VIDEO:
-    logging.debug('Smallest 720p or above size: %s',
-                  smallest_720p_or_above_size)
-    return smallest_720p_or_above_size
-  else:
-    logging.debug('Largest supported preview size: %s',
-                  largest_supported_preview_size)
-    return largest_supported_preview_size
-
-
-def get_lowest_preview_video_size(
+def get_lowest_common_preview_video_size(
     supported_preview_sizes, supported_video_qualities, min_area):
   """Returns the common, smallest size above minimum in preview and video.
 
@@ -166,9 +128,9 @@ def extract_key_frames_from_video(log_path, video_file_name):
   Ffmpeg tool is used to extract key frames from the video at path
   os.path.join(log_path, video_file_name).
   The extracted key frames will have the name video_file_name with "_key_frame"
-  suffix to identify the frames for video of each quality.Since there can be
+  suffix to identify the frames for video of each quality. Since there can be
   multiple key frames, each key frame image will be differentiated with it's
-  frame index.All the extracted key frames will be available in  jpeg format
+  frame index. All the extracted key frames will be available in jpeg format
   at the same path as the video file.
 
   The run time flag '-loglevel quiet' hides the information from terminal.
@@ -176,15 +138,15 @@ def extract_key_frames_from_video(log_path, video_file_name):
   option to 'info'.
 
   Args:
-    log_path: path for video file directory
+    log_path: path for video file directory.
     video_file_name: name of the video file.
   Returns:
-    key_frame_files: A list of paths for each key frame extracted from the
-    video. Ex: VID_20220325_050918_0_CIF_352x288.mp4
+    key_frame_files: a sorted list of files which contains a name per key
+      frame. Ex: VID_20220325_050918_0_preview_1920x1440_key_frame_0001.png
   """
-  ffmpeg_image_name = f"{video_file_name.split('.')[0]}_key_frame"
+  ffmpeg_image_name = f'{os.path.splitext(video_file_name)[0]}_key_frame'
   ffmpeg_image_file_path = os.path.join(
-      log_path, ffmpeg_image_name + '_%02d.png')
+      log_path, ffmpeg_image_name + '_%04d.png')
   cmd = ['ffmpeg',
          '-skip_frame',
          'nokey',
@@ -208,7 +170,7 @@ def extract_key_frames_from_video(log_path, video_file_name):
   for file in arr:
     if '.png' in file and not os.path.isdir(file) and ffmpeg_image_name in file:
       key_frame_files.append(file)
-
+  key_frame_files.sort()
   logging.debug('Extracted key frames: %s', key_frame_files)
   logging.debug('Length of key_frame_files: %d', len(key_frame_files))
   if not key_frame_files:
@@ -260,10 +222,10 @@ def extract_all_frames_from_video(log_path, video_file_name, img_format):
   ffmpeg_image_name = f"{video_file_name.split('.')[0]}_frame"
   logging.debug('ffmpeg_image_name: %s', ffmpeg_image_name)
   ffmpeg_image_file_names = (
-      f'{os.path.join(log_path, ffmpeg_image_name)}_%03d.{img_format}')
+      f'{os.path.join(log_path, ffmpeg_image_name)}_%04d.{img_format}')
   cmd = [
       'ffmpeg', '-i', os.path.join(log_path, video_file_name),
-      '-vsync', 'vfr',  # force ffmpeg to use video fps instead of inferred fps
+      '-vsync', 'passthrough',  # prevents frame drops during decoding
       ffmpeg_image_file_names, '-loglevel', 'quiet'
   ]
   _ = subprocess.call(cmd,

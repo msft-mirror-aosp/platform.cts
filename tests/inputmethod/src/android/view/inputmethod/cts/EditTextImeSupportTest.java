@@ -21,6 +21,9 @@ import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.hideSoftInputMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatcher;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -32,7 +35,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.graphics.Color;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.View;
 import android.view.ViewGroup;
@@ -72,16 +74,10 @@ import java.util.concurrent.atomic.AtomicReference;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class EditTextImeSupportTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    private static final long NOT_EXPECT_TIMEOUT = 10;  // msec
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.EditTextImeSupportTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     public EditText launchTestActivity(String marker, String initialText,
             int initialSelectionStart, int initialSelectionEnd) {
@@ -355,10 +351,10 @@ public class EditTextImeSupportTest extends EndToEndImeTestBase {
             final var editText = editTextRef.get();
             runOnMainSync(() -> editText.getContext().getSystemService(InputMethodManager.class)
                     .showSoftInput(editText, 0));
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
 
             runOnMainSync(() -> editText.setEnabled(false));
-            expectEvent(stream, event -> "hideSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
         }
     }
 
@@ -393,11 +389,69 @@ public class EditTextImeSupportTest extends EndToEndImeTestBase {
             final var editText = editTextRef.get();
             runOnMainSync(() -> editText.getContext().getSystemService(InputMethodManager.class)
                     .showSoftInput(editText, 0));
-            expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
 
             expectCommand(stream, imeSession.callPerformEditorAction(EditorInfo.IME_ACTION_DONE),
                     TIMEOUT);
-            expectEvent(stream, event -> "hideSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
+        }
+    }
+
+    /**
+     * Verifies that disabling an {@link EditText} after its losing input focus will not hide the
+     * software keyboard.
+     *
+     * <p>This is a simplified repro code of Bug 332912075.</p>
+     */
+    @Test
+    public void testDisableImeAfterFocusChange() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String marker1 = getTestMarker("EditText1");
+            final String marker2 = getTestMarker("EditText2");
+            final AtomicReference<EditText> editTextRef1 = new AtomicReference<>();
+            final AtomicReference<EditText> editTextRef2 = new AtomicReference<>();
+            TestActivity.startSync(activity-> {
+                final LinearLayout layout = new LinearLayout(activity);
+                layout.setOrientation(LinearLayout.VERTICAL);
+                {
+                    final EditText editText = new EditText(activity);
+                    editText.setPrivateImeOptions(marker1);
+                    editText.requestFocus();
+                    editTextRef1.set(editText);
+                    layout.addView(editText);
+                }
+                {
+                    final EditText editText = new EditText(activity);
+                    editText.setPrivateImeOptions(marker2);
+                    editTextRef2.set(editText);
+                    layout.addView(editText);
+                }
+                return layout;
+            });
+            final var editText1 = editTextRef1.get();
+            final var editText2 = editTextRef2.get();
+
+            expectEvent(stream, editorMatcher("onStartInput", marker1), TIMEOUT);
+            notExpectEvent(stream, showSoftInputMatcher(0), NOT_EXPECT_TIMEOUT);
+
+            // Make sure to show the IME.
+            runOnMainSync(() -> editText1.getContext().getSystemService(InputMethodManager.class)
+                    .showSoftInput(editText1, 0));
+            expectEvent(stream, showSoftInputMatcher(0), TIMEOUT);
+
+            runOnMainSync(() -> {
+                editText2.requestFocus();
+                editText1.setEnabled(false);
+            });
+
+            var forkedStream = stream.copy();
+            expectEvent(stream, editorMatcher("onStartInput", marker2), TIMEOUT);
+            notExpectEvent(forkedStream, hideSoftInputMatcher(), NOT_EXPECT_TIMEOUT);
         }
     }
 }

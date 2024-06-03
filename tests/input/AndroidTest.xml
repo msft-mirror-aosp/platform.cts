@@ -32,6 +32,8 @@
         <option name="test-timeout" value="600000" />
         <option name="device-listeners" value="android.device.collectors.ScreenshotOnFailureCollector"/>
         <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
+        <!-- DefaultUITraceListener args -->
+        <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
     </test>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <!-- TODO(b/285554134): Remove once underlying issue is fixed-->
@@ -48,9 +50,13 @@
     </target_preparer>
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
         <option name="pull-pattern-keys" value="input_.*" />
-        <option name="pull-pattern-keys" value="android.device.collectors.ScreenshotOnFailureCollector.*\.png"/>
-        <option name="directory-keys" value="/data/user/0/android.input.cts/files" />
+        <!-- Pull perfetto traces from DefaultUITraceListener -->
+        <option name="pull-pattern-keys" value="perfetto_file_path*" />
+        <!-- Pull screenshot on test failure -->
+        <option name="pull-pattern-keys"
+            value="android.device.collectors.ScreenshotOnFailureCollector.*\.png" />
+        <!-- Pull files created by tests, like the output of screenshot tests -->
+        <option name="directory-keys" value="/storage/emulated/0/CtsInputTestCases" />
         <option name="collect-on-run-ended-only" value="false" />
-        <option name="clean-up" value="false" />
     </metrics_collector>
 </configuration>

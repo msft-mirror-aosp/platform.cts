@@ -46,13 +46,16 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
 
     @Override
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         assumeActivityEmbeddingSupportedDevice();
 
         mActivityEmbeddingComponent = getWindowExtensions().getActivityEmbeddingComponent();
         mSplitInfoConsumer = new TestValueCountConsumer<>();
         mActivityEmbeddingComponent.setSplitInfoCallback(mSplitInfoConsumer);
+        // The splitInfoCallback will be triggered once upon register, so clear the queue before
+        // test starts.
+        mSplitInfoConsumer.clearQueue();
 
         UiDeviceUtils.pressWakeupButton();
         UiDeviceUtils.pressUnlockButton();
@@ -65,6 +68,10 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
         mReportedDisplayMetrics.restoreDisplayMetrics();
         if (mActivityEmbeddingComponent != null) {
             mActivityEmbeddingComponent.setEmbeddingRules(Collections.emptySet());
+            mActivityEmbeddingComponent.clearActivityStackAttributesCalculator();
+            mActivityEmbeddingComponent.clearEmbeddedActivityWindowInfoCallback();
+            mActivityEmbeddingComponent.clearSplitAttributesCalculator();
+            mActivityEmbeddingComponent.clearSplitInfoCallback();
         }
     }
 }

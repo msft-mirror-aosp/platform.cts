@@ -79,9 +79,11 @@
                   android:exported="true"
         />
         <activity android:name="android.server.wm.jetpack.utils.TestFocusPrimaryActivity"
-                  android:label="TestFocusPrimaryActivity" />
+                  android:label="TestFocusPrimaryActivity"
+                  android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen" />
         <activity android:name="android.server.wm.jetpack.utils.TestFocusSecondaryActivity"
-                  android:label="TestFocusSecondaryActivity" />
+                  android:label="TestFocusSecondaryActivity"
+                  android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen" />
 
         <!-- The provider properties must match the shared one defined in the util module. -->
         <provider android:name="android.server.wm.activity.lifecycle.EventLog"

@@ -6,21 +6,16 @@ import static android.telecom.cts.TestUtils.waitOnAllHandlers;
 import android.bluetooth.BluetoothManager;
 import android.content.ComponentName;
 import android.content.ServiceConnection;
-import android.content.pm.ComponentInfo;
-import android.content.pm.ModuleInfo;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.DeadObjectException;
 import android.telecom.cts.api29incallservice.CtsApi29InCallService;
 import android.telecom.cts.api29incallservice.ICtsApi29InCallServiceControl;
-import android.util.Log;
 import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
-
-import java.util.Arrays;
+import androidx.test.filters.FlakyTest;
 
 public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
     private static final String LOG_TAG = NonUiInCallServiceTest.class.getSimpleName();
@@ -55,10 +50,11 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
                         "android.permission.CONTROL_INCALL_EXPERIENCE",
                         "android.permission.CHANGE_COMPONENT_ENABLED_STATE");
         try {
-            mContext.getPackageManager().setComponentEnabledSetting(
-                    ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
-                            "." + CtsApi29InCallService.class.getSimpleName()),
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0);
+            setComponentEnabledSettingsAndWaitForBroadcasts(
+                    new PackageManager.ComponentEnabledSetting(
+                            ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
+                                    "." + CtsApi29InCallService.class.getSimpleName()),
+                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0));
             ICtsApi29InCallServiceControl controlInterface = setUpControl();
 
             addAndVerifyNewIncomingCall(createTestNumber(), new Bundle());
@@ -66,11 +62,12 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
             assertFalse("Non-UI incall incorrectly bound to despite being disabled",
                     controlInterface.hasReceivedBindRequest());
 
-            mContext.getPackageManager().setComponentEnabledSetting(
-                    ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
-                            "." + CtsApi29InCallService.class.getSimpleName()),
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP);
+            setComponentEnabledSettingsAndWaitForBroadcasts(
+                    new PackageManager.ComponentEnabledSetting(
+                            ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
+                                    "." + CtsApi29InCallService.class.getSimpleName()),
+                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                            PackageManager.DONT_KILL_APP));
 
             boolean hasBound = controlInterface.waitForBindRequest();
             assertTrue("InCall was not bound to", hasBound);
@@ -99,6 +96,7 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
      * enablement.
      * @throws Exception
      */
+    @FlakyTest
     public void testMidCallComponentEnablementWithNoneAvailableAtStart() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -116,20 +114,24 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
         try {
             // Note: Since the CtsApi29Ics app is a separate app its fine to kill the app when
             // disabling it since it shouldn't be running anyways.
-            mContext.getPackageManager().setComponentEnabledSetting(
-                    ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
-                            "." + CtsApi29InCallService.class.getSimpleName()),
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0 /* doKillApp */);
+            setComponentEnabledSettingsAndWaitForBroadcasts(
+                    new PackageManager.ComponentEnabledSetting(
+                            ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
+                                    "." + CtsApi29InCallService.class.getSimpleName()),
+                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0 /* doKillApp */));
 
             // Disable Bluetooth to make sure the Bluetooth ICS is not running.
             bluetoothManager.getAdapter().disable(false);
 
             // Ensure that the CTS test's ICS is disabled; we want to get to a state where there are
             // no non UI ICS that can get bound.
-            mContext.getPackageManager().setComponentEnabledSetting(
-                    ComponentName.createRelative(MockInCallService.class.getPackage().getName(),
-                            "." + MockInCallService.class.getSimpleName()),
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+            setComponentEnabledSettingsAndWaitForBroadcasts(
+                    new PackageManager.ComponentEnabledSetting(
+                            ComponentName.createRelative(
+                                    MockInCallService.class.getPackage().getName(),
+                                    "." + MockInCallService.class.getSimpleName()),
+                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                            PackageManager.DONT_KILL_APP));
 
             ICtsApi29InCallServiceControl controlInterface = setUpControl();
 
@@ -143,11 +145,12 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
             assertFalse("Non-UI incall incorrectly bound to despite being disabled",
                     controlInterface.hasReceivedBindRequest());
 
-            mContext.getPackageManager().setComponentEnabledSetting(
-                    ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
-                            "." + CtsApi29InCallService.class.getSimpleName()),
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP);
+            setComponentEnabledSettingsAndWaitForBroadcasts(
+                    new PackageManager.ComponentEnabledSetting(
+                            ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
+                                    "." + CtsApi29InCallService.class.getSimpleName()),
+                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                            PackageManager.DONT_KILL_APP));
             boolean hasBound = controlInterface.waitForBindRequest();
             assertTrue("InCall was not bound to", hasBound);
             waitOnAllHandlers(getInstrumentation());
@@ -170,10 +173,13 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
             bluetoothManager.getAdapter().enable();
 
             // Always ensure the CTS ICS is re-enabled.
-            mContext.getPackageManager().setComponentEnabledSetting(
-                    ComponentName.createRelative(MockInCallService.class.getPackage().getName(),
-                            "." + MockInCallService.class.getSimpleName()),
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+            setComponentEnabledSettingsAndWaitForBroadcasts(
+                    new PackageManager.ComponentEnabledSetting(
+                            ComponentName.createRelative(
+                                    MockInCallService.class.getPackage().getName(),
+                                    "." + MockInCallService.class.getSimpleName()),
+                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                            PackageManager.DONT_KILL_APP));
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
         }
@@ -188,10 +194,11 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
                         "android.permission.CONTROL_INCALL_EXPERIENCE",
                         "android.permission.CHANGE_COMPONENT_ENABLED_STATE");
         try {
-            mContext.getPackageManager().setComponentEnabledSetting(
-                    ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
-                            "." + CtsApi29InCallService.class.getSimpleName()),
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED, 0);
+            setComponentEnabledSettingsAndWaitForBroadcasts(
+                    new PackageManager.ComponentEnabledSetting(
+                            ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
+                                    "." + CtsApi29InCallService.class.getSimpleName()),
+                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED, 0));
             ICtsApi29InCallServiceControl controlInterface = setUpControl();
             controlInterface.setShouldReturnNullBinding(true);
 

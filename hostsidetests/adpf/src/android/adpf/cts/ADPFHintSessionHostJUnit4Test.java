@@ -19,14 +19,17 @@ package android.adpf.cts;
 import static android.adpf.common.ADPFHintSessionConstants.BASELINE_KEY;
 import static android.adpf.common.ADPFHintSessionConstants.ERROR_MARGIN;
 import static android.adpf.common.ADPFHintSessionConstants.HEAVY_LOAD_KEY;
-import static android.adpf.common.ADPFHintSessionConstants.TRANSITION_LOAD_KEY;
 import static android.adpf.common.ADPFHintSessionConstants.IS_HINT_SESSION_SUPPORTED_KEY;
 import static android.adpf.common.ADPFHintSessionConstants.LIGHT_LOAD_KEY;
 import static android.adpf.common.ADPFHintSessionConstants.MINIMUM_VALID_SDK;
+import static android.adpf.common.ADPFHintSessionConstants.MINIMUM_VENDOR_API_LEVEL;
+import static android.adpf.common.ADPFHintSessionConstants.TRANSITION_LOAD_KEY;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import com.android.ddmlib.Log;
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
@@ -38,8 +41,6 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner.TestMetrics;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
-
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,8 +64,17 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
     private ITestDevice mDevice;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         mDevice = getDevice();
+        final String[] abis = getProperty("ro.product.cpu.abilist").split(",");
+        boolean supported = false;
+        for (String abi : abis) {
+            if (abi.toLowerCase().startsWith("arm")) {
+                supported = true;
+                break;
+            }
+        }
+        assumeTrue("Test skipped as no ARM based ABI is supported", supported);
     }
 
     private String getProperty(String prop) throws Exception {
@@ -74,9 +84,31 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
     private void checkMinSdkVersion() throws Exception {
         String sdkAsString = getProperty("ro.build.version.sdk");
         int sdk = Integer.parseInt(sdkAsString);
-        Assume.assumeTrue("Test requires sdk >= " + MINIMUM_VALID_SDK
+        assumeTrue("Test requires sdk >= " + MINIMUM_VALID_SDK
                         + " while test device has sdk = " + sdk,
                 sdk >= MINIMUM_VALID_SDK);
+    }
+
+    private void checkMinVendorApiLevel() throws Exception {
+        String vendorApiLevelStr = getProperty("ro.vendor.api_level");
+        int apiLevel = Integer.parseInt(vendorApiLevelStr);
+        assumeTrue("Test is only enforced on vendor API level >= " + MINIMUM_VENDOR_API_LEVEL
+                        + " while test device at = " + apiLevel,
+                apiLevel >= MINIMUM_VENDOR_API_LEVEL);
+    }
+
+    private void checkVirtualDevice() throws Exception {
+        String device = getProperty("ro.product.device");
+        String model = getProperty("ro.product.model");
+        String name = getProperty("ro.product.name");
+        String qemu = getProperty("ro.boot.qemu");
+        String hardware = getProperty("ro.hardware");
+        boolean isVirtual = device.startsWith("vsoc_") || model.startsWith("Cuttlefish ")
+                || name.startsWith("cf_") || name.startsWith("aosp_cf_")
+                || qemu.equals("1") || hardware.contains("goldfish")
+                || hardware.contains("ranchu")
+                || hardware.contains("cutf_cvm") || hardware.contains("starfish");
+        assumeFalse("Test is skipped on virtual device ", isVirtual);
     }
 
     private static long getMedian(long[] numbers) {
@@ -114,6 +146,8 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
     @Test
     public void testAdpfHintSession() throws Exception {
         checkMinSdkVersion();
+        checkMinVendorApiLevel();
+        checkVirtualDevice();
         installPackage(PACKAGE_APK);
         // wake up and unlock the device, otherwise the device test may crash on drawing GL
         mDevice.executeShellCommand("input keyevent KEYCODE_WAKEUP");

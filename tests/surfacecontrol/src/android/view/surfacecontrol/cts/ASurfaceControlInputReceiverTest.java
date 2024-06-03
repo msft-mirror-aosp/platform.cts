@@ -21,6 +21,7 @@ import static android.server.wm.CtsWindowInfoUtils.assertAndDumpWindowState;
 import static android.server.wm.CtsWindowInfoUtils.sendTap;
 import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfos;
+import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
 import static android.view.cts.util.ASurfaceControlInputReceiverTestUtils.nCreateInputReceiver;
 import static android.view.cts.util.ASurfaceControlInputReceiverTestUtils.nDeleteInputReceiver;
 import static android.view.cts.util.ASurfaceControlInputReceiverTestUtils.nGetInputTransferToken;
@@ -35,12 +36,12 @@ import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setSolidBuffer;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setVisibility;
 
-import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withMotionAction;
 import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withCoords;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withMotionAction;
 
-import static org.junit.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -102,9 +103,10 @@ public class ASurfaceControlInputReceiverTest {
     public FailOnTestThreadRule mFailOnTestThreadRule = new FailOnTestThreadRule();
 
     @Before
-    public void setUp() throws InterruptedException {
+    public void setUp() throws InterruptedException, RemoteException {
         mActivityRule.getScenario().onActivity(a -> mActivity = a);
         mWm = mActivity.getWindowManager();
+        waitForWindowOnTop(mActivity.getWindow());
     }
 
     private void testLocalASurfaceControlReceivesInput(boolean batched)
@@ -129,20 +131,28 @@ public class ASurfaceControlInputReceiverTest {
                 return false;
             }
         });
-
         Rect bounds = new Rect();
         assertWindowAndGetBounds(mActivity.getDisplayId(), bounds);
-
-        final Point coord = new Point(bounds.left + bounds.width() / 2,
+        final Point tapCoord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(InstrumentationRegistry.getInstrumentation(), coord,
+        sendTap(InstrumentationRegistry.getInstrumentation(), tapCoord,
                 false /* useGlobalInjection */);
 
+        assertMotionEventOnWindowCenter(motionEvents, bounds);
+    }
+
+    private void assertMotionEventOnWindowCenter(BlockingQueue<MotionEvent> motionEvents,
+            Rect windowBounds) throws InterruptedException {
         MotionEvent motionEvent = motionEvents.poll(WAIT_TIME_S, TimeUnit.SECONDS);
+        // As the surface view is being attached to the contentView, it will always start from
+        // (0, 0) within the activity window. But there is no guarantee that Activity window itself
+        // is at (0, 0) even in immersive mode. To correctly check the value, center of the activity
+        // bounds should be obtained instead of off-setting which is needed to tap at right place.
+        final Point centerCoordRelativeToWindow = new Point(windowBounds.width() / 2,
+                windowBounds.height() / 2);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
         assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
-                                      withCoords(coord)));
-
+                withCoords(centerCoordRelativeToWindow)));
     }
 
     @Test
@@ -182,10 +192,7 @@ public class ASurfaceControlInputReceiverTest {
         sendTap(InstrumentationRegistry.getInstrumentation(), coord,
                 false /* useGlobalInjection */);
 
-        MotionEvent motionEvent = motionEvents.poll(WAIT_TIME_S, TimeUnit.SECONDS);
-        assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
-                                      withCoords(coord)));
+        assertMotionEventOnWindowCenter(motionEvents, bounds);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -229,10 +236,7 @@ public class ASurfaceControlInputReceiverTest {
 
         assertTrue("Failed to receive touch event on host",
                 hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
-        MotionEvent motionEvent = embeddedMotionEvent.poll(WAIT_TIME_S, TimeUnit.SECONDS);
-        assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
-                                      withCoords(coord)));
+        assertMotionEventOnWindowCenter(embeddedMotionEvent, bounds);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -273,10 +277,7 @@ public class ASurfaceControlInputReceiverTest {
 
         assertTrue("Failed to receive touch event on host",
                 hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
-        MotionEvent motionEvent = embeddedMotionEvents.poll(WAIT_TIME_S, TimeUnit.SECONDS);
-        assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
-                                      withCoords(coord)));
+        assertMotionEventOnWindowCenter(embeddedMotionEvents, bounds);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -318,10 +319,7 @@ public class ASurfaceControlInputReceiverTest {
 
         assertTrue("Failed to receive touch event on embedded",
                 embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
-        MotionEvent motionEvent = hostMotionEvent.poll(WAIT_TIME_S, TimeUnit.SECONDS);
-        assertAndDumpWindowState(TAG, "Failed to receive touch in host", motionEvent != null);
-        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
-                                      withCoords(coord)));
+        assertMotionEventOnWindowCenter(hostMotionEvent, bounds);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -356,10 +354,7 @@ public class ASurfaceControlInputReceiverTest {
 
         assertTrue("Failed to receive touch event on embedded",
                 embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
-        MotionEvent motionEvent = hostMotionEvent.poll(WAIT_TIME_S, TimeUnit.SECONDS);
-        assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
-        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
-                                      withCoords(coord)));
+        assertMotionEventOnWindowCenter(hostMotionEvent, bounds);
     }
 
     private static void assertWindowAndGetBounds(int displayId, Rect outBounds)

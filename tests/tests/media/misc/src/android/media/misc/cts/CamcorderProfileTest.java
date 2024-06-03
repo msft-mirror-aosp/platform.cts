@@ -21,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -31,6 +32,8 @@ import android.hardware.cts.helpers.CameraUtils;
 import android.media.CamcorderProfile;
 import android.media.EncoderProfiles;
 import android.media.MediaCodecInfo;
+import android.media.MediaCodecInfo.CodecProfileLevel;
+import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
 import android.util.Log;
@@ -38,6 +41,7 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
@@ -46,6 +50,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.List;
 
+@FrameworkSpecificTest
 @NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 public class CamcorderProfileTest {
@@ -559,6 +564,192 @@ public class CamcorderProfileTest {
                 checkGet(cameraId);
             }
         }
+    }
+
+    MediaCodecList mCodecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
+
+    private void checkSupportedEncoder(
+            String mediaType, int width, int height, int frameRate, int profile) {
+        MediaFormat format = MediaFormat.createVideoFormat(mediaType, width, height);
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, frameRate);
+        format.setInteger(MediaFormat.KEY_PROFILE, profile);
+        format.setInteger(MediaFormat.KEY_LEVEL, 0 /* unknown */);
+        for (MediaCodecInfo info : mCodecList.getCodecInfos()) {
+            if (!info.isEncoder() || !info.isHardwareAccelerated()) {
+                continue;
+            }
+            MediaCodecInfo.CodecCapabilities caps = info.getCapabilitiesForType(mediaType);
+            if (caps == null) {
+                continue;
+            }
+            if (caps.isFormatSupported(format)) {
+                return;
+            }
+        }
+        fail(
+                "No supported encoder found: "
+                        + width
+                        + "x"
+                        + height
+                        + "@"
+                        + frameRate
+                        + " for "
+                        + mediaType
+                        + " at profile "
+                        + profile);
+    }
+
+    private boolean checkHdrProfile(
+            int cameraId, String mediaType, int camHdrFormat, List<Integer> mediaHdrProfiles) {
+        boolean hasSupportedProfiles = false;
+        for (Integer quality : ALL_SUPPORTED_QUALITIES) {
+            if (!CamcorderProfile.hasProfile(cameraId, quality)) {
+                continue;
+            }
+            CamcorderProfile profile = getWithOptionalId(quality, cameraId);
+            if (profile == null) {
+                continue;
+            }
+            EncoderProfiles allProfiles =
+                    CamcorderProfile.getAll(String.valueOf(cameraId), quality);
+            for (EncoderProfiles.VideoProfile videoProfile : allProfiles.getVideoProfiles()) {
+                Log.i(
+                        TAG,
+                        "Video encoder profile: cameraId="
+                                + cameraId
+                                + " mediaType="
+                                + videoProfile.getMediaType()
+                                + " hdrFormat="
+                                + videoProfile.getHdrFormat()
+                                + " profile="
+                                + videoProfile.getProfile()
+                                + " "
+                                + videoProfile.getWidth()
+                                + "x"
+                                + videoProfile.getHeight()
+                                + "@"
+                                + videoProfile.getFrameRate());
+                if (!videoProfile.getMediaType().equals(mediaType)
+                        || videoProfile.getHdrFormat() != camHdrFormat) {
+                    continue;
+                }
+                assertTrue(
+                        "Unexpected video profile: "
+                                + videoProfile.getProfile()
+                                + " expected to be one in "
+                                + mediaHdrProfiles,
+                        mediaHdrProfiles.contains(videoProfile.getProfile()));
+                checkSupportedEncoder(
+                        mediaType,
+                        videoProfile.getWidth(),
+                        videoProfile.getHeight(),
+                        videoProfile.getFrameRate(),
+                        videoProfile.getProfile());
+                hasSupportedProfiles = true;
+            }
+        }
+        return hasSupportedProfiles;
+    }
+
+    private void checkAllHdrProfile(
+            String mediaType, int camHdrFormat, List<Integer> mediaHdrProfiles) {
+        int nCamera = Camera.getNumberOfCameras();
+        Context context = InstrumentationRegistry.getContext();
+        assertNotNull("did not find context", context);
+        boolean hasSupportedProfiles = false;
+        for (int cameraId = 0; cameraId < nCamera; cameraId++) {
+            boolean isExternal = false;
+            try {
+                isExternal = CameraUtils.isExternal(context, cameraId);
+            } catch (Exception e) {
+                Log.e(TAG, "Unable to query external camera: " + e);
+            }
+
+            if (!isExternal) {
+                if (checkHdrProfile(cameraId, mediaType, camHdrFormat, mediaHdrProfiles)) {
+                    hasSupportedProfiles = true;
+                }
+            }
+        }
+        assumeTrue(
+                "No profile detected for mediaType="
+                        + mediaType
+                        + " hdrFormat="
+                        + camHdrFormat,
+                hasSupportedProfiles);
+    }
+
+    @Test
+    public void testHevcHlgEncoderSupport() {
+        checkAllHdrProfile(
+                MediaFormat.MIMETYPE_VIDEO_HEVC,
+                EncoderProfiles.VideoProfile.HDR_HLG,
+                List.of(CodecProfileLevel.HEVCProfileMain10));
+    }
+
+    @Test
+    public void testHevcHdr10EncoderSupport() {
+        checkAllHdrProfile(
+                MediaFormat.MIMETYPE_VIDEO_HEVC,
+                EncoderProfiles.VideoProfile.HDR_HDR10,
+                List.of(CodecProfileLevel.HEVCProfileMain10HDR10));
+    }
+
+    @Test
+    public void testHevcHdr10PlusEncoderSupport() {
+        checkAllHdrProfile(
+                MediaFormat.MIMETYPE_VIDEO_HEVC,
+                EncoderProfiles.VideoProfile.HDR_HDR10PLUS,
+                List.of(CodecProfileLevel.HEVCProfileMain10HDR10Plus));
+    }
+
+    @Test
+    public void testVp9HlgEncoderSupport() {
+        checkAllHdrProfile(
+                MediaFormat.MIMETYPE_VIDEO_VP9,
+                EncoderProfiles.VideoProfile.HDR_HLG,
+                List.of(CodecProfileLevel.VP9Profile2, CodecProfileLevel.VP9Profile3));
+    }
+
+    @Test
+    public void testVp9Hdr10EncoderSupport() {
+        checkAllHdrProfile(
+                MediaFormat.MIMETYPE_VIDEO_VP9,
+                EncoderProfiles.VideoProfile.HDR_HDR10,
+                List.of(CodecProfileLevel.VP9Profile2HDR, CodecProfileLevel.VP9Profile3HDR));
+    }
+
+    @Test
+    public void testVp9Hdr10PlusEncoderSupport() {
+        checkAllHdrProfile(
+                MediaFormat.MIMETYPE_VIDEO_VP9,
+                EncoderProfiles.VideoProfile.HDR_HDR10PLUS,
+                List.of(CodecProfileLevel.VP9Profile2HDR10Plus,
+                        CodecProfileLevel.VP9Profile3HDR10Plus));
+    }
+
+    @Test
+    public void testAv1HlgEncoderSupport() {
+        checkAllHdrProfile(
+                MediaFormat.MIMETYPE_VIDEO_AV1,
+                EncoderProfiles.VideoProfile.HDR_HLG,
+                List.of(CodecProfileLevel.AV1ProfileMain10));
+    }
+
+    @Test
+    public void testAv1Hdr10EncoderSupport() {
+        checkAllHdrProfile(
+                MediaFormat.MIMETYPE_VIDEO_AV1,
+                EncoderProfiles.VideoProfile.HDR_HDR10,
+                List.of(CodecProfileLevel.AV1ProfileMain10HDR10));
+    }
+
+    @Test
+    public void testAv1Hdr10PlusEncoderSupport() {
+        checkAllHdrProfile(
+                MediaFormat.MIMETYPE_VIDEO_AV1,
+                EncoderProfiles.VideoProfile.HDR_HDR10PLUS,
+                List.of(CodecProfileLevel.AV1ProfileMain10HDR10Plus));
     }
 
     private boolean isSizeSupported(int width, int height, List<Size> sizes) {

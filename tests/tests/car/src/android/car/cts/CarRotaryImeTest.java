@@ -18,6 +18,7 @@ package android.car.cts;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -31,6 +32,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -39,6 +41,7 @@ import java.io.IOException;
 
 // Note: this test must not extend AbstractCarTestCase. See b/328536639.
 public final class CarRotaryImeTest {
+
     private static final long POLLING_CHECK_TIMEOUT_MILLIS = 3000L;
 
     private static final ComponentName ROTARY_SERVICE_COMPONENT_NAME =
@@ -56,6 +59,13 @@ public final class CarRotaryImeTest {
 
     @Before
     public void setUp() {
+        UserHelper userHelper = new UserHelper(mContext);
+
+        // Skipping for visible background users as Accessibility Framework which RotaryService
+        // relies on does not support visible background users.
+        assumeFalse("Not supported on visible background user",
+                userHelper.isVisibleBackgroundUser());
+
         assumeHasRotaryService();
     }
 

@@ -859,10 +859,6 @@ public abstract class ActivityManagerTestBase {
         mTouchHelper.tapOnDisplayCenter(displayId);
     }
 
-    protected void tapOnDisplayCenterAsync(int displayId) {
-        mTouchHelper.tapOnDisplayCenterAsync(displayId);
-    }
-
     public static void injectKey(int keyCode, boolean longPress, boolean sync) {
         TouchHelper.injectKey(keyCode, longPress, sync);
     }

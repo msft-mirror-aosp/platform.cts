@@ -92,10 +92,6 @@
           "exclude-filter": "android.os.cts.FileObserverTest#testFileObserver_multipleFilesFull"
         },
         {
-          // TODO(b/180726379)
-          "exclude-filter": "android.os.cts.SeccompTest#testKernelPrecedenceTests"
-        },
-        {
           // TODO(b/214271070)
           "exclude-filter": "android.os.storage.cts.StorageManagerTest#testAttemptMountNonObb"
         },

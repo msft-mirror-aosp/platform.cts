@@ -1548,19 +1548,21 @@ public class ExtractorTest {
 
             if (hasDecoder(MediaFormat.MIMETYPE_VIDEO_VP9)) {
                 // profile and level constraints as per sec 2.3.2 of cdd
-                /* TODO(b/159582475)
                 exhaustiveArgsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_VP9, new String[]{
                         "bbb_1920x1080_vp9_main_l41.webm",
                         "bbb_1920x1080_vp9_main_l41.mkv"},
                         MediaCodecInfo.CodecProfileLevel.VP9Profile0,
-                        MediaCodecInfo.CodecProfileLevel.VP9Level41, 1920, 1080});*/
+                        MediaCodecInfo.CodecProfileLevel.VP9Level41, 1920, 1080});
                 // profile/level constraints for vp9 as per sec 5.3.6 of cdd
-                /* TODO(b/159582475)
                 exhaustiveArgsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_VP9, new String[]{
                         "bbb_1920x1080_vp9_main_l40.webm",
                         "bbb_1920x1080_vp9_main_l40.mkv"},
                         MediaCodecInfo.CodecProfileLevel.VP9Profile0,
-                        MediaCodecInfo.CodecProfileLevel.VP9Level4, 1920, 1080});*/
+                        MediaCodecInfo.CodecProfileLevel.VP9Level4, 1920, 1080});
+                exhaustiveArgsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_VP9, new String[]{
+                        "color_bands_176x176_vp9_10bit_fr.webm"},
+                        MediaCodecInfo.CodecProfileLevel.VP9Profile2,
+                        MediaCodecInfo.CodecProfileLevel.VP9Level4, 176, 176});
             }
 
             if (hasDecoder(MediaFormat.MIMETYPE_VIDEO_H263)) {
@@ -1668,6 +1670,15 @@ public class ExtractorTest {
                     if (format.containsKey(MediaFormat.KEY_PROFILE)) {
                         int profile = format.getInteger(MediaFormat.KEY_PROFILE, -1);
                         assertEquals("mismatched KEY_PROFILE in file " + file, mProfile, profile);
+                    }
+                } else if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+                    int profile = format.getInteger(MediaFormat.KEY_PROFILE, -1);
+                    assertEquals("mismatched KEY_PROFILE in file " + file, mProfile, profile);
+                    int level = format.getInteger(MediaFormat.KEY_LEVEL, -1);
+                    // The level information cannot be parsed from uncompressed frame header, so
+                    // verify the level information only if it is present.
+                    if (level != -1) {
+                        assertEquals("mismatched KEY_LEVEL in file " + file, mLevel, level);
                     }
                 } else {
                     int profile = format.getInteger(MediaFormat.KEY_PROFILE, -1);

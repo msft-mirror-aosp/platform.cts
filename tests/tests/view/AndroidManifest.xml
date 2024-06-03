@@ -254,6 +254,7 @@
         <activity android:name="android.view.cts.MockActivity"
              android:label="MockActivity"
              android:screenOrientation="locked"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <meta-data android:name="android.view.merge"
                  android:resource="@xml/merge"/>
@@ -417,6 +418,7 @@
         </activity>
 
         <activity android:name="android.view.cts.TouchDelegateTestActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -431,6 +433,7 @@
         </activity>
 
         <activity android:name="android.view.cts.SystemGestureExclusionActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

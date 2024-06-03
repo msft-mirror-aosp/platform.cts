@@ -166,4 +166,18 @@ public class CpuFeaturesTest extends TestCase {
             assertNotInCpuinfo(features, feature);
         }
     }
+
+    public void testNoSerial() throws IOException {
+        String serial = getFieldFromCpuinfo("Serial");
+        if (CpuFeatures.isArm64Cpu() || CpuFeatures.isArm64CpuIn32BitMode()) {
+            // A 64-bit arm kernel shouldn't have a serial field at all.
+            assertTrue(serial == null);
+        } else if (CpuFeatures.isArmCpu()) {
+            // By default a 32-bit kernel will have a serial field, but it
+            // should be set to all zeros. See http://b/313425671.
+            if (serial != null) {
+                assertEquals("0000000000000000", serial);
+            }
+        }
+    }
 }

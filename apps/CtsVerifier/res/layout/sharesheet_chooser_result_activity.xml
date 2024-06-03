@@ -14,13 +14,13 @@
      limitations under the License.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fitsSystemWindows="true"
     android:orientation="vertical"
     android:padding="8dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <TextView android:id="@+id/instructions"
-        android:text="@string/sharesheet_result_test_instructions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textColor="#fff"
@@ -35,12 +35,10 @@
         android:visibility="gone"
         >
         <Button android:id="@+id/sharesheet_result_test_pressed"
-            android:text="@string/sharesheet_result_test_pressed"
             android:layout_width="wrap_content"
             android:layout_height="match_parent" />
         <Button android:id="@+id/sharesheet_result_test_not_found"
             android:layout_weight="1"
-            android:text="@string/sharesheet_result_test_not_found"
             android:layout_width="wrap_content"
             android:layout_height="match_parent" />
     </LinearLayout>

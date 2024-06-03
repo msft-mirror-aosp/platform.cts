@@ -25,6 +25,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageInstaller
 import android.icu.util.ULocale
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import android.provider.DeviceConfig
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
@@ -48,6 +49,7 @@ import org.junit.runner.RunWith
 
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
+@ScreenRecord
 class PreapprovalInstallTest : PackageInstallerTestBase() {
 
     companion object {
@@ -62,19 +64,10 @@ class PreapprovalInstallTest : PackageInstallerTestBase() {
         const val PROPERTY_IS_PRE_APPROVAL_REQUEST_AVAILABLE = "is_preapproval_available"
     }
 
-    private val apkFile_pl = File(context.filesDir, TEST_APK_NAME_PL)
-    private val apkFile_v2 = File(context.filesDir, TEST_APK_NAME_V2)
-
     @get:Rule
     val deviceConfigPreApprovalRequestAvailable = DeviceConfigStateChangerRule(
         context, DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE,
             PROPERTY_IS_PRE_APPROVAL_REQUEST_AVAILABLE, true.toString())
-
-    @Before
-    fun copyOtherTestApks() {
-        File(TEST_APK_LOCATION, TEST_APK_NAME_PL).copyTo(target = apkFile_pl, overwrite = true)
-        File(TEST_APK_LOCATION, TEST_APK_NAME_V2).copyTo(target = apkFile_v2, overwrite = true)
-    }
 
     @Before
     fun checkPreconditions() {

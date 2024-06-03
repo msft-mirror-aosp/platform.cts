@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsGameFrameRateTestCases",
+    team: "trendy_team_games",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     libs: [

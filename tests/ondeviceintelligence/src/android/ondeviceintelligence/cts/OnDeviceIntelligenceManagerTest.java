@@ -17,6 +17,7 @@
 package android.ondeviceintelligence.cts;
 
 import static android.app.ondeviceintelligence.flags.Flags.FLAG_ENABLE_ON_DEVICE_INTELLIGENCE;
+import static android.content.Context.RECEIVER_EXPORTED;
 import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructException;
 import static android.ondeviceintelligence.cts.CtsIsolatedInferenceService.constructTokenInfo;
 
@@ -28,7 +29,10 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import android.Manifest;
@@ -40,16 +44,25 @@ import android.app.ondeviceintelligence.ProcessingCallback;
 import android.app.ondeviceintelligence.ProcessingSignal;
 import android.app.ondeviceintelligence.StreamingProcessingCallback;
 import android.app.ondeviceintelligence.TokenInfo;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CancellationSignal;
-import android.os.Parcel;
 import android.os.PersistableBundle;
+import android.os.Process;
+import android.os.UserHandle;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.DeviceConfig;
+import android.provider.Settings;
+import android.service.ondeviceintelligence.OnDeviceIntelligenceService;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -73,7 +86,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /**
  * Test the OnDeviceIntelligenceManager API. Run with "atest OnDeviceIntelligenceManagerTest"
@@ -85,35 +101,45 @@ public class OnDeviceIntelligenceManagerTest {
     public static final String TEST_FILE_NAME = "test_file.txt";
     public static final String TEST_KEY = "test_key";
     public static final String TEST_CONTENT = "test_content";
+    public static final String TEST_AUGMENT_KEY = "test_augment_key";
+    public static final String TEST_AUGMENT_CONTENT = "test_augment_content";
     public static final String EXCEPTION_MESSAGE_KEY = "message_key";
     public static final String EXCEPTION_STATUS_CODE_KEY = "code_key";
     public static final String EXCEPTION_PARAMS_KEY = "params_key";
     public static final String TOKEN_INFO_COUNT_KEY = "tokenInfo_count_key";
     public static final String TOKEN_INFO_PARAMS_KEY = "tokenInfo_params_key";
+    public static final String TEST_OD_NAMESPACE = "test_od_namespace";
 
 
     private static final String TAG = OnDeviceIntelligenceManagerTest.class.getSimpleName();
-    private static final String CTS_PACKAGE_NAME =
+    public static final String CTS_PACKAGE_NAME =
             android.ondeviceintelligence.cts.CtsIntelligenceService.class.getPackageName();
-    private static final String CTS_INTELLIGENCE_SERVICE_NAME =
+    public static final String CTS_INTELLIGENCE_SERVICE_NAME =
             CTS_PACKAGE_NAME + "/"
                     + android.ondeviceintelligence.cts.CtsIntelligenceService.class.getCanonicalName();
-    private static final String CTS_INFERENCE_SERVICE_NAME =
+    public static final String CTS_INFERENCE_SERVICE_NAME =
             CTS_PACKAGE_NAME + "/"
                     + android.ondeviceintelligence.cts.CtsIsolatedInferenceService.class.getCanonicalName();
-    private static final int TEMPORARY_SERVICE_DURATION = 10000;
-    private static final String NAMESPACE_ON_DEVICE_INTELLIGENCE = "ondeviceintelligence";
-    private static final String KEY_SERVICE_ENABLED = "service_enabled";
+    private static final int TEMPORARY_SERVICE_DURATION = 20000;
+    public static final String NAMESPACE_ON_DEVICE_INTELLIGENCE = "ondeviceintelligence";
+    public static final String KEY_SERVICE_ENABLED = "service_enabled";
 
     public static final int REQUEST_TYPE_GET_PACKAGE_NAME = 1000;
 
-    public static final int REQUEST_TYPE_GET_FILE_FROM_NON_ISOLATED = 1001;
-    public static final int REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES = 1002;
+    public static final int REQUEST_TYPE_GET_FILE_FROM_MAP = 1001;
+    public static final int REQUEST_TYPE_GET_FILE_FROM_STREAM = 1002;
+    public static final int REQUEST_TYPE_GET_FILE_FROM_PFD = 1003;
+    public static final int REQUEST_TYPE_GET_AUGMENTED_DATA = 1004;
+    public static final int REQUEST_TYPE_GET_CALLER_UID = 1005;
+    public static final int REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG = 1006;
+    public static final int REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY = 1007;
 
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
+    private static final String MODEL_LOADED_BROADCAST_ACTION = "TEST_MODEL_LOADED";
 
     private Context mContext;
-    private OnDeviceIntelligenceManager mOnDeviceIntelligenceManager;
+    public OnDeviceIntelligenceManager mOnDeviceIntelligenceManager;
+    private final Executor mExecutor = Executors.newCachedThreadPool();
 
     @Rule
     public final DeviceConfigStateChangerRule mDeviceConfigStateChangerRule =
@@ -129,16 +155,13 @@ public class OnDeviceIntelligenceManagerTest {
     @Before
     public void setUp() throws Exception {
         mContext = getInstrumentation().getContext();
-        mOnDeviceIntelligenceManager =
-                (OnDeviceIntelligenceManager)
-                        mContext.getSystemService(Context.ON_DEVICE_INTELLIGENCE_SERVICE);
-        clearTestableOnDeviceIntelligenceService();
+        mOnDeviceIntelligenceManager = mContext.getSystemService(OnDeviceIntelligenceManager.class);
         bindToTestableOnDeviceIntelligenceServices();
+        setTestableDeviceConfigNamespace(TEST_OD_NAMESPACE);
     }
 
     @After
     public void tearDown() throws Exception {
-        clearTestableOnDeviceIntelligenceService();
         getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
     }
 
@@ -325,13 +348,13 @@ public class OnDeviceIntelligenceManagerTest {
                 EXECUTOR,
                 result -> {
                     Log.i(TAG, "Feature : =" + result);
-                    assertEquals(result.getFeatureParams(), expectedFeature.getFeatureParams());
+                    assertEquals(result.getFeatureParams().size(),
+                            expectedFeature.getFeatureParams().size());
                     assertEquals(result.getId(), expectedFeature.getId());
                     assertEquals(result.getName(), expectedFeature.getName());
                     assertEquals(result.getModelName(), expectedFeature.getModelName());
                     assertEquals(result.getType(), expectedFeature.getType());
                     assertEquals(result.getVariant(), expectedFeature.getVariant());
-                    assertEquals(result, expectedFeature);
                     statusLatch.countDown();
                 });
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
@@ -391,7 +414,7 @@ public class OnDeviceIntelligenceManagerTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
         Feature feature = new Feature.Builder(1).build();
-        CountDownLatch statusLatch = new CountDownLatch(1);
+        CountDownLatch statusLatch = new CountDownLatch(3);
 
         mOnDeviceIntelligenceManager.requestFeatureDownload(feature, null, EXECUTOR,
                 new DownloadCallback() {
@@ -403,6 +426,16 @@ public class OnDeviceIntelligenceManagerTest {
                     }
 
                     @Override
+                    public void onDownloadProgress(long bytesDownloaded) {
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onDownloadStarted(long bytesDownloaded) {
+                        statusLatch.countDown();
+                    }
+
+                    @Override
                     public void onDownloadCompleted(
                             @NonNull PersistableBundle downloadParams) {
                         Log.i(TAG, "Response : =" + downloadParams);
@@ -410,6 +443,28 @@ public class OnDeviceIntelligenceManagerTest {
                     }
                 });
         assertThat(statusLatch.await(2, SECONDS)).isTrue();
+
+        // test download failed
+        Feature feature2 = new Feature.Builder(2).build();
+        CountDownLatch statusLatch2 = new CountDownLatch(1);
+
+        mOnDeviceIntelligenceManager.requestFeatureDownload(feature2, null, EXECUTOR,
+                new DownloadCallback() {
+                    @Override
+                    public void onDownloadFailed(int failureStatus,
+                            @Nullable String errorMessage,
+                            @NonNull PersistableBundle errorParams) {
+                        Log.e(TAG, "Got Error", new RuntimeException(errorMessage));
+                        statusLatch2.countDown();
+                    }
+
+                    @Override
+                    public void onDownloadCompleted(
+                            @NonNull PersistableBundle downloadParams) {
+                        Log.i(TAG, "Response : =" + downloadParams);
+                    }
+                });
+        assertThat(statusLatch2.await(2, SECONDS)).isTrue();
     }
 
     @Test
@@ -510,45 +565,6 @@ public class OnDeviceIntelligenceManagerTest {
     }
 
 
-    @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
-    public void canSendAndReceiveCustomParcelables() throws Exception {
-        getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
-        CountDownLatch statusLatch = new CountDownLatch(1);
-
-        CompletableFuture<String> resultFuture = new CompletableFuture<>();
-        Feature feature = new Feature.Builder(1).build();
-        Bundle request = new Bundle();
-        SimpleParcelable simpleParcelable = new SimpleParcelable("abc");
-        Parcel parcel = Parcel.obtain();
-        simpleParcelable.writeToParcel(parcel, 0);
-        byte[] bytes = parcel.marshall();
-        request.putByteArray("request", bytes);
-        parcel.recycle();
-
-        mOnDeviceIntelligenceManager.processRequest(feature,
-                request, REQUEST_TYPE_PROCESS_CUSTOM_PARCELABLE_AS_BYTES,
-                null, null, EXECUTOR,
-                new ProcessingCallback() {
-                    @Override
-                    public void onResult(Bundle result) {
-                        Log.i(TAG, "Final Result : " + result);
-                        resultFuture.complete(result.getString(TEST_KEY));
-                        statusLatch.countDown();
-                    }
-
-                    @Override
-                    public void onError(@NonNull OnDeviceIntelligenceException error) {
-                        Log.e(TAG, "Final Result : ", error);
-                    }
-                });
-        assertThat(statusLatch.await(1, SECONDS)).isTrue();
-        assertThat(resultFuture.get()).isEqualTo("abc");
-    }
-
-
 //===================== Tests Exception populated ==================
 
     @Test
@@ -628,7 +644,7 @@ public class OnDeviceIntelligenceManagerTest {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
-        CountDownLatch statusLatch = new CountDownLatch(1);
+        CountDownLatch statusLatch = new CountDownLatch(2);
         CancellationSignal cancellationSignal = new CancellationSignal();
         Feature feature = new Feature.Builder(1).build();
         CompletableFuture<Bundle> resultBundle = new CompletableFuture<>();
@@ -638,6 +654,7 @@ public class OnDeviceIntelligenceManagerTest {
                     @Override
                     public void onPartialResult(@NonNull Bundle partialResult) {
                         Log.i(TAG, "New Content : " + partialResult);
+                        cancellationSignal.cancel(); //cancel
                         statusLatch.countDown();
                     }
 
@@ -653,9 +670,6 @@ public class OnDeviceIntelligenceManagerTest {
                         Log.e(TAG, "Final Result : ", error);
                     }
                 });
-
-        cancellationSignal.cancel(); //cancel
-
         assertThat(statusLatch.await(2, SECONDS)).isTrue();
         assertThat(resultBundle.get()).isNotNull();
         assertThat(resultBundle.get().containsKey("test_key")).isTrue();
@@ -696,8 +710,9 @@ public class OnDeviceIntelligenceManagerTest {
                 });
         assertThat(statusLatch.await(1, SECONDS)).isTrue();
         assertThat(resultBundle.get()).isNotNull();
-        assertThat(resultBundle.get().containsKey("test_key")).isTrue();
-        assertThat(resultBundle.get().getBoolean(TEST_KEY)).isTrue();
+        assertThat(
+                resultBundle.get().isEmpty()).isTrue(); // When cancelled before sending request,
+        // we simulate empty response.
     }
 
     @Test
@@ -740,10 +755,12 @@ public class OnDeviceIntelligenceManagerTest {
     @Test
     @SkipSetupAndTeardown
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
-    public void exceptionWhenAttemptingGetVersionWithoutServiceConfigured() throws Exception {
+    public void exceptionWhenAttemptingGetVersionWithoutServiceConfigured() {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        assumeFalse("Service is already configured as part of the device overlay config.",
+                isServiceOverlayConfigured());
         mOnDeviceIntelligenceManager =
                 (OnDeviceIntelligenceManager)
                         mContext.getSystemService(Context.ON_DEVICE_INTELLIGENCE_SERVICE);
@@ -755,14 +772,15 @@ public class OnDeviceIntelligenceManagerTest {
                         result -> Log.i(TAG, "Feature : =" + result)));
     }
 
-
     @Test
     @SkipSetupAndTeardown
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
-    public void exceptionWhenAttemptingProcessRequestWithoutServiceConfigured() throws Exception {
+    public void exceptionWhenAttemptingProcessRequestWithoutServiceConfigured() {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        assumeFalse("Service is already configured as part of the device overlay config.",
+                isServiceOverlayConfigured());
         mOnDeviceIntelligenceManager =
                 (OnDeviceIntelligenceManager)
                         mContext.getSystemService(Context.ON_DEVICE_INTELLIGENCE_SERVICE);
@@ -809,7 +827,7 @@ public class OnDeviceIntelligenceManagerTest {
                     @Override
                     public void onResult(@NonNull Bundle result) {
                         Log.i(TAG, "Final Result : " + result);
-                        packageNameFuture.complete(result.getPairValue());
+                        packageNameFuture.complete(result.getString(TEST_KEY));
                         statusLatch.countDown();
                     }
 
@@ -822,10 +840,47 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(packageNameFuture.get()).isEqualTo(CTS_PACKAGE_NAME);
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void callerUidReceivedIsOriginalCallerUid() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        Feature feature = new Feature.Builder(1).build();
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                Bundle.EMPTY, REQUEST_TYPE_GET_CALLER_UID, null,
+                null, EXECUTOR, new ProcessingCallback() {
+                    @Override
+                    public void onResult(@NonNull Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        assertThat(result.getInt(TEST_KEY)).isEqualTo(Process.myUid());
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Error Occurred", error);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+    }
+
+
     //===================== Tests for accessing file from isolated process via non-isolated =======
     @Test
     @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
-    public void testGetFileDescriptorFromNonIsolatedService() throws Exception {
+    public void canAccessFilesInIsolated() throws Exception {
+        int[] requestTypes =
+                new int[]{REQUEST_TYPE_GET_FILE_FROM_MAP, REQUEST_TYPE_GET_FILE_FROM_STREAM,
+                        REQUEST_TYPE_GET_FILE_FROM_PFD, REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY};
+        for (int requestType : requestTypes) {
+            sendRequestToReadTestFile(requestType);
+        }
+    }
+
+    private void sendRequestToReadTestFile(int requestType)
+            throws InterruptedException, ExecutionException {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
@@ -833,7 +888,7 @@ public class OnDeviceIntelligenceManagerTest {
         CountDownLatch statusLatch = new CountDownLatch(1);
         CompletableFuture<String> fileContents = new CompletableFuture<>();
         mOnDeviceIntelligenceManager.processRequest(feature,
-                Bundle.EMPTY, REQUEST_TYPE_GET_FILE_FROM_NON_ISOLATED, null,
+                Bundle.EMPTY, requestType, null,
                 null, EXECUTOR, new StreamingProcessingCallback() {
                     @Override
                     public void onPartialResult(@NonNull Bundle partialResult) {
@@ -856,22 +911,294 @@ public class OnDeviceIntelligenceManagerTest {
         assertThat(fileContents.get()).isEqualTo(TEST_CONTENT);
     }
 
-    private void clearTestableOnDeviceIntelligenceService() {
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void updateProcessingStateReturnsSuccessfully() throws Exception {
+        // When targets run as a different user than 0, it is not possible to get service
+        // instance from user 0 in this test.
+        assumeTrue(isSystemUser());
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        // init the intelligence service
+        CtsIntelligenceService.initServiceConnectionLatch();
+        mOnDeviceIntelligenceManager.getVersion(EXECUTOR, unused -> statusLatch.countDown());
+        statusLatch.await(1, SECONDS);
+
+        // call update state on the service instance
+        CtsIntelligenceService.waitServiceConnect();
+        OnDeviceIntelligenceService onDeviceIntelligenceService =
+                CtsIntelligenceService.getServiceInstance();
+        CountDownLatch statusLatch2 = new CountDownLatch(1);
+        onDeviceIntelligenceService.updateProcessingState(Bundle.EMPTY, EXECUTOR, result -> {
+            assertThat(result.isEmpty()).isTrue();
+            statusLatch2.countDown();
+        });
+
+        assertThat(statusLatch2.await(1, SECONDS)).isTrue();
+    }
+
+    //===================== Tests data augmentation while processing request =====================
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void dataAugmentationReturnsDataToInference() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        Feature feature = new Feature.Builder(1).build();
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        CompletableFuture<String> augmentedContent = new CompletableFuture<>();
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                Bundle.EMPTY, REQUEST_TYPE_GET_AUGMENTED_DATA, null,
+                null, EXECUTOR, new StreamingProcessingCallback() {
+                    @Override
+                    public void onPartialResult(@NonNull Bundle partialResult) {
+                        Log.i(TAG, "New Content : " + partialResult);
+                    }
+
+                    @Override
+                    public void onResult(Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        augmentedContent.complete(result.getString(TEST_AUGMENT_KEY));
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+
+                    @Override
+                    public void onDataAugmentRequest(Bundle processedContent,
+                            @OnDeviceIntelligenceManager.InferenceParams Consumer<Bundle> contentConsumer) {
+                        Bundle bundle = new Bundle();
+                        bundle.putString(TEST_AUGMENT_KEY, TEST_AUGMENT_CONTENT);
+                        contentConsumer.accept(bundle);
+                    }
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        assertThat(augmentedContent.get()).isEqualTo(TEST_AUGMENT_CONTENT);
+    }
+
+    //===================== Tests broadcasts are sent for model updates =========================
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void broadcastsMustBeSentOnModelUpdates() throws Exception {
+        assumeTrue(isSystemUser());
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE);
+        setTestableBroadcastKeys(new String[]{MODEL_LOADED_BROADCAST_ACTION, "blah"},
+                mContext.getPackageName());
+        Feature feature = new Feature.Builder(1).build();
+        CountDownLatch statusLatch = new CountDownLatch(2);
+        BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                if (action != null) {
+                    Log.d(TAG, "Received broadcast with action: " + action);
+                    if (action == MODEL_LOADED_BROADCAST_ACTION) {
+                        statusLatch.countDown();
+                    }
+                }
+            }
+        };
+        mContext.registerReceiver(broadcastReceiver,
+                new IntentFilter(MODEL_LOADED_BROADCAST_ACTION), RECEIVER_EXPORTED);
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                Bundle.EMPTY, 1, null,
+                null, EXECUTOR, new StreamingProcessingCallback() {
+                    @Override
+                    public void onPartialResult(@NonNull Bundle partialResult) {
+                        Log.i(TAG, "New Content : " + partialResult);
+                    }
+
+                    @Override
+                    public void onResult(Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+                });
+        assertThat(statusLatch.await(5, SECONDS)).isTrue();
+    }
+
+    //===================== Tests unbind based on timeout settings are invoked ====================
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void serviceUnbindsWhenCallbackIsNotPopulatedAfterIdleTimeout() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE,
+                        Manifest.permission.WRITE_SECURE_SETTINGS);
+        assumeTrue(isSystemUser());
+        updateSecureSettings();
+        // Feature Id to ensure no callbacks are invoked
+        Feature feature = new Feature.Builder(3).build();
+        CtsIntelligenceService.initServiceConnectionLatch();
+        CtsIntelligenceService.initUnbindLatch();
+        mOnDeviceIntelligenceManager.requestFeatureDownload(feature, null, EXECUTOR,
+                new DownloadCallback() {
+                    @Override
+                    public void onDownloadFailed(int failureStatus,
+                            @Nullable String errorMessage,
+                            @NonNull PersistableBundle errorParams) {
+                        Log.e(TAG, "Got Error", new RuntimeException(errorMessage));
+                    }
+
+                    @Override
+                    public void onDownloadProgress(long bytesDownloaded) {
+                    }
+
+                    @Override
+                    public void onDownloadStarted(long bytesDownloaded) {
+
+                    }
+
+                    @Override
+                    public void onDownloadCompleted(
+                            @NonNull PersistableBundle downloadParams) {
+                        Log.i(TAG, "Response : =" + downloadParams);
+                    }
+                });
+        CtsIntelligenceService.waitServiceConnect();
+        CtsIntelligenceService.waitForUnbind();
+        resetSecureSettings();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void serviceUnbindsWhenCallbackIsPopulatedAfterIdleTimeout() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE,
+                        Manifest.permission.WRITE_SECURE_SETTINGS);
+        assumeTrue(isSystemUser());
+        updateSecureSettings();
+        CtsIntelligenceService.initServiceConnectionLatch();
+        CtsIntelligenceService.initUnbindLatch();
+        CountDownLatch statusLatch = new CountDownLatch(1);
+
+        mOnDeviceIntelligenceManager.getVersion(EXECUTOR,
+                result -> {
+                    Log.i(TAG, "Version : =" + result);
+                    statusLatch.countDown();
+                });
+        assertThat(statusLatch.await(1, SECONDS)).isTrue();
+        CtsIntelligenceService.waitServiceConnect();
+        CtsIntelligenceService.waitForUnbind();
+        resetSecureSettings();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_ON_DEVICE_INTELLIGENCE)
+    public void deviceConfigUpdateMustBeSentOnInferenceServiceConnected() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.USE_ON_DEVICE_INTELLIGENCE,
+                        "android.permission.WRITE_DEVICE_CONFIG",
+                        "android.permission.READ_DEVICE_CONFIG",
+                        "android.permission.MONITOR_DEVICE_CONFIG_ACCESS");
+        Feature feature = new Feature.Builder(1).build();
+        CountDownLatch statusLatch = new CountDownLatch(1);
+        String currentVal = DeviceConfig.getProperty(TEST_OD_NAMESPACE, "key1");
+        if (currentVal == null) {
+            currentVal = "val1";
+        }
+        String modifiedVal = currentVal + "_new";
+        mOnDeviceIntelligenceManager.processRequest(feature,
+                Bundle.EMPTY, REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG, null,
+                null, EXECUTOR, new ProcessingCallback() {
+                    @Override
+                    public void onResult(Bundle result) {
+                        Log.i(TAG, "Final Result : " + result);
+                        PersistableBundle receivedConfig = result.getParcelable(TEST_KEY,
+                                PersistableBundle.class);
+                        assertThat(receivedConfig.containsKey("key1")).isTrue();
+                        assertThat(receivedConfig.getString("key1")).isEqualTo(modifiedVal);
+
+                        statusLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(@NonNull OnDeviceIntelligenceException error) {
+                        Log.e(TAG, "Final Result : ", error);
+                    }
+                });
+        Executors.newScheduledThreadPool(1).schedule(
+                () -> {
+                    DeviceConfig.setProperty(TEST_OD_NAMESPACE, "key1", modifiedVal, false);
+                    Log.i(TAG, "Finished writing property to device config.");
+                }, 2L,
+                SECONDS);
+        assertThat(statusLatch.await(10, SECONDS)).isTrue();
+        DeviceConfig.deleteProperty(TEST_OD_NAMESPACE, "key1");
+    }
+
+
+    public static void clearTestableOnDeviceIntelligenceService() {
         runShellCommand("cmd on_device_intelligence set-temporary-services");
     }
 
-    private void bindToTestableOnDeviceIntelligenceServices() {
-        assertThat(getOnDeviceIntelligencePackageName()).isNotEqualTo(CTS_PACKAGE_NAME);
+    public void bindToTestableOnDeviceIntelligenceServices() {
         setTestableOnDeviceIntelligenceServiceNames(
                 new String[]{CTS_INTELLIGENCE_SERVICE_NAME, CTS_INFERENCE_SERVICE_NAME});
         assertThat(CTS_INFERENCE_SERVICE_NAME).contains(getOnDeviceIntelligencePackageName());
+    }
+
+    private void updateSecureSettings() {
+        Settings.Secure.putLong(mContext.getContentResolver(),
+                Settings.Secure.ON_DEVICE_INTELLIGENCE_UNBIND_TIMEOUT_MS, SECONDS.toMillis(1));
+        Settings.Secure.putLong(mContext.getContentResolver(),
+                Settings.Secure.ON_DEVICE_INTELLIGENCE_IDLE_TIMEOUT_MS, SECONDS.toMillis(1));
+    }
+
+    private void resetSecureSettings() {
+        Settings.Secure.putLong(mContext.getContentResolver(),
+                Settings.Secure.ON_DEVICE_INTELLIGENCE_UNBIND_TIMEOUT_MS, -1);
+        Settings.Secure.putLong(mContext.getContentResolver(),
+                Settings.Secure.ON_DEVICE_INTELLIGENCE_IDLE_TIMEOUT_MS, HOURS.toMillis(1));
     }
 
     private String getOnDeviceIntelligencePackageName() {
         return mOnDeviceIntelligenceManager.getRemoteServicePackageName();
     }
 
-    private void setTestableOnDeviceIntelligenceServiceNames(String[] serviceNames) {
+    private boolean isServiceOverlayConfigured() {
+        String sanboxedServiceComponentName = mContext.getResources().getString(
+                com.android.internal.R.string.config_defaultOnDeviceIntelligenceService);
+        String intelligenceServiceComponentName = mContext.getResources().getString(
+                com.android.internal.R.string.config_defaultOnDeviceIntelligenceService);
+
+        return !TextUtils.isEmpty(sanboxedServiceComponentName) || !TextUtils.isEmpty(
+                intelligenceServiceComponentName);
+    }
+
+    private static boolean isSystemUser() {
+        return Process.myUserHandle().equals(UserHandle.SYSTEM);
+    }
+
+    public static void setTestableBroadcastKeys(String[] broadcastKeys, String packageName) {
+        runShellCommand(
+                "cmd on_device_intelligence set-model-broadcasts %s %s %s %d",
+                broadcastKeys[0], broadcastKeys[1], packageName, TEMPORARY_SERVICE_DURATION);
+    }
+
+
+    public static void setTestableDeviceConfigNamespace(String configNamespace) {
+        runShellCommand(
+                "cmd on_device_intelligence set-deviceconfig-namespace %s %d", configNamespace,
+                TEMPORARY_SERVICE_DURATION);
+    }
+
+    public static void setTestableOnDeviceIntelligenceServiceNames(String[] serviceNames) {
         runShellCommand(
                 "cmd on_device_intelligence set-temporary-services %s %s %d",
                 serviceNames[0], serviceNames[1], TEMPORARY_SERVICE_DURATION);
@@ -900,4 +1227,6 @@ public class OnDeviceIntelligenceManagerTest {
             }
         }
     };
+
+
 }

@@ -60,12 +60,15 @@ android_test_helper_app {
     ],
     privileged: true,
     static_libs: [
+        "bluetooth-test-util-lib",
         "core-tests-support",
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "androidx.legacy_legacy-support-v4",
         "androidx.test.rules",
         "cts-net-utils",
+        "collector-device-lib",
+        "cts_adpf_atom_common",
     ],
     jni_libs: [
         "liblmkhelper_statsdatom",

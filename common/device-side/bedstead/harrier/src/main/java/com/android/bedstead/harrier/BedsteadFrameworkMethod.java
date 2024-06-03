@@ -23,7 +23,7 @@ import com.android.bedstead.harrier.annotations.meta.RequireRunOnProfileAnnotati
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnUserAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
-import com.google.common.base.Objects;
+import com.google.common.base.Equivalence;
 
 import org.junit.runners.model.FrameworkMethod;
 
@@ -36,34 +36,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
-/**
- * {@link FrameworkMethod} subclass which allows modifying the test name and annotations.
- */
+/** {@link FrameworkMethod} subclass which allows modifying the test name and annotations. */
 public final class BedsteadFrameworkMethod extends FrameworkMethod {
 
     private final BedsteadJUnit4 mBedsteadJUnit4;
-    private final Annotation mParameterizedAnnotation;
+    private final List<Annotation> mParameterizedAnnotations;
     private final Map<Class<? extends Annotation>, Annotation> mAnnotationsMap =
             new HashMap<>();
+    private final Equivalence<Iterable<Annotation>> equivalence =
+            Equivalence.equals().pairwise(); // For element-wise comparison
+
     private Annotation[] mAnnotations;
 
     public BedsteadFrameworkMethod(BedsteadJUnit4 bedsteadJUnit4, Method method) {
-        this(bedsteadJUnit4, method, /* parameterizedAnnotation= */ null);
+        this(bedsteadJUnit4, method, /* parameterizedAnnotations= */ new ArrayList<>());
     }
 
-    public BedsteadFrameworkMethod(BedsteadJUnit4 bedsteadJUnit4, Method method,
-            @Nullable Annotation parameterizedAnnotation) {
+    public BedsteadFrameworkMethod(
+            BedsteadJUnit4 bedsteadJUnit4,
+            Method method,
+            List<Annotation> parameterizedAnnotations) {
         super(method);
         mBedsteadJUnit4 = bedsteadJUnit4;
-        mParameterizedAnnotation = parameterizedAnnotation;
+        mParameterizedAnnotations = parameterizedAnnotations;
 
         calculateAnnotations();
     }
 
-    public Annotation getParameterizedAnnotation() {
-        return mParameterizedAnnotation;
+    public List<Annotation> getParameterizedAnnotations() {
+        return mParameterizedAnnotations;
     }
 
     private void calculateAnnotations() {
@@ -78,9 +79,8 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
         BedsteadJUnit4.parseEnterpriseAnnotations(annotations);
         BedsteadJUnit4.parsePermissionAnnotations(annotations);
         BedsteadJUnit4.parseUserAnnotations(annotations);
-        BedsteadJUnit4.parseFlagAnnotations(annotations);
 
-        mBedsteadJUnit4.resolveRecursiveAnnotations(annotations, mParameterizedAnnotation);
+        mBedsteadJUnit4.resolveRecursiveAnnotations(annotations, mParameterizedAnnotations);
 
         boolean hasRequireRunOnAnnotation = false;
 
@@ -102,10 +102,11 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
                             mBedsteadJUnit4.getHarrierRule(),
                             BedsteadJUnit4.requireRunOnInitialUser(
                                     /* switchToUser= */ OptionalBoolean.ANY),
-                            /* parameterizedAnnotation= */ null));
+                            /* parameterizedAnnotations= */ List.of()));
         }
 
         mAnnotations = annotations.toArray(new Annotation[0]);
+
         for (Annotation annotation : annotations) {
             if (annotation instanceof DynamicParameterizedAnnotation) {
                 continue; // don't return this
@@ -116,11 +117,17 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
 
     @Override
     public String getName() {
-        if (mParameterizedAnnotation == null) {
+        if (mParameterizedAnnotations.isEmpty()) {
             return super.getName();
         }
-        return super.getName() + "[" + BedsteadJUnit4.getParameterName(mParameterizedAnnotation)
-                + "]";
+        StringBuilder newMethodName = new StringBuilder(super.getName());
+        for (Annotation annotation : mParameterizedAnnotations) {
+            newMethodName
+                    .append("[")
+                    .append(BedsteadJUnit4.getParameterName(annotation))
+                    .append("]");
+        }
+        return newMethodName.toString();
     }
 
     @Override
@@ -129,13 +136,11 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
             return false;
         }
 
-        if (!(obj instanceof BedsteadFrameworkMethod)) {
+        if (!(obj instanceof BedsteadFrameworkMethod other)) {
             return false;
         }
 
-        BedsteadFrameworkMethod other = (BedsteadFrameworkMethod) obj;
-
-        return Objects.equal(mParameterizedAnnotation, other.mParameterizedAnnotation);
+        return equivalence.equivalent(mParameterizedAnnotations, other.mParameterizedAnnotations);
     }
 
     @Override

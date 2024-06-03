@@ -18,9 +18,11 @@ package android.graphics.pdf.cts.module;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.graphics.pdf.models.ListItem;
+import android.os.Parcel;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -44,5 +46,41 @@ public class ListItemTest {
 
         assertEquals("Orange", orange.getLabel());
         assertTrue(orange.isSelected());
+    }
+
+    @Test
+    public void testParcelable() {
+        ListItem bananaIn = new ListItem("Banana", /* selected= */ false);
+
+        Parcel parcel = Parcel.obtain();
+        assertEquals(0, bananaIn.describeContents());
+        bananaIn.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        ListItem bananaOut = ListItem.CREATOR.createFromParcel(parcel);
+
+        assertEquals(bananaIn, bananaOut);
+    }
+
+    @Test
+    public void testEqualsHashcode_matchingProperties() {
+        ListItem apple1 = new ListItem("Apple", /* selected= */ false);
+        ListItem apple2 = new ListItem("Apple", /* selected= */ false);
+
+        assertEquals(apple1, apple2);
+    }
+
+    @Test
+    public void testEqualsHashcode_notMatchingProperties() {
+        ListItem apple = new ListItem("Apple", /* selected= */ false);
+        ListItem orange = new ListItem("Orange", /* selected= */ true);
+
+        assertNotEquals(apple, orange);
+    }
+
+    @Test
+    public void testEquals_notListItem() {
+        ListItem orange = new ListItem("Orange", /* selected= */ true);
+
+        assertNotEquals(orange, new Object());
     }
 }

@@ -24,6 +24,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 
 import org.junit.Assert;
@@ -115,7 +116,7 @@ public class CallProvider extends ContentProvider {
     @GuardedBy("sMessageQueue")
     private static void waitForMessageLocked(long timeoutUptime) {
         while (sMessageQueue.size() == 0) {
-            final long wait = timeoutUptime - System.currentTimeMillis();
+            final long wait = timeoutUptime - SystemClock.uptimeMillis();
             if (wait <= 0) {
                 Assert.fail("Timeout waiting for the next message");
             }
@@ -132,7 +133,7 @@ public class CallProvider extends ContentProvider {
      */
     public static FgsTimeoutMessage waitForNextMessage(long timeoutMillis) {
         synchronized (sMessageQueue) {
-            waitForMessageLocked(System.currentTimeMillis() + timeoutMillis);
+            waitForMessageLocked(SystemClock.uptimeMillis() + timeoutMillis);
             return sMessageQueue.remove(0);
         }
     }
@@ -144,7 +145,7 @@ public class CallProvider extends ContentProvider {
      * so in this method, we not only look at the head of the queue, but the entire queue.
      */
     public static void waitForAckMessage(long timeoutMillis) {
-        final long timeoutUptime = System.currentTimeMillis() + timeoutMillis;
+        final long timeoutUptime = SystemClock.uptimeMillis() + timeoutMillis;
         synchronized (sMessageQueue) {
             waitForMessageLocked(timeoutUptime);
 

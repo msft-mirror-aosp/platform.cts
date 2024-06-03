@@ -31,8 +31,6 @@ import android.os.Bundle;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.MediaUtils;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,8 +58,6 @@ public class ADPFHintSessionDeviceTest {
                 pm.hasSystemFeature(PackageManager.FEATURE_WATCH));
         assumeFalse("Skipping test for embedded",
                 pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED));
-        assumeFalse("Skipping test for Cuttlefish",
-                MediaUtils.onCuttlefish());
     }
 
     @Test

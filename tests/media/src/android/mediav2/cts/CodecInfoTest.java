@@ -24,12 +24,16 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420P
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_DynamicColorAspects;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HdrEditing;
+import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_HlgEditing;
+import static android.media.codec.Flags.FLAG_DYNAMIC_COLOR_ASPECTS;
 import static android.media.codec.Flags.FLAG_IN_PROCESS_SW_AUDIO_CODEC;
-import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_202404;
+import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AT_LEAST_202404;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_T;
+import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.IS_HDR_CAPTURE_SUPPORTED;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_MAP;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_PLUS_MAP;
@@ -52,6 +56,8 @@ import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecTestBase;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Range;
 
 import androidx.test.filters.SdkSuppress;
@@ -59,11 +65,13 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.VsrTest;
 
 import org.junit.Assume;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -86,6 +94,9 @@ public class CodecInfoTest {
     public String mMediaType;
     public String mCodecName;
     public MediaCodecInfo mCodecInfo;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     public CodecInfoTest(String mediaType, String codecName, MediaCodecInfo codecInfo) {
         mMediaType = mediaType;
@@ -125,6 +136,7 @@ public class CodecInfoTest {
     // TODO (b/228237404) Remove the following once there is a reliable way to query HDR
     // display capabilities at native level, till then limit the test to vendor codecs
     @NonMainlineTest
+    @FrameworkSpecificTest
     @CddTest(requirements = "5.1.7/C-2-1")
     @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
     public void testHDRDisplayCapabilities() {
@@ -164,6 +176,7 @@ public class CodecInfoTest {
      */
     @CddTest(requirements = {"5.1.7/C-1-2", "5.1.7/C-1-3", "5.1.7/C-4-1", "5.12/C-6-5",
             "5.12/C-7-1", "5.12/C-7-3"})
+    @VsrTest(requirements = {"VSR-4.4.011"})
     @Test
     public void testColorFormatSupport() {
         Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
@@ -191,20 +204,23 @@ public class CodecInfoTest {
                         IntStream.of(caps.colorFormats).noneMatch(x -> x == COLOR_FormatYUVP010));
             }
 
-            // Encoders that support FEATURE_HdrEditing, must support ABGR2101010 color format
-            // and at least one HDR profile
+            // Encoders that support FEATURE_HdrEditing / FEATURE_HlgEditing, must support
+            // ABGR2101010 color format and at least one HDR profile
             boolean hdrEditingSupported = caps.isFeatureSupported(FEATURE_HdrEditing);
-            if (hdrEditingSupported) {
+            boolean hlgEditingSupported = (IS_AT_LEAST_V && android.media.codec.Flags.hlgEditing())
+                    ? caps.isFeatureSupported(FEATURE_HlgEditing) : false;
+            if (hdrEditingSupported || hlgEditingSupported) {
                 boolean abgr2101010Supported = IntStream.of(caps.colorFormats)
                         .anyMatch(x -> x == COLOR_Format32bitABGR2101010);
-                assertTrue(mCodecName + " supports FEATURE_HdrEditing, but does not support"
-                        + " COLOR_FormatABGR2101010 color formats.", abgr2101010Supported);
-                assertTrue(mCodecName + " supports FEATURE_HdrEditing, but does not support"
-                        + " any HDR profiles.", canHandleHdr);
+                assertTrue(mCodecName + " supports feature HdrEditing/HlgEditing, but does not"
+                        + "  support COLOR_FormatABGR2101010 color formats.", abgr2101010Supported);
+                assertTrue(mCodecName + " supports feature HdrEditing/HlgEditing, but does not"
+                        + " support any HDR profiles.", canHandleHdr);
             }
         } else {
-            if (FIRST_SDK_IS_AT_LEAST_T && VNDK_IS_AT_LEAST_T && BOARD_SDK_IS_AT_LEAST_T
-                    && canDisplaySupportHDRContent() && canHandleHdr) {
+            if (((FIRST_SDK_IS_AT_LEAST_T && VNDK_IS_AT_LEAST_T && BOARD_SDK_IS_AT_LEAST_T)
+                    || BOARD_FIRST_SDK_IS_AT_LEAST_202404) && canDisplaySupportHDRContent()
+                    && canHandleHdr) {
                 if (MediaUtils.isTv()) {
                     // Some TV devices support HDR10 display with VO instead of GPU. In this
                     // case, skip checking P010 on TV devices.
@@ -268,6 +284,28 @@ public class CodecInfoTest {
     }
 
     /**
+     * All decoders for compression technologies that were introduced after 2002 must support
+     * dynamic color aspects feature on CHIPSETs that set ro.board.first_api_level to V or higher.
+     */
+    @RequiresFlagsEnabled(FLAG_DYNAMIC_COLOR_ASPECTS)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @VsrTest(requirements = {"VSR-4.2.005.001"})
+    @Test
+    public void testDynamicColorAspectSupport() {
+        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
+        Assume.assumeFalse("Test is applicable only for decoders", mCodecInfo.isEncoder());
+        Assume.assumeTrue("Skipping, Only intended for coding technologies introduced after 2002.",
+                !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
+                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)
+                && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2));
+        Assume.assumeTrue("Skipping, Only intended for devices with board first_api_level >= V",
+                BOARD_FIRST_SDK_IS_AT_LEAST_202404);
+        assertTrue(mCodecName + " does not support FEATURE_DynamicColorAspects.",
+                isFeatureSupported(mCodecName, mMediaType, FEATURE_DynamicColorAspects));
+    }
+
+    /**
      * Components advertising support for compression technologies that were introduced after 2002
      * must support a given resolution in both portrait and landscape mode.
      */
@@ -280,7 +318,7 @@ public class CodecInfoTest {
                 && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)
                 && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2));
         Assume.assumeTrue("Skipping, Only intended for devices with SDK >= 202404",
-                BOARD_SDK_IS_AT_LEAST_202404);
+                BOARD_FIRST_SDK_IS_AT_LEAST_202404);
         if (!isFeatureSupported(mCodecName, mMediaType, "can-swap-width-height")) {
             MediaCodecInfo.VideoCapabilities vCaps =
                     mCodecInfo.getCapabilitiesForType(mMediaType).getVideoCapabilities();
@@ -293,7 +331,7 @@ public class CodecInfoTest {
 
     /**
      * Components advertising support for compression technologies that were introduced after 2002
-     * must support a smallest width/height alignment allowed by the video standard.
+     * must support 1x1 alignment for vp8, av1 and 2x2 for avc, hevc and vp9.
      */
     @VsrTest(requirements = {"VSR-4.2-004.001"})
     @Test
@@ -304,7 +342,7 @@ public class CodecInfoTest {
                         && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_H263)
                         && !mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG2));
         Assume.assumeTrue("Skipping, Only intended for devices with SDK >= 202404",
-                BOARD_SDK_IS_AT_LEAST_202404);
+                BOARD_FIRST_SDK_IS_AT_LEAST_202404);
         MediaCodecInfo.VideoCapabilities vCaps =
                 mCodecInfo.getCapabilitiesForType(mMediaType).getVideoCapabilities();
         int widthAlignment = vCaps.getWidthAlignment();
@@ -312,13 +350,13 @@ public class CodecInfoTest {
         switch (mMediaType) {
             case MediaFormat.MIMETYPE_VIDEO_AVC:
             case MediaFormat.MIMETYPE_VIDEO_HEVC:
+            case MediaFormat.MIMETYPE_VIDEO_VP9:
                 assertTrue(mCodecName + ", width alignment = " + widthAlignment
                         + " should be <= 2 ", widthAlignment <= 2);
                 assertTrue(mCodecName + ", height alignment = " + heightAlignment
                         + " should be <= 2 ", heightAlignment <= 2);
                 break;
             case MediaFormat.MIMETYPE_VIDEO_VP8:
-            case MediaFormat.MIMETYPE_VIDEO_VP9:
             case MediaFormat.MIMETYPE_VIDEO_AV1:
                 assertEquals(mCodecName + ", width alignment = " + widthAlignment
                         + "  should be equal to 1 ", 1, widthAlignment);

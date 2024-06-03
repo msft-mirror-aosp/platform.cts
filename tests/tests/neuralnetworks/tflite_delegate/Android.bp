@@ -26,6 +26,7 @@ package {
 
 cc_test {
     name: "CtsTfliteNnapiDelegateTestCases",
+    team: "trendy_team_renderscript_nnapi",
     compile_multilib: "both",
     multilib: {
         lib32: {

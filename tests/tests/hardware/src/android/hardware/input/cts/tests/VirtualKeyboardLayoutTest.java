@@ -27,7 +27,6 @@ import android.hardware.display.VirtualDisplay;
 import android.hardware.input.InputManager;
 import android.hardware.input.VirtualKeyboard;
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
-import android.provider.Settings;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -36,7 +35,6 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,18 +58,11 @@ public class VirtualKeyboardLayoutTest {
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mInputManager = mContext.getSystemService(InputManager.class);
-        Settings.Global.putString(
-                mContext.getContentResolver(), "settings_new_keyboard_ui", "true");
         mVirtualDevice = mRule.createManagedVirtualDevice();
         mVirtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED);
-    }
-
-    @After
-    public void tearDown() {
-        Settings.Global.putString(mContext.getContentResolver(), "settings_new_keyboard_ui", "");
     }
 
     @Test

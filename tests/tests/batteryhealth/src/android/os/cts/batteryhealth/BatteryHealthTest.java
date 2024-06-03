@@ -29,12 +29,20 @@ import android.os.BatteryManager;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireAutomotive;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class BatteryHealthTest {
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private static final String TAG = "BatteryHealthTest";
 
     // Battery usage date: check the range from 2020-12-01 to 2038-01-19
@@ -44,6 +52,9 @@ public class BatteryHealthTest {
     // Battery state_of_health: value must be in the range 0 to 100
     private static final int BATTERY_STATE_OF_HEALTH_MIN = 0;
     private static final int BATTERY_STATE_OF_HEALTH_MAX = 100;
+
+    // Battery capacity representing full battery level
+    private static final int BATTERY_PROPERTY_FULL_CAPACITY = 100;
 
     // ChargingPolicy
     private static final int CHARGING_POLICY_DEFAULT = 1;
@@ -152,6 +163,9 @@ public class BatteryHealthTest {
         mAutomation.adoptShellPermissionIdentity(android.Manifest.permission.BATTERY_STATS);
         final int partStatus = mBatteryManager.getIntProperty(BatteryManager
                 .BATTERY_PROPERTY_PART_STATUS);
+        if (partStatus == Integer.MIN_VALUE) {
+            return;
+        }
 
         assertThat(partStatus).isAtLeast(BatteryManager.PART_STATUS_UNSUPPORTED);
         assertThat(partStatus).isAtMost(BatteryManager.PART_STATUS_REPLACED);
@@ -204,5 +218,74 @@ public class BatteryHealthTest {
             return;
         }
         fail("Didn't throw SecurityException");
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#isCharging"})
+    @RequireAutomotive(reason = "Auto assumes an always charging and large capacity battery")
+    public void testAutomotive_isCharging() {
+        assertThat(mBatteryManager.isCharging()).isTrue();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#EXTRA_STATUS",
+            "android.os.BatteryManager#EXTRA_PLUGGED",
+            "android.os.BatteryManager#EXTRA_LEVEL",
+            "android.os.BatteryManager#EXTRA_SCALE"})
+    @RequireAutomotive(reason = "Auto assumes an always charging and large capacity battery")
+    public void testAutomotive_getIntExtra() {
+        final Context context = InstrumentationRegistry.getContext();
+        final Intent batteryInfo = context.registerReceiver(/* receiver */ null,
+                                    /* filter */ new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        final int chargingStatus = batteryInfo.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+        assertThat(chargingStatus).isEqualTo(BatteryManager.BATTERY_STATUS_CHARGING);
+
+        final int pluggedInfo = batteryInfo.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
+        assertThat(pluggedInfo).isEqualTo(BatteryManager.BATTERY_PLUGGED_AC);
+
+        final int batteryLevel = batteryInfo.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        final int batteryScale = batteryInfo.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+        assertThat(batteryLevel).isEqualTo(batteryScale);
+        assertThat(batteryLevel).isEqualTo(BATTERY_PROPERTY_FULL_CAPACITY);
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#getIntProperty",
+            "android.os.BatteryManager#BATTERY_PROPERTY_CAPACITY",
+            "android.os.BatteryManager#BATTERY_PROPERTY_CHARGE_COUNTER",
+            "android.os.BatteryManager#BATTERY_PROPERTY_CHARGE_NOW",
+            "android.os.BatteryManager#BATTERY_PROPERTY_CHARGE_AVERAGE",
+            "android.os.BatteryManager#BATTERY_PROPERTY_CHARGE_STATUS"})
+    @RequireAutomotive(reason = "Auto assumes an always charging and large capacity battery")
+    public void testAutomotive_getIntProperty() {
+        int batteryPercent = mBatteryManager.getIntProperty(
+                BatteryManager.BATTERY_PROPERTY_CAPACITY);
+        assertThat(batteryPercent).isEqualTo(BATTERY_PROPERTY_FULL_CAPACITY);
+
+        final int chargeCounter = mBatteryManager.getIntProperty(
+                BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+        assertThat(chargeCounter).isAtLeast(0);
+
+        final int currentNow = mBatteryManager.getIntProperty(
+                BatteryManager.BATTERY_PROPERTY_CURRENT_NOW);
+        assertThat(currentNow).isAtLeast(1);
+
+        final int chargeAverage = mBatteryManager.getIntProperty(
+                BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE);
+        assertThat(chargeAverage).isAtLeast(1);
+
+        final int chargeStatus = mBatteryManager.getIntProperty(
+                BatteryManager.BATTERY_PROPERTY_STATUS);
+        assertThat(chargeStatus).isEqualTo(BatteryManager.BATTERY_STATUS_CHARGING);
+    }
+
+    @Test
+    @ApiTest(apis = {"android.os.BatteryManager#getLongProperty",
+            "android.os.BatteryManager#BATTERY_PROPERTY_ENERGY_COUNTER"})
+    @RequireAutomotive(reason = "Auto assumes an always charging and large capacity battery")
+    public void testAutomotive_getLongProperty() {
+        final long energyCounter = mBatteryManager.getLongProperty(
+                BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER);
+        assertThat(energyCounter).isAtLeast(0);
     }
 }

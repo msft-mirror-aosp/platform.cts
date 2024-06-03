@@ -52,7 +52,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
-import android.os.Process;
 import android.os.storage.StorageManager;
 import android.provider.MediaStore;
 import android.system.ErrnoException;
@@ -228,47 +227,6 @@ public class TestUtils {
         } catch (Exception e) {
             fail("Exception on polling for permission revoke for " + packageName + " for "
                     + permission + ": " + e.getMessage());
-        }
-    }
-
-    public static void revokeAccessMediaLocation() {
-        revokeAppOpPermission(Manifest.permission.ACCESS_MEDIA_LOCATION,
-                "android:access_media_location");
-    }
-
-    /**
-     * Revoke the app op for the given permission. Unlike
-     * {@link TestUtils#revokePermission(String, String)}, its usage does not kill the application.
-     * It can be used to drop permissions previously granted to the test application, without
-     * crashing the test application itself.
-     */
-    private static void revokeAppOpPermission(String manifestPermission, String appOp) {
-        try {
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation()
-                    .adoptShellPermissionIdentity("android.permission.MANAGE_APP_OPS_MODES",
-                            "android.permission.REVOKE_RUNTIME_PERMISSIONS");
-            Context context =
-                    androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                            .getTargetContext();
-            // Revoking the manifest permission will kill the test app.
-            // Deny the permission App Op to revoke this permission.
-            PackageManager packageManager = context.getPackageManager();
-            String packageName = context.getPackageName();
-            if (packageManager.checkPermission(manifestPermission,
-                    packageName) == PackageManager.PERMISSION_GRANTED) {
-                context.getPackageManager().updatePermissionFlags(
-                        manifestPermission, packageName,
-                        PackageManager.FLAG_PERMISSION_REVOKED_COMPAT,
-                        PackageManager.FLAG_PERMISSION_REVOKED_COMPAT, context.getUser());
-                context.getSystemService(AppOpsManager.class).setUidMode(
-                        appOp, Process.myUid(),
-                        AppOpsManager.MODE_IGNORED);
-            }
-        } finally {
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation()
-                    .dropShellPermissionIdentity();
         }
     }
 
@@ -1202,13 +1160,16 @@ public class TestUtils {
         return packageManager.hasSystemFeature(feature);
     }
 
-    private static void scrollIntoView(UiSelector selector) {
+    private static void scrollIntoView(UiSelector selector) throws Exception {
         UiScrollable uiScrollable = new UiScrollable(new UiSelector().scrollable(true));
+        uiScrollable.setSwipeDeadZonePercentage(0.25);
         try {
             uiScrollable.scrollIntoView(selector);
         } catch (UiObjectNotFoundException e) {
             // Scrolling can fail if the UI is not scrollable
         }
+        // Sleep for a few moments to let the scroll fully stop.
+        Thread.sleep(250);
     }
 
     /**

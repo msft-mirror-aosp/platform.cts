@@ -57,10 +57,13 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @RunWith(AndroidJUnit4.class)
 public class PdfRendererPreVTest {
 
+    private static final Pattern LINE_BREAK_PATTERN = Pattern.compile("\\R");
     private Context mContext;
 
     @Before
@@ -229,12 +232,12 @@ public class PdfRendererPreVTest {
         PdfRendererPreV.Page firstPage = renderer.openPage(0);
 
         assertThat(firstPage.getTextContents().size()).isEqualTo(1);
-        assertThat(firstPage.getTextContents().get(0).getText().lines().toList().size()).isEqualTo(
-                2);
-        assertThat(firstPage.getTextContents().get(0).getText().lines().toList().get(0)).isEqualTo(
-                "Social Security Administration Guide:");
-        assertThat(firstPage.getTextContents().get(0).getText().lines().toList().get(1)).isEqualTo(
-                "Alternate text for images");
+        List<String> textContents = LINE_BREAK_PATTERN.splitAsStream(
+                firstPage.getTextContents().get(0).getText()).collect(Collectors.toList());
+
+        assertThat(textContents.size()).isEqualTo(2);
+        assertThat(textContents.get(0)).isEqualTo("Social Security Administration Guide:");
+        assertThat(textContents.get(1)).isEqualTo("Alternate text for images");
 
         firstPage.close();
         renderer.close();
@@ -443,22 +446,19 @@ public class PdfRendererPreVTest {
         SelectionBoundary start = new SelectionBoundary(point);
         SelectionBoundary stop = new SelectionBoundary(point);
         // first query
-        PageSelection firstTextSelection = firstPage.selectContent(start, stop, /* isRtl = */ true);
+        PageSelection firstTextSelection = firstPage.selectContent(start, stop);
         // second query
         Point leftPoint = new Point(93, 139);
         Point rightPoint = new Point(147, 139);
         PageSelection secondTextSelection = firstPage.selectContent(
-                new SelectionBoundary(leftPoint), new SelectionBoundary(rightPoint), /* isRtl = */
-                true);
+                new SelectionBoundary(leftPoint), new SelectionBoundary(rightPoint));
 
         // first selected text is: "this"
         assertThat(firstTextSelection.getPage()).isEqualTo(1);
-        assertThat(firstTextSelection.isRtl()).isTrue();
-        assertSelectionBoundary(firstTextSelection.getLeft(), -1, new Point(72, 103));
-        assertSelectionBoundary(firstTextSelection.getRight(), -1, new Point(91, 103));
+        assertSelectionBoundary(firstTextSelection.getStart(), -1, new Point(72, 103));
+        assertSelectionBoundary(firstTextSelection.getStop(), -1, new Point(91, 103));
         assertPageSelection(firstTextSelection, 1, 1);
-        assertThat(firstTextSelection.getSelectedTextContents().get(
-                0).getText()).isEqualTo("This");
+        assertThat(firstTextSelection.getSelectedTextContents().get(0).getText()).isEqualTo("This");
         // assert second selected content
         assertPageSelection(secondTextSelection, 1, 1);
         assertThat(secondTextSelection.getSelectedTextContents().get(0).getText()).isEqualTo(
@@ -476,52 +476,49 @@ public class PdfRendererPreVTest {
         Point leftPoint = new Point(93, 139);
         Point rightPoint = new Point(135, 168);
         PageSelection textSelection = firstPage.selectContent(new SelectionBoundary(leftPoint),
-                new SelectionBoundary(rightPoint), /* isRtl = */ true);
+                new SelectionBoundary(rightPoint));
+
         assertThat(textSelection.getPage()).isEqualTo(1);
-        assertThat(textSelection.isRtl()).isTrue();
-        assertSelectionBoundary(textSelection.getLeft(), -1, new Point(93, 139));
-        assertSelectionBoundary(textSelection.getRight(), -1, new Point(135, 163));
+        assertSelectionBoundary(textSelection.getStart(), -1, new Point(93, 139));
+        assertSelectionBoundary(textSelection.getStop(), -1, new Point(135, 163));
         assertPageSelection(textSelection, 2, 1);
-        assertThat(textSelection.getSelectedTextContents().get(
-                0).getText().lines().toList().size()).isEqualTo(2);
-        assertThat(textSelection.getSelectedTextContents().get(
-                0).getText().lines().toList().get(
-                0)).isEqualTo(
-                "And more text. And more text. And more text. ");
-        assertThat(textSelection.getSelectedTextContents().get(
-                0).getText().lines().toList().get(
-                1)).isEqualTo(
-                " And more text");
+
+        List<String> selectedText = LINE_BREAK_PATTERN.splitAsStream(
+                textSelection.getSelectedTextContents().get(0).getText()).collect(
+                Collectors.toList());
+
+        assertThat(selectedText.size()).isEqualTo(2);
+        assertThat(selectedText.get(0)).isEqualTo("And more text. And more text. And more text. ");
+        assertThat(selectedText.get(1)).isEqualTo(" And more text");
 
         firstPage.close();
         renderer.close();
     }
 
     @Test
-    public void selectPageText_leftToRight() throws Exception {
+    public void selectPageText_rightToLeft() throws Exception {
         PdfRendererPreV renderer = createPreVRenderer(PROTECTED_PDF, mContext, LOAD_PARAMS);
         PdfRendererPreV.Page firstPage = renderer.openPage(1);
 
         Point leftPoint = new Point(275, 163);
         Point rightPoint = new Point(65, 125);
         PageSelection fourthTextSelection = firstPage.selectContent(
-                new SelectionBoundary(leftPoint), new SelectionBoundary(rightPoint), /* isRtl = */
-                false);
+                new SelectionBoundary(leftPoint), new SelectionBoundary(rightPoint));
 
         assertThat(fourthTextSelection.getPage()).isEqualTo(1);
-        assertThat(fourthTextSelection.isRtl()).isFalse();
-        assertSelectionBoundary(fourthTextSelection.getLeft(), -1, new Point(71, 127));
-        assertSelectionBoundary(fourthTextSelection.getRight(), -1, new Point(275, 163));
+        assertSelectionBoundary(fourthTextSelection.getStart(), -1, new Point(71, 127));
+        assertSelectionBoundary(fourthTextSelection.getStop(), -1, new Point(275, 163));
         assertPageSelection(fourthTextSelection, 3, 1);
-        assertThat(fourthTextSelection.getSelectedTextContents().get(
-                0).getText().lines().toList().get(0)).isEqualTo(
+
+        List<String> selectedText = LINE_BREAK_PATTERN.splitAsStream(
+                fourthTextSelection.getSelectedTextContents().get(0).getText()).collect(
+                Collectors.toList());
+
+        assertThat(selectedText.get(0)).isEqualTo(
                 "just for use in the Virtual Mechanics tutorials. More text. And more ");
-        assertThat(fourthTextSelection.getSelectedTextContents().get(
-                0).getText().lines().toList().get(1)).isEqualTo(
+        assertThat(selectedText.get(1)).isEqualTo(
                 " text. And more text. And more text. And more text. ");
-        assertThat(fourthTextSelection.getSelectedTextContents().get(
-                0).getText().lines().toList().get(2)).isEqualTo(
-                " And more text. And more text. And more text. ");
+        assertThat(selectedText.get(2)).isEqualTo(" And more text. And more text. And more text. ");
 
         firstPage.close();
         renderer.close();
@@ -534,15 +531,13 @@ public class PdfRendererPreVTest {
 
         Point rightPoint = new Point(225, 168);
         PageSelection pageSelection = firstPage.selectContent(new SelectionBoundary(2),
-                new SelectionBoundary(rightPoint), /* isRtl = */ true);
+                new SelectionBoundary(rightPoint));
 
         assertThat(pageSelection.getPage()).isEqualTo(0);
-        assertThat(pageSelection.isRtl()).isTrue();
-        assertSelectionBoundary(pageSelection.getLeft(), -1, new Point(71, 52));
-        assertSelectionBoundary(pageSelection.getRight(), -1, new Point(225, 52));
+        assertSelectionBoundary(pageSelection.getStart(), -1, new Point(71, 52));
+        assertSelectionBoundary(pageSelection.getStop(), -1, new Point(225, 52));
 
-        assertThat(pageSelection.getSelectedTextContents().get(
-                0).getText()).isEqualTo(
+        assertThat(pageSelection.getSelectedTextContents().get(0).getText()).isEqualTo(
                 "Simple PDF File, which will be ");
 
         firstPage.close();
@@ -557,7 +552,7 @@ public class PdfRendererPreVTest {
         Point leftPoint = new Point(157, 330);
         Point rightPoint = new Point(157, 330);
         PageSelection pageSelection = firstPage.selectContent(new SelectionBoundary(leftPoint),
-                new SelectionBoundary(rightPoint), /* isRtl = */ true);
+                new SelectionBoundary(rightPoint));
 
         assertThat(pageSelection).isNull();
 
@@ -571,9 +566,8 @@ public class PdfRendererPreVTest {
         PdfRendererPreV.Page firstPage = renderer.openPage(1);
 
         Point rightPoint = new Point(157, 330);
-        assertThrows(NullPointerException.class, () -> firstPage.selectContent(null,
-                new SelectionBoundary(rightPoint),  /* isRtl = */
-                true));
+        assertThrows(NullPointerException.class,
+                () -> firstPage.selectContent(null, new SelectionBoundary(rightPoint)));
 
     }
 
@@ -584,8 +578,7 @@ public class PdfRendererPreVTest {
 
         Point point = new Point(157, 330);
         assertThrows(NullPointerException.class,
-                () -> firstPage.selectContent(new SelectionBoundary(point), null, /* isRtl = */
-                        true));
+                () -> firstPage.selectContent(new SelectionBoundary(point), null));
     }
 
     @Test
@@ -594,7 +587,38 @@ public class PdfRendererPreVTest {
         PdfRendererPreV.Page firstPage = renderer.openPage(1);
 
         assertThrows(IllegalArgumentException.class,
-                () -> firstPage.selectContent(new SelectionBoundary(-1), null,  /* isRtl = */true));
+                () -> firstPage.selectContent(new SelectionBoundary(-1), null));
+    }
+
+    @Test
+    public void selectPageText_rightPointMovingTowardsLeft_returnsMultipleSelectedObjects()
+            throws Exception {
+        PdfRendererPreV renderer = createPreVRenderer(SAMPLE_PDF, mContext, LOAD_PARAMS);
+        PdfRendererPreV.Page firstPage = renderer.openPage(1);
+
+        Point leftPoint = new Point(244, 70);
+        int rightPointXCoordinate = 284;
+        int rightAndLeftPointXCoordinateDifference = 40;
+        int emptyAreaXCoordinateDifferenceFromRightCoordinate = 35;
+
+        // We are moving the right point towards the left point by a margin of 5.
+        // Note: Tha margin can be any whole number except 0.
+        for (int i = 0; i <= rightAndLeftPointXCoordinateDifference; i += 5) {
+            Point nextRightPoint = new Point(rightPointXCoordinate - i, 70);
+
+            PageSelection pageSelection = firstPage.selectContent(new SelectionBoundary(leftPoint),
+                    new SelectionBoundary(nextRightPoint));
+
+            if (i == emptyAreaXCoordinateDifferenceFromRightCoordinate) {
+                // This is the point where the selected area between the boundaries is empty.
+                assertThat(pageSelection).isNull();
+            } else {
+                assertThat(pageSelection).isNotNull();
+            }
+        }
+
+        firstPage.close();
+        renderer.close();
     }
 
     @Test
@@ -688,8 +712,7 @@ public class PdfRendererPreVTest {
             int expectedPageNumber) {
         assertThat(pageSelection.getPage()).isEqualTo(expectedPageNumber);
         assertThat(pageSelection.getSelectedTextContents()).isNotEmpty();
-        assertThat(pageSelection.getSelectedTextContents().get(
-                0).getBounds().size()).isEqualTo(
+        assertThat(pageSelection.getSelectedTextContents().get(0).getBounds().size()).isEqualTo(
                 expectedRectsSize);
     }
 
@@ -707,7 +730,7 @@ public class PdfRendererPreVTest {
         assertThrows(IllegalStateException.class, () -> page.searchText("more"));
         assertThrows(IllegalStateException.class,
                 () -> page.selectContent(new SelectionBoundary(leftPoint),
-                        new SelectionBoundary(rightPoint), false));
+                        new SelectionBoundary(rightPoint)));
         assertThrows(IllegalStateException.class, () -> page.render(
                 Bitmap.createBitmap(A4_WIDTH_PTS, A4_HEIGHT_PTS, Bitmap.Config.ARGB_8888), null,
                 null, new RenderParams.Builder(1).build()));

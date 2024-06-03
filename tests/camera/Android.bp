@@ -101,3 +101,10 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+filegroup {
+    name: "CameraCtsBitmapUtils",
+    srcs: [
+        "src/android/hardware/camera2/cts/rs/BitmapUtils.java",
+    ],
+}

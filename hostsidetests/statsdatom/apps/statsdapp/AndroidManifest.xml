@@ -91,12 +91,13 @@
 
         <activity android:name=".DaveyActivity"
              android:exported="true"/>
+        <activity android:name=".MediaProjectionTests$MediaProjectionActivity"
+            android:exported="true"/>
         <activity android:name=".ANRActivity"
              android:label="ANR Test Activity"
              android:launchMode="singleInstance"
              android:process=":ANRProcess"
              android:exported="true"/>
-
         <service android:name=".StatsdAuthenticator"
              android:exported="false">
             <intent-filter>

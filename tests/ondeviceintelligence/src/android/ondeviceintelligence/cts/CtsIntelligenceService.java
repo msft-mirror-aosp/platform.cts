@@ -25,7 +25,9 @@ import android.app.ondeviceintelligence.DownloadCallback;
 import android.app.ondeviceintelligence.Feature;
 import android.app.ondeviceintelligence.FeatureDetails;
 import android.app.ondeviceintelligence.OnDeviceIntelligenceException;
+import android.content.Intent;
 import android.os.CancellationSignal;
+import android.os.Looper;
 import android.os.OutcomeReceiver;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
@@ -43,10 +45,37 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 public class CtsIntelligenceService extends OnDeviceIntelligenceService {
+    public static CountDownLatch sConnectLatch;
+    public static CountDownLatch sUnbindLatch;
+
+    // The timeout to wait for async result
+    public static final long WAIT_TIMEOUT_IN_MS = 5000;
+
+    private static OnDeviceIntelligenceService sService;
+    private final Executor mAsyncRequestExecutor = Executors.newCachedThreadPool();
+
+
+    @Override
+    public void onReady() {
+        Log.d(TAG, "onReady()");
+        sService = this;
+        if (sConnectLatch != null) {
+            sConnectLatch.countDown();
+        }
+    }
+
+    public static OnDeviceIntelligenceService getServiceInstance() {
+        return sService;
+    }
+
     public static Feature getSampleFeature(int id) {
         return new Feature.Builder(id).setFeatureParams(PersistableBundle.EMPTY).setModelName(
                 "test-model").setName("test-feature").setType(1).setVariant(2).build();
@@ -66,6 +95,16 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
 
     @Override
     public void onInferenceServiceConnected() {
+        mAsyncRequestExecutor.execute(() -> {
+            try {
+                File testFile = new File(getFilesDir(), TEST_FILE_NAME);
+                File testFile2 = new File(TEST_FILE_NAME);
+                populateTestContent(testFile);
+                populateTestContent(testFile2);
+            } catch (IOException e) {
+                Log.i(TAG, "Received failure when creating file.");
+            }
+        });
         Log.i(TAG, "Received onInferenceServiceStarted");
     }
 
@@ -75,10 +114,27 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     }
 
     @Override
+    public boolean onUnbind(Intent intent) {
+        Log.d(TAG, "onUnbind()");
+        mAsyncRequestExecutor.execute(() -> {
+            if (sUnbindLatch != null) {
+                sUnbindLatch.countDown();
+            }
+        });
+        return true;
+    }
+
+    @Override
     public void onGetReadOnlyFeatureFileDescriptorMap(@NonNull Feature feature,
             @NonNull Consumer<Map<String, ParcelFileDescriptor>> fileDescriptorMapConsumer) {
+        mAsyncRequestExecutor.execute(() -> createAndPopulateTestFile(fileDescriptorMapConsumer));
+    }
+
+    private void createAndPopulateTestFile(
+            @NonNull Consumer<Map<String, ParcelFileDescriptor>> fileDescriptorMapConsumer) {
         try {
-            File testFile = getTestFile();
+            File testFile = new File(getFilesDir(), TEST_FILE_NAME);
+            populateTestContent(testFile);
             try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(testFile,
                     ParcelFileDescriptor.MODE_READ_ONLY)) {
                 Map<String, ParcelFileDescriptor> fileDescriptorMap = new ArrayMap<>();
@@ -97,6 +153,15 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
             @Nullable CancellationSignal cancellationSignal,
             @NonNull DownloadCallback downloadCallback) {
         Log.w(TAG, "Received onDownloadFeature call from: " + callerUid);
+        if (feature.getId() == 3) {
+            return; // don't invoke any callback
+        }
+        if (feature.getId() == 2) {
+            downloadCallback.onDownloadFailed(1, "error message", PersistableBundle.EMPTY);
+            return;
+        }
+        downloadCallback.onDownloadStarted(100);
+        downloadCallback.onDownloadProgress(100);
         downloadCallback.onDownloadCompleted(PersistableBundle.EMPTY);
     }
 
@@ -109,7 +174,12 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onGetFeature(int callerUid, int featureId,
             @NonNull OutcomeReceiver<Feature, OnDeviceIntelligenceException> featureCallback) {
-        featureCallback.onResult(getSampleFeature(1));
+        if (!isMainThread()) {
+            featureCallback.onError(
+                    new OnDeviceIntelligenceException(-1, "Not running on app thread."));
+        }
+
+        featureCallback.onResult(getSampleFeature(featureId));
     }
 
     @Override
@@ -123,21 +193,59 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
     @Override
     public void onGetVersion(@NonNull LongConsumer versionConsumer) {
         versionConsumer.accept(1);
-
     }
 
-    private File getTestFile() throws IOException {
-        File path = this.getFilesDir();
-        File file = new File(path, TEST_FILE_NAME);
+    /**
+     * Init the CountDownLatch that is used to wait for service onReady() and onShutdown().
+     */
+    public static void initServiceConnectionLatch() {
+        sConnectLatch = new CountDownLatch(1);
+    }
+
+    /**
+     * Wait for service onCreate().
+     */
+    public static void waitServiceConnect() throws InterruptedException {
+        if (sConnectLatch == null) {
+            throw new AssertionError("Should init connect CountDownLatch");
+        }
+        if (!sConnectLatch.await(WAIT_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS)) {
+            throw new AssertionError("OnDeviceIntelligenceService doesn't start.");
+        }
+        sConnectLatch = null;
+    }
+
+    /**
+     * Init the CountDownLatch that is used to wait for service onReady() and onShutdown().
+     */
+    public static void initUnbindLatch() {
+        sUnbindLatch = new CountDownLatch(1);
+    }
+
+    /**
+     * Wait for service {@link #onUnbind}.
+     */
+    public static void waitForUnbind() throws InterruptedException {
+        if (sUnbindLatch == null) {
+            throw new AssertionError("Should init connect CountDownLatch");
+        }
+        if (!sUnbindLatch.await(WAIT_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS)) {
+            throw new AssertionError("OnDeviceIntelligenceService doesn't get unbinded.");
+        }
+        sUnbindLatch = null;
+    }
+
+    private void populateTestContent(File file) throws IOException {
         if (file.exists()) {
-            return file;
+            return;
         }
 
         try (FileOutputStream stream = new FileOutputStream(file)) {
             stream.write(TEST_CONTENT.getBytes());
         }
-
-        return file;
     }
 
+    private static boolean isMainThread() {
+        return Looper.myLooper() == Looper.getMainLooper();
+    }
 }

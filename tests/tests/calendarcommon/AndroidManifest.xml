@@ -28,7 +28,7 @@
                      android:label="CTS tests of calendarcommon">
     </instrumentation>
 
-    <uses-sdk android:minSdkVersion="15" android:targetSdkVersion="17"></uses-sdk>
+    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="28"></uses-sdk>
 
 </manifest>
 

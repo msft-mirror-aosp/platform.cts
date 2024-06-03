@@ -28,15 +28,12 @@ import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.InstantAppInfo;
+import android.content.pm.PackageManager;
 import android.os.RemoteCallback;
 import android.os.UserHandle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
@@ -51,8 +48,9 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
@@ -76,7 +74,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @LargeTest
-@RequireFeature(CommonPackages.FEATURE_INPUT_METHODS)
 @RequireMultiUserSupport
 @RunWith(BedsteadJUnit4.class)
 public class MultiUserTest {
@@ -92,9 +89,6 @@ public class MultiUserTest {
     private Context mContext;
     private InputMethodManager mImm;
     private boolean mNeedsTearDown = false;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -126,11 +120,13 @@ public class MultiUserTest {
      * APK installation
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_IMM_USERHANDLE_HOSTSIDETESTS)
     @EnsureHasSecondaryUser
-    public void testSecondaryUser() throws Exception {
+    @EnsureHasAdditionalUser  // Required on Android Automotive
+    public void testSecondaryUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference secondaryUser = sDeviceState.secondaryUser();
+        final UserReference secondaryUser =
+                isRunningOnAuto() ? sDeviceState.additionalUser() : sDeviceState.secondaryUser();
+
         final int currentUserId = currentUser.id();
         final int secondaryUserId = secondaryUser.id();
 
@@ -186,12 +182,15 @@ public class MultiUserTest {
         assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, secondaryUserId);
     }
 
+    private boolean isRunningOnAuto() {
+        return TestApis.packages().features().contains(PackageManager.FEATURE_AUTOMOTIVE);
+    }
+
     /**
      * Make sure that InputMethodManagerService automatically updates its internal IME list upon IME
      * APK installation
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_IMM_USERHANDLE_HOSTSIDETESTS)
     @RequireFeature(CommonPackages.FEATURE_MANAGED_USERS)
     @EnsureHasWorkProfile
     public void testProfileUser() throws Exception {

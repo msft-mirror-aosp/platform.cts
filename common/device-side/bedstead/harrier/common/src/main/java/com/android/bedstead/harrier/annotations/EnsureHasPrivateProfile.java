@@ -38,9 +38,11 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RequireNotHeadlessSystemUserMode(reason = "Requires full system user")
 @EnsureHasProfileAnnotation("android.os.usertype.profile.PRIVATE")
+@RequirePrivateSpaceSupported
 public @interface EnsureHasPrivateProfile {
+    int ENSURE_HAS_PRIVATE_PROFILE_PRECEDENCE = REQUIRE_RUN_ON_PRECEDENCE - 1;
+
     /** Which user type the private profile should be attached to. */
     UserType forUser() default INITIAL_USER;
 
@@ -64,5 +66,5 @@ public @interface EnsureHasPrivateProfile {
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
     // Must be before RequireRunOn to ensure users exist
-    int priority() default REQUIRE_RUN_ON_PRECEDENCE - 1;
+    int priority() default ENSURE_HAS_PRIVATE_PROFILE_PRECEDENCE;
 }

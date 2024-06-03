@@ -44,7 +44,7 @@
     <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.AutoRevokeTest" />
 
     <!-- No Gallery2, Music -->
-    <option name="compatibility:exclude-filter" value="CtsProviderTestCases android.provider.cts.media.MediaStoreIntentsTest" />
+    <option name="compatibility:exclude-filter" value="CtsMediaProviderTestCases android.provider.cts.media.MediaStoreIntentsTest" />
 
     <!-- No Music -->
     <option name="compatibility:exclude-filter" value="CtsContentTestCases android.content.cts.AvailableIntentsTest#testMusicPlayback" />
@@ -131,6 +131,9 @@
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.IpSecManagerTest#testChaCha20Poly1305Udp4UdpEncap" />
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.IpSecManagerTest#testChaCha20Poly1305Tcp4UdpEncap" />
 
+    <!-- b/335351293 Remove ApfIntegrationTest running against broken vendor images on GSI -->
+    <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.ApfIntegrationTest" />
+
     <!-- b/285247534 Remove WM Extension tests on GSI -->
     <option name="compatibility:exclude-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.SdkAvailabilityTest" />
 
@@ -171,4 +174,8 @@
 
     <!-- b/310810735 Remove CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testImageReaderYuvAndPrivate from cts-on-gsi -->
     <option name="compatibility:exclude-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testImageReaderYuvAndPrivate" />
+
+    <!-- b/236205588#comment26 -->
+    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
+    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
 </configuration>

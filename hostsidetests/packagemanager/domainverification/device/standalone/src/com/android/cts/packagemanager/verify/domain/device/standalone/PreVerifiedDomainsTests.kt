@@ -33,6 +33,7 @@ import com.android.cts.packagemanager.verify.domain.java.DomainUtils.DOMAIN_1
 import com.android.cts.packagemanager.verify.domain.java.DomainUtils.DOMAIN_2
 import com.google.common.truth.Truth.assertThat
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -81,6 +82,8 @@ class PreVerifiedDomainsTests : DomainVerificationIntentTestBase(DOMAIN_1) {
         // The 2nd domain isn't marked as auto verify so can't be pre-verified
         assertThat(hostToStateMap?.get(DOMAIN_2))
                 .isEqualTo(DomainVerificationUserState.DOMAIN_STATE_NONE)
+        // Abort the test if the domain verification agent got enabled during the test
+        Assume.assumeTrue(getDomainVerificationAgent() == null)
         // The first domain resolves to app
         assertResolvesTo(DECLARING_PKG_1_COMPONENT)
         // The pre-verified state can be overwritten
@@ -117,7 +120,7 @@ class PreVerifiedDomainsTests : DomainVerificationIntentTestBase(DOMAIN_1) {
 
     private fun getDomainVerificationAgent(): ComponentName? {
         val agentComponentName: String = SystemUtil.runShellCommand(
-            "pm get-domain-verification-agent"
+            "pm get-domain-verification-agent --user " + userId
         ).trim()
         if (agentComponentName.startsWith("Failure") ||
             agentComponentName.startsWith("No Domain Verifier")) {

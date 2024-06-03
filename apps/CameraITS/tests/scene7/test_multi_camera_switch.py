@@ -14,8 +14,6 @@
 """Verify that the switch from UW to W has similar RGB values."""
 
 
-import cv2
-import glob
 import logging
 import math
 import os.path
@@ -29,53 +27,54 @@ import camera_properties_utils
 import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
-import preview_stabilization_utils
-import video_processing_utils
+import preview_processing_utils
 
+
+_AE_ATOL = 4.0
+_AE_RTOL = 0.04  # 4%
+_AF_ATOL = 0.02  # 2%
 _ARUCO_MARKERS_COUNT = 4
+_AWB_ATOL = 0.02  # 2%
 _CH_FULL_SCALE = 255
 _COLORS = ('r', 'g', 'b', 'gray')
 _IMG_FORMAT = 'png'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_PERCENTAGE_CHANGE_THRESHOLD = 0.5
+_PATCH_MARGIN = 50  # pixels
 _RECORDING_DURATION = 400  # milliseconds
-_SHARPNESS_RTOL = 0.02  # 2%
+_SENSOR_ORIENTATIONS = (90, 270)
 _SKIP_INITIAL_FRAMES = 15
+_TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _ZOOM_RANGE_UW_W = (0.95, 2.05)  # UW/W crossover range
 _ZOOM_STEP = 0.01
 
 
-def _remove_frame_files(dir_name, save_files_list):
-  """Removes the generated frame files from test dir.
+def _check_orientation_and_flip(props, uw_img, w_img, img_name_stem):
+  """Checks the sensor orientation and flips image.
+
+  The preview stream captures are flipped based on the sensor
+  orientation while using the front camera. In such cases, check the
+  sensor orientation and flip the image if needed.
 
   Args:
-    dir_name: test directory name.
-    save_files_list: list of files not to be removed.
-  """
-  if os.path.exists(dir_name):
-    for image in glob.glob('%s/*.png' % dir_name):
-      if image not in save_files_list:
-        os.remove(image)
-
-
-def _do_af_check(uw_img, w_img, log_path):
-  """Checks the AF behavior between the uw and w img.
-
-  Args:
+    props: camera properties object.
     uw_img: image captured using UW lens.
     w_img: image captured using W lens.
-    log_path: path to save the image.
+    img_name_stem: prefix for the img name to be saved
+
+  Returns:
+    numpy array of uw_img and w_img.
   """
-  file_stem = f'{os.path.join(log_path, _NAME)}_slanted_edge'
-  sharpness_uw = _compute_slanted_edge_sharpness(uw_img, f'{file_stem}_uw.png')
-  logging.debug('Sharpness for UW patch: %.2f', sharpness_uw)
-
-  sharpness_w = _compute_slanted_edge_sharpness(w_img, f'{file_stem}_w.png')
-  logging.debug('Sharpness for W patch: %.2f', sharpness_w)
-
-  if not math.isclose(sharpness_w, sharpness_uw, reltol=_SHARPNESS_RTOL):
-    raise AssertionError('Sharpness change is greater than the threshold value.'
-                         f'RTOL: {_SHARPNESS_RTOL}')
+  uw_img = (
+      preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+          props['android.sensor.orientation'], uw_img))
+  w_img = (
+      preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+          props['android.sensor.orientation'], w_img))
+  uw_img_name = f'{img_name_stem}_uw.png'
+  w_img_name = f'{img_name_stem}_w.png'
+  image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, uw_img_name)
+  image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, w_img_name)
+  return uw_img, w_img
 
 
 def _compute_slanted_edge_sharpness(input_img, file_name):
@@ -94,52 +93,9 @@ def _compute_slanted_edge_sharpness(input_img, file_name):
   """
   slanted_edge_patch = opencv_processing_utils.get_slanted_edge_from_patch(
       input_img)
-  image_processing_utils.write_image(slanted_edge_patch/255, file_name)
+  image_processing_utils.write_image(
+      slanted_edge_patch/_CH_FULL_SCALE, file_name)
   return image_processing_utils.compute_image_sharpness(slanted_edge_patch)
-
-
-def _do_awb_check(uw_img, w_img):
-  """Checks the ratio of R/G and B/G for UW and W img.
-
-  Args:
-    uw_img: image captured using UW lens.
-    w_img: image captured using W lens.
-  """
-  uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img)
-  logging.debug('UW R/G ratio: %s', uw_r_g_ratio)
-  logging.debug('UW B/G ratio: %s', uw_b_g_ratio)
-
-  w_r_g_ratio, w_b_g_ratio = _get_color_ratios(w_img)
-  logging.debug('W R/G ratio: %s', w_r_g_ratio)
-  logging.debug('W B/G ratio: %s', w_b_g_ratio)
-
-  r_g_ratio_change_percent = (
-      abs(w_r_g_ratio-uw_r_g_ratio)/uw_r_g_ratio)*100
-  logging.debug('r_g_ratio_change_percent: %.4f', r_g_ratio_change_percent)
-  if r_g_ratio_change_percent > _PERCENTAGE_CHANGE_THRESHOLD:
-    raise AssertionError('R/G percent change is greater than threshold value')
-
-  b_g_ratio_change_percent = (
-      abs(w_b_g_ratio-uw_b_g_ratio)/uw_b_g_ratio)*100
-  logging.debug('b_g_ratio_change_percent: %.4f', b_g_ratio_change_percent)
-  if b_g_ratio_change_percent > _PERCENTAGE_CHANGE_THRESHOLD:
-    raise AssertionError('B/G percent change is greater than threshold value')
-
-
-def _get_color_ratios(img):
-  """Computes the ratios of R/G and B/G for img.
-
-  Args:
-    img: RGB img in numpy format.
-  Returns:
-    r_g_ratio: Ratio of R and G channel means.
-    b_g_ratio: Ratio of B and G channel means.
-  """
-  img_means = image_processing_utils.compute_image_means(img)
-  img_means = [i * _CH_FULL_SCALE for i in img_means]
-  r_g_ratio = img_means[0]/img_means[1]
-  b_g_ratio = img_means[2]/img_means[1]
-  return r_g_ratio, b_g_ratio
 
 
 def _do_ae_check(uw_img, w_img, log_path, suffix):
@@ -164,28 +120,62 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
   y_avg_change_percent = (abs(w_y_avg-uw_y_avg)/uw_y_avg)*100
   logging.debug('y_avg_change_percent: %.4f', y_avg_change_percent)
 
-  if y_avg_change_percent > _PERCENTAGE_CHANGE_THRESHOLD:
-    raise AssertionError('y_avg change is greater than threshold value')
+  if not math.isclose(uw_y_avg, w_y_avg, rel_tol=_AE_RTOL, abs_tol=_AE_ATOL):
+    raise AssertionError('y_avg change is greater than threshold value: '
+                         f'diff: {abs(w_y_avg-uw_y_avg):.4f} '
+                         f'ATOL: {_AE_ATOL} '
+                         f'RTOL: {_AE_RTOL} '
+                         f'uw_y_avg: {uw_y_avg:.4f} '
+                         f'w_y_avg: {w_y_avg:.4f} ')
 
 
-def _extract_y(img_rgb, file_name):
-  """Converts an RGB img to BGR and returns a Y img.
+def _do_af_check(uw_img, w_img, log_path):
+  """Checks the AF behavior between the uw and w img.
 
-  The y img is saved with file_name in the test dir.
   Args:
-    img_rgb: An openCV image in RGB order.
-    file_name: file name along with the path to save the image.
-  Returns:
-    An openCV image converted to Y.
+    uw_img: image captured using UW lens.
+    w_img: image captured using W lens.
+    log_path: path to save the image.
   """
-  img_bgr = img_rgb[:, :, ::-1]
-  img_y = opencv_processing_utils.convert_to_y(img_bgr)
-  img_y_bgr = cv2.cvtColor(img_y, cv2.COLOR_GRAY2BGR)
-  image_processing_utils.write_image(img_y_bgr, file_name)
-  return img_y
+  file_stem = f'{os.path.join(log_path, _NAME)}_slanted_edge'
+  sharpness_uw = _compute_slanted_edge_sharpness(uw_img, f'{file_stem}_uw.png')
+  logging.debug('Sharpness for UW patch: %.2f', sharpness_uw)
+
+  sharpness_w = _compute_slanted_edge_sharpness(w_img, f'{file_stem}_w.png')
+  logging.debug('Sharpness for W patch: %.2f', sharpness_w)
+
+  if not math.isclose(sharpness_w, sharpness_uw, abs_tol=_AF_ATOL):
+    raise AssertionError('Sharpness change is greater than the threshold value.'
+                         f' ATOL: {_AF_ATOL} '
+                         f'sharpness_w: {sharpness_w} '
+                         f'sharpness_uw: {sharpness_uw}')
 
 
-def _extract_main_patch(img_rgb, img_path, lens_suffix):
+def _do_awb_check(uw_img, w_img):
+  """Checks the ratio of R/G and B/G for UW and W img.
+
+  Args:
+    uw_img: image captured using UW lens.
+    w_img: image captured using W lens.
+  """
+  uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img, 'UW')
+  w_r_g_ratio, w_b_g_ratio = _get_color_ratios(w_img, 'W')
+
+  if not math.isclose(uw_r_g_ratio, w_r_g_ratio,
+                      abs_tol=_AWB_ATOL):
+    raise AssertionError(f'R/G change is greater than the threshold value: '
+                         f'ATOL: {_AWB_ATOL} '
+                         f'uw_r_g_ratio: {uw_r_g_ratio:.4f} '
+                         f'w_r_g_ratio: {w_r_g_ratio:.4f}')
+  if not math.isclose(uw_b_g_ratio, w_b_g_ratio,
+                      abs_tol=_AWB_ATOL):
+    raise AssertionError(f'B/G change is greater than the threshold value: '
+                         f'ATOL: {_AWB_ATOL} '
+                         f'uw_b_g_ratio: {uw_b_g_ratio:.4f} '
+                         f'w_b_g_ratio: {w_b_g_ratio:.4f}')
+
+
+def _extract_main_patch(corners, ids, img_rgb, img_path, lens_suffix):
   """Extracts the main rectangle patch from the captured frame.
 
   Find aruco markers in the captured image and detects if the
@@ -194,25 +184,84 @@ def _extract_main_patch(img_rgb, img_path, lens_suffix):
   without the aruco markers in it.
 
   Args:
+    corners: list of detected corners.
+    ids: list of int ids for each ArUco markers in the input_img.
     img_rgb: An openCV image in RGB order.
     img_path: Path to save the image.
     lens_suffix: str; suffix used to save the image.
   Returns:
     rectangle_patch: numpy float image array of the rectangle patch.
   """
-  aruco_path = img_path.with_name(
-      f'{img_path.stem}_{lens_suffix}_aruco{img_path.suffix}')
-  corners, ids, _ = opencv_processing_utils.find_aruco_markers(
-      img_rgb, aruco_path)
-  if len(ids) != _ARUCO_MARKERS_COUNT:
-    raise AssertionError(
-        f'{_ARUCO_MARKERS_COUNT} ArUco markers should be detected.')
   rectangle_patch = opencv_processing_utils.get_patch_from_aruco_markers(
       img_rgb, corners, ids)
   patch_path = img_path.with_name(
       f'{img_path.stem}_{lens_suffix}_patch{img_path.suffix}')
   image_processing_utils.write_image(rectangle_patch/_CH_FULL_SCALE, patch_path)
   return rectangle_patch
+
+
+def _extract_y(img_uint8, file_name):
+  """Converts an RGB uint8 image to YUV and returns Y.
+
+  The Y img is saved with file_name in the test dir.
+
+  Args:
+    img_uint8: An openCV image in RGB order.
+    file_name: file name along with the path to save the image.
+
+  Returns:
+    An openCV image converted to Y.
+  """
+  y_uint8 = opencv_processing_utils.convert_to_y(img_uint8, 'RGB')
+  y_uint8 = np.expand_dims(y_uint8, axis=2)  # add plane to save image
+  image_processing_utils.write_image(y_uint8/_CH_FULL_SCALE, file_name)
+  return y_uint8
+
+
+def _find_aruco_markers(img_bw, img_path, lens_suffix):
+  """Detect ArUco markers in the input image.
+
+  Args:
+    img_bw: input img in black and white with ArUco markers.
+    img_path: path to save the image.
+    lens_suffix: suffix used to save the image.
+  Returns:
+    corners: list of detected corners.
+    ids: list of int ids for each ArUco markers in the input_img.
+  """
+  aruco_path = img_path.with_name(
+      f'{img_path.stem}_{lens_suffix}_aruco{img_path.suffix}')
+  corners, ids, _ = opencv_processing_utils.find_aruco_markers(
+      img_bw, aruco_path)
+  if len(ids) != _ARUCO_MARKERS_COUNT:
+    raise AssertionError(
+        f'{_ARUCO_MARKERS_COUNT} ArUco markers should be detected.')
+  return corners, ids
+
+
+def _get_color_ratios(img, identifier):
+  """Computes the ratios of R/G and B/G for img.
+
+  Args:
+    img: RGB img in numpy format.
+    identifier: str; identifier for logging statement. ie. 'UW' or 'W'
+
+  Returns:
+    r_g_ratio: Ratio of R and G channel means.
+    b_g_ratio: Ratio of B and G channel means.
+  """
+  img_means = image_processing_utils.compute_image_means(img)
+  r = img_means[0]
+  g = img_means[1]
+  b = img_means[2]
+  logging.debug('%s R mean: %.4f', identifier, r)
+  logging.debug('%s G mean: %.4f', identifier, g)
+  logging.debug('%s B mean: %.4f', identifier, b)
+  r_g_ratio = r/g
+  b_g_ratio = b/g
+  logging.debug('%s R/G ratio: %.4f', identifier, r_g_ratio)
+  logging.debug('%s B/G ratio: %.4f', identifier, b_g_ratio)
+  return r_g_ratio, b_g_ratio
 
 
 def _get_four_quadrant_patches(img, img_path, lens_suffix):
@@ -237,11 +286,18 @@ def _get_four_quadrant_patches(img, img_path, lens_suffix):
       h = size_y / num_columns
       w = size_x / num_rows
       patch = img[int(y):int(y+h), int(x):int(x+w)]
-      four_quadrant_patches.append(patch)
       patch_path = img_path.with_name(
           f'{img_path.stem}_{lens_suffix}_patch_'
           f'{i}_{j}{img_path.suffix}')
       image_processing_utils.write_image(patch/_CH_FULL_SCALE, patch_path)
+      cropped_patch = patch[_PATCH_MARGIN:-_PATCH_MARGIN,
+                            _PATCH_MARGIN:-_PATCH_MARGIN]
+      four_quadrant_patches.append(cropped_patch)
+      cropped_patch_path = img_path.with_name(
+          f'{img_path.stem}_{lens_suffix}_cropped_patch_'
+          f'{i}_{j}{img_path.suffix}')
+      image_processing_utils.write_image(
+          cropped_patch/_CH_FULL_SCALE, cropped_patch_path)
   return four_quadrant_patches
 
 
@@ -273,7 +329,7 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # Check the zoom range
       zoom_range = props['android.control.zoomRatioRange']
-      logging.debug('zoomRatioRange: %s', str(zoom_range))
+      logging.debug('zoomRatioRange: %s', zoom_range)
       camera_properties_utils.skip_unless(
           len(zoom_range) > 1 and
           (zoom_range[0] <= _ZOOM_RANGE_UW_W[0] <= zoom_range[1]) and
@@ -281,37 +337,21 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, chart_distance)
+      # Tap tablet to remove gallery buttons
+      if self.tablet:
+        self.tablet.adb.shell(
+            f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
-      preview_test_size = preview_stabilization_utils.get_max_preview_test_size(
+      preview_test_size = preview_processing_utils.get_max_preview_test_size(
           cam, self.camera_id)
       cam.do_3a()
 
-      # dynamic preview recording
-      # pylint: disable=line-too-long
-      recording_obj = preview_stabilization_utils.collect_preview_data_with_zoom(
-          cam, preview_test_size, _ZOOM_RANGE_UW_W[0],
-          _ZOOM_RANGE_UW_W[1], _ZOOM_STEP, _RECORDING_DURATION)
-
-      # Grab the recording from DUT
-      self.dut.adb.pull([recording_obj['recordedOutputPath'], self.log_path])
-      preview_file_name = (
-          recording_obj['recordedOutputPath'].split('/')[-1])
-      logging.debug('preview_file_name: %s', preview_file_name)
-      logging.debug('recorded video size : %s',
-                    str(recording_obj['videoSize']))
-
-      # Extract frames as png from mp4 preview recording
-      file_list = video_processing_utils.extract_all_frames_from_video(
-          self.log_path, preview_file_name, _IMG_FORMAT
+      # Start dynamic preview recording and collect results
+      capture_results, file_list = (
+          preview_processing_utils.preview_over_zoom_range(
+              self.dut, cam, preview_test_size, _ZOOM_RANGE_UW_W[0],
+              _ZOOM_RANGE_UW_W[1], _ZOOM_STEP, self.log_path)
       )
-
-      # TODO(ruchamk): Raise error if capture result and
-      # frame count doesn't match.
-      capture_results = recording_obj['captureMetadata']
-
-      # skip frames which might not have 3A converged
-      capture_results = capture_results[_SKIP_INITIAL_FRAMES:]
-      file_list = file_list[_SKIP_INITIAL_FRAMES:]
 
       physical_id_before = None
       counter = 0  # counter for the index of crossover point result
@@ -342,33 +382,25 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       img_uw_file = file_list[counter-2]
       capture_result_uw = capture_results[counter-2]
-      logging.debug('Capture results uw crossover: %s',
-                    capture_result_uw)
+      logging.debug('Capture results uw crossover: %s', capture_result_uw)
       img_w_file = file_list[counter-1]
       capture_result_w = capture_results[counter-1]
-      logging.debug('Capture results w crossover: %s',
-                    capture_result_w)
+      logging.debug('Capture results w crossover: %s', capture_result_w)
 
       # Remove unwanted frames and only save the UW and
       # W crossover point frames along with mp4 recording
-      _remove_frame_files(self.log_path, [
+      its_session_utils.remove_frame_files(self.log_path, [
           os.path.join(self.log_path, img_uw_file),
           os.path.join(self.log_path, img_w_file)])
 
       # Add suffix to the UW and W image files
-      uw_path = pathlib.Path(os.path.join(self.log_path,
-                                          img_uw_file))
-      uw_name = uw_path.with_name(
-          f'{uw_path.stem}_uw{uw_path.suffix}')
-      os.rename(os.path.join(self.log_path,
-                             img_uw_file), uw_name)
+      uw_path = pathlib.Path(os.path.join(self.log_path, img_uw_file))
+      uw_name = uw_path.with_name(f'{uw_path.stem}_uw{uw_path.suffix}')
+      os.rename(os.path.join(self.log_path, img_uw_file), uw_name)
 
-      w_path = pathlib.Path(os.path.join(self.log_path,
-                                         img_w_file))
-      w_name = w_path.with_name(
-          f'{w_path.stem}_w{w_path.suffix}')
-      os.rename(os.path.join(self.log_path, img_w_file),
-                w_name)
+      w_path = pathlib.Path(os.path.join(self.log_path, img_w_file))
+      w_name = w_path.with_name(f'{w_path.stem}_w{w_path.suffix}')
+      os.rename(os.path.join(self.log_path, img_w_file), w_name)
 
       # Convert UW and W img to numpy array
       uw_img = image_processing_utils.convert_image_to_numpy_array(
@@ -376,17 +408,37 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       w_img = image_processing_utils.convert_image_to_numpy_array(
           w_name)
 
+      # Check the sensor orientation and flip image
+      if (props['android.lens.facing'] ==
+          camera_properties_utils.LENS_FACING['FRONT']):
+        img_name_stem = os.path.join(self.log_path, 'flipped_preview')
+        uw_img, w_img = _check_orientation_and_flip(
+            props, uw_img, w_img, img_name_stem
+        )
+
+      # Convert UW and W img to black and white
+      uw_img_bw = (
+          opencv_processing_utils.convert_image_to_high_contrast_black_white(
+              uw_img))
+      w_img_bw = (
+          opencv_processing_utils.convert_image_to_high_contrast_black_white(
+              w_img))
+
       # Find ArUco markers in the image with UW lens
       # and extract the outer box patch
-      uw_chart_patch = _extract_main_patch(uw_img, uw_path, 'uw')
+      corners, ids = _find_aruco_markers(uw_img_bw, uw_path, 'uw')
+      uw_chart_patch = _extract_main_patch(
+          corners, ids, uw_img, uw_path, 'uw')
       uw_four_patches = _get_four_quadrant_patches(
           uw_chart_patch, uw_path, 'uw')
 
       # Find ArUco markers in the image with W lens
       # and extract the outer box patch
-      w_chart_patch = _extract_main_patch(w_img, w_path, 'w')
+      corners, ids = _find_aruco_markers(w_img_bw, w_path, 'w')
+      w_chart_patch = _extract_main_patch(
+          corners, ids, w_img, w_path, 'w')
       w_four_patches = _get_four_quadrant_patches(
-          w_chart_patch, uw_path, 'w')
+          w_chart_patch, w_path, 'w')
 
       for uw_patch, w_patch, color in zip(
           uw_four_patches, w_four_patches, _COLORS):

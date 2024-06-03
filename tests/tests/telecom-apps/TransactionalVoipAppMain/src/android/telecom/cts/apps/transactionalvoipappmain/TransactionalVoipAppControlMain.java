@@ -417,6 +417,11 @@ public class TransactionalVoipAppControlMain extends Service {
             }
             return mIdToControl.get(id);
         }
+
+        @Override
+        public void cleanup() {
+            cleanupImplementation();
+        }
     };
 
     @Nullable
@@ -435,9 +440,7 @@ public class TransactionalVoipAppControlMain extends Service {
         return null;
     }
 
-    @Override
-    public boolean onUnbind(Intent intent) {
-        Log.i(mTag, String.format("onUnbind: with intent=[%s]", intent));
+    private void disconnectAndDestroyAllCalls() {
         for (TransactionalCall call : mIdToControl.values()) {
             call.getCallControl().disconnect(
                     new DisconnectCause(
@@ -448,12 +451,27 @@ public class TransactionalVoipAppControlMain extends Service {
             call.getCallResources().destroyResources(getApplicationContext());
         }
         mIdToControl.clear();
-        Log.i(mTag, String.format("onUnbind: mPhoneAccount=[%s]", mPhoneAccount));
-        mTelecomManager.unregisterPhoneAccount(mPhoneAccount.getAccountHandle());
+    }
+
+    private void unregisterAllPhoneAccounts() {
+        for (PhoneAccountHandle handle : mTelecomManager.getOwnSelfManagedPhoneAccounts()) {
+            mTelecomManager.unregisterPhoneAccount(handle);
+        }
+    }
+
+    private void cleanupImplementation() {
+        disconnectAndDestroyAllCalls();
+        unregisterAllPhoneAccounts();
         // delete the call channel
         NotificationUtils.deleteNotificationChannel(
                 getApplicationContext(),
                 NOTIFICATION_CHANNEL_ID);
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.i(mTag, String.format("onUnbind: with intent=[%s]", intent));
+        cleanupImplementation();
         mIsBound = false;
         return super.onUnbind(intent);
     }

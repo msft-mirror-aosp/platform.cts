@@ -104,7 +104,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -113,7 +112,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
- * CTS tests for DomainSelection.
+ * CTS tests for AOSP DomainSelectionService.
  */
 @RunWith(AndroidJUnit4.class)
 public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase {
@@ -172,7 +171,7 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
         sSupportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(telephonyManager,
-                        (tm) -> tm.isDomainSelectionSupported());
+                        (tm) -> tm.isAospDomainSelectionService());
 
         if (!sSupportDomainSelection) {
             return;
@@ -214,6 +213,8 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         ImsMmTelManager mmTelManager = imsManager.getImsMmTelManager(sTestSub);
         sVoLteEnabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mmTelManager,
                 ImsMmTelManager::isAdvancedCallingSettingEnabled);
+
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
 
         sMockModemManager.notifyEmergencyNumberList(sTestSlot,
                 new String[] { TEST_EMERGENCY_NUMBER });
@@ -298,7 +299,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         TelephonyUtils.endBlockSuppression(InstrumentationRegistry.getInstrumentation());
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsRegisteredBarredSelectCs() throws Exception {
         // Setup pre-condition
@@ -317,7 +317,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsRegisteredSelectPs() throws Exception {
         // Setup pre-condition
@@ -334,7 +333,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyPsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsNotRegisteredSelectCs() throws Exception {
         // Setup pre-condition
@@ -351,7 +349,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsNotRegisteredBarredSelectCs() throws Exception {
         // Setup pre-condition
@@ -370,7 +367,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsRegisteredEmsOffBarredSelectCs() throws Exception {
         // Setup pre-condition
@@ -389,7 +385,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsRegisteredEmsOffSelectCs() throws Exception {
         // Setup pre-condition
@@ -406,7 +401,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsNotRegisteredEmsOffSelectCs() throws Exception {
         // Setup pre-condition
@@ -423,7 +417,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsNotRegisteredEmsOffBarredSelectCs() throws Exception {
         // Setup pre-condition
@@ -442,7 +435,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsRegisteredVopsOffBarredSelectCs() throws Exception {
         // Setup pre-condition
@@ -461,7 +453,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsRegisteredVopsOffSelectCs() throws Exception {
         // Setup pre-condition
@@ -478,7 +469,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsNotRegisteredVopsOffSelectCs() throws Exception {
         // Setup pre-condition
@@ -495,7 +485,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsNotRegisteredVopsOffBarredSelectCs() throws Exception {
         // Setup pre-condition
@@ -514,7 +503,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsRegisteredVopsOffEmsOffBarredSelectCs() throws Exception {
         // Setup pre-condition
@@ -533,7 +521,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsRegisteredVopsOffEmsOffSelectCs() throws Exception {
         // Setup pre-condition
@@ -550,7 +537,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsNotRegisteredVopsOffEmsOffSelectCs() throws Exception {
         // Setup pre-condition
@@ -567,7 +553,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCombinedImsNotRegisteredVopsOffEmsOffBarredSelectCs() throws Exception {
         // Setup pre-condition
@@ -586,7 +571,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCsSelectCs() throws Exception {
         // Setup pre-condition
@@ -603,7 +587,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyCsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsRegisteredBarredScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -622,7 +605,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsRegisteredSelectPs() throws Exception {
         // Setup pre-condition
@@ -639,7 +621,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyPsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsNotRegisteredSelectPs() throws Exception {
         // Setup pre-condition
@@ -656,7 +637,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyPsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsNotRegisteredBarredSelectScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -675,7 +655,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsRegisteredEmsOffBarredScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -694,7 +673,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsRegisteredEmsOffScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -711,7 +689,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsNotRegisteredEmsOffScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -728,7 +705,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsNotRegisteredEmsOffBarredScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -747,7 +723,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsRegisteredVopsOffBarredScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -766,7 +741,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsRegisteredVopsOffScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -783,7 +757,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsNotRegisteredVopsOffScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -800,7 +773,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsNotRegisteredVopsOffBarredScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -819,7 +791,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsRegisteredVopsOffEmsOffBarredScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -838,7 +809,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsRegisteredVopsOffEmsOffScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -855,7 +825,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsImsNotRegisteredVopsOffEmsOffScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -872,7 +841,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultEpsNotRegisteredVopsOffEmsOffBarredScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -891,7 +859,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultOutOfServiceScanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -907,7 +874,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testVoLteOnEpsImsNotRegisteredSelectPs() throws Exception {
         // Setup pre-condition
@@ -930,7 +896,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyPsDialed();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testVoLteOffEpsImsNotRegisteredScanCsPreferred() throws Exception {
         // Setup pre-condition
@@ -953,7 +918,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanCsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testRequiresRegEpsImsNotRegisteredScanCsPreferred() throws Exception {
         // Setup pre-condition
@@ -971,7 +935,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanCsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCsSelectCsFailedRescanPsPreferred() throws Exception {
         // Setup pre-condition
@@ -994,7 +957,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyRescanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultWifiImsRegisteredScanTimeoutSelectWifiImsPdn() throws Exception {
         // Setup pre-condition
@@ -1025,7 +987,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         assertNotNull(callSession);
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultWifiImsRegisteredCellularTimeoutSelectWifiImsPdn() throws Exception {
         // Setup pre-condition
@@ -1057,7 +1018,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         assertNotNull(callSession);
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testDefaultCsThenPs() throws Exception {
         // Setup pre-condition
@@ -1088,7 +1048,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         unsolEmergencyNetworkScanResult(EUTRAN);
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testNrEpsImsRegisteredEmcOffEmsOnScanLtePreferred() throws Exception {
         // Setup pre-condition
@@ -1111,7 +1070,6 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
         verifyScanPsPreferred();
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testOutGoingEmergencyCall() throws Exception {
         // Setup pre-condition

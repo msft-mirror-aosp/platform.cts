@@ -18,9 +18,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.android.cts.verifier"
           android:versionCode="5"
-          android:versionName="14_r2">
+          android:versionName="15_r1">
 
-    <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="34"/>
+    <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="35"/>
 
     <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
     <uses-permission android:name="android.car.permission.READ_CAR_POWER_POLICY" />
@@ -125,6 +125,9 @@
 
     <!-- Needed for Notification Full Screen Intent tests -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+
+    <!-- Needed for Notification Hiding tests -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
 
     <application android:networkSecurityConfig="@xml/network_security_config"
                  android:label="@string/app_name"
@@ -2409,54 +2412,6 @@
                                       android.nfc.tech.NfcA#transceive" />
         </activity>
 
-        <activity android:name=".nfc.hce.ObserveModeReaderActivity"
-                android:label="@string/nfc_observe_mode_reader">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction"/>
-        </activity>
-
-        <activity android:name=".nfc.hce.ObserveModeEmulatorActivity"
-                android:label="@string/nfc_observe_mode_emulator">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction|
-                                      android.nfc.NfcAdapter#allowTransaction|
-                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_A|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
-        </activity>
-
-        <activity android:name=".nfc.hce.PollingLoopReaderActivity"
-                android:label="@string/nfc_polling_loop_a_reader">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction|
-                                      android.nfc.NfcAdapter#allowTransaction|
-                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_B|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
-        </activity>
-
-        <activity android:name=".nfc.hce.PollingLoopEmulatorActivity"
-                android:label="@string/nfc_polling_loop_a_emulator">
-                <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-                <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#disallowTransaction|
-                                      android.nfc.NfcAdapter#allowTransaction|
-                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_A|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_B|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
-                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
-        </activity>
-
         <activity android:name=".nfc.hce.DualPaymentEmulatorActivity"
                 android:label="@string/nfc_hce_dual_payment_emulator"
                 android:configChanges="keyboardHidden|orientation|screenSize" >
@@ -2826,15 +2781,6 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/screen_off_payment_aid_list"/>
         </service>
-        <service android:name=".nfc.hce.PollingLoopService" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/access_aid_list"/>
-        </service>
 
         <service
             android:name=".nfc.hcef.MyHostFelicaService"
@@ -3141,6 +3087,7 @@
 
         <activity
             android:name=".camera.fov.PhotoCaptureActivity"
+            android:configChanges="orientation|screenSize"
             android:label="@string/camera_fov_calibration"
             android:exported="true"
             android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" >
@@ -3534,6 +3481,24 @@
                 android.provider.Service#EXTRA_CHANNEL_FILTER_LIST" />
         </activity>
 
+        <activity android:name=".notifications.NotificationHidingVerifierActivity"
+            android:exported="true"
+            android:label="@string/notif_hiding_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_notifications" />
+            <meta-data android:name="test_excluded_features"
+                       android:value="android.hardware.type.watch:android.software.leanback:android.hardware.type.automotive" />
+            <meta-data android:name="display_mode"
+                android:value="multi_display_mode" />
+            <meta-data android:name="CddTest" android:value="9.8.2/C-0-6,C-3-1,C-3-2,C-3-3" />
+        </activity>
+        <service android:name=".notifications.NotificationHidingVerifierActivity$MediaProjectionService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
         <activity android:name=".notifications.NotificationPrivacyVerifierActivity"
             android:exported="true"
             android:label="@string/notif_privacy_test">
@@ -3558,7 +3523,7 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_notifications" />
             <meta-data android:name="test_excluded_features"
-                android:value="android.hardware.type.automotive:android.hardware.type.television:android.hardware.type.watch" />
+                android:value="android.hardware.type.automotive:android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="CddTest" android:value="3.8.3.1/C-2-1" />
         </activity>
@@ -3635,6 +3600,8 @@
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                        android:value="android.widget.Toast#makeText" />
+            <meta-data android:name="test_excluded_features"
+                       android:value="android.hardware.type.watch" />
         </activity>
 
         <activity android:name=".notifications.BubblesVerifierActivity"
@@ -4778,6 +4745,18 @@
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                        android:value="android.provider.AlarmClock#ACTION_SHOW_ALARMS|android.provider.AlarmClock#ACTION_SET_ALARM|android.provider.AlarmClock#ACTION_SET_TIMER" />
+        </activity>
+
+        <activity android:name=".multidevice.MultiDeviceTestsActivity"
+                android:exported="true"
+                android:label="@string/nfc_tests_title">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_multidevice" />
+            <meta-data android:name="display_mode"
+                       android:value="single_display_mode" />
         </activity>
 
 <!-- TODO: enable when not requiring to tap the screen and timeouts are tuned -->
@@ -6354,6 +6333,19 @@
             <meta-data android:name="CddTest" android:value="9.8.13/C-1-3" />
         </activity>
 
+        <activity android:name=".audio.ImmersiveAudioActivity"
+            android:exported="true"
+            android:label="@string/immersive_audio_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+                <category android:name="com.android.cts.verifier.audio.IMMERSIVE_AUDIO_RESULTS" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="CddTest" android:value="5.6/C-4-1" />
+        </activity>
+
         <service android:name=".tv.MockTvInputService"
                 android:exported="true"
             android:permission="android.permission.BIND_TV_INPUT">
@@ -6450,23 +6442,6 @@
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                        android:value="android.car.hardware.power.CarPowerManager#getCurrentPowerPolicy" />
-        </activity>
-
-        <!-- Used for CTS Verifying UX Restrictions on multiple displays. -->
-        <activity android:name=".car.UxRestrictionsTestActivity"
-            android:exported="true"
-            android:label="@string/car_uxre_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_car" />
-            <meta-data android:name="test_required_features"
-                android:value="android.hardware.type.automotive"/>
-            <meta-data android:name="display_mode"
-                android:value="multi_display_mode" />
-            <meta-data android:name="NonApiTest"
-                android:value="Test behavior of ActivityBlockingActivity for UX Restrictions on multiple displays" />
         </activity>
 
         <activity-alias android:name=".car.CarDockActivity2"
@@ -7123,9 +7098,30 @@
 
         <!-- Components for Sharesheet tests -->
        <activity
-            android:name=".sharesheet.SharesheetChooserResultActivity"
+            android:name=".sharesheet.SharesheetChooserResultEditActivity"
             android:exported="true"
-            android:label="@string/sharesheet_result_test">
+            android:label="@string/sharesheet_result_test_edit"
+            android:launchMode="singleTask">
+           <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
+                    |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetChooserResultCopyActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_result_test_copy"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
@@ -7140,6 +7136,27 @@
                     |android.service.chooser.ChooserResult#getResult" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetChooserResultComponentActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_result_test_component"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
+                    |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
 
         <activity
             android:name=".sharesheet.SharesheetPayloadToggleActivity"
@@ -7275,6 +7292,31 @@
             <meta-data android:name="NonApiTest"
                        android:value="Helper class. Used to perform admin policy setup." />
         </activity>
+        <activity android:name=".widget.GeneratedPreviewsTestActivity"
+            android:exported="true"
+            android:label="@string/widget_generated_previews_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_other" />
+            <meta-data android:name="test_required_features"
+                android:value="android.software.app_widgets" />
+            <meta-data android:name="display_mode"
+                android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.appwidget.AppWidgetManager#setWidgetPreview|android.appwidget.AppWidgetManager#getWidgetPreview" />
+        </activity>
+        <receiver android:name=".widget.GeneratedPreviewWidgetProvider"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/widget_generated_previews_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/generated_previews_widget_info" />
+        </receiver>
     </application>
 
     <queries>

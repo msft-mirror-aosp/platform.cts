@@ -70,4 +70,15 @@ public final class ShellCommandUtils {
     public static String clearPackageData(String packageName, int userId) {
         return String.format("pm clear --user %d %s", userId, packageName);
     }
+
+    /** Command to install existing app to another user. */
+    public static String installExisting(String packageName, int userId, boolean instant) {
+        final StringBuilder sb = new StringBuilder("cmd package install-existing");
+        sb.append(" --user ").append(userId);
+        if (instant) {
+            sb.append(" --instant");
+        }
+        sb.append(" ").append(packageName);
+        return sb.toString();
+    }
 }

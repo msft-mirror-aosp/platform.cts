@@ -46,7 +46,6 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
             "testProfileGlobalRestrictionsNotEnforced";
 
     private boolean mRemoveOwnerInTearDown;
-    private int mDeviceOwnerUserId;
 
     @Override
     public void setUp() throws Exception {
@@ -327,10 +326,6 @@ public final class UserRestrictionsTest extends BaseDevicePolicyTest {
                 setDeviceOwner(DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,
                         mDeviceOwnerUserId, /*expectFailure*/ false));
         mRemoveOwnerInTearDown = true;
-
-        if (isHeadlessSystemUserMode()) {
-            affiliateUsers(DEVICE_ADMIN_PKG, mDeviceOwnerUserId, mPrimaryUserId);
-        }
     }
 
     /**

@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -76,6 +77,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
     private static final String LOG_TAG = CodecEncoderTest.class.getSimpleName();
     private static final ArrayList<String> ABR_MEDIATYPE_LIST = new ArrayList<>();
 
+    private boolean mGotCSD;
     private int mNumSyncFramesReceived;
     private final ArrayList<Integer> mSyncFramesPos = new ArrayList<>();
 
@@ -97,11 +99,16 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
     @Override
     protected void resetContext(boolean isAsync, boolean signalEOSWithLastFrame) {
         super.resetContext(isAsync, signalEOSWithLastFrame);
+        mGotCSD = false;
         mNumSyncFramesReceived = 0;
         mSyncFramesPos.clear();
     }
 
+    @Override
     protected void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {
+        if (info.size > 0 && ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0)) {
+            mGotCSD = true;
+        }
         if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
             mNumSyncFramesReceived += 1;
             mSyncFramesPos.add(mOutputCount);
@@ -277,6 +284,21 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 + mTestEnv, mActiveRawRes);
     }
 
+    private void validateCSD() {
+        if (mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_AAC)
+                || mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_OPUS)
+                || mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)
+                || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
+                || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
+                || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
+            assertTrue("components that support mediaType: " + mMediaType
+                    + " must generate CodecPrivateData \n" + mTestConfig + mTestEnv, mGotCSD);
+        } else if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+            assertFalse("components that support mediaType: " + mMediaType
+                    + " must not generate CodecPrivateData \n" + mTestConfig + mTestEnv, mGotCSD);
+        }
+    }
+
     /**
      * Checks if the component under test can encode the test file correctly. The encoding
      * happens in synchronous, asynchronous mode, eos flag signalled with last raw frame and
@@ -288,7 +310,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
      * parameters, the test checks for consistency across runs. Although the test collects the
      * output in a byte buffer, no analysis is done that checks the integrity of the bitstream.
      */
-    @CddTest(requirements = {"2.2.2", "2.3.2", "2.5.2", "5.1.1", "5.2/C-1-1"})
+    @CddTest(requirements = {"2.2.2", "2.3.2", "2.5.2", "5.1.1", "5.2/C-1-1", "5.2.4/C-1-3"})
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#COLOR_FormatYUV420Flexible",
             "android.media.AudioFormat#ENCODING_PCM_16BIT"})
     @LargeTest
@@ -320,6 +342,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                         queueEOS();
                         waitForAllOutputs();
                         validateMetrics(mCodecName, format);
+                        validateCSD();
                         /* TODO(b/147348711) */
                         if (false) mCodec.stop();
                         else mCodec.reset();

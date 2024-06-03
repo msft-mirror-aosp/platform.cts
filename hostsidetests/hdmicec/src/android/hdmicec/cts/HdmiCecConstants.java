@@ -30,6 +30,7 @@ public final class HdmiCecConstants {
     public static final int REBOOT_TIMEOUT = 60000;
     public static final int TIMEOUT_CEC_REINIT_SECONDS = 5;
     public static final int TIMEOUT_SAFETY_MS = 500;
+    public static final long TIMEOUT_UI_AND_STANDBY_AFTER_ACTIVE_SOURCE_LOST_SECONDS = 35;
 
     public static final int INVALID_VENDOR_ID = 0xFFFFFF;
 

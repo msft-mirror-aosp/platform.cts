@@ -101,6 +101,11 @@ void nativeMotionEventTest(JNIEnv *env, jclass /* clazz */, jobject obj) {
     AInputEvent_release(event);
 }
 
+void obtainNativeMotionEventCopyFromJava(JNIEnv *env, jclass /* clazz */, jobject obj) {
+    const AInputEvent *event = AMotionEvent_fromJava(env, obj);
+    AInputEvent_release(event);
+}
+
 jobject obtainMotionEventCopyFromNative(JNIEnv *env, jclass /* clazz */, jobject obj) {
     const AInputEvent *event = AMotionEvent_fromJava(env, obj);
     jobject motionEvent = AInputEvent_toJava(env, event);
@@ -142,17 +147,26 @@ void nativeKeyEventTest(JNIEnv *env, jclass /* clazz */, jobject obj) {
     AInputEvent_release(event);
 }
 
-const std::array<JNINativeMethod, 2> JNI_METHODS_MOTION = {{
+void obtainNativeKeyEventCopyFromJava(JNIEnv *env, jclass /* clazz */, jobject obj) {
+    const AInputEvent *event = AKeyEvent_fromJava(env, obj);
+    AInputEvent_release(event);
+}
+
+const std::array<JNINativeMethod, 3> JNI_METHODS_MOTION = {{
         {"nativeMotionEventTest", "(Landroid/view/MotionEvent;)V", (void *)nativeMotionEventTest},
         {"obtainMotionEventCopyFromNative",
          "(Landroid/view/MotionEvent;)Landroid/view/MotionEvent;",
          (jobject)obtainMotionEventCopyFromNative},
+        {"obtainNativeMotionEventCopyFromJava", "(Landroid/view/MotionEvent;)V",
+         (void *)obtainNativeMotionEventCopyFromJava},
 }};
 
-const std::array<JNINativeMethod, 2> JNI_METHODS_KEY = {{
+const std::array<JNINativeMethod, 3> JNI_METHODS_KEY = {{
         {"nativeKeyEventTest", "(Landroid/view/KeyEvent;)V", (void *)nativeKeyEventTest},
         {"obtainKeyEventCopyFromNative", "(Landroid/view/KeyEvent;)Landroid/view/KeyEvent;",
          (jobject)obtainKeyEventCopyFromNative},
+        {"obtainNativeKeyEventCopyFromJava", "(Landroid/view/KeyEvent;)V",
+         (void *)obtainNativeKeyEventCopyFromJava},
 }};
 
 } // anonymous namespace

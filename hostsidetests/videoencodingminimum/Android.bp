@@ -20,16 +20,20 @@ java_test_host {
     name: "CtsVideoQualityFloorHostTestCases",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
+    static_libs: [
+        "cts-host-utils",
+    ],
     libs: [
         "cts-tradefed",
         "cts-shim-host-lib",
         "tradefed",
     ],
     test_suites: [
-        // need to straighten out host tool dependencies before it goes back into CTS
-        // (ffmpeg and mediainfo used in scripts)
-        // "cts",
+        "cts",
         "cts-shim-host-lib",
         "tradefed",
+    ],
+    data: [
+        ":VideoEncodingMinApp",
     ],
 }

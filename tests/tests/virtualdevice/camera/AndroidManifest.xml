@@ -20,11 +20,22 @@
 
     <application android:debuggable="true">
         <uses-library android:name="android.test.runner" />
+        <activity
+            android:name="android.app.Activity"
+            android:exported="false" />
+        <activity
+            android:name=".util.NativeCameraTestActivity"
+            android:exported="false" />
+        <activity
+            android:name="androidx.appcompat.app.AppCompatActivity"
+            android:theme="@style/Theme.AppCompat"
+            android:exported="false" />
     </application>
 
     <uses-feature android:name="android.software.companion_device_setup" />
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
         android:targetPackage="android.virtualdevice.cts.camera"

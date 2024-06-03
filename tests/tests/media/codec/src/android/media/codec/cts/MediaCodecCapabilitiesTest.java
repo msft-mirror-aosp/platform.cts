@@ -46,6 +46,8 @@ import android.view.Display;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.After;
@@ -79,8 +81,6 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     private final MediaCodecInfo[] mAllInfos =
             mAllCodecs.getCodecInfos();
 
-    private static final String MODULE_NAME = "CtsMediaCodecTestCases";
-
     @Before
     @Override
     public void setUp() throws Throwable {
@@ -96,6 +96,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     // Android device implementations with H.264 encoders, MUST support Baseline Profile Level 3.
     // SHOULD support Main Profile/ Level 4, if supported the device must also support Main
     // Profile/Level 4 decoding.
+    @CddTest(requirements = {"5.2.2/C-1-1", "5/C-0-3"})
     @Test
     public void testH264EncoderProfileAndLevel() throws Exception {
         if (!MediaUtils.checkEncoder(MIMETYPE_VIDEO_AVC)) {
@@ -113,8 +114,9 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
     }
 
-    // Android device implementations with H.264 decoders, MUST support Baseline Profile Level 3.
+    // Android device implementations with H.264 decoders, MUST support Main Profile Level 31.
     // Android Television Devices MUST support High Profile Level 4.2.
+    @CddTest(requirements = {"5.3.4/C-1-1", "5.3.4/T-1-3"})
     @Test
     public void testH264DecoderProfileAndLevel() throws Exception {
         if (!MediaUtils.checkDecoder(MIMETYPE_VIDEO_AVC)) {
@@ -122,8 +124,11 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
 
         assertTrue(
-                "H.264 must support Baseline Profile Level 3",
-                hasDecoder(MIMETYPE_VIDEO_AVC, AVCProfileBaseline, AVCLevel3));
+                "H.264 must support Main Profile Level 31",
+                hasDecoder(MIMETYPE_VIDEO_AVC, AVCProfileMain, AVCLevel31));
+        assertTrue(
+                "H.264 must support Baseline Profile Level 31",
+                hasDecoder(MIMETYPE_VIDEO_AVC, AVCProfileBaseline, AVCLevel31));
 
         if (isTv()) {
             assertTrue(
@@ -133,6 +138,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     }
 
     // Android device implementations with H.263 encoders, MUST support Level 45.
+    @CddTest(requirements = {"5.2.1/C-1-1"})
     @Test
     public void testH263EncoderProfileAndLevel() throws Exception {
         if (!MediaUtils.checkEncoder(MIMETYPE_VIDEO_H263)) {
@@ -141,10 +147,11 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
 
         assertTrue(
                 "H.263 must support Level 45",
-                hasEncoder(MIMETYPE_VIDEO_H263, MPEG4ProfileSimple, H263Level45));
+                hasEncoder(MIMETYPE_VIDEO_H263, H263ProfileBaseline, H263Level45));
     }
 
     // Android device implementations with H.263 decoders, MUST support Level 30.
+    @CddTest(requirements = {"5.3.2/C-1-1"})
     @Test
     public void testH263DecoderProfileAndLevel() throws Exception {
         if (!MediaUtils.checkDecoder(MIMETYPE_VIDEO_H263)) {
@@ -153,10 +160,11 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
 
         assertTrue(
                 "H.263 must support Level 30",
-                hasDecoder(MIMETYPE_VIDEO_H263, MPEG4ProfileSimple, H263Level30));
+                hasDecoder(MIMETYPE_VIDEO_H263, H263ProfileBaseline, H263Level30));
     }
 
     // Android device implementations with MPEG-4 decoders, MUST support Simple Profile Level 3.
+    @CddTest(requirements = {"5.3.3/C-1-1"})
     @Test
     public void testMpeg4DecoderProfileAndLevel() throws Exception {
         if (!MediaUtils.checkDecoder(MIMETYPE_VIDEO_MPEG4)) {
@@ -173,6 +181,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     // Android Television Devices MUST support the Main Profile Level 4.1 Main tier.
     // When the UHD video decoding profile is supported, it MUST support Main10 Level 5 Main
     // Tier profile.
+    @CddTest(requirements = {"5.3.5/C-1-1", "5.3.5/T-1-1", "5.3.5/T-2-1"})
     @Test
     public void testH265DecoderProfileAndLevel() throws Exception {
         if (!MediaUtils.checkDecoder(MIMETYPE_VIDEO_HEVC)) {
@@ -196,6 +205,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
     }
 
+    @CddTest(requirements = {"5.3.7/T-1-1", "5.3.7/T-2-1"})
     @Test
     public void testVp9DecoderCapabilitiesOnTv() throws Exception {
         if (isTv() && MediaUtils.hasHardwareCodec(MIMETYPE_VIDEO_VP9, /* encode = */ false)) {
@@ -210,16 +220,18 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
     }
 
+    @CddTest(requirements = {"5.3.4/C-1-1"})
     @Test
     public void testAvcBaseline1() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_AVC, AVCProfileBaseline, AVCLevel1)) {
             return; // skip
         }
 
-        // TODO: add a test stream
+        // TODO(b/333672303): add a test stream
         MediaUtils.skipTest(TAG, "no test stream");
     }
 
+    @CddTest(requirements = {"5.3.4/C-1-1"})
     @Test
     public void testAvcBaseline12() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_AVC, AVCProfileBaseline, AVCLevel12)) {
@@ -233,6 +245,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
     }
 
+    @CddTest(requirements = {"5.3.4/C-1-1"})
     @Test
     public void testAvcBaseline30() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_AVC, AVCProfileBaseline, AVCLevel3)) {
@@ -265,6 +278,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         return getMaxDisplayHeight() >= videoResolutionHeight;
     }
 
+    @CddTest(requirements = {"5.3.4/C-2-1"})
     @Test
     public void testAvcHigh31() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_AVC, AVCProfileHigh, AVCLevel31)) {
@@ -280,6 +294,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
     }
 
+    @CddTest(requirements = {"5.3.4/C-2-2"})
     @Test
     public void testAvcHigh40() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_AVC, AVCProfileHigh, AVCLevel4)) {
@@ -299,93 +314,102 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
     }
 
+    @CddTest(requirements = {"5.3.5/C-1-1"})
     @Test
     public void testHevcMain1() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_HEVC, HEVCProfileMain, HEVCMainTierLevel1)) {
             return; // skip
         }
 
-        // TODO: add a test stream
+        // TODO(b/333672303): add a test stream
         MediaUtils.skipTest(TAG, "no test stream");
     }
 
+    @CddTest(requirements = {"5.3.5/C-1-1"})
     @Test
     public void testHevcMain2() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_HEVC, HEVCProfileMain, HEVCMainTierLevel2)) {
             return; // skip
         }
 
-        // TODO: add a test stream
+        // TODO(b/333672303): add a test stream
         MediaUtils.skipTest(TAG, "no test stream");
     }
 
+    @CddTest(requirements = {"5.3.5/C-1-1"})
     @Test
     public void testHevcMain21() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_HEVC, HEVCProfileMain, HEVCMainTierLevel21)) {
             return; // skip
         }
 
-        // TODO: add a test stream
+        // TODO(b/333672303): add a test stream
         MediaUtils.skipTest(TAG, "no test stream");
     }
 
+    @CddTest(requirements = {"5.3.5/C-1-1"})
     @Test
     public void testHevcMain3() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_HEVC, HEVCProfileMain, HEVCMainTierLevel3)) {
             return; // skip
         }
 
-        // TODO: add a test stream
+        // TODO(b/333672303): add a test stream
         MediaUtils.skipTest(TAG, "no test stream");
     }
 
+    @CddTest(requirements = {"5.3.5/T-1-1", "5.3.5/C-2-1"})
     @Test
     public void testHevcMain31() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_HEVC, HEVCProfileMain, HEVCMainTierLevel31)) {
             return; // skip
         }
 
-        // TODO: add a test stream
+        // TODO(b/333672303): add a test stream
         MediaUtils.skipTest(TAG, "no test stream");
     }
 
+    @CddTest(requirements = {"5.3.5/T-1-1", "5.3.5/C-2-1"})
     @Test
     public void testHevcMain4() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_HEVC, HEVCProfileMain, HEVCMainTierLevel4)) {
             return; // skip
         }
 
-        // TODO: add a test stream
+        // TODO(b/333672303): add a test stream
         MediaUtils.skipTest(TAG, "no test stream");
     }
 
+    @CddTest(requirements = {"5.3.5/T-1-1", "5.3.5/C-2-1"})
     @Test
     public void testHevcMain41() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_HEVC, HEVCProfileMain, HEVCMainTierLevel41)) {
             return; // skip
         }
 
-        // TODO: add a test stream
+        // TODO(b/333672303): add a test stream
         MediaUtils.skipTest(TAG, "no test stream");
     }
 
+    @CddTest(requirements = {"5.3.5/C-2-1"})
     @Test
     public void testHevcMain5() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_HEVC, HEVCProfileMain, HEVCMainTierLevel5)) {
             return; // skip
         }
 
-        // TODO: add a test stream
+        // TODO(b/333672303): add a test stream
         MediaUtils.skipTest(TAG, "no test stream");
     }
 
+    @CddTest(requirements = {"5.3.5/C-2-1"})
     @Test
     public void testHevcMain51() throws Exception {
         if (!checkDecoder(MIMETYPE_VIDEO_HEVC, HEVCProfileMain, HEVCMainTierLevel51)) {
             return; // skip
         }
 
-        // TODO: add a test stream
+        // TODO(b/333672303): add a test stream
         MediaUtils.skipTest(TAG, "no test stream");
     }
 
@@ -466,6 +490,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         return adaptiveFormats;
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback"})
     @Test
     public void testHaveAdaptiveVideoDecoderForAllSupportedFormats() {
         Set<String> supportedFormats = new HashSet<String>();
@@ -501,6 +526,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback"})
     @Test
     public void testAllVideoDecodersAreAdaptive() {
         Set<String> adaptiveFormats = requiredAdaptiveFormats();
@@ -548,6 +574,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         return format;
     }
 
+    @ApiTest(apis = {"android.media.MediaCodec#getName",
+            "android.media.MediaCodecInfo.CodecCapabilities#FEATURE_SecurePlayback"})
     @Test
     public void testSecureCodecsAdvertiseSecurePlayback() throws IOException {
         boolean skipped = true;
@@ -618,6 +646,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         return format;
     }
 
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_BITRATE_MODE"})
     @Test
     public void testAllAdvertisedVideoEncoderBitrateModes() throws IOException {
         boolean skipped = true;
@@ -668,6 +697,7 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
     }
 
+    @CddTest(requirements = {"5.1.7/C-1-2"})
     @Test
     public void testAllNonTunneledVideoCodecsSupportFlexibleYUV() throws IOException {
         boolean skipped = true;
@@ -732,6 +762,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#getVideoCapabilities",
+            "android.media.MediaCodecInfo.VideoCapabilities#getSupportedFrameRates"})
     @Test
     public void testGetSupportedFrameRates() throws IOException {
         // Chose MediaFormat.MIMETYPE_VIDEO_H263 randomly
@@ -747,6 +779,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         assertTrue("Invalid framerate range", Range.create(1, 15).equals(supportedFrameRates));
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#getAudioCapabilities",
+            "android.media.MediaCodecInfo.AudioCapabilities#isSampleRateSupported"})
     @Test
     public void testIsSampleRateSupported() throws IOException {
         if (!MediaUtils.checkDecoder(MediaFormat.MIMETYPE_AUDIO_AAC)) {
@@ -772,6 +806,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
     }
 
     // API test coverage for MediaCodecInfo.EncoderCapabilities.getComplexityRange()
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#getEncoderCapabilities",
+            "android.media.MediaCodecInfo.EncoderCapabilities#getComplexityRange"})
     @Test
     public void testGetComplexityRange() throws IOException {
         boolean skipTest = true;
@@ -806,6 +842,8 @@ public class MediaCodecCapabilitiesTest extends MediaPlayerTestBase {
         }
     }
 
+    // Device implementations SHOULD aim for minimum codec latency
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_LowLatency"})
     @Test
     public void testLowLatencyFeatureIsSupportedOnly() throws IOException {
         MediaCodecList list = new MediaCodecList(MediaCodecList.ALL_CODECS);

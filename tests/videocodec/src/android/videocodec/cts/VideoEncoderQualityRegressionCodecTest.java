@@ -104,7 +104,8 @@ public class VideoEncoderQualityRegressionCodecTest extends VideoEncoderQualityR
             ArrayList<MediaFormat> fmts = new ArrayList<>();
             for (int j = 0; j < cfgsOfMediaType.length; j++) {
                 cfgsOfMediaType[j] = getVideoEncoderCfgParams(mediaTypes[i], WIDTH, HEIGHT,
-                        BIT_RATES[j], mBitRateMode, KEY_FRAME_INTERVAL, FRAME_RATE, B_FRAMES[0]);
+                        BIT_RATES[j], mBitRateMode, KEY_FRAME_INTERVAL, FRAME_RATE, B_FRAMES[0],
+                        null);
                 fmts.add(cfgsOfMediaType[j].getFormat());
             }
             if (mediaTypes[i].equals(mMediaType)) {
@@ -121,6 +122,6 @@ public class VideoEncoderQualityRegressionCodecTest extends VideoEncoderQualityR
         }
         Predicate<Double> predicate = bdRate -> bdRate < 0d;
         getQualityRegressionForCfgs(cfgsUnion, testInstances, encoderNames, res, FRAME_LIMIT,
-                FRAME_RATE, true, predicate);
+                FRAME_RATE, null, true, predicate);
     }
 }

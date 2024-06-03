@@ -52,6 +52,8 @@ import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.S
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.isConnected;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilConnected;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilDisconnected;
+import static android.autofillservice.cts.testcore.UiBot.LANDSCAPE;
+import static android.autofillservice.cts.testcore.UiBot.PORTRAIT;
 import static android.content.Context.CLIPBOARD_SERVICE;
 import static android.service.autofill.FillRequest.FLAG_MANUAL_REQUEST;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_ADDRESS;
@@ -76,6 +78,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.PendingIntent;
 import android.app.assist.AssistStructure.ViewNode;
@@ -2263,12 +2266,25 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
     @Test
     @AppModeFull(reason = "Unit test")
     public void testNoContainers() throws Exception {
+
+        assumeTrue("Rotation is supported", Helper.isRotationSupported(mContext));
+        assumeTrue(
+                "Device state is not REAR_DISPLAY",
+                !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.REAR_DISPLAY));
+
         // Enable flag
         Helper.setDeviceConfig(
                 mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, true);
 
         // Set service.
         enableService();
+
+        // Rotation Device (only needed because the flag is set after activity creation)
+        // Delete this along with flag
+        mUiBot.setScreenOrientation(LANDSCAPE);
+        mUiBot.setScreenOrientation(PORTRAIT);
+        mUiBot.assertShownByRelativeId("username");
+        mUiBot.selectByRelativeId("username");
 
         // Set expectations.
         sReplier.addResponse(NO_RESPONSE);

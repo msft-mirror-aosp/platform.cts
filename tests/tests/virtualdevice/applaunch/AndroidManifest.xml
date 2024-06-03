@@ -31,6 +31,9 @@
             android:canDisplayOnRemoteDevices="false"
             android:exported="false" />
         <activity
+            android:name=".VirtualDeviceDrmTest$DrmActivity"
+            android:exported="false" />
+        <activity
             android:name=".RestrictActivityTest$RestrictedActivity"
             android:requiredDisplayCategory="testActivityCategory"
             android:exported="false" />

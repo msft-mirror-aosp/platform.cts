@@ -4,6 +4,7 @@ package {
 
 cc_test {
     name: "CtsBionicTestCases",
+    team: "trendy_team_native_tools_libraries",
 
     defaults: ["cts_bionic_defaults"],
 

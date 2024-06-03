@@ -17,9 +17,11 @@
 package com.android.bedstead.testapp;
 
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
-import com.android.bedstead.nene.permissions.PermissionContextModifier;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContextModifier;
 import com.android.bedstead.nene.utils.Versions;
+
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -47,6 +49,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withPermission(String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withPermission(String... permissions) {
         for (String permission : permissions) {
             if (mDeniedPermissions.contains(permission)) {
@@ -66,6 +69,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withPermissionOnVersion(int, String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withPermissionOnVersion(int sdkVersion, String... permissions) {
         return withPermissionOnVersionBetween(sdkVersion, sdkVersion, permissions);
     }
@@ -74,6 +78,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withPermissionOnVersionAtLeast(int, String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withPermissionOnVersionAtLeast(
             int minSdkVersion, String... permissions) {
         return withPermissionOnVersionBetween(minSdkVersion, Versions.ANY, permissions);
@@ -83,6 +88,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withPermissionOnVersionAtMost(int, String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withPermissionOnVersionAtMost(
             int maxSdkVersion, String... permissions) {
         return withPermissionOnVersionBetween(Versions.ANY, maxSdkVersion, permissions);
@@ -92,6 +98,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withPermissionOnVersionBetween(int, int, String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withPermissionOnVersionBetween(
             int minSdkVersion, int maxSdkVersion, String... permissions) {
         if (Versions.meetsSdkVersionRequirements(minSdkVersion, maxSdkVersion)) {
@@ -105,6 +112,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withoutPermission(String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withoutPermission(String... permissions) {
         for (String permission : permissions) {
             if (mGrantedPermissions.contains(permission)) {
@@ -124,6 +132,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withAppOp(String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withAppOp(String... appOps) {
         for (String appOp : appOps) {
             if (mDeniedAppOps.contains(appOp)) {
@@ -142,6 +151,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withAppOpOnVersion(int, String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public PermissionContext withAppOpOnVersion(int sdkVersion, String... appOps) {
         return withAppOpOnVersionBetween(sdkVersion, sdkVersion, appOps);
     }
@@ -150,6 +160,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withAppOpOnVersionAtLeast(int, String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public PermissionContext withAppOpOnVersionAtLeast(int minSdkVersion, String... appOps) {
         return withAppOpOnVersionBetween(minSdkVersion, Versions.ANY, appOps);
     }
@@ -158,6 +169,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withAppOpOnVersionAtMost(int, String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public PermissionContext withAppOpOnVersionAtMost(int maxSdkVersion, String... appOps) {
         return withAppOpOnVersionBetween(Versions.ANY, maxSdkVersion, appOps);
     }
@@ -166,6 +178,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withAppOpOnVersionBetween(int, int, String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public PermissionContext withAppOpOnVersionBetween(
             int minSdkVersion, int maxSdkVersion, String... appOps) {
         if (Versions.meetsSdkVersionRequirements(minSdkVersion, maxSdkVersion)) {
@@ -179,6 +192,7 @@ public class TestAppPermissionContext implements PermissionContextModifier {
      * See {@link TestAppInstancePermissions#withoutAppOp(String...)}
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withoutAppOp(String... appOps) {
         for (String appOp : appOps) {
             if (mGrantedAppOps.contains(appOp)) {

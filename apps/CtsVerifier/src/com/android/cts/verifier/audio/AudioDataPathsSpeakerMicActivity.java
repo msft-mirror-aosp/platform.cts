@@ -218,7 +218,6 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
     }
 
     void postValidateTestDevices(int numValidTestModules) {
-
+        // NOP
     }
-
 }

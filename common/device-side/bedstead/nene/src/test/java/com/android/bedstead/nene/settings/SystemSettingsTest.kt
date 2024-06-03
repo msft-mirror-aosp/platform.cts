@@ -23,14 +23,12 @@ import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.harrier.annotations.RequireSdkVersion
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.NeneException
-import com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
-import com.google.common.truth.Truth
+import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.testng.Assert
 import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)

@@ -32,7 +32,6 @@ import android.app.ActivityOptions;
 import android.app.ActivityOptions.LaunchCookie;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.media.projection.MediaProjection;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -49,6 +48,7 @@ import com.android.compatibility.common.util.SystemUtil;
 import com.android.window.flags.Flags;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -113,6 +113,11 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
 
     private MediaProjectionHelper mMediaProjectionHelper = new MediaProjectionHelper();
     private MediaProjection mMediaProjection = null;
+
+    @Before
+    public void checkAssumptions() {
+        assumeFalse(isCar());
+    }
 
     @After
     public void stopMediaProjection() {
@@ -295,7 +300,7 @@ public class ScreenRecordingCallbackTests extends WindowManagerTestBase {
             "android.view.WindowManager#removeScreenRecordingCallback"})
     @Test
     public void testPartialScreenSharingNotRecorded() throws InterruptedException {
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
+        assumeFalse(isWatch());
 
         // The LaunchCookie is used to test partial screen sharing. In the typical Media
         // Projection flow, when a user selects partial screen sharing, their selected app is

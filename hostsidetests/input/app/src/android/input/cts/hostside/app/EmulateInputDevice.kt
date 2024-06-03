@@ -20,12 +20,14 @@ import android.content.Context
 import android.graphics.Point
 import android.util.DisplayMetrics
 import android.util.Size
-import android.view.InputDevice
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.UinputDevice
+import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.UinputTouchPad
+import com.android.cts.input.UinputTouchScreen
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -63,13 +65,7 @@ class EmulateInputDevice {
      */
     @Test
     fun useTouchscreenForFiveSeconds() {
-        UinputTouchDevice(
-                instrumentation,
-                context.display,
-                R.raw.test_touchscreen_register,
-                InputDevice.SOURCE_TOUCHSCREEN,
-                useDisplaySize = true,
-        ).use { touchscreen ->
+        UinputTouchScreen(instrumentation, context.display).use { touchscreen ->
             // Start the usage session.
             touchscreen.tapOnScreen()
 
@@ -78,6 +74,8 @@ class EmulateInputDevice {
                 Thread.sleep(1000)
                 touchscreen.tapOnScreen()
             }
+
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -103,12 +101,7 @@ class EmulateInputDevice {
 
     @Test
     fun useTouchpadWithFingersAndPalms() {
-        UinputTouchDevice(
-                instrumentation,
-                context.display,
-                R.raw.test_touchpad_register,
-                InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE,
-        ).use { touchpad ->
+        UinputTouchPad(instrumentation, context.display).use { touchpad ->
             for (i in 0 until 3) {
                 val pointer = Point(100, 200)
                 touchpad.sendBtnTouch(true)
@@ -133,17 +126,13 @@ class EmulateInputDevice {
                 touchpad.sendUp(0)
                 touchpad.sync()
             }
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
     @Test
     fun pinchOnTouchpad() {
-        UinputTouchDevice(
-            instrumentation,
-            context.display,
-            R.raw.test_touchpad_register,
-            InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE
-        ).use { touchpad ->
+        UinputTouchPad(instrumentation, context.display).use { touchpad ->
             val pointer0 = Point(500, 500)
             val pointer1 = Point(700, 700)
             touchpad.sendBtnTouch(true)
@@ -175,7 +164,7 @@ class EmulateInputDevice {
             touchpad.sendBtnTouch(false)
             touchpad.sendUp(1)
             touchpad.sync()
-            Thread.sleep(TOUCHPAD_POST_GESTURE_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -195,12 +184,7 @@ class EmulateInputDevice {
     }
 
     private fun multiFingerSwipe(numFingers: Int) {
-        UinputTouchDevice(
-            instrumentation,
-            context.display,
-            R.raw.test_touchpad_register,
-            InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE
-        ).use { touchpad ->
+        UinputTouchPad(instrumentation, context.display).use { touchpad ->
             val pointers = Array(numFingers) { i -> Point(500 + i * 200, 500) }
             touchpad.sendBtnTouch(true)
             touchpad.sendBtn(UinputTouchDevice.toolBtnForFingerCount(numFingers), true)
@@ -225,35 +209,27 @@ class EmulateInputDevice {
             touchpad.sendBtn(UinputTouchDevice.toolBtnForFingerCount(numFingers), false)
             touchpad.sendBtnTouch(false)
             touchpad.sync()
-            Thread.sleep(TOUCHPAD_POST_GESTURE_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
     @Test
     fun createKeyboardDevice() {
-        UinputDevice.create(
-            instrumentation,
-            R.raw.test_keyboard_register,
-            InputDevice.SOURCE_KEYBOARD
-        ).use {
+        UinputKeyboard(instrumentation).use {
             // Do nothing: Adding a device should trigger the logging logic.
             // Wait until the Input device created is sent to KeyboardLayoutManager to trigger
             // logging logic
-            Thread.sleep(KEYBOARD_POST_EVENT_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
     @Test
     fun createKeyboardDeviceAndSendCapsLockKey() {
-        UinputDevice.create(
-                instrumentation,
-                R.raw.test_keyboard_register,
-                InputDevice.SOURCE_KEYBOARD
-        ).use { keyboard ->
+        UinputKeyboard(instrumentation).use { keyboard ->
             // Wait for device to be added
             injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, KEY_PRESS, 0, 0, 0))
             injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, KEY_RELEASE, 0, 0, 0))
-            Thread.sleep(KEYBOARD_POST_EVENT_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -268,11 +244,11 @@ class EmulateInputDevice {
         const val KEY_PRESS: Int = 1
         const val KEY_RELEASE: Int = 0
 
-        // This delay seems to be necessary to let the gesture be properly processed and added to
-        // metrics before the touchpad device is torn down.
-        const val TOUCHPAD_POST_GESTURE_DELAY_MILLIS: Long = 500
-
-        // This delay is required for key events to be sent and handled correctly.
-        const val KEYBOARD_POST_EVENT_DELAY_MILLIS: Long = 500
+        // When a uinput device is closed, there's a race between InputReader picking up the final
+        // events from the device's buffer (specifically, the buffer in struct evdev_client in the
+        // kernel) and the device being torn down. If the device is torn down first, one or more
+        // frames of data get lost. To prevent flakes due to this race, we delay closing the device
+        // for a while after sending the last event, so InputReader has time to read them all.
+        const val UINPUT_POST_EVENT_DELAY_MILLIS: Long = 500
     }
 }

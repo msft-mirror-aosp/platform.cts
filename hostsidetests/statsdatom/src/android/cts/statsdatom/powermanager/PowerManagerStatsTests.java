@@ -16,7 +16,17 @@
 
 package android.cts.statsdatom.powermanager;
 
+import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_RESULT_TIDS;
+import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_UID;
+
+import static com.android.server.power.hint.Flags.FLAG_POWERHINT_THREAD_CLEANUP;
+
 import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
@@ -31,6 +41,7 @@ import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
 import com.android.os.adpf.AdpfExtensionAtoms;
+import com.android.os.adpf.AdpfHintSessionTidCleanup;
 import com.android.os.adpf.ThermalApiStatus;
 import com.android.os.adpf.ThermalHeadroomCalled;
 import com.android.os.adpf.ThermalHeadroomThresholds;
@@ -38,6 +49,7 @@ import com.android.os.adpf.ThermalHeadroomThresholdsCalled;
 import com.android.os.adpf.ThermalStatusCalled;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.result.TestDescription;
+import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
@@ -52,6 +64,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -64,6 +77,8 @@ import java.util.List;
 public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final String DEVICE_TEST_PKG = "com.android.server.cts.device.statsdatom";
     private static final String DEVICE_TEST_CLASS = ".PowerManagerTests";
+    private static final String ADPF_ATOM_APP_PKG = "com.android.server.cts.device.statsdatom";
+    private static final String ADPF_ATOM_APP_APK = "CtsStatsdAdpfApp.apk";
 
     private IBuildInfo mCtsBuild;
 
@@ -77,6 +92,7 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
+        DeviceUtils.installTestApp(getDevice(), ADPF_ATOM_APP_APK, ADPF_ATOM_APP_PKG, mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
@@ -188,5 +204,51 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         ThermalHeadroomThresholds a0 = data.get(0).getExtension(
                 AdpfExtensionAtoms.thermalHeadroomThresholds);
         assertThat(a0.getHeadroomCount()).isGreaterThan(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_POWERHINT_THREAD_CLEANUP)
+    public void testAdpfHintSessionTidCleanupIsPushed() throws Exception {
+        final String testMethod = "testAdpfTidCleanup";
+        final TestDescription desc = TestDescription.fromString(
+                DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);
+        ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                AdpfExtensionAtoms.ADPF_HINT_SESSION_TID_CLEANUP_FIELD_NUMBER);
+        TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
+                DEVICE_TEST_CLASS, testMethod);
+        RunUtil.getDefault().sleep(5 * AtomTestUtils.WAIT_TIME_LONG);
+        TestResult result = testRunResult.getTestResults().get(desc);
+        assertNotNull(result);
+        TestStatus status = result.getStatus();
+        assumeFalse(status == TestStatus.ASSUMPTION_FAILURE);
+        assertThat(status).isEqualTo(TestStatus.PASSED);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        AdpfExtensionAtoms.registerAllExtensions(registry);
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
+                registry);
+        assertFalse(data.isEmpty());
+        String tidsStr = result.getMetrics().get(CONTENT_KEY_RESULT_TIDS);
+        int uid = Integer.parseInt(result.getMetrics().get(CONTENT_KEY_UID));
+        List<Integer> tids = Arrays.stream(tidsStr.split(",")).map(Integer::parseInt).toList();
+        boolean found = false;
+        for (StatsLog.EventMetricData event : data) {
+            if (event.getAtom().hasExtension(AdpfExtensionAtoms.adpfHintSessionTidCleanup)) {
+                AdpfHintSessionTidCleanup a0 = event.getAtom().getExtension(
+                        AdpfExtensionAtoms.adpfHintSessionTidCleanup);
+                assertNotNull(tidsStr);
+                if (a0.getUid() == uid) {
+                    assertThat(a0.getMaxInvalidTidCount()).isAtLeast(tids.size());
+                    assertThat(a0.getTotalTidCount()).isAtLeast(tids.size());
+                    assertThat(a0.getTotalInvalidTidCount()).isAtLeast(tids.size());
+                    assertThat(a0.getMaxDurationUs()).isGreaterThan(0);
+                    assertThat(a0.getTotalDurationUs()).isGreaterThan(0);
+                    assertThat(a0.getSessionCount()).isAtLeast(1);
+                    found = true;
+                }
+            }
+        }
+        if (!found) {
+            fail("Failed to find an event data belonging to the test process in data: " + data);
+        }
     }
 }

@@ -22,15 +22,14 @@ import its_base_test
 import camera_properties_utils
 import image_processing_utils
 import its_session_utils
-import preview_stabilization_utils
+import preview_processing_utils
 import video_processing_utils
 import zoom_capture_utils
 
 
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_STEPS = 10
-_ZOOM_MIN_THRESH = 2.0
+_NUM_STEPS = 100  # TODO: b/332322632 - improve test runtime
 
 
 class PreviewZoomTest(its_base_test.ItsBaseTest):
@@ -52,9 +51,9 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(
           camera_properties_utils.zoom_ratio_range(props))
 
-      # Load scene
-      its_session_utils.load_scene(cam, props, self.scene, self.tablet,
-                                   its_session_utils.CHART_DISTANCE_NO_SCALING)
+      # Load chart for scene
+      its_session_utils.load_scene(
+          cam, props, self.scene, self.tablet, self.chart_distance)
 
       # Raise error if not FRONT or REAR facing camera
       camera_properties_utils.check_front_or_rear_camera(props)
@@ -69,25 +68,30 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         for fl in fls:
           test_tols[fl] = (zoom_capture_utils.RADIUS_RTOL,
                            zoom_capture_utils.OFFSET_RTOL)
+      logging.debug('Threshold levels to be used for testing: %s', test_tols)
 
       # get max preview size
-      preview_size = preview_stabilization_utils.get_max_preview_test_size(
+      preview_size = preview_processing_utils.get_max_preview_test_size(
           cam, self.camera_id)
       size = [int(x) for x in preview_size.split('x')]
       logging.debug('preview_size = %s', preview_size)
       logging.debug('size = %s', size)
 
-      # recording preview
+      # Determine test zoom range and step size
       z_range = props['android.control.zoomRatioRange']
-      try:
-        capture_results, file_list, z_min, z_max = (
-            preview_stabilization_utils.preview_over_zoom_range(
-                self.dut, cam, preview_size, z_range, log_path)
-        )
-      except ValueError as e:
-        camera_properties_utils.skip_unless(False, e)
+      logging.debug('z_range = %s', str(z_range))
+      z_min, z_max, z_step_size = zoom_capture_utils.get_zoom_params(
+          z_range, _NUM_STEPS)
+      camera_properties_utils.skip_unless(
+          z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
 
-      test_data = {}
+      # recording preview
+      capture_results, file_list = (
+          preview_processing_utils.preview_over_zoom_range(
+              self.dut, cam, preview_size, z_min, z_max, z_step_size, log_path)
+      )
+
+      test_data = []
       test_data_index = 0
 
       for capture_result, img_name in zip(capture_results, file_list):
@@ -124,16 +128,24 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
           logging.error('Unable to detect circle in %s', img_name)
           break
 
-        test_data[test_data_index] = {'z': z, 'circle': circle,
-                                      'r_tol': radius_tol, 'o_tol': offset_tol,
-                                      'fl': cap_fl}
+        test_data.append(
+            zoom_capture_utils.ZoomTestData(
+                result_zoom=z,
+                circle=circle,
+                radius_tol=radius_tol,
+                offset_tol=offset_tol,
+                focal_length=cap_fl
+            )
+        )
 
         logging.debug('test_data[%d] = %s', test_data_index,
-                      str(test_data[test_data_index]))
+                      test_data[test_data_index])
         test_data_index = test_data_index + 1
 
-      if not zoom_capture_utils.verify_zoom_results(
-          test_data, size, z_max, z_min):
+      its_session_utils.remove_frame_files(log_path)
+
+      if not zoom_capture_utils.verify_preview_zoom_results(
+          test_data, size, z_max, z_min, z_step_size):
         raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')
 
 if __name__ == '__main__':

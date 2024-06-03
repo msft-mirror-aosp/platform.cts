@@ -56,6 +56,7 @@ import android.view.MotionEvent.PointerCoords;
 import android.view.MotionEvent.PointerProperties;
 import android.view.cts.MotionEventUtils.PointerCoordsBuilder;
 import android.view.cts.MotionEventUtils.PointerPropertiesBuilder;
+import android.view.cts.util.NativeHeapLeakDetector;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -96,7 +97,14 @@ public class MotionEventTest {
     private static final float DELTA               = 0.01f;
     private static final float RAW_COORD_TOLERANCE = 0.001f;
 
+    // Underestimated from ~528 B to breach threshold when leaked
+    private static final int APPROX_MOTION_EVENT_SIZE_BYTES = 500;
+    private static final int NUM_MOTION_EVENT_ALLOCATIONS =
+            NativeHeapLeakDetector.MEMORY_LEAK_THRESHOLD_KB * 1024 / APPROX_MOTION_EVENT_SIZE_BYTES;
+
     private static native void nativeMotionEventTest(MotionEvent event);
+
+    private static native void obtainNativeMotionEventCopyFromJava(MotionEvent event);
 
     private static native MotionEvent obtainMotionEventCopyFromNative(MotionEvent event);
 
@@ -1124,5 +1132,49 @@ public class MotionEventTest {
                 javaMotionEvent.getEventTimeNanos(),
                 motionEventFromNative.getEventTimeNanos()
         );
+    }
+
+    @Test
+    public void testNativeToJavaConverterMemoryLeak() {
+        final MotionEvent javaMotionEvent =
+                MotionEvent.obtain(
+                        mDownTime, mEventTime, MotionEvent.ACTION_DOWN, X_3F, Y_4F, META_STATE);
+
+        try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
+            for (int iteration = 0; iteration < NUM_MOTION_EVENT_ALLOCATIONS; ++iteration) {
+                obtainMotionEventCopyFromNative(javaMotionEvent);
+            }
+        }
+    }
+
+    @Test
+    public void testNativeToJavaConverterMemoryLeakRecylingObjects() {
+        final MotionEvent javaMotionEvent =
+                MotionEvent.obtain(
+                        mDownTime, mEventTime, MotionEvent.ACTION_DOWN, X_3F, Y_4F, META_STATE);
+
+        try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
+            for (int iteration = 0; iteration < NUM_MOTION_EVENT_ALLOCATIONS; ++iteration) {
+                obtainMotionEventCopyFromNative(javaMotionEvent).recycle();
+            }
+        }
+    }
+
+    @Test
+    public void testJavaToNativeConverterMemoryLeak() {
+        final MotionEvent event =
+                MotionEvent.obtain(
+                        mDownTime,
+                        mEventTime,
+                        MotionEvent.ACTION_BUTTON_PRESS,
+                        X_3F,
+                        Y_4F,
+                        META_STATE);
+
+        try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
+            for (int iteration = 0; iteration < NUM_MOTION_EVENT_ALLOCATIONS; ++iteration) {
+                obtainNativeMotionEventCopyFromJava(event);
+            }
+        }
     }
 }

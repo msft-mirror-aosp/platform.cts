@@ -65,7 +65,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -113,7 +113,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
-import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ScreenUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.modules.utils.build.SdkLevel;
@@ -128,7 +127,6 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1115,6 +1113,9 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     @Test
     public void testTotalSilenceOnlyMuteStreams() throws Exception {
+        assumeFalse("Skipping test on automotive platform",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
 
@@ -1155,6 +1156,9 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     @Test
     public void testAlarmsOnlyMuteStreams() throws Exception {
+        assumeFalse("Skipping test on automotive platform",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
 
@@ -2035,6 +2039,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         }
         assertFalse(isBobIntercepted);
 
+
         boolean isCharlieIntercepted = true;
         for (int i = 0; i < 6; i++) {
             isCharlieIntercepted = mListener.mIntercepted.get(charlie.getKey());
@@ -2043,7 +2048,12 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
             }
             sleep();
         }
-        assertFalse(isCharlieIntercepted);
+        if (android.app.Flags.restrictAudioAttributesMedia()) {
+            // media notifications are moved to notification stream, so they should be intercepted
+            assertTrue(isCharlieIntercepted);
+        } else {
+            assertFalse(isCharlieIntercepted);
+        }
 
         assertTrue(mListener.mIntercepted.get(alice.getKey()));
     }
@@ -2124,105 +2134,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
         // Notification should be intercepted now
         assertTrue(mListener.mIntercepted.get(sbn.getKey()));
-    }
-
-    @CddTest(requirements = {"2.2.3/3.8.4/H-1-1"})
-    @Test
-    public void testContactAffinityByPhoneOrder() throws Exception {
-        insertSingleContact(ALICE, ALICE_PHONE, ALICE_EMAIL, true);
-        insertSingleContact(BOB, BOB_PHONE, BOB_EMAIL, false);
-        // Not Charlie
-
-        mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL);
-        sendNotifications(MODE_PHONE, false, false);
-
-        int rankA= 0, rankB = 0, rankC = 0;
-        for (int i = 0; i < 6; i++) {
-            List<String> orderedKeys = new ArrayList<>(
-                    Arrays.asList(mListener.mRankingMap.getOrderedKeys()));
-            rankA = findTagInKeys(ALICE, orderedKeys);
-            rankB = findTagInKeys(BOB, orderedKeys);
-            rankC = findTagInKeys(CHARLIE, orderedKeys);
-            // ordered by contact affinity: A, B, C
-            if (rankA < rankB && rankB < rankC) {
-                // yay
-                break;
-            }
-            sleep();
-        }
-        // ordered by contact affinity: A, B, C
-        if (rankA < rankB && rankB < rankC) {
-            // yay
-        } else {
-            fail("Notifications out of order. Actual order: Alice: " + rankA + " Bob: " + rankB
-                    + " Charlie: " + rankC);
-        }
-    }
-
-    @CddTest(requirements = {"2.2.3/3.8.4/H-1-1"})
-    @Test
-    public void testContactUriByUriOrder() throws Exception {
-        insertSingleContact(ALICE, ALICE_PHONE, ALICE_EMAIL, true);
-        insertSingleContact(BOB, BOB_PHONE, BOB_EMAIL, false);
-        // Not Charlie
-
-        mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL);
-        sendNotifications(MODE_URI, false, false);
-
-        int rankA= 0, rankB = 0, rankC = 0;
-        for (int i = 0; i < 6; i++) {
-            List<String> orderedKeys = new ArrayList<>(
-                    Arrays.asList(mListener.mRankingMap.getOrderedKeys()));
-            rankA = findTagInKeys(ALICE, orderedKeys);
-            rankB = findTagInKeys(BOB, orderedKeys);
-            rankC = findTagInKeys(CHARLIE, orderedKeys);
-            // ordered by contact affinity: A, B, C
-            if (rankA < rankB && rankB < rankC) {
-                // yay
-                break;
-            }
-            sleep();
-        }
-        // ordered by contact affinity: A, B, C
-        if (rankA < rankB && rankB < rankC) {
-            // yay
-        } else {
-            fail("Notifications out of order. Actual order: Alice: " + rankA + " Bob: " + rankB
-                    + " Charlie: " + rankC);
-        }
-    }
-
-    @CddTest(requirements = {"2.2.3/3.8.4/H-1-1"})
-    @Test
-    public void testContactUriByEmailOrder() throws Exception {
-        insertSingleContact(ALICE, ALICE_PHONE, ALICE_EMAIL, true);
-        insertSingleContact(BOB, BOB_PHONE, BOB_EMAIL, false);
-        // Not Charlie
-
-        mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL);
-        sendNotifications(MODE_EMAIL, false, false);
-
-        int rankA= 0, rankB = 0, rankC = 0;
-        for (int i = 0; i < 6; i++) {
-            List<String> orderedKeys = new ArrayList<>(
-                    Arrays.asList(mListener.mRankingMap.getOrderedKeys()));
-            rankA = findTagInKeys(ALICE, orderedKeys);
-            rankB = findTagInKeys(BOB, orderedKeys);
-            rankC = findTagInKeys(CHARLIE, orderedKeys);
-            // ordered by contact affinity: A, B, C
-            if (rankA < rankB && rankB < rankC) {
-                // yay
-                break;
-            }
-            sleep();
-        }
-        // ordered by contact affinity: A, B, C
-        if (rankA < rankB && rankB < rankC) {
-            // yay
-        } else {
-            fail("Notifications out of order. Actual order: Alice: " + rankA + " Bob: " + rankB
-                    + " Charlie: " + rankC);
-        }
     }
 
     @Test

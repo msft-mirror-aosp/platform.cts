@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 
 import com.android.cts.appcloning.AppCloningBaseHostTest;
@@ -213,6 +214,7 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
     }
 
     @Test
+    @FlakyTest
     public void testCrossUserMediaAccess() throws Exception {
         assumeTrue(isAtLeastT());
 
@@ -254,6 +256,7 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
     }
 
     @Test
+    @FlakyTest
     public void testGetStorageVolumesIncludingSharedProfiles() throws Exception {
         assumeTrue(isAtLeastT());
         int currentUserId = getCurrentUserId();
@@ -384,6 +387,7 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
      * from a cloned app process. The content will be saved in cloned user in this case.
      */
     @Test
+    @FlakyTest
     public void testMediaCreationWithContentOwnerSpecifiedAsParentUser() throws Exception {
         assumeTrue(isAtLeastV(sDevice));
 

@@ -32,6 +32,8 @@ import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.util.Log;
 
+import androidx.test.platform.app.InstrumentationRegistry;
+
 import java.util.List;
 
 public class AppControlWrapper {
@@ -299,6 +301,10 @@ public class AppControlWrapper {
 
     private void handleRemoteException(RemoteException e, String callingMethod)
             throws RemoteException {
+        // before failing the test or throwing the exception, attempt to clean-up the test app
+        // and dump the telecom state to help with debugging since test reports do not include the
+        // Telecom tab
+        dumpTelecomStateAndCleanupApp();
         if (e.getClass().equals(DeadObjectException.class)) {
             fail(CLASS + "." + callingMethod + " threw a DeadObjectException meaning that "
                     + "Process=[" + mTelecomApps + "] died while processing the " + callingMethod
@@ -309,9 +315,22 @@ public class AppControlWrapper {
         }
     }
 
+    private void dumpTelecomStateAndCleanupApp() {
+        try {
+            ShellCommandExecutor.dumpTelecom(InstrumentationRegistry.getInstrumentation());
+            mBinder.cleanup();
+        } catch (Exception cleanupException) {
+            // ignore exception while trying to clean up
+        }
+    }
+
     private void maybeFailTest(BaseTransaction transactionResult) {
         if (transactionResult != null
                 && transactionResult.getResult().equals(TestAppTransaction.Failure)) {
+            // before failing the test or throwing the exception, attempt to clean-up the test app
+            // and dump the telecom state to help with debugging since test reports do not include
+            // the Telecom tab
+            dumpTelecomStateAndCleanupApp();
             fail(transactionResult.getTestAppException().getMessage());
         }
     }

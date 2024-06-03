@@ -85,8 +85,8 @@ def do_capture_and_determine_sharpness(
   req['android.edge.mode'] = edge_mode
 
   sharpness_list = []
-  for n in range(_NUM_SAMPLES):
-    cap = cam.do_capture(req, out_surface, repeat_request=req)
+  caps = cam.do_capture([req]*_NUM_SAMPLES, [out_surface], repeat_request=req)
+  for n, cap in enumerate(caps):
     y, _, _ = image_processing_utils.convert_capture_to_planes(cap)
     chart.img = image_processing_utils.get_image_patch(
         y, chart.xnorm, chart.ynorm, chart.wnorm, chart.hnorm)
@@ -153,7 +153,7 @@ class EdgeEnhancementTest(its_base_test.ItsBaseTest):
           continue
 
         ret = do_capture_and_determine_sharpness(
-            cam, edge_mode, s, e, fd, out_surface, chart, self.log_path)
+            cam, edge_mode, s, e, fd, out_surface, chart, name_with_log_path)
         edge_mode_reported_regular.append(ret['edge_mode'])
         sharpness_regular.append(ret['sharpness'])
 

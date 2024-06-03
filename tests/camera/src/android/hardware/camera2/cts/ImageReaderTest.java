@@ -22,6 +22,7 @@ import static android.hardware.camera2.cts.CameraTestUtils.SESSION_READY_TIMEOUT
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleImageReaderListener;
 import static android.hardware.camera2.cts.CameraTestUtils.dumpFile;
+import static android.hardware.camera2.cts.CameraTestUtils.getUnavailablePhysicalCameras;
 import static android.hardware.camera2.cts.CameraTestUtils.getValueNotNull;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -67,6 +68,7 @@ import android.os.ConditionVariable;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.util.Log;
+import android.util.Pair;
 import android.util.Size;
 import android.view.Surface;
 
@@ -964,6 +966,8 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testImageReaderPrivateWithProtectedUsageFlag() throws Exception {
+        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras(
+                mCameraManager, mHandler);
         for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Private format and protected usage testing for camera " + id);
@@ -977,10 +981,14 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
                 if (mAllStaticInfo.get(id).isLogicalMultiCamera()) {
                     Set<String> physicalIdsSet =
-                        mAllStaticInfo.get(id).getCharacteristics().getPhysicalCameraIds();
+                            mAllStaticInfo.get(id).getCharacteristics().getPhysicalCameraIds();
                     for (String physicalId : physicalIdsSet) {
-                        if (mAllStaticInfo.get(physicalId).isCapabilitySupported(
-                                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_SECURE_IMAGE_DATA)) {
+                        StaticMetadata phyInfo = mAllStaticInfo.get(physicalId);
+                        boolean isUnavailable =
+                                unavailablePhysicalCameras.contains(new Pair<>(id, physicalId));
+                        if (phyInfo.isCapabilitySupported(CameraCharacteristics
+                                .REQUEST_AVAILABLE_CAPABILITIES_SECURE_IMAGE_DATA)
+                                && !isUnavailable) {
                             testCameraIds.add(physicalId);
                         }
                     }

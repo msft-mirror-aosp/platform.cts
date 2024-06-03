@@ -22,7 +22,7 @@ No Change.
 No Change.
 
 ### FileUtil.java
-Commented out the code which asserts if total track count in media is not equal to 2, as this check restricts usage of input clips which are having only one video track which is a valid use case scenario.
+No Change.
 
 ### MssimCalculator.java
 No change.
@@ -31,7 +31,7 @@ No change.
 No change.
 
 ### TransformerAndroidTestRunner.java
-Remove usage of NullableType annotation as library is not accessible for it.
+No Change.
 
 ### VideoDecodingWrapper.java
 No change.

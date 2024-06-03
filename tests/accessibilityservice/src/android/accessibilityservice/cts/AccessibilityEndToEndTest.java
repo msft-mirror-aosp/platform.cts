@@ -29,6 +29,7 @@ import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.getActi
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.dispatchGesture;
 import static android.accessibilityservice.cts.utils.RunOnMainUtils.getOnMain;
@@ -52,6 +53,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -529,11 +531,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                     " - Watches have different notification system.");
             return;
         }
-        if (pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
-            Log.i(LOG_TAG, "Skipping: testTypeNotificationStateChangedAccessibilityEvent" +
-                    " - Automotive handle notifications differently.");
-            return;
-        }
+        assumeFalse("Skipping - Automotive handle notifications differently.",
+                isAutomotive(sInstrumentation.getTargetContext()));
 
         String message = mActivity.getString(R.string.notification_message);
 
@@ -1838,6 +1837,12 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {
             "android.view.accessibility.AccessibilityNodeInfo#setQueryFromAppProcessEnabled"})
     public void testDirectAccessibilityConnection_UsesCurrentWindowSpec() throws Throwable {
+        if (isAutomotive(sInstrumentation.getTargetContext())) {
+            Log.i(LOG_TAG, "Skipping: testDirectAccessibilityConnection_UsesCurrentWindowSpec"
+                    + " - Automotive does not support magnification.");
+            return;
+        }
+
         // Store the initial bounds of the ANI.
         final View layoutView = mActivity.findViewById(R.id.buttonLayout);
         final AccessibilityNodeInfo layoutNode = layoutView.createAccessibilityNodeInfo();
@@ -1901,6 +1906,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @AsbSecurityTest(cveBugId = {243378132})
     @Test
     public void testUninstallPackage_DisablesMultipleServices() throws Exception {
+        AccessibilityManager manager = mActivity.getSystemService(AccessibilityManager.class);
         final String apkPath =
                 "/data/local/tmp/cts/content/CtsAccessibilityMultipleServicesApp.apk";
         final String packageName = "foo.bar.multipleservices";
@@ -1915,14 +1921,21 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             // Install the apk in this test method, instead of as part of the target preparer, to
             // allow repeated --iterations of the test.
             assertThat(ShellUtils.runShellCommand("pm install " + apkPath)).startsWith("Success");
+            TestUtils.waitUntil(
+                    "Failed to install services from " + apkPath,
+                    (int) TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            manager.getInstalledAccessibilityServiceList().stream()
+                                            .filter(info -> info.getId().startsWith(packageName))
+                                            .count()
+                                    == 2);
+
             // Enable the two services and wait until AccessibilityManager reports them as enabled.
-            final String servicesToEnable = getEnabledServicesSetting() + componentNameSeparator
-                    + service1.flattenToShortString() + componentNameSeparator
-                    + service2.flattenToShortString();
+            final String servicesToEnable = service1.flattenToShortString()
+                    + componentNameSeparator + service2.flattenToShortString();
             ShellCommandBuilder.create(sInstrumentation)
                     .putSecureSetting(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
                             servicesToEnable)
-                    .putSecureSetting(Settings.Secure.ACCESSIBILITY_ENABLED, "1")
                     .run();
             TestUtils.waitUntil("Failed to enable 2 services from package " + packageName,
                     (int) TIMEOUT_SERVICE_ENABLE / 1000,

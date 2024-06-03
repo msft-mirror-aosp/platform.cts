@@ -19,6 +19,7 @@ package android.media.cujcommon.cts;
 import static org.junit.Assert.assertEquals;
 
 import android.app.Activity;
+import android.app.ActivityTaskManager;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -93,10 +94,24 @@ public class CujTestBase {
   }
 
   /**
+   * Whether the device supports split-screen feature.
+   */
+  public static boolean deviceSupportSplitScreenMode(final Activity activity) {
+    return ActivityTaskManager.supportsSplitScreenMultiWindow(activity);
+  }
+
+  /**
    * Whether the device is a watch.
    */
   public static boolean isWatchDevice(final Activity activity) {
     return activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+  }
+
+  /**
+   * Whether the device is a television.
+   */
+  public static boolean isTelevisionDevice(final Activity activity) {
+    return activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
   }
 
   /**
@@ -112,12 +127,10 @@ public class CujTestBase {
     if (!mIsScrollTest) {
       mActivity.runOnUiThread(() -> {
         mActivity.prepareMediaItems(mediaUrls);
-        mActivity.run();
       });
     } else {
       mScrollActivity.runOnUiThread(() -> {
         mScrollActivity.prepareMediaItems(mediaUrls);
-        mScrollActivity.run();
       });
     }
 

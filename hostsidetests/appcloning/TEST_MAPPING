@@ -5,6 +5,19 @@
         "options": [
           {
             "exclude-annotation": "android.platform.test.annotations.LargeTest"
+          },
+          {
+            "exclude-annotation": "android.platform.test.annotations.FlakyTest"
+          }
+        ]
+    }
+  ],
+  "mediaprovider-mainline-presubmit": [
+    {
+        "name": "CtsAppCloningHostTest",
+        "options": [
+          {
+            "exclude-annotation": "android.platform.test.annotations.LargeTest"
           }
         ]
     }
@@ -15,6 +28,9 @@
         "options": [
           {
             "include-annotation": "android.platform.test.annotations.LargeTest"
+          },
+          {
+            "include-annotation": "android.platform.test.annotations.FlakyTest"
           }
         ]
     }
@@ -25,6 +41,9 @@
       "options": [
         {
           "exclude-annotation": "android.platform.test.annotations.LargeTest"
+        },
+        {
+          "exclude-annotation": "android.platform.test.annotations.FlakyTest"
         }
       ]
     }
@@ -35,6 +54,9 @@
       "options": [
         {
           "include-annotation": "android.platform.test.annotations.LargeTest"
+        },
+        {
+          "include-annotation": "android.platform.test.annotations.FlakyTest"
         }
       ]
     }

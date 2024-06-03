@@ -34,6 +34,7 @@ class TestAppDetails {
     final Bundle mMetadata = new Bundle();
     final Set<String> mPermissions = new HashSet<>();
     final Set<ActivityInfo> mActivities = new HashSet<>();
+    final Set<ActivityInfo> mActivityAliases = new HashSet<>();
     final Set<ServiceInfo> mServices = new HashSet<>();
     final Set<ReceiverInfo> mReceivers = new HashSet<>();
 
@@ -73,6 +74,7 @@ class TestAppDetails {
                 + ", mMetadata=" + mMetadata
                 + ", mPermissions=" + mPermissions
                 + ", mActivities=" + mActivities
+                + ", mActivityAliases=" + mActivityAliases
                 + ", mServices=" + mServices
                 + ", mReceivers=" + mReceivers
                 + '}';

@@ -608,7 +608,7 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
             mNm.createNotificationChannelGroup(group);
             NotificationChannel channel =
                     new NotificationChannel(
-                            mGroupId, "ReceiveChannelBlockNoticeTest", IMPORTANCE_LOW);
+                            mGroupId, "ReceiveChannelBlockNoticeTest", IMPORTANCE_NONE);
             channel.setGroup(mGroupId);
             mNm.createNotificationChannel(channel);
             status = READY;

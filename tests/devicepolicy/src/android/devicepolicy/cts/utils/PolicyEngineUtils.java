@@ -16,7 +16,7 @@
 
 package android.devicepolicy.cts.utils;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
 import static org.junit.Assert.fail;
 
@@ -32,7 +32,7 @@ import android.content.ComponentName;
 import android.os.UserHandle;
 
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 
 import java.util.List;
 import java.util.Set;

@@ -30,7 +30,8 @@ public final class BlockingLogcatListener implements AutoCloseable {
     }
 
     public void awaitMatch() {
-        Poll.forValue("matching lines", () -> TestApis.logcat().dump(mFilter))
+        String unused =
+                Poll.forValue("matching lines", () -> TestApis.logcat().dump(mFilter))
                 .toMeet(s -> !s.isBlank())
                 .await();
     }

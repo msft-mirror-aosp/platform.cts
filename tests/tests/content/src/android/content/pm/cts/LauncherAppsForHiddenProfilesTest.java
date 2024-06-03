@@ -24,8 +24,8 @@ import static android.multiuser.Flags.FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PR
 import static android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES;
 import static android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.permissions.CommonPermissions.START_TASKS_FROM_RECENTS;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.START_TASKS_FROM_RECENTS;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.getDefaultLauncher;
 import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
 
@@ -34,9 +34,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static junit.framework.Assert.fail;
 
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assume.assumeTrue;
 
-import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -46,21 +44,22 @@ import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.UserHandle;
-import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
-import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
+import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
-import com.android.bedstead.nene.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.ShellCommand;
+import com.android.bedstead.nene.utils.ShellCommandUtils;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.bedstead.testapp.TestAppProvider;
@@ -77,6 +76,8 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+@RequirePrivateSpaceSupported
+@RequireNotInstantApp(reason = "Requires bedstead withoutPermission and RoleManager")
 @RunWith(BedsteadJUnit4.class)
 public class LauncherAppsForHiddenProfilesTest {
 
@@ -100,14 +101,6 @@ public class LauncherAppsForHiddenProfilesTest {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-
-        try (PermissionContext p =
-                TestApis.permissions().withPermission(Manifest.permission.CREATE_USERS)) {
-            assumeTrue(
-                    "Private profile not enabled on the device",
-                    Objects.requireNonNull(mContext.getSystemService(UserManager.class))
-                            .canAddPrivateProfile());
-        }
 
         mLauncherApps = mContext.getSystemService(LauncherApps.class);
         mDefaultHome = getDefaultLauncher(InstrumentationRegistry.getInstrumentation());
@@ -223,24 +216,6 @@ public class LauncherAppsForHiddenProfilesTest {
     }
 
     @Test
-    @FlakyTest(bugId = 325954148)
-    @RequiresFlagsEnabled({
-        FLAG_ALLOW_PRIVATE_PROFILE,
-        FLAG_ENABLE_LAUNCHER_APPS_HIDDEN_PROFILE_CHECKS,
-        FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
-        FLAG_ENABLE_HIDING_PROFILES,
-        FLAG_ENABLE_PRIVATE_SPACE_FEATURES
-    })
-    public void testAppChangesCallbacks_withSystemPerm_callbacksReceived() {
-        try (UserReference privateProfile = createProfile();
-                PermissionContext p =
-                        TestApis.permissions().withPermission(ACCESS_HIDDEN_PROFILES_FULL)) {
-            privateProfile.start();
-            assertCallbacksPropagation(privateProfile, /* received= */ true);
-        }
-    }
-
-    @Test
     @RequiresFlagsEnabled({
         FLAG_ALLOW_PRIVATE_PROFILE,
         FLAG_ENABLE_LAUNCHER_APPS_HIDDEN_PROFILE_CHECKS,
@@ -253,27 +228,6 @@ public class LauncherAppsForHiddenProfilesTest {
                 PermissionContext p =
                         TestApis.permissions().withPermission(ACCESS_HIDDEN_PROFILES)) {
             privateProfile.start();
-            assertCallbacksPropagation(privateProfile, /* received= */ false);
-        }
-    }
-
-    @Test
-    @FlakyTest(bugId = 325954148)
-    @RequiresFlagsEnabled({
-        FLAG_ALLOW_PRIVATE_PROFILE,
-        FLAG_ENABLE_LAUNCHER_APPS_HIDDEN_PROFILE_CHECKS,
-        FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
-        FLAG_ENABLE_HIDING_PROFILES,
-        FLAG_ENABLE_PRIVATE_SPACE_FEATURES
-    })
-    public void testAppChangesCallbacks_defaultLauncherNoPerms_callbacksNotReceived() {
-        try (UserReference privateProfile = createProfile();
-                PermissionContext p =
-                        TestApis.permissions()
-                                .withoutPermission(
-                                        ACCESS_HIDDEN_PROFILES, ACCESS_HIDDEN_PROFILES_FULL)) {
-            privateProfile.start();
-            setSelfAsDefaultLauncher();
             assertCallbacksPropagation(privateProfile, /* received= */ false);
         }
     }
@@ -338,7 +292,9 @@ public class LauncherAppsForHiddenProfilesTest {
                                 .map(PackageInstaller.SessionInfo::getUser)
                                 .toList())
                 .doesNotContain(targetUser);
-        assertThat(mLauncherApps.shouldHideFromSuggestions(packageName, targetUser)).isFalse();
+        if (canSetAppAsDistracting()) {
+            assertThat(mLauncherApps.shouldHideFromSuggestions(packageName, targetUser)).isFalse();
+        }
 
         try (PermissionContext p =
                 TestApis.permissions().withPermission(START_TASKS_FROM_RECENTS)) {
@@ -374,7 +330,9 @@ public class LauncherAppsForHiddenProfilesTest {
                                 .map(PackageInstaller.SessionInfo::getUser)
                                 .toList())
                 .contains(targetUser);
-        assertThat(mLauncherApps.shouldHideFromSuggestions(packageName, targetUser)).isTrue();
+        if (canSetAppAsDistracting()) {
+            assertThat(mLauncherApps.shouldHideFromSuggestions(packageName, targetUser)).isTrue();
+        }
 
         try (PermissionContext p =
                 TestApis.permissions().withPermission(START_TASKS_FROM_RECENTS)) {
@@ -396,8 +354,14 @@ public class LauncherAppsForHiddenProfilesTest {
         startInstallationSession(reference);
 
         // Required to test shouldHideFromSuggestions API
-        setAppAsDistracting(reference, mTestApp.packageName());
+        if (canSetAppAsDistracting()) {
+            setAppAsDistracting(reference, mTestApp.packageName());
+        }
         return reference;
+    }
+
+    private boolean canSetAppAsDistracting() {
+        return ShellCommandUtils.isRootAvailable();
     }
 
     private UserReference createProfile() {

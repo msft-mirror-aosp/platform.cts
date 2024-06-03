@@ -92,12 +92,13 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
     private static final String SEPOLICY_VERSION_JSON_KEY = "sepolicy_version";
     private static final String PLATFORM_SEPOLICY_VERSION_JSON_KEY = "platform_sepolicy_version";
 
-    private static final Map<ITestDevice, File> cachedDevicePolicyFiles = new HashMap<>(1);
-    private static final Map<ITestDevice, File> cachedDevicePlatFcFiles = new HashMap<>(1);
-    private static final Map<ITestDevice, File> cachedDeviceVendorFcFiles = new HashMap<>(1);
-    private static final Map<ITestDevice, File> cachedDeviceVendorManifest = new HashMap<>(1);
-    private static final Map<ITestDevice, File> cachedDeviceVintfJson = new HashMap<>(1);
-    private static final Map<ITestDevice, File> cachedDeviceSystemPolicy = new HashMap<>(1);
+    private static final Map<ITestDevice, File> sCachedDevicePolicyFiles = new HashMap<>(1);
+    private static final Map<ITestDevice, File> sCachedDevicePlatFcFiles = new HashMap<>(1);
+    private static final Map<ITestDevice, File> sCachedDeviceVendorFcFiles = new HashMap<>(1);
+    private static final Map<ITestDevice, File> sCachedDeviceVendorManifest = new HashMap<>(1);
+    private static final Map<ITestDevice, File> sCachedDeviceVendorPolicy = new HashMap<>(1);
+    private static final Map<ITestDevice, File> sCachedDeviceVintfJson = new HashMap<>(1);
+    private static final Map<ITestDevice, File> sCachedDeviceSystemPolicy = new HashMap<>(1);
 
     private File mSepolicyAnalyze;
     private File checkSeapp;
@@ -163,16 +164,16 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
 
         devicePolicyFile = getDevicePolicyFile(mDevice);
         if (isSepolicySplit(mDevice)) {
-            devicePlatFcFile = getDeviceFile(mDevice, cachedDevicePlatFcFiles,
+            devicePlatFcFile = getDeviceFile(mDevice, sCachedDevicePlatFcFiles,
                     "/system/etc/selinux/plat_file_contexts", "plat_file_contexts");
-            deviceVendorFcFile = getDeviceFile(mDevice, cachedDeviceVendorFcFiles,
+            deviceVendorFcFile = getDeviceFile(mDevice, sCachedDeviceVendorFcFiles,
                     "/vendor/etc/selinux/vendor_file_contexts", "vendor_file_contexts");
             deviceSystemPolicyFile =
                     android.security.cts.SELinuxHostTest.getDeviceSystemPolicyFile(mDevice);
         } else {
-            devicePlatFcFile = getDeviceFile(mDevice, cachedDevicePlatFcFiles,
+            devicePlatFcFile = getDeviceFile(mDevice, sCachedDevicePlatFcFiles,
                     "/plat_file_contexts", "plat_file_contexts");
-            deviceVendorFcFile = getDeviceFile(mDevice, cachedDeviceVendorFcFiles,
+            deviceVendorFcFile = getDeviceFile(mDevice, sCachedDeviceVendorFcFiles,
                     "/vendor_file_contexts", "vendor_file_contexts");
         }
     }
@@ -204,7 +205,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
             Map<ITestDevice, File> cache, String deviceFilePath,
             String tmpFileName) throws Exception {
         if (!device.doesFileExist(deviceFilePath)){
-            throw new Exception();
+            throw new Exception("File not found on the device: " + deviceFilePath);
         }
         File file;
         synchronized (cache) {
@@ -231,7 +232,6 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
             return builtPolicyFile;
         }
 
-
         builtPolicyFile = createTempFile(tmpFileName, ".tmp");
 
         File secilc = copyResourceToTempFile("/secilc");
@@ -239,14 +239,90 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
 
         File systemSepolicyCilFile = createTempFile("plat_sepolicy", ".cil");
         File fileContextsFile = createTempFile("file_contexts", ".txt");
-
         assertTrue(device.pullFile("/system/etc/selinux/plat_sepolicy.cil", systemSepolicyCilFile));
 
-        String errorString = tryRunCommand(secilc.getAbsolutePath(),
-                "-m", "-M", "true", "-c", "30",
-                "-o", builtPolicyFile.getAbsolutePath(),
-                "-f", fileContextsFile.getAbsolutePath(),
-                systemSepolicyCilFile.getAbsolutePath());
+        List<String> command = new ArrayList<>(Arrays.asList(
+                secilc.getAbsolutePath(),
+                "-m",
+                "-M",
+                "true",
+                "-c",
+                "30",
+                "-o",
+                builtPolicyFile.getAbsolutePath(),
+                "-f",
+                fileContextsFile.getAbsolutePath(),
+                systemSepolicyCilFile.getAbsolutePath()));
+
+        File systemExtCilFile = createTempFile("system_ext_sepolicy", ".cil");
+        File productCilFile = createTempFile("product_sepolicy", ".cil");
+        if (device.pullFile("/system_ext/etc/selinux/system_ext_sepolicy.cil", systemExtCilFile)) {
+            command.add(systemExtCilFile.getAbsolutePath());
+        }
+        if (device.pullFile("/product/etc/selinux/product_sepolicy.cil", productCilFile)) {
+            command.add(productCilFile.getAbsolutePath());
+        }
+
+        String errorString = tryRunCommand(command.toArray(new String[0]));
+        assertTrue(errorString, errorString.length() == 0);
+
+        synchronized (cache) {
+            cache.put(device, builtPolicyFile);
+        }
+        return builtPolicyFile;
+    }
+
+    private static File buildVendorPolicy(IBuildInfo build, ITestDevice device,
+            Map<ITestDevice, File> cache, String tmpFileName) throws Exception {
+        File builtPolicyFile;
+        synchronized (cache) {
+            builtPolicyFile = cache.get(device);
+        }
+        if (builtPolicyFile != null) {
+            return builtPolicyFile;
+        }
+
+        builtPolicyFile = createTempFile(tmpFileName, ".tmp");
+
+        File secilc = copyResourceToTempFile("/secilc");
+        secilc.setExecutable(true);
+
+        int vendorVersion = getVendorSepolicyVersion(build, device);
+
+        File platSepolicyFile = copyResourceToTempFile("/" + vendorVersion + "_plat_sepolicy.cil");
+        File platMappingFile = copyResourceToTempFile("/" + vendorVersion + "_mapping.cil");
+        File vendorSepolicyCilFile = createTempFile("vendor_sepolicy", ".cil");
+        File platPubVersionedCilFile = createTempFile("plat_pub_versioned", ".cil");
+        File odmSepolicyCilFile = createTempFile("odm_sepolicy", ".cil");
+        File fileContextsFile = createTempFile("file_contexts", ".txt");
+
+        assertTrue(device.pullFile("/vendor/etc/selinux/vendor_sepolicy.cil",
+                vendorSepolicyCilFile));
+        assertTrue(device.pullFile("/vendor/etc/selinux/plat_pub_versioned.cil",
+                platPubVersionedCilFile));
+
+        List<String> command = new ArrayList<>(Arrays.asList(
+                secilc.getAbsolutePath(),
+                "-m",
+                "-M",
+                "true",
+                "-c",
+                "30",
+                "-N",
+                "-o",
+                builtPolicyFile.getAbsolutePath(),
+                "-f",
+                fileContextsFile.getAbsolutePath(),
+                platSepolicyFile.getAbsolutePath(),
+                platMappingFile.getAbsolutePath(),
+                vendorSepolicyCilFile.getAbsolutePath(),
+                platPubVersionedCilFile.getAbsolutePath()));
+
+        if (device.pullFile("/odm/etc/selinux/odm_sepolicy.cil", odmSepolicyCilFile)) {
+            command.add(odmSepolicyCilFile.getAbsolutePath());
+        }
+
+        String errorString = tryRunCommand(command.toArray(new String[0]));
         assertTrue(errorString, errorString.length() == 0);
 
         synchronized (cache) {
@@ -259,14 +335,23 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
      * Returns the host-side file containing the SELinux policy of the device under test.
      */
     public static File getDevicePolicyFile(ITestDevice device) throws Exception {
-        return getDeviceFile(device, cachedDevicePolicyFiles, "/sys/fs/selinux/policy", "sepolicy");
+        return getDeviceFile(device, sCachedDevicePolicyFiles, "/sys/fs/selinux/policy",
+                "sepolicy");
     }
 
     /**
      * Returns the host-side file containing the system SELinux policy of the device under test.
      */
     public static File getDeviceSystemPolicyFile(ITestDevice device) throws Exception {
-        return buildSystemPolicy(device, cachedDeviceSystemPolicy, "system_sepolicy");
+        return buildSystemPolicy(device, sCachedDeviceSystemPolicy, "system_sepolicy");
+    }
+
+    /**
+     * Returns the host-side file containing the vendor SELinux policy of the device under test.
+     */
+    public static File getDeviceVendorPolicyFile(IBuildInfo build, ITestDevice device)
+            throws Exception {
+        return buildVendorPolicy(build, device, sCachedDeviceVendorPolicy, "vendor_sepolicy");
     }
 
     /**
@@ -287,19 +372,20 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         try {
             return getVendorSepolicyVersionFromBuildInfo(build);
         } catch (Exception ex) {
-            CLog.e("getVendorSepolicyVersionFromBuildInfo failed: ", ex);
+            CLog.e("getVendorSepolicyVersionFromBuildInfo failed: " + ex);
             buildInfoEx = ex;
         }
         try {
             return getVendorSepolicyVersionFromDeviceJson(device);
         } catch (Exception ex) {
-            CLog.e("getVendorSepolicyVersionFromDeviceJson failed: ", ex);
+            CLog.e("getVendorSepolicyVersionFromDeviceJson failed: " + ex);
         }
         try {
             return getVendorSepolicyVersionFromManifests(device);
         } catch (Exception ex) {
-            CLog.e("getVendorSepolicyVersionFromManifests failed: ", ex);
-            throw buildInfoEx;
+            CLog.e("getVendorSepolicyVersionFromManifests failed: " + ex);
+            throw new Exception("Unable to get the vendor policy version from the device:",
+                buildInfoEx);
         }
     }
 
@@ -331,7 +417,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
      * VintfDeviceInfo.
      */
     private static int getVendorSepolicyVersionFromDeviceJson(ITestDevice device) throws Exception {
-        File vintfJson = getDeviceFile(device, cachedDeviceVintfJson,
+        File vintfJson = getDeviceFile(device, sCachedDeviceVintfJson,
                 DEVICE_INFO_DEVICE_DIR + VINTF_DEVICE_JSON, VINTF_DEVICE_JSON);
         return getVendorSepolicyVersionFromJsonFile(vintfJson);
     }
@@ -354,11 +440,30 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
      * search new paths, hence this may not work on devices launching Android 11 and later.
      */
     private static int getVendorSepolicyVersionFromManifests(ITestDevice device) throws Exception {
-        String deviceManifestPath =
-                (device.doesFileExist("/vendor/etc/vintf/manifest.xml")) ?
-                "/vendor/etc/vintf/manifest.xml" :
-                "/vendor/manifest.xml";
-        File vendorManifestFile = getDeviceFile(device, cachedDeviceVendorManifest,
+        String deviceManifestPath = null;
+
+        //check default path /vendor/etc/vintf/manifest.xml, prefer to use by default
+        if (device.doesFileExist("/vendor/etc/vintf/manifest.xml")) {
+            deviceManifestPath = "/vendor/etc/vintf/manifest.xml";
+        }
+
+        //only if /vendor/etc/vintf/manifest.xml not exist, then check /vendor/etc/vintf/manifest_{vendorSku}.xml
+        String vendorSku = device.getProperty("ro.boot.product.vendor.sku");
+        if (deviceManifestPath == null && vendorSku != null && vendorSku.length() > 0) {
+            String vendorSkuDeviceManifestPath = "/vendor/etc/vintf/manifest_"+ vendorSku + ".xml";
+            if (device.doesFileExist(vendorSkuDeviceManifestPath)) {
+                deviceManifestPath = vendorSkuDeviceManifestPath;
+            }
+        }
+
+        //use /vendor/manifest.xml if above paths not exist
+        if (deviceManifestPath == null) {
+            deviceManifestPath = "/vendor/manifest.xml";
+        }
+
+        CLog.i("getVendorSepolicyVersionFromManifests " + deviceManifestPath);
+
+        File vendorManifestFile = getDeviceFile(device, sCachedDeviceVendorManifest,
                 deviceManifestPath, "manifest.xml");
 
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();

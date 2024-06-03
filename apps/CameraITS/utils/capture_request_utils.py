@@ -17,17 +17,25 @@
 import logging
 import math
 
-_COMMON_IMG_ARS = (4/3, 16/9)
-_COMMON_IMG_ARS_ATOL = 0.01
-_MAX_YUV_SIZE = (1920, 1080)
-_MIN_YUV_SIZE = (640, 360)
-_VGA_W, _VGA_H = 640, 480
-_CAPTURE_INTENT_STILL_CAPTURE = 2
 _AE_MODE_ON_AUTO_FLASH = 2
-_CAPTURE_INTENT_PREVIEW = 1
 _AE_PRECAPTURE_TRIGGER_START = 1
 _AE_PRECAPTURE_TRIGGER_IDLE = 0
+_CAPTURE_INTENT_STILL_CAPTURE = 2
+_CAPTURE_INTENT_PREVIEW = 1
+_COMMON_IMG_ARS = (4/3, 16/9)
+_COMMON_IMG_ARS_ATOL = 0.01
 _FLASH_MODE_SINGLE = 1
+FMT_CODE_JPEG = 0x100
+FMT_CODE_JPEG_R = 0x1005
+FMT_CODE_PRIV = 0x22
+FMT_CODE_RAW = 0x20
+FMT_CODE_RAW10 = 0x25
+FMT_CODE_RAW12 = 0x26
+FMT_CODE_YUV = 0x23  # YUV_420_888
+FMT_CODE_Y8 = 0x20203859
+_MAX_YUV_SIZE = (1920, 1080)
+_MIN_YUV_SIZE = (640, 360)
+_VGA_W, _VGA_H = (640, 480)
 
 
 def is_common_aspect_ratio(size):
@@ -183,15 +191,15 @@ def get_available_output_sizes(fmt, props, max_size=None, match_ar_size=None):
   """
   ar_tolerance = 0.03
   fmt_codes = {
-      'raw': 0x20,
-      'raw10': 0x25,
-      'raw12': 0x26,
-      'yuv': 0x23,
-      'jpg': 0x100,
-      'jpeg': 0x100,
-      'jpeg_r': 0x1005,
-      'priv': 0x22,
-      'y8': 0x20203859
+      'raw': FMT_CODE_RAW,
+      'raw10': FMT_CODE_RAW10,
+      'raw12': FMT_CODE_RAW12,
+      'yuv': FMT_CODE_YUV,
+      'jpg': FMT_CODE_JPEG,
+      'jpeg': FMT_CODE_JPEG,
+      'jpeg_r': FMT_CODE_JPEG_R,
+      'priv': FMT_CODE_PRIV,
+      'y8': FMT_CODE_Y8
   }
   configs = props[
       'android.scaler.streamConfigurationMap']['availableStreamConfigurations']

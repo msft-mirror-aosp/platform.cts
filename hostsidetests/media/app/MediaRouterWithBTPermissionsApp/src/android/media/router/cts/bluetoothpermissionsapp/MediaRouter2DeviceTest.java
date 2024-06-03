@@ -52,12 +52,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRoute2Info;
+import android.media.MediaRoute2ProviderService;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.ScanRequest;
 import android.media.MediaRouter2.ScanToken;
 import android.media.MediaRouter2Manager;
 import android.media.RouteDiscoveryPreference;
 import android.media.RouteListingPreference;
+import android.media.cts.app.common.PlaceholderSelfScanMediaRoute2ProviderService;
 import android.media.cts.app.common.ScreenOnActivity;
 import android.os.ConditionVariable;
 import android.os.PowerManager;
@@ -585,6 +587,69 @@ public class MediaRouter2DeviceTest {
         assertThat(systemController.getSelectedRoutes())
                 .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
                 .containsExactly(MediaRoute2Info.ROUTE_ID_DEFAULT);
+    }
+
+    @Test
+    public void activeScanRouteDiscoveryPreference_scansOnSelfScanProvider() {
+        launchScreenOnActivity();
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+
+        RouteDiscoveryPreference activeScanRouteDiscoveryPreference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of("placeholder_feature"), /* activeScan= */ true)
+                        .build();
+        MediaRouter2.RouteCallback routeCallback = new MediaRouter2.RouteCallback() {};
+
+        ConditionVariable onBindConditionVariable = new ConditionVariable();
+        ConditionVariable onUnbindConditionVariable = new ConditionVariable();
+
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        onBindConditionVariable.open();
+                    }
+                });
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnUnbindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        onUnbindConditionVariable.open();
+                    }
+                });
+        try {
+            router.registerRouteCallback(
+                    Runnable::run, routeCallback, activeScanRouteDiscoveryPreference);
+            assertThat(onBindConditionVariable.block(TIMEOUT_MS)).isTrue();
+
+            router.unregisterRouteCallback(routeCallback);
+            assertThat(onUnbindConditionVariable.block(TIMEOUT_MS)).isTrue();
+        } finally {
+            PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(action -> {});
+            PlaceholderSelfScanMediaRoute2ProviderService.setOnUnbindCallback(action -> {});
+            router.unregisterRouteCallback(routeCallback);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PREVENTION_OF_MANAGER_SCANS_WHEN_NO_APPS_SCAN)
+    @Test
+    public void managerScan_withNoAppsScanning_doesNotWakeUpProvider() {
+        // Permission required for the proxy router scan (also known as manager scan).
+        mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
+
+        // We use self-pointing proxy router to trigger a manager scan.
+        MediaRouter2 proxyRouter = MediaRouter2.getInstance(mContext, mContext.getPackageName());
+        ConditionVariable conditionVariable = new ConditionVariable();
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        conditionVariable.open();
+                    }
+                });
+        proxyRouter.startScan();
+        try {
+            assertThat(conditionVariable.block(TIMEOUT_MS)).isFalse();
+        } finally {
+            proxyRouter.stopScan();
+        }
     }
 
     @ApiTest(apis = {"android.media.MediaRouter2"})

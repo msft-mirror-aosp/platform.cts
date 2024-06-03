@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@UsesAnnotationExecutor(InteractiveAnnotationExecutor.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.INTERACTIVE)
 @Repeatable(RequireBooleanStepResultGroup.class)
 public @interface RequireBooleanStepResult {
     /** The step to execute. */

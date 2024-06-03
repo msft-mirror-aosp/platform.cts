@@ -33,7 +33,9 @@ import android.graphics.pdf.PdfRendererPreV;
 import android.graphics.pdf.RenderParams;
 import android.graphics.pdf.models.PageMatchBounds;
 import android.graphics.pdf.models.selection.SelectionBoundary;
+import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
+import android.os.Parcelable;
 import android.util.ArrayMap;
 import android.util.Log;
 
@@ -562,5 +564,14 @@ class Utils {
             Point expectedPoint) {
         assertThat(selectionBoundary.getIndex()).isEqualTo(expectedIndex);
         assertThat(selectionBoundary.getPoint()).isEqualTo(expectedPoint);
+    }
+
+    public static <T extends Parcelable> T writeAndReadFromParcel(T openable,
+            Parcelable.Creator<T> creator) {
+        Parcel parcel = Parcel.obtain();
+        openable.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        T clone = creator.createFromParcel(parcel);
+        return clone;
     }
 }

@@ -733,27 +733,29 @@ def cropped_raw_stream_use_case(props):
       'android.scaler.availableStreamUseCases']
 
 
-def intrinsic_calibration(props):
-  """Returns whether a device supports android.lens.intrinsicCalibration.
+def dynamic_range_ten_bit(props):
+  """Returns whether a device supports the DYNAMIC_RANGE_TEN_BIT capability.
 
   Args:
     props: Camera properties object.
 
   Returns:
-    Boolean. True if device supports android.lens.intrinsicCalibratino.
+     Boolean. True if the device supports the DYNAMIC_RANGE_TEN_BIT capability.
   """
-  return props.get('android.lens.intrinsicCalibration') is not None
+  return 'android.request.availableCapabilities' in props and 18 in props[
+      'android.request.availableCapabilities']
 
 
-def get_intrinsic_calibration(props, debug, fd=None):
+def get_intrinsic_calibration(props, metadata, debug, fd=None):
   """Get intrinsicCalibration and create intrisic matrix.
 
   If intrinsic android.lens.intrinsicCalibration does not exist, return None.
 
   Args:
-    props: camera properties
-    debug: bool to print more information
-    fd: focal length from capture metadata
+    props: camera properties.
+    metadata: dict; camera capture metadata.
+    debug: boolean; enable printing more information.
+    fd: float; focal length from capture metadata.
 
   Returns:
     intrinsic transformation matrix
@@ -761,10 +763,10 @@ def get_intrinsic_calibration(props, debug, fd=None):
          [0, f_y, c_y],
          [0,   0,   1]]
   """
-  if props.get('android.lens.intrinsicCalibration'):
-    ical = np.array(props['android.lens.intrinsicCalibration'])
+  if metadata['android.lens.intrinsicCalibration']:
+    ical = np.array(metadata['android.lens.intrinsicCalibration'])
   else:
-    logging.error('Device does not have android.lens.intrinsicCalibration.')
+    logging.error('Camera does not have android.lens.intrinsicCalibration.')
     return None
 
   # basic checks for parameter correctness

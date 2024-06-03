@@ -62,7 +62,7 @@ import java.util.List;
 
 /**
  * Build/Install/Run:
- *     atest CtsWindowManagerDeviceWindow:ConfigChangeTests
+ *     atest CtsWindowManagerDeviceActivity:ConfigChangeTests
  */
 @Presubmit
 public class ConfigChangeTests extends ActivityManagerTestBase {
@@ -71,7 +71,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
 
     @Test
     public void testRotation90Relaunch() {
-        assumeTrue("Skipping test: no rotation support", supportsRotation());
+        assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
 
         // Should relaunch on every rotation and receive no onConfigurationChanged()
         testRotation(TEST_ACTIVITY, 1, 1, 0);
@@ -79,7 +79,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
 
     @Test
     public void testRotation90NoRelaunch() {
-        assumeTrue("Skipping test: no rotation support", supportsRotation());
+        assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
 
         // Should receive onConfigurationChanged() on every rotation and no relaunch
         testRotation(NO_RELAUNCH_ACTIVITY, 1, 0, 1);
@@ -87,7 +87,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
 
     @Test
     public void testRotation180_RegularActivity() {
-        assumeTrue("Skipping test: no rotation support", supportsRotation());
+        assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
         assumeFalse("Skipping test: display cutout present, can't predict exact lifecycle",
                 hasDisplayCutout());
 
@@ -97,7 +97,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
 
     @Test
     public void testRotation180_NoRelaunchActivity() {
-        assumeTrue("Skipping test: no rotation support", supportsRotation());
+        assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
         assumeFalse("Skipping test: display cutout present, can't predict exact lifecycle",
                 hasDisplayCutout());
 
@@ -111,7 +111,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
      */
     @Test
     public void testRotation180RelaunchWithCutout() {
-        assumeTrue("Skipping test: no rotation support", supportsRotation());
+        assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
         assumeTrue("Skipping test: no display cutout", hasDisplayCutout());
 
         testRotation180WithCutout(TEST_ACTIVITY, false /* canHandleConfigChange */);
@@ -119,7 +119,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
 
     @Test
     public void testRotation180NoRelaunchWithCutout() {
-        assumeTrue("Skipping test: no rotation support", supportsRotation());
+        assumeTrue("Skipping test: no rotation support", supportsOrientationRequest());
         assumeTrue("Skipping test: no display cutout", hasDisplayCutout());
 
         testRotation180WithCutout(NO_RELAUNCH_ACTIVITY, true /* canHandleConfigChange */);

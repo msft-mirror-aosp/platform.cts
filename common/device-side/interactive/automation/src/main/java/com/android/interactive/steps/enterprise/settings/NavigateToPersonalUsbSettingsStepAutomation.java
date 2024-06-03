@@ -18,14 +18,13 @@ package com.android.interactive.steps.enterprise.settings;
 
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_USB;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_USB;
 
 import android.content.ComponentName;
 import android.content.Intent;
-import android.provider.Settings;
 
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.interactive.Automation;
 import com.android.interactive.Nothing;
 import com.android.interactive.annotations.AutomationFor;

@@ -48,37 +48,28 @@
       "keywords": ["primary-device"],
       "options": [
         {
-          "exclude-filter": "android.hardware.camera2.cts.SurfaceViewPreviewTest"
+          "exclude-filter": "android.hardware.camera2.cts.StillCaptureTest#testAePrecaptureTriggerCancelJpegCapture[1]"
         },
         {
-          "exclude-filter": "android.hardware.camera2.cts.StillCaptureTest"
+          "exclude-filter": "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraPerfClassCharacteristics[1]"
         },
         {
-          "exclude-filter": "android.hardware.camera2.cts.StaticMetadataTest#testCapabilities[1]"
+          "exclude-filter": "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]"
         },
         {
-          "exclude-filter": "android.hardware.camera2.cts.NativeStillCaptureTest"
-        },
-        {
-          "exclude-filter": "android.hardware.camera2.cts.NativeCameraDeviceTest"
-        },
-        {
-          "exclude-filter": "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest"
+          "exclude-filter": "android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]"
         },
         {
           "exclude-filter": "android.hardware.camera2.cts.ConcurrentCameraTest#testMandatoryConcurrentStreamCombination[1]"
         },
         {
-          "exclude-filter": "android.hardware.camera2.cts.CaptureRequestTest"
+          "exclude-filter": "android.hardware.camera2.cts.CaptureRequestTest#testNoiseReductionModeControl[1]"
         },
         {
           "exclude-filter": "android.hardware.camera2.cts.CameraManagerTest#testCameraManagerGetDeviceIdList[1]"
         },
         {
           "exclude-filter": "android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionAvailability"
-        },
-        {
-          "exclude-filter": "android.hardware.camera2.cts.CameraDeviceSetupTest#testOpenSuccessful[1]"
         }
       ]
     }

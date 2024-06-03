@@ -71,6 +71,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       lighting_control_utils.set_lighting_state(
           arduino_serial_port, self.lighting_ch, 'OFF')
 
+      # turn OFF DUT to reduce reflections
+      lighting_control_utils.turn_off_device_screen(self.dut)
+
       # Validate lighting
       cam.do_3a(do_af=False)
       cap = cam.do_capture(
@@ -88,7 +91,6 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       supported_video_sizes = cam.get_supported_video_sizes_capped(
           self.camera_id)
       max_video_size = supported_video_sizes[-1]  # largest available size
-      logging.debug('Camera supported preview sizes: %s', preview_sizes)
       logging.debug('Camera supported video sizes: %s', supported_video_sizes)
 
       preview_size = preview_sizes[-1]  # choose largest available size
@@ -149,8 +151,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
                     last_key_frame)
       last_image = image_processing_utils.convert_image_to_numpy_array(
           os.path.join(self.log_path, last_key_frame))
-      last_image_bgr = last_image[:, :, ::-1]
-      y_avg = np.average(opencv_processing_utils.convert_to_y(last_image_bgr))
+      y_avg = np.average(
+          opencv_processing_utils.convert_to_y(last_image, 'RGB')
+      )
       logging.debug('Last frame y avg: %.4f', y_avg)
       if not math.isclose(y_avg, 0, abs_tol=_DARKNESS_ATOL):
         raise AssertionError(f'Last frame y average: {y_avg}, expected: 0, '

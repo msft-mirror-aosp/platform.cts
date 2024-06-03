@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_MOST_U;
 
 import android.media.MediaCodec;
@@ -181,7 +182,49 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                             "cosmat_800x640_24fps_768kbps_av1_10bit.mkv"}, CODEC_ALL},
             }));
         }
-        return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
+        List<Object[]> argsList = prepareParamList(exhaustiveArgsList, isEncoder, needAudio,
+                needVideo, false);
+        if (IS_AT_LEAST_V && android.media.codec.Flags.dynamicColorAspects()) {
+            List<Object[]> dynamicColorAspectsArgs = Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_VIDEO_AVC, new String[]{
+                            "bbb_640x360_512kbps_30fps_avc_nob.mp4",
+                            "cosmat_1280x720_24fps_crf22_avc_10bit_nob.mkv",
+                            "bbb_800x640_768kbps_30fps_avc_nob.mp4",
+                            "cosmat_640x360_24fps_crf22_avc_10bit_nob.mkv",
+                            "bbb_1280x720_1mbps_30fps_avc_2b.mp4",
+                            "cosmat_800x640_24fps_crf22_avc_10bit_2b.mkv"}, CODEC_OPTIONAL},
+                    {MediaFormat.MIMETYPE_VIDEO_HEVC, new String[]{
+                            "bbb_640x360_512kbps_30fps_hevc_nob.mp4",
+                            "cosmat_1280x720_24fps_crf22_hevc_10bit_nob.mkv",
+                            "cosmat_352x288_hdr10_only_stream_hevc.mkv",
+                            "bbb_800x640_768kbps_30fps_hevc_nob.mp4",
+                            "cosmat_640x360_24fps_crf22_hevc_10bit_2b.mkv",
+                            "bbb_1280x720_1mbps_30fps_hevc_2b.mp4",
+                            "cosmat_352x288_hdr10plus_hevc.mp4",
+                            "cosmat_800x640_24fps_crf22_hevc_10bit_nob.mkv"}, CODEC_OPTIONAL},
+                    {MediaFormat.MIMETYPE_VIDEO_VP9, new String[]{
+                            "bbb_640x360_512kbps_30fps_vp9.webm",
+                            "cosmat_1280x720_24fps_crf22_vp9_10bit.mkv",
+                            "cosmat_352x288_hdr10_only_container_vp9.mkv",
+                            "bbb_800x640_768kbps_30fps_vp9.webm",
+                            "cosmat_640x360_24fps_crf22_vp9_10bit.mkv",
+                            "bbb_1280x720_1mbps_30fps_vp9.webm",
+                            "cosmat_800x640_24fps_crf22_vp9_10bit.mkv"}, CODEC_OPTIONAL},
+                    {MediaFormat.MIMETYPE_VIDEO_AV1, new String[]{
+                            "bbb_640x360_512kbps_30fps_av1.webm",
+                            "cosmat_1280x720_24fps_1200kbps_av1_10bit.mkv",
+                            "cosmat_352x288_hdr10_stream_and_container_correct_av1.mkv",
+                            "bbb_800x640_768kbps_30fps_av1.webm",
+                            "cosmat_640x360_24fps_512kbps_av1_10bit.mkv",
+                            "bbb_1280x720_1mbps_30fps_av1.webm",
+                            "cosmat_352x288_hdr10plus_av1.mkv",
+                            "cosmat_800x640_24fps_768kbps_av1_10bit.mkv"}, CODEC_OPTIONAL},
+            });
+            argsList.addAll(prepareParamList(dynamicColorAspectsArgs, isEncoder, needAudio,
+                    needVideo, false /* mustTestAllCodecs */, ComponentClass.ALL,
+                    new String[]{MediaCodecInfo.CodecCapabilities.FEATURE_DynamicColorAspects}));
+        }
+        return argsList;
     }
 
     @Override
@@ -194,6 +237,16 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
             mOutputCount++;
         }
         mCodec.releaseOutputBuffer(bufferIndex, mSurface != null);
+    }
+
+    private ArrayList<String> getSupportedFiles(List<MediaFormat> formats) {
+        ArrayList<String> supportedClips = new ArrayList<>();
+        for (int i = 0; i < formats.size(); i++) {
+            if (isFormatSupported(mCodecName, mMediaType, formats.get(i))) {
+                supportedClips.add(mSrcFiles[i]);
+            }
+        }
+        return supportedClips;
     }
 
     private MediaFormat createInputList(MediaFormat format, ByteBuffer buffer,
@@ -245,7 +298,8 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
      * Test video decoder for seamless resolution changes.
      */
     @CddTest(requirement = "5.3/C-1-1")
-    @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback")
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback",
+            "android.media.MediaCodecInfo.CodecCapabilities#FEATURE_DynamicColorAspects"})
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testAdaptivePlayback() throws IOException, InterruptedException {
@@ -263,18 +317,26 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
             formats.add(setUpSource(MEDIA_DIR + file));
             mExtractor.release();
         }
-        checkFormatSupport(mCodecName, mMediaType, false, formats, null, mSupportRequirements);
+        ArrayList<String> resFiles;
+        if (mSupportRequirements.equals(CODEC_ALL)) {
+            checkFormatSupport(mCodecName, mMediaType, false, formats, null, mSupportRequirements);
+            resFiles = new ArrayList<>(Arrays.asList(mSrcFiles));
+        } else {
+            resFiles = getSupportedFiles(formats);
+        }
+        Assume.assumeTrue("none of the given test clips are supported by the codec: "
+                + mCodecName, !resFiles.isEmpty());
         formats.clear();
         int totalSize = 0;
-        for (String srcFile : mSrcFiles) {
-            File file = new File(MEDIA_DIR + srcFile);
+        for (String resFile : resFiles) {
+            File file = new File(MEDIA_DIR + resFile);
             totalSize += (int) file.length();
         }
         long ptsOffset = 0;
         int buffOffset = 0;
         ArrayList<MediaCodec.BufferInfo> list = new ArrayList<>();
         ByteBuffer buffer = ByteBuffer.allocate(totalSize);
-        for (String file : mSrcFiles) {
+        for (String file : resFiles) {
             formats.add(createInputList(setUpSource(MEDIA_DIR + file), buffer, list, buffOffset,
                     ptsOffset));
             mExtractor.release();

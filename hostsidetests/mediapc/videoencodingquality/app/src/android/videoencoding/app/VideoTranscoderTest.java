@@ -71,7 +71,9 @@ import java.util.ArrayList;
  */
 @RunWith(AndroidJUnit4.class)
 public class VideoTranscoderTest {
-    private static final String MEDIA_DIR = "/sdcard/veq/input/";
+    private static final String SDCARD_MOUNT_POINT =
+            Environment.getExternalStorageDirectory().getAbsolutePath();
+    private static final String MEDIA_DIR = SDCARD_MOUNT_POINT + "/veq/input/";
     public static final String ENC_CONFIG_JSON = "conf-json";
     private static final String ENC_CONFIG_FILE;
     private static String PATH_PREFIX;
@@ -186,7 +188,7 @@ public class VideoTranscoderTest {
         Assert.assertEquals("Apk does not have permissions to write to external storage",
                 PackageManager.PERMISSION_GRANTED,
                 CONTEXT.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE));
-        File pub = new File("/sdcard/veq/output/");
+        File pub = new File(SDCARD_MOUNT_POINT + "/veq/output/");
         File dir = buildPath(pub,
                 "output_" + ENC_CONFIG_FILE.substring(0, ENC_CONFIG_FILE.lastIndexOf('.')));
         if (!dir.exists()) {

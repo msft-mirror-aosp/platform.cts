@@ -86,8 +86,6 @@ class PreviewFrameDropTest(its_base_test.ItsBaseTest):
 
       # Record preview at largest supported size
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      logging.debug('Supported preview resolutions: %s',
-                    supported_preview_sizes)
       supported_video_sizes = cam.get_supported_video_sizes_capped(
           self.camera_id)
       max_video_size = supported_video_sizes[-1]

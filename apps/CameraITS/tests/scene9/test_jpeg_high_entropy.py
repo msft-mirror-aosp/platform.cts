@@ -19,6 +19,7 @@ import os.path
 
 from mobly import test_runner
 import numpy as np
+import PIL
 
 import its_base_test
 import camera_properties_utils
@@ -27,11 +28,48 @@ import image_processing_utils
 import its_session_utils
 
 
+_JPEG_EXTENSION = '.jpg'
+_JPEG_QUALITY_SETTING = 100  # set value to max
+_JPEG_MP_SIZE_SCALING = 0.075  # MP --> bytes to ensure busy scene (empirical)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 8
-_ZOOM_RATIO_MAX = 8  # too high zoom ratios will eventualy reduce entropy
+_ZOOM_RATIO_MAX = 4  # too high zoom ratios will eventualy reduce entropy
 _ZOOM_RATIO_MIN = 1  # low zoom ratios don't fill up FoV
 _ZOOM_RATIO_THRESH = 2  # some zoom ratio needed to fill up FoV
+
+
+def _read_files_back_from_disk(log_path):
+  """Read the JPEG files written as part of test back from disk.
+
+  Args:
+    log_path: string; location to read files.
+
+  Returns:
+    list of uint8 images read with Image.read().
+    jpeg_size_max: int; max size of jpeg files.
+  """
+  jpeg_files = []
+  jpeg_sizes = []
+  for file in sorted(os.listdir(log_path)):
+    if _JPEG_EXTENSION in file:
+      jpeg_files.append(file)
+  if jpeg_files:
+    logging.debug('JPEG files from directory: %s', jpeg_files)
+  else:
+    raise AssertionError(f'No JPEG files in {log_path}')
+  for jpeg_file in jpeg_files:
+    jpeg_file_with_log_path = os.path.join(log_path, jpeg_file)
+    jpeg_file_size = os.stat(jpeg_file_with_log_path).st_size
+    jpeg_sizes.append(jpeg_file_size)
+    logging.debug('Opening file %s', jpeg_file)
+    logging.debug('File size %d (bytes)', jpeg_file_size)
+    try:
+      image_processing_utils.convert_image_to_numpy_array(
+          jpeg_file_with_log_path)
+    except PIL.UnidentifiedImageError as e:
+      raise AssertionError(f'Cannot read {jpeg_file_with_log_path}') from e
+    logging.debug('Successfully read %s.', jpeg_file)
+  return max(jpeg_sizes)
 
 
 class JpegHighEntropyTest(its_base_test.ItsBaseTest):
@@ -47,6 +85,8 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
+      log_path = self.log_path
+      test_name_with_log_path = os.path.join(log_path, _NAME)
 
       # Load chart for scene
       its_session_utils.load_scene(
@@ -71,20 +111,36 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
 
       # Do captures over zoom range
       req = capture_request_utils.auto_capture_request()
+      req['android.jpeg.quality'] = _JPEG_QUALITY_SETTING
+      out_surface = capture_request_utils.get_largest_jpeg_format(props)
+      logging.debug('req W: %d, H: %d',
+                    out_surface['width'], out_surface['height'])
+      jpeg_file_size_thresh = (out_surface['width'] * out_surface['height'] *
+                               _JPEG_MP_SIZE_SCALING)
+
       for zoom_ratio in zoom_ratios:
         req['android.control.zoomRatio'] = zoom_ratio
         logging.debug('zoom ratio: %.3f', zoom_ratio)
         cam.do_3a(zoom_ratio=zoom_ratio)
-        cap = cam.do_capture(req, cam.CAP_JPEG)
+        cap = cam.do_capture(req, out_surface)
 
-        # save JPEG image
-        img = image_processing_utils.convert_capture_to_rgb_image(
-            cap, props=props)
-        img_name = os.path.join(self.log_path, _NAME)
+        # Save JPEG image
+        try:
+          img = image_processing_utils.convert_capture_to_rgb_image(
+              cap, props=props)
+        except PIL.UnidentifiedImageError as e:
+          raise AssertionError(
+              f'Cannot convert cap to JPEG for zoom: {zoom_ratio:.2f}') from e
+        logging.debug('cap size (pixels): %d', img.shape[1]*img.shape[0])
         image_processing_utils.write_image(
-            img, f'{img_name}_{round(zoom_ratio, 2)}.jpg')
-        img = image_processing_utils.convert_image_to_uint8(img)
-        # TODO: b/310805430 - add spoofing checks
+            img, f'{test_name_with_log_path}_{zoom_ratio:.2f}{_JPEG_EXTENSION}')
+
+      # Read JPEG files back to ensure readable encoding
+      jpeg_size_max = _read_files_back_from_disk(log_path)
+      if jpeg_size_max < jpeg_file_size_thresh:
+        raise AssertionError(
+            f'JPEG files are not large enough! max: {jpeg_size_max}, '
+            f'THRESH: {jpeg_file_size_thresh:.1f}')
 
 if __name__ == '__main__':
   test_runner.main()

@@ -35,6 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.app.compat.CompatChanges;
@@ -45,9 +46,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.jobscheduler.cts.jobtestapp.TestActivity;
 import android.jobscheduler.cts.jobtestapp.TestFgsService;
 import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
+import android.net.NetworkPolicyManager;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.server.wm.WindowManagerStateHelper;
@@ -62,6 +65,7 @@ import com.android.compatibility.common.util.SystemUtil;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 /**
  * Common functions to interact with the test app.
@@ -77,23 +81,29 @@ class TestAppInterface implements AutoCloseable {
     static final String TEST_APP_RECEIVER = TEST_APP_PACKAGE + ".TestJobSchedulerReceiver";
 
     private final Context mContext;
+    private final NetworkPolicyManager mNetworkPolicyManager;
     private final int mJobId;
     private final int mTestPackageUid;
 
     /* accesses must be synchronized on itself */
     private final SparseArray<TestJobState> mTestJobStates = new SparseArray();
 
-    TestAppInterface(Context ctx, int jobId) throws Exception {
+    TestAppInterface(Context ctx, int jobId) {
         mContext = ctx;
         mJobId = jobId;
+        mNetworkPolicyManager = mContext.getSystemService(NetworkPolicyManager.class);
 
-        mTestPackageUid = mContext.getPackageManager().getPackageUid(TEST_APP_PACKAGE, 0);
+        try {
+            mTestPackageUid = mContext.getPackageManager().getPackageUid(TEST_APP_PACKAGE, 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            throw new IllegalStateException("Test app uid not found", e);
+        }
 
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_JOB_STARTED);
         intentFilter.addAction(ACTION_JOB_STOPPED);
         intentFilter.addAction(ACTION_JOB_SCHEDULE_RESULT);
-        mContext.registerReceiver(mReceiver, intentFilter, Context.RECEIVER_EXPORTED_UNAUDITED);
+        mContext.registerReceiver(mReceiver, intentFilter, Context.RECEIVER_EXPORTED);
         SystemUtil.runShellCommand(
                 "am compat enable --no-kill ALLOW_TEST_API_ACCESS " + TEST_APP_PACKAGE);
         if (AppStandbyUtils.isAppStandbyEnabled()) {
@@ -106,6 +116,7 @@ class TestAppInterface implements AutoCloseable {
         }
         // Remove the app from the whitelist.
         SystemUtil.runShellCommand("cmd deviceidle whitelist -" + TEST_APP_PACKAGE);
+        SystemUtil.runShellCommand("cmd netpolicy start-watching " + mTestPackageUid);
         if (isTestAppTempWhitelisted()) {
             Log.w(TAG, "Test package already in temp whitelist");
             if (!removeTestAppFromTempWhitelist()) {
@@ -134,6 +145,7 @@ class TestAppInterface implements AutoCloseable {
         SystemUtil.runShellCommand("cmd deviceidle whitelist -" + TEST_APP_PACKAGE);
         removeTestAppFromTempWhitelist();
         mTestJobStates.clear();
+        SystemUtil.runShellCommand("cmd netpolicy stop-watching");
         SystemUtil.runShellCommand(
                 "cmd jobscheduler reset-execution-quota -u current " + TEST_APP_PACKAGE);
         forceStopApp(); // Clean up as much internal/temporary system state as possible
@@ -226,6 +238,22 @@ class TestAppInterface implements AutoCloseable {
         runSatisfiedJob(mJobId);
     }
 
+    void kill() {
+        SystemUtil.runShellCommand("am stop-app " + TEST_APP_PACKAGE);
+        mTestJobStates.clear();
+    }
+
+    boolean isNetworkBlockedByPolicy() {
+        try {
+            return SystemUtil.callWithShellPermissionIdentity(
+                    () -> mNetworkPolicyManager.isUidNetworkingBlocked(mTestPackageUid, false),
+                    Manifest.permission.OBSERVE_NETWORK_POLICY);
+        } catch (Exception e) {
+            // Unexpected while calling isUidNetworkingBlocked.
+            throw new RuntimeException(e);
+        }
+    }
+
     void runSatisfiedJob(int jobId) throws Exception {
         if (HW_TIMEOUT_MULTIPLIER > 1) {
             // Device has increased HW multiplier. Wait a short amount of time before sending the
@@ -303,7 +331,7 @@ class TestAppInterface implements AutoCloseable {
         return false;
     }
 
-    boolean removeTestAppFromTempWhitelist() throws Exception {
+    boolean removeTestAppFromTempWhitelist() {
         SystemUtil.runShellCommand("cmd deviceidle tempwhitelist"
                 + " -u " + UserHandle.myUserId()
                 + " -r " + TEST_APP_PACKAGE);
@@ -446,12 +474,12 @@ class TestAppInterface implements AutoCloseable {
         });
     }
 
-    private boolean waitUntilTrue(long maxWait, Condition condition) throws Exception {
-        final long deadLine = SystemClock.uptimeMillis() + maxWait;
+    private boolean waitUntilTrue(long maxWait, BooleanSupplier condition) {
+        final long deadline = SystemClock.uptimeMillis() + maxWait;
         do {
-            Thread.sleep(500);
-        } while (!condition.isTrue() && SystemClock.uptimeMillis() < deadLine);
-        return condition.isTrue();
+            SystemClock.sleep(500);
+        } while (!condition.getAsBoolean() && SystemClock.uptimeMillis() < deadline);
+        return condition.getAsBoolean();
     }
 
     JobParameters getLastParams() {
@@ -484,9 +512,5 @@ class TestAppInterface implements AutoCloseable {
             oomScoreAdj = INVALID_ADJ;
             scheduleResult = -1;
         }
-    }
-
-    private interface Condition {
-        boolean isTrue() throws Exception;
     }
 }

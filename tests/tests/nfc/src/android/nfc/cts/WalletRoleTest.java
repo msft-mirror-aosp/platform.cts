@@ -19,6 +19,7 @@ package android.nfc.cts;
 import static android.nfc.cts.DefaultPaymentProviderTestUtils.CTS_MY_HOSTAPDU_SERVICE;
 import static android.nfc.cts.DefaultPaymentProviderTestUtils.runWithDefaultPaymentSetting;
 import static android.nfc.cts.WalletRoleTestUtils.CTS_PACKAGE_NAME;
+import static android.nfc.cts.WalletRoleTestUtils.canAssignRoleToPackage;
 import static android.nfc.cts.WalletRoleTestUtils.clearRoleHolders;
 import static android.nfc.cts.WalletRoleTestUtils.getDefaultWalletRoleHolder;
 import static android.nfc.cts.WalletRoleTestUtils.getOverLayDefaultHolder;
@@ -64,6 +65,7 @@ public class WalletRoleTest {
     public void testMigrationFromOverlay() {
         String overlayConfig = getOverLayDefaultHolder(mContext);
         Assume.assumeNotNull(overlayConfig);
+        Assume.assumeTrue(canAssignRoleToPackage(mContext, overlayConfig));
         runWithDefaultPaymentSetting(mContext,
                 null,
                 () -> {

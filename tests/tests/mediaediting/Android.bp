@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsMediaEditingTestCases",
+    team: "trendy_team_android_media_solutions",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -27,6 +28,7 @@ android_test {
         "androidx.media3.media3-common",
         "androidx.media3.media3-effect",
         "androidx.media3.media3-exoplayer",
+        "androidx.media3.media3-test-utils",
         "androidx.media3.media3-transformer",
         "ctsmediav2common",
     ],
@@ -40,7 +42,6 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-media",
     ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",

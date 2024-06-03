@@ -63,12 +63,16 @@ public final class TestMeasurementUtil {
             " listener has failed, this indicates a platform bug. Please report the issue with" +
             " a full bugreport.";
 
+    private static final Range<Double> GPS_L1_QZSS_J1_FREQ_RANGE_HZ =
+            Range.closed(1.563e9, 1.587e9);
     private static final Range<Double> GPS_L5_QZSS_J5_FREQ_RANGE_HZ =
             Range.closed(1.164e9, 1.189e9);
-    private static final Range<Double> GAL_E1_FREQ_RANGE_HZ =
+    private static final Range<Double> BDS_B1_FREQ_RANGE_HZ =
             Range.closed(1.559e9, 1.591e9);
-    private static final Range<Double> GAL_E5_FREQ_RANGE_HZ =
-            Range.closed(1.164e9, 1.218e9);
+    private static final Range<Double> BDS_B2A_FREQ_RANGE_HZ =
+            Range.closed(1.166e9, 1.186e9);
+    private static final Range<Double> GAL_E5A_FREQ_RANGE_HZ =
+            Range.closed(1.166e9, 1.186e9);
 
     private enum GnssBand {
         GNSS_L1,
@@ -524,7 +528,7 @@ public final class TestMeasurementUtil {
      * @param measurement GnssMeasurement
      * @param softAssert  custom SoftAssert
      * @param timeInNs    event time in ns
-     * */
+     */
     private static void verifyReceivedSatelliteVehicleTimeInNs(GnssMeasurement measurement,
         SoftAssert softAssert, long timeInNs) {
 
@@ -687,6 +691,18 @@ public final class TestMeasurementUtil {
                             "0ms >= X <= 4ms",
                             String.valueOf(sv_time_ms),
                             sv_time_ms >= 0 && sv_time_ms <= 4);
+                } else if ((state & GnssMeasurement.STATE_2ND_CODE_LOCK)
+                        == GnssMeasurement.STATE_2ND_CODE_LOCK
+                        && GAL_E5A_FREQ_RANGE_HZ.contains(
+                        (double) measurement.getCarrierFrequencyHz())) {
+                    // E5A
+                    softAssert.assertTrue(getReceivedSvTimeNsLogMessage(
+                                    "GNSS_MEASUREMENT_STATE_2ND_CODE_LOCK",
+                                    "GnssStatus.CONSTELLATION_GALILEO"),
+                            timeInNs,
+                            "0ms >= X <= 100ms",
+                            String.valueOf(sv_time_ms),
+                            sv_time_ms >= 0 && sv_time_ms <= 100);
                 }
                 break;
             case GnssStatus.CONSTELLATION_BEIDOU:
@@ -753,6 +769,29 @@ public final class TestMeasurementUtil {
                             "0ms >= X <= 1ms",
                             String.valueOf(sv_time_ms),
                             sv_time_ms >= 0 && sv_time_ms <= 1);
+                } else if ((state & GnssMeasurement.STATE_2ND_CODE_LOCK)
+                        == GnssMeasurement.STATE_2ND_CODE_LOCK) {
+                    if (BDS_B1_FREQ_RANGE_HZ.contains(
+                            (double) measurement.getCarrierFrequencyHz())) {
+                        // B1C (P)
+                        softAssert.assertTrue(getReceivedSvTimeNsLogMessage(
+                                        "GNSS_MEASUREMENT_STATE_2ND_CODE_LOCK",
+                                        "GnssStatus.CONSTELLATION_BEIDOU"),
+                                timeInNs,
+                                "0ms >= X <= 18000ms",
+                                String.valueOf(sv_time_ms),
+                                sv_time_ms >= 0 && sv_time_ms <= 18000);
+                    } else if (BDS_B2A_FREQ_RANGE_HZ.contains(
+                            (double) measurement.getCarrierFrequencyHz())) {
+                        // B2A
+                        softAssert.assertTrue(getReceivedSvTimeNsLogMessage(
+                                        "GNSS_MEASUREMENT_STATE_2ND_CODE_LOCK",
+                                        "GnssStatus.CONSTELLATION_BEIDOU"),
+                                timeInNs,
+                                "0ms >= X <= 100ms",
+                                String.valueOf(sv_time_ms),
+                                sv_time_ms >= 0 && sv_time_ms <= 100);
+                    }
                 }
                 break;
         }
@@ -825,10 +864,8 @@ public final class TestMeasurementUtil {
                 maxReceivedSvTimeMs = 10;
             } else if (isGpsL5OrQzssJ5Q(measurement)) {
                 maxReceivedSvTimeMs = 20;
-            } else if (isGalileoE1C(measurement)) {
-                maxReceivedSvTimeMs = 100;
-            } else if (isGalileoE5AQ(measurement)) {
-                maxReceivedSvTimeMs = 100;
+            } else if (isGpsOrQZSSL1C_P(measurement)) {
+                maxReceivedSvTimeMs = 18000;
             } else {
                 softAssert.assertTrue(
                         "Signal type does not have secondary code but has have "
@@ -857,7 +894,6 @@ public final class TestMeasurementUtil {
                     sv_time_ms >= 0 && sv_time_ms <= 1);
         }
     }
-
 
     /**
      * Get a unique string for the SV including the constellation and the default L1 band.
@@ -1107,8 +1143,8 @@ public final class TestMeasurementUtil {
     }
 
     private static boolean isGpsL5OrQzssJ5I(GnssMeasurement measurement) {
-        return (measurement.getConstellationType() == GnssStatus.CONSTELLATION_GPS ||
-                measurement.getConstellationType() == GnssStatus.CONSTELLATION_QZSS)
+        return (measurement.getConstellationType() == GnssStatus.CONSTELLATION_GPS
+                || measurement.getConstellationType() == GnssStatus.CONSTELLATION_QZSS)
                 && GPS_L5_QZSS_J5_FREQ_RANGE_HZ.contains(
                 (double) measurement.getCarrierFrequencyHz())
                 && measurement.hasCodeType()
@@ -1116,25 +1152,20 @@ public final class TestMeasurementUtil {
     }
 
     private static boolean isGpsL5OrQzssJ5Q(GnssMeasurement measurement) {
-        return (measurement.getConstellationType() == GnssStatus.CONSTELLATION_GPS ||
-                measurement.getConstellationType() == GnssStatus.CONSTELLATION_QZSS)
+        return (measurement.getConstellationType() == GnssStatus.CONSTELLATION_GPS
+                || measurement.getConstellationType() == GnssStatus.CONSTELLATION_QZSS)
                 && GPS_L5_QZSS_J5_FREQ_RANGE_HZ.contains(
                 (double) measurement.getCarrierFrequencyHz())
                 && measurement.hasCodeType()
                 && "Q".equals(measurement.getCodeType());
     }
 
-    private static boolean isGalileoE1C(GnssMeasurement measurement) {
-        return measurement.getConstellationType() == GnssStatus.CONSTELLATION_GALILEO
-                && GAL_E1_FREQ_RANGE_HZ.contains((double) measurement.getCarrierFrequencyHz())
+    private static boolean isGpsOrQZSSL1C_P(GnssMeasurement measurement) {
+        return (measurement.getConstellationType() == GnssStatus.CONSTELLATION_GPS
+                || measurement.getConstellationType() == GnssStatus.CONSTELLATION_QZSS)
+                && GPS_L1_QZSS_J1_FREQ_RANGE_HZ.contains(
+                (double) measurement.getCarrierFrequencyHz())
                 && measurement.hasCodeType()
-                && "C".equals(measurement.getCodeType());
-    }
-
-    private static boolean isGalileoE5AQ(GnssMeasurement measurement) {
-        return measurement.getConstellationType() == GnssStatus.CONSTELLATION_GALILEO
-                && GAL_E5_FREQ_RANGE_HZ.contains((double) measurement.getCarrierFrequencyHz())
-                && measurement.hasCodeType()
-                && "Q".equals(measurement.getCodeType());
+                && "L".equals(measurement.getCodeType());
     }
 }

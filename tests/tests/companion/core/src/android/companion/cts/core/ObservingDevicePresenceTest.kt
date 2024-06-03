@@ -16,7 +16,7 @@
 
 package android.companion.cts.core
 
-import android.Manifest
+import android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
 import android.companion.DevicePresenceEvent.EVENT_BLE_APPEARED
 import android.companion.DevicePresenceEvent.EVENT_BLE_DISAPPEARED
 import android.companion.Flags
@@ -89,7 +89,7 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         }
 
         // Same call with the REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE permissions should succeed.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
         }
     }
@@ -101,7 +101,7 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         val associationId = cdm.myAssociations[0].id
 
         // Start observing presence.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
         }
         // Simulate device appeared.
@@ -144,7 +144,7 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         val associationId = cdm.myAssociations[0].id
 
         // Start and stop observing presence.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
             cdm.stopObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
         }
@@ -186,7 +186,7 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         // Make sure CDM doesn't bind application yet
         assertValidCompanionDeviceServicesRemainUnbound()
         // Start observing presence of an already present device.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
         }
 
@@ -211,7 +211,7 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         val idB = cdm.myAssociations[1].id
 
         // Start observing presence of both devices.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
             cdm.startObservingDevicePresence(MAC_ADDRESS_B.toUpperCaseString())
         }
@@ -285,7 +285,7 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         val idB = cdm.myAssociations[1].id
 
         // Start observing presence of both devices.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
             cdm.startObservingDevicePresence(MAC_ADDRESS_B.toUpperCaseString())
         }
@@ -304,7 +304,7 @@ class ObservingDevicePresenceTest : CoreTestBase() {
 
         // Stop observing presence of device A.
         PrimaryCompanionService.forgetDevicePresence(idA)
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.stopObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
         }
 
@@ -313,7 +313,7 @@ class ObservingDevicePresenceTest : CoreTestBase() {
 
         // Stop observing presence of device B.
         PrimaryCompanionService.forgetDevicePresence(idB)
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.stopObservingDevicePresence(MAC_ADDRESS_B.toUpperCaseString())
         }
 

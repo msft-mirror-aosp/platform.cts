@@ -51,11 +51,11 @@ import java.util.stream.Collectors;
  * Running a single test using this class is not supported.
  * For this use case look at {@link IntentGenerationTests#verifySingle()}
  *
- * Note: atest CtsWindowManagerDeviceTestCases:IntentTests#verify does not work because the
+ * Note: atest CtsWindowManagerDeviceActivity:IntentTests#verify does not work because the
  * Parameterized runner won't expose the test that way to atest.
  *
  * Build/Install/Run:
- * atest CtsWindowManagerDeviceTestCases:IntentTests
+ * atest CtsWindowManagerDeviceActivity:IntentTests
  */
 @Presubmit
 @LargeTest

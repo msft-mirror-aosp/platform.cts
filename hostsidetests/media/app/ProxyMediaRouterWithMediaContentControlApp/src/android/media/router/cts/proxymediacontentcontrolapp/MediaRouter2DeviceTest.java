@@ -16,11 +16,13 @@
 
 package android.media.router.cts.proxymediacontentcontrolapp;
 
+import static android.media.cts.MediaRouterTestConstants.FEATURE_ACTIVE_SCAN_ONLY;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_SECONDARY_USER_HELPER_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.TARGET_USER_ID_KEY;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
 
@@ -31,11 +33,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRoute2Info;
+import android.media.MediaRoute2ProviderService;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.ScanRequest;
 import android.media.RouteDiscoveryPreference;
+import android.media.cts.app.common.PlaceholderSelfScanMediaRoute2ProviderService;
 import android.media.cts.app.common.ScreenOnActivity;
 import android.os.Bundle;
+import android.os.ConditionVariable;
 import android.os.UserHandle;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -108,7 +113,7 @@ public class MediaRouter2DeviceTest {
                 mExecutor,
                 placeholderCallback,
                 new RouteDiscoveryPreference.Builder(
-                                List.of(FEATURE_SAMPLE), /* isActiveScan */ false)
+                                List.of(FEATURE_ACTIVE_SCAN_ONLY), /* isActiveScan */ false)
                         .build());
 
         MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
@@ -120,17 +125,22 @@ public class MediaRouter2DeviceTest {
                     @Override
                     public void onRoutesUpdated(@NonNull List<MediaRoute2Info> routes) {
                         if (routes.stream()
-                                .anyMatch(r -> r.getFeatures().contains(FEATURE_SAMPLE))) {
+                                .anyMatch(
+                                        r -> r.getFeatures().contains(FEATURE_ACTIVE_SCAN_ONLY))) {
                             latch.countDown();
                         }
                     }
                 };
 
+        // RouteDiscoveryPreference set by proxy routers are always ignored. They receive callbacks
+        // based on the target router's RDP.
         instance.registerRouteCallback(mExecutor, onRoutesUpdated, RouteDiscoveryPreference.EMPTY);
 
         MediaRouter2.ScanToken token = instance.requestScan(new ScanRequest.Builder().build());
         try {
-            assertThat(latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            assertWithMessage("Could not find matching routes.")
+                    .that(latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .isTrue();
         } finally {
             instance.cancelScanRequest(token);
             localInstance.unregisterRouteCallback(placeholderCallback);
@@ -158,6 +168,46 @@ public class MediaRouter2DeviceTest {
         MediaRouter2.ScanToken token = instance.requestScan(new ScanRequest.Builder().build());
         instance.cancelScanRequest(token);
         assertThrows(IllegalArgumentException.class, () -> instance.cancelScanRequest(token));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
+    @Test
+    public void cancelScanRequest_screenOnScanning_unbindsSelfScanProvider() {
+        loadScreenOnActivity();
+
+        MediaRouter2 localInstance = MediaRouter2.getInstance(mContext);
+        MediaRouter2.RouteCallback placeholderCallback = new MediaRouter2.RouteCallback() {};
+        localInstance.registerRouteCallback(
+                mExecutor,
+                placeholderCallback,
+                new RouteDiscoveryPreference.Builder(List.of(FEATURE_SAMPLE), false).build());
+
+        MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
+        assertThat(instance).isNotNull();
+
+        ConditionVariable onBindConditionVariable = new ConditionVariable();
+        ConditionVariable onUnbindConditionVariable = new ConditionVariable();
+
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnBindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        onBindConditionVariable.open();
+                    }
+                });
+
+        PlaceholderSelfScanMediaRoute2ProviderService.setOnUnbindCallback(
+                action -> {
+                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
+                        onUnbindConditionVariable.open();
+                    }
+                });
+
+        MediaRouter2.ScanToken token =
+                instance.requestScan(new MediaRouter2.ScanRequest.Builder().build());
+        assertThat(onBindConditionVariable.block(TIMEOUT_MS)).isTrue();
+
+        instance.cancelScanRequest(token);
+        assertThat(onUnbindConditionVariable.block(TIMEOUT_MS)).isTrue();
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)

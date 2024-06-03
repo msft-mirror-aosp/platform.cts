@@ -14,6 +14,7 @@
 
 android_test {
     name: "CtsPdfModuleTestCases",
+    team: "trendy_team_android_pdf",
     manifest: "AndroidManifest.xml",
     test_config: "AndroidTest.xml",
     srcs: [
@@ -23,9 +24,11 @@ android_test {
     test_suites: [
         "general-tests",
         "cts",
+        "mts-mediaprovider",
+        "mcts-mediaprovider",
     ],
     sdk_version: "module_current",
-    min_sdk_version: "30",
+    min_sdk_version: "31",
     target_sdk_version: "35",
     libs: [
         "android.test.runner",
@@ -39,5 +42,9 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "junit",
+        "modules-utils-native-coverage-listener",
+    ],
+    jni_libs: [
+        "libnativecoverage",
     ],
 }

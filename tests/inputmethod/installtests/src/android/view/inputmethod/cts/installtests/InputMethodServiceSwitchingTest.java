@@ -37,9 +37,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.packages.CommonPackages;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
@@ -57,7 +55,6 @@ import java.util.concurrent.TimeUnit;
 
 @LargeTest
 @RunWith(BedsteadJUnit4.class)
-@RequireFeature(CommonPackages.FEATURE_INPUT_METHODS)
 public final class InputMethodServiceSwitchingTest {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(15);
 

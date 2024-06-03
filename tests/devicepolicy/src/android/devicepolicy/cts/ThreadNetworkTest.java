@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static android.Manifest.permission.THREAD_NETWORK_PRIVILEGED;
 import static android.net.thread.ThreadNetworkException.ERROR_FAILED_PRECONDITION;
 import static android.os.UserManager.DISALLOW_THREAD_NETWORK;
 
@@ -23,48 +24,39 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
-import android.Manifest;
 import android.content.Context;
 import android.net.thread.ThreadNetworkController;
 import android.net.thread.ThreadNetworkException;
 import android.net.thread.ThreadNetworkManager;
-import android.os.Bundle;
-import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
-import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
-import com.android.activitycontext.ActivityContext;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.DisallowThreadNetwork;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.net.thread.platform.flags.Flags;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(BedsteadJUnit4.class)
 // If the device doesn't support Thread then as long as the user restriction doesn't throw an
@@ -126,41 +118,45 @@ public final class ThreadNetworkTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_THREAD_ENABLED_PLATFORM)
-    @EnsureHasPermission(Manifest.permission.THREAD_NETWORK_PRIVILEGED)
     @EnsureHasUserRestriction(DISALLOW_THREAD_NETWORK)
     @Postsubmit(reason = "new test")
     @Test
     @ApiTest(apis = "android.os.UserManager#DISALLOW_THREAD_NETWORK")
     public void enableThread_disallowThreadNetworkIsSet_failWithFailedPrecondition()
             throws Exception {
-        ThreadNetworkController controller =
-                sThreadNetworkManager.getAllThreadNetworkControllers().get(0);
-        CompletableFuture<Boolean> setEnabledFuture = new CompletableFuture<>();
+        try (PermissionContext p =
+                     TestApis.permissions().withPermission(THREAD_NETWORK_PRIVILEGED)) {
+            ThreadNetworkController controller =
+                    sThreadNetworkManager.getAllThreadNetworkControllers().get(0);
+            CompletableFuture<Boolean> setEnabledFuture = new CompletableFuture<>();
 
-        controller.setEnabled(
-                true, sContext.getMainExecutor(), newOutcomeReceiver(setEnabledFuture));
+            controller.setEnabled(
+                    true, sContext.getMainExecutor(), newOutcomeReceiver(setEnabledFuture));
 
-        ExecutionException thrown = assertThrows(
-                ExecutionException.class, () -> setEnabledFuture.get(1, TimeUnit.SECONDS));
-        ThreadNetworkException cause = (ThreadNetworkException) thrown.getCause();
-        assertThat(cause.getErrorCode()).isEqualTo(ERROR_FAILED_PRECONDITION);
+            ExecutionException thrown = assertThrows(
+                    ExecutionException.class, () -> setEnabledFuture.get(1, TimeUnit.SECONDS));
+            ThreadNetworkException cause = (ThreadNetworkException) thrown.getCause();
+            assertThat(cause.getErrorCode()).isEqualTo(ERROR_FAILED_PRECONDITION);
+        }
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_THREAD_ENABLED_PLATFORM)
-    @EnsureHasPermission(Manifest.permission.THREAD_NETWORK_PRIVILEGED)
     @EnsureDoesNotHaveUserRestriction(DISALLOW_THREAD_NETWORK)
     @Postsubmit(reason = "new test")
     @Test
     @ApiTest(apis = "android.os.UserManager#DISALLOW_THREAD_NETWORK")
     public void enableThread_disallowThreadIsNotSet_success() throws Exception {
-        ThreadNetworkController controller =
-                sThreadNetworkManager.getAllThreadNetworkControllers().get(0);
-        CompletableFuture<Boolean> setEnabledFuture = new CompletableFuture<>();
+        try (PermissionContext p =
+                     TestApis.permissions().withPermission(THREAD_NETWORK_PRIVILEGED)) {
+            ThreadNetworkController controller =
+                    sThreadNetworkManager.getAllThreadNetworkControllers().get(0);
+            CompletableFuture<Boolean> setEnabledFuture = new CompletableFuture<>();
 
-        controller.setEnabled(
-                true, sContext.getMainExecutor(), newOutcomeReceiver(setEnabledFuture));
+            controller.setEnabled(
+                    true, sContext.getMainExecutor(), newOutcomeReceiver(setEnabledFuture));
 
-        assertThat(setEnabledFuture.get(1, TimeUnit.SECONDS)).isTrue();
+            assertThat(setEnabledFuture.get(1, TimeUnit.SECONDS)).isTrue();
+        }
     }
 
     // TODO(b/328393183): add the Thread API call to bedstead when there is another use case
@@ -169,7 +165,7 @@ public final class ThreadNetworkTest {
      * receiver is invoked with a result, or fails the {@code future} with a {@link
      * ThreadNetworkException} when the receiver is invoked with an error.
      */
-    private static final OutcomeReceiver<Void, ThreadNetworkException> newOutcomeReceiver(
+    private static OutcomeReceiver<Void, ThreadNetworkException> newOutcomeReceiver(
             CompletableFuture<Boolean> future) {
         return new OutcomeReceiver<Void, ThreadNetworkException>() {
                 @Override

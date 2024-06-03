@@ -29,7 +29,6 @@ import android.os.Parcel;
 import android.os.ParcelUuid;
 import android.os.Process;
 import android.os.UserHandle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.CallAudioState;
 import android.telecom.CallEndpoint;
 import android.telecom.ConnectionRequest;
@@ -207,8 +206,10 @@ public class DataObjectUnitTests extends InstrumentationTestCase {
     }
 
     @ApiTest(apis = {"android.telecom.DisconnectCause#DisconnectCause"})
-    @RequiresFlagsEnabled(Flags.FLAG_TELECOM_RESOLVE_HIDDEN_DEPENDENCIES)
     public void testDisconnectCauseWithTelephonyDebugInfo() throws Exception {
+        if (!Flags.telecomResolveHiddenDependencies()) {
+            return;
+        }
         final CharSequence label = "Out of service area";
         final CharSequence description = "Mobile network not available";
         final String reason = "CTS Testing";

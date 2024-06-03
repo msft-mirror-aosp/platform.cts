@@ -16,16 +16,15 @@
 
 package android.input.cts
 
-import android.graphics.Point
+import android.cts.input.EventVerifier
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
-import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.hardware.input.Flags
 import org.junit.After
@@ -52,7 +51,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class MotionEventIsResampledTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private lateinit var touchScreen: UinputTouchDevice
+    private lateinit var touchScreen: UinputTouchScreen
     private lateinit var verifier: EventVerifier
 
     @get:Rule
@@ -64,13 +63,7 @@ class MotionEventIsResampledTest {
 
     @Before
     fun setUp() {
-        touchScreen = UinputTouchDevice(
-                instrumentation,
-                virtualDisplayRule.virtualDisplay.display,
-                R.raw.test_touchscreen_register,
-                InputDevice.SOURCE_TOUCHSCREEN,
-                useDisplaySize = true,
-        )
+        touchScreen = UinputTouchScreen(instrumentation, virtualDisplayRule.virtualDisplay.display)
         verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
     }
 
@@ -87,13 +80,9 @@ class MotionEventIsResampledTest {
         var x = 100
         val y = 100
         val step = 5
-        val pointer = Point(x, y)
 
         // ACTION_DOWN
-        val pointerId = 0
-        touchScreen.sendBtnTouch(true)
-        touchScreen.sendDown(pointerId, pointer)
-        touchScreen.sync()
+        val pointer = touchScreen.touchDown(x, y)
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN))
 
         // Three ACTION_MOVEs
@@ -106,9 +95,7 @@ class MotionEventIsResampledTest {
             // frameworks/native/libs/input/InputTransport.cpp) apart. Add another 1ms to be safe.
             touchScreen.delay(3)
 
-            pointer.offset(step, 0)
-            touchScreen.sendMove(pointerId, pointer)
-            touchScreen.sync()
+            pointer.moveTo(x, y)
         }
 
         var numResamples = 0
@@ -130,7 +117,7 @@ class MotionEventIsResampledTest {
             if (event !is MotionEvent) {
                 continue
             }
-            var coords = MotionEvent.PointerCoords()
+            val coords = MotionEvent.PointerCoords()
             for (i in 0..<event.historySize) {
                 event.getHistoricalPointerCoords(0, i, coords)
                 checkPointerCoords(coords)
@@ -142,9 +129,7 @@ class MotionEventIsResampledTest {
         }
 
         // ACTION_UP
-        touchScreen.sendBtnTouch(false)
-        touchScreen.sendUp(pointerId)
-        touchScreen.sync()
+        pointer.lift()
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP))
 
         Log.d(TAG, "Number of resampled PointerCoords: $numResamples")

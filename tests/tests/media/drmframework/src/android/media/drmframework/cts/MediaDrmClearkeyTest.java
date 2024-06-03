@@ -132,6 +132,10 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
             SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
+    private static final boolean FIRST_RELEASE_IS_AT_LEAST_U =
+            SystemProperties.getInt("ro.product.first_api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+
     public MediaDrmClearkeyTest() {
         super(MediaStubActivity.class);
     }
@@ -1685,7 +1689,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testGetKeyRequestDefaultUrl()
             throws UnsupportedSchemeException, NotProvisionedException {
-        if (watchHasNoClearkeySupport() || !VNDK_IS_AT_LEAST_U) {
+        if (watchHasNoClearkeySupport() || !FIRST_RELEASE_IS_AT_LEAST_U || !VNDK_IS_AT_LEAST_U) {
             return;
         }
 

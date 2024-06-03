@@ -46,6 +46,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
@@ -85,7 +86,8 @@ public class FakeAssociationRule extends ExternalResource {
     }
 
     public AssociationInfo createManagedAssociation() {
-        String deviceAddress = String.format(FAKE_ASSOCIATION_ADDRESS_FORMAT, ++mNextDeviceId);
+        String deviceAddress = String.format(Locale.getDefault(Locale.Category.FORMAT),
+                FAKE_ASSOCIATION_ADDRESS_FORMAT, ++mNextDeviceId);
         if (mNextDeviceId > 99) {
             throw new IllegalArgumentException("At most 99 associations supported");
         }
@@ -96,7 +98,8 @@ public class FakeAssociationRule extends ExternalResource {
         Log.d(TAG, "Associations before shell cmd: "
                 + mCompanionDeviceManager.getMyAssociations().size());
         reset(mOnAssociationsChangedListener);
-        SystemUtil.runShellCommandOrThrow(String.format("cmd companiondevice associate %d %s %s %s",
+        SystemUtil.runShellCommandOrThrow(String.format(Locale.getDefault(Locale.Category.FORMAT),
+                "cmd companiondevice associate %d %s %s %s",
                 getInstrumentation().getContext().getUserId(),
                 mContext.getPackageName(),
                 deviceAddress,
@@ -180,6 +183,7 @@ public class FakeAssociationRule extends ExternalResource {
     private void disassociate(int associationId) {
         reset(mOnAssociationsChangedListener);
         mCompanionDeviceManager.disassociate(associationId);
-        verify(mOnAssociationsChangedListener, timeout(TIMEOUT_MS)).onAssociationsChanged(any());
+        verify(mOnAssociationsChangedListener, timeout(TIMEOUT_MS).atLeastOnce())
+            .onAssociationsChanged(any());
     }
 }

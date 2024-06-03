@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.content.Context;
+import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
@@ -178,8 +179,10 @@ public class KeyPairGeneratorTest {
         // XDH is also a supported algorithm, but not available for other tests as the keys
         // generated with it have more limited set of uses.
         expectedAlgsLowerCase.add("xdh");
-        // AndroidKeyStore supports key generation of curve 25519
-        expectedAlgsLowerCase.add("ed25519");
+        if (TestUtils.isEd25519AlgorithmExpectedToSupport()) {
+            // AndroidKeyStore supports key generation of curve Ed25519 from Android V preview
+            expectedAlgsLowerCase.add("ed25519");
+        }
 
         for (Service service : services) {
             if ("KeyPairGenerator".equalsIgnoreCase(service.getType())) {
@@ -256,6 +259,7 @@ public class KeyPairGeneratorTest {
     @Test
     public void testDefaultKeySize() throws Exception {
         for (String algorithm : EXPECTED_ALGORITHMS) {
+            StrictModeDetector strict = new StrictModeDetector(getContext());
             try {
                 int expectedSizeBits = DEFAULT_KEY_SIZES.get(algorithm);
                 KeyPairGenerator generator = getGenerator(algorithm);
@@ -266,6 +270,7 @@ public class KeyPairGeneratorTest {
             } catch (Throwable e) {
                 throw new RuntimeException("Failed for " + algorithm, e);
             }
+            strict.check(algorithm + " keypair generation");
         }
     }
 

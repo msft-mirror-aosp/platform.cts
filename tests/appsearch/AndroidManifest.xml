@@ -16,7 +16,14 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.android.cts.appsearch" >
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.android.cts.appsearch">
+
+    <!--The Harrier library uses the READ_EXTERNAL_STORAGE permission. We have a test that
+        assumes this test app does not have this permission. So removes it. -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        tools:node="remove" />
 
     <queries>
         <package android:name="com.android.cts.appsearch.helper.a" />

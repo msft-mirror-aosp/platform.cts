@@ -33,6 +33,7 @@ import android.content.RestrictionsManager;
 import android.content.pm.CrossProfileApps;
 import android.content.pm.LauncherApps;
 import android.content.pm.PackageManager;
+import android.media.projection.MediaProjectionManager;
 import android.net.wifi.WifiManager;
 import android.os.HardwarePropertiesManager;
 import android.os.UserManager;
@@ -52,35 +53,83 @@ import com.android.eventlib.premade.EventLibService;
  */
 @TestAppReceiver(
         frameworkClasses = {
-                @FrameworkClass(frameworkClass = DevicePolicyManager.class, constructor = "context.getSystemService(android.app.admin.DevicePolicyManager.class)"),
-                @FrameworkClass(frameworkClass = HardwarePropertiesManager.class, constructor = "context.getSystemService(android.os.HardwarePropertiesManager.class)"),
-                @FrameworkClass(frameworkClass = UserManager.class, constructor = "context.getSystemService(android.os.UserManager.class)"),
-                @FrameworkClass(frameworkClass = WifiManager.class, constructor = "context.getSystemService(android.net.wifi.WifiManager.class)"),
-                @FrameworkClass(frameworkClass = PackageManager.class, constructor = "context.getPackageManager()"),
-                @FrameworkClass(frameworkClass = CrossProfileApps.class, constructor = "context.getSystemService(android.content.pm.CrossProfileApps.class)"),
-                @FrameworkClass(frameworkClass = LauncherApps.class, constructor = "context.getSystemService(android.content.pm.LauncherApps.class)"),
-                @FrameworkClass(frameworkClass = AccountManager.class, constructor = "context.getSystemService(android.accounts.AccountManager.class)"),
-                @FrameworkClass(frameworkClass = Context.class, constructor = "context"),
-                @FrameworkClass(frameworkClass = ContentResolver.class, constructor = "context.getContentResolver()"),
-                @FrameworkClass(frameworkClass = BluetoothManager.class, constructor = "context.getSystemService(android.bluetooth.BluetoothManager.class)"),
-                @FrameworkClass(frameworkClass = BluetoothAdapter.class, constructor = "context.getSystemService(android.bluetooth.BluetoothManager.class).getAdapter()"),
-                @FrameworkClass(frameworkClass = KeyChain.class, constructor = "null"), // KeyChain can not be instantiated - all calls are static
-                @FrameworkClass(frameworkClass = NotificationManager.class, constructor =
-                        "context.getSystemService(android.app.NotificationManager.class)"),
-                @FrameworkClass(frameworkClass = TelecomManager.class, constructor =
-                        "context.getSystemService(android.telecom.TelecomManager.class)"),
-                @FrameworkClass(frameworkClass = RestrictionsManager.class, constructor =
-                        "context.getSystemService(android.content.RestrictionsManager.class)"),
-                @FrameworkClass(frameworkClass = SmsManager.class, constructor =
-                        "context.getSystemService(android.telephony.SmsManager.class)"),
-                @FrameworkClass(frameworkClass = WallpaperManager.class, constructor =
-                        "context.getSystemService(android.app.WallpaperManager.class)"),
-                @FrameworkClass(frameworkClass = TelephonyManager.class, constructor =
-                        "context.getSystemService(android.telephony.TelephonyManager.class)"),
-                @FrameworkClass(frameworkClass = EuiccManager.class, constructor =
-                        "context.getSystemService(android.telephony.euicc.EuiccManager.class)")
-        }
-)
+            @FrameworkClass(
+                    frameworkClass = DevicePolicyManager.class,
+                    constructor =
+                            "context.getSystemService(android.app.admin.DevicePolicyManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = HardwarePropertiesManager.class,
+                    constructor =
+                            "context.getSystemService(android.os.HardwarePropertiesManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = UserManager.class,
+                    constructor = "context" + ".getSystemService(android.os.UserManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = WifiManager.class,
+                    constructor =
+                            "context" + ".getSystemService(android.net.wifi.WifiManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = PackageManager.class,
+                    constructor = "context" + ".getPackageManager()"),
+            @FrameworkClass(
+                    frameworkClass = CrossProfileApps.class,
+                    constructor =
+                            "context.getSystemService(android.content.pm.CrossProfileApps.class)"),
+            @FrameworkClass(
+                    frameworkClass = LauncherApps.class,
+                    constructor =
+                            "context" + ".getSystemService(android.content.pm.LauncherApps.class)"),
+            @FrameworkClass(
+                    frameworkClass = AccountManager.class,
+                    constructor =
+                            "context" + ".getSystemService(android.accounts.AccountManager.class)"),
+            @FrameworkClass(frameworkClass = Context.class, constructor = "context"),
+            @FrameworkClass(
+                    frameworkClass = ContentResolver.class,
+                    constructor = "context" + ".getContentResolver()"),
+            @FrameworkClass(
+                    frameworkClass = BluetoothManager.class,
+                    constructor =
+                            "context.getSystemService(android.bluetooth.BluetoothManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = BluetoothAdapter.class,
+                    constructor =
+                            "context"
+                                    + ".getSystemService(android.bluetooth.BluetoothManager.class)"
+                                    + ".getAdapter()"),
+            @FrameworkClass(frameworkClass = KeyChain.class, constructor = "null"),
+            // KeyChain can not be instantiated - all calls are static
+            @FrameworkClass(
+                    frameworkClass = NotificationManager.class,
+                    constructor =
+                            "context.getSystemService(android.app.NotificationManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = TelecomManager.class,
+                    constructor = "context.getSystemService(android.telecom.TelecomManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = RestrictionsManager.class,
+                    constructor =
+                            "context.getSystemService(android.content.RestrictionsManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = SmsManager.class,
+                    constructor = "context.getSystemService(android.telephony.SmsManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = WallpaperManager.class,
+                    constructor = "context.getSystemService(android.app.WallpaperManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = TelephonyManager.class,
+                    constructor =
+                            "context.getSystemService(android.telephony.TelephonyManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = EuiccManager.class,
+                    constructor =
+                            "context.getSystemService(android.telephony.euicc.EuiccManager.class)"),
+            @FrameworkClass(
+                    frameworkClass = MediaProjectionManager.class,
+                    constructor =
+                            "context.getSystemService(android.media.projection."
+                                    + "MediaProjectionManager.class)")
+        })
 public final class TestAppAppComponentFactory extends AppComponentFactory {
 
     private static final String LOG_TAG = "TestAppACF";
@@ -161,10 +210,11 @@ public final class TestAppAppComponentFactory extends AppComponentFactory {
                 Log.d(LOG_TAG, "Service class (" + className
                         + ") not found, routing to BaseTestAppContentSuggestionsService");
                 BaseTestAppContentSuggestionsService service =
-                        (BaseTestAppContentSuggestionsService) super.instantiateService(
-                        classLoader,
-                        BaseTestAppContentSuggestionsService.class.getName(),
-                        intent);
+                        (BaseTestAppContentSuggestionsService)
+                                super.instantiateService(
+                                        classLoader,
+                                        BaseTestAppContentSuggestionsService.class.getName(),
+                                        intent);
                 service.setOverrideServiceClassName(className);
                 return service;
             }

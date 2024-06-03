@@ -188,8 +188,19 @@ abstract class TestBase {
     fun simulateDeviceUuidEvent(uuid: ParcelUuid, event: Int) =
             runShellCommand(
                     "cmd companiondevice simulate-device-uuid-event " +
-                    "$uuid $targetPackageName $userId $event"
+                            "$uuid $targetPackageName $userId $event"
             )
+
+    fun simulateDeviceEventDeviceLocked(associationId: Int, userId: Int, event: Int, uuid: String) {
+        runShellCommand(
+            "cmd companiondevice simulate-device-event-device-locked " +
+                "$associationId $userId $event $uuid"
+        )
+    }
+
+    fun simulateDeviceEventDeviceUnlocked(userId: Int) {
+        runShellCommand("cmd companiondevice simulate-device-event-device-unlocked $userId")
+    }
 }
 
 const val TAG = "CtsCompanionDeviceManagerTestCases"
@@ -322,6 +333,14 @@ fun assertOnlyPrimaryCompanionDeviceServiceNotified(associationId: Int, appeared
     assertContentEquals(snapshotSecondary, SecondaryCompanionService.connectedDevices)
     assertContentEquals(snapshotUnauthorized, MissingPermissionCompanionService.connectedDevices)
     assertContentEquals(snapshotInvalid, MissingIntentFilterActionCompanionService.connectedDevices)
+}
+
+fun assertDevicePresenceEvent(expected: Int, actual: Int) {
+    assertTrue("Expected event: $expected, but actual: $actual") {
+        waitFor (timeout = 2.seconds, interval = 100.milliseconds ) {
+            actual == expected
+        }
+    }
 }
 
 /**

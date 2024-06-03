@@ -20,22 +20,26 @@ import static android.Manifest.permission.MANAGE_DEFAULT_APPLICATIONS;
 import static android.Manifest.permission.MANAGE_ROLE_HOLDERS;
 import static android.Manifest.permission.OBSERVE_ROLE_HOLDERS;
 
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.role.OnRoleHoldersChangedListener;
 import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.res.Resources;
+import android.os.UserManager;
 import android.text.TextUtils;
 
 import com.google.common.util.concurrent.MoreExecutors;
+
+import org.junit.Assert;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 
 public final class WalletRoleTestUtils {
 
@@ -135,6 +139,8 @@ public final class WalletRoleTestUtils {
     }
 
     static void runWithRole(Context context, String roleHolder, Runnable runnable) {
+        final UserManager userManager = context.getSystemService(UserManager.class);
+        assumeFalse(userManager.isHeadlessSystemUserMode());
         try {
             runWithRoleNone(context, () -> {}); //Remove the role holder first to trigger callbacks
             RoleManager roleManager = context.getSystemService(RoleManager.class);
@@ -157,7 +163,7 @@ public final class WalletRoleTestUtils {
                     onRoleHoldersChangedListener, context.getUser());
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
-            assumeTrue(setDefaultWalletRoleHolder(context, roleHolder));
+            Assert.assertTrue(setDefaultWalletRoleHolder(context, roleHolder));
             countDownLatch.await(4000, TimeUnit.MILLISECONDS);
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(OBSERVE_ROLE_HOLDERS);
@@ -168,6 +174,22 @@ public final class WalletRoleTestUtils {
             throw new RuntimeException(e);
         } finally {
             runWithRoleNone(context, () -> {}); //Remove the role holder first to trigger callbacks
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    static boolean canAssignRoleToPackage(Context context, String packageName) {
+        String previousHolder = getDefaultWalletRoleHolder(context);
+        try {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
+            boolean canSet = setDefaultWalletRoleHolder(context, packageName);
+            if (canSet && previousHolder != null) {
+                setDefaultWalletRoleHolder(context, previousHolder);
+            }
+            return canSet;
+        } finally {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().dropShellPermissionIdentity();
         }
@@ -197,8 +219,10 @@ public final class WalletRoleTestUtils {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(MANAGE_ROLE_HOLDERS);
             if (currentHolder != null) {
-                assumeTrue(removeRoleHolder(context, currentHolder));
+                roleManager.setRoleFallbackEnabled(RoleManager.ROLE_WALLET, false);
+                Assert.assertTrue(removeRoleHolder(context, currentHolder));
                 countDownLatch.await(4000, TimeUnit.MILLISECONDS);
+                roleManager.setRoleFallbackEnabled(RoleManager.ROLE_WALLET, true);
             }
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity(OBSERVE_ROLE_HOLDERS);

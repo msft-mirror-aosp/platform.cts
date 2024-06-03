@@ -28,7 +28,6 @@ import static org.junit.Assert.assertTrue;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.graphics.Color;
-import android.os.SystemClock;
 import android.system.Os;
 import android.view.View;
 import android.view.ViewGroup;
@@ -69,12 +68,6 @@ public final class InputConnectionLifecycleTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     private static final int TEST_VIEW_HEIGHT = 10;
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.InputConnectionLifecycleTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     /**
      * A mostly-minimum implementation of {@link View} that can be used to test custom

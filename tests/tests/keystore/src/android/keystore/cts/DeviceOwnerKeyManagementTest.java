@@ -49,7 +49,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
-import android.os.SystemProperties;
 import android.security.AttestedKeyPair;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
@@ -64,7 +63,7 @@ import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.ApiTest;
 
 import com.google.android.attestation.ParsedAttestationRecord;
@@ -88,6 +87,7 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DeviceOwnerKeyManagementTest {
     private static final Context sContext = TestApis.context().instrumentedContext();
@@ -141,10 +141,6 @@ public class DeviceOwnerKeyManagementTest {
     void verifySignatureOverData(String algoIdentifier, KeyPair keyPair) throws Exception {
         verifySignature(algoIdentifier, keyPair.getPublic(),
                 signDataWithKey(algoIdentifier, keyPair.getPrivate()));
-    }
-
-    int getDeviceFirstSdkLevel() {
-        return SystemProperties.getInt("ro.board.first_api_level", 0);
     }
 
     private void validateDeviceIdAttestationData(Certificate[] certs,
@@ -223,7 +219,7 @@ public class DeviceOwnerKeyManagementTest {
                 TestUtils.getFeatureVersionKeystore(sContext, useStrongbox) >= 300;
         final boolean emptySecondImei = TextUtils.isEmpty(expectedSecondImei);
         final boolean deviceShippedWithKeyMint3 =
-                getDeviceFirstSdkLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+                TestUtils.getVendorApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
         if (!isKeyMintV3) {
             // Earlier versions of KeyMint must not attest to second IMEI values as they are not
@@ -255,7 +251,10 @@ public class DeviceOwnerKeyManagementTest {
                                                             boolean useStrongbox)
             throws CertificateParsingException, IOException {
         ParsedAttestationRecord parsedAttestationRecord =
-                createParsedAttestationRecord(Arrays.asList((X509Certificate[]) certs));
+                createParsedAttestationRecord(
+                    Arrays.stream(certs)
+                    .map(certificate -> (X509Certificate) certificate)
+                    .collect(Collectors.toList()));
 
         com.google.android.attestation.AuthorizationList teeAttestation =
                 parsedAttestationRecord.teeEnforced;
@@ -418,7 +417,7 @@ public class DeviceOwnerKeyManagementTest {
             List<Certificate> attestation = generated.getAttestationRecord();
             validateAttestationRecord(attestation, attestationChallenge);
             validateSignatureChain(attestation, keyPair.getPublic());
-            return (Certificate[]) attestation.toArray();
+            return attestation.toArray(new Certificate[0]);
         } catch (UnsupportedOperationException ex) {
             assertWithMessage(
                     String.format(
@@ -458,7 +457,10 @@ public class DeviceOwnerKeyManagementTest {
                     .isNotNull();
             imei = telephonyService.getImei(0);
             secondImei = telephonyService.getImei(1);
-            meid = telephonyService.getMeid(0);
+            if (sContext.getPackageManager()
+                    .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CDMA)) {
+                meid = telephonyService.getMeid(0);
+            }
             // If the device has a valid IMEI it must support attestation for it.
             if (imei != null) {
                 modesToTest.add(ID_TYPE_IMEI);
@@ -610,7 +612,7 @@ public class DeviceOwnerKeyManagementTest {
         // hence skipping this test for such scenario.
         assumeFalse("This test is not applicable for device running GSI image and"
                 + " first_api_level < 14", TestUtils.isGsiImage()
-                && getDeviceFirstSdkLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+                && TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
 
         final boolean isDeviceLocked = checkDeviceLocked();
         try (DeviceOwner o = TestApis.devicePolicy().setDeviceOwner(DEVICE_ADMIN_COMPONENT_NAME)) {
@@ -641,7 +643,7 @@ public class DeviceOwnerKeyManagementTest {
         // hence skipping this test for such scenario.
         assumeFalse("This test is not applicable for device running GSI image and"
                 + " first_api_level < 14", TestUtils.isGsiImage()
-                && getDeviceFirstSdkLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+                && TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
 
         final boolean isDeviceLocked = checkDeviceLocked();
         try (DeviceOwner o = TestApis.devicePolicy().setDeviceOwner(DEVICE_ADMIN_COMPONENT_NAME)) {

@@ -155,8 +155,11 @@ public class MainInteractionSession extends VoiceInteractionSession {
                     boolean statusBarContainsCutout = !android.graphics.Insets.NONE.equals(min);
                     Log.d(TAG, "statusBarContainsCutout=" + statusBarContainsCutout);
                     displayPoint.y = statusBarContainsCutout
-                            ? bound.height() - min.top - min.bottom : bound.height();
-                    displayPoint.x = bound.width();
+                            ? bound.height() - min.top - min.bottom :
+                            bound.height() - displayCutoutInsets.top - displayCutoutInsets.bottom;
+                    displayPoint.x = statusBarContainsCutout ?
+                            bound.width() - min.left - min.right :
+                            bound.width() - displayCutoutInsets.left - displayCutoutInsets.right;
                     DisplayCutout dc = d.getCutout();
                     if (dc != null) {
                         // Means the device has a cutout area

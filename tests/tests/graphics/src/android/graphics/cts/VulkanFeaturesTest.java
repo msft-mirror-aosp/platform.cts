@@ -34,17 +34,17 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Test that the Vulkan loader is present, supports the required extensions, and that system
@@ -105,10 +105,18 @@ public class VulkanFeaturesTest {
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_V,
                 new String[] {
+                    "VK_KHR_calibrated_timestamps",
                     "VK_KHR_cooperative_matrix",
+                    "VK_KHR_index_type_uint8",
+                    "VK_KHR_line_rasterization",
+                    "VK_KHR_load_store_op_none",
                     "VK_KHR_maintenance5",
+                    "VK_KHR_maintenance6",
                     "VK_KHR_map_memory2",
                     "VK_KHR_ray_tracing_position_fetch",
+                    "VK_KHR_shader_expect_assume",
+                    "VK_KHR_shader_quad_control",
+                    "VK_KHR_vertex_attribute_divisor",
                     "VK_ANDROID_external_format_resolve"});
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_U,
@@ -236,6 +244,7 @@ public class VulkanFeaturesTest {
     private JSONObject mVkJSON = null;
     private JSONObject mVulkanDevices[];
     private JSONObject mBestDevice = null;
+    private boolean mIsTV = false;
 
     @Before
     public void setup() throws Throwable {
@@ -263,6 +272,8 @@ public class VulkanFeaturesTest {
                     if (DEBUG) {
                         Log.d(TAG, feature.name + "=" + feature.version);
                     }
+                } else if (PackageManager.FEATURE_LEANBACK.equals(feature.name)) {
+                    mIsTV = true;
                 }
             }
         }
@@ -502,6 +513,7 @@ public class VulkanFeaturesTest {
     @Test
     public void testAndroidBaselineProfile2021Support() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
+        assumeTrue("Skipping because ABP is not required of TV devices", !mIsTV);
 
         if (!hasOnlyCpuDevice()) {
             assertEquals("This device must support the ABP 2021.", "", nativeGetABPSupport());

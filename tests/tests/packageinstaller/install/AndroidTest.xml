@@ -39,6 +39,13 @@
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="settings put system pointer_location 1" />
+        <option name="run-command" value="settings put system show_touches 1" />
+        <option name="teardown-command" value="settings put system pointer_location 0" />
+        <option name="teardown-command" value="settings put system show_touches 0" />
+    </target_preparer>
+
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="pm uninstall android.packageinstaller.emptytestapp.cts" />
         <!-- dismiss all system dialogs before launch test -->
         <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
@@ -53,6 +60,7 @@
         <option name="push" value="CtsEmptyInstallerApp.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyInstallerApp.apk" />
         <option name="push" value="CtsEmptyTestApp_FullScreenIntent.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_FullScreenIntent.apk" />
         <option name="push" value="CtsEmptyTestApp_AppMetadataInApk.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk.apk" />
+        <option name="push" value="CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -92,10 +100,16 @@
         <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
     </target_preparer>
 
-    <!-- Required for UserRestrictionInstallTest (b/277987631) -->
+    <!-- Ensures that screen recording is captured -->
     <target_preparer class="com.android.tradefed.targetprep.RootTargetPreparer">
-        <option name="force-root" value="false" />
+        <option name="force-root" value="true" />
+        <option name="throw-on-error" value="false" />
     </target_preparer>
+
+    <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
+        <option name="directory-keys" value="/data/user/0/android.packageinstaller.install.cts/files" />
+        <option name="collect-on-run-ended-only" value="true" />
+    </metrics_collector>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.packageinstaller.install.cts" />
