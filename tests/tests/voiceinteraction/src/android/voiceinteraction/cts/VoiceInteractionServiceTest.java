@@ -40,6 +40,9 @@ import android.os.PersistableBundle;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.voice.AlwaysOnHotwordDetector;
 import android.service.voice.HotwordDetectionService;
 import android.service.voice.HotwordDetector;
@@ -99,6 +102,9 @@ public class VoiceInteractionServiceTest extends AbstractHdsTestCase {
     public final SettingsStateKeeperRule mPublicServiceSettingsKeeper =
             new SettingsStateKeeperRule(getInstrumentation().getTargetContext(),
                     "assist_screenshot_enabled");
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final SettingsStateManager sScreenshotEnabledManager = new SettingsStateManager(
             getInstrumentation().getTargetContext(), "assist_screenshot_enabled");
@@ -194,6 +200,8 @@ public class VoiceInteractionServiceTest extends AbstractHdsTestCase {
             "android.service.voice.VoiceInteractionSession#onShow"
     })
     @EnsureHasWorkProfile
+    @RequiresFlagsEnabled({
+            android.app.admin.flags.Flags.FLAG_ASSIST_CONTENT_USER_RESTRICTION_ENABLED})
     @EnsureHasUserRestriction(value = DISALLOW_ASSIST_CONTENT, onUser = WORK_PROFILE)
     @Test
     public void onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_failed()
@@ -210,6 +218,8 @@ public class VoiceInteractionServiceTest extends AbstractHdsTestCase {
             "android.service.voice.VoiceInteractionSession#onShow"
     })
     @EnsureHasWorkProfile
+    @RequiresFlagsEnabled({
+            android.app.admin.flags.Flags.FLAG_ASSIST_CONTENT_USER_RESTRICTION_ENABLED})
     @EnsureHasUserRestriction(value = DISALLOW_ASSIST_CONTENT, onUser = WORK_PROFILE)
     @Test
     public void onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_successInInitialUser()
