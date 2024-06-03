@@ -20,6 +20,7 @@ import logging
 import math
 import cv2
 import numpy
+import os.path
 
 import camera_properties_utils
 import capture_request_utils
@@ -151,6 +152,10 @@ def find_center_circle(
   width, height = size
   min_area = _MIN_AREA_RATIO * width * height * zoom_ratio * zoom_ratio
 
+  # create a copy of image to avoid modification on the original image since
+  # image_processing_utils.convert_image_to_uint8 uses mutable np array methods
+  img = numpy.ndarray.copy(img)
+
   # convert [0, 1] image to [0, 255] and cast as uint8
   if img.dtype != numpy.uint8:
     img = image_processing_utils.convert_image_to_uint8(img)
@@ -162,6 +167,11 @@ def find_center_circle(
 
   # use OpenCV to find contours (connected components)
   contours = opencv_processing_utils.find_all_contours(255-img_bw)
+
+  # write copy of image for debug purposes
+  img_copy_name = img_name.split('.')[0] + '_copy.jpg'
+  image_processing_utils.write_image(numpy.expand_dims(
+      (255-img_bw).astype(numpy.float)/255.0, axis=2), img_copy_name)
 
   # check contours and find the best circle candidates
   circles = []
