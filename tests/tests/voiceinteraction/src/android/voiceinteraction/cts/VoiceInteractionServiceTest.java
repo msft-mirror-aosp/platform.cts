@@ -41,6 +41,8 @@ import android.os.RemoteCallback;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.voice.AlwaysOnHotwordDetector;
 import android.service.voice.HotwordDetectionService;
 import android.service.voice.HotwordDetector;
@@ -58,11 +60,11 @@ import android.voiceinteraction.cts.testcore.VoiceInteractionServiceConnectedRul
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
@@ -100,6 +102,9 @@ public class VoiceInteractionServiceTest {
     public final SettingsStateKeeperRule mPublicServiceSettingsKeeper =
             new SettingsStateKeeperRule(getInstrumentation().getTargetContext(),
                     "assist_screenshot_enabled");
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final SettingsStateManager sScreenshotEnabledManager = new SettingsStateManager(
             getInstrumentation().getTargetContext(), "assist_screenshot_enabled");
@@ -194,6 +199,8 @@ public class VoiceInteractionServiceTest {
             "android.service.voice.VoiceInteractionSession#onShow"
     })
     @EnsureHasWorkProfile
+    @RequiresFlagsEnabled({
+            android.app.admin.flags.Flags.FLAG_ASSIST_CONTENT_USER_RESTRICTION_ENABLED})
     @EnsureHasUserRestriction(value = DISALLOW_ASSIST_CONTENT, onUser = WORK_PROFILE)
     @Test
     public void onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_failed()
@@ -210,6 +217,8 @@ public class VoiceInteractionServiceTest {
             "android.service.voice.VoiceInteractionSession#onShow"
     })
     @EnsureHasWorkProfile
+    @RequiresFlagsEnabled({
+            android.app.admin.flags.Flags.FLAG_ASSIST_CONTENT_USER_RESTRICTION_ENABLED})
     @EnsureHasUserRestriction(value = DISALLOW_ASSIST_CONTENT, onUser = WORK_PROFILE)
     @Test
     public void onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_successInInitialUser()

@@ -25,7 +25,6 @@ import android.text.method.ReplacementTransformationMethod;
 import android.util.TypedValue;
 import android.widget.EditText;
 
-import androidx.test.annotation.UiThreadTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -63,7 +62,6 @@ public class ReplacementTransformationMethodTest {
     @Rule(order = 1)
     public ActivityTestRule<CtsActivity> mActivityRule = new ActivityTestRule<>(CtsActivity.class);
 
-    @UiThreadTest
     @Before
     public void setup() throws Throwable {
         CtsActivity activity = mActivityRule.getActivity();

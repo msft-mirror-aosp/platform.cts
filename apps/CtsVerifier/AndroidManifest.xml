@@ -4749,7 +4749,7 @@
 
         <activity android:name=".multidevice.MultiDeviceTestsActivity"
                 android:exported="true"
-                android:label="@string/multi_device_tests_title">
+                android:label="@string/nfc_tests_title">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
@@ -7098,9 +7098,30 @@
 
         <!-- Components for Sharesheet tests -->
        <activity
-            android:name=".sharesheet.SharesheetChooserResultActivity"
+            android:name=".sharesheet.SharesheetChooserResultEditActivity"
             android:exported="true"
-            android:label="@string/sharesheet_result_test">
+            android:label="@string/sharesheet_result_test_edit"
+            android:launchMode="singleTask">
+           <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
+                    |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetChooserResultCopyActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_result_test_copy"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
@@ -7115,6 +7136,27 @@
                     |android.service.chooser.ChooserResult#getResult" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetChooserResultComponentActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_result_test_component"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
+                    |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
 
         <activity
             android:name=".sharesheet.SharesheetPayloadToggleActivity"
