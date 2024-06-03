@@ -28,6 +28,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -57,6 +58,7 @@ import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.DisableAnimationRule;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -160,6 +162,8 @@ public class PackageInstallerCujTestBase {
 
     @Before
     public void setup() throws Exception {
+        assumeFalse(isNotSupportedDevice());
+
         uninstallTestPackage();
         assertTestPackageNotInstalled();
 
@@ -647,5 +651,9 @@ public class PackageInstallerCujTestBase {
         public void resetResult() {
             mInstallerResponseResult = new CompletableFuture();
         }
+    }
+
+    private static boolean isNotSupportedDevice() {
+        return FeatureUtil.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }
