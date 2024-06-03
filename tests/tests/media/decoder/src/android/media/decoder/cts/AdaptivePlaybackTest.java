@@ -1433,11 +1433,14 @@ class Media {
 
         Log.i(TAG, "format=" + media.getFormat());
         ArrayList<ByteBuffer> csds = new ArrayList<ByteBuffer>();
-        for (String tag: new String[] { "csd-0", "csd-1" }) {
-            if (media.getFormat().containsKey(tag)) {
-                ByteBuffer csd = media.getFormat().getByteBuffer(tag);
-                Log.i(TAG, tag + "=" + AdaptivePlaybackTest.byteBufferToString(csd, 0, 16));
-                csds.add(csd);
+        // CSD in VP9 can not be combined with frame data
+        if (!media.getMime().equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+            for (String tag: new String[] { "csd-0", "csd-1" }) {
+                if (media.getFormat().containsKey(tag)) {
+                    ByteBuffer csd = media.getFormat().getByteBuffer(tag);
+                    Log.i(TAG, tag + "=" + AdaptivePlaybackTest.byteBufferToString(csd, 0, 16));
+                    csds.add(csd);
+                }
             }
         }
 

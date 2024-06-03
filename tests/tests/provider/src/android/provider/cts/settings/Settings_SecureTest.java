@@ -31,6 +31,8 @@ import android.provider.Settings.SettingNotFoundException;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FeatureUtil;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -192,8 +194,12 @@ public class Settings_SecureTest {
 
     @Test
     public void testUnknownSourcesOnByDefault() throws SettingNotFoundException {
-        assertEquals("install_non_market_apps is deprecated. Should be set to 1 by default.",
-                1, Settings.Secure.getInt(cr, Settings.Global.INSTALL_NON_MARKET_APPS));
+        // automotive vendors set the new user restriction 'no_install_unknown_sources'
+        // which causes the obsolete 'install_non_market_apps' setting to flip to 0
+        if (!FeatureUtil.isAutomotive()) {
+            assertEquals("install_non_market_apps is deprecated. Should be set to 1 by default.",
+                    1, Settings.Secure.getInt(cr, Settings.Global.INSTALL_NON_MARKET_APPS));
+        }
     }
 
     private static final String BLUETOOTH_MAC_ADDRESS_SETTING_NAME = "bluetooth_address";

@@ -64,6 +64,7 @@ import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputConnectionWrapper;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.cts.util.DisableImmersiveModeConfirmationRule;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.SimulatedVirtualDisplaySession;
 import android.view.inputmethod.cts.util.TestActivity;
@@ -88,6 +89,7 @@ import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -115,6 +117,11 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
     private static final String ERASE_FONT_SCALE_CMD = "settings delete system font_scale";
     // 1.2 is an arbitrary value.
     private static final String PUT_FONT_SCALE_CMD = "settings put system font_scale 1.2";
+
+    @ClassRule
+    public static DisableImmersiveModeConfirmationRule sDisableImmersiveModeConfirmationRule =
+            new DisableImmersiveModeConfirmationRule();
+
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();

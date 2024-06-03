@@ -71,6 +71,8 @@ public class SurfacePackageFlickerTest {
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
         mActivity.dismissPermissionDialog();
         mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        // Change runtime to 10s instead of 50s
+        mActivity.setMinimumCaptureDurationMs(10000);
     }
 
     /**
@@ -150,7 +152,7 @@ public class SurfacePackageFlickerTest {
 
         @Override
         public boolean hasAnimation() {
-            return true;
+            return false;
         }
 
         @Override

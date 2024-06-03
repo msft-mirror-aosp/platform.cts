@@ -24,6 +24,7 @@ import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.overlay.Components.OverlayActivity.EXTRA_TOKEN;
 import static android.view.WindowInsets.Type.navigationBars;
+import static android.view.WindowInsets.Type.statusBars;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -69,6 +70,7 @@ import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.view.accessibility.AccessibilityWindowInfo;
@@ -192,7 +194,7 @@ public class WindowUntrustedTouchTest {
             mContainer = mActivity.view;
             // On ARC++, text toast is fixed on the screen. Its position may overlays the navigation
             // bar. Hide it to ensure the text toast overlays the app. b/191075641
-            mContainer.getWindowInsetsController().hide(navigationBars());
+            mContainer.getWindowInsetsController().hide(statusBars() | navigationBars());
             mContainer.setOnTouchListener(this::onTouchEvent);
         });
         mInstrumentation = getInstrumentation();
@@ -1163,6 +1165,7 @@ public class WindowUntrustedTouchTest {
         @Override
         protected void onCreate(@Nullable Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
+            requestWindowFeature(Window.FEATURE_NO_TITLE);
             view = new View(this);
             view.setBackgroundColor(ACTIVITY_COLOR);
             setContentView(view);

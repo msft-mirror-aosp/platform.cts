@@ -4164,7 +4164,7 @@ You should be prompted to select credentials; choose the ones you just installed
         2. Go to OEM unlocking settings, if this device has this Settings option. It is often located under \"Developer options\".\n
         Confirm that:\n
            - Oem Unlocking is disabled.\n
-           - Enabling Oem unlocking is not possible and triggers a support message.\n\n
+           - Enabling Oem unlocking is not possible, and pressing the button or menu option to enable it triggers a support message (if pressing is possible).\n\n
         Return back to this page.
     </string>
     <string name="device_owner_user_restriction_set">Set restriction</string>
