@@ -65,6 +65,9 @@ class ModifierKeyRemappingTest {
 
         // Linux keycode defined in the "linux/input-event-codes.h" header.
         val KEY_LEFTALT = 56
+
+        // Wait time for existing remapping to happen after device added
+        val MODIFIER_REMAPPING_WAIT_TIME_MILLIS = 500L
     }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -215,6 +218,9 @@ class ModifierKeyRemappingTest {
             // Wait for device to be added
             PollingCheck.waitFor { inputManager.getInputDevice(keyboardDevice.deviceId) != null }
             activity.assertNoEvents()
+
+            // TODO(b/344517984): Refactor so that we don't need to wait for remapping to occur
+            Thread.sleep(MODIFIER_REMAPPING_WAIT_TIME_MILLIS)
 
             injectKeyDown(keyboardDevice, KEY_LEFTALT)
             injectKeyUp(keyboardDevice, KEY_LEFTALT)
