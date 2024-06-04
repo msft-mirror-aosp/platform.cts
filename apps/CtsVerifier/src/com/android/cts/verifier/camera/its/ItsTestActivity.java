@@ -126,6 +126,9 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
             Pattern.compile("test_burst_capture_.*");
 
+    private static final Pattern PERF_METRICS_DISTORTION_PATTERN =
+            Pattern.compile("test_preview_distortion_.*");
+
     private static final String REPORT_LOG_NAME = "CtsCameraItsTestCases";
 
     private final ResultReceiver mResultsReceiver = new ResultReceiver();
@@ -569,8 +572,12 @@ public class ItsTestActivity extends DialogTestListActivity {
                         perfMetricsResult);
             boolean burstCaptureMetricsMatches = burstCaptureMetricsMatcher.matches();
 
+            Matcher distortionMetricsMatcher = PERF_METRICS_DISTORTION_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean distortionMetricsMatches = distortionMetricsMatcher.matches();
+
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
-                        && !imuDriftMetricsMatches) {
+                        && !imuDriftMetricsMatches && !distortionMetricsMatches) {
                 return false;
             }
 
@@ -607,6 +614,27 @@ public class ItsTestActivity extends DialogTestListActivity {
                     Log.i(TAG, "burst capture  matches");
                     float value = Float.parseFloat(burstCaptureMetricsMatcher.group(1));
                     obj.put("burst_capture_max_frame_time_minus_frameDuration_ns", value);
+                }
+
+                if (distortionMetricsMatches) {
+                    Log.i(TAG, "preview distortion matches");
+                    String result = perfMetricsResult.replaceFirst("^test_", "");
+                    String resultKey = result.split(":")[0].strip();
+                    String str_value = result.split(":")[1].strip();
+                    if (str_value.equalsIgnoreCase("None")) {
+                        String value = result.split(":")[1].strip();
+                        obj.put(resultKey, value);
+                    } else if (resultKey.contains("zoom") || resultKey.contains("error")
+                            || resultKey.contains("coverage")) {
+                        float value = Float.parseFloat(result.split(":")[1].strip());
+                        obj.put(resultKey, value);
+                    } else if (resultKey.contains("camera_id")) {
+                        int value = Integer.parseInt(result.split(":")[1].strip());
+                        obj.put(resultKey, value);
+                    } else {
+                        String value = result.split(":")[1].strip();
+                        obj.put(resultKey, value);
+                    }
                 }
             } catch (org.json.JSONException e) {
                 Log.e(TAG, "Error when serializing the metrics into a JSONObject" , e);
