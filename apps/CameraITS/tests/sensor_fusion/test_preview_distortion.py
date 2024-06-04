@@ -485,6 +485,7 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
           frame_data = PreviewFrameData(img_name, capture_result, z)
           preview_frames.append(frame_data)
 
+      failure_msg = []
       # Determine distortion error and chart coverage for each frames
       for frame in preview_frames:
         img_full_name = f'{os.path.join(log_path, frame.img_name)}'
@@ -518,32 +519,32 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
         )
         logging.debug(f'{_NAME}_aruco_chart_coverage: %s', arc_chart_coverage)
 
-        failure_msg = None
-
         if arc_distortion_error is None:
           if zoom < _WIDE_ZOOM:
-            failure_msg = (f'Unable to find all ArUco markers in {img_name}')
-            logging.debug(failure_msg)
+            failure_msg.append('Unable to find all ArUco markers in '
+                               f'{img_name}')
+            logging.debug(failure_msg[-1])
         else:
           if arc_distortion_error > _ARUCO_DIST_TOL:
-            failure_msg = (f'Distortion error {chkr_distortion_error} '
-                           f'is greater than tolerance {_CHKR_DIST_TOL}')
-            logging.debug(failure_msg)
+            failure_msg.append('ArUco Distortion error '
+                               f'{arc_distortion_error:.3f} is greater than '
+                               f'tolerance {_ARUCO_DIST_TOL}')
+            logging.debug(failure_msg[-1])
 
         if chkr_distortion_error is None:
           # Checkerboard corners shall be detected at minimum zoom level
-          if math.isclose(zoom, z_levels[0], rel_tol=_ZOOM_TOL):
-            failure_msg = (f'Unable to find full checker board in {img_name}')
-            logging.debug(failure_msg)
+          failure_msg.append(f'Unable to find full checker board in {img_name}')
+          logging.debug(failure_msg[-1])
         else:
           if chkr_distortion_error > _CHKR_DIST_TOL:
-            failure_msg = (f'Distortion error {chkr_distortion_error} '
-                           f'is greater than tolerance {_CHKR_DIST_TOL}')
-            logging.debug(failure_msg)
+            failure_msg.append('Chess Distortion error '
+                               f'{chkr_distortion_error:.3f} is greater than '
+                               f'tolerance {_CHKR_DIST_TOL}')
+            logging.debug(failure_msg[-1])
 
-        if failure_msg is not None:
-          raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
-                               f'\n\n{failure_msg}')
+      if failure_msg:
+        raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                             f'\n\n{failure_msg}')
 
 if __name__ == '__main__':
   test_runner.main()
