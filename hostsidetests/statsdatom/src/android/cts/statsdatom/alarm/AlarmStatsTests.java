@@ -70,8 +70,10 @@ public class AlarmStatsTests extends DeviceTestCase implements IBuildReceiver {
         ReportUtils.clearReports(getDevice());
 
         resetCompatChanges(ALARM_ATOM_TEST_PACKAGE);
-
         DeviceUtils.uninstallTestApp(getDevice(), ALARM_ATOM_TEST_PACKAGE);
+
+        resetCompatChanges(ALARM_ATOM_TEST_PACKAGE_2);
+        DeviceUtils.uninstallTestApp(getDevice(), ALARM_ATOM_TEST_PACKAGE_2);
         super.tearDown();
     }
 
