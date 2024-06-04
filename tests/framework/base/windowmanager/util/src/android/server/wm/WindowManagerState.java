@@ -673,16 +673,6 @@ public class WindowManagerState {
         return null;
     }
 
-    /** Gets the top root task with the {@code windowingMode}. **/
-    public Task getTopRootTaskByWindowingMode(int windowingMode) {
-        for (Task rootTask : mRootTasks) {
-            if (windowingMode == rootTask.getWindowingMode()) {
-                return rootTask;
-            }
-        }
-        return null;
-    }
-
     public int getStandardTaskCountByWindowingMode(int windowingMode) {
         int count = 0;
         for (Task rootTask : mRootTasks) {
