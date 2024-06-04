@@ -53,6 +53,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
@@ -117,6 +118,12 @@ public class MediaExtractorTest {
         TestMediaDataSource ds = getDataSourceFor(res);
         mExtractor.setDataSource(ds);
         return ds;
+    }
+
+    @Test
+    @FrameworkSpecificTest
+    public void testExtractorFrameworkStub() throws Exception {
+        Log.d(TAG, "Stub FrameworkSpecific tests are non-empty");
     }
 
     @Test

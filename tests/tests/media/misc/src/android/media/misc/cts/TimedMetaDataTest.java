@@ -19,6 +19,7 @@ package android.media.misc.cts;
 import android.media.TimedMetaData;
 import android.test.AndroidTestCase;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import java.nio.charset.StandardCharsets;
@@ -26,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Tests for TimedMetaData.
  */
+@FrameworkSpecificTest
 @NonMainlineTest
 public class TimedMetaDataTest extends AndroidTestCase {
     private static final String RAW_METADATA = "RAW_METADATA";

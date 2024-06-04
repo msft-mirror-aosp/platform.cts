@@ -34,6 +34,7 @@ import android.webkit.cts.CtsTestServer;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
@@ -52,6 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests of MediaPlayer streaming capabilities.
  */
+@FrameworkSpecificTest
 @NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
@@ -60,7 +62,6 @@ public class StreamingMediaPlayerTest extends MediaPlayerTestBase {
     private static final String TAG = "StreamingMediaPlayerTest";
     static final String mInpPrefix = WorkDir.getMediaDirString() + "assets/";
 
-    private static final String MODULE_NAME = "CtsMediaPlayerTestCases";
     private static final int HLS_PLAYBACK_TIME_MS = 20 * 1000;
     private CtsTestServer mServer;
 

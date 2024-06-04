@@ -49,6 +49,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.PollingCheck;
 
@@ -70,6 +71,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "The system should be able to bind to StubMediaRoute2ProviderService")
 @LargeTest
+@FrameworkSpecificTest
 @NonMainlineTest
 public class MediaRoute2ProviderServiceTest {
     private static final String TAG = "MR2ProviderServiceTest";

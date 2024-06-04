@@ -50,11 +50,8 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.cts.CodecState;
 import android.media.cts.MediaCodecTunneledPlayer;
-import android.media.cts.MediaCodecWrapper;
 import android.media.cts.MediaHeavyPresubmitTest;
 import android.media.cts.MediaTestBase;
-import android.media.cts.NdkMediaCodec;
-import android.media.cts.SdkMediaCodec;
 import android.media.cts.TestUtils;
 import android.net.Uri;
 import android.os.Build;
@@ -71,9 +68,7 @@ import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DeviceReportLog;
-import com.android.compatibility.common.util.DynamicConfigDeviceSide;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
@@ -140,9 +135,6 @@ public class DecoderTest extends MediaTestBase {
     private static final int SLEEP_TIME_MS = 1000;
     private static final long PLAY_TIME_MS = TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES);
 
-    private static final String MODULE_NAME = "CtsMediaDecoderTestCases";
-    private DynamicConfigDeviceSide dynamicConfig;
-
     static final Map<String, String> sDefaultDecoders = new HashMap<>();
 
     protected static AssetFileDescriptor getAssetFileDescriptorFor(final String res)
@@ -176,8 +168,6 @@ public class DecoderTest extends MediaTestBase {
         }
         bis.close();
         masterFd.close();
-
-        dynamicConfig = new DynamicConfigDeviceSide(MODULE_NAME);
     }
 
     @After
@@ -1515,11 +1505,6 @@ public class DecoderTest extends MediaTestBase {
             try {
                 MediaCodecInfo.CodecCapabilities caps = info.getCapabilitiesForType(mime);
                 if (caps != null) {
-                    // do we test this codec in current mode?
-                    if (!TestUtils.isTestableCodecInCurrentMode(info.getName())) {
-                        Log.i(TAG, "skip codec " + info.getName() + " in current mode");
-                        continue;
-                    }
                     if (codecSupportMode == CODEC_ALL) {
                         if (IS_AFTER_T) {
                             // This is an extractor failure as often as it is a codec failure
@@ -1541,19 +1526,28 @@ public class DecoderTest extends MediaTestBase {
                     }
                 }
             } catch (IllegalArgumentException e) {
-                // type is not supported
+                // type is not supported by this codec
             }
         }
-        if (TestUtils.isMtsMode()) {
-            // not fatal in MTS mode
-            Assume.assumeTrue("no MTS-mode codecs found for format " + format.toString(),
-                            matchingCodecs.size() != 0);
-        } else {
-            // but fatal in CTS mode
-            assertTrue("no codecs found for format " + format.toString(),
-                            matchingCodecs.size() != 0);
+
+        // CTS rules say the device must have a codec that supports this mediatype.
+        assertTrue("no codecs found for format " + format.toString(),
+                        matchingCodecs.size() != 0);
+        // but we only test the ones appropriate to this mode;
+        // testing all matching codecs requires us to run both CtsMediaXXX and MctsMediaXXX
+        ArrayList<String> usingCodecs = new ArrayList<String>();
+        for (String codecName : matchingCodecs) {
+            if (!TestUtils.isTestableCodecInCurrentMode(codecName)) {
+                Log.i(TAG, "skip codec " + codecName + " in current mode");
+                continue;
+            }
+            usingCodecs.add(codecName);
         }
-        return matchingCodecs;
+        // which may be empty, triggering a non-fatal assumption failure
+        Assume.assumeTrue("no testable codecs for format " + format.toString()
+                          + " in test mode " + TestUtils.currentTestModeName(),
+                          usingCodecs.size() != 0);
+        return usingCodecs;
     }
 
     /**

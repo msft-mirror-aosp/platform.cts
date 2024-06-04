@@ -324,7 +324,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
             assertNumCalls(getInCallService(), 1);
-            assertEquals(Call.STATE_ACTIVE, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
             callControlAction(DISCONNECT, mCall1);
             assertNumCalls(getInCallService(), 0);
         } finally {
@@ -348,7 +348,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
-            assertEquals(Call.STATE_ACTIVE, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
             // Ensure that the call has PROPERTY_IS_TRANSACTIONAL:
             Call call = getLastAddedCall();
             assertTrue(call.getDetails().hasProperty(Call.Details.PROPERTY_IS_TRANSACTIONAL));
@@ -375,7 +375,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
             assertNumCalls(getInCallService(), 1);
-            assertEquals(Call.STATE_ACTIVE, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
             callControlAction(DISCONNECT, mCall1);
             assertNumCalls(getInCallService(), 0);
         } finally {
@@ -399,7 +399,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall1);
             callControlAction(SET_ACTIVE, mCall1);
-            assertEquals(Call.STATE_ACTIVE, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
             // Ensure that the call has PROPERTY_IS_TRANSACTIONAL:
             Call call = getLastAddedCall();
             assertTrue(call.getDetails().hasProperty(Call.Details.PROPERTY_IS_TRANSACTIONAL));
@@ -448,7 +448,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall1);
             assertNumCalls(getInCallService(), 1);
-            assertEquals(Call.STATE_RINGING, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_RINGING);
             try {
                 callControlAction(DISCONNECT, mCall1, DisconnectCause.ERROR);
                 fail("testRejectIncomingCall: forced fail b/c IllegalArgumentException not thrown");
@@ -715,7 +715,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             callControlAction(SET_ACTIVE, mCall1);
             assertNumCalls(getInCallService(), 1);
 
-            assertEquals(Call.STATE_ACTIVE, getLastAddedCall().getState());
+            assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
 
             startCallWithAttributesAndVerify(mIncomingCallAttributes, mCall2);
             callControlAction(SET_ACTIVE, mCall2);
@@ -724,13 +724,13 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             Call call1 = getCallWithId(mCall1.getTelecomCallId());
             Call call2 = getCallWithId(mCall2.getTelecomCallId());
 
-            assertEquals(Call.STATE_HOLDING, call1.getState());
-            assertEquals(Call.STATE_ACTIVE, call2.getState());
+            assertCallState(call1, Call.STATE_HOLDING);
+            assertCallState(call2, Call.STATE_ACTIVE);
 
             callControlAction(DISCONNECT, mCall2);
             assertNumCalls(getInCallService(), 1);
 
-            assertEquals(Call.STATE_HOLDING, call1.getState());
+            assertCallState(call1, Call.STATE_HOLDING);
 
             callControlAction(DISCONNECT, mCall1);
             assertNumCalls(getInCallService(), 0);
