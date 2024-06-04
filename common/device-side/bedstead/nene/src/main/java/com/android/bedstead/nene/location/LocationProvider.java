@@ -22,7 +22,6 @@ import static com.android.bedstead.nene.appops.AppOpsMode.DEFAULT;
 
 import android.app.AppOpsManager;
 import android.content.Context;
-import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.location.provider.ProviderProperties;
@@ -41,8 +40,7 @@ public final class LocationProvider implements AutoCloseable {
 
     LocationProvider(String provider) {
         this.sProviderName = provider;
-        addTestProvider();
-        enableTestProvider();
+        addAndEnableTestProvider();
     }
 
     @Override
@@ -51,19 +49,24 @@ public final class LocationProvider implements AutoCloseable {
         clearTestProviderLocation();
     }
 
-    private void addTestProvider() {
+    private void addAndEnableTestProvider() {
         try (PermissionContext p = TestApis.permissions().withAppOp(OPSTR_MOCK_LOCATION)) {
-            sLocationManager.addTestProvider(sProviderName,
-                    /* requiresNetwork= */ true,
-                    /* requiresSatellite= */ false,
-                    /* requiresCell= */ true,
-                    /* hasMonetaryCost= */ false,
-                    /* supportsAltitude= */ false,
-                    /* supportsSpeed= */ false,
-                    /* supportsBearing= */ false,
-                    ProviderProperties.POWER_USAGE_MEDIUM,
-                    ProviderProperties.ACCURACY_COARSE);
+            addTestProvider();
+            enableTestProvider();
         }
+    }
+
+    private void addTestProvider() {
+        sLocationManager.addTestProvider(sProviderName,
+                /* requiresNetwork= */ true,
+                /* requiresSatellite= */ false,
+                /* requiresCell= */ true,
+                /* hasMonetaryCost= */ false,
+                /* supportsAltitude= */ false,
+                /* supportsSpeed= */ false,
+                /* supportsBearing= */ false,
+                ProviderProperties.POWER_USAGE_MEDIUM,
+                ProviderProperties.ACCURACY_COARSE);
     }
 
     private void enableTestProvider() {
@@ -71,7 +74,9 @@ public final class LocationProvider implements AutoCloseable {
     }
 
     private void removeTestProvider() {
-        sLocationManager.removeTestProvider(sProviderName);
+        try (PermissionContext p = TestApis.permissions().withAppOp(OPSTR_MOCK_LOCATION)) {
+            sLocationManager.removeTestProvider(sProviderName);
+        }
         TestApis.packages().instrumented().appOps().set(AppOpsManager.OPSTR_MOCK_LOCATION, DEFAULT);
     }
 

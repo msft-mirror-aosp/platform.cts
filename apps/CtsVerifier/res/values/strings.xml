@@ -1366,26 +1366,6 @@
     <string name="nfc_hce_payment_prefix_aids_emulator_2">Payment prefix AIDs 2 (Emulator)</string>
     <string name="nfc_hce_payment_prefix_aids_reader_2">Payment prefix AIDs 2 (Reader)</string>
 
-    <string name="nfc_observe_mode_emulator">Observe Mode (Emulator)</string>
-    <string name="nfc_observe_mode_reader">Observe Mode (Reader)</string>
-    <string name="nfc_observe_mode_emulator_help">In observe mode there should not be any response from the emulator to the reader. If the emulator detects the reader and does not receive a command, it will enable the pass button and that represents a pass or the test.</string>
-    <string name="nfc_observe_mode_reader_help">In observe mode there should not be any response from the emulator to the reader. If the reader detects a response it will disable the pass button and this is a failure.</string>
-
-    <string name="nfc_polling_loop_a_emulator">Polling Loop A (Emulator)</string>
-    <string name="nfc_polling_loop_a_reader">Polling Loop A (Reader)</string>
-    <string name="nfc_polling_loop_b_emulator">Polling Loop B (Emulator)</string>
-    <string name="nfc_polling_loop_b_reader">Polling Loop B (Reader)</string>
-    <string name="nfc_polling_loop_ab_emulator">Polling Loop A and B (Emulator)</string>
-    <string name="nfc_polling_loop_custom_emulator">Polling Loop Custom (Emulator)</string>
-    <string name="nfc_polling_loop_ab_reader">Polling Loop A and B (Reader)</string>
-    <string name="nfc_polling_loop_a_emulator_help">The emulator will wait until it sees 3 NFC-A polling frames before responding. If it sees another type of frame, it will fail.</string>
-    <string name="nfc_polling_loop_a_reader_help">The reader will poll for NFC-A.</string>
-    <string name="nfc_polling_loop_b_emulator_help">The emulator will wait until it sees 3 NFC-B polling frames before responding. If it sees another type of frame, it will fail.</string>
-    <string name="nfc_polling_loop_b_reader_help">The reader will poll for NFC-B.</string>
-    <string name="nfc_polling_loop_ab_emulator_help">The emulator will wait until it sees 3 NFC-A polling frames and 3 NFC-B polling frames before responding. If it sees another type of frame, it will fail.</string>
-    <string name="nfc_polling_loop_ab_reader_help">The reader will poll for NFC-A and NFC-B.</string>
-    <string name="nfc_polling_loop_custom_emulator_help">Please connect the PN532 to your linux machine and follow the instructions. The emulator will wait until it sees the specified custom polling frame.</string>
-
     <string name="nfc_hce_other_prefix_aids_emulator">Other prefix AIDs (Emulator)</string>
     <string name="nfc_hce_other_prefix_aids_reader">Other prefix AIDs (Reader)</string>
     <string name="nfc_hce_other_prefix_aids_help">This test dynamically registers prefix AIDs for a non-payment service.</string>
@@ -3301,11 +3281,11 @@ You should be prompted to select credentials; choose the ones you just installed
         \nThen click the \"Change password\" button to change it. You should be prompted for the current password first. If you are not, then mark the test as failed.
     </string>
 
-    <!-- Strings for MultiDeviceTests. -->
-    <string name="multi_device_tests_title">Multi-device Tests</string>
-    <string name="multi_device_tests_dialog_title">Multi-device Tests Dialog</string>
-    <string name="multi_device_tests_dialog_content">
-        All multi-device host-side tests.\n
+    <!-- Strings for NFC Tests. -->
+    <string name="nfc_tests_title">NFC Tests</string>
+    <string name="nfc_tests_dialog_title">NFC Tests Dialog</string>
+    <string name="nfc_tests_dialog_content">
+        The NFC tests.\n
         The DUT \"must\" be connected to a host to run these tests.\n
         Please follow the detailed instruction of the tests to execute scripts and get results.
     </string>
@@ -5751,6 +5731,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_invalid_transfer">Invalid Transfer Type</string>
 
     <string name="audio_datapaths_calibrate">Calibrate Audio</string>
+    <string name="audio_datapaths_devices">Audio Devices</string>
     <string name="audio_datapaths_calibratetitle">Calibrate Loopback Audio</string>
 
     <string name="audio_devicesupport_title">Audio Devices</string>
@@ -6869,13 +6850,16 @@ You should be prompted to select credentials; choose the ones you just installed
     <!-- Add bubble from overflow -->
     <string name="bubbles_test_add_from_overflow_title">Add bubble from overflow</string>
     <string name="bubbles_test_add_from_overflow_verify">1. Expand the stack and open the bubble
-        overflow.\n\n 2. Tap on a bubble in the overflow, pass this test if that bubble is opened
-        and removed from the overflow.</string>
+        overflow.\n\n 2. Tap on a bubble in the overflow, pass this test if that bubble is opened.
+    </string>
     <!-- Cancel removes bubbles in overflow -->
     <string name="bubbles_test_cancel_overflow_title">Cancel removes overflowed bubbles</string>
     <string name="bubbles_test_cancel_overflow_verify">1. Press the button below, it will cancel all
         previous bubble notifications and post one more.\n\n
         2. Expand that bubble, navigate to the overflow and ensure that it is empty.</string>
+    <string name="bubbles_test_cancel_overflow_verify2">1. Press the button below, it will cancel
+        all previous bubble notifications and post one more.\n\n
+        2. Expand that bubble, observe that there is no overflow button.</string>
     <string name="bubbles_test_cancel_overflow_button">Cancel previous bubbles and post a
         single bubble</string>
     <!-- Tap on notification with bubble in the overflow -->
@@ -7407,22 +7391,33 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nIf the sharesheet indicates that it\'s an album being shared, pass the test, otherwise fail.</string>
 
     <!-- Sharesheet ChooserResult test -->
-    <string name="sharesheet_result_test">Sharesheet Chooser Result Test</string>
-    <string name="sharesheet_result_test_info">This test verifies an app is notified of actions taken when sharing content.</string>
-    <string name="sharesheet_result_test_instructions">For each step, tap the \"Share\" button below and then take the requested action within the Sharing UI.</string>
-    <string name="sharesheet_result_test_app_instructions">Tap the icon for \'CtsVerifier\'.
-        \n\nIf it does not appear, dismiss the Share UI. </string>
-    <string name="sharesheet_result_test_copy_instructions">Press the \"Copy\" button.
-        \n\nIf there is no \'Copy\' button, dismiss the Share UI. </string>
-    <string name="sharesheet_result_test_edit_instructions">Press the \"Edit\" button.
-        \n\nIf there is no \'Edit\' button, dismiss the Share UI. </string>
+    <string name="sharesheet_result_test_edit">Chooser Result: Edit</string>
+    <string name="sharesheet_result_test_edit_info">This test verifies an app is notified taken the EDIT action is invoked within the Sharing UI.</string>
+    <string name="sharesheet_result_test_edit_instructions">Tap the \"Share\" button below.\nWhen the Share UI opens, press the EDIT button.\n\nIf an EDIT button cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_edit_instructions_short">Press Edit.</string>
+    <string name="sharesheet_result_test_edit_pressed">The EDIT button was pressed</string>
+    <string name="sharesheet_result_test_edit_not_found">The EDIT button could not be found</string>
+
+    <string name="sharesheet_result_test_copy">Chooser Result: Copy</string>
+    <string name="sharesheet_result_test_copy_info">This test verifies an app is notified taken the COPY action is invoked within the Sharing UI.</string>
+    <string name="sharesheet_result_test_copy_instructions">Tap the \"Share\" button below.\nWhen the Share UI open, press the COPY button.\n\nIf a COPY button cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_copy_instructions_short">Press Copy .</string>
+    <string name="sharesheet_result_test_copy_pressed">The COPY button was pressed</string>
+    <string name="sharesheet_result_test_copy_not_found">The COPY button could not be found</string>
+
+   <string name="sharesheet_result_test_component">Chooser Result: Component</string>
+    <string name="sharesheet_result_test_component_info">This test verifies an app is notified when a target component (APP) is selected in the Sharing UI.</string>
+    <string name="sharesheet_result_test_component_instructions">Tap the \"Share\" button below.\nWhen the Share UI opens, tap the icon labeled \""CtsVerifier\".\n\nIf the \"CtsVerifier\" icon cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_component_instructions_short">Tap the CtsVerifier Icon</string>
+    <string name="sharesheet_result_test_component_selected">The CtsVerifier icon was selected</string>
+    <string name="sharesheet_result_test_component_not_found">The CtsVerifier icon could not be found</string>
+
     <string name="sharesheet_result_test_instructions_after_share">Choose from the options below:</string>
-    <string name="sharesheet_result_test_pressed">I pressed the button</string>
-    <string name="sharesheet_result_test_not_found">I couldn\'t locate the button</string>
+
     <string name="sharesheet_result_test_try_again">Try again</string>
     <string name="sharesheet_result_test_no_result_message">No result received - test failed</string>
-    <string name="sharesheet_result_test_no_button">Some actions not available - test passed</string>
-    <string name="sharesheet_result_test_passed">Test passed.</string>
+    <string name="sharesheet_result_test_incorrect_result">Incorrect result received - test failed</string>
+    <string name="sharesheet_result_test_no_button">Action not available - test passed</string>
 
     <!-- Strings for CaptureContentForNotes test -->
     <string name="ccfn_tests">Capture Content For Notes Tests</string>
@@ -7564,7 +7559,7 @@ You should be prompted to select credentials; choose the ones you just installed
         1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
         \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
-        \n4. Take a screenshot of CtsVerifier App, and verify there is no content in screenshot".
+        \n4. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
         \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
     </string>
     <string name="notif_hiding_shade_partial_test_instructions">
@@ -7596,7 +7591,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="notif_hiding_app_local_screen_recorder_test_instructions">
         1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
-        \n3. Take a screenshot of CtsVerifier App, and verify there is content in screenshot".
+        \n3. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" appears in the screenshot".
         \n4. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
     </string>
     <string name="notif_hiding_shade_disable_protections_test_instructions">

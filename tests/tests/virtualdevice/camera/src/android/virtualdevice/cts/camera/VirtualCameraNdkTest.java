@@ -80,7 +80,8 @@ public class VirtualCameraNdkTest {
     private static final int CAMERA_MAX_FPS = 30;
 
     @Rule
-    public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
+    public VirtualDeviceRule mRule =
+            VirtualDeviceRule.createDefault().withVirtualCameraSupportCheck();
 
     @Mock
     private VirtualCameraCallback mVirtualCameraCallback;

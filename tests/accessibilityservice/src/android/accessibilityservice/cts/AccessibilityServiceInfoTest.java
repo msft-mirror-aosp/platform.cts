@@ -30,7 +30,6 @@ import android.accessibilityservice.AccessibilityServiceInfo;
 import android.os.Parcel;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.accessibility.AccessibilityEvent;
@@ -39,7 +38,6 @@ import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.server.accessibility.Flags;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
 import org.junit.Rule;
@@ -211,7 +209,6 @@ public class AccessibilityServiceInfoTest extends StsExtraBusinessLogicTestCase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_RESETTABLE_DYNAMIC_PROPERTIES)
     public void testDynamicallyConfigurableProperties_doNotPersist() {
         try {
             final int flag = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;
