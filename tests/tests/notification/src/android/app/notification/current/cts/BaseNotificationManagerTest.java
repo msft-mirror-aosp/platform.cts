@@ -134,7 +134,7 @@ public abstract class BaseNotificationManagerTest {
         mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, true);
-        mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL);
+        runAsSystemUi(() -> mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL));
         toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, false);
 
         // Ensure that the tests are exempt from global service-related rate limits

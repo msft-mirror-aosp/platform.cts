@@ -49,6 +49,8 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ModuleSpecificTest;
+
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
@@ -71,6 +73,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @RequiresDevice
 @AppModeFull(reason = "Instant apps cannot access the SD card")
+@ModuleSpecificTest
 @SdkSuppress(minSdkVersion = 31, codeName = "S")
 @RunWith(AndroidJUnit4.class)
 public class MediaTranscodingManagerTest {

@@ -85,7 +85,11 @@ public class MethodAnalyzer extends MethodVisitor {
             if (!(obj instanceof Handle handle)) {
                 continue;
             }
-            handleMethodCall(handle.getOwner(), handle.getName(), handle.getDesc());
+            try {
+                handleMethodCall(handle.getOwner(), handle.getName(), handle.getDesc());
+            } catch (RuntimeException e) {
+                // TODO(slotus): handle the exception
+            }
         }
     }
 

@@ -21,6 +21,7 @@ package {
 
 android_test {
     name: "CtsRotationResolverServiceDeviceTestCases",
+    team: "trendy_team_location_time",
     defaults: ["cts_defaults"],
     dex_preopt: {
         enabled: false,
