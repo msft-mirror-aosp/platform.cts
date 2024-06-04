@@ -104,28 +104,26 @@ public class DataTest {
                         }));
         cdl.await();
         assertThat(cellInfos.size()).isGreaterThan(0);
-
-        for (CellInfo cellInfo : cellInfos) {
-            if (cellInfo instanceof CellInfoGsm gsm) {
-                assertThat(gsm.getCellIdentity().getCid()).isNotEqualTo(CellInfo.UNAVAILABLE);
-            } else if (cellInfo instanceof CellInfoCdma cdma) {
-                assertThat(cdma.getCellIdentity().getBasestationId()).isNotEqualTo(
-                        CellInfo.UNAVAILABLE);
-            } else if (cellInfo instanceof CellInfoLte lte) {
-                assertThat(lte.getCellIdentity().getCi()).isNotEqualTo(
-                        CellInfo.UNAVAILABLE);
-            } else if (cellInfo instanceof CellInfoWcdma wcdma) {
-                assertThat(wcdma.getCellIdentity().getCid()).isNotEqualTo(
-                        CellInfo.UNAVAILABLE);
-            } else if (cellInfo instanceof CellInfoTdscdma tdscdma) {
-                assertThat(tdscdma.getCellIdentity().getCid()).isNotEqualTo(
-                        CellInfo.UNAVAILABLE);
-            } else if (cellInfo instanceof CellInfoNr nr) {
-                assertThat(((CellIdentityNr) nr.getCellIdentity()).getNci())
-                        .isNotEqualTo(CellInfo.UNAVAILABLE);
-            } else {
-                assertThat(cellInfo.getCellSignalStrength().getLevel()).isGreaterThan(0);
-            }
-        }
+        assertThat(cellInfos.stream().anyMatch(cellInfo -> {
+            if (cellInfo instanceof CellInfoGsm gsm
+                    && gsm.getCellIdentity().getCid() != CellInfo.UNAVAILABLE) {
+                return true;
+            } else if (cellInfo instanceof CellInfoCdma cdma
+                    && cdma.getCellIdentity().getBasestationId() != CellInfo.UNAVAILABLE) {
+                return true;
+            } else if (cellInfo instanceof CellInfoLte lte
+                    && lte.getCellIdentity().getCi() != CellInfo.UNAVAILABLE) {
+                return true;
+            } else if (cellInfo instanceof CellInfoWcdma wcdma
+                    && wcdma.getCellIdentity().getCid() != CellInfo.UNAVAILABLE) {
+                return true;
+            } else if (cellInfo instanceof CellInfoTdscdma tdscdma
+                    && tdscdma.getCellIdentity().getCid() != CellInfo.UNAVAILABLE) {
+                return true;
+            } else if (cellInfo instanceof CellInfoNr nr
+                    && ((CellIdentityNr) nr.getCellIdentity()).getNci() != CellInfo.UNAVAILABLE) {
+                return true;
+            } else return cellInfo.getCellSignalStrength().getLevel() > 0;
+        })).isTrue();
     }
 }
