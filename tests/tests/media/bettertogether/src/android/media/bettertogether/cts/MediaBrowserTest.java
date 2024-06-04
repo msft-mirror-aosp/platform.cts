@@ -29,6 +29,7 @@ import android.os.Bundle;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.PollingCheck;
 
@@ -47,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Test {@link android.media.browse.MediaBrowser}.
  */
+@FrameworkSpecificTest
 @NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 public class MediaBrowserTest {

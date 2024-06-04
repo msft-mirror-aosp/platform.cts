@@ -194,9 +194,16 @@ public class HDRDecoderTest extends MediaTestBase {
             String[] decoderNames = MediaUtils.getDecoderNames(format);
 
             for (String decoder : decoderNames) {
-                if (TestUtils.isMtsMode() && !TestUtils.isMainlineCodec(decoder)) {
-                    Log.i(TAG, "operating as MTS; skipping non-mainline codec " + decoder);
-                    continue;
+                if (TestUtils.isMainlineCodec(decoder)) {
+                    if (!TestUtils.isTestingModules()) {
+                        Log.i(TAG, "not testing modules, skip module codec " + decoder);
+                        continue;
+                    }
+                } else {
+                    if (TestUtils.isTestingModules()) {
+                        Log.i(TAG, "testing modules, skip non-module codec " + decoder);
+                        continue;
+                    }
                 }
                 Object[] testArgs = new Object[argLength + 2];
                 testArgs[0] = decoder;

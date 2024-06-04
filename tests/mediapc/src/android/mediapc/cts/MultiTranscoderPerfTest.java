@@ -51,7 +51,7 @@ import java.util.concurrent.Future;
 
 /**
  * The following test class validates the maximum number of concurrent Transcode sessions that
- * it can support by the (mime, decoder - mime, encoder) pair calculated via the
+ * it can support by the (mediaType, decoder - mediaType, encoder) pair calculated via the
  * CodecCapabilities.getMaxSupportedInstances() and
  * VideoCapabilities.getSupportedPerformancePoints() methods. If maximum instances is odd, create
  * one additional decoder which decodes to surface and render. Also ensures that all the supported
@@ -78,34 +78,34 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
     @Rule
     public final TestName mTestName = new TestName();
 
-    // Parameters {0}_{1}_{2} -- Pair(Mime DecoderName)_Pair(Mime EncoderName)_isAsync
+    // Parameters {0}_{1}_{2} -- Pair(MediaType DecoderName)_Pair(MediaType EncoderName)_isAsync
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
     public static Collection<Object[]> inputParams() {
         // Prepares the params list with the supported Hardware decoders/encoders in the device
         final List<Object[]> argsList = new ArrayList<>();
-        ArrayList<Pair<String, String>> mimeTypeDecoderPairs = new ArrayList<>();
-        ArrayList<Pair<String, String>> mimeTypeEncoderPairs = new ArrayList<>();
-        for (String mime : mMimeList) {
-            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+        ArrayList<Pair<String, String>> mediaTypeTypeDecoderPairs = new ArrayList<>();
+        ArrayList<Pair<String, String>> mediaTypeTypeEncoderPairs = new ArrayList<>();
+        for (String mediaType : mMediaTypeList) {
+            if (mediaTypePrefix != null && !mediaType.startsWith(mediaTypePrefix)) {
                 continue;
             }
-            ArrayList<String> listOfDecoders = getHardwareCodecsForMime(mime, false);
+            ArrayList<String> listOfDecoders = getHardwareCodecsForMediaTypes(mediaType, false);
             for (String decoder : listOfDecoders) {
-                mimeTypeDecoderPairs.add(Pair.create(mime, decoder));
+                mediaTypeTypeDecoderPairs.add(Pair.create(mediaType, decoder));
             }
-            ArrayList<String> listOfEncoders = getHardwareCodecsForMime(mime, true);
+            ArrayList<String> listOfEncoders = getHardwareCodecsForMediaTypes(mediaType, true);
             for (String encoder : listOfEncoders) {
                 if ((codecPrefix != null && !encoder.startsWith(codecPrefix))
                         || (codecFilter != null && !codecFilter.matcher(encoder).matches())) {
                     continue;
                 }
-                mimeTypeEncoderPairs.add(Pair.create(mime, encoder));
+                mediaTypeTypeEncoderPairs.add(Pair.create(mediaType, encoder));
             }
         }
-        for (Pair<String, String> mimeTypeDecoderPair : mimeTypeDecoderPairs) {
-            for (Pair<String, String> mimeTypeEncoderPair : mimeTypeEncoderPairs) {
+        for (Pair<String, String> mediaTypeDecoderPair : mediaTypeTypeDecoderPairs) {
+            for (Pair<String, String> mediaTypeEncoderPair : mediaTypeTypeEncoderPairs) {
                 for (boolean isAsync : boolStates) {
-                    argsList.add(new Object[]{mimeTypeDecoderPair, mimeTypeEncoderPair, isAsync});
+                    argsList.add(new Object[]{mediaTypeDecoderPair, mediaTypeEncoderPair, isAsync});
                 }
             }
         }
@@ -114,10 +114,10 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test calculates the validates number of concurrent 720p Transcode sessions that
-     * it can support by the (mime, decoder - mime, encoder) pairs. Creates maxInstances / 2
-     * Transcode sessions. If maximum instances is odd, creates one additional decoder which decodes
-     * to surface and render. And ensures that all the supported sessions succeed in
-     * transcoding/decoding with meeting the expected frame rate.
+     * it can support by the (mediaType, decoder - mediaType, encoder) pairs. Creates
+     * maxInstances / 2 Transcode sessions. If maximum instances is odd, creates one additional
+     * decoder which decodes to surface and render. And ensures that all the supported sessions
+     * succeed in transcoding/decoding with meeting the expected frame rate.
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
@@ -133,10 +133,10 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test calculates the validates number of concurrent 1080p Transcode sessions that
-     * it can support by the (mime, decoder - mime, encoder) pairs. Creates maxInstances / 2
-     * Transcode sessions. If maximum instances is odd, creates one additional decoder which decodes
-     * to surface and render. And ensures that all the supported sessions succeed in
-     * transcoding/decoding with meeting the expected frame rate.
+     * it can support by the (mediaType, decoder - mediaType, encoder) pairs. Creates
+     * maxInstances / 2 Transcode sessions. If maximum instances is odd, creates one additional
+     * decoder which decodes to surface and render. And ensures that all the supported sessions
+     * succeed in transcoding/decoding with meeting the expected frame rate.
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
@@ -148,10 +148,10 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test calculates the validates number of concurrent 4k Transcode sessions that
-     * it can support by the (mime, decoder - mime, encoder) pairs. Creates maxInstances / 2
-     * Transcode sessions. If maximum instances is odd, creates one additional decoder which decodes
-     * to surface and render. And ensures that all the supported sessions succeed in
-     * transcoding/decoding with meeting the expected frame rate.
+     * it can support by the (mediaType, decoder - mediaType, encoder) pairs. Creates
+     * maxInstances / 2 Transcode sessions. If maximum instances is odd, creates one additional
+     * decoder which decodes to surface and render. And ensures that all the supported sessions
+     * succeed in transcoding/decoding with meeting the expected frame rate.
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
@@ -163,10 +163,10 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test calculates the validates number of concurrent 4k HBD Transcode sessions that
-     * it can support by the (mime, decoder - mime, encoder) pairs. Creates maxInstances / 2
-     * Transcode sessions. If maximum instances is odd, creates one additional decoder which decodes
-     * to surface and render. And ensures that all the supported sessions succeed in
-     * transcoding/decoding with meeting the expected frame rate.
+     * it can support by the (mediaType, decoder - mediaType, encoder) pairs. Creates
+     * maxInstances / 2 Transcode sessions. If maximum instances is odd, creates one additional
+     * decoder which decodes to surface and render. And ensures that all the supported sessions
+     * succeed in transcoding/decoding with meeting the expected frame rate.
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
@@ -182,12 +182,12 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
     private void testCodec(Map<String, String> testFiles, int height, int width,
             int requiredMinInstances, boolean useHighBitDepth) throws Exception {
         mTestFiles = testFiles;
-        ArrayList<Pair<String, String>> mimeCodecPairs = new ArrayList<>();
-        mimeCodecPairs.add(mDecoderPair);
-        mimeCodecPairs.add(mEncoderPair);
+        ArrayList<Pair<String, String>> mediaTypeCodecPairs = new ArrayList<>();
+        mediaTypeCodecPairs.add(mDecoderPair);
+        mediaTypeCodecPairs.add(mEncoderPair);
         int maxInstances =
-                checkAndGetMaxSupportedInstancesForCodecCombinations(height, width, mimeCodecPairs,
-                        false, requiredMinInstances);
+                checkAndGetMaxSupportedInstancesForCodecCombinations(height, width,
+                        mediaTypeCodecPairs, false, requiredMinInstances);
         double achievedFrameRate = 0.0;
         double frameDropsPerSec = 0.0;
         if (false) {
