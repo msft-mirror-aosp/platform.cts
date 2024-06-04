@@ -206,7 +206,7 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
         logging.debug('target_preview_size: %s', target_preview_size)
 
         logging.debug('capture frame using camera2')
-        file_stem = f'{test_name}_camera2'
+        file_stem = f'{test_name}_{self.camera_id}_camera2'
         _capture_and_analyze(cam, file_stem, self.camera_id,
                              target_preview_size, _EXTENSION_NONE,
                              should_mirror)
@@ -219,7 +219,7 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
         logging.debug('target_preview_size: %s', target_preview_size)
 
         logging.debug('capture frame using night mode extension')
-        file_stem = f'{test_name}_camera_extension'
+        file_stem = f'{test_name}_{self.camera_id}_camera_extension'
         _capture_and_analyze(cam, file_stem, self.camera_id,
                              target_preview_size, _EXTENSION_NIGHT,
                              should_mirror)

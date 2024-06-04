@@ -182,7 +182,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       # Set tablet brightness to darken scene
       self.set_screen_brightness(_TABLET_BRIGHTNESS)
 
-      file_stem = f'{test_name}_{accepted_format}_{width}x{height}'
+      file_stem = f'{test_name}_{self.camera_id}_{accepted_format}_{width}x{height}'
       out_surfaces = {
           'format': accepted_format, 'width': width, 'height': height}
       req = capture_request_utils.auto_capture_request()
