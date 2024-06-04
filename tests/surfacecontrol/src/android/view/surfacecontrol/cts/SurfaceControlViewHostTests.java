@@ -482,6 +482,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                     leftMargin, topMargin);
             mInstrumentation.waitForIdleSync();
             waitUntilEmbeddedViewDrawn();
+            waitForStableWindowGeometry(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
 
             final int[] surfaceLocation = new int[2];
             mSurfaceView.getLocationOnScreen(surfaceLocation);
