@@ -162,7 +162,7 @@ public class PackageInstallerCujTestBase {
 
     @Before
     public void setup() throws Exception {
-        assumeFalse(isNotSupportedDevice());
+        assumeFalse("The device is not supported", isNotSupportedDevice());
 
         uninstallTestPackage();
         assertTestPackageNotInstalled();
@@ -680,6 +680,10 @@ public class PackageInstallerCujTestBase {
     }
 
     private static boolean isNotSupportedDevice() {
-        return FeatureUtil.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        return FeatureUtil.isArc()
+                || FeatureUtil.isAutomotive()
+                || FeatureUtil.isTV()
+                || FeatureUtil.isWatch()
+                || FeatureUtil.isVrHeadset();
     }
 }
