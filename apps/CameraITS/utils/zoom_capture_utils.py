@@ -33,6 +33,7 @@ _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _CONTOUR_AREA_LOGGING_THRESH = 0.8  # logging tol to cut down spam in log file
 _CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 _CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
+_DEFAULT_FOV_RATIO = 1  #ratio of sub camera's fov over logical camera's fov
 _MIN_AREA_RATIO = 0.00013  # Found empirically with partners
 _MIN_CIRCLE_PTS = 25
 _MIN_FOCUS_DIST_TOL = 0.80  # allow charts a little closer than min
@@ -116,7 +117,8 @@ def find_center_circle(
     img, img_name, size, zoom_ratio, min_zoom_ratio,
     expected_color=_CIRCLE_COLOR, circle_ar_rtol=_CIRCLE_AR_RTOL,
     circlish_rtol=_CIRCLISH_RTOL, min_circle_pts=_MIN_CIRCLE_PTS,
-    debug=False, draw_color=_CV2_RED, write_img=True):
+    fov_ratio=_DEFAULT_FOV_RATIO, debug=False, draw_color=_CV2_RED,
+    write_img=True):
   """Find circle closest to image center for scene with multiple circles.
 
   Finds all contours in the image. Rejects those too small and not enough
@@ -139,22 +141,24 @@ def find_center_circle(
     circle_ar_rtol: float aspect ratio relative tolerance
     circlish_rtol: float contour area vs ideal circle area pi*((w+h)/4)**2
     min_circle_pts: int minimum number of points to define a circle
+    fov_ratio: ratio of sub camera over logical camera's field of view
     debug: bool to save extra data
     draw_color: cv2 color in RGB to draw circle and circle center on the image
     write_img: bool: True - save image with circle and center
                      False - don't save image.
-
 
   Returns:
     circle: [center_x, center_y, radius]
   """
 
   width, height = size
-  min_area = _MIN_AREA_RATIO * width * height * zoom_ratio * zoom_ratio
+  min_area = (
+      _MIN_AREA_RATIO * width * height * zoom_ratio * zoom_ratio * fov_ratio)
 
   # create a copy of image to avoid modification on the original image since
   # image_processing_utils.convert_image_to_uint8 uses mutable np array methods
-  img = numpy.ndarray.copy(img)
+  if debug == True:
+    img = numpy.ndarray.copy(img)
 
   # convert [0, 1] image to [0, 255] and cast as uint8
   if img.dtype != numpy.uint8:
@@ -169,9 +173,10 @@ def find_center_circle(
   contours = opencv_processing_utils.find_all_contours(255-img_bw)
 
   # write copy of image for debug purposes
-  img_copy_name = img_name.split('.')[0] + '_copy.jpg'
-  image_processing_utils.write_image(numpy.expand_dims(
-      (255-img_bw).astype(numpy.float)/255.0, axis=2), img_copy_name)
+  if debug == True:
+    img_copy_name = img_name.split('.')[0] + '_copy.jpg'
+    image_processing_utils.write_image(numpy.expand_dims(
+        (255-img_bw).astype(numpy.float)/255.0, axis=2), img_copy_name)
 
   # check contours and find the best circle candidates
   circles = []
