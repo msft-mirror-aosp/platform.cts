@@ -44,7 +44,7 @@ import java.util.Map;
 
 /**
  * The following test class calculates the maximum number of concurrent decode sessions that it can
- * support by the two hardware (mime - decoder) pair calculated via the
+ * support by the two hardware (mediaType - decoder) pair calculated via the
  * CodecCapabilities.getMaxSupportedInstances() and
  * VideoCapabilities.getSupportedPerformancePoints() methods. Splits the maximum supported instances
  * between the two pairs and ensures that all the supported sessions succeed in decoding
@@ -68,30 +68,31 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
     @Rule
     public final TestName mTestName = new TestName();
 
-    // Returns the list of params with two hardware (mime - decoder) pairs in both
+    // Returns the list of params with two hardware (mediaType - decoder) pairs in both
     // sync and async modes.
-    // Parameters {0}_{1}_{2} -- Pair(Mime DecoderName)_Pair(Mime DecoderName)_isAsync
+    // Parameters {0}_{1}_{2} -- Pair(MediaType DecoderName)_Pair(MediaType DecoderName)_isAsync
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
     public static Collection<Object[]> inputParams() {
         final List<Object[]> argsList = new ArrayList<>();
-        ArrayList<Pair<String, String>> mimeTypeDecoderPairs = new ArrayList<>();
-        for (String mime : mMimeList) {
-            if (mediaTypePrefix != null && !mime.startsWith(mediaTypePrefix)) {
+        ArrayList<Pair<String, String>> mediaTypeDecoderPairs = new ArrayList<>();
+        for (String mediaType : mMediaTypeList) {
+            if (mediaTypePrefix != null && !mediaType.startsWith(mediaTypePrefix)) {
                 continue;
             }
-            ArrayList<String> listOfDecoders = getHardwareCodecsForMime(mime, false, true);
+            ArrayList<String> listOfDecoders =
+                    getHardwareCodecsForMediaTypes(mediaType, false, true);
             for (String decoder : listOfDecoders) {
                 if ((codecPrefix != null && !decoder.startsWith(codecPrefix))
                         || (codecFilter != null && !codecFilter.matcher(decoder).matches())) {
                     continue;
                 }
-                mimeTypeDecoderPairs.add(Pair.create(mime, decoder));
+                mediaTypeDecoderPairs.add(Pair.create(mediaType, decoder));
             }
         }
-        for (int i = 0; i < mimeTypeDecoderPairs.size(); i++) {
-            for (int j = i + 1; j < mimeTypeDecoderPairs.size(); j++) {
-                Pair<String, String> pair1 = mimeTypeDecoderPairs.get(i);
-                Pair<String, String> pair2 = mimeTypeDecoderPairs.get(j);
+        for (int i = 0; i < mediaTypeDecoderPairs.size(); i++) {
+            for (int j = i + 1; j < mediaTypeDecoderPairs.size(); j++) {
+                Pair<String, String> pair1 = mediaTypeDecoderPairs.get(i);
+                Pair<String, String> pair2 = mediaTypeDecoderPairs.get(j);
                 for (boolean isAsync : boolStates) {
                     argsList.add(new Object[]{pair1, pair2, isAsync});
                 }
@@ -102,8 +103,8 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test calculates the number of 720p 30 fps decoder instances that the given two
-     * (mime - decoder) pairs can support. Assigns the same number of instances to the two pairs
-     * (if max instances are even), or one more to one pair (if odd) and ensures that all the
+     * (mediaType - decoder) pairs can support. Assigns the same number of instances to the two
+     * pairs (if max instances are even), or one more to one pair (if odd) and ensures that all the
      * concurrent sessions succeed in decoding with meeting the expected frame rate.
      */
     @LargeTest
@@ -123,8 +124,8 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test calculates the number of 1080p 30 fps decoder instances that the given two
-     * (mime - decoder) pairs can support. Assigns the same number of instances to the two pairs
-     * (if max instances are even), or one more to one pair (if odd) and ensures that all the
+     * (mediaType - decoder) pairs can support. Assigns the same number of instances to the two
+     * pairs (if max instances are even), or one more to one pair (if odd) and ensures that all the
      * concurrent sessions succeed in decoding with meeting the expected frame rate.
      */
     @LargeTest
@@ -154,8 +155,8 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test calculates the number of 4k 30 fps SDR decoder instances that the given two
-     * (mime - decoder) pairs can support. Assigns the same number of instances to the two pairs
-     * (if max instances are even), or one more to one pair (if odd) and ensures that all the
+     * (mediaType - decoder) pairs can support. Assigns the same number of instances to the two
+     * pairs (if max instances are even), or one more to one pair (if odd) and ensures that all the
      * concurrent sessions succeed in decoding with meeting the expected frame rate.
      */
     @LargeTest
@@ -185,8 +186,8 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test calculates the number of 4k 30 fps HDR decoder instances that the given two
-     * (mime - decoder) pairs can support. Assigns the same number of instances to the two pairs
-     * (if max instances are even), or one more to one pair (if odd) and ensures that all the
+     * (mediaType - decoder) pairs can support. Assigns the same number of instances to the two
+     * pairs (if max instances are even), or one more to one pair (if odd) and ensures that all the
      * concurrent sessions succeed in decoding with meeting the expected frame rate.
      */
     @LargeTest
@@ -217,16 +218,16 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
     private void testCodec(Map<String, String> testFiles, Map<String, String> widevineTestFiles,
             int height, int width, int requiredMinInstances) throws Exception {
         mTestFiles = testFiles;
-        ArrayList<Pair<String, String>> mimeDecoderPairs = new ArrayList<>();
-        mimeDecoderPairs.add(mFirstPair);
-        mimeDecoderPairs.add(mSecondPair);
+        ArrayList<Pair<String, String>> mediaTypeDecoderPairs = new ArrayList<>();
+        mediaTypeDecoderPairs.add(mFirstPair);
+        mediaTypeDecoderPairs.add(mSecondPair);
         boolean isFirstSecure = isSecureSupportedCodec(mFirstPair.second, mFirstPair.first);
         boolean isSecondSecure = isSecureSupportedCodec(mSecondPair.second, mSecondPair.first);
         boolean secureWithUnsecure = isFirstSecure ^ isSecondSecure;
         boolean bothSecure = isFirstSecure & isSecondSecure;
         boolean noneSecure = !(isFirstSecure || isSecondSecure);
         int maxInstances = checkAndGetMaxSupportedInstancesForCodecCombinations(height, width,
-                mimeDecoderPairs, false, requiredMinInstances);
+                mediaTypeDecoderPairs, false, requiredMinInstances);
         double achievedFrameRate = 0.0;
         double frameDropsPerSec = 0.0;
         boolean meetsPreconditions = (isFirstSecure || isSecondSecure) ?
@@ -262,8 +263,8 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
                 boolean isSecure = isFirstSecure;
                 String testFile = isSecure ? widevineTestFiles.get(mFirstPair.first) :
                         mTestFiles.get(mFirstPair.first);
-                Assume.assumeTrue("Add " + (isSecure ? "secure" : "") + " test vector for mime: " +
-                        mFirstPair.first, testFile != null);
+                Assume.assumeTrue("Add " + (isSecure ? "secure" : "") + " test vector for"
+                        + "mediaType: " + mFirstPair.first, testFile != null);
                 testList.add(new Decode(mFirstPair.first, testFile, mFirstPair.second, mIsAsync,
                         isSecure));
             }
@@ -272,8 +273,8 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
                 String testFile = isSecure ? widevineTestFiles.get(mSecondPair.first) :
                         mTestFiles.get(mSecondPair.first);
                 if (height > 1080 && noneSecure) testFile = m1080pTestFiles.get(mSecondPair.first);
-                Assume.assumeTrue("Add " + (isSecure ? "secure" : "") + " test vector for mime: " +
-                        mSecondPair.first, testFile != null);
+                Assume.assumeTrue("Add " + (isSecure ? "secure" : "") + " test vector for"
+                        + "mediaType: " + mSecondPair.first, testFile != null);
                 testList.add(new Decode(mSecondPair.first, testFile, mSecondPair.second,
                         mIsAsync, isSecure));
             }

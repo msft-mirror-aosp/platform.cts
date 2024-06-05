@@ -17,6 +17,7 @@ package com.android.bedstead.harrier
 
 import com.android.bedstead.nene.utils.FailureDumper
 import kotlin.reflect.KClass
+import kotlin.reflect.KProperty
 
 /**
  * Registrar of dependencies for use by Bedstead modules.
@@ -31,6 +32,7 @@ class BedsteadServiceLocator : DeviceStateComponent {
 
     /**
      * Obtains the instance of the given [clazz]
+     * if you have circular dependencies use [getValue], or lazy delegate
      */
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> get(clazz: KClass<T>): T {
@@ -48,6 +50,14 @@ class BedsteadServiceLocator : DeviceStateComponent {
      * See [BedsteadServiceLocator.get]
      */
     inline fun <reified T : Any> get(): T = get(T::class)
+
+    /**
+     * Obtains the instance of the given type when needed by delegated properties
+     * example: val instance: Type by locator
+     */
+    inline operator fun <reified T : Any> getValue(thisRef: Any, property: KProperty<*>): T {
+        return get<T>()
+    }
 
     /**
      * See [BedsteadServiceLocator.get]
@@ -132,6 +142,12 @@ class BedsteadServiceLocator : DeviceStateComponent {
     override fun prepareTestState() {
         getAllDependenciesOfType<DeviceStateComponent>().forEach {
             it.prepareTestState()
+        }
+    }
+
+    override fun releaseResources() {
+        getAllDependenciesOfType<DeviceStateComponent>().forEach {
+            it.releaseResources()
         }
     }
 

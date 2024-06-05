@@ -20,7 +20,6 @@ import static org.junit.Assert.assertEquals;
 
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.flags.Flags;
-import android.content.Context;
 import android.graphics.PointF;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -44,11 +43,10 @@ import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.WindowManager;
+import android.view.Surface;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.cts.input.DefaultPointerSpeedRule;
@@ -80,10 +78,16 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
 
     @Override
     void onSetUp() {
-        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        WindowManager windowManager = context.getSystemService(WindowManager.class);
-        mDisplayWidth = windowManager.getCurrentWindowMetrics().getBounds().width();
-        mDisplayHeight = windowManager.getCurrentWindowMetrics().getBounds().height();
+        // We expect the VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR flag to mirror the entirety of the current
+        // display. Use the same size for the virtual display to avoid scaling the mirrored content.
+        mDisplayWidth = mTestActivity.getDisplay().getMode().getPhysicalWidth();
+        mDisplayHeight = mTestActivity.getDisplay().getMode().getPhysicalHeight();
+        int rotation = mTestActivity.getDisplay().getRotation();
+        if (rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) {
+            int tmp = mDisplayWidth;
+            mDisplayWidth = mDisplayHeight;
+            mDisplayHeight = tmp;
+        }
         mVirtualDevice = mRule.createManagedVirtualDevice();
         mVirtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice,
                 VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder(
@@ -207,9 +211,9 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
         final float inputSize = 1f;
         // Convert the input axis size to its equivalent fraction of the total screen.
         final float computedSize = inputSize / (mDisplayWidth - 1f);
-        final float x = mDisplayWidth / 2f;
-        final float y = mDisplayHeight / 2f;
-
+        // TODO(b/343960635): Use test activity to calculate the center position.
+        final int x = mDisplayWidth / 2;
+        final int y = mDisplayHeight / 2;
         // The number of move events that are sent between the down and up event.
         final int moveEventCount = 5;
         List<InputEvent> expectedEvents = new ArrayList<>(moveEventCount + 2);
@@ -353,12 +357,22 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                 .build());
         // Convert the input axis size to its equivalent fraction of the total touchpad size.
         final float computedSize = inputSize / (touchPadWidth - 1f);
+
+        // Get the absolute location of the test activity, so we can ensure that x and  y
+        // positions from the events below are valid on any surface, including the portrait ones
+        // (like car portrait).
+        // TODO(b/343963635): Update this test to not send events based on the screen location.
+        final int[] locationOnScreen = new int[2];  // position 0 corresponds to X, and 1 to y
+        mDecorView.getLocationOnScreen(locationOnScreen);
+
         verifyEvents(Arrays.asList(
                 VirtualInputEventCreator.createNavigationTouchpadMotionEvent(
-                        MotionEvent.ACTION_DOWN, x, y, computedSize /* size */,
+                        MotionEvent.ACTION_DOWN, x + locationOnScreen[0], y + locationOnScreen[1],
+                        computedSize /* size */,
                         inputSize /* axisSize */),
                 VirtualInputEventCreator.createNavigationTouchpadMotionEvent(
-                        MotionEvent.ACTION_UP, x, y, computedSize /* size */,
+                        MotionEvent.ACTION_UP, x + locationOnScreen[0], y + locationOnScreen[1],
+                        computedSize /* size */,
                         inputSize /* axisSize */)));
     }
 
