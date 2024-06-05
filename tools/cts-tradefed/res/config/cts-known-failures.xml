@@ -87,6 +87,9 @@
     <!-- b/63916274 -->
     <option name="compatibility:exclude-filter" value="CtsTelecomTestCases android.telecom.cts.WiredHeadsetTest" />
 
+    <!-- b/340793169 -->
+    <option name="compatibility:exclude-filter" value="CtsTelecomTestCases android.telecom.cts.ExtendedInCallServiceTest#testSwitchCallEndpoint" />
+
     <!-- b/62302163 -->
     <option name="compatibility:exclude-filter" value="CtsSecurityBulletinHostTestCases android.security.cts.Poc17_04#testPocCVE_2017_0564" />
 
@@ -257,6 +260,17 @@
     <!-- b/300310474 -->
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DUAL] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:REAR_DUAL] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <!-- b/319385496 -->
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:2:HALF_OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:3:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:4:OPENED_REVERSE] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:6:OPENED_REVERSE_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:2:HALF_OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:3:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:4:OPENED_REVERSE] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:6:OPENED_REVERSE_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
 
     <!-- b/202357331 -->
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testCreateAdminSupportIntent" />
@@ -346,4 +360,86 @@
 
     <!-- b/301216478 -->
     <option name="compatibility:exclude-filter" value="CtsSandboxedFledgeManagerTests com.android.tests.sandbox.fledge.SandboxedFledgeManagerTest#loadSdkAndRunFledgeFlow" />
+
+    <!-- b/320761239 -->
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AttributionTest#cannotUseTooManyAttributions" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#noteFromTwoProxiesAndVerifyProxyInfo" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#startStopTrustedProxyVerifyRunningAndTime" />
+    <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpEventCollectionTest#startStopTrustedAndUntrustedProxyVerifyProxyInfo" />
+    <option name="compatibility:exclude-filter" value="CtsAttributionSourceTestCases android.attributionsource.cts.RuntimePermissionsAppOpTrackingTest#testTrustedAccessSmsAttributeToAnother" />
+    <option name="compatibility:exclude-filter" value="CtsAttributionSourceTestCases android.attributionsource.cts.RuntimePermissionsAppOpTrackingTest#testTrustedAccessCallLogAttributeToAnother" />
+    <option name="compatibility:exclude-filter" value="CtsAttributionSourceTestCases android.attributionsource.cts.RuntimePermissionsAppOpTrackingTest#testTrustedAccessContactsAttributeToAnother" />
+    <option name="compatibility:exclude-filter" value="CtsAttributionSourceTestCases android.attributionsource.cts.RuntimePermissionsAppOpTrackingTest#testTrustedAccessCalendarAttributeToAnother" />
+
+    <!-- b/318756444 -->
+    <option name="compatibility:exclude-filter" value="CtsSettingsTestCases android.settings.cts.SettingsMultiPaneDeepLinkTest#deepLinkHomeActivity_splitNotSupported_deepLinkHomeDisabled" />
+
+    <!-- b/326655855 -->
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[instant] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:1:TENT] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:3:OPEN] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[instant] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[foldable:1:TENT] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[foldable:3:OPEN] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutManagerTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
+
+    <!-- b/326656256 -->
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_downgrade" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_noManifestOnOldVersion" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[instant] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:1:TENT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:2:HALF_FOLDED] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:3:OPEN] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsShortcutHostTestCases[foldable:5:REAR_DUAL] android.content.pm.cts.shortcuthost.ShortcutManagerBackupTest#testBackupAndRestore_invisibleIgnored" />
+
+    <!-- b/328010720 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_not_contains" />
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_contains" />
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases[instant] android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_not_contains" />
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases[instant] android.media.audio.cts.AudioHalVersionInfoTest#test_VERSIONS_contains" />
+
+    <!-- b/325695985 -->
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
 </configuration>

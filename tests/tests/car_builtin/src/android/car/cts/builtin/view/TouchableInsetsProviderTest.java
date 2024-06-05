@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Instrumentation;
 import android.car.builtin.input.InputManagerHelper;
 import android.car.builtin.view.TouchableInsetsProvider;
 import android.car.test.AbstractExpectableTestCase;
@@ -37,9 +38,10 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -115,14 +117,16 @@ public final class TouchableInsetsProviderTest extends AbstractExpectableTestCas
         }
     }
 
+    private Instrumentation mInstrumentation;
     private InputManager mInputManager;
     private TestActivity mActivity;
 
     @Before
-    public void setup() {
-        mInputManager = InstrumentationRegistry.getInstrumentation().getTargetContext()
-                .getSystemService(InputManager.class);
+    public void setup() throws Exception {
+        mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mInputManager = mInstrumentation.getTargetContext().getSystemService(InputManager.class);
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
+        UiDevice.getInstance(mInstrumentation).waitForIdle();
     }
 
     @Test

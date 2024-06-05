@@ -28,6 +28,7 @@ import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.findWin
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.getActivityTitle;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.RunOnMainUtils.getOnMain;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED;
@@ -44,6 +45,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -126,6 +128,7 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -504,11 +507,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                     " - Watches have different notification system.");
             return;
         }
-        if (pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
-            Log.i(LOG_TAG, "Skipping: testTypeNotificationStateChangedAccessibilityEvent" +
-                    " - Automotive handle notifications differently.");
-            return;
-        }
+        assumeFalse("Skipping - Automotive handle notifications differently.",
+                isAutomotive(sInstrumentation.getTargetContext()));
 
         String message = mActivity.getString(R.string.notification_message);
 
@@ -1597,6 +1597,12 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {
             "android.view.accessibility.AccessibilityNodeInfo#setQueryFromAppProcessEnabled"})
     public void testDirectAccessibilityConnection_UsesCurrentWindowSpec() throws Throwable {
+        if (isAutomotive(sInstrumentation.getTargetContext())) {
+            Log.i(LOG_TAG, "Skipping: testDirectAccessibilityConnection_UsesCurrentWindowSpec"
+                    + " - Automotive does not support magnification.");
+            return;
+        }
+
         // Store the initial bounds of the ANI.
         final View layoutView = mActivity.findViewById(R.id.buttonLayout);
         final AccessibilityNodeInfo layoutNode = layoutView.createAccessibilityNodeInfo();
@@ -1660,6 +1666,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @AsbSecurityTest(cveBugId = {243378132})
     @Test
     public void testUninstallPackage_DisablesMultipleServices() throws Exception {
+        AccessibilityManager manager = mActivity.getSystemService(AccessibilityManager.class);
         final String apkPath =
                 "/data/local/tmp/cts/content/CtsAccessibilityMultipleServicesApp.apk";
         final String packageName = "foo.bar.multipleservices";
@@ -1674,15 +1681,21 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             // Install the apk in this test method, instead of as part of the target preparer, to
             // allow repeated --iterations of the test.
             assertThat(ShellUtils.runShellCommand("pm install " + apkPath)).startsWith("Success");
+            TestUtils.waitUntil(
+                    "Failed to install services from " + apkPath,
+                    (int) TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            manager.getInstalledAccessibilityServiceList().stream()
+                                            .filter(info -> info.getId().startsWith(packageName))
+                                            .count()
+                                    == 2);
 
             // Enable the two services and wait until AccessibilityManager reports them as enabled.
-            final String servicesToEnable = getEnabledServicesSetting() + componentNameSeparator
-                    + service1.flattenToShortString() + componentNameSeparator
-                    + service2.flattenToShortString();
+            final String servicesToEnable = service1.flattenToShortString()
+                    + componentNameSeparator + service2.flattenToShortString();
             ShellCommandBuilder.create(sInstrumentation)
                     .putSecureSetting(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
                             servicesToEnable)
-                    .putSecureSetting(Settings.Secure.ACCESSIBILITY_ENABLED, "1")
                     .run();
             TestUtils.waitUntil("Failed to enable 2 services from package " + packageName,
                     (int) TIMEOUT_SERVICE_ENABLE / 1000,
@@ -1825,6 +1838,96 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             assertThat(foundEvent.get()).isFalse();
         } finally {
             touchExplorationService.disableSelfAndRemove();
+        }
+    }
+
+    @AsbSecurityTest(cveBugId = 326485767)
+    @Test
+    public void testUpdateServiceWithoutIntent_disablesService() throws Exception {
+        AccessibilityManager manager = mActivity.getSystemService(AccessibilityManager.class);
+        final String v1ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV1.apk";
+        final String v2ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV2.apk";
+        final String v3ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV3.apk";
+        final String packageName = "foo.bar.updateservice";
+        final ComponentName service = ComponentName.createRelative(packageName, ".StubService");
+
+        // Match AccessibilityManagerService#COMPONENT_NAME_SEPARATOR
+        final String componentNameSeparator = ":";
+        final String originalEnabledServicesSetting = getEnabledServicesSetting();
+        try {
+            // Install the apk in this test method, instead of as part of the target preparer, to
+            // allow repeated --iterations of the test.
+            assertThat(ShellUtils.runShellCommand("pm install " + v1ApkPath)).startsWith("Success");
+            // Wait for the service to register as installed.
+            TestUtils.waitUntil(
+                    "Failed to install service:" + v1ApkPath,
+                    (int) TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            manager.getInstalledAccessibilityServiceList().stream()
+                                            .filter(info -> info.getId().startsWith(packageName))
+                                            .count()
+                                    == 1);
+
+            // Enable the service and wait until AccessibilityManager reports it is
+            // enabled.
+            final String servicesToEnable = service.flattenToShortString();
+            ShellCommandBuilder.create(sInstrumentation)
+                    .putSecureSetting(
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, servicesToEnable)
+                    .run();
+            // Wait for the service to be enabled.
+            TestUtils.waitUntil(
+                    "Failed to enable service:" + servicesToEnable,
+                    (int) TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            getEnabledServices().stream()
+                                            .filter(info -> info.getId().startsWith(packageName))
+                                            .count()
+                                    == 1);
+
+            // Update to a new version that doesn't have the intent declared.
+            assertThat(ShellUtils.runShellCommand("pm install " + v2ApkPath)).startsWith("Success");
+
+            // Wait for the install to finish and the service to be disabled.
+            TestUtils.waitUntil(
+                    "The service is still in the enabled services list.",
+                    TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            Arrays.asList(getEnabledServicesSetting().split(componentNameSeparator))
+                                            .stream()
+                                            .filter(comp -> comp.startsWith(packageName))
+                                            .count()
+                                    == 0);
+
+            // Update to version 3 that does have the intent declared.
+            // The service should not re-enable.
+            assertThat(ShellUtils.runShellCommand("pm install " + v3ApkPath)).startsWith("Success");
+
+            // confirm the service is still not enabled.
+            assertThrows(
+                    "The service is still in the enabled services list.",
+                    AssertionError.class,
+                    () ->
+                            TestUtils.waitUntil(
+                                    "The service is still in the enabled services list.",
+                                    TIMEOUT_SERVICE_ENABLE / 1000,
+                                    () ->
+                                            Arrays.asList(getEnabledServicesSetting()
+                                            .split(componentNameSeparator))
+                                                            .stream().filter(comp ->
+                                                            comp.startsWith(packageName))
+                                                            .count() == 1));
+
+        } finally {
+            ShellCommandBuilder.create(sInstrumentation)
+                    .putSecureSetting(
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                            originalEnabledServicesSetting)
+                    .run();
+            ShellUtils.runShellCommand("pm uninstall " + packageName);
         }
     }
 

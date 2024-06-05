@@ -22,6 +22,7 @@ import static android.server.wm.jetpack.utils.ExtensionUtil.EXTENSION_VERSION_2;
 import static android.server.wm.jetpack.utils.ExtensionUtil.assertEqualWindowLayoutInfo;
 import static android.server.wm.jetpack.utils.ExtensionUtil.assumeHasDisplayFeatures;
 import static android.server.wm.jetpack.utils.ExtensionUtil.getExtensionWindowLayoutInfo;
+import static android.server.wm.jetpack.utils.ExtensionUtil.getWindowExtensions;
 import static android.server.wm.jetpack.utils.ExtensionUtil.isExtensionVersionAtLeast;
 import static android.server.wm.jetpack.utils.SidecarUtil.assumeSidecarSupportedDevice;
 import static android.server.wm.jetpack.utils.SidecarUtil.getSidecarInterface;
@@ -388,16 +389,21 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         mWindowLayoutInfo = getExtensionWindowLayoutInfo(configHandlingActivity);
         assumeHasDisplayFeatures(mWindowLayoutInfo);
 
-        final WindowLayoutInfo initialInfo = getExtensionWindowLayoutInfo(
-                configHandlingActivity);
+        TestValueCountConsumer<WindowLayoutInfo> consumer = new TestValueCountConsumer<>();
+        // We expect 3 values, 1 before entering PiP, one while in PiP, one after exiting PiP.
+        consumer.setCount(3);
+        getWindowExtensions().getWindowLayoutComponent().addWindowLayoutInfoListener(
+                configHandlingActivity, consumer);
 
         enterPipActivityHandlesConfigChanges(configHandlingActivity);
         exitPipActivityHandlesConfigChanges(configHandlingActivity);
 
-        final WindowLayoutInfo updatedInfo = getExtensionWindowLayoutInfo(
-                configHandlingActivity);
+        List<WindowLayoutInfo> values = consumer.waitAndGetAllValues();
 
-        assertEquals(initialInfo, updatedInfo);
+        assertEquals(3, values.size());
+        assertEquals(mWindowLayoutInfo, values.get(0));
+        assertTrue(values.get(1).getDisplayFeatures().isEmpty());
+        assertEquals(mWindowLayoutInfo, values.get(2));
     }
 
     /**

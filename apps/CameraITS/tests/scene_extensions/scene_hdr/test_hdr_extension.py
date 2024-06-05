@@ -224,7 +224,6 @@ class HdrExtensionTest(its_base_test.ItsBaseTest):
       # Take capture without HDR extension activated as baseline
       logging.debug('Taking capture without HDR extension')
       out_surfaces = {'format': _FMT_NAME, 'width': _WIDTH, 'height': _HEIGHT}
-      cam.do_3a()
       req = capture_request_utils.auto_capture_request()
       no_hdr_start_of_capture = time.time()
       no_hdr_cap = cam.do_capture(req, out_surfaces)
@@ -240,7 +239,6 @@ class HdrExtensionTest(its_base_test.ItsBaseTest):
       # Take capture with HDR extension
       logging.debug('Taking capture with HDR extension')
       out_surfaces = {'format': _FMT_NAME, 'width': _WIDTH, 'height': _HEIGHT}
-      cam.do_3a()
       req = capture_request_utils.auto_capture_request()
       hdr_start_of_capture = time.time()
       hdr_cap = cam.do_capture_with_extensions(

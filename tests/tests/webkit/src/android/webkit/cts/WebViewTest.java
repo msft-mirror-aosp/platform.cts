@@ -1834,6 +1834,13 @@ public class WebViewTest extends SharedWebViewTest {
                 .sendPointerSync(
                         MotionEvent.obtain(
                                 time, time, MotionEvent.ACTION_DOWN, middleX, middleY, 0));
+
+        time = SystemClock.uptimeMillis();
+        getTestEnvironment()
+                .sendPointerSync(
+                        MotionEvent.obtain(
+                                time, time, MotionEvent.ACTION_UP, middleX, middleY, 0));
+
         getTestEnvironment().waitForIdleSync();
         mOnUiThread.requestImageRef(msg);
         new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {

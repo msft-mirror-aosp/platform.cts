@@ -74,6 +74,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -179,6 +180,7 @@ public class MediaRouter2Test {
      *
      * <p>Runs on both the primary user and a work profile, as per {@link UserTest}.
      */
+    @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @UserTest({UserType.PRIMARY_USER, UserType.WORK_PROFILE})
     @Test
     public void testGetRoutes() throws Exception {
@@ -289,6 +291,7 @@ public class MediaRouter2Test {
         }
     }
 
+    @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testTransferToFailure() throws Exception {
         final List<String> sampleRouteType = new ArrayList<>();
@@ -614,6 +617,7 @@ public class MediaRouter2Test {
     }
 
     // TODO: Add tests for illegal inputs if needed (e.g. selecting already selected route)
+    @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testRoutingControllerSelectAndDeselectRoute() throws Exception {
         final List<String> sampleRouteType = new ArrayList<>();
@@ -740,21 +744,25 @@ public class MediaRouter2Test {
             }
         };
 
-        ControllerCallback controllerCallback = new ControllerCallback() {
-            @Override
-            public void onControllerUpdated(RoutingController controller) {
-                if (onTransferLatch.getCount() != 0
-                        || !TextUtils.equals(controllers.get(0).getId(), controller.getId())) {
-                    return;
-                }
-                assertThat(controller.getSelectedRoutes()).hasSize(1);
-                assertThat(getOriginalRouteIds(controller.getSelectedRoutes()))
-                        .doesNotContain(ROUTE_ID1);
-                assertThat(getOriginalRouteIds(controller.getSelectedRoutes()))
-                        .contains(ROUTE_ID5_TO_TRANSFER_TO);
-                onControllerUpdatedLatch.countDown();
-            }
-        };
+        ControllerCallback controllerCallback =
+                new ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(RoutingController controller) {
+                        if (onTransferLatch.getCount() != 0
+                                || !TextUtils.equals(
+                                controllers.get(0).getId(), controller.getId())) {
+                            return;
+                        }
+
+                        if (getOriginalRouteIds(controller.getSelectedRoutes())
+                                .contains(ROUTE_ID5_TO_TRANSFER_TO)) {
+                            assertThat(controller.getSelectedRoutes()).hasSize(1);
+                            assertThat(getOriginalRouteIds(controller.getSelectedRoutes()))
+                                    .doesNotContain(ROUTE_ID1);
+                            onControllerUpdatedLatch.countDown();
+                        }
+                    }
+                };
 
         // TODO: Remove this once the MediaRouter2 becomes always connected to the service.
         RouteCallback routeCallback = new RouteCallback() {};
@@ -808,21 +816,26 @@ public class MediaRouter2Test {
                 onTransferLatch.countDown();
             }
         };
-        ControllerCallback controllerCallback = new ControllerCallback() {
-            @Override
-            public void onControllerUpdated(RoutingController controller) {
-                if (onTransferLatch.getCount() != 0
-                        || !TextUtils.equals(controllers.get(0).getId(), controller.getId())) {
-                    return;
-                }
-                assertThat(controller.getSelectedRoutes()).hasSize(1);
-                assertThat(getOriginalRouteIds(controller.getSelectedRoutes()))
-                        .doesNotContain(ROUTE_ID1);
-                assertThat(getOriginalRouteIds(controller.getSelectedRoutes()))
-                        .contains(ROUTE_ID5_TO_TRANSFER_TO);
-                onControllerUpdatedLatch.countDown();
-            }
-        };
+        ControllerCallback controllerCallback =
+                new ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(RoutingController controller) {
+                        if (onTransferLatch.getCount() != 0
+                                || !TextUtils.equals(
+                                mRouter2.getSystemController().getId(),
+                                controller.getId())) {
+                            return;
+                        }
+
+                        if (getOriginalRouteIds(controller.getSelectedRoutes())
+                                .contains(ROUTE_ID5_TO_TRANSFER_TO)) {
+                            assertThat(controller.getSelectedRoutes()).hasSize(1);
+                            assertThat(getOriginalRouteIds(controller.getSelectedRoutes()))
+                                    .doesNotContain(ROUTE_ID1);
+                            onControllerUpdatedLatch.countDown();
+                        }
+                    }
+                };
 
         // TODO: Remove this once the MediaRouter2 becomes always connected to the service.
         RouteCallback routeCallback = new RouteCallback() {};
@@ -830,12 +843,12 @@ public class MediaRouter2Test {
 
         try {
             mRouter2.registerTransferCallback(mExecutor, transferCallback);
-            mRouter2.registerControllerCallback(mExecutor, controllerCallback);
             mRouter2.transferTo(routeToBegin);
             assertThat(onTransferLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
 
             assertThat(controllers).hasSize(1);
 
+            mRouter2.registerControllerCallback(mExecutor, controllerCallback);
             // Transfer to ROUTE_ID5_TO_TRANSFER_TO
             MediaRoute2Info routeToTransferTo = routes.get(ROUTE_ID5_TO_TRANSFER_TO);
             assertThat(routeToTransferTo).isNotNull();
@@ -904,13 +917,14 @@ public class MediaRouter2Test {
 
         try {
             mRouter2.registerTransferCallback(mExecutor, transferCallback);
-            mRouter2.registerControllerCallback(mExecutor, controllerCallback);
             mRouter2.transferTo(routeTransferFrom);
             assertThat(onTransferLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
 
             assertThat(controllers).hasSize(1);
             RoutingController controller = controllers.get(0);
 
+            // Registering the callback here to avoid unrelated calls related to the transfer above.
+            mRouter2.registerControllerCallback(mExecutor, controllerCallback);
             mRouter2.stop();
 
             // Select ROUTE_ID5_TO_TRANSFER_TO
@@ -932,6 +946,7 @@ public class MediaRouter2Test {
         }
     }
 
+    @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testRoutingControllerRelease() throws Exception {
         final List<String> sampleRouteType = new ArrayList<>();

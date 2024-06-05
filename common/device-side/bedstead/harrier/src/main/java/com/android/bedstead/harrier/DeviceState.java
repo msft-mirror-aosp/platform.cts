@@ -379,7 +379,7 @@ public final class DeviceState extends HarrierRule {
 
                     AssertionError assertionError = new AssertionError(
                             "Timed out executing test " + description.getDisplayName()
-                                    + " after " + MAX_TEST_DURATION);
+                                    + " after " + MAX_TEST_DURATION, e);
                     assertionError.setStackTrace(stack);
                     throw assertionError;
                 }
@@ -1295,9 +1295,7 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof RequireHasDefaultBrowser) {
-                RequireHasDefaultBrowser requireHasDefaultBrowser =
-                        (RequireHasDefaultBrowser) annotation;
+            if (annotation instanceof RequireHasDefaultBrowser requireHasDefaultBrowser) {
                 UserReference user =
                             resolveUserTypeToUser(requireHasDefaultBrowser.forUser());
 

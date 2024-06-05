@@ -42,6 +42,7 @@ import com.android.internal.util.HexDump;
 import org.junit.Assert;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -97,6 +98,16 @@ public class TestUtils {
                 InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageManager();
         assumeTrue("Can only test if we have StrongBox",
                 packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE));
+    }
+
+    /**
+     * Returns 0 if not implemented. Otherwise returns the feature version.
+     */
+    public static int getFeatureVersionKeystore(Context appContext, boolean useStrongbox) {
+        if (useStrongbox) {
+            return getFeatureVersionKeystoreStrongBox(appContext);
+        }
+        return getFeatureVersionKeystore(appContext);
     }
 
     // Returns 0 if not implemented. Otherwise returns the feature version.
@@ -194,6 +205,33 @@ public class TestUtils {
      */
     public static boolean supports3DES() {
         return "true".equals(SystemProperties.get("ro.hardware.keystore_desede"));
+    }
+
+    /**
+     * Returns VSR API level.
+     */
+    public static int getVendorApiLevel() {
+        int vendorApiLevel = SystemProperties.getInt("ro.vendor.api_level", -1);
+        if (vendorApiLevel != -1) {
+            return vendorApiLevel;
+        }
+
+        // Android S and older devices do not define ro.vendor.api_level
+        vendorApiLevel = SystemProperties.getInt("ro.board.api_level", -1);
+        if (vendorApiLevel == -1) {
+            vendorApiLevel = SystemProperties.getInt("ro.board.first_api_level", -1);
+        }
+
+        int productApiLevel = SystemProperties.getInt("ro.product.first_api_level", -1);
+        if (productApiLevel == -1) {
+            productApiLevel = Build.VERSION.SDK_INT;
+        }
+
+        // VSR API level is the minimum of vendorApiLevel and productApiLevel.
+        if (vendorApiLevel == -1 || vendorApiLevel > productApiLevel) {
+            return productApiLevel;
+        }
+        return vendorApiLevel;
     }
 
     /**
@@ -1171,5 +1209,14 @@ public class TestUtils {
     public static boolean hasSecureLockScreen(Context context) {
         PackageManager pm = context.getPackageManager();
         return (pm != null && pm.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN));
+    }
+
+    /**
+     * Determines whether running build is GSI or not.
+     * @return true if running build is GSI, false otherwise.
+     */
+    public static boolean isGsiImage() {
+        final File initGsiRc = new File("/system/system_ext/etc/init/init.gsi.rc");
+        return initGsiRc.exists();
     }
 }

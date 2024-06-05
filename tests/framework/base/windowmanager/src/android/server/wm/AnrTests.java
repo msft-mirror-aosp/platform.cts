@@ -114,7 +114,7 @@ public class AnrTests extends ActivityManagerTestBase {
     public void slowOnKeyEventHandleTriggersAnr() {
         startUnresponsiveActivity(EXTRA_ON_KEYDOWN_DELAY_MS, true /* waitForCompletion */,
                 UNRESPONSIVE_ACTIVITY);
-        injectKey(KeyEvent.KEYCODE_BACK, false /* longpress */, false /* sync */);
+        injectKey(KeyEvent.KEYCODE_A, false /* longpress */, false /* sync */);
         clickCloseAppOnAnrDialog();
         assertEventLogsContainsAnr(UnresponsiveActivity.PROCESS_NAME);
     }

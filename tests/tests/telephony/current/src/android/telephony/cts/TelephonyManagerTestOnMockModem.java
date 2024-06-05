@@ -489,6 +489,13 @@ public class TelephonyManagerTestOnMockModem {
     public void testVoiceCallState() throws Throwable {
         Log.d(TAG, "TelephonyManagerTestOnMockModem#testVoiceCallState");
 
+        // Skip the test if it is a data-only device
+        final PackageManager pm = getContext().getPackageManager();
+        if (!pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
+            Log.d(TAG, "Skipping test: Not test on data-only device");
+            return;
+        }
+
         assumeTrue(isSimHotSwapCapable());
 
         int slotId = 0;
@@ -558,6 +565,8 @@ public class TelephonyManagerTestOnMockModem {
         //Disable Ims to make sure the call would go thorugh with a CS call
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
                 sTelephonyManager,  (tm) -> tm.disableIms(slotId));
+        // Sleep 3s to make sure ims is disabled
+        TimeUnit.SECONDS.sleep(3);
 
         // Dial a CS voice call
         Log.d(TAG, "Start dialing call");

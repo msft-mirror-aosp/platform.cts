@@ -23,6 +23,8 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="multiuser" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
+    <!-- See b/341807929. -->
+    <option name="hidden-api-checks" value="false" />
 
     <target_preparer class="com.android.tradefed.targetprep.RunOnSystemUserTargetPreparer"/>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

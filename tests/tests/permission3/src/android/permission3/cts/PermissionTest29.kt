@@ -34,6 +34,7 @@ class PermissionTest29 : BaseUsePermissionTest() {
 
     @Before
     fun installApp29() {
+        uninstallPackage(APP_APK_PATH_29, false)
         installPackage(APP_APK_PATH_29)
     }
 
@@ -164,6 +165,11 @@ class PermissionTest29 : BaseUsePermissionTest() {
             pressBack()
             if (isAutomotive) {
                 waitFindObject(By.textContains("Allow in settings."), 100)
+            } else if (isWatch) {
+                waitForIdleLong()
+                findAccessibilityNodeInfosByTextForSurfaceView(
+                        uiAutomation.rootInActiveWindow,
+                        "Allow in settings")
             } else {
                 waitFindObject(By.res("com.android.permissioncontroller:id/grant_dialog"), 100)
             }

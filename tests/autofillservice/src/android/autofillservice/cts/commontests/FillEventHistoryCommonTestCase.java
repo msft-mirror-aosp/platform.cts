@@ -478,13 +478,19 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                 .build());
 
         // Now switch back to A...
-        mUiBot.pressBack(); // dismiss autofill
-        mUiBot.pressBack(); // dismiss keyboard (or task, if there was no keyboard)
         final AtomicBoolean focusOnA = new AtomicBoolean();
-        mActivity.syncRunOnUiThread(() -> focusOnA.set(mActivity.hasWindowFocus()));
-        if (!focusOnA.get()) {
-            mUiBot.pressBack(); // dismiss task, if the last pressBack dismissed only the keyboard
-        }
+        int retries = 0;
+        do {
+            assertWithMessage("Did not go back to LoginActivity - did it die?")
+                    .that(retries < 10)
+                    .isTrue();
+            // Dismiss all Autofill UI until back to LoginActivity
+            // Do this in a loop because Inline/Dropdown have different number of UIs to dismiss
+            mUiBot.pressBack(); // dismiss task
+            mActivity.syncRunOnUiThread(() -> focusOnA.set(mActivity.hasWindowFocus()));
+            retries += 1;
+        } while (!focusOnA.get());
+
         mUiBot.assertShownByRelativeId(ID_USERNAME);
         assertWithMessage("root window has no focus")
                 .that(mActivity.getWindow().getDecorView().hasWindowFocus()).isTrue();
@@ -665,13 +671,31 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
 
         // Set expectations.
         CannedFillResponse.Builder builder = createTestResponseBuilder(/* withDataSet= */ true);
-        contextCommitted_whileEmptyValueForRequiredIds(builder, /* withDataSet= */ true);
+        builder.setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD);
+        sReplier.addResponse(builder.build());
+
+        // Trigger autofill and set the save UI not show reason with
+        // NO_SAVE_UI_REASON_HAS_EMPTY_REQUIRED.
+        mUiBot.focusByRelativeId(ID_USERNAME);
+        mUiBot.waitForIdle();
+        sReplier.getNextFillRequest();
+        mUiBot.assertDatasets("dataset1");
+
+        mActivity.onUsername((v) -> v.setText(BACKDOOR_USERNAME));
+        // To reduce flaky, first focus on password, then set text
+        mUiBot.focusByRelativeId(ID_PASSWORD);
+        mUiBot.waitForIdleSync();
+        mActivity.onPassword((v) -> v.setText(""));
+
+        // Finish the context by login in and it will trigger to check if the save UI should be
+        // shown.
+        tapLogin();
 
         // Verify that the save UI should not be shown and the history should include the reason.
         mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_PASSWORD);
 
-        final List<Event> verifyEvents = InstrumentedAutoFillService.getFillEvents(2);
-        final Event event = verifyEvents.get(1);
+        final List<Event> verifyEvents = InstrumentedAutoFillService.getFillEvents(4);
+        final Event event = verifyEvents.get(3);
 
         assertThat(event.getNoSaveUiReason()).isEqualTo(NO_SAVE_UI_REASON_HAS_EMPTY_REQUIRED);
     }

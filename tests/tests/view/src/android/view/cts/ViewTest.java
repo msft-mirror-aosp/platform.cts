@@ -3354,12 +3354,12 @@ public class ViewTest {
         MotionEvent downEvent =
                 MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0);
         downEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        mInstrumentation.getUiAutomation().injectInputEvent(downEvent, true);
+        mInstrumentation.sendPointerSync(downEvent);
         final long eventTime = SystemClock.uptimeMillis();
         MotionEvent upEvent =
                 MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_UP, x, y, 0);
         upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        mInstrumentation.getUiAutomation().injectInputEvent(upEvent, true);
+        mInstrumentation.sendPointerSync(upEvent);
 
         compareAndRecycleMotionEvents(downEvent, events.poll());
         compareAndRecycleMotionEvents(upEvent, events.poll());
@@ -4752,13 +4752,17 @@ public class ViewTest {
     }
 
     private boolean startDragAndDrop(View view, View.DragShadowBuilder shadowBuilder) {
-        final Point size = new Point();
-        mActivity.getWindowManager().getDefaultDisplay().getSize(size);
+        final int[] viewOnScreenXY = new int[2];
+        View decorView = mActivity.getWindow().getDecorView();
+        decorView.getLocationOnScreen(viewOnScreenXY);
+        int xOnScreen = viewOnScreenXY[0] + decorView.getWidth() / 2;
+        int yOnScreen = viewOnScreenXY[1] + decorView.getHeight() / 2;
+
         final MotionEvent event = MotionEvent.obtain(
                 SystemClock.uptimeMillis(), SystemClock.uptimeMillis(),
-                MotionEvent.ACTION_DOWN, size.x / 2, size.y / 2, 1);
+                MotionEvent.ACTION_DOWN, xOnScreen, yOnScreen, 1);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        mInstrumentation.getUiAutomation().injectInputEvent(event, true);
+        mInstrumentation.sendPointerSync(event);
 
         return view.startDragAndDrop(ClipData.newPlainText("", ""), shadowBuilder, view, 0);
     }

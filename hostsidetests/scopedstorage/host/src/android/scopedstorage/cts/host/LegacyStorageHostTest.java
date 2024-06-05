@@ -18,6 +18,8 @@ package android.scopedstorage.cts.host;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.tradefed.device.contentprovider.ContentProviderHandler;
@@ -40,7 +42,7 @@ public class LegacyStorageHostTest extends BaseHostTestCase {
     private ContentProviderHandler mContentProviderHandler;
 
     /**
-     * Runs the given phase of LegacyFileAccessTest by calling into the device.
+     * Runs the given phase of LegacyStorageTest by calling into the device.
      * Throws an exception if the test phase fails.
      */
     void runDeviceTest(String phase) throws Exception {
@@ -86,6 +88,9 @@ public class LegacyStorageHostTest extends BaseHostTestCase {
 
     @Before
     public void setup() throws Exception {
+        // Ignore tests on automotive devices b/319785789
+        assumeFalse(hasDeviceFeature("android.hardware.type.automotive"));
+
         mContentProviderHandler = new ContentProviderHandler(getDevice());
         mContentProviderHandler.setUp();
         setupExternalStorage();
@@ -98,7 +103,9 @@ public class LegacyStorageHostTest extends BaseHostTestCase {
 
     @After
     public void tearDown() throws Exception {
-        mContentProviderHandler.tearDown();
+        if (mContentProviderHandler != null) {
+            mContentProviderHandler.tearDown();
+        }
         revokePermissions("android.permission.WRITE_EXTERNAL_STORAGE",
                 "android.permission.READ_EXTERNAL_STORAGE");
     }
@@ -260,7 +267,7 @@ public class LegacyStorageHostTest extends BaseHostTestCase {
     }
 
     /**
-     * (b/205673506): Test that legacy System Gallery can update() media file's releative_path to a
+     * (b/205673506): Test that legacy System Gallery can update() media file's relative_path to a
      * non default top level directory.
      */
     @Test

@@ -24,6 +24,7 @@ import static android.mediav2.common.cts.CodecEncoderTestBase.colorFormatToStrin
 import static android.mediav2.common.cts.CodecEncoderTestBase.getMuxerFormatForMediaType;
 import static android.mediav2.common.cts.CodecEncoderTestBase.getTempFilePath;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
+import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_BEFORE_U;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_BEFORE_U;
 import static android.mediav2.common.cts.CodecTestBase.hasSupportForColorFormat;
@@ -413,7 +414,7 @@ public class CodecEncoderSurfaceTest {
             String encoderName = (String) arg[0];
             String decoderName = (String) arg[2];
             String decoderMediaType = (String) arg[3];
-            if ((VNDK_IS_BEFORE_U || encoderName.toUpperCase().startsWith("OMX"))
+            if ((BOARD_SDK_IS_BEFORE_U || VNDK_IS_BEFORE_U || encoderName.toUpperCase().startsWith("OMX"))
                     && isVendorCodec(encoderName)) {
                 if (!isDefaultCodec(decoderName, decoderMediaType, /* isEncoder */false)) {
                     continue;

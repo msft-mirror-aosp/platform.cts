@@ -52,7 +52,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
-import android.os.Process;
 import android.os.storage.StorageManager;
 import android.provider.MediaStore;
 import android.system.ErrnoException;
@@ -224,47 +223,6 @@ public class TestUtils {
         } catch (Exception e) {
             fail("Exception on polling for permission revoke for " + packageName + " for "
                     + permission + ": " + e.getMessage());
-        }
-    }
-
-    public static void revokeAccessMediaLocation() {
-        revokeAppOpPermission(Manifest.permission.ACCESS_MEDIA_LOCATION,
-                "android:access_media_location");
-    }
-
-    /**
-     * Revoke the app op for the given permission. Unlike
-     * {@link TestUtils#revokePermission(String, String)}, its usage does not kill the application.
-     * It can be used to drop permissions previously granted to the test application, without
-     * crashing the test application itself.
-     */
-    private static void revokeAppOpPermission(String manifestPermission, String appOp) {
-        try {
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation()
-                    .adoptShellPermissionIdentity("android.permission.MANAGE_APP_OPS_MODES",
-                            "android.permission.REVOKE_RUNTIME_PERMISSIONS");
-            Context context =
-                    androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                            .getTargetContext();
-            // Revoking the manifest permission will kill the test app.
-            // Deny the permission App Op to revoke this permission.
-            PackageManager packageManager = context.getPackageManager();
-            String packageName = context.getPackageName();
-            if (packageManager.checkPermission(manifestPermission,
-                    packageName) == PackageManager.PERMISSION_GRANTED) {
-                context.getPackageManager().updatePermissionFlags(
-                        manifestPermission, packageName,
-                        PackageManager.FLAG_PERMISSION_REVOKED_COMPAT,
-                        PackageManager.FLAG_PERMISSION_REVOKED_COMPAT, context.getUser());
-                context.getSystemService(AppOpsManager.class).setUidMode(
-                        appOp, Process.myUid(),
-                        AppOpsManager.MODE_IGNORED);
-            }
-        } finally {
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation()
-                    .dropShellPermissionIdentity();
         }
     }
 
@@ -440,8 +398,10 @@ public class TestUtils {
             throws Exception {
         final String actionName = QUERY_MEDIA_BY_URI_QUERY;
         final Bundle bundle = new Bundle();
-        for (String columnName : projection) {
-            bundle.putString(columnName, "");
+        if (projection != null) {
+            for (String columnName : projection) {
+                bundle.putString(columnName, "");
+            }
         }
 
         return getFromTestApp(testApp, uri, actionName, bundle).getBundle(actionName);
@@ -1019,7 +979,8 @@ public class TestUtils {
 
             try {
                 getContentResolver().delete(uri, Bundle.EMPTY);
-            } catch (Exception ignored) {
+            } catch (Exception exception) {
+                Log.e("Exception while deleting files", exception.getMessage());
             }
         }
     }
@@ -1155,12 +1116,7 @@ public class TestUtils {
             // to keep rolling forward if we can't find our grant button
             final UiSelector grant = new UiSelector().textMatches("(?i)Allow");
             if (isWatch(inst.getContext().getPackageManager())) {
-                UiScrollable uiScrollable = new UiScrollable(new UiSelector().scrollable(true));
-                try {
-                    uiScrollable.scrollIntoView(grant);
-                } catch (UiObjectNotFoundException e) {
-                    // Scrolling can fail if the UI is not scrollable
-                }
+                scrollIntoView(grant);
             }
             final boolean grantExists = new UiObject(grant).waitForExists(timeout);
 
@@ -1177,6 +1133,9 @@ public class TestUtils {
         } else {
             // fine the Deny button
             final UiSelector deny = new UiSelector().textMatches("(?i)Deny");
+            if (isWatch(inst.getContext().getPackageManager())) {
+                scrollIntoView(deny);
+            }
             final boolean denyExists = new UiObject(deny).waitForExists(timeout);
 
             assertThat(denyExists).isTrue();
@@ -1195,6 +1154,18 @@ public class TestUtils {
 
     private static boolean hasFeature(PackageManager packageManager, String feature) {
         return packageManager.hasSystemFeature(feature);
+    }
+
+    private static void scrollIntoView(UiSelector selector) throws Exception {
+        UiScrollable uiScrollable = new UiScrollable(new UiSelector().scrollable(true));
+        uiScrollable.setSwipeDeadZonePercentage(0.25);
+        try {
+            uiScrollable.scrollIntoView(selector);
+        } catch (UiObjectNotFoundException e) {
+            // Scrolling can fail if the UI is not scrollable
+        }
+        // Sleep for a few moments to let the scroll fully stop.
+        Thread.sleep(250);
     }
 
     /**

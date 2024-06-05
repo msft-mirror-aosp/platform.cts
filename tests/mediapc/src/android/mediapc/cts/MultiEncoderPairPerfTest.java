@@ -186,6 +186,7 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
             for (Future<Double> result : resultList) {
                 achievedFrameRate += result.get();
             }
+            pool.shutdown();
         }
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_3;

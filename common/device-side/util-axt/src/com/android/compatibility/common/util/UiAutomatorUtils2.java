@@ -34,6 +34,7 @@ import androidx.test.uiautomator.UiScrollable;
 import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class UiAutomatorUtils2 {
@@ -140,7 +141,30 @@ public class UiAutomatorUtils2 {
                         scrolledPastCollapsibleToolbar = false;
                     } else {
                         Rect boundsBeforeScroll = scrollable.getBounds();
-                        boolean scrollAtStartOrEnd = !scrollable.scrollForward();
+                        boolean scrollAtStartOrEnd;
+                        boolean isWearCompose = FeatureUtil.isWatch() && Objects.equals(
+                                scrollable.getPackageName(),
+                                InstrumentationRegistry.getInstrumentation().getContext()
+                                        .getPackageManager().getPermissionControllerPackageName());
+                        if (isWearCompose) {
+                            // TODO(b/306483780): Removed the condition once the scrollForward is
+                            //  fixed.
+                            if (!wasScrolledUpAlready) {
+                                // TODO(b/306483780): scrollForward() always returns false. Thus
+                                // `isAtEnd` will never be false for Wear Compose, because
+                                // `scrollAtStartOrEnd` is set to false, and the value of `isAtEnd`
+                                // is an && combination of that value. To avoid skipping Views
+                                // that exist above the start-point of the search, we will first
+                                // scroll up before doing a downward search and scroll.
+                                scrollable.scrollToBeginning(Integer.MAX_VALUE);
+                                wasScrolledUpAlready = true;
+                                continue;
+                            }
+                            scrollable.scrollForward();
+                            scrollAtStartOrEnd = false;
+                        } else {
+                            scrollAtStartOrEnd = !scrollable.scrollForward();
+                        }
                         // The scrollable view may no longer be scrollable after the toolbar is
                         // collapsed.
                         if (scrollable.exists()) {

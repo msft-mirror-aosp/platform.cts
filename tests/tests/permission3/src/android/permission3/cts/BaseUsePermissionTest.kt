@@ -37,6 +37,7 @@ import android.provider.Settings
 import android.text.Spanned
 import android.text.style.ClickableSpan
 import android.view.View
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.StaleObjectException
@@ -47,6 +48,7 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.android.compatibility.common.util.UiAutomatorUtils2
 import com.android.modules.utils.build.SdkLevel
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
@@ -101,6 +103,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
             "com.android.permissioncontroller:id/permission_allow_selected_button"
         const val DONT_SELECT_MORE_BUTTON =
             "com.android.permissioncontroller:id/permission_dont_allow_more_selected_button"
+        const val EDIT_PHOTOS_BUTTON = "com.android.permissioncontroller:id/edit_selected_button"
         const val ALLOW_BUTTON =
                 "com.android.permissioncontroller:id/permission_allow_button"
         const val ALLOW_FOREGROUND_BUTTON =
@@ -138,6 +141,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         const val NO_UPGRADE_AND_DONT_ASK_AGAIN_BUTTON_TEXT = "grant_dialog_button_no_upgrade"
         const val ALERT_DIALOG_MESSAGE = "android:id/message"
         const val ALERT_DIALOG_OK_BUTTON = "android:id/button1"
+        const val ALERT_DIALOG_DESC_CONFIRM = "confirm"
         const val APP_PERMISSION_RATIONALE_CONTAINER_VIEW =
             "com.android.permissioncontroller:id/app_permission_rationale_container"
         const val APP_PERMISSION_RATIONALE_CONTENT_VIEW =
@@ -154,6 +158,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         const val PURPOSE_MESSAGE_ID = "com.android.permissioncontroller:id/purpose_message"
         const val LEARN_MORE_TITLE_ID = "com.android.permissioncontroller:id/learn_more_title"
         const val LEARN_MORE_MESSAGE_ID = "com.android.permissioncontroller:id/learn_more_message"
+        const val DETAIL_MESSAGE_ID = "com.android.permissioncontroller:id/detail_message"
         const val PERMISSION_RATIONALE_SETTINGS_SECTION =
             "com.android.permissioncontroller:id/settings_section"
         const val SETTINGS_TITLE_ID =
@@ -531,7 +536,12 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
 
         // Clear the low target SDK warning message if it's expected
         if (getTargetSdk() <= MAX_SDK_FOR_SDK_WARNING) {
-            clearTargetSdkWarning(timeoutMillis = QUICK_CHECK_TIMEOUT_MILLIS)
+            if (isWatch) {
+                // Warning takes longer to clear on watch
+                clearTargetSdkWarning()
+            } else {
+                clearTargetSdkWarning(timeoutMillis = QUICK_CHECK_TIMEOUT_MILLIS)
+            }
             waitForIdle()
         }
 
@@ -579,7 +589,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
     )
 
     protected fun clickPermissionRequestAllowButton(timeoutMillis: Long = 20000) {
-        if (isAutomotive) {
+        if (isAutomotive || isWatch) {
             click(By.text(getPermissionControllerString(ALLOW_BUTTON_TEXT)), timeoutMillis)
         } else {
             click(By.res(ALLOW_BUTTON), timeoutMillis)
@@ -636,8 +646,10 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
         }
     }
 
-    protected fun clickPermissionRequestAllowForegroundButton(timeoutMillis: Long = 10_000) {
-        if (isAutomotive) {
+    protected fun clickPermissionRequestAllowForegroundButton(
+        timeoutMillis: Long = (if (isWatch) 20_000 else 10_000)
+    ) {
+        if (isAutomotive || isWatch) {
             click(By.text(
                     getPermissionControllerString(ALLOW_FOREGROUND_BUTTON_TEXT)), timeoutMillis)
         } else {
@@ -665,6 +677,11 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
     protected fun clickPermissionRequestSettingsLink() {
         waitForIdle()
         eventually {
+            if (isWatch) {
+                clickPermissionRequestSettingsLinkForWear()
+                return@eventually
+            }
+
             // UiObject2 doesn't expose CharSequence.
             val node = if (isAutomotive) {
                 // Should match "Allow in settings." (location) and "go to settings." (body sensors)
@@ -672,20 +689,52 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                         " settings."
                 )[0]
             } else {
-                uiAutomation.rootInActiveWindow.findAccessibilityNodeInfosByViewId(
-                        "com.android.permissioncontroller:id/detail_message"
-                )[0]
+                uiAutomation.rootInActiveWindow
+                        .findAccessibilityNodeInfosByViewId(DETAIL_MESSAGE_ID)[0]
             }
             if (!node.isVisibleToUser) {
                 scrollToBottom()
             }
             assertTrue(node.isVisibleToUser)
+
             val text = node.text as Spanned
             val clickableSpan = text.getSpans(0, text.length, ClickableSpan::class.java)[0]
             // We could pass in null here in Java, but we need an instance in Kotlin.
             clickableSpan.onClick(View(context))
         }
         waitForIdle()
+    }
+
+    private fun clickPermissionRequestSettingsLinkForWear() {
+        // Find detail message.
+        val text = UiAutomatorUtils2.waitFindObject(By.textContains(" settings."))
+
+        // Move the view to the top of the screen.
+        var visibleBounds = text.getVisibleBounds()
+        val centerX = (visibleBounds.left + visibleBounds.right) / 2
+        uiDevice.drag(centerX, visibleBounds.top, centerX, 0, 10)
+
+        // Click the deep link.
+        // Not sure where the clickable text is. So try different point in the last line
+        // of the 5 line text.
+        val bounds = text.getVisibleBounds()
+        val xdelta = 0.2 * bounds.width()
+        val y = bounds.bottom - (0.05 * bounds.height())
+        var clickedOnLink: Boolean = false
+        for (i in 1..4) {
+            val x = bounds.left + (i * xdelta)
+            uiDevice.click(x.toInt(), y.toInt())
+            waitForIdleLong()
+            val nextScreenNode: AccessibilityNodeInfo? =
+                    findAccessibilityNodeInfosByTextForSurfaceView(
+                        uiAutomation.rootInActiveWindow,
+                        "All the time")
+            if (nextScreenNode != null) {
+                clickedOnLink = true
+                break
+            }
+        }
+        assertTrue("Could not click on the settings link correctly", clickedOnLink)
     }
 
     protected fun clickPermissionRequestDenyAndDontAskAgainButton() {
@@ -710,7 +759,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
     }
 
     protected fun clickPermissionRequestNoUpgradeAndDontAskAgainButton() {
-        if (isAutomotive) {
+        if (isAutomotive || isWatch) {
             click(By.text(getPermissionControllerString(NO_UPGRADE_AND_DONT_ASK_AGAIN_BUTTON_TEXT)))
         } else {
             click(By.res(NO_UPGRADE_AND_DONT_ASK_AGAIN_BUTTON))
@@ -957,7 +1006,13 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                 targetSdk <= Build.VERSION_CODES.S_V2 &&
                 permission in MEDIA_PERMISSIONS
             if (shouldShowStorageWarning) {
-                click(By.res(ALERT_DIALOG_OK_BUTTON))
+                if (isWatch) {
+                    val confirmPattern = Pattern.compile(Pattern.quote(ALERT_DIALOG_DESC_CONFIRM),
+                    Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE)
+                    click(By.desc(confirmPattern))
+                } else {
+                    click(By.res(ALERT_DIALOG_OK_BUTTON))
+                }
             } else if (!alreadyChecked && isLegacyApp && wasGranted) {
                 if (!isTv) {
                     // Wait for alert dialog to popup, then scroll to the bottom of it
@@ -973,8 +1028,7 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                 // Due to the limited real estate, Wear uses buttons with icons instead of text
                 // for dialogs
                 if (isWatch) {
-                    click(By.res(
-                        "com.android.permissioncontroller:id/wear_alertdialog_positive_button"))
+                    click(By.desc(getPermissionControllerString("ok")))
                 } else {
                     val resources = context.createPackageContext(
                         packageManager.permissionControllerPackageName, 0
@@ -1053,6 +1107,20 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
                 e.printStackTrace()
             }
         }
+    }
+
+    protected fun findAccessibilityNodeInfosByTextForSurfaceView(
+        node: AccessibilityNodeInfo,
+        text: String
+    ): AccessibilityNodeInfo? {
+        if (node.text != null && node.text.contains(text)) return node
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i)
+            if (child != null) {
+                return findAccessibilityNodeInfosByTextForSurfaceView(child, text) ?: continue
+            }
+        }
+        return null
     }
 
     private fun byTextRes(textRes: Int): BySelector = By.text(context.getString(textRes))

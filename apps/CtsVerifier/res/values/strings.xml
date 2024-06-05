@@ -17,7 +17,8 @@
     <string name="app_name">CTS Verifier</string>
     <string name="module_id">noabi CtsVerifier</string>
 
-    <string name="title_version">CTS Verifier %1$s</string>
+    <string name="title_version">Verifier %1$s</string>
+    <string name="version_number_format">Version #: %d</string>
 
     <string name="pass_button_text">Pass</string>
     <string name="info_button_text">Info</string>
@@ -36,6 +37,9 @@
     <string name="search_label">TestListActivity</string>
     <string name="search_hint">Search Tests</string>
     <string name="search_title">Search</string>
+    <string name="system">System</string>
+    <string name="system_on">ON</string>
+    <string name="system_off">OFF</string>
 
     <!-- Strings for CtsReportLog warning -->
     <string name="reportlog_warning_title">CTS-Verifier Report Log</string>
@@ -2476,7 +2480,7 @@
         with Full Screen Intents.</string>
     <string name="fsi_lockscreen_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, lock the screen and press the power button as quickly as possible to go to the lock screen.\n
-        Wait for a heads up notification to appear first in the list with a pill button.\n
+        Wait for a heads up notification to appear.\n
         Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
         Fail the test if the notification does not appear as described.
     </string>
@@ -2488,9 +2492,9 @@
     </string>
     <string name="fsi_screen_off_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, press the power button as quickly as possible to turn off the screen.\n
-        Wait for a notification to appear on the screen with a pill button.\n
-        Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
-        Fail the test if the notification does not appear as described.
+        Wait about 5 seconds to observe the behavior, then unlock screen to return to this page.\n
+        Pass the test if a notification appears on the screen with a pill button, or if a notification icon appears.\n
+        Fail the test if a page automatically launched with the message \"This page is a full screen intent.\".\n
     </string>
     <string name="fsi_screen_off_with_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, press the power button as quickly as possible to turn off the screen.\n
@@ -4295,7 +4299,7 @@ You should be prompted to select credentials; choose the ones you just installed
         2. Go to OEM unlocking settings, if this device has this Settings option. It is often located under \"Developer options\".\n
         Confirm that:\n
            - Oem Unlocking is disabled.\n
-           - Enabling Oem unlocking is not possible and triggers a support message.\n\n
+           - Enabling Oem unlocking is not possible, and pressing the button or menu option to enable it triggers a support message (if pressing is possible).\n\n
         Return back to this page.
     </string>
     <string name="device_owner_user_restriction_set">Set restriction</string>
@@ -4368,7 +4372,8 @@ You should be prompted to select credentials; choose the ones you just installed
         \n
         Tap the \"DECLINE\" button and verify that:\n
         \n
-        - \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n
+        <!-- Disabled in U due to b/317738856 -->
+        <!-- \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n -->
         - Notification titled \"Device Owner Requesting Bugreport Tests\" with message \"Bugreport sharing declined\" is present.\n
         \n
         Dismiss the notifications and mark test as passed or failed.
@@ -4383,7 +4388,8 @@ You should be prompted to select credentials; choose the ones you just installed
         \n
         Tap the \"SHARE\" button and verify that:\n
         \n
-        - \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n
+        <!-- Disabled in U due to b/317738856 -->
+        <!-- \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n -->
         - Notification titled \"Sharing bugreport...\" with an indefinite progress bar is present.\n
         - After a few minutes (time necessary to wait for bugreport being collected) notification titled \"Sharing bugreport...\" is automatically dismissed and notification titled \"Device Owner Requesting Bugreport Tests\" with message \"Bugreport shared successfully\" is present.\n
         \n
@@ -4398,7 +4404,8 @@ You should be prompted to select credentials; choose the ones you just installed
         \n
         Wait for a few minutes (time necessary for bugreport to be collected) and verify that:\n
         \n
-        - \"Taking bugreport...\" notification with an indefinite progress bar is dismissed.\n
+        <!-- Disabled in U due to b/317738856 -->
+        <!-- \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n -->
         - Notification titled \"Share bug report?\", that contains a message \"Your IT admin requested a bug report to help troubleshoot this device. Apps and data may be shared.\" and two buttons - \"DECLINE\" and \"SHARE\" is shown.\n
         \n
         Tap the \"DECLINE\" button and verify that:\n
@@ -4417,7 +4424,8 @@ You should be prompted to select credentials; choose the ones you just installed
         \n
         Wait for a few minutes (time necessary for bugreport to be collected) and verify that:\n
         \n
-        - \"Taking bugreport...\" notification with an indefinite progress bar is dismissed.\n
+        <!-- Disabled in U due to b/317738856 -->
+        <!-- \"Taking bugreport...\" notification with an indefinite progress bar is no longer present.\n -->
         - Notification titled \"Share bug report?\", that contains a message \"Your IT admin requested a bug report to help troubleshoot this device. Apps and data may be shared.\" and two buttons - \"DECLINE\" and \"SHARE\" is shown.\n
         \n
         Tap the \"SHARE\" button and verify that:\n
@@ -5839,9 +5847,10 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_frequency_mic_test">Audio Frequency Microphone Test</string>
     <string name="frequency_mic_info">
         This test requires an external USB reference microphone and external speakers.
-        The test signals can be played from the device under test (DUT) or from a secondary device (e.g. when your DUT can’t support a USB microphone and external speakers simultaneously, or DUT does not have headphone output).
-Follow the instructions on the screen to measure the frequency response for the built in microphone.
-       </string>
+        The test signals should be played from a secondary device connected to either analog speakers connected
+        to the analog headset jack, or USB speakers connected to the USB port of the secondary device.
+        Follow the instructions on the screen to measure the frequency response for the built in microphone.
+    </string>
 
     <string name="frequency_mic_play">Play</string>
     <string name="frequency_mic_stop">Stop</string>
@@ -6740,15 +6749,6 @@ Follow the instructions on the screen to measure the frequency response for the 
     step-by-step instructions.
     </string>
     <string name="ia_notification_instruction_label">\n
-    1. Click Start Test. \n\n
-    2. An alert dialog with install instruction will be shown if the sample Instant App has not been installed, otherwise, the sample Instant App will be opened automatically. \n\n
-    3. Drag down the notification bar when the sample Instant App is at foreground. \n\n
-    4. Check if Instant App is shown in notifciation area with the following (Please expand the notification if it is collapsed): \n
-    \u0020\u0020\u0020a. It provides information about Instant Apps not requiring installation and an action that provides more information about the Instant App. \n
-    \u0020\u0020\u0020b. It provides an action allowing the user to launch the associated link with web browser. \n\n
-    5. Click Pass button if all checks in step 4 passed, otherwise click Fail button.
-    </string>
-    <string name="ia_notification_instruction_label_no_app_market_version">\n
     1. Click Start Test. \n\n
     2. An alert dialog with install instruction will be shown if the sample Instant App has not been installed, otherwise, the sample Instant App will be opened automatically. \n\n
     3. Drag down the notification bar when the sample Instant App is at foreground. \n\n

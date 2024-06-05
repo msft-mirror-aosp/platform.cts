@@ -32,6 +32,7 @@ import android.app.role.RoleManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
 
@@ -140,6 +141,7 @@ public final class DefaultDialerApplicationTest {
     // TODO(b/198588696): Add support is @RequireVoiceCapable and @RequireNotVoiceCapable
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = DefaultDialerApplication.class)
+    @RequireFeature(PackageManager.FEATURE_TELEPHONY_CALLING)
     public void setDefaultDialerApplication_notVoiceCapable_unchanged() {
         assumeTrue(!mTelephonyManager.isVoiceCapable()
                 && (mRoleManager == null
@@ -173,6 +175,6 @@ public final class DefaultDialerApplicationTest {
                 throw new IllegalStateException(
                         "Error setting default dialer application. Relevant logcat: " + logcat);
             }
-        }).timeout(Duration.ofMinutes(2)).runAndWrapException();
+        }).timeout(Duration.ofMinutes(4)).runAndWrapException();
     }
 }

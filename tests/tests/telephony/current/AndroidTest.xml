@@ -37,18 +37,6 @@
       <option name="apk" value="CtsTelephonyCleanerApp.apk" />
       <option name="package" value="android.telephony.cts.preconditions.cleanerApp" />
     </target_preparer>
-    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-        <option name="cleanup-apks" value="true" />
-        <option name="test-file-name" value="CtsTelephonyTestCases.apk" />
-        <option name="test-file-name" value="EmbmsMiddlewareCtsTestApp.apk"/>
-        <option name="test-file-name" value="TestSmsApp22.apk"/>
-        <option name="test-file-name" value="TestSmsApp.apk"/>
-        <option name="test-file-name" value="TestSmsRetrieverApp.apk"/>
-        <option name="test-file-name" value="TestFinancialSmsApp.apk"/>
-        <option name="test-file-name" value="LocationAccessingApp.apk"/>
-        <option name="test-file-name" value="LocationAccessingAppSdk28.apk"/>
-        <option name="test-file-name" value="TestExternalImsServiceApp.apk"/>
-    </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.telephony.cts" />
         <option name="hidden-api-checks" value="false"/>
@@ -70,5 +58,17 @@
     <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer" >
         <option name="flag-value" value="telephony/com.android.internal.telephony.flags.oem_enabled_satellite_flag=true" />
         <option name="flag-value" value="telephony/com.android.internal.telephony.flags.carrier_enabled_satellite_flag=true" />
+    </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <option name="test-file-name" value="CtsTelephonyTestCases.apk" />
+        <option name="test-file-name" value="EmbmsMiddlewareCtsTestApp.apk"/>
+        <option name="test-file-name" value="TestSmsApp22.apk"/>
+        <option name="test-file-name" value="TestSmsApp.apk"/>
+        <option name="test-file-name" value="TestSmsRetrieverApp.apk"/>
+        <option name="test-file-name" value="TestFinancialSmsApp.apk"/>
+        <option name="test-file-name" value="LocationAccessingApp.apk"/>
+        <option name="test-file-name" value="LocationAccessingAppSdk28.apk"/>
+        <option name="test-file-name" value="TestExternalImsServiceApp.apk"/>
     </target_preparer>
 </configuration>

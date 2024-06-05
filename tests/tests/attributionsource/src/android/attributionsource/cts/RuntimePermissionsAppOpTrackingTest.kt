@@ -42,6 +42,7 @@ import android.speech.RecognitionListener
 import android.speech.SpeechRecognizer
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
+import com.android.modules.utils.build.SdkLevel;
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -394,9 +395,18 @@ class RuntimePermissionsAppOpTrackingTest {
             val recognizerRef = AtomicReference<SpeechRecognizer>()
             var currentOperationComplete = CountDownLatch(1)
 
+            // Makes sure that all runnable for setting up temporary recognition service is done
+            // before moving on to start the recognizer.
             instrumentation.runOnMainSync {
-                val recognizer = SpeechRecognizer.createSpeechRecognizer(context,
-                        ComponentName(RECEIVER2_PACKAGE_NAME, RECOGNITION_SERVICE))
+                instrumentation.uiAutomation
+                        .adoptShellPermissionIdentity("android.permission.MANAGE_SPEECH_RECOGNITION")
+                val recognizer = SpeechRecognizer.createOnDeviceTestingSpeechRecognizer(context)
+                recognizer.setTemporaryOnDeviceRecognizer(ComponentName(RECEIVER2_PACKAGE_NAME, RECOGNITION_SERVICE))
+                recognizerRef.set(recognizer)
+            }
+
+            instrumentation.runOnMainSync {
+                val recognizer = recognizerRef.get()
 
                 recognizer.setRecognitionListener(object : RecognitionListener {
                     override fun onReadyForSpeech(params: Bundle?) {}
@@ -415,8 +425,6 @@ class RuntimePermissionsAppOpTrackingTest {
                 val recoIntent = Intent()
                 recoIntent.putExtra(OPERATION, OPERATION_INJECT_RECO_WITHOUT_ATTRIBUTION)
                 recognizer.startListening(recoIntent)
-
-                recognizerRef.set(recognizer)
             }
 
             try {
@@ -503,7 +511,11 @@ class RuntimePermissionsAppOpTrackingTest {
                         intThat(attributionChainIdMatcher))
             } finally {
                 // Take down the recognition service
-                instrumentation.runOnMainSync { recognizerRef.get().destroy() }
+                instrumentation.runOnMainSync {
+                    recognizerRef.get().setTemporaryOnDeviceRecognizer(null)
+                    recognizerRef.get().destroy()
+                    instrumentation.uiAutomation.dropShellPermissionIdentity()
+                }
             }
         }
     }
@@ -528,9 +540,18 @@ class RuntimePermissionsAppOpTrackingTest {
             val recognizerRef = AtomicReference<SpeechRecognizer>()
             var currentOperationComplete = CountDownLatch(1)
 
+            // Makes sure that all runnable for setting up temporary recognition service is done
+            // before moving on to start the recognizer.
             instrumentation.runOnMainSync {
-                val recognizer = SpeechRecognizer.createSpeechRecognizer(context,
-                        ComponentName(RECEIVER2_PACKAGE_NAME, RECOGNITION_SERVICE))
+                instrumentation.uiAutomation
+                        .adoptShellPermissionIdentity("android.permission.MANAGE_SPEECH_RECOGNITION")
+                val recognizer = SpeechRecognizer.createOnDeviceTestingSpeechRecognizer(context)
+                recognizer.setTemporaryOnDeviceRecognizer(ComponentName(RECEIVER2_PACKAGE_NAME, RECOGNITION_SERVICE))
+                recognizerRef.set(recognizer)
+            }
+
+            instrumentation.runOnMainSync {
+                val recognizer = recognizerRef.get()
 
                 recognizer.setRecognitionListener(object : RecognitionListener {
                     override fun onReadyForSpeech(params: Bundle?) {}
@@ -549,8 +570,6 @@ class RuntimePermissionsAppOpTrackingTest {
                 val recoIntent = Intent()
                 recoIntent.putExtra(OPERATION, OPERATION_MIC_RECO_WITH_ATTRIBUTION)
                 recognizer.startListening(recoIntent)
-
-                recognizerRef.set(recognizer)
             }
 
             try {
@@ -610,34 +629,40 @@ class RuntimePermissionsAppOpTrackingTest {
                 val receiverUid = context.packageManager.getPackageUid(
                         RECEIVER_PACKAGE_NAME, 0)
 
-                inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
-                        eq(recognizerUid), eq(RECEIVER2_PACKAGE_NAME), isNull(), eq(true),
-                        eq(AppOpsManager.ATTRIBUTION_FLAG_ACCESSOR or ATTRIBUTION_FLAG_TRUSTED),
-                        intThat(attributionChainIdMatcher))
-                inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
-                        eq(Process.myUid()), eq(context.packageName), eq(ACCESSOR_ATTRIBUTION_TAG),
-                        eq(true), eq(AppOpsManager.ATTRIBUTION_FLAG_INTERMEDIARY or
-                        ATTRIBUTION_FLAG_TRUSTED), intThat(attributionChainIdMatcher))
-                inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
-                        eq(receiverUid), eq(RECEIVER_PACKAGE_NAME), eq(RECEIVER_ATTRIBUTION_TAG),
-                        eq(true), eq(AppOpsManager.ATTRIBUTION_FLAG_RECEIVER or
-                        ATTRIBUTION_FLAG_TRUSTED), intThat(attributionChainIdMatcher))
+                if (!SdkLevel.isAtLeastV()) {
+                    inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
+                            eq(recognizerUid), eq(RECEIVER2_PACKAGE_NAME), isNull(), eq(true),
+                            eq(AppOpsManager.ATTRIBUTION_FLAG_ACCESSOR or ATTRIBUTION_FLAG_TRUSTED),
+                            intThat(attributionChainIdMatcher))
+                    inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
+                            eq(Process.myUid()), eq(context.packageName), eq(ACCESSOR_ATTRIBUTION_TAG),
+                            eq(true), eq(AppOpsManager.ATTRIBUTION_FLAG_INTERMEDIARY or
+                            ATTRIBUTION_FLAG_TRUSTED), intThat(attributionChainIdMatcher))
+                    inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
+                            eq(receiverUid), eq(RECEIVER_PACKAGE_NAME), eq(RECEIVER_ATTRIBUTION_TAG),
+                            eq(true), eq(AppOpsManager.ATTRIBUTION_FLAG_RECEIVER or
+                            ATTRIBUTION_FLAG_TRUSTED), intThat(attributionChainIdMatcher))
 
-                inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
-                        eq(recognizerUid), eq(RECEIVER2_PACKAGE_NAME), isNull(), eq(false),
-                        eq(AppOpsManager.ATTRIBUTION_FLAG_ACCESSOR or ATTRIBUTION_FLAG_TRUSTED),
-                        intThat(attributionChainIdMatcher))
-                inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
-                        eq(Process.myUid()), eq(context.packageName), eq(ACCESSOR_ATTRIBUTION_TAG),
-                        eq(false), eq(AppOpsManager.ATTRIBUTION_FLAG_INTERMEDIARY or
-                        ATTRIBUTION_FLAG_TRUSTED), intThat(attributionChainIdMatcher))
-                inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
-                        eq(receiverUid), eq(RECEIVER_PACKAGE_NAME), eq(RECEIVER_ATTRIBUTION_TAG),
-                        eq(false), eq(AppOpsManager.ATTRIBUTION_FLAG_RECEIVER or
-                        ATTRIBUTION_FLAG_TRUSTED), intThat(attributionChainIdMatcher))
+                    inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
+                            eq(recognizerUid), eq(RECEIVER2_PACKAGE_NAME), isNull(), eq(false),
+                            eq(AppOpsManager.ATTRIBUTION_FLAG_ACCESSOR or ATTRIBUTION_FLAG_TRUSTED),
+                            intThat(attributionChainIdMatcher))
+                    inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
+                            eq(Process.myUid()), eq(context.packageName), eq(ACCESSOR_ATTRIBUTION_TAG),
+                            eq(false), eq(AppOpsManager.ATTRIBUTION_FLAG_INTERMEDIARY or
+                            ATTRIBUTION_FLAG_TRUSTED), intThat(attributionChainIdMatcher))
+                    inOrder.verify(listener).onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
+                            eq(receiverUid), eq(RECEIVER_PACKAGE_NAME), eq(RECEIVER_ATTRIBUTION_TAG),
+                            eq(false), eq(AppOpsManager.ATTRIBUTION_FLAG_RECEIVER or
+                            ATTRIBUTION_FLAG_TRUSTED), intThat(attributionChainIdMatcher))
+                }
             } finally {
                 // Take down the recognition service
-                instrumentation.runOnMainSync { recognizerRef.get().destroy() }
+                instrumentation.runOnMainSync {
+                    recognizerRef.get().setTemporaryOnDeviceRecognizer(null)
+                    recognizerRef.get().destroy()
+                    instrumentation.uiAutomation.dropShellPermissionIdentity()
+                }
             }
         }
     }
@@ -1001,7 +1026,17 @@ class RuntimePermissionsAppOpTrackingTest {
                 }
                 assertThat(opProxyInfo!!.uid).isEqualTo(attributionSource.uid)
                 assertThat(opProxyInfo.packageName).isEqualTo(attributionSource.packageName)
-                assertThat(opProxyInfo.attributionTag).isEqualTo(attributionSource.attributionTag)
+
+                /* Fix made to b/304983146 treats the attribution coming from shell as invalid
+                 because it will not exist in shell package. Hence this change is to
+                 validate them as null instead of actual values
+                */
+                if (attributionSource.packageName == SHELL_PACKAGE_NAME) {
+                    assertThat(opProxyInfo.attributionTag).isNull()
+                } else {
+                    assertThat(opProxyInfo.attributionTag)
+                        .isEqualTo(attributionSource.attributionTag)
+                }
             }
         }
 

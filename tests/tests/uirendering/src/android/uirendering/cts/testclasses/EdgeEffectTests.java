@@ -706,6 +706,7 @@ public class EdgeEffectTests extends ActivityTestBase {
             EdgeEffect edgeEffect = new EdgeEffect(getContext());
             edgeEffect.setSize(WIDTH, HEIGHT);
             initializer.initialize(edgeEffect);
+            sleepAnimationTime(timeBetweenFrames);
             RenderNode renderNode1 = drawEdgeEffect(edgeEffect, 0, 0);
             float oldStretch = getStretchDownPixelCount(renderNode1);
             for (int i = 0; i < 3; i++) {

@@ -1676,6 +1676,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         String.class, mCarPropertyManager)
+                .setCarPropertyValueVerifier(
+                        (carPropertyConfig, propertyId, areaId, timestampNanos, make) ->
+                                assertWithMessage("INFO_MAKE must not be empty")
+                                        .that(make)
+                                        .isNotEmpty())
                 .addReadPermission(Car.PERMISSION_CAR_INFO)
                 .build();
     }
@@ -1704,6 +1709,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         String.class, mCarPropertyManager)
+                .setCarPropertyValueVerifier(
+                        (carPropertyConfig, propertyId, areaId, timestampNanos, model) ->
+                                assertWithMessage("INFO_MODEL must not be empty")
+                                        .that(model)
+                                        .isNotEmpty())
                 .addReadPermission(Car.PERMISSION_CAR_INFO)
                 .build();
     }
@@ -5332,9 +5342,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
                         Float.class, mCarPropertyManager)
                 .setPossiblyDependentOnHvacPowerOn()
+                .requireMinMaxValues()
                 .setCarPropertyConfigVerifier(
                         carPropertyConfig -> {
                             List<Integer> configArray = carPropertyConfig.getConfigArray();
+                            if (configArray.isEmpty()) {
+                                return;
+                            }
                             assertWithMessage("HVAC_TEMPERATURE_SET config array must be size 6")
                                     .that(configArray.size())
                                     .isEqualTo(6);
@@ -5405,40 +5419,32 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             for (int i = 0; i < supportedAreaIds.length; i++) {
                                 int areaId = supportedAreaIds[i];
                                 Float minValueFloat = (Float) carPropertyConfig.getMinValue(areaId);
-                                if (minValueFloat != null) {
-                                    Integer minValueInt = (int) (minValueFloat * 10);
-                                    assertWithMessage(
-                                                    "HVAC_TEMPERATURE_SET minimum value: "
-                                                            + minValueInt
-                                                            + " at areaId: "
-                                                            + areaId
-                                                            + " should be equal to minimum"
-                                                            + " value specified in config"
-                                                            + " array: "
-                                                            + configMinValue)
-                                            .that(minValueInt)
-                                            .isEqualTo(configMinValue);
-                                }
+                                Integer minValueInt = (int) (minValueFloat * 10);
+                                assertWithMessage(
+                                        "HVAC_TEMPERATURE_SET minimum value: " + minValueInt
+                                        + " at areaId: " + areaId + " should be equal to minimum"
+                                        + " value specified in config"
+                                        + " array: " + configMinValue)
+                                        .that(minValueInt)
+                                        .isEqualTo(configMinValue);
+
                                 Float maxValueFloat = (Float) carPropertyConfig.getMaxValue(areaId);
-                                if (maxValueFloat != null) {
-                                    Integer maxValueInt = (int) (maxValueFloat * 10);
-                                    assertWithMessage(
-                                                    "HVAC_TEMPERATURE_SET maximum value: "
-                                                            + maxValueInt
-                                                            + " at areaId: "
-                                                            + areaId
-                                                            + " should be equal to maximum"
-                                                            + " value specified in config"
-                                                            + " array: "
-                                                            + configMaxValue)
-                                            .that(maxValueInt)
-                                            .isEqualTo(configMaxValue);
-                                }
+                                Integer maxValueInt = (int) (maxValueFloat * 10);
+                                assertWithMessage(
+                                        "HVAC_TEMPERATURE_SET maximum value: " + maxValueInt
+                                        + " at areaId: " + areaId + " should be equal to maximum"
+                                        + " value specified in config"
+                                        + " array: " + configMaxValue)
+                                        .that(maxValueInt)
+                                        .isEqualTo(configMaxValue);
                             }
                         })
                 .setCarPropertyValueVerifier(
                         (carPropertyConfig, propertyId, areaId, timestampNanos, tempInCelsius) -> {
                             List<Integer> configArray = carPropertyConfig.getConfigArray();
+                            if (configArray.isEmpty()) {
+                                return;
+                            }
                             Integer minTempInCelsius = configArray.get(0);
                             Integer maxTempInCelsius = configArray.get(1);
                             Integer incrementInCelsius = configArray.get(2);

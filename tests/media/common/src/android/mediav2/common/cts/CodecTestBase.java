@@ -66,6 +66,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -130,6 +131,9 @@ public abstract class CodecTestBase {
     public static final boolean BOARD_SDK_IS_AT_LEAST_T =
             SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= Build.VERSION_CODES.TIRAMISU;
+    public static final boolean BOARD_SDK_IS_BEFORE_U =
+            SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final boolean IS_HDR_EDITING_SUPPORTED;
     public static final boolean IS_HDR_CAPTURE_SUPPORTED;
     private static final String LOG_TAG = CodecTestBase.class.getSimpleName();
@@ -677,6 +681,20 @@ public abstract class CodecTestBase {
             }
         }
         return false;
+    }
+
+    /**
+     * Stop the current codec session and transfer component to uninitialized state.
+     * <p>
+     * Some legacy OMX components do not properly clear the internal state at stop().
+     * Workaround the issue with resetting the component.
+     */
+    public static void endCodecSession(MediaCodec codec) {
+        if (codec.getName().toUpperCase(Locale.getDefault()).startsWith("OMX")) {
+            codec.reset();
+        } else {
+            codec.stop();
+        }
     }
 
     protected static String paramToString(Object[] param) {

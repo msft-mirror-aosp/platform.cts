@@ -355,7 +355,8 @@ def convert_capture_to_planes(cap, props=None):
             rgb[2::3].reshape(h, w, 1))
   elif cap['format'] == 'raw':
     assert_props_is_not_none(props)
-    white_level = float(props['android.sensor.info.whiteLevel'])
+    white_level = get_white_level(props, cap['metadata'])
+    logging.debug('dynamic white level: %.2f', white_level)
     img = numpy.ndarray(
         shape=(h * w,), dtype='<u2', buffer=cap['data'][0:w * h * 2])
     img = img.astype(numpy.float32).reshape(h, w) / white_level
@@ -405,7 +406,7 @@ def convert_capture_to_planes(cap, props=None):
     return [imgs[i] for i in idxs]
   elif cap['format'] == 'rawStats':
     assert_props_is_not_none(props)
-    white_level = float(props['android.sensor.info.whiteLevel'])
+    white_level = get_white_level(props, cap['metadata'])
     # pylint: disable=unused-variable
     mean_image, var_image = unpack_rawstats_capture(cap)
     idxs = get_canonical_cfa_order(props)
@@ -479,6 +480,9 @@ def convert_raw_to_rgb_image(r_plane, gr_plane, gb_plane, b_plane, props,
   # Reorder black levels and gains to R,Gr,Gb,B, to match the order
   # of the planes.
   black_levels = [get_black_level(i, props, cap_res) for i in range(4)]
+  logging.debug('dynamic black levels: %s', black_levels)
+  white_level = get_white_level(props, cap_res)
+  logging.debug('dynamic white level: %.2f', white_level)
   gains = get_gains_in_canonical_order(props, gains)
 
   # Convert CCM from rational to float, as numpy arrays.
@@ -612,6 +616,27 @@ def get_gains_in_canonical_order(props, gains):
     return [gains[0], gains[2], gains[1], gains[3]]
   else:
     raise error_util.CameraItsError('Not supported')
+
+def get_white_level(props, cap_res=None):
+  """Return the white level to use for a given capture.
+
+  Uses a dynamic value from the capture result if available, else falls back
+  to the static global value in the camera characteristics.
+
+  Args:
+    props: The camera properties object.
+    cap_res: A capture result object.
+
+  Returns:
+    The white level value of type float.
+  """
+  if (cap_res is not None and
+      'android.sensor.dynamicWhiteLevel' in cap_res and
+      cap_res['android.sensor.dynamicWhiteLevel'] is not None):
+    white_level = cap_res['android.sensor.dynamicWhiteLevel']
+  else:
+    white_level = props['android.sensor.info.whiteLevel']
+  return float(white_level)
 
 
 def get_black_level(chan, props, cap_res=None):

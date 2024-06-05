@@ -32,6 +32,7 @@ import android.media.cts.TestUtils.Monitor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Looper;
+import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.util.Base64;
@@ -127,6 +128,13 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     private boolean mLostStateReceived;
 
     private static boolean sIsAtLeastS = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S);
+    private static final boolean VNDK_IS_AT_LEAST_U =
+            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+
+    private static final boolean FIRST_RELEASE_IS_AT_LEAST_U =
+            SystemProperties.getInt("ro.product.first_api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
     public MediaDrmClearkeyTest() {
         super(MediaStubActivity.class);
@@ -1681,7 +1689,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testGetKeyRequestDefaultUrl()
             throws UnsupportedSchemeException, NotProvisionedException {
-        if (watchHasNoClearkeySupport()) {
+        if (watchHasNoClearkeySupport() || !FIRST_RELEASE_IS_AT_LEAST_U || !VNDK_IS_AT_LEAST_U) {
             return;
         }
 

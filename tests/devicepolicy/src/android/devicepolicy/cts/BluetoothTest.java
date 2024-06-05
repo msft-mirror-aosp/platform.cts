@@ -407,14 +407,14 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
     public void share_disallowBluetoothAndSharingRestrictionsAreNotSet_canShare() {
+        Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
+
         Poll.forValue("Opp Launcher Component Enabled",
                 () -> TestApis.packages().activity(OPP_LAUNCHER_COMPONENT)
                         .isEnabled(TestApis.users().system()))
-                .toBeEqualTo(false)
+                .toBeEqualTo(true)
                 .errorOnFail()
                 .await();
-
-        Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
 
         List<ResolveInfo> resolveInfos = sPackageManager.queryIntentActivities(
                 FILE_SHARING_INTENT, /* flags= */ 0);
@@ -426,14 +426,14 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
     public void share_disallowBluetoothSharingRestrictionIsSet_canNotShare() {
+        Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
+
         Poll.forValue("Opp Launcher Component Enabled",
                 () -> TestApis.packages().activity(OPP_LAUNCHER_COMPONENT)
                         .isEnabled(TestApis.users().system()))
                 .toBeEqualTo(false)
                 .errorOnFail()
                 .await();
-
-        Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
 
         List<ResolveInfo> resolveInfos = sPackageManager.queryIntentActivities(
                 FILE_SHARING_INTENT, /* flags= */ 0);
@@ -483,14 +483,14 @@ public final class BluetoothTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH")
     @RequireNotHeadlessSystemUserMode(reason = "b/276405672 bluetooth restriction not enforced on secondary users")
     public void share_disallowBluetoothRestrictionIsSet_canNotShare() {
+        Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
+
         Poll.forValue("Opp Launcher Component Enabled",
                 () -> TestApis.packages().activity(OPP_LAUNCHER_COMPONENT)
                         .isEnabled(TestApis.users().system()))
                 .toBeEqualTo(false)
                 .errorOnFail()
                 .await();
-
-        Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
 
         List<ResolveInfo> resolveInfos = sPackageManager.queryIntentActivities(
                 FILE_SHARING_INTENT, /* flags= */ 0);
