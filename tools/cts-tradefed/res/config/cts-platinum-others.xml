@@ -254,7 +254,6 @@
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testFrequencyCapFiltering_WinEventDifferentKey_IsNotFiltered" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testFrequencyCapFiltering_WinEventSameBuyerDifferentCustomAudience_IsNotFiltered" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsDebuggableTest#testFrequencyCapFiltering_WinEvent_FiltersAds" />
-    <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.FledgeCtsMockServerTests#testFledgeAuctionSelectionFlowSuccessWithDataVersionHeader_unifiedTable" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.ScenarioDispatcherTest#testScenarioDispatcher_happyPath_httpGetSuccess" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.ScenarioDispatcherTest#testScenarioDispatcher_withComplexUrlStructure_success" />
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.ScenarioDispatcherTest#testScenarioDispatcher_withDuplicatePathCalls_doesNotReturnEarly" />

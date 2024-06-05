@@ -26,7 +26,6 @@ import static com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip;
 import static com.android.bedstead.harrier.annotations.EnsureHasAccount.DEFAULT_ACCOUNT_KEY;
 import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 import static com.android.bedstead.harrier.annotations.UsesAnnotationExecutorKt.getAnnotationExecutorClass;
-import static com.android.bedstead.enterprise.annotations.EnsureHasDelegate.DELEGATE_KEY;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_CLONE_PROFILE;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_MANAGED_PROFILE;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_ADD_PRIVATE_PROFILE;
@@ -51,9 +50,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.util.Log;
 
+import com.android.bedstead.enterprise.DeviceOwnerComponent;
+import com.android.bedstead.enterprise.EnterpriseComponent;
+import com.android.bedstead.enterprise.ProfileOwnersComponent;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwnerKt;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
@@ -120,28 +127,13 @@ import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsuppor
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
 import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
+import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled;
 import com.android.bedstead.harrier.annotations.RequireUserSupported;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
 import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.EnsureHasDelegate;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwnerKt;
-import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
-import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
-import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
-import com.android.bedstead.enterprise.annotations.RequireHasPolicyExemptApps;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasNoProfileAnnotation;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasNoUserAnnotation;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasProfileAnnotation;
@@ -154,9 +146,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountReference;
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy;
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.OperationSafetyReason;
-import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
-import com.android.bedstead.nene.devicepolicy.DevicePolicyController;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.display.Display;
 import com.android.bedstead.nene.display.DisplayProperties;
@@ -172,15 +162,11 @@ import com.android.bedstead.nene.utils.FailureDumper;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ResolveInfoWrapper;
 import com.android.bedstead.nene.utils.Tags;
-import com.android.bedstead.nene.utils.Versions;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator;
-import com.android.bedstead.remotedpc.RemoteDelegate;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
 import com.android.bedstead.remotedpc.RemoteDpc;
-import com.android.bedstead.remotedpc.RemoteDpcUsingParentInstance;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
-import com.android.bedstead.remotedpc.RemoteTestApp;
 import com.android.bedstead.testapp.NotFoundException;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -188,8 +174,6 @@ import com.android.bedstead.testapp.TestAppProvider;
 import com.android.bedstead.testapp.TestAppQueryBuilder;
 import com.android.eventlib.EventLogs;
 import com.android.queryable.annotations.Query;
-
-import com.google.common.base.Objects;
 
 import junit.framework.AssertionFailedError;
 
@@ -312,7 +296,16 @@ public final class DeviceState extends HarrierRule {
 
     public DeviceState(Duration maxTestDuration) {
         mLocator.loadModules(new MainLocatorModule(this));
-        mDeviceStateUsers = mLocator.get(DeviceStateUsers.class);
+        mUsersComponent = mLocator.get(UsersComponent.class);
+        mEnterpriseComponent = mLocator.get(EnterpriseComponent.class);
+        mDeviceOwnerComponent = mLocator.get(DeviceOwnerComponent.class);
+        mProfileOwnersComponent = mLocator.get(ProfileOwnersComponent.class);
+        mTestAppsComponent = mLocator.get(TestAppsComponent.class);
+        mContentTestApp = testApps()
+                .query()
+                .wherePackageName()
+                .isEqualTo("com.android.ContentTestApp")
+                .get();
         mMaxTestDuration = maxTestDuration;
         mSkipTestTeardown = TestApis.instrumentation().arguments().getBoolean(
                 SKIP_TEST_TEARDOWN_KEY, false);
@@ -363,12 +356,9 @@ public final class DeviceState extends HarrierRule {
     @Override
     protected void releaseResources() {
         Log.i(LOG_TAG, "Releasing resources");
-        mTestAppProvider.releaseResources();
-        mProfileOwners.clear();
+        mLocator.releaseResources();
         mAddedUserRestrictions.clear();
         mRegisteredBroadcastReceivers.clear();
-        mChangedProfileOwners.clear();
-        mTestApps.clear();
         mOriginalProperties.clear();
         mOriginalGlobalSettings.clear();
         mOriginalSecureSettings.clear();
@@ -543,7 +533,8 @@ public final class DeviceState extends HarrierRule {
 
                 if (ensureHasProfileAnnotation.hasProfileOwner()) {
                     if (isOrganizationOwned(annotation)) {
-                        ensureHasNoDeviceOwner(); // It doesn't make sense to have COPE + DO
+                        // It doesn't make sense to have COPE + DO
+                        mDeviceOwnerComponent.ensureHasNoDeviceOwner();
                     }
 
                     ((ProfileOwner) profileOwner(
@@ -557,7 +548,7 @@ public final class DeviceState extends HarrierRule {
             EnsureHasNoUserAnnotation ensureHasNoUserAnnotation =
                     annotationType.getAnnotation(EnsureHasNoUserAnnotation.class);
             if (ensureHasNoUserAnnotation != null) {
-                mDeviceStateUsers.ensureHasNoUser(ensureHasNoUserAnnotation.value());
+                mUsersComponent.ensureHasNoUser(ensureHasNoUserAnnotation.value());
                 continue;
             }
 
@@ -570,7 +561,7 @@ public final class DeviceState extends HarrierRule {
                 OptionalBoolean switchedToUser = (OptionalBoolean)
                         annotation.annotationType()
                                 .getMethod(SWITCHED_TO_USER).invoke(annotation);
-                mDeviceStateUsers.ensureHasUser(
+                mUsersComponent.ensureHasUser(
                         ensureHasUserAnnotation.value(), installInstrumentedApp,
                         switchedToUser);
                 continue;
@@ -601,25 +592,25 @@ public final class DeviceState extends HarrierRule {
             }
 
             if (annotation instanceof EnsureHasAdditionalUser ensureHasAdditionalUserAnnotation) {
-                mDeviceStateUsers.ensureHasAdditionalUser(
+                mUsersComponent.ensureHasAdditionalUser(
                         ensureHasAdditionalUserAnnotation.installInstrumentedApp(),
                         ensureHasAdditionalUserAnnotation.switchedToUser());
                 continue;
             }
 
             if (annotation instanceof EnsureHasNoAdditionalUser) {
-                mDeviceStateUsers.ensureHasNoAdditionalUser();
+                mUsersComponent.ensureHasNoAdditionalUser();
                 continue;
             }
 
             if (annotation instanceof RequireRunOnAdditionalUser requireRunOnAdditionalUserAnnotation) {
-                mDeviceStateUsers.requireRunOnAdditionalUser(
+                mUsersComponent.requireRunOnAdditionalUser(
                         requireRunOnAdditionalUserAnnotation.switchedToUser());
                 continue;
             }
 
             if (annotation instanceof RequireRunOnSingleUser) {
-                mDeviceStateUsers.requireRunOnSingleUser();
+                mUsersComponent.requireRunOnSingleUser();
                 continue;
             }
 
@@ -629,7 +620,7 @@ public final class DeviceState extends HarrierRule {
                 OptionalBoolean switchedToUser = (OptionalBoolean)
                         annotation.annotationType()
                                 .getMethod(SWITCHED_TO_USER).invoke(annotation);
-                mDeviceStateUsers.requireRunOnUser(
+                mUsersComponent.requireRunOnUser(
                         requireRunOnUserAnnotation.value(),
                         switchedToUser
                 );
@@ -675,7 +666,8 @@ public final class DeviceState extends HarrierRule {
 
                 if (requireRunOnProfileAnnotation.hasProfileOwner()) {
                     if (isOrganizationOwned(annotation)) {
-                        ensureHasNoDeviceOwner(); // It doesn't make sense to have COPE + DO
+                        // It doesn't make sense to have COPE + DO
+                        mDeviceOwnerComponent.ensureHasNoDeviceOwner();
                     }
 
                     ((ProfileOwner) profileOwner(
@@ -693,17 +685,17 @@ public final class DeviceState extends HarrierRule {
             }
 
             if (annotation instanceof EnsureTestAppInstalled ensureTestAppInstalledAnnotation) {
-                ensureTestAppInstalled(
+                mTestAppsComponent.ensureTestAppInstalled(
                         ensureTestAppInstalledAnnotation.key(),
                         ensureTestAppInstalledAnnotation.query(),
-                        ensureTestAppInstalledAnnotation.onUser(),
+                        resolveUserTypeToUser(ensureTestAppInstalledAnnotation.onUser()),
                         ensureTestAppInstalledAnnotation.isPrimary()
                 );
                 continue;
             }
 
             if (annotation instanceof EnsureTestAppHasPermission ensureTestAppHasPermissionAnnotation) {
-                ensureTestAppHasPermission(
+                mTestAppsComponent.ensureTestAppHasPermission(
                         ensureTestAppHasPermissionAnnotation.testAppKey(),
                         ensureTestAppHasPermissionAnnotation.value(),
                         ensureTestAppHasPermissionAnnotation.minVersion(),
@@ -714,7 +706,7 @@ public final class DeviceState extends HarrierRule {
             }
 
             if (annotation instanceof EnsureTestAppDoesNotHavePermission ensureTestAppDoesNotHavePermissionAnnotation) {
-                ensureTestAppDoesNotHavePermission(
+                mTestAppsComponent.ensureTestAppDoesNotHavePermission(
                         ensureTestAppDoesNotHavePermissionAnnotation.testAppKey(),
                         ensureTestAppDoesNotHavePermissionAnnotation.value(),
                         ensureTestAppDoesNotHavePermissionAnnotation.failureMode()
@@ -723,67 +715,12 @@ public final class DeviceState extends HarrierRule {
             }
 
             if (annotation instanceof EnsureTestAppHasAppOp ensureTestAppHasAppOpAnnotation) {
-                ensureTestAppHasAppOp(
+                mTestAppsComponent.ensureTestAppHasAppOp(
                         ensureTestAppHasAppOpAnnotation.testAppKey(),
                         ensureTestAppHasAppOpAnnotation.value(),
                         ensureTestAppHasAppOpAnnotation.minVersion(),
                         ensureTestAppHasAppOpAnnotation.maxVersion()
                 );
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasDelegate ensureHasDelegateAnnotation) {
-                ensureHasDelegate(
-                        ensureHasDelegateAnnotation.admin(),
-                        Arrays.asList(ensureHasDelegateAnnotation.scopes()),
-                        ensureHasDelegateAnnotation.isPrimary());
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasDevicePolicyManagerRoleHolder ensureHasDevicePolicyManagerRoleHolder) {
-                ensureHasDevicePolicyManagerRoleHolder(
-                        ensureHasDevicePolicyManagerRoleHolder.onUser(),
-                        ensureHasDevicePolicyManagerRoleHolder.isPrimary());
-            }
-
-
-            if (annotation instanceof EnsureHasDeviceOwner ensureHasDeviceOwnerAnnotation) {
-
-                ensureHasDeviceOwner(ensureHasDeviceOwnerAnnotation.failureMode(),
-                        ensureHasDeviceOwnerAnnotation.isPrimary(),
-                        ensureHasDeviceOwnerAnnotation.headlessDeviceOwnerType(),
-                        new HashSet<>(
-                                Arrays.asList(
-                                        ensureHasDeviceOwnerAnnotation.affiliationIds())),
-                        ensureHasDeviceOwnerAnnotation.type(),
-                        getDpcKeyFromAnnotation(annotation, "key"),
-                        getDpcQueryFromAnnotation(annotation));
-                continue;
-            }
-
-            if (annotation instanceof com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner ensureHasDeviceOwnerAnnotation) {
-
-                ensureHasDeviceOwner(ensureHasDeviceOwnerAnnotation.failureMode(),
-                        ensureHasDeviceOwnerAnnotation.isPrimary(),
-                        ensureHasDeviceOwnerAnnotation.headlessDeviceOwnerType(),
-                        new HashSet<>(
-                                Arrays.asList(
-                                        ensureHasDeviceOwnerAnnotation.affiliationIds())),
-                        ensureHasDeviceOwnerAnnotation.type(),
-                        getDpcKeyFromAnnotation(annotation, "key"),
-                        getDpcQueryFromAnnotation(annotation));
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasNoDelegate ensureHasNoDelegateAnnotation) {
-                ensureHasNoDelegate(ensureHasNoDelegateAnnotation.admin());
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasNoDeviceOwner ||
-                    annotation instanceof com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner
-            ) {
-                ensureHasNoDeviceOwner();
                 continue;
             }
 
@@ -794,6 +731,11 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
+            if (annotation instanceof RequireUsbDataSignalingCanBeDisabled requireUsbDataSignalingCanBeDisabledAnnotation) {
+                requireUsbDataSignalingCanBeDisabled();
+                continue;
+            }
+
             if (annotation instanceof RequireDoesNotHaveFeature requireDoesNotHaveFeatureAnnotation) {
                 requireDoesNotHaveFeature(
                         requireDoesNotHaveFeatureAnnotation.value(),
@@ -801,26 +743,8 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof EnsureHasProfileOwner ensureHasProfileOwnerAnnotation) {
-                ensureHasProfileOwner(ensureHasProfileOwnerAnnotation.onUser(),
-                        ensureHasProfileOwnerAnnotation.isPrimary(),
-                        ensureHasProfileOwnerAnnotation.useParentInstance(),
-                        new HashSet<>(Arrays.asList(
-                                ensureHasProfileOwnerAnnotation.affiliationIds())),
-                        ensureHasProfileOwnerAnnotation.key(),
-                        getDpcQueryFromAnnotation(annotation));
-                continue;
-            }
-
-            if (annotationType.equals(EnsureHasNoProfileOwner.class)) {
-                EnsureHasNoProfileOwner ensureHasNoProfileOwnerAnnotation =
-                        (EnsureHasNoProfileOwner) annotation;
-                ensureHasNoProfileOwner(ensureHasNoProfileOwnerAnnotation.onUser());
-                continue;
-            }
-
             if (annotation instanceof RequireUserSupported requireUserSupportedAnnotation) {
-                mDeviceStateUsers.requireUserSupported(
+                mUsersComponent.requireUserSupported(
                         requireUserSupportedAnnotation.value(),
                         requireUserSupportedAnnotation.failureMode());
                 continue;
@@ -977,14 +901,14 @@ public final class DeviceState extends HarrierRule {
             }
 
             if (annotation instanceof EnsurePasswordSet ensurePasswordSetAnnotation) {
-                mDeviceStateUsers.ensurePasswordSet(
+                mUsersComponent.ensurePasswordSet(
                         ensurePasswordSetAnnotation.forUser(),
                         ensurePasswordSetAnnotation.password());
                 continue;
             }
 
             if (annotation instanceof EnsurePasswordNotSet ensurePasswordNotSetAnnotation) {
-                mDeviceStateUsers.ensurePasswordNotSet(ensurePasswordNotSetAnnotation.forUser());
+                mUsersComponent.ensurePasswordNotSet(ensurePasswordNotSetAnnotation.forUser());
                 continue;
             }
 
@@ -1046,11 +970,6 @@ public final class DeviceState extends HarrierRule {
 
             if (annotation instanceof RequireMultiUserSupport requireMultiUserSupportAnnotation) {
                 requireMultiUserSupport(requireMultiUserSupportAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireHasPolicyExemptApps requireHasPolicyExemptAppsAnnotation) {
-                requireHasPolicyExemptApps(requireHasPolicyExemptAppsAnnotation.failureMode());
                 continue;
             }
 
@@ -1138,50 +1057,6 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof MostImportantCoexistenceTest mostImportantCoexistenceTestAnnotation) {
-                mTestApps.put(MostImportantCoexistenceTest.MORE_IMPORTANT, deviceOwner());
-
-                EnterprisePolicy[] policies =
-                        mostImportantCoexistenceTestAnnotation.policy()
-                                .getAnnotationsByType(EnterprisePolicy.class);
-
-                if (policies[0].permissions().length != 1) {
-                    throw new IllegalStateException(
-                            "Cannot use MostImportantCoexistenceTest for policies which have"
-                                    + " 0 or 2+ permissions");
-                }
-
-                String[] permission = new String[]{policies[0].permissions()[0].appliedWith()};
-
-                ensureTestAppHasPermission(MostImportantCoexistenceTest.MORE_IMPORTANT, permission,
-                        0, Integer.MAX_VALUE, FailureMode.SKIP);
-                ensureTestAppHasPermission(MostImportantCoexistenceTest.LESS_IMPORTANT, permission,
-                        0, Integer.MAX_VALUE, FailureMode.SKIP);
-
-                continue;
-            }
-
-            if (annotation instanceof MostRestrictiveCoexistenceTest mostRestrictiveCoexistenceTestAnnotation) {
-                EnterprisePolicy[] policies =
-                        mostRestrictiveCoexistenceTestAnnotation.policy()
-                                .getAnnotationsByType(EnterprisePolicy.class);
-
-                if (policies[0].permissions().length != 1) {
-                    throw new IllegalStateException(
-                            "Cannot use MostRestrictiveCoexistenceTest for policies which have "
-                                    + "0 or 2+ permissions");
-                }
-
-                String[] permission = new String[]{policies[0].permissions()[0].appliedWith()};
-
-                ensureTestAppHasPermission(MostRestrictiveCoexistenceTest.DPC_1, permission,
-                        0, Integer.MAX_VALUE, FailureMode.SKIP);
-                ensureTestAppHasPermission(MostRestrictiveCoexistenceTest.DPC_2, permission,
-                        0, Integer.MAX_VALUE, FailureMode.SKIP);
-
-                continue;
-            }
-
             if (annotation instanceof RequireStorageEncryptionSupported) {
                 requireStorageEncryptionSupported();
 
@@ -1244,11 +1119,6 @@ public final class DeviceState extends HarrierRule {
 
         requireSdkVersion(/* min= */ mMinSdkVersionCurrentTest,
                 /* max= */ Integer.MAX_VALUE, FailureMode.SKIP);
-    }
-
-    private static TestAppQueryBuilder defaultDpcQuery() {
-        return new TestAppProvider().query()
-                .wherePackageName().isEqualTo(RemoteDpc.REMOTE_DPC_APP_PACKAGE_NAME_OR_PREFIX);
     }
 
     private static TestAppQueryBuilder getDpcQueryFromAnnotation(Annotation annotation) {
@@ -1494,19 +1364,24 @@ public final class DeviceState extends HarrierRule {
         }
 
         if (hasProfileOwner) {
-            ensureHasProfileOwner(
+            mProfileOwnersComponent.ensureHasProfileOwner(
                     instrumentedUser, dpcIsPrimary, useParentInstance, affiliationIds, dpcKey,
                     dpcQuery);
         } else {
-            ensureHasNoProfileOwner(instrumentedUser);
+            mProfileOwnersComponent.ensureHasNoProfileOwner(instrumentedUser);
         }
 
-        mDeviceStateUsers.ensureSwitchedToUser(switchedToParentUser, instrumentedUser.parent());
+        mUsersComponent.ensureSwitchedToUser(switchedToParentUser, instrumentedUser.parent());
     }
 
     private void requireFeature(String feature, FailureMode failureMode) {
         checkFailOrSkip("Device must have feature " + feature,
                 TestApis.packages().features().contains(feature), failureMode);
+    }
+
+    private void requireUsbDataSignalingCanBeDisabled() {
+        assumeTrue("device must be able to control usb data signaling",
+                TestApis.devicePolicy().canUsbDataSignalingBeDisabled());
     }
 
     private void requireDoesNotHaveFeature(String feature, FailureMode failureMode) {
@@ -1551,34 +1426,24 @@ public final class DeviceState extends HarrierRule {
     private static final Context sContext = TestApis.context().instrumentedContext();
     private final Map<com.android.bedstead.nene.users.UserType, Map<UserReference, UserReference>>
             mProfiles = new HashMap<>();
-    private DevicePolicyController mDeviceOwner;
-    private final Map<UserReference, DevicePolicyController> mProfileOwners = new HashMap<>();
-    private RemotePolicyManager mDelegateDpc;
-    private RemotePolicyManager mPrimaryPolicyManager;
-    private RemoteDevicePolicyManagerRoleHolder mDevicePolicyManagerRoleHolder;
     private UserType mOtherUserType;
 
     private final Map<UserReference, Set<String>> mAddedUserRestrictions = new ConcurrentHashMap<>();
     private final Map<UserReference, Set<String>> mRemovedUserRestrictions = new ConcurrentHashMap<>();
-    private final DeviceStateUsers mDeviceStateUsers;
+    private final UsersComponent mUsersComponent;
+    private final EnterpriseComponent mEnterpriseComponent;
+    private final DeviceOwnerComponent mDeviceOwnerComponent;
+    private final ProfileOwnersComponent mProfileOwnersComponent;
+    private final TestAppsComponent mTestAppsComponent;
     private final List<BlockingBroadcastReceiver> mRegisteredBroadcastReceivers = new ArrayList<>();
-    private boolean mHasChangedDeviceOwner = false;
-    private DevicePolicyController mOriginalDeviceOwner;
-    private Integer mOriginalDeviceOwnerType;
-    private boolean mHasChangedDeviceOwnerType;
-    private final Map<UserReference, DevicePolicyController> mChangedProfileOwners =
-            new HashMap<>();
     private Boolean mOriginalBluetoothEnabled;
     private DisplayProperties.Theme mOriginalDisplayTheme;
     private DisplayProperties.ScreenOrientation mOriginalScreenOrientation;
 
     private Boolean mOriginalWifiEnabled;
-    private final TestAppProvider mTestAppProvider = new TestAppProvider();
-    private final Map<String, TestAppInstance> mTestApps = new HashMap<>();
-
     private final Map<String, String> mOriginalProperties = new HashMap<>();
     private final Map<String, String> mOriginalGlobalSettings = new HashMap<>();
-    private final Map<String, Query> mAdditionalQueryParameters = new HashMap<>();
+    public final Map<String, Query> mAdditionalQueryParameters = new HashMap<>();
     private final Map<UserReference, Boolean> mOriginalDefaultContentSuggestionsServiceEnabled =
             new HashMap<>();
     private final Set<UserReference> mTemporaryContentSuggestionsServiceSet =
@@ -1845,7 +1710,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed secondary user
      */
     public UserReference secondaryUser() {
-        return mDeviceStateUsers.user(SECONDARY_USER_TYPE_NAME);
+        return mUsersComponent.user(SECONDARY_USER_TYPE_NAME);
     }
 
     /**
@@ -1873,7 +1738,7 @@ public final class DeviceState extends HarrierRule {
             String dpcKey,
             TestAppQueryBuilder dpcQuery) {
         com.android.bedstead.nene.users.UserType resolvedUserType =
-                mDeviceStateUsers.requireUserSupported(profileType, FailureMode.SKIP);
+                mUsersComponent.requireUserSupported(profileType, FailureMode.SKIP);
 
         UserReference forUserReference = resolveUserTypeToUser(forUser);
 
@@ -1887,7 +1752,7 @@ public final class DeviceState extends HarrierRule {
                 requireFeature(FEATURE_MANAGED_USERS, FailureMode.SKIP);
 
                 // DO + work profile isn't a valid state
-                ensureHasNoDeviceOwner();
+                mDeviceOwnerComponent.ensureHasNoDeviceOwner();
                 ensureDoesNotHaveUserRestriction(DISALLOW_ADD_MANAGED_PROFILE, forUserReference);
             }
 
@@ -1916,7 +1781,7 @@ public final class DeviceState extends HarrierRule {
         mProfiles.get(resolvedUserType).put(forUserReference, profile);
 
         if (hasProfileOwner) {
-            ensureHasProfileOwner(
+            mProfileOwnersComponent.ensureHasProfileOwner(
                     profile, profileOwnerIsPrimary,
                     useParentInstance,
                     /* affiliationIds= */ null,
@@ -1924,7 +1789,7 @@ public final class DeviceState extends HarrierRule {
                     dpcQuery);
         }
 
-        mDeviceStateUsers.ensureSwitchedToUser(switchedToParentUser, forUserReference);
+        mUsersComponent.ensureSwitchedToUser(switchedToParentUser, forUserReference);
 
         return profile;
     }
@@ -1949,7 +1814,7 @@ public final class DeviceState extends HarrierRule {
             if (profileOwner != null && profileOwner.isOrganizationOwned()) {
                 profileOwner.setIsOrganizationOwned(false);
             }
-            mDeviceStateUsers.removeAndRecordUser(profile);
+            mUsersComponent.removeAndRecordUser(profile);
         }
     }
 
@@ -2135,7 +2000,7 @@ public final class DeviceState extends HarrierRule {
             case INITIAL_USER:
                 return TestApis.users().initial();
             case ADDITIONAL_USER:
-                return mDeviceStateUsers.additionalUser();
+                return mUsersComponent.additionalUser();
             case CLONE_PROFILE:
                 return cloneProfile();
             case PRIVATE_PROFILE:
@@ -2157,7 +2022,7 @@ public final class DeviceState extends HarrierRule {
      * Returns the additional user specified by annotation
      */
     public UserReference additionalUser() {
-        return mDeviceStateUsers.additionalUser();
+        return mUsersComponent.additionalUser();
     }
 
     void teardownNonShareableState() {
@@ -2198,14 +2063,9 @@ public final class DeviceState extends HarrierRule {
             broadcastReceiver.unregisterQuietly();
         }
         mRegisteredBroadcastReceivers.clear();
-        mDelegateDpc = null;
-        mPrimaryPolicyManager = null;
         mOtherUserType = null;
-        mTestApps.clear();
         mAccounts.clear();
         mAccountAuthenticators.clear();
-
-        mTestAppProvider.restore();
 
         mLocator.teardownNonShareableState();
 
@@ -2226,9 +2086,6 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private final Set<TestAppInstance> mInstalledTestApps = new HashSet<>();
-    private final Set<TestAppInstance> mUninstalledTestApps = new HashSet<>();
-
     void teardown() {
         teardownNonShareableState();
         teardownShareableState();
@@ -2240,76 +2097,6 @@ public final class DeviceState extends HarrierRule {
 
             TestApis.devicePolicy().calculateHasIncompatibleAccounts();
         }
-
-        if (mHasChangedDeviceOwner) {
-            if (mOriginalDeviceOwner == null) {
-                if (mDeviceOwner != null) {
-                    mDeviceOwner.remove();
-                }
-            } else if (!mOriginalDeviceOwner.equals(mDeviceOwner)) {
-                if (mDeviceOwner != null) {
-                    mDeviceOwner.remove();
-                }
-
-                ensureHasNoProfileOwner(TestApis.users().system());
-                TestApis.devicePolicy().setDeviceOwner(
-                        mOriginalDeviceOwner.componentName());
-            }
-
-            if (mOriginalDeviceOwner != null && mOriginalDeviceOwnerType != null) {
-                ((DeviceOwner) mOriginalDeviceOwner).setType(mOriginalDeviceOwnerType);
-            }
-
-            mHasChangedDeviceOwner = false;
-            mOriginalDeviceOwner = null;
-
-            mHasChangedDeviceOwnerType = false;
-            mOriginalDeviceOwnerType = null;
-        } else {
-            // Device owner type changed but the device owner is the same.
-            if (mHasChangedDeviceOwnerType) {
-                ((DeviceOwner) mDeviceOwner).setType(mOriginalDeviceOwnerType);
-
-                mHasChangedDeviceOwnerType = false;
-                mOriginalDeviceOwnerType = null;
-            }
-        }
-
-        for (Map.Entry<UserReference, DevicePolicyController> originalProfileOwner :
-                mChangedProfileOwners.entrySet()) {
-
-            ProfileOwner currentProfileOwner =
-                    TestApis.devicePolicy().getProfileOwner(originalProfileOwner.getKey());
-            if (Objects.equal(currentProfileOwner, originalProfileOwner.getValue())) {
-                continue; // No need to restore
-            }
-
-            if (currentProfileOwner != null) {
-                currentProfileOwner.remove();
-            }
-
-            if (originalProfileOwner.getValue() != null) {
-                TestApis.devicePolicy().setProfileOwner(originalProfileOwner.getKey(),
-                        originalProfileOwner.getValue().componentName());
-            }
-        }
-        mChangedProfileOwners.clear();
-        if (mDevicePolicyManagerRoleHolder != null) {
-            TestApis.devicePolicy().unsetDevicePolicyManagementRoleHolder(
-                    mDevicePolicyManagerRoleHolder.testApp().pkg(),
-                    mDevicePolicyManagerRoleHolder.user());
-            mDevicePolicyManagerRoleHolder = null;
-        }
-
-        for (TestAppInstance installedTestApp : mInstalledTestApps) {
-            installedTestApp.uninstall();
-        }
-        mInstalledTestApps.clear();
-
-        for (TestAppInstance uninstalledTestApp : mUninstalledTestApps) {
-            uninstalledTestApp.testApp().install(uninstalledTestApp.user());
-        }
-        mUninstalledTestApps.clear();
 
         if (mOriginalBluetoothEnabled != null) {
             TestApis.bluetooth().setEnabled(mOriginalBluetoothEnabled);
@@ -2357,7 +2144,7 @@ public final class DeviceState extends HarrierRule {
             com.android.bedstead.nene.users.UserType profileType,
             UserReference parent
     ) {
-        mDeviceStateUsers.ensureCanAddUser();
+        mUsersComponent.ensureCanAddUser();
         ensureCanAddProfile(parent, profileType, FailureMode.SKIP);
 
         if (profileType.name().equals("android.os.usertype.profile.CLONE")) {
@@ -2369,512 +2156,10 @@ public final class DeviceState extends HarrierRule {
         }
 
         try {
-            return mDeviceStateUsers.createUser(profileType, parent);
+            return mUsersComponent.createUser(profileType, parent);
         } catch (NeneException e) {
             throw new IllegalStateException("Error creating profile of type " + profileType, e);
         }
-    }
-
-    private void ensureHasDevicePolicyManagerRoleHolder(UserType onUser, boolean isPrimary) {
-        UserReference user = resolveUserTypeToUser(onUser);
-
-        ensureHasNoAccounts(UserType.ANY, /* allowPreCreatedAccounts= */ true,
-                FailureMode.FAIL);
-        ensureTestAppInstalled(RemoteDevicePolicyManagerRoleHolder.sTestApp, user);
-        TestApis.devicePolicy().setDevicePolicyManagementRoleHolder(
-                RemoteDevicePolicyManagerRoleHolder.sTestApp.pkg(), user);
-
-        mDevicePolicyManagerRoleHolder =
-                new RemoteDevicePolicyManagerRoleHolder(
-                        RemoteDevicePolicyManagerRoleHolder.sTestApp, user);
-
-        if (isPrimary) {
-            // We will override the existing primary
-            if (mPrimaryPolicyManager != null) {
-                Log.i(LOG_TAG, "Overriding primary policy manager "
-                        + mPrimaryPolicyManager + " with " + mDevicePolicyManagerRoleHolder);
-            }
-            mPrimaryPolicyManager = mDevicePolicyManagerRoleHolder;
-        }
-    }
-
-    private void ensureHasDelegate(
-            EnsureHasDelegate.AdminType adminType, List<String> scopes, boolean isPrimary) {
-        RemotePolicyManager dpc = getDeviceAdmin(adminType);
-
-        boolean specifiesAdminType = adminType != EnsureHasDelegate.AdminType.PRIMARY;
-        boolean currentPrimaryPolicyManagerIsNotDelegator =
-                !Objects.equal(mPrimaryPolicyManager, dpc);
-
-        if (isPrimary && mPrimaryPolicyManager != null
-                && (specifiesAdminType || currentPrimaryPolicyManagerIsNotDelegator)) {
-            throw new IllegalStateException(
-                    "Only one DPC can be marked as primary per test (current primary is "
-                            + mPrimaryPolicyManager + ")");
-        }
-
-        ensureTestAppInstalled(DELEGATE_KEY, RemoteDelegate.sTestApp, dpc.user());
-        RemoteDelegate delegate = new RemoteDelegate(RemoteDelegate.sTestApp, dpc().user());
-        dpc.devicePolicyManager().setDelegatedScopes(
-                dpc.componentName(), delegate.packageName(), scopes);
-
-        if (isPrimary) {
-            mDelegateDpc = dpc;
-            mPrimaryPolicyManager = delegate;
-        }
-    }
-
-    private void ensureHasNoDelegate(EnsureHasNoDelegate.AdminType adminType) {
-        if (adminType == EnsureHasNoDelegate.AdminType.ANY) {
-            for (UserReference user : TestApis.users().all()) {
-                ensureTestAppNotInstalled(RemoteDelegate.sTestApp, user);
-            }
-            return;
-        }
-        RemotePolicyManager dpc =
-                adminType == EnsureHasNoDelegate.AdminType.PRIMARY ? mPrimaryPolicyManager
-                        : adminType == EnsureHasNoDelegate.AdminType.DEVICE_OWNER
-                        ? deviceOwner()
-                        : adminType == EnsureHasNoDelegate.AdminType.PROFILE_OWNER
-                        ? profileOwner() : null;
-        if (dpc == null) {
-            throw new IllegalStateException("Unknown Admin Type " + adminType);
-        }
-
-        ensureTestAppNotInstalled(RemoteDelegate.sTestApp, dpc.user());
-    }
-
-    private void ensureTestAppInstalled(
-            String key, Query query, UserType onUser, boolean isPrimary) {
-        TestApp testApp =
-                mTestAppProvider.query(query).applyAnnotation(
-                        mAdditionalQueryParameters.getOrDefault(key, null)).get();
-
-        TestAppInstance testAppInstance = ensureTestAppInstalled(
-                key, testApp, resolveUserTypeToUser(onUser));
-
-        if (isPrimary) {
-            if (mPrimaryPolicyManager != null) {
-                throw new IllegalStateException(
-                        "Only one DPC can be marked as primary per test (current primary is "
-                                + mPrimaryPolicyManager + ")");
-            }
-
-            mPrimaryPolicyManager = new RemoteTestApp(testAppInstance);
-        }
-    }
-
-    private void ensureTestAppHasPermission(
-            String testAppKey, String[] permissions, int minVersion, int maxVersion,
-            FailureMode failureMode) {
-        checkTestAppExistsWithKey(testAppKey);
-
-        try {
-            mTestApps.get(testAppKey).permissions()
-                    .withPermissionOnVersionBetween(minVersion, maxVersion, permissions);
-        } catch (NeneException e) {
-            if (failureMode.equals(FailureMode.SKIP) && e.getMessage().contains("Cannot grant")
-                    || e.getMessage().contains("Error granting")) {
-                failOrSkip(e.getMessage(), FailureMode.SKIP);
-            } else {
-                throw e;
-            }
-        }
-    }
-
-    private void ensureTestAppDoesNotHavePermission(
-            String testAppKey, String[] permissions, FailureMode failureMode) {
-        checkTestAppExistsWithKey(testAppKey);
-
-        try {
-            mTestApps.get(testAppKey).permissions().withoutPermission(permissions);
-        } catch (NeneException e) {
-            if (failureMode.equals(FailureMode.SKIP)) {
-                failOrSkip(e.getMessage(), FailureMode.SKIP);
-            } else {
-                throw e;
-            }
-        }
-    }
-
-    private void ensureTestAppHasAppOp(
-            String testAppKey, String[] appOps, int minVersion, int maxVersion) {
-        checkTestAppExistsWithKey(testAppKey);
-
-        mTestApps.get(testAppKey).permissions()
-                .withAppOpOnVersionBetween(minVersion, maxVersion, appOps);
-    }
-
-    private void checkTestAppExistsWithKey(String testAppKey) {
-        if (!mTestApps.containsKey(testAppKey)) {
-            throw new NeneException(
-                    "No testapp with key " + testAppKey + ". Use @EnsureTestAppInstalled."
-                            + " Valid Test apps: " + mTestApps);
-        }
-    }
-
-    private RemotePolicyManager getDeviceAdmin(EnsureHasDelegate.AdminType adminType) {
-        switch (adminType) {
-            case DEVICE_OWNER:
-                return deviceOwner();
-            case PROFILE_OWNER:
-                return profileOwner();
-            case PRIMARY:
-                return dpc();
-            default:
-                throw new IllegalStateException("Unknown device admin type " + adminType);
-        }
-    }
-
-    private TestAppInstance ensureTestAppInstalled(TestApp testApp, UserReference user) {
-        return ensureTestAppInstalled(/* key= */ null, testApp, user);
-    }
-
-    private TestAppInstance ensureTestAppInstalled(String key, TestApp testApp,
-                                                   UserReference user) {
-        if (!mAdditionalQueryParameters.isEmpty()) {
-            assumeFalse("b/276740719 - we don't support custom delegates",
-                    DELEGATE_KEY.equals(key));
-        }
-
-        Package pkg = TestApis.packages().find(testApp.packageName());
-        TestAppInstance testAppInstance = null;
-        if (pkg != null && TestApis.packages().find(testApp.packageName()).installedOnUser(
-                user)) {
-            testAppInstance = testApp.instance(user);
-        } else {
-            // TODO: Consider if we want to record that we've started it so we can stop it after
-            //  if needed?
-            user.start();
-
-            testAppInstance = testApp.install(user);
-            mInstalledTestApps.add(testAppInstance);
-        }
-        if (key != null) {
-            mTestApps.put(key, testAppInstance);
-        }
-        return testAppInstance;
-    }
-
-    private void ensureTestAppNotInstalled(TestApp testApp, UserReference user) {
-        Package pkg = TestApis.packages().find(testApp.packageName());
-        if (pkg == null || !TestApis.packages().find(testApp.packageName()).installedOnUser(
-                user)) {
-            return;
-        }
-
-        TestAppInstance instance = testApp.instance(user);
-
-        if (mInstalledTestApps.contains(instance)) {
-            mInstalledTestApps.remove(instance);
-        } else {
-            mUninstalledTestApps.add(instance);
-        }
-
-        testApp.uninstall(user);
-    }
-
-    private void ensureHasDeviceOwner(FailureMode failureMode, boolean isPrimary,
-                                      EnsureHasDeviceOwner.HeadlessDeviceOwnerType headlessDeviceOwnerType,
-                                      Set<String> affiliationIds, int type,
-                                      String key, TestAppQueryBuilder dpcQuery) {
-
-        // TODO(scottjonathan): Should support non-remotedpc device owner (default to remotedpc)
-
-        dpcQuery.applyAnnotation(mAdditionalQueryParameters.getOrDefault(key, null));
-
-        if (dpcQuery.isEmptyQuery()) {
-            dpcQuery = defaultDpcQuery();
-        }
-
-        if (headlessDeviceOwnerType == EnsureHasDeviceOwner.HeadlessDeviceOwnerType.AFFILIATED
-                && TestApis.users().isHeadlessSystemUserMode()) {
-            affiliationIds.add("DEFAULT_AFFILIATED"); // To ensure headless PO + DO are affiliated
-        }
-
-        UserReference deviceOwnerUser;
-
-        if (headlessDeviceOwnerType == EnsureHasDeviceOwner.HeadlessDeviceOwnerType.SINGLE_USER) {
-            deviceOwnerUser = TestApis.users().main();
-        } else {
-            deviceOwnerUser = TestApis.users().system();
-        }
-
-        if (isPrimary && mPrimaryPolicyManager != null && !deviceOwnerUser.equals(
-                mPrimaryPolicyManager.user())) {
-            throw new IllegalStateException(
-                    "Only one DPC can be marked as primary per test (current primary is "
-                            + mPrimaryPolicyManager + ")");
-        }
-
-        DeviceOwner currentDeviceOwner = TestApis.devicePolicy().getDeviceOwner();
-
-        // if current device owner matches query, keep it as it is
-        if (RemoteDpc.matchesRemoteDpcQuery(currentDeviceOwner, dpcQuery)) {
-            mDeviceOwner = currentDeviceOwner;
-        } else {
-            // if there is no device owner, or current device owner is not a remote dpc
-            UserReference instrumentedUser = TestApis.users().instrumented();
-
-            if (!Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.S)) {
-                // Prior to S we can't set device owner if there are other users on the device
-
-                if (instrumentedUser.id() != 0) {
-                    // If we're not on the system user we can't reach the required state
-                    throw new AssumptionViolatedException(
-                            "Can't set Device Owner when running on non-system-user"
-                                    + " on this version of Android");
-                }
-
-                for (UserReference u : TestApis.users().all()) {
-                    if (u.equals(instrumentedUser)) {
-                        // Can't remove the user we're running on
-                        continue;
-                    }
-                    try {
-                        mDeviceStateUsers.removeAndRecordUser(u);
-                    } catch (NeneException e) {
-                        failOrSkip(
-                                "Error removing user to prepare for DeviceOwner: "
-                                        + e,
-                                failureMode);
-                    }
-                }
-            }
-
-            // We must remove all non-test users on all devices though
-            // (except for the first 1 if headless and always the system user)
-            int allowedNonTestUsers = TestApis.users().isHeadlessSystemUserMode() ? 1 : 0;
-
-            UserReference instrumented = TestApis.users().instrumented();
-
-            for (UserReference u : TestApis.users().all().stream()
-                    .sorted(Comparator.comparing(u -> u.equals(instrumented)).reversed())
-                    .collect(Collectors.toList())) {
-                if (u.isSystem()) {
-                    continue;
-                }
-                if (u.isForTesting()) {
-                    continue;
-                }
-
-                if (allowedNonTestUsers > 0) {
-                    allowedNonTestUsers--;
-                    continue;
-                }
-
-                if (u.equals(instrumented)) {
-                    // From U+ we limit non-for-testing users when setting device owner.
-                    if (Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
-                        throw new IllegalStateException(
-                                "Cannot set Device Owner when running on a "
-                                        + "non-for-testing secondary user (" + u + ")");
-                    } else {
-                        continue;
-                    }
-                }
-
-                try {
-                    mDeviceStateUsers.removeAndRecordUser(u);
-                } catch (NeneException e) {
-                    failOrSkip(
-                            "Error removing user to prepare for DeviceOwner: "
-                                    + e,
-                            failureMode);
-                }
-            }
-
-            if (Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
-                ensureHasNoAccounts(UserType.ANY, /* allowPreCreatedAccounts= */ true,
-                        FailureMode.FAIL);
-            } else {
-                // Prior to U this only checked the system user
-                ensureHasNoAccounts(UserType.SYSTEM_USER, /* allowPreCreatedAccounts= */ true,
-                        FailureMode.FAIL);
-            }
-            ensureHasNoProfileOwner(deviceOwnerUser);
-
-            if (!mHasChangedDeviceOwner) {
-                recordDeviceOwner();
-                mHasChangedDeviceOwner = true;
-                mHasChangedDeviceOwnerType = true;
-            }
-
-            mDeviceOwner = RemoteDpc.setAsDeviceOwner(dpcQuery,
-                        deviceOwnerUser).devicePolicyController();
-        }
-
-        if (isPrimary) {
-            mPrimaryPolicyManager = RemoteDpc.forDevicePolicyController(mDeviceOwner);
-        }
-
-        int deviceOwnerType = ((DeviceOwner) mDeviceOwner).getType();
-        if (deviceOwnerType != type) {
-            if (!mHasChangedDeviceOwnerType) {
-                mOriginalDeviceOwnerType = deviceOwnerType;
-                mHasChangedDeviceOwnerType = true;
-            }
-
-            ((DeviceOwner) mDeviceOwner).setType(type);
-        }
-
-        if (type != DeviceOwnerType.FINANCED) {
-            // API is not allowed to be called by a financed device owner.
-            RemoteDpc remoteDpcForDeviceOwner = RemoteDpc.forDevicePolicyController(mDeviceOwner);
-
-            remoteDpcForDeviceOwner.devicePolicyManager()
-                    .setAffiliationIds(
-                            remoteDpcForDeviceOwner.componentName(),
-                            affiliationIds);
-        }
-
-        if (headlessDeviceOwnerType == EnsureHasDeviceOwner.HeadlessDeviceOwnerType.AFFILIATED
-                && TestApis.users().isHeadlessSystemUserMode()) {
-            // To simulate "affiliated" headless mode - we must also set the profile owner on the
-            // initial user
-
-            ensureHasProfileOwner(TestApis.users().initial(),
-                    /* isPrimary= */ false, /* useParentInstance= */ false,
-                    affiliationIds, key, dpcQuery,
-                    RemoteDpc.forDevicePolicyController(mDeviceOwner).testApp());
-        }
-    }
-
-    private void recordDeviceOwner() {
-        mOriginalDeviceOwner = TestApis.devicePolicy().getDeviceOwner();
-        mOriginalDeviceOwnerType =
-                mOriginalDeviceOwner != null ? ((DeviceOwner) mOriginalDeviceOwner).getType()
-                        : null;
-    }
-
-    private void ensureHasProfileOwner(UserType onUser, boolean isPrimary,
-                                       boolean useParentInstance, Set<String> affiliationIds, String key,
-                                       TestAppQueryBuilder dpcQuery) {
-        // TODO(scottjonathan): Should support non-remotedpc profile owner
-        //  (default to remotedpc)
-        UserReference user = resolveUserTypeToUser(onUser);
-
-        ensureHasProfileOwner(user, isPrimary, useParentInstance, affiliationIds, key, dpcQuery);
-    }
-
-    private void ensureHasProfileOwner(
-            UserReference user, boolean isPrimary, boolean useParentInstance,
-            Set<String> affiliationIds, String key, TestAppQueryBuilder dpcQuery) {
-        ensureHasProfileOwner(user, isPrimary, useParentInstance, affiliationIds, key, dpcQuery,
-                /* resolvedDpcTestApp= */ null);
-    }
-
-    private void ensureHasProfileOwner(
-            UserReference user, boolean isPrimary, boolean useParentInstance,
-            Set<String> affiliationIds, String key,
-            TestAppQueryBuilder dpcQuery, TestApp resolvedDpcTestApp) {
-
-        dpcQuery.applyAnnotation(mAdditionalQueryParameters.getOrDefault(key, null));
-
-        if (dpcQuery.isEmptyQuery()) {
-            dpcQuery = defaultDpcQuery();
-        }
-
-        if (isPrimary && mPrimaryPolicyManager != null
-                && !user.equals(mPrimaryPolicyManager.user())) {
-            throw new IllegalStateException(
-                    "Only one DPC can be marked as primary per test");
-        }
-
-        ProfileOwner currentProfileOwner = TestApis.devicePolicy().getProfileOwner(user);
-        DeviceOwner currentDeviceOwner = TestApis.devicePolicy().getDeviceOwner();
-
-        if (currentDeviceOwner != null && currentDeviceOwner.user().equals(user)) {
-            // Can't have DO and PO on the same user
-            ensureHasNoDeviceOwner();
-        }
-
-        if (RemoteDpc.matchesRemoteDpcQuery(currentProfileOwner, dpcQuery)) {
-            mProfileOwners.put(user, currentProfileOwner);
-        } else {
-            if (user.parent() != null) {
-                ensureDoesNotHaveUserRestriction(DISALLOW_ADD_MANAGED_PROFILE, user.parent());
-            }
-
-            if (!mChangedProfileOwners.containsKey(user)) {
-                mChangedProfileOwners.put(user, currentProfileOwner);
-            }
-
-            ensureHasNoAccounts(user, /* allowPreCreatedAccounts= */ true,
-                    FailureMode.FAIL);
-
-            if (resolvedDpcTestApp != null) {
-                mProfileOwners.put(user,
-                        RemoteDpc.setAsProfileOwner(user, resolvedDpcTestApp)
-                                .devicePolicyController());
-            } else {
-                mProfileOwners.put(user,
-                        RemoteDpc.setAsProfileOwner(user, dpcQuery).devicePolicyController());
-            }
-        }
-
-        if (Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
-            ensureHasNoAccounts(user, /* allowPreCreatedAccounts= */ true,
-                    FailureMode.FAIL);
-        } else {
-            // Prior to U this incorrectly checked the system user
-            ensureHasNoAccounts(UserType.SYSTEM_USER, /* allowPreCreatedAccounts= */ true,
-                    FailureMode.FAIL);
-        }
-
-        if (isPrimary) {
-            if (useParentInstance) {
-                mPrimaryPolicyManager = new RemoteDpcUsingParentInstance(
-                        RemoteDpc.forDevicePolicyController(mProfileOwners.get(user)));
-            } else {
-                mPrimaryPolicyManager =
-                        RemoteDpc.forDevicePolicyController(mProfileOwners.get(user));
-            }
-        }
-
-        if (affiliationIds != null) {
-            RemoteDpc profileOwner = profileOwner(user);
-            profileOwner.devicePolicyManager()
-                    .setAffiliationIds(profileOwner.componentName(), affiliationIds);
-        }
-    }
-
-    private void ensureHasNoDeviceOwner() {
-        DeviceOwner deviceOwner = TestApis.devicePolicy().getDeviceOwner();
-
-        if (deviceOwner == null) {
-            return;
-        }
-
-        if (!mHasChangedDeviceOwner) {
-            recordDeviceOwner();
-            mHasChangedDeviceOwner = true;
-            mHasChangedDeviceOwnerType = true;
-        }
-
-        mDeviceOwner = null;
-        deviceOwner.remove();
-    }
-
-    private void ensureHasNoProfileOwner(UserType onUser) {
-        UserReference user = resolveUserTypeToUser(onUser);
-
-        ensureHasNoProfileOwner(user);
-    }
-
-    private void ensureHasNoProfileOwner(UserReference user) {
-        ProfileOwner currentProfileOwner = TestApis.devicePolicy().getProfileOwner(user);
-
-        if (currentProfileOwner == null) {
-            return;
-        }
-
-        if (!mChangedProfileOwners.containsKey(user)) {
-            mChangedProfileOwners.put(user, currentProfileOwner);
-        }
-
-        TestApis.devicePolicy().getProfileOwner(user).remove();
-        mProfileOwners.remove(user);
     }
 
     /**
@@ -2885,17 +2170,7 @@ public final class DeviceState extends HarrierRule {
      * <p>If the device owner is not a RemoteDPC then an exception will be thrown
      */
     public RemoteDpc deviceOwner() {
-        if (mDeviceOwner == null) {
-            throw new IllegalStateException(
-                    "No Harrier-managed device owner. This method should "
-                            + "only be used when Harrier was used to set the Device Owner.");
-        }
-        if (!RemoteDpc.isRemoteDpc(mDeviceOwner)) {
-            throw new IllegalStateException("The device owner is not a RemoteDPC."
-                    + " You must use Nene to query for this device owner.");
-        }
-
-        return RemoteDpc.forDevicePolicyController(mDeviceOwner);
+        return mDeviceOwnerComponent.deviceOwner();
     }
 
     /**
@@ -2932,24 +2207,7 @@ public final class DeviceState extends HarrierRule {
      * <p>If the profile owner is not a RemoteDPC then an exception will be thrown.
      */
     public RemoteDpc profileOwner(UserReference onUser) {
-        if (onUser == null) {
-            throw new NullPointerException();
-        }
-
-        if (!mProfileOwners.containsKey(onUser)) {
-            throw new IllegalStateException(
-                    "No Harrier-managed profile owner. This method should "
-                            + "only be used when Harrier was used to set the Profile Owner.");
-        }
-
-        DevicePolicyController profileOwner = mProfileOwners.get(onUser);
-
-        if (!RemoteDpc.isRemoteDpc(profileOwner)) {
-            throw new IllegalStateException("The profile owner is not a RemoteDPC."
-                    + " You must use Nene to query for this profile owner.");
-        }
-
-        return RemoteDpc.forDevicePolicyController(profileOwner);
+        return mProfileOwnersComponent.profileOwner(onUser);
     }
 
     private void requirePackageInstalled(
@@ -3003,13 +2261,7 @@ public final class DeviceState extends HarrierRule {
      * the delegating DPC not the delegate.
      */
     public RemotePolicyManager dpcOnly() {
-        if (mPrimaryPolicyManager != null) {
-            if (mPrimaryPolicyManager.isDelegate()) {
-                return mDelegateDpc;
-            }
-        }
-
-        return dpc();
+        return mEnterpriseComponent.dpcOnly();
     }
 
     /**
@@ -3031,29 +2283,7 @@ public final class DeviceState extends HarrierRule {
      * <p>If the profile owner or device owner is not a RemoteDPC then an exception will be thrown.
      */
     public RemotePolicyManager dpc() {
-        if (mPrimaryPolicyManager != null) {
-            return mPrimaryPolicyManager;
-        }
-
-        if (mProfileOwners.containsKey(TestApis.users().instrumented())) {
-            DevicePolicyController profileOwner =
-                    mProfileOwners.get(TestApis.users().instrumented());
-
-
-            if (RemoteDpc.isRemoteDpc(profileOwner)) {
-                return RemoteDpc.forDevicePolicyController(profileOwner);
-            }
-        }
-
-        if (mDeviceOwner != null) {
-            if (RemoteDpc.isRemoteDpc(mDeviceOwner)) {
-                return RemoteDpc.forDevicePolicyController(mDeviceOwner);
-            }
-
-        }
-
-        throw new IllegalStateException("No Harrier-managed profile owner or device owner. "
-                + "Ensure you have set up the DPC using bedstead annotations.");
+        return mEnterpriseComponent.dpc();
     }
 
 
@@ -3061,12 +2291,7 @@ public final class DeviceState extends HarrierRule {
      * Get the Device Policy Management Role Holder.
      */
     public RemoteDevicePolicyManagerRoleHolder dpmRoleHolder() {
-        if (mDevicePolicyManagerRoleHolder == null) {
-            throw new IllegalStateException(
-                    "No Harrier-managed device policy manager role holder.");
-        }
-
-        return mDevicePolicyManagerRoleHolder;
+        return mEnterpriseComponent.dpmRoleHolder();
     }
 
     /**
@@ -3076,7 +2301,7 @@ public final class DeviceState extends HarrierRule {
      * automatically remove test apps use the {@link EnsureTestAppInstalled} annotation.
      */
     public TestAppProvider testApps() {
-        return mTestAppProvider;
+        return mTestAppsComponent.getTestAppProvider();
     }
 
     /**
@@ -3090,11 +2315,7 @@ public final class DeviceState extends HarrierRule {
      * Get a test app installed with `@EnsureTestAppInstalled` with the given key.
      */
     public TestAppInstance testApp(String key) {
-        if (!mTestApps.containsKey(key)) {
-            throw new NeneException("No testapp with given key. Use @EnsureTestAppInstalled");
-        }
-
-        return mTestApps.get(key);
+        return mTestAppsComponent.testApp(key);
     }
 
     private void requireNotHeadlessSystemUserMode(String reason) {
@@ -3264,9 +2485,7 @@ public final class DeviceState extends HarrierRule {
         TestApis.content().suggestions().setDefaultServiceEnabled(enabled);
     }
 
-    private final TestApp mContentTestApp = testApps().query().wherePackageName()
-            .isEqualTo("com.android.ContentTestApp").get();
-    // TODO: Use queries
+    private final TestApp mContentTestApp;
     private final ComponentReference mContentSuggestionsService =
             ComponentReference.unflattenFromString(
                     "com.android.ContentTestApp/.ContentSuggestionsService");
@@ -3277,8 +2496,7 @@ public final class DeviceState extends HarrierRule {
 
     private void ensureHasTestContentSuggestionsService(UserReference user) {
         ensureDefaultContentSuggestionsServiceEnabled(user, /* enabled= */ false);
-        TestAppInstance contentTestApp =
-                ensureTestAppInstalled("content", mContentTestApp, user);
+        mTestAppsComponent.ensureTestAppInstalled("content", mContentTestApp, user);
 
         mTemporaryContentSuggestionsServiceSet.add(user);
 
@@ -3288,11 +2506,6 @@ public final class DeviceState extends HarrierRule {
     private void requireMultiUserSupport(FailureMode failureMode) {
         checkFailOrSkip("This test is only supported on multi user devices",
                 TestApis.users().supportsMultipleUsers(), failureMode);
-    }
-
-    private void requireHasPolicyExemptApps(FailureMode failureMode) {
-        checkFailOrSkip("OEM does not define any policy-exempt apps",
-                !TestApis.devicePolicy().getPolicyExemptApps().isEmpty(), failureMode);
     }
 
     private void requireInstantApp(String reason, FailureMode failureMode) {
@@ -3334,7 +2547,7 @@ public final class DeviceState extends HarrierRule {
     private void ensureHasAccountAuthenticator(UserType onUser) {
         UserReference user = resolveUserTypeToUser(onUser);
         // We don't use .install() so we can rely on the default testapp sharing/uninstall logic
-        ensureTestAppInstalled(REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP,
+        mTestAppsComponent.ensureTestAppInstalled(REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP,
                 user);
 
         mAccountAuthenticators.put(user, RemoteAccountAuthenticator.install(user));
@@ -3378,7 +2591,13 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void ensureHasNoAccounts(UserType userType, boolean allowPreCreatedAccounts,
+    /**
+     * See {@link DeviceState#ensureHasNoAccounts(UserReference, boolean, FailureMode)}
+     * @deprecated do not use it in tests
+     */
+    //TODO(karzelek): move it outside of DeviceState
+    @Deprecated
+    public void ensureHasNoAccounts(UserType userType, boolean allowPreCreatedAccounts,
             FailureMode failureMode) {
         if (userType == UserType.ANY) {
             TestApis.users().all().forEach(user -> ensureHasNoAccounts(user,
@@ -3389,7 +2608,15 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void ensureHasNoAccounts(UserReference user, boolean allowPreCreatedAccounts,
+    /**
+     * Ensure that the given user has no accounts
+     * <p>
+     * Do not use this method inside tests, instead use the {@link EnsureHasNoAccounts} annotation.
+     * @deprecated do not use it in tests
+     */
+    //TODO(karzelek): move it outside of DeviceState
+    @Deprecated
+    public void ensureHasNoAccounts(UserReference user, boolean allowPreCreatedAccounts,
             FailureMode failureMode) {
         if (REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP.pkg().installedOnUser(user)) {
             user.start(); // The user has to be started to remove accounts
@@ -3516,7 +2743,7 @@ public final class DeviceState extends HarrierRule {
     }
 
     private boolean trySetUserRestrictionWithDeviceOwner(String restriction) {
-        ensureHasDeviceOwner(FailureMode.FAIL,
+        mDeviceOwnerComponent.ensureHasDeviceOwner(FailureMode.FAIL,
                 /* isPrimary= */ false, EnsureHasDeviceOwner.HeadlessDeviceOwnerType.NONE,
                 /* affiliationIds= */ new HashSet<>(), /* type= */ DeviceOwnerType.DEFAULT,
                 EnsureHasDeviceOwner.DEFAULT_KEY, new TestAppProvider().query());
@@ -3535,7 +2762,7 @@ public final class DeviceState extends HarrierRule {
 
     private boolean trySetUserRestrictionWithProfileOwner(UserReference onUser,
                                                           String restriction) {
-        ensureHasProfileOwner(onUser,
+        mProfileOwnersComponent.ensureHasProfileOwner(onUser,
                 /* isPrimary= */ false, /* isParentInstance= */ false,
                 /* affiliationIds= */ new HashSet<>(), EnsureHasProfileOwnerKt.DEFAULT_KEY,
                 new TestAppProvider().query());
@@ -3553,7 +2780,7 @@ public final class DeviceState extends HarrierRule {
     }
 
     private boolean tryClearUserRestrictionWithDeviceOwner(String restriction) {
-        ensureHasDeviceOwner(FailureMode.FAIL,
+        mDeviceOwnerComponent.ensureHasDeviceOwner(FailureMode.FAIL,
                 /* isPrimary= */ false, EnsureHasDeviceOwner.HeadlessDeviceOwnerType.NONE,
                 /* affiliationIds= */ new HashSet<>(), /* type= */ DeviceOwnerType.DEFAULT,
                 EnsureHasDeviceOwner.DEFAULT_KEY, new TestAppProvider().query());
@@ -3572,7 +2799,7 @@ public final class DeviceState extends HarrierRule {
 
     private boolean tryClearUserRestrictionWithProfileOwner(UserReference onUser,
                                                             String restriction) {
-        ensureHasProfileOwner(onUser,
+        mProfileOwnersComponent.ensureHasProfileOwner(onUser,
                 /* isPrimary= */ false, /* isParentInstance= */ false,
                 /* affiliationIds= */ new HashSet<>(), EnsureHasProfileOwnerKt.DEFAULT_KEY,
                 new TestAppProvider().query());
@@ -3603,22 +2830,22 @@ public final class DeviceState extends HarrierRule {
     private void tryClearUserRestriction(UserReference onUser, String restriction) {
         if (restriction.equals(DISALLOW_ADD_MANAGED_PROFILE)) {
             // Special case - set by the system whenever there is a Device Owner
-            ensureHasNoDeviceOwner();
+            mDeviceOwnerComponent.ensureHasNoDeviceOwner();
         } else if (restriction.equals(DISALLOW_ADD_CLONE_PROFILE)) {
             // Special case - set by the system whenever there is a Device Owner
-            ensureHasNoDeviceOwner();
+            mDeviceOwnerComponent.ensureHasNoDeviceOwner();
         } else if (restriction.equals(DISALLOW_ADD_PRIVATE_PROFILE)) {
             // Special case - set by the system whenever there is a Device Owner
-            ensureHasNoDeviceOwner();
+            mDeviceOwnerComponent.ensureHasNoDeviceOwner();
         } else if (restriction.equals(DISALLOW_ADD_USER)) {
             // Special case - set by the system whenever there is a Device Owner or
             // organization-owned profile owner
-            ensureHasNoDeviceOwner();
+            mDeviceOwnerComponent.ensureHasNoDeviceOwner();
 
             ProfileOwner orgOwnedProfileOwner =
                     TestApis.devicePolicy().getOrganizationOwnedProfileOwner();
             if (orgOwnedProfileOwner != null) {
-                ensureHasNoProfileOwner(orgOwnedProfileOwner.user());
+                mProfileOwnersComponent.ensureHasNoProfileOwner(orgOwnedProfileOwner.user());
                 return;
             }
         }
@@ -3639,7 +2866,15 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void ensureDoesNotHaveUserRestriction(String restriction, UserReference onUser) {
+    /**
+     * Ensure that a user restriction isn't set on the given user.
+     * <p>
+     * @deprecated Do not use this method inside tests,
+     * instead use the {@link EnsureDoesNotHaveUserRestriction} annotation.
+     */
+    //TODO(karzelek): move it outside of DeviceState
+    @Deprecated
+    public void ensureDoesNotHaveUserRestriction(String restriction, UserReference onUser) {
         if (!TestApis.devicePolicy().userRestrictions(onUser).isSet(restriction)) {
             return;
         }
@@ -3774,7 +3009,7 @@ public final class DeviceState extends HarrierRule {
 
         if(!packageResponded) {
             try {
-                ensureTestAppInstalled(
+                mTestAppsComponent.ensureTestAppInstalled(
                         /* testApp= */ testApps().query().whereActivities().contains(
                                         activity().where().intentFilters().contains(
                                                 intentFilter().where().actions().contains(paramIntent.action())))

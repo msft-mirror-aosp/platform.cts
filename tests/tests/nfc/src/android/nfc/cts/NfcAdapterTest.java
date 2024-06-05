@@ -283,25 +283,40 @@ public class NfcAdapterTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_SET_DISCOVERY_TECH)
     public void testResetDiscoveryTechnology() {
-            NfcAdapter adapter = getDefaultAdapter();
-            Activity activity = createAndResumeActivity();
-            adapter.resetDiscoveryTechnology(activity);
+        NfcAdapter adapter = getDefaultAdapter();
+        Activity activity = createAndResumeActivity();
+        adapter.setDiscoveryTechnology(activity, NfcAdapter.FLAG_READER_KEEP,
+                NfcAdapter.FLAG_LISTEN_KEEP);
+        adapter.resetDiscoveryTechnology(activity);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NFC_SET_DISCOVERY_TECH)
     public void testSetDiscoveryTechnology() {
-            NfcAdapter adapter = getDefaultAdapter();
-            Activity activity = createAndResumeActivity();
-            adapter.setDiscoveryTechnology(activity,
-                    NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_NFC_B
-                    | NfcAdapter.FLAG_READER_NFC_F,
-                    NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_A | NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_B
-                    | NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_F);
-            adapter.resetDiscoveryTechnology(activity);
-            adapter.setDiscoveryTechnology(activity, NfcAdapter.FLAG_READER_DISABLE,
-                    NfcAdapter.FLAG_LISTEN_KEEP);
-            adapter.resetDiscoveryTechnology(activity);
+        NfcAdapter adapter = getDefaultAdapter();
+        Activity activity = createAndResumeActivity();
+        adapter.setDiscoveryTechnology(activity,
+                NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_NFC_B
+                | NfcAdapter.FLAG_READER_NFC_F,
+                NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_A | NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_B
+                | NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_F);
+        adapter.resetDiscoveryTechnology(activity);
+        adapter.setDiscoveryTechnology(activity, NfcAdapter.FLAG_READER_DISABLE,
+                NfcAdapter.FLAG_LISTEN_KEEP);
+        adapter.resetDiscoveryTechnology(activity);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_SET_DEFAULT_DISC_TECH)
+    public void testSetDefaultDiscoveryTechnology() {
+        NfcAdapter adapter = getDefaultAdapter();
+        Activity activity = createAndResumeActivity();
+        adapter.setDiscoveryTechnology(activity,
+                NfcAdapter.FLAG_READER_KEEP,
+                NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_B
+                | NfcAdapter.FLAG_SET_DEFAULT_TECH);
+        adapter.setDiscoveryTechnology(activity, NfcAdapter.FLAG_READER_KEEP,
+                NfcAdapter.FLAG_LISTEN_KEEP | NfcAdapter.FLAG_SET_DEFAULT_TECH | 0xff);
     }
 
     @Test
@@ -501,6 +516,7 @@ public class NfcAdapterTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_VENDOR_CMD)
     public void testSendVendorCmd() throws InterruptedException, RemoteException {
         CountDownLatch rspCountDownLatch = new CountDownLatch(1);
         CountDownLatch ntfCountDownLatch = new CountDownLatch(1);

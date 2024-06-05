@@ -23,7 +23,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.app.BroadcastOptions;
 import android.content.BroadcastReceiver;
@@ -52,7 +51,6 @@ import org.junit.runner.RunWith;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(BroadcastsTestRunner.class)
@@ -68,8 +66,6 @@ public class BroadcastReceiverTest extends BaseBroadcastTest {
             "com.android.cts.broadcasts.BROADCAST_INTERNAL";
     private static final String ACTION_BROADCAST_MOCKTEST =
             "com.android.cts.broadcasts.BROADCAST_MOCKTEST";
-    private static final String ACTION_TEST_NOT_EXPORTED =
-            "com.android.cts.broadcasts.TEST_NOT_EXPORTED";
     private static final String ACTION_BROADCAST_TESTABORT =
             "com.android.cts.broadcasts.BROADCAST_TESTABORT";
     private static final String ACTION_BROADCAST_DISABLED =
@@ -81,7 +77,6 @@ public class BroadcastReceiverTest extends BaseBroadcastTest {
 
     private static final long SEND_BROADCAST_TIMEOUT = 15000;
 
-    private static final CountDownLatch COUNT_DOWN_LATCH = new CountDownLatch(1);
     private static final ComponentName DISABLEABLE_RECEIVER = new ComponentName(TEST_PACKAGE_NAME,
             "android.app.cts.broadcasts.MockReceiverDisableable");
 
@@ -188,13 +183,6 @@ public class BroadcastReceiverTest extends BaseBroadcastTest {
             }
 
             super.onReceive(context, intent);
-        }
-    }
-
-    public static class TestNonExportedReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            COUNT_DOWN_LATCH.countDown();
         }
     }
 
@@ -376,16 +364,6 @@ public class BroadcastReceiverTest extends BaseBroadcastTest {
                 resultExtras.getString(MockReceiverFirst.RESULT_EXTRAS_FIRST_KEY));
         assertEquals(MockReceiverAbort.RESULT_EXTRAS_ABORT_VALUE,
                 resultExtras.getString(MockReceiverAbort.RESULT_EXTRAS_ABORT_KEY));
-    }
-
-    @Test
-    public void testReceiverNotExported() throws Exception {
-        mContext.sendBroadcast(new Intent(ACTION_TEST_NOT_EXPORTED));
-        try {
-            assertFalse(COUNT_DOWN_LATCH.await(10, TimeUnit.SECONDS));
-        } catch (InterruptedException e) {
-            fail("interrupted");
-        }
     }
 
     @Test

@@ -97,7 +97,8 @@ public class DeviceAdminTestReceiver extends DeviceAdminReceiver {
                 // to set them again.
                 Log.i(TAG, "Also setting the affiliation ids for device owner");
                 DevicePolicyManager doDpm = TestAppSystemServiceFactory.getDevicePolicyManager(
-                        context, getClass(), /* forDeviceOwner= */ true);
+                        context, getClass(), /* forDeviceOwner= */ true,
+                        /* isSingleUser = */ false);
                 doDpm.setAffiliationIds(admin, ids);
             }
             Log.i(TAG, "Is affiliated: " + dpm.isAffiliatedUser());

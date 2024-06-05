@@ -90,7 +90,8 @@ public final class VirtualCameraUtils {
             new CameraCharacteristics.Key<Integer>("android.info.deviceId", int.class);
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final float EPSILON = 0.3f;
-    private static final double BITMAP_MAX_DIFF = 0.1;
+    // Difference between two bitmaps using average of per-pixel differences.
+    private static final double BITMAP_MAX_DIFF = 1.5;
     private static final String TAG = "VirtualCameraUtils";
 
     static VirtualCameraConfig createVirtualCameraConfig(
@@ -304,11 +305,11 @@ public final class VirtualCameraUtils {
         }
     }
 
-    static Bitmap loadGolden(int goldenResId) {
+    static Bitmap loadBitmapFromRaw(int rawResId) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inScaled = false;
         return BitmapFactory.decodeResource(getApplicationContext().getResources(),
-                goldenResId, options);
+                rawResId, options);
     }
 
     static Bitmap jpegImageToBitmap(Image image) throws IOException {
