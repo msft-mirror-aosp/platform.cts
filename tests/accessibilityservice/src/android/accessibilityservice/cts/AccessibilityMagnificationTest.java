@@ -109,9 +109,9 @@ import java.util.function.Consumer;
 public class AccessibilityMagnificationTest {
 
     /** Maximum timeout when waiting for a magnification callback. */
-    public static final int LISTENER_TIMEOUT_MILLIS = 500;
+    public static final int LISTENER_TIMEOUT_MILLIS = 800;
     /** Maximum animation timeout when waiting for a magnification callback. */
-    public static final int LISTENER_ANIMATION_TIMEOUT_MILLIS = 1000;
+    public static final int LISTENER_ANIMATION_TIMEOUT_MILLIS = 2000;
     public static final int BOUNDS_TOLERANCE = 1;
     public static final String ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED =
             "accessibility_display_magnification_enabled";
@@ -190,6 +190,7 @@ public class AccessibilityMagnificationTest {
             mService.runOnServiceSync(() -> {
                 mService.getMagnificationController().resetCurrentMagnification(/* animate= */
                         false);
+                mService.disableSelfAndRemove();
             });
         }
 

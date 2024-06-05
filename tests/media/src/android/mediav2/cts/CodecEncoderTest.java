@@ -285,17 +285,31 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
     }
 
     private void validateCSD() {
-        if (mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_AAC)
+        boolean requireCSD = false;
+        if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+            if (!IS_AT_LEAST_V) {
+                assertFalse("components that support mediaType: " + mMediaType
+                        + " must not generate CodecPrivateData before Android V\n"
+                        + mTestConfig + mTestEnv, mGotCSD);
+            } else if (BOARD_FIRST_SDK_IS_AT_LEAST_202404) {
+                // For devices launching with Android V, CSD is mandated for VP9 encoders
+                requireCSD = true;
+            } else {
+                // For devices upgrading to Android V, CSD is not mandated for VP9 encoders
+                requireCSD = false;
+            }
+        } else if (mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_AAC)
                 || mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_OPUS)
                 || mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
                 || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
+            requireCSD = true;
+        }
+
+        if (requireCSD) {
             assertTrue("components that support mediaType: " + mMediaType
                     + " must generate CodecPrivateData \n" + mTestConfig + mTestEnv, mGotCSD);
-        } else if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
-            assertFalse("components that support mediaType: " + mMediaType
-                    + " must not generate CodecPrivateData \n" + mTestConfig + mTestEnv, mGotCSD);
         }
     }
 

@@ -12,10 +12,6 @@ public class CommandApdu implements Parcelable {
         mReachable = reachable;
     }
 
-    public boolean isReachable() {
-        return mReachable;
-    }
-
     public String getApdu() {
         return mApdu;
     }
@@ -27,18 +23,18 @@ public class CommandApdu implements Parcelable {
 
     public static final Parcelable.Creator<CommandApdu> CREATOR =
             new Parcelable.Creator<CommandApdu>() {
-        @Override
-        public CommandApdu createFromParcel(Parcel source) {
-            String apdu = source.readString();
-            boolean reachable = source.readInt() != 0 ? true : false;
-            return new CommandApdu(apdu, reachable);
-        }
+                @Override
+                public CommandApdu createFromParcel(Parcel source) {
+                    String apdu = source.readString();
+                    boolean reachable = source.readInt() != 0;
+                    return new CommandApdu(apdu, reachable);
+                }
 
-        @Override
-        public CommandApdu[] newArray(int size) {
-            return new CommandApdu[size];
-        }
-    };
+                @Override
+                public CommandApdu[] newArray(int size) {
+                    return new CommandApdu[size];
+                }
+            };
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {

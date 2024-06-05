@@ -70,6 +70,7 @@ android_test {
         ":CtsMockLargeResourceInputMethod",
         ":CtsMockInputMethodWithSubtypes",
         ":CtsInputMethodTestLauncher",
+        ":TestIme",
     ],
     per_testcase_directory: true,
 }
