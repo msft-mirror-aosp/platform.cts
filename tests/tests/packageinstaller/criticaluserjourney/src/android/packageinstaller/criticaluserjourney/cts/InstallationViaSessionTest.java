@@ -42,7 +42,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickInstallButton();
 
-//        assertInstallSuccess();
+        assertInstallSuccess();
         assertTestPackageInstalled();
     }
 
@@ -58,7 +58,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         pressBack();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -74,7 +74,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         touchOutside();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -90,7 +90,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickCancelButton();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -104,7 +104,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         exitAllowFromSettings();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -178,7 +178,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickUpdateButton();
 
-//        assertInstallSuccess();
+        assertInstallSuccess();
         assertTestPackageLabelV2Installed();
     }
 
@@ -196,7 +196,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         pressBack();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 
@@ -214,7 +214,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         touchOutside();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 
@@ -232,7 +232,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickCancelButton();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 
@@ -248,7 +248,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         exitAllowFromSettings();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 
