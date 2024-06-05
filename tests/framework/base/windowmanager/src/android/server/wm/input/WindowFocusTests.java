@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.multidisplay;
+package android.server.wm.input;
 
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_FOCUS;
@@ -86,7 +86,7 @@ import javax.annotation.concurrent.GuardedBy;
  * Ensure window focus assignment is executed as expected.
  *
  * Build/Install/Run:
- *     atest CtsWindowManagerDeviceMultiDisplay:WindowFocusTests
+ *     atest CtsWindowManagerDeviceInput:WindowFocusTests
  */
 @Presubmit
 public class WindowFocusTests extends WindowManagerTestBase {

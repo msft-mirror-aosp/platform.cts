@@ -33,12 +33,10 @@ public class TestProvider extends ContentProvider {
 
     @Override
     public Bundle call(String method, String arg, Bundle extras) {
-        var intent = new Intent()
-                .setClassName(getContext(), "android.content.pm.cts.PmTestReceiver")
-                .setAction("non.existing.action");
-        var p = PendingIntent.getBroadcast(getContext(), 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        var intent = extras.getParcelable(Intent.EXTRA_INTENT, Intent.class);
+        var pi = PendingIntent.getBroadcast(getContext(), 0, intent, PendingIntent.FLAG_IMMUTABLE);
         var b = new Bundle();
-        b.putParcelable("pendingIntent", p);
+        b.putParcelable(Intent.EXTRA_INTENT, pi);
         return b;
     }
 

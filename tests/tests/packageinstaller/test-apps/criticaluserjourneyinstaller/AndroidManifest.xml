@@ -35,5 +35,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        <receiver android:name="android.packageinstaller.cts.cujinstaller.MainActivity$InstallResultReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.packageinstaller.cts.cujinstaller.action.INSTALL_RESULT"/>
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

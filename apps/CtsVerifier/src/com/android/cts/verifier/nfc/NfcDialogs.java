@@ -42,50 +42,6 @@ public class NfcDialogs {
                 .create();
     }
 
-    public static AlertDialog createHceTapReaderDialog(final Context context, String message) {
-        String baseString = context.getString(R.string.nfc_hce_tap_reader_message);
-        return new AlertDialog.Builder(context)
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .setTitle(R.string.nfc_hce_tap_reader_title)
-                .setMessage(message != null ? message + "\n\n" + baseString : baseString)
-                .setPositiveButton("OK", null)
-                .create();
-    }
-
-    public static AlertDialog createChangeForegroundDialog(final Context context) {
-        return new AlertDialog.Builder(context)
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .setTitle(R.string.nfc_hce_tap_reader_title)
-                .setMessage(context.getString(R.string.nfc_hce_change_favor_foreground))
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent intent = new Intent(Settings.ACTION_NFC_PAYMENT_SETTINGS);
-                        context.startActivity(intent);
-                    }
-                })
-                .create();
-    }
-
-    /**
-     * SecureNfcEnabled dialog
-     */
-    public static AlertDialog createSecureNfcEnabledDialog(final Context context) {
-        return new AlertDialog.Builder(context)
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .setTitle(R.string.secure_nfc_enabled)
-                .setMessage(R.string.secure_nfc_enabled_message)
-                .setPositiveButton(R.string.nfc_settings, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent intent = new Intent(Settings.ACTION_NFC_SETTINGS);
-                        context.startActivity(intent);
-                    }
-                })
-                .create();
-    }
-
-
     private NfcDialogs() {
     }
 }

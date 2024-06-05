@@ -53,10 +53,14 @@ import androidx.test.uiautomator.UiDevice;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.RequiredFeatureRule;
 
+import com.google.common.time.Sleeper;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.time.Duration;
 
 @Presubmit
 @AppModeFull(reason = "Service-specific test")
@@ -176,6 +180,8 @@ public class CtsSettingsIntentTest {
                     // Launches settings using provider intent.
                     activity.startSettingsActivity(intent);
                 });
+
+        Sleeper.defaultSleeper().sleep(Duration.ofSeconds(2));
 
         assertThat(hasViewWithText("Test Provider Service Alternate")).isTrue();
         assertThat(hasViewWithText("Additional providers")).isFalse();

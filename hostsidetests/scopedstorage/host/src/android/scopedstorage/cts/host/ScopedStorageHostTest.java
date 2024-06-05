@@ -165,16 +165,16 @@ public class ScopedStorageHostTest extends BaseHostTestCase {
     @Test
     public void testCheckInstallerAppAccessToObbDirs() throws Exception {
         allowAppOps("android:request_install_packages");
-        // WRITE_EXTERNAL_STORAGE is no-op for Installers T onwards
-        if (isSdkLevelLessThanT()) {
+        // WRITE_EXTERNAL_STORAGE is no-op for Installers U onwards
+        if (isSdkLevelLessThanU()) {
             grantPermissions("android.permission.WRITE_EXTERNAL_STORAGE");
         }
         try {
             runDeviceTest("testCheckInstallerAppAccessToObbDirs");
         } finally {
             denyAppOps("android:request_install_packages");
-            // WRITE_EXTERNAL_STORAGE is no-op for Installers T onwards
-            if (isSdkLevelLessThanT()) {
+            // WRITE_EXTERNAL_STORAGE is no-op for Installers U onwards
+            if (isSdkLevelLessThanU()) {
                 revokePermissions("android.permission.WRITE_EXTERNAL_STORAGE");
             }
         }
@@ -183,16 +183,16 @@ public class ScopedStorageHostTest extends BaseHostTestCase {
     @Test
     public void testCheckInstallerAppCannotAccessDataDirs() throws Exception {
         allowAppOps("android:request_install_packages");
-        // WRITE_EXTERNAL_STORAGE is no-op for Installers T onwards
-        if (isSdkLevelLessThanT()) {
+        // WRITE_EXTERNAL_STORAGE is no-op for Installers U onwards
+        if (isSdkLevelLessThanU()) {
             grantPermissions("android.permission.WRITE_EXTERNAL_STORAGE");
         }
         try {
             runDeviceTest("testCheckInstallerAppCannotAccessDataDirs");
         } finally {
             denyAppOps("android:request_install_packages");
-            // WRITE_EXTERNAL_STORAGE is no-op for Installers T onwards
-            if (isSdkLevelLessThanT()) {
+            // WRITE_EXTERNAL_STORAGE is no-op for Installers U onwards
+            if (isSdkLevelLessThanU()) {
                 revokePermissions("android.permission.WRITE_EXTERNAL_STORAGE");
             }
         }
@@ -392,8 +392,8 @@ public class ScopedStorageHostTest extends BaseHostTestCase {
         }
     }
 
-    private boolean isSdkLevelLessThanT() throws DeviceNotAvailableException {
+    private boolean isSdkLevelLessThanU() throws DeviceNotAvailableException {
         DeviceSdkLevel deviceSdkLevel = new DeviceSdkLevel(getDevice());
-        return !deviceSdkLevel.isDeviceAtLeastT();
+        return !deviceSdkLevel.isDeviceAtLeastU();
     }
 }

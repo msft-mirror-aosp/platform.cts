@@ -318,22 +318,6 @@
                 <action android:name="android.intent.action.MAIN"/>
             </intent-filter>
         </activity>
-        <activity android:name="android.content.cts.ContextCtsExportedActivity"
-                  android:label="ContextCtsExportedActivity"
-                  android:exported="true">
-            <intent-filter>
-                <action android:name="android.cts.action.TEST_EXPORTED"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-        </activity>
-        <activity android:name="android.content.cts.ContextCtsNonExportedActivity"
-                  android:label="ContextCtsNonExportedActivity"
-                  android:exported="false">
-            <intent-filter>
-                <action android:name="android.cts.action.TEST_NON_EXPORTED"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-        </activity>
 
         <receiver android:name="android.content.cts.MockReceiver"
              android:exported="true">
@@ -356,12 +340,6 @@
                 <action android:name="android.content.cts.BroadcastReceiverTest.BROADCAST_MOCKTEST"/>
                 <action android:name="android.content.cts.BroadcastReceiverTest.BROADCAST_TESTABORT"/>
                 <action android:name="android.content.cts.ContextTest.BROADCAST_TESTORDER"/>
-            </intent-filter>
-        </receiver>
-        <receiver android:name="android.content.cts.BroadcastReceiverTest$TestNonExportedReceiver"
-                  android:exported="false">
-            <intent-filter android:priority="3">
-                <action android:name="android.content.cts.BroadcastReceiverTest.TEST_NOT_EXPORTED"/>
             </intent-filter>
         </receiver>
 
@@ -415,6 +393,24 @@
                 <action android:name="android.content.pm.cts.PackageManagerTest.PMTEST_RECEIVER"/>
             </intent-filter>
         </receiver>
+
+        <!--Test for Safer Implicit Intent-->
+        <activity android:name="android.content.pm.cts.ImplicitLaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.cts.EXPORTED_ACTION"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
+        <activity-alias
+            android:name="android.content.pm.cts.ImplicitLaunchActivityNonExported"
+            android:targetActivity="android.content.pm.cts.ImplicitLaunchActivity"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.cts.NON_EXPORTED_ACTION"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity-alias>
 
         <activity android:name="android.content.pm.cts.LauncherMockActivity"
              android:enabled="true"
