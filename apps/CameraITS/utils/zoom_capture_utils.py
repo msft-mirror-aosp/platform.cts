@@ -20,7 +20,6 @@ import logging
 import math
 import cv2
 import numpy
-import os.path
 
 import camera_properties_utils
 import capture_request_utils
@@ -33,7 +32,7 @@ _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _CONTOUR_AREA_LOGGING_THRESH = 0.8  # logging tol to cut down spam in log file
 _CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 _CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
-_DEFAULT_FOV_RATIO = 1  #ratio of sub camera's fov over logical camera's fov
+_DEFAULT_FOV_RATIO = 1  # ratio of sub camera's fov over logical camera's fov
 _MIN_AREA_RATIO = 0.00013  # Found empirically with partners
 _MIN_CIRCLE_PTS = 25
 _MIN_FOCUS_DIST_TOL = 0.80  # allow charts a little closer than min
@@ -45,6 +44,7 @@ RADIUS_RTOL = 0.10
 ZOOM_MIN_THRESH = 2.0
 ZOOM_MAX_THRESH = 10.0
 ZOOM_RTOL = 0.01  # variation of zoom ratio due to floating point
+PRV_Z_RTOL = 0.01  # variation of zoom ratio between request and result
 JPEG_STR = 'jpg'
 
 
@@ -157,7 +157,7 @@ def find_center_circle(
 
   # create a copy of image to avoid modification on the original image since
   # image_processing_utils.convert_image_to_uint8 uses mutable np array methods
-  if debug == True:
+  if debug:
     img = numpy.ndarray.copy(img)
 
   # convert [0, 1] image to [0, 255] and cast as uint8
@@ -173,7 +173,7 @@ def find_center_circle(
   contours = opencv_processing_utils.find_all_contours(255-img_bw)
 
   # write copy of image for debug purposes
-  if debug == True:
+  if debug:
     img_copy_name = img_name.split('.')[0] + '_copy.jpg'
     image_processing_utils.write_image(numpy.expand_dims(
         (255-img_bw).astype(numpy.float)/255.0, axis=2), img_copy_name)
@@ -424,25 +424,25 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size):
                 results_z_min, results_z_max)
 
   # check if max zoom in capture result close to requested zoom range
-  if z_max - (z_step_size + ZOOM_RTOL) <= results_z_max <= z_max + ZOOM_RTOL:
+  if z_max - (z_step_size + PRV_Z_RTOL) <= results_z_max <= z_max + PRV_Z_RTOL:
     logging.debug('results_z_max = %.2f in range (%.2f , %.2f)', results_z_max,
-                  z_max - (z_step_size + ZOOM_RTOL), z_max + ZOOM_RTOL)
+                  z_max - (z_step_size + PRV_Z_RTOL), z_max + PRV_Z_RTOL)
   else:
     test_success = False
     e_msg = (f'Max zoom ratio {results_z_max:.4f} in capture results out of '
-             f'range ({(ZOOM_MAX_THRESH * z_min):.2f} , '
-             f'{(z_max + ZOOM_RTOL):.2f}). '
-             f'Range advertised min: {z_min}, max: {z_max}')
+             f'range ({(z_max - (z_step_size + PRV_Z_RTOL)):.2f} , '
+             f'{(z_max + PRV_Z_RTOL):.2f}). Range advertised min: '
+             f'{z_min}, max: {z_max}. Step size: {z_step_size}')
     logging.error(e_msg)
 
-  if math.isclose(results_z_min, z_min, rel_tol=ZOOM_RTOL):
+  if math.isclose(results_z_min, z_min, rel_tol=PRV_Z_RTOL):
     d_msg = (f'results_z_min = {results_z_min:.2f} is close to requested '
-             f'z_min = {z_min:.2f} by {ZOOM_RTOL:.2f} Tol')
+             f'z_min = {z_min:.2f} by {PRV_Z_RTOL:.2f} Tol')
     logging.debug(d_msg)
   else:
     test_success = False
     e_msg = (f'Min zoom ratio {results_z_min:.4f} in capture results '
-             f'not close to {z_min:.2f} by {ZOOM_RTOL:.2f} tolerance.')
+             f'not close to {z_min:.2f} by {PRV_Z_RTOL:.2f} tolerance.')
     logging.error(e_msg)
 
   return test_success and verify_zoom_data(test_data, size)
