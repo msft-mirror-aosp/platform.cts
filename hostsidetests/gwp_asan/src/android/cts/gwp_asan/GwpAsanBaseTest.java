@@ -23,6 +23,7 @@ import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
@@ -31,6 +32,7 @@ public abstract class GwpAsanBaseTest extends BaseHostJUnit4Test {
     protected ITestDevice mDevice;
 
     protected abstract String getTestApk();
+    protected abstract String getTestNameSuffix();
 
     @Before
     public void setUp() throws Exception {
@@ -56,5 +58,26 @@ public abstract class GwpAsanBaseTest extends BaseHostJUnit4Test {
 
     public void runTest(String testClass, String testName) throws Exception {
         Assert.assertTrue(runDeviceTests(TEST_PKG, TEST_PKG + testClass, testName));
+    }
+
+    @Test
+    public void testGwpAsanEnabled() throws Exception {
+        runTest(".GwpAsanActivityTest", "testEnablement");
+        runTest(".GwpAsanServiceTest", "testEnablement");
+    }
+
+    @Test
+    public void testCrashToDropbox() throws Exception {
+        runTest(".GwpAsanActivityTest", "testCrashToDropbox" + getTestNameSuffix() + "Enabled");
+        runTest(".GwpAsanActivityTest", "testCrashToDropbox" + getTestNameSuffix() + "Default");
+        runTest(".GwpAsanServiceTest", "testCrashToDropbox" + getTestNameSuffix() + "Enabled");
+        runTest(".GwpAsanServiceTest", "testCrashToDropbox" + getTestNameSuffix() + "Default");
+    }
+
+    @Test
+    public void testAppExitInfo() throws Exception {
+        resetAppExitInfo();
+        runTest(".GwpAsanActivityTest", "testCrashToDropbox" + getTestNameSuffix() + "Default");
+        runTest(".GwpAsanActivityTest", "checkAppExitInfo");
     }
 }

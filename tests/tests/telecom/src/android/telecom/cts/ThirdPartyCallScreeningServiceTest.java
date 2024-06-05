@@ -16,6 +16,7 @@
 
 package android.telecom.cts;
 
+import static android.telecom.cts.TestUtils.hasTelephonyFeature;
 import static android.telecom.cts.TestUtils.shouldTestTelecom;
 import static android.telecom.cts.TestUtils.waitOnAllHandlers;
 
@@ -196,6 +197,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
             return;
         }
 
+        revokeReadContactPermission();
         verifyPermission(false);
         // Tell the test app to block the call.
         mCallScreeningControl.setCallResponse(true /* shouldDisallowCall */,
@@ -222,6 +224,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
             return;
         }
 
+        revokeReadContactPermission();
         verifyPermission(false);
         mCallScreeningControl.setCallResponse(true /* shouldDisallowCall */,
                 true /* shouldRejectCall */, false /* shouldSilenceCall */,
@@ -245,6 +248,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
             return;
         }
 
+        revokeReadContactPermission();
         verifyPermission(false);
         placeOutgoingCall(false /* addContact */);
         assertTrue(mCallScreeningControl.waitForBind());
@@ -266,6 +270,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
             return;
         }
 
+        revokeReadContactPermission();
         verifyPermission(false);
         placeOutgoingCall(true /* addCountact */);
         assertFalse(mCallScreeningControl.waitForBind());
@@ -331,7 +336,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testNoPostCallActivityForOutgoingEmergencyCall() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -347,7 +352,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testNoPostCallActivityForIncomingEmergencyCall() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);

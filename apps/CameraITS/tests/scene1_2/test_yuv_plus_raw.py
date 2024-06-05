@@ -34,6 +34,7 @@ _PATCH_W = 0.1
 _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
 _THRESHOLD_MAX_RMS_DIFF = 0.035
+_LENS_SHADING_MAP_ON = 1
 
 
 def apply_lens_shading_map(color_plane, black_level, white_level, lsc_map):
@@ -131,12 +132,14 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
   """
   shading_mode = cap_raw['metadata']['android.shading.mode']
   lens_shading_applied = props['android.sensor.info.lensShadingApplied']
+  lens_shading_map_mode = cap_raw['metadata'].get('android.statistics.lensShadingMapMode')
   control_af_mode = cap_raw['metadata']['android.control.afMode']
   focus_distance = cap_raw['metadata']['android.lens.focusDistance']
   logging.debug('%s capture AF mode: %s', raw_fmt, control_af_mode)
   logging.debug('%s capture focus distance: %s', raw_fmt, focus_distance)
   logging.debug('%s capture shading mode: %d', raw_fmt, shading_mode)
   logging.debug('lensShadingMapApplied: %r', lens_shading_applied)
+  logging.debug('lensShadingMapMode: %s', lens_shading_map_mode)
 
   # YUV
   img = image_processing_utils.convert_capture_to_rgb_image(cap_yuv)
@@ -152,7 +155,8 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
   r, gr, gb, b = image_processing_utils.convert_capture_to_planes(
       cap_raw, props=props
   )
-  if not lens_shading_applied:  # get from metadata, upsample, and apply
+  # If no lens shading, get from metadata, upsample, and apply
+  if (not lens_shading_applied) and (lens_shading_map_mode == _LENS_SHADING_MAP_ON):
     plot_name_stem_with_log_path = f'{log_path_with_name}_{raw_fmt}'
     black_levels = image_processing_utils.get_black_levels(props, cap_raw)
     white_level = int(props['android.sensor.info.whiteLevel'])
@@ -261,6 +265,7 @@ class YuvPlusRawTest(its_base_test.ItsBaseTest):
         out_surfaces = [{'format': raw_fmt},
                         {'format': 'yuv', 'width': w, 'height': h}]
         cam.do_3a(do_af=False)
+        req['android.statistics.lensShadingMapMode'] = _LENS_SHADING_MAP_ON
         cap_raw, cap_yuv = cam.do_capture(req, out_surfaces)
         msg = convert_and_compare_captures(cap_raw, cap_yuv, props,
                                            log_path, raw_fmt)

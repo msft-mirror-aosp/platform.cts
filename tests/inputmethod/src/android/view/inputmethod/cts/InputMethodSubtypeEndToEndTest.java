@@ -25,7 +25,10 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.Manifest;
 import android.app.Instrumentation;
+import android.content.Context;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.TextUtils;
 import android.view.inputmethod.InputMethodInfo;
@@ -42,6 +45,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
@@ -52,6 +56,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -60,6 +65,8 @@ import java.util.concurrent.TimeUnit;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+
+    private static final String TEST_IME_ID = "com.android.cts.testime/.TestIme";
 
     private static final InputMethodSubtype IMPLICITLY_ENABLED_TEST_SUBTYPE =
             new InputMethodSubtype.InputMethodSubtypeBuilder()
@@ -304,6 +311,45 @@ public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
             expectCommand(stream, imeSession.callSwitchInputMethod(
                     imeSession.getImeId(), TEST_SUBTYPE2), TIMEOUT);
             expectEvent(stream, onCurrentIMSubtypeChangedMatcher(TEST_SUBTYPE2), TIMEOUT);
+        }
+    }
+
+    @NonNull
+    private static List<InputMethodInfo> getInputMethodListWithQueryAllPackage(
+            @NonNull Context context) {
+        final InputMethodManager imm =
+                Objects.requireNonNull(context.getSystemService(InputMethodManager.class));
+        return SystemUtil.runWithShellPermissionIdentity(imm::getInputMethodList,
+                Manifest.permission.QUERY_ALL_PACKAGES);
+    }
+
+    /**
+     * Regression test for Bug 342105635.
+     */
+    @Test
+    @AppModeFull(reason = "Instant app mode is irrelevant in this scenario.")
+    public void testSetAdditionalInputMethodSubtypeDoesNotRemoveImesInvisibleFromCaller()
+            throws Exception  {
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        final var context = instrumentation.getTargetContext();
+        assertThat(getInputMethodListWithQueryAllPackage(context).stream()
+                .map(InputMethodInfo::getId).toList()).contains(TEST_IME_ID);
+
+        try (MockImeSession imeSession = MockImeSession.create(context,
+                instrumentation.getUiAutomation(), new ImeSettings.Builder())) {
+
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker();
+            launchTestActivity(marker);
+
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetAdditionalInputMethodSubtypes(
+                    imeSession.getImeId(), new InputMethodSubtype[]{TEST_SUBTYPE2}), TIMEOUT);
+
+            assertThat(getInputMethodListWithQueryAllPackage(context).stream()
+                    .map(InputMethodInfo::getId).toList()).contains(TEST_IME_ID);
         }
     }
 
