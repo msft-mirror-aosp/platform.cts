@@ -189,6 +189,10 @@ public abstract class BaseNotificationManagerTest extends AndroidTestCase {
         return mNotificationHelper.findPostedNotification(id, all);
     }
 
+    protected StatusBarNotification findPostedNotification(int id, boolean all, String pkg) {
+        return mNotificationHelper.findPostedNotification(id, all, pkg);
+    }
+
     protected void setUpNotifListener() {
         try {
             toggleListenerAccess(true);
