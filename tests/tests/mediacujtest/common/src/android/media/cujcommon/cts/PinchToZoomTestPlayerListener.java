@@ -17,9 +17,10 @@
 package android.media.cujcommon.cts;
 
 import android.app.Instrumentation;
-import android.content.res.Resources;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.MotionEvent.PointerCoords;
 import android.view.MotionEvent.PointerProperties;
@@ -30,16 +31,16 @@ import androidx.media3.common.Player;
 
 public class PinchToZoomTestPlayerListener extends PlayerListener {
 
+  private static final String TAG = PinchToZoomTestPlayerListener.class.getSimpleName();
   private static final int ZOOM_IN_DURATION_MS = 4000;
   private static final int PINCH_STEP_COUNT = 10;
   private static final float SPAN_GAP = 50.0f;
-  private static final int SCREEN_WIDTH = Resources.getSystem().getDisplayMetrics().widthPixels;
-  private static final int SCREEN_HEIGHT = Resources.getSystem().getDisplayMetrics().heightPixels;
   private static final float LEFT_MARGIN_WIDTH_FACTOR = 0.1f;
   private static final float RIGHT_MARGIN_WIDTH_FACTOR = 0.9f;
-  private static final float STEP_SIZE =
-      (RIGHT_MARGIN_WIDTH_FACTOR * SCREEN_WIDTH - LEFT_MARGIN_WIDTH_FACTOR * SCREEN_WIDTH
-          - 2 * SPAN_GAP) / (2 * PINCH_STEP_COUNT);
+
+  private int mWidth;
+  private int mHeight;
+  private float mStepSize;
 
   public PinchToZoomTestPlayerListener(long sendMessagePosition) {
     super();
@@ -75,6 +76,8 @@ public class PinchToZoomTestPlayerListener extends PlayerListener {
       // Register scale gesture detector
       mActivity.mScaleGestureDetector = new ScaleGestureDetector(mActivity,
           new ScaleGestureListener(mActivity.mExoplayerView));
+      // Adjust the touch input region.
+      setInputRegionSize();
     }
   }
 
@@ -95,6 +98,17 @@ public class PinchToZoomTestPlayerListener extends PlayerListener {
         .send();
   }
 
+  /** Adjusts the touchable region size, based on the main activity's display metrics. */
+  private void setInputRegionSize() {
+    DisplayMetrics displayMetrics = mActivity.getResources().getDisplayMetrics();
+    mWidth = displayMetrics.widthPixels;
+    mHeight = displayMetrics.heightPixels;
+    mStepSize = (RIGHT_MARGIN_WIDTH_FACTOR * mWidth - LEFT_MARGIN_WIDTH_FACTOR * mWidth
+            - 2 * SPAN_GAP) / (2 * PINCH_STEP_COUNT);
+    Log.i(TAG, "Set the touchable region size: width=" + mWidth + ", height=" + mHeight
+            + ", stepSize=" + mStepSize);
+  }
+
   /**
    * Create a new MotionEvent, filling in all of the basic values that define the motion. Then,
    * dispatch a pointer event into a window owned by the instrumented application.
@@ -113,7 +127,8 @@ public class PinchToZoomTestPlayerListener extends PlayerListener {
     MotionEvent pointerMotionEvent = MotionEvent.obtain(SystemClock.uptimeMillis() /* downTime */,
         SystemClock.uptimeMillis() /* eventTime */, action, pointerCount, pointerProperties,
         pointerCoords, 0 /* metaState */, 0 /* buttonState */, 1 /* xPrecision */,
-        1 /* yPrecision */, 0 /* deviceId */, 0 /* edgeFlags */, 0 /* source */, 0 /* flags */);
+        1 /* yPrecision */, 0 /* deviceId */, 0 /* edgeFlags */, 0 /* source */,
+        mActivity.getDisplayId(), 0 /* flags */);
     inst.sendPointerSync(pointerMotionEvent);
   }
 
@@ -125,17 +140,17 @@ public class PinchToZoomTestPlayerListener extends PlayerListener {
   PointerCoords[] getPointerCoords(boolean isZoomIn) {
     PointerCoords leftPointerStartCoords;
     PointerCoords rightPointerStartCoords;
-    float midDisplayHeight = SCREEN_HEIGHT / 2.0f;
+    float midDisplayHeight = mHeight / 2.0f;
     if (isZoomIn) {
-      float midDisplayWidth = SCREEN_WIDTH / 2.0f;
+      float midDisplayWidth = mWidth / 2.0f;
       // During zoom in, start pinching from middle of the display towards the end.
       leftPointerStartCoords = getDisplayPointer(midDisplayWidth - SPAN_GAP, midDisplayHeight);
       rightPointerStartCoords = getDisplayPointer(midDisplayWidth + SPAN_GAP, midDisplayHeight);
     } else {
       // During zoom out, start pinching from end of the display towards the middle.
-      leftPointerStartCoords = getDisplayPointer(LEFT_MARGIN_WIDTH_FACTOR * SCREEN_WIDTH,
+      leftPointerStartCoords = getDisplayPointer(LEFT_MARGIN_WIDTH_FACTOR * mWidth,
           midDisplayHeight);
-      rightPointerStartCoords = getDisplayPointer(RIGHT_MARGIN_WIDTH_FACTOR * SCREEN_WIDTH,
+      rightPointerStartCoords = getDisplayPointer(RIGHT_MARGIN_WIDTH_FACTOR * mWidth,
           midDisplayHeight);
     }
     return new PointerCoords[]{leftPointerStartCoords, rightPointerStartCoords};
@@ -175,11 +190,11 @@ public class PinchToZoomTestPlayerListener extends PlayerListener {
 
         for (int i = 0; i < PINCH_STEP_COUNT; i++) {
           if (isZoomIn) {
-            pointerCoords[0].x -= STEP_SIZE;
-            pointerCoords[1].x += STEP_SIZE;
+            pointerCoords[0].x -= mStepSize;
+            pointerCoords[1].x += mStepSize;
           } else {
-            pointerCoords[0].x += STEP_SIZE;
-            pointerCoords[1].x -= STEP_SIZE;
+            pointerCoords[0].x += mStepSize;
+            pointerCoords[1].x -= mStepSize;
           }
           obtainAndSendPointerEvent(inst, MotionEvent.ACTION_MOVE, 2 /* pointerCount */,
               pointerProperties, pointerCoords);
