@@ -23,8 +23,8 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.UsersComponent
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.devicepolicy.DeviceOwner

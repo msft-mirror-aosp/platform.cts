@@ -68,9 +68,7 @@ import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
 import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts;
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
-import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent;
@@ -90,34 +88,27 @@ import com.android.bedstead.harrier.annotations.EnsureUsingScreenOrientation;
 import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.FailureMode;
-import com.android.bedstead.harrier.annotations.OtherUser;
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
 import com.android.bedstead.harrier.annotations.RequireInstantApp;
-import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntent;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
 import com.android.bedstead.harrier.annotations.RequirePackageInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent;
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport;
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnSingleUser;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
 import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
-import com.android.bedstead.harrier.annotations.RequireUserSupported;
 import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasNoProfileAnnotation;
-import com.android.bedstead.harrier.annotations.meta.EnsureHasNoUserAnnotation;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasProfileAnnotation;
-import com.android.bedstead.harrier.annotations.meta.EnsureHasUserAnnotation;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnProfileAnnotation;
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnUserAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
+import com.android.bedstead.multiuser.UsersComponent;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountReference;
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy;
@@ -198,7 +189,6 @@ import java.util.stream.Collectors;
  * {@code assumeTrue} will be used, so tests which do not meet preconditions will be skipped.
  */
 public final class DeviceState extends HarrierRule {
-    private static final String SWITCHED_TO_USER = "switchedToUser";
     private static final String SWITCHED_TO_PARENT_USER = "switchedToParentUser";
     public static final String INSTALL_INSTRUMENTED_APP = "installInstrumentedApp";
     private static final String IS_QUIET_MODE_ENABLED = "isQuietModeEnabled";
@@ -436,6 +426,7 @@ public final class DeviceState extends HarrierRule {
     }
 
     private void applyAnnotations(List<Annotation> annotations, boolean isTest) throws Throwable {
+        //TODO b/345391598 move handling annotations to AnnotationExecutors
         Log.d(LOG_TAG, "Applying annotations: " + annotations);
         for (final Annotation annotation : annotations) {
             Log.v(LOG_TAG, "Applying annotation " + annotation);
@@ -517,28 +508,6 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            EnsureHasNoUserAnnotation ensureHasNoUserAnnotation =
-                    annotationType.getAnnotation(EnsureHasNoUserAnnotation.class);
-            if (ensureHasNoUserAnnotation != null) {
-                mUsersComponent.ensureHasNoUser(ensureHasNoUserAnnotation.value());
-                continue;
-            }
-
-            EnsureHasUserAnnotation ensureHasUserAnnotation =
-                    annotationType.getAnnotation(EnsureHasUserAnnotation.class);
-            if (ensureHasUserAnnotation != null) {
-                OptionalBoolean installInstrumentedApp = (OptionalBoolean)
-                        annotation.annotationType()
-                                .getMethod(INSTALL_INSTRUMENTED_APP).invoke(annotation);
-                OptionalBoolean switchedToUser = (OptionalBoolean)
-                        annotation.annotationType()
-                                .getMethod(SWITCHED_TO_USER).invoke(annotation);
-                mUsersComponent.ensureHasUser(
-                        ensureHasUserAnnotation.value(), installInstrumentedApp,
-                        switchedToUser);
-                continue;
-            }
-
             if (annotation instanceof EnsureDefaultContentSuggestionsServiceEnabled ensureDefaultContentSuggestionsServiceEnabledAnnotation) {
 
                 ensureDefaultContentSuggestionsServiceEnabled(
@@ -560,42 +529,6 @@ public final class DeviceState extends HarrierRule {
             if (annotation instanceof EnsureHasTestContentSuggestionsService ensureHasTestContentSuggestionsServiceAnnotation) {
                 ensureHasTestContentSuggestionsService(
                         ensureHasTestContentSuggestionsServiceAnnotation.onUser());
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasAdditionalUser ensureHasAdditionalUserAnnotation) {
-                mUsersComponent.ensureHasAdditionalUser(
-                        ensureHasAdditionalUserAnnotation.installInstrumentedApp(),
-                        ensureHasAdditionalUserAnnotation.switchedToUser());
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasNoAdditionalUser) {
-                mUsersComponent.ensureHasNoAdditionalUser();
-                continue;
-            }
-
-            if (annotation instanceof RequireRunOnAdditionalUser requireRunOnAdditionalUserAnnotation) {
-                mUsersComponent.requireRunOnAdditionalUser(
-                        requireRunOnAdditionalUserAnnotation.switchedToUser());
-                continue;
-            }
-
-            if (annotation instanceof RequireRunOnSingleUser) {
-                mUsersComponent.requireRunOnSingleUser();
-                continue;
-            }
-
-            RequireRunOnUserAnnotation requireRunOnUserAnnotation =
-                    annotationType.getAnnotation(RequireRunOnUserAnnotation.class);
-            if (requireRunOnUserAnnotation != null) {
-                OptionalBoolean switchedToUser = (OptionalBoolean)
-                        annotation.annotationType()
-                                .getMethod(SWITCHED_TO_USER).invoke(annotation);
-                mUsersComponent.requireRunOnUser(
-                        requireRunOnUserAnnotation.value(),
-                        switchedToUser
-                );
                 continue;
             }
 
@@ -696,13 +629,6 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof RequireUserSupported requireUserSupportedAnnotation) {
-                mUsersComponent.requireUserSupported(
-                        requireUserSupportedAnnotation.value(),
-                        requireUserSupportedAnnotation.failureMode());
-                continue;
-            }
-
             if (annotation instanceof RequireSystemServiceAvailable requireSystemServiceAvailableAnnotation) {
                 requireSystemServiceAvailable(requireSystemServiceAvailableAnnotation.value(),
                         requireSystemServiceAvailableAnnotation.failureMode());
@@ -779,11 +705,6 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof OtherUser otherUserAnnotation) {
-                mOtherUserType = otherUserAnnotation.value();
-                continue;
-            }
-
             if (annotation instanceof EnsureBluetoothEnabled) {
                 ensureBluetoothEnabled();
                 continue;
@@ -832,11 +753,6 @@ public final class DeviceState extends HarrierRule {
                 ensureGlobalSettingSet(
                         ensureGlobalSettingSetAnnotation.key(),
                         ensureGlobalSettingSetAnnotation.value());
-                continue;
-            }
-
-            if (annotation instanceof RequireMultiUserSupport requireMultiUserSupportAnnotation) {
-                requireMultiUserSupport(requireMultiUserSupportAnnotation.failureMode());
                 continue;
             }
 
@@ -1257,7 +1173,6 @@ public final class DeviceState extends HarrierRule {
     private static final Context sContext = TestApis.context().instrumentedContext();
     private final Map<com.android.bedstead.nene.users.UserType, Map<UserReference, UserReference>>
             mProfiles = new HashMap<>();
-    private UserType mOtherUserType;
 
     private final Map<UserReference, Set<String>> mAddedUserRestrictions = new ConcurrentHashMap<>();
     private final Map<UserReference, Set<String>> mRemovedUserRestrictions = new ConcurrentHashMap<>();
@@ -1550,11 +1465,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no "other" user
      */
     public UserReference otherUser() {
-        if (mOtherUserType == null) {
-            throw new IllegalStateException("No other user specified. Use @OtherUser");
-        }
-
-        return resolveUserTypeToUser(mOtherUserType);
+        return mUsersComponent.otherUser();
     }
 
     private UserReference ensureHasProfile(
@@ -1894,7 +1805,6 @@ public final class DeviceState extends HarrierRule {
             broadcastReceiver.unregisterQuietly();
         }
         mRegisteredBroadcastReceivers.clear();
-        mOtherUserType = null;
         mAccounts.clear();
         mAccountAuthenticators.clear();
 
@@ -2261,11 +2171,6 @@ public final class DeviceState extends HarrierRule {
         TestApis.content().suggestions().setTemporaryService(user, mContentSuggestionsService);
     }
 
-    private void requireMultiUserSupport(FailureMode failureMode) {
-        checkFailOrSkip("This test is only supported on multi user devices",
-                TestApis.users().supportsMultipleUsers(), failureMode);
-    }
-
     private void requireInstantApp(String reason, FailureMode failureMode) {
         checkFailOrSkip("Test only runs as an instant-app: " + reason,
                 TestApis.packages().instrumented().isInstantApp(), failureMode);
@@ -2574,7 +2479,15 @@ public final class DeviceState extends HarrierRule {
         return true;
     }
 
-    void ensureDoesNotHaveUserRestriction(String restriction, UserType onUser) {
+    /**
+     * Ensure that a user restriction isn't set on the given user.
+     * <p>
+     * @deprecated Do not use this method inside tests,
+     * instead use the {@link EnsureDoesNotHaveUserRestriction} annotation.
+     */
+    //TODO(karzelek): move it outside of DeviceState
+    @Deprecated
+    public void ensureDoesNotHaveUserRestriction(String restriction, UserType onUser) {
         if (onUser == UserType.ANY) {
             for (UserReference userReference : TestApis.users().all()) {
                 ensureDoesNotHaveUserRestriction(restriction, userReference);

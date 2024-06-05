@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface RequireNotHeadlessSystemUserMode {
 
     /** The reason this test requires not headless system user mode. */

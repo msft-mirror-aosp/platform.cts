@@ -44,6 +44,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @RequireRunOnUserAnnotation("android.os.usertype.full.SYSTEM")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface RequireRunOnPrimaryUser {
     /**
      * Should we ensure that we are switched to the given user.
