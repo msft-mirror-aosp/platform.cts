@@ -29,7 +29,7 @@ import static androidx.window.extensions.embedding.SplitRule.FINISH_ADJACENT;
 import static androidx.window.extensions.embedding.SplitRule.FINISH_ALWAYS;
 import static androidx.window.extensions.embedding.SplitRule.FINISH_NEVER;
 
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.app.Activity;
 import android.platform.test.annotations.Presubmit;
@@ -86,7 +86,7 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
 
         // Verify that there are no split states
         List<SplitInfo> splitInfoList = mSplitInfoConsumer.waitAndGet();
-        assertTrue(splitInfoList.isEmpty());
+        assertThat(splitInfoList).isEmpty();
     }
 
     /**
@@ -112,7 +112,7 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
 
         // Verify that there are no split states
         List<SplitInfo> splitInfoList = mSplitInfoConsumer.waitAndGet();
-        assertTrue(splitInfoList.isEmpty());
+        assertThat(splitInfoList).isEmpty();
     }
 
     /**
