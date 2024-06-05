@@ -73,7 +73,7 @@ def _check_orientation_and_flip(props, uw_img, w_img, img_name_stem):
   uw_img_name = f'{img_name_stem}_uw.png'
   w_img_name = f'{img_name_stem}_w.png'
   image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, uw_img_name)
-  image_processing_utils.write_image(uw_img / _CH_FULL_SCALE, w_img_name)
+  image_processing_utils.write_image(w_img / _CH_FULL_SCALE, w_img_name)
   return uw_img, w_img
 
 
