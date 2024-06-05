@@ -20,6 +20,7 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
+import android.os.ParcelFileDescriptor
 import android.platform.test.annotations.AppModeFull
 import androidx.test.InstrumentationRegistry
 import java.io.File
@@ -46,12 +47,24 @@ class InstallInfoTest : PackageInstallerTestBase() {
 
     @Test
     fun testInstallInfoOfMonolithicPackage() {
-        val apk = File(context.filesDir.canonicalPath + "/$TEST_APK_NAME")
+        val apk = File(TEST_APK_LOCATION + "/$TEST_APK_NAME")
         val installInfo = pi.readInstallInfo(apk, 0)
 
         assertEquals(PackageInfo.INSTALL_LOCATION_PREFER_EXTERNAL, installInfo.installLocation)
         assertEquals(TEST_APK_PACKAGE_NAME, installInfo.packageName)
         assertEquals(apk.length(), installInfo.calculateInstalledSize(mParams))
+    }
+
+    @Test
+    fun testInstallInfoOfMonolithicPackageViaFileDescriptor() {
+        val apk = File(TEST_APK_LOCATION + "/$TEST_APK_NAME")
+        ParcelFileDescriptor.open(apk, ParcelFileDescriptor.MODE_READ_ONLY).use {
+            val installInfo = pi.readInstallInfo(it, apk.absolutePath, 0)
+
+            assertEquals(PackageInfo.INSTALL_LOCATION_PREFER_EXTERNAL, installInfo.installLocation)
+            assertEquals(TEST_APK_PACKAGE_NAME, installInfo.packageName)
+            assertEquals(apk.length(), installInfo.calculateInstalledSize(mParams, it))
+        }
     }
 
     @Test

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_input_method_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -24,6 +25,7 @@ android_library {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
         "compatibility-device-util-axt",
+        "cts-input-lib",
         "cts-wm-util",
         "ctstestrunner-axt",
         "CtsMockInputMethodLib",

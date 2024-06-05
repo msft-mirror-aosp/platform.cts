@@ -1,4 +1,4 @@
-// Copyright (C) 2017 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_autofill",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -23,16 +24,19 @@ android_test {
         "androidx.annotation_annotation",
         "androidx.autofill_autofill",
         "androidx.test.ext.junit",
+        "androidx.credentials_credentials",
         "compatibility-device-util-axt",
         "ctsdeviceutillegacy-axt",
         "ctstestrunner-axt",
-        "truth-prebuilt",
+        "truth",
         "androidx.test.uiautomator_uiautomator",
+        "androidx.test.espresso.core",
         "CtsMockInputMethodLib",
         // TODO: remove once Android migrates to JUnit 4.12,
         // which provides assertThrows
         "testng",
         "cts-wm-util",
+        "TestParameterInjector",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
@@ -43,7 +47,13 @@ android_test {
     sdk_version: "test_current",
     data: [
         ":TestAutofillServiceApp",
+        ":TestAutofillServiceWithoutIntentFilter",
         ":CtsMockInputMethod",
     ],
     per_testcase_directory: true,
+    errorprone: {
+        javacflags: [
+            "-Xep:BareDotMetacharacter:WARN",
+        ],
+    },
 }

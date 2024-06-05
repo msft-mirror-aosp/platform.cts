@@ -34,6 +34,8 @@ import com.android.queryable.queries.UserHandleQuery;
 import com.android.queryable.queries.UserHandleQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link DeviceAdminReceiver#onPasswordFailed(Context, Intent)} or
  * {@link DeviceAdminReceiver#onPasswordFailed(Context, Intent, UserHandle)} is called.
@@ -58,7 +60,7 @@ public final class DeviceAdminPasswordFailedEvent extends Event {
                 new DeviceAdminReceiverQueryHelper<>(this);
         IntentQueryHelper<DeviceAdminPasswordFailedEventQuery> mIntent =
                 new IntentQueryHelper<>(this);
-        UserHandleQueryHelper<DeviceAdminPasswordFailedEventQuery> mUserHandle =
+        UserHandleQueryHelper<DeviceAdminPasswordFailedEventQuery> mUser =
                 new UserHandleQueryHelper<>(this);
 
         private DeviceAdminPasswordFailedEventQuery(String packageName) {
@@ -85,8 +87,8 @@ public final class DeviceAdminPasswordFailedEvent extends Event {
          * {@link DeviceAdminReceiver#onPasswordFailed(Context, Intent, UserHandle)}.
          */
         @CheckResult
-        public UserHandleQuery<DeviceAdminPasswordFailedEventQuery> whereUserHandle() {
-            return mUserHandle;
+        public UserHandleQuery<DeviceAdminPasswordFailedEventQuery> whereUser() {
+            return mUser;
         }
 
         @Override
@@ -97,7 +99,7 @@ public final class DeviceAdminPasswordFailedEvent extends Event {
             if (!mDeviceAdminReceiver.matches(event.mDeviceAdminReceiver)) {
                 return false;
             }
-            if (!mUserHandle.matches(event.mUserHandle)) {
+            if (!mUser.matches(event.mUserHandle)) {
                 return false;
             }
             return true;
@@ -108,7 +110,7 @@ public final class DeviceAdminPasswordFailedEvent extends Event {
             return toStringBuilder(DeviceAdminPasswordFailedEvent.class, this)
                     .field("intent", mIntent)
                     .field("deviceAdminReceiver", mDeviceAdminReceiver)
-                    .field("userHandle", mUserHandle)
+                    .field("userHandle", mUser)
                     .toString();
         }
     }
@@ -130,6 +132,7 @@ public final class DeviceAdminPasswordFailedEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminPasswordFailedEventLogger setDeviceAdminReceiver(
                 DeviceAdminReceiver deviceAdminReceiver) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiver);
@@ -144,6 +147,7 @@ public final class DeviceAdminPasswordFailedEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminPasswordFailedEventLogger setDeviceAdminReceiver(
                 String deviceAdminReceiverClassName) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiverClassName);
@@ -157,6 +161,7 @@ public final class DeviceAdminPasswordFailedEvent extends Event {
         }
 
         /** Sets the {@link UserHandle}. */
+        @CanIgnoreReturnValue
         public DeviceAdminPasswordFailedEventLogger setUserHandle(UserHandle userHandle) {
             mEvent.mUserHandle = new SerializableParcelWrapper<>(userHandle);
             return this;

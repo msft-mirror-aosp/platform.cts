@@ -23,6 +23,7 @@ import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.expectA11y
 import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.expectA11yImeEvent;
 import static com.android.cts.mocka11yime.MockA11yImeEventStreamUtils.notExpectA11yImeEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
@@ -34,7 +35,7 @@ import android.app.UiAutomation;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Process;
-import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.Selection;
@@ -53,6 +54,7 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -75,16 +77,10 @@ import java.util.function.BiFunction;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10);
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.AccessibilityInputMethodTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     @FunctionalInterface
     private interface A11yImeTest {
@@ -107,12 +103,13 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @FlakyTest
     public void testLifecycle() throws Exception {
         testA11yIme((uiAutomation, imeSession, a11yImeSession) -> {
             final var stream = a11yImeSession.openEventStream();
 
-            final String marker = getTestMarker();
-            final String markerForRestartInput = marker + "++";
+            final String marker = getTestMarker(FIRST_EDIT_TEXT_TAG);
+            final String markerForRestartInput = getTestMarker(SECOND_EDIT_TEXT_TAG);
             final AtomicReference<EditText> anotherEditTextRef = new AtomicReference<>();
             TestActivity.startSync(testActivity -> {
                 final LinearLayout layout = new LinearLayout(testActivity);
@@ -151,6 +148,7 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @FlakyTest
     public void testRestartInput() throws Exception {
         testA11yIme((uiAutomation, imeSession, a11yImeSession) -> {
             final var stream = a11yImeSession.openEventStream();
@@ -191,7 +189,7 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
                 return !restarting;
             }, TIMEOUT);
 
-            final String markerForRestartInput = marker + "++";
+            final String markerForRestartInput = getTestMarker("restarted-" + EDIT_TEXT_TAG);
             runOnMainSync(() -> {
                 final EditText editText = editTextRef.get();
                 editText.setPrivateImeOptions(markerForRestartInput);
@@ -245,6 +243,7 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @FlakyTest
     public void testNoFallbackInputConnection() throws Exception {
         final String marker = getTestMarker();
         testA11yIme((uiAutomation, imeSession, a11yImeSession) -> {
@@ -280,15 +279,13 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
             runOnMainSync(() -> editTextForFallbackInputConnectionRef.get().requestFocus());
 
             // Both IME and A11y IME should receive "onFinishInput".
-            expectEvent(imeEventStream,
-                    event -> "onFinishInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(imeEventStream, eventMatcher("onFinishInput"), TIMEOUT);
             expectA11yImeEvent(a11yImeEventStream,
                     event -> "onFinishInput".equals(event.getEventName()), TIMEOUT);
 
             // Only IME will receive "onStartInput" with a fallback InputConnection.
             {
-                final var startInputEvent = expectEvent(imeEventStream,
-                        event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+                final var startInputEvent = expectEvent(imeEventStream, eventMatcher("onStartInput"), TIMEOUT);
                 verifyOnStartInputEventForFallbackInputConnection(startInputEvent,
                         false /* restarting */);
             }
@@ -303,6 +300,7 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @FlakyTest
     public void testNoFallbackInputConnectionAfterRestartInput() throws Exception {
         final String marker = getTestMarker();
         testA11yIme((uiAutomation, imeSession, a11yImeSession) -> {
@@ -340,8 +338,7 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
 
             // Only IME will receive "onStartInput" with a fallback InputConnection.
             {
-                final var startInputEvent = expectEvent(imeEventStream,
-                        event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+                final var startInputEvent = expectEvent(imeEventStream, eventMatcher("onStartInput"), TIMEOUT);
                 verifyOnStartInputEventForFallbackInputConnection(startInputEvent,
                         true /* restarting */);
             }
@@ -528,14 +525,14 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
                         myEditor, newSelStart, newSelEnd, -1, -1);
             });
 
-            notExpectEvent(imeEventStream,
-                    event -> "onUpdateSelection".equals(event.getEventName()), NOT_EXPECT_TIMEOUT);
+            notExpectEvent(imeEventStream, eventMatcher("onUpdateSelection"), NOT_EXPECT_TIMEOUT);
             notExpectA11yImeEvent(a11yImeEventStream,
                     event -> "onUpdateSelection".equals(event.getEventName()), NOT_EXPECT_TIMEOUT);
         });
     }
 
     @Test
+    @FlakyTest
     public void testInvalidateInput() throws Exception {
         // If IC#takeSnapshot() returns true, it should work, even if IC#{begin,end}BatchEdit()
         // always return false.
@@ -552,6 +549,7 @@ public final class AccessibilityInputMethodTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @FlakyTest
     public void testInvalidateInputFallback() throws Exception {
         // If IC#takeSnapshot() returns false, then fall back to IMM#restartInput()
         testInvalidateInputMain((view, editable) -> new TestInputConnection(view, editable) {

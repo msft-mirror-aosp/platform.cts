@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import glob
+import json
 import logging
 import os
 import os.path
@@ -22,20 +22,22 @@ import subprocess
 import sys
 import tempfile
 import time
+import types
 
 import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
+import its_device_utils
 import its_session_utils
+import lighting_control_utils
 import numpy as np
 import yaml
-import lighting_control_utils
+
 
 YAML_FILE_DIR = os.environ['CAMERA_ITS_TOP']
 CONFIG_FILE = os.path.join(YAML_FILE_DIR, 'config.yml')
 TEST_KEY_TABLET = 'tablet'
 TEST_KEY_SENSOR_FUSION = 'sensor_fusion'
-LOAD_SCENE_DELAY = 1  # seconds
 ACTIVITY_START_WAIT = 1.5  # seconds
 MERGE_RESULTS_TIMEOUT = 3600  # seconds
 
@@ -45,10 +47,10 @@ RESULT_FAIL = 'FAIL'
 RESULT_NOT_EXECUTED = 'NOT_EXECUTED'
 RESULT_KEY = 'result'
 METRICS_KEY = 'mpc_metrics'
+PERFORMANCE_KEY = 'performance_metrics'
 SUMMARY_KEY = 'summary'
-RESULT_VALUES = {RESULT_PASS, RESULT_FAIL, RESULT_NOT_EXECUTED}
+RESULT_VALUES = (RESULT_PASS, RESULT_FAIL, RESULT_NOT_EXECUTED)
 CTS_VERIFIER_PACKAGE_NAME = 'com.android.cts.verifier'
-ITS_TEST_ACTIVITY = 'com.android.cts.verifier/.camera.its.ItsTestActivity'
 ACTION_ITS_RESULT = 'com.android.cts.verifier.camera.its.ACTION_ITS_RESULT'
 EXTRA_VERSION = 'camera.its.extra.VERSION'
 CURRENT_ITS_VERSION = '1.0'  # version number to sync with CtsVerifier
@@ -57,50 +59,56 @@ EXTRA_RESULTS = 'camera.its.extra.RESULTS'
 TIME_KEY_START = 'start'
 TIME_KEY_END = 'end'
 VALID_CONTROLLERS = ('arduino', 'canakit')
-_INT_STR_DICT = {'11': '1_1', '12': '1_2'}  # recover replaced '_' in scene def
 _FRONT_CAMERA_ID = '1'
+# recover replaced '_' in scene def
+_INT_STR_DICT = types.MappingProxyType({'11': '1_1', '12': '1_2'})
+_MAIN_TESTBED = 0
 _PROPERTIES_TO_MATCH = (
     'ro.product.model', 'ro.product.name', 'ro.build.display.id', 'ro.revision'
 )
-_MAIN_TESTBED = 0
 
-# All possible scenes
+# Scenes that can be automated through tablet display
 # Notes on scene names:
 #   scene*_1/2/... are same scene split to load balance run times for scenes
 #   scene*_a/b/... are similar scenes that share one or more tests
-_ALL_SCENES = [
+_TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
-    'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene5',
-    'scene6', os.path.join('scene_extensions', 'scene_hdr'),
-    os.path.join('scene_extensions', 'scene_night'), 'sensor_fusion'
-]
-
-# Scenes that can be automated through tablet display
-_AUTO_SCENES = [
-    'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
-    'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6',
+    'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6', 'scene7',
+    'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
-    os.path.join('scene_extensions', 'scene_night')
-]
-
-# Scenes that are logically grouped and can be called as group
-_GROUPED_SCENES = {
-        'scene1': ['scene1_1', 'scene1_2'],
-        'scene2': ['scene2_a', 'scene2_b', 'scene2_c', 'scene2_d', 'scene2_e',
-                   'scene2_f']
-}
-
-# Scene extensions
-_EXTENSIONS_SCENES = (
-    os.path.join('scene_extensions', 'scene_hdr'),
-    os.path.join('scene_extensions', 'scene_night'),
+    os.path.join('scene_extensions', 'scene_low_light'),
+    'scene_video',
 )
 
+# Scenes that use the 'sensor_fusion' test rig
+_MOTION_SCENES = ('sensor_fusion', 'feature_combination',)
+
+# Scenes that uses lighting control
+_FLASH_SCENES = ('scene_flash',)
+
+# Scenes that uses checkerboard as chart
+_CHECKERBOARD_SCENES = ('sensor_fusion', 'scene_flash', 'feature_combination',)
+
 # Scenes that have to be run manually regardless of configuration
-_MANUAL_SCENES = ['scene5']
+_MANUAL_SCENES = ('scene5',)
+
+# Scene extensions
+_EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
+                      os.path.join('scene_extensions', 'scene_low_light'),
+                      )
+
+# All possible scenes
+_ALL_SCENES = _TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES + _FLASH_SCENES
+
+# Scenes that are logically grouped and can be called as group
+_GROUPED_SCENES = types.MappingProxyType({
+        'scene1': ('scene1_1', 'scene1_2'),
+        'scene2': ('scene2_a', 'scene2_b', 'scene2_c', 'scene2_d', 'scene2_e',
+                   'scene2_f')
+})
 
 # Scene requirements for manual testing.
-_SCENE_REQ = {
+_SCENE_REQ = types.MappingProxyType({
     'scene0': None,
     'scene1_1': 'A grey card covering at least the middle 30% of the scene',
     'scene1_2': 'A grey card covering at least the middle 30% of the scene',
@@ -113,91 +121,93 @@ _SCENE_REQ = {
     'scene3': 'The ISO12233 chart',
     'scene4': 'A test chart of a circle covering at least the middle 50% of '
               'the scene. See tests/scene4/scene4.png',
-    'scene5': 'Capture images with a diffuser attached to the camera. '
-              'See source.android.com/docs/compatibility/cts/camera-its-tests#scene5/diffuser '
+    'scene5': 'Capture images with a diffuser attached to the camera. See '
+              'source.android.com/docs/compatibility/cts/camera-its-tests#scene5/diffuser '  # pylint: disable line-too-long
               'for more details',
     'scene6': 'A grid of black circles on a white background. '
               'See tests/scene6/scene6.png',
+    'scene7': 'The picture with 4 different colors, slanted edge and'
+              '4 ArUco markers. See tests/scene7/scene7.png',
+    'scene8': 'The picture with 4 faces in 4 different colors overlay.'
+              'See tests/scene8/scene8.png',
+    'scene9': 'A scene with high entropy consisting of random size and colored '
+              'circles. See tests/scene9/scene9.png',
     # Use os.path to avoid confusion on other platforms
     os.path.join('scene_extensions', 'scene_hdr'): (
         'A tablet displayed scene with a face on the left '
         'and a low-contrast QR code on the right. '
         'See tests/scene_extensions/scene_hdr/scene_hdr.png'
     ),
-    os.path.join('scene_extensions', 'scene_night'): (
-        'A tablet displayed scene with a white circle '
-        'and four smaller circles inside of it. '
-        'See tests/scene_extensions/scene_night/scene_night.png'
+    os.path.join('scene_extensions', 'scene_low_light'): (
+        'A tablet displayed scene with a grid of squares of varying '
+        'brightness. See '
+        'tests/scene_extensions/scene_low_light/scene_low_light.png'
     ),
     'sensor_fusion': 'A checkerboard pattern for phone to rotate in front of '
                      'in tests/sensor_fusion/checkerboard.pdf\n'
                      'See tests/sensor_fusion/SensorFusion.pdf for detailed '
                      'instructions.\nNote that this test will be skipped '
                      'on devices not supporting REALTIME camera timestamp.',
-}
+    'feature_combination': 'The same scene as sensor_fusion, '
+                           'separated for easier testing.',
+    'scene_flash': 'A checkerboard pattern chart with lights off.',
+    'scene_video': 'A tablet displayed scene with a series of circles moving '
+                   'at different simulated frame rates. '
+                   'See tests/scene_video/scene_video.mp4',
+})
 
-
-SUB_CAMERA_TESTS = {
-    'scene0': [
-        'test_burst_capture',
+SUB_CAMERA_TESTS = types.MappingProxyType({
+    'scene0': (
         'test_jitter',
         'test_metadata',
-        'test_read_write',
+        'test_request_capture_match',
         'test_sensor_events',
         'test_solid_color_test_pattern',
         'test_unified_timestamps',
-    ],
-    'scene1_1': [
+    ),
+    'scene1_1': (
+        'test_burst_capture',
         'test_burst_sameness_manual',
         'test_dng_noise_model',
-        'test_exposure',
+        'test_exposure_x_iso',
         'test_linearity',
-    ],
-    'scene1_2': [
+    ),
+    'scene1_2': (
         'test_raw_exposure',
         'test_raw_sensitivity',
         'test_yuv_plus_raw',
-    ],
-    'scene2_a': [
+    ),
+    'scene2_a': (
         'test_num_faces',
-    ],
-    'scene4': [
+    ),
+    'scene4': (
         'test_aspect_ratio_and_crop',
-    ],
-    'sensor_fusion': [
+    ),
+    'scene_video': (
+        'test_preview_frame_drop',
+    ),
+    'sensor_fusion': (
         'test_sensor_fusion',
-    ],
-}
+    ),
+})
 
-_LIGHTING_CONTROL_TESTS = [
+_LIGHTING_CONTROL_TESTS = (
     'test_auto_flash.py',
     'test_preview_min_frame_rate.py',
     'test_led_snapshot.py',
     'test_night_extension.py',
+    'test_low_light_boost_extension.py',
     'test_hdr_extension.py',
-    ]
+    )
+
+_EXTENSION_NAMES = (
+    'hdr',
+    'low_light',
+)
 
 _DST_SCENE_DIR = '/sdcard/Download/'
+_SUB_CAMERA_LEVELS = 2
 MOBLY_TEST_SUMMARY_TXT_FILE = 'test_mobly_summary.txt'
-
-
-def run(cmd):
-  """Replaces os.system call, while hiding stdout+stderr messages."""
-  with open(os.devnull, 'wb') as devnull:
-    subprocess.check_call(cmd.split(), stdout=devnull, stderr=subprocess.STDOUT)
-
-
-def check_cts_apk_installed(device_id):
-  """Verifies that CtsVerifer.apk is installed on a given device."""
-  verify_cts_cmd = f'adb -s {device_id} shell pm list packages | grep {CTS_VERIFIER_PACKAGE_NAME}'
-  raw_output = subprocess.check_output(
-      verify_cts_cmd, stderr=subprocess.STDOUT, shell=True
-  )
-  output = str(raw_output.decode('utf-8')).strip()
-  if CTS_VERIFIER_PACKAGE_NAME not in output:
-    raise AssertionError(
-        f"{CTS_VERIFIER_PACKAGE_NAME} was not found in {device_id}'s list of packages!"
-    )
 
 
 def report_result(device_id, camera_id, results):
@@ -210,15 +220,7 @@ def report_result(device_id, camera_id, results):
             current ITS run. See test_report_result unit test for an example.
   """
   adb = f'adb -s {device_id}'
-  initialization_cmds = (
-      f'{adb} shell input keyevent KEYCODE_WAKEUP',
-      f'{adb} shell input keyevent KEYCODE_MENU',
-      (f'{adb} shell am start -n {ITS_TEST_ACTIVITY} '
-       '--activity-brought-to-front')
-  )
-  # Awaken if necessary and start ItsTestActivity to receive test results
-  for cmd in initialization_cmds:
-    run(cmd)
+  its_device_utils.start_its_test_activity(device_id)
   time.sleep(ACTIVITY_START_WAIT)
 
   # Validate/process results argument
@@ -229,17 +231,15 @@ def report_result(device_id, camera_id, results):
       raise ValueError(f'Unknown ITS result for {scene}: {results[RESULT_KEY]}')
     if SUMMARY_KEY in results[scene]:
       device_summary_path = f'/sdcard/its_camera{camera_id}_{scene}.txt'
-      run('%s push %s %s' %
-          (adb, results[scene][SUMMARY_KEY], device_summary_path))
+      its_device_utils.run(
+          f'{adb} push {results[scene][SUMMARY_KEY]} {device_summary_path}')
       results[scene][SUMMARY_KEY] = device_summary_path
 
   json_results = json.dumps(results)
   cmd = (f"{adb} shell am broadcast -a {ACTION_ITS_RESULT} --es {EXTRA_VERSION}"
          f" {CURRENT_ITS_VERSION} --es {EXTRA_CAMERA_ID} {camera_id} --es "
          f"{EXTRA_RESULTS} \'{json_results}\'")
-  if len(cmd) > 8000:
-    logging.info('ITS command string might be too long! len:%s', len(cmd))
-  run(cmd)
+  its_device_utils.run(cmd)
 
 
 def write_result(testbed_index, device_id, camera_id, results):
@@ -316,26 +316,6 @@ def are_devices_similar(device_id_1, device_id_2):
   return True
 
 
-def load_scenes_on_tablet(scene, tablet_id):
-  """Copies scenes onto the tablet before running the tests.
-
-  Args:
-    scene: Name of the scene to copy image files.
-    tablet_id: adb id of tablet
-  """
-  logging.info('Copying files to tablet: %s', tablet_id)
-  scene_dir = os.listdir(
-      os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests', scene))
-  for file_name in scene_dir:
-    if file_name.endswith('.png'):
-      src_scene_file = os.path.join(os.environ['CAMERA_ITS_TOP'], 'tests',
-                                    scene, file_name)
-      cmd = f'adb -s {tablet_id} push {src_scene_file} {_DST_SCENE_DIR}'
-      subprocess.Popen(cmd.split())
-  time.sleep(LOAD_SCENE_DELAY)
-  logging.info('Finished copying files to tablet.')
-
-
 def check_manual_scenes(device_id, camera_id, scene, out_path):
   """Halt run to change scenes.
 
@@ -345,9 +325,17 @@ def check_manual_scenes(device_id, camera_id, scene, out_path):
     scene: Name of the scene to copy image files.
     out_path: output file location
   """
+  hidden_physical_id = None
+  if its_session_utils.SUB_CAMERA_SEPARATOR in camera_id:
+    split_camera_ids = camera_id.split(its_session_utils.SUB_CAMERA_SEPARATOR)
+    if len(split_camera_ids) == _SUB_CAMERA_LEVELS:
+      camera_id = split_camera_ids[0]
+      hidden_physical_id = split_camera_ids[1]
+
   with its_session_utils.ItsSession(
       device_id=device_id,
-      camera_id=camera_id) as cam:
+      camera_id=camera_id,
+      hidden_physical_id=hidden_physical_id) as cam:
     props = cam.get_camera_properties()
     props = cam.override_with_hidden_physical_camera_props(props)
 
@@ -461,7 +449,7 @@ def enable_external_storage(device_id):
   """
   cmd = (f'adb -s {device_id} shell appops '
          'set com.android.cts.verifier MANAGE_EXTERNAL_STORAGE allow')
-  run(cmd)
+  its_device_utils.run(cmd)
 
 
 def get_available_cameras(device_id, camera_id):
@@ -577,11 +565,29 @@ def main():
     raise ValueError('testbed_index must be less than num_testbeds. '
                      'testbed_index starts at 0.')
 
+  # Prepend 'scene' if not specified at cmd line
+  for i, s in enumerate(scenes):
+    if (not s.startswith('scene') and
+        not s.startswith(('checkerboard', 'sensor_fusion',
+                          'flash', 'feature_combination', '<scene-name>'))):
+      scenes[i] = f'scene{s}'
+    if s.startswith('flash') or s.startswith('extensions'):
+      scenes[i] = f'scene_{s}'
+    # Handle scene_extensions
+    if any(s.startswith(extension) for extension in _EXTENSION_NAMES):
+      scenes[i] = f'scene_extensions/scene_{s}'
+    if (any(s.startswith('scene_' + extension)
+            for extension in _EXTENSION_NAMES)):
+      scenes[i] = f'scene_extensions/{s}'
+
   # Read config file and extract relevant TestBed
   config_file_contents = get_config_file_contents()
   if testbed_index is None:
     for i in config_file_contents['TestBeds']:
-      if scenes == ['sensor_fusion']:
+      if scenes in (
+          ['sensor_fusion'], ['checkerboard'], ['scene_flash'],
+          ['feature_combination']
+      ):
         if TEST_KEY_SENSOR_FUSION not in i['Name'].lower():
           config_file_contents['TestBeds'].remove(i)
       else:
@@ -605,7 +611,7 @@ def main():
   enable_external_storage(device_id)
 
   # Verify that CTS Verifier is installed
-  check_cts_apk_installed(device_id)
+  its_session_utils.check_apk_installed(device_id, CTS_VERIFIER_PACKAGE_NAME)
   # Check whether the dut is foldable or not
   testing_foldable_device = True if test_params_content[
       'foldable_device'] == 'True' else False
@@ -623,13 +629,13 @@ def main():
   logging.info('Saving %s output files to: %s', config_file_test_key, topdir)
   if TEST_KEY_TABLET in config_file_test_key:
     tablet_id = get_device_serial_number('tablet', config_file_contents)
-    tablet_name_cmd = f'adb -s {tablet_id} shell getprop ro.build.product'
+    tablet_name_cmd = f'adb -s {tablet_id} shell getprop ro.product.device'
     raw_output = subprocess.check_output(
         tablet_name_cmd, stderr=subprocess.STDOUT, shell=True)
     tablet_name = str(raw_output.decode('utf-8')).strip()
     logging.debug('Tablet name: %s', tablet_name)
     brightness = test_params_content['brightness']
-    its_session_utils.validate_tablet_brightness(tablet_name, brightness)
+    its_session_utils.validate_tablet(tablet_name, brightness, tablet_id)
   else:
     tablet_id = None
 
@@ -639,23 +645,9 @@ def main():
       testing_sensor_fusion_with_controller = True
 
   testing_flash_with_controller = False
-  if (TEST_KEY_TABLET in config_file_test_key or
-      'manual' in config_file_test_key):
-    if test_params_content.get('lighting_cntl', 'None').lower() == 'arduino':
-      testing_flash_with_controller = True
-
-  # Prepend 'scene' if not specified at cmd line
-  for i, s in enumerate(scenes):
-    if (not s.startswith('scene') and
-        not s.startswith(('sensor_fusion', '<scene-name>'))):
-      scenes[i] = f'scene{s}'
-    # Handle scene_extensions
-    if s.startswith('extensions'):
-      scenes[i] = f'scene_{s}'
-    if s.startswith('hdr') or s.startswith('night'):
-      scenes[i] = f'scene_extensions/scene_{s}'
-    if s.startswith('scene_hdr') or s.startswith('scene_night'):
-      scenes[i] = f'scene_extensions/{s}'
+  if (test_params_content.get('lighting_cntl', 'None').lower() == 'arduino' and
+      'manual' not in config_file_test_key):
+    testing_flash_with_controller = True
 
   # Expand GROUPED_SCENES and remove any duplicates
   scenes = [_GROUPED_SCENES[s] if s in _GROUPED_SCENES else s for s in scenes]
@@ -676,7 +668,7 @@ def main():
     auto_scene_switch = True
   else:
     auto_scene_switch = False
-    logging.info('No tablet: manual, sensor_fusion, or scene5 testing.')
+    logging.info('Manual, checkerboard scenes, or scene5 testing.')
 
   folded_prompted = False
   opened_prompted = False
@@ -728,12 +720,17 @@ def main():
       if auto_scene_switch:
         possible_scenes.remove('sensor_fusion')
     else:
-      if 'scene_extensions' in scenes:
+      if 'checkerboard' in scenes:
+        possible_scenes = _CHECKERBOARD_SCENES
+      elif 'scene_flash' in scenes:
+        possible_scenes = _FLASH_SCENES
+      elif 'scene_extensions' in scenes:
         possible_scenes = _EXTENSIONS_SCENES
       else:
-        possible_scenes = _AUTO_SCENES if auto_scene_switch else _ALL_SCENES
+        possible_scenes = _TABLET_SCENES if auto_scene_switch else _ALL_SCENES
 
-    if '<scene-name>' in scenes or 'scene_extensions' in scenes:
+    if ('<scene-name>' in scenes or 'checkerboard' in scenes or
+        'scene_extensions' in scenes):
       per_camera_scenes = possible_scenes
     else:
       # Validate user input scene names
@@ -776,13 +773,16 @@ def main():
     # A subdir in topdir will be created for each camera_id. All scene test
     # output logs for each camera id will be stored in this subdir.
     # This output log path is a mobly param : LogPath
-    cam_id_string = f"cam_id_{camera_id.replace(its_session_utils.SUB_CAMERA_SEPARATOR, '_')}"
-    mobly_output_logs_path = os.path.join(topdir, cam_id_string)
+    camera_id_str = (
+        camera_id.replace(its_session_utils.SUB_CAMERA_SEPARATOR, '_')
+    )
+    mobly_output_logs_path = os.path.join(topdir, f'cam_id_{camera_id_str}')
     os.mkdir(mobly_output_logs_path)
     tot_pass = 0
     for s in per_camera_scenes:
       results[s]['TEST_STATUS'] = []
       results[s][METRICS_KEY] = []
+      results[s][PERFORMANCE_KEY] = []
 
       # unit is millisecond for execution time record in CtsVerifier
       scene_start_time = int(round(time.time() * 1000))
@@ -801,10 +801,11 @@ def main():
       if auto_scene_switch:
         # Copy scene images onto the tablet
         if 'scene0' not in testing_scene:
-          load_scenes_on_tablet(testing_scene, tablet_id)
+          its_session_utils.copy_scenes_to_tablet(testing_scene, tablet_id)
       else:
         # Check manual scenes for correctness
-        if 'scene0' not in testing_scene and not testing_sensor_fusion_with_controller:
+        if ('scene0' not in testing_scene and
+            not testing_sensor_fusion_with_controller):
           check_manual_scenes(device_id, camera_id, testing_scene,
                               mobly_output_logs_path)
 
@@ -858,6 +859,7 @@ def main():
               '-c',
               f'{new_yml_file_name}'
           ]
+        return_string = ''
         for num_try in range(NUM_TRIES):
           # Handle manual lighting control redirected stdout in test
           if (test in _LIGHTING_CONTROL_TESTS and
@@ -870,14 +872,15 @@ def main():
             output = subprocess.run(cmd, stdout=fp)
           # pylint: enable=subprocess-run-check
 
-          # Parse mobly logs to determine SKIP, NOT_YET_MANDATED, and
-          # socket FAILs.
+          # Parse mobly logs to determine PASS/FAIL(*)/SKIP & socket FAILs
           with open(
               os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE), 'r') as file:
             test_code = output.returncode
             test_skipped = False
             test_not_yet_mandated = False
             test_mpc_req = ''
+            perf_test_metrics = ''
+            hdr_mpc_req = ''
             content = file.read()
 
             # Find media performance class logging
@@ -893,13 +896,30 @@ def main():
                 test_mpc_req = one_line
                 break
 
+            for one_line in lines:
+              # regular expression pattern must match in ItsTestActivity.java.
+              gainmap_string_match = re.search('^has_gainmap:', one_line)
+              if gainmap_string_match:
+                hdr_mpc_req = one_line
+                break
+
+            for one_line in lines:
+              # regular expression pattern must match in ItsTestActivity.java.
+              perf_metrics_string_match = re.search(
+                  '^test.*:',
+                  one_line)
+              if perf_metrics_string_match:
+                perf_test_metrics = one_line
+                # each test can add multiple metrics
+                results[s][PERFORMANCE_KEY].append(perf_test_metrics)
+
             if 'Test skipped' in content:
               return_string = 'SKIP '
               num_skip += 1
               test_skipped = True
               break
 
-            if 'Not yet mandated test' in content:
+            if its_session_utils.NOT_YET_MANDATED_MESSAGE in content:
               return_string = 'FAIL*'
               num_not_mandated_fail += 1
               test_not_yet_mandated = True
@@ -928,9 +948,12 @@ def main():
             'status': return_string.strip()})
         if test_mpc_req:
           results[s][METRICS_KEY].append(test_mpc_req)
+        if hdr_mpc_req:
+          results[s][METRICS_KEY].append(hdr_mpc_req)
         msg_short = f'{return_string} {test}'
         scene_test_summary += msg_short + '\n'
-        if test in _LIGHTING_CONTROL_TESTS and not testing_flash_with_controller:
+        if (test in _LIGHTING_CONTROL_TESTS and
+            not testing_flash_with_controller):
           print('Turn lights ON in rig and press <ENTER> to continue.')
 
       # unit is millisecond for execution time record in CtsVerifier
@@ -976,6 +999,7 @@ def main():
     # Log results per camera
     if num_testbeds is None or testbed_index == _MAIN_TESTBED:
       logging.info('Reporting camera %s ITS results to CtsVerifier', camera_id)
+      logging.info('ITS results to CtsVerifier: %s', results)
       report_result(device_id, camera_id, results)
     else:
       write_result(testbed_index, device_id, camera_id, results)
@@ -991,11 +1015,11 @@ def main():
   lighting_cntl = test_params_content.get('lighting_cntl', 'None')
   lighting_ch = test_params_content.get('lighting_ch', 'None')
   arduino_serial_port = lighting_control_utils.lighting_control(
-    lighting_cntl, lighting_ch)
+      lighting_cntl, lighting_ch)
 
   # turn OFF lights
   lighting_control_utils.set_lighting_state(
-    arduino_serial_port, lighting_ch, 'OFF')
+      arduino_serial_port, lighting_ch, 'OFF')
 
   if num_testbeds is not None:
     if testbed_index == _MAIN_TESTBED:

@@ -22,6 +22,7 @@ import static android.hardware.camera2.cts.CameraTestUtils.SESSION_READY_TIMEOUT
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleImageReaderListener;
 import static android.hardware.camera2.cts.CameraTestUtils.dumpFile;
+import static android.hardware.camera2.cts.CameraTestUtils.getUnavailablePhysicalCameras;
 import static android.hardware.camera2.cts.CameraTestUtils.getValueNotNull;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -67,6 +68,7 @@ import android.os.ConditionVariable;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.util.Log;
+import android.util.Pair;
 import android.util.Size;
 import android.view.Surface;
 
@@ -130,7 +132,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testFlexibleYuv() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
                 openDevice(id);
@@ -145,7 +147,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testDepth16() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
                 openDevice(id);
@@ -160,7 +162,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testDepthPointCloud() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
                 openDevice(id);
@@ -175,7 +177,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testDynamicDepth() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 openDevice(id);
                 BufferFormatTestParam params = new BufferFormatTestParam(
@@ -190,7 +192,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testY8() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
                 openDevice(id);
@@ -205,7 +207,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testJpeg() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing jpeg capture for Camera " + id);
                 openDevice(id);
@@ -220,7 +222,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testRaw() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing raw capture for camera " + id);
                 openDevice(id);
@@ -235,7 +237,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testRawPrivate() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing raw capture for camera " + id);
                 openDevice(id);
@@ -250,7 +252,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testP010() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing YUV P010 capture for Camera " + id);
                 openDevice(id);
@@ -276,7 +278,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testDisplayP3Yuv() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
                             .REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES)) {
@@ -305,7 +307,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testDisplayP3YuvRepeating() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
                             .REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES)) {
@@ -334,7 +336,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testDisplayP3Heic() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
                             .REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES)) {
@@ -362,7 +364,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testDisplayP3HeicRepeating() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
                             .REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES)) {
@@ -390,7 +392,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testDisplayP3Jpeg() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
                             .REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES)) {
@@ -418,7 +420,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testDisplayP3JpegRepeating() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
                             .REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES)) {
@@ -446,7 +448,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testSRGBJpeg() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
                             .REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES)) {
@@ -474,7 +476,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testSRGBJpegRepeating() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 if (!mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
                             .REQUEST_AVAILABLE_CAPABILITIES_COLOR_SPACE_PROFILES)) {
@@ -502,7 +504,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testJpegR() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 if (!mAllStaticInfo.get(id).isJpegRSupported()) {
                     Log.i(TAG, "Camera " + id + " does not support Jpeg/R, skipping");
@@ -525,7 +527,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testJpegRDisplayP3() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 if (!mAllStaticInfo.get(id).isJpegRSupported()) {
                     Log.i(TAG, "Camera " + id + " does not support Jpeg/R, skipping");
@@ -559,7 +561,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testHeic() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing heic capture for Camera " + id);
                 openDevice(id);
@@ -574,7 +576,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testRepeatingJpeg() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing repeating jpeg capture for Camera " + id);
                 openDevice(id);
@@ -589,7 +591,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testRepeatingRaw() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing repeating raw capture for camera " + id);
                 openDevice(id);
@@ -604,7 +606,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testRepeatingRawPrivate() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing repeating raw capture for camera " + id);
                 openDevice(id);
@@ -619,7 +621,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testRepeatingHeic() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing repeating heic capture for Camera " + id);
                 openDevice(id);
@@ -634,7 +636,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testFlexibleYuvWithTimestampBase() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
                 openDevice(id);
@@ -658,7 +660,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testLongProcessingRepeatingRaw() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing long processing on repeating raw for camera " + id);
 
@@ -677,7 +679,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testLongProcessingRepeatingFlexibleYuv() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing long processing on repeating YUV for camera " + id);
 
@@ -704,7 +706,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
     @Test
     public void testInvalidAccessTest() throws Exception {
         // Test byte buffer access after an image is released, it should throw ISE.
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing invalid image access for Camera " + id);
                 openDevice(id);
@@ -723,7 +725,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testYuvAndJpeg() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "YUV and JPEG testing for camera " + id);
                 if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
@@ -747,7 +749,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testYuvAndJpegWithUsageFlag() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "YUV and JPEG testing for camera " + id);
                 if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
@@ -918,7 +920,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testImageReaderYuvAndRaw() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "YUV and RAW testing for camera " + id);
                 if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
@@ -935,13 +937,38 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
     }
 
     /**
+     * Test two image stream (YUV420_888 and PRIVATE) capture by using ImageReader.
+     */
+    @Test
+    public void testImageReaderYuvAndPrivate() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                Log.v(TAG, "YUV and PRIVATE testing for camera " + id);
+                if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + id
+                            + " does not support color outputs, skipping");
+                    continue;
+                }
+                openDevice(id);
+                // YUV PREVIEW + PRIVATE PREVIEW is a mandatory legacy stream combination.
+                bufferFormatWithYuvTestByCamera(ImageFormat.PRIVATE,
+                        /*setUsageFlag*/false, /*useYuvSize*/true);
+            } finally {
+                closeDevice(id);
+            }
+        }
+    }
+
+    /**
      * If the camera device advertises the SECURE_IAMGE_DATA capability, test
      * ImageFormat.PRIVATE + PROTECTED usage capture by using ImageReader with the
      * ImageReader factory method that has usage flag argument, and uses a custom usage flag.
      */
     @Test
     public void testImageReaderPrivateWithProtectedUsageFlag() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras(
+                mCameraManager, mHandler);
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Private format and protected usage testing for camera " + id);
                 List<String> testCameraIds = new ArrayList<>();
@@ -954,10 +981,14 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
                 if (mAllStaticInfo.get(id).isLogicalMultiCamera()) {
                     Set<String> physicalIdsSet =
-                        mAllStaticInfo.get(id).getCharacteristics().getPhysicalCameraIds();
+                            mAllStaticInfo.get(id).getCharacteristics().getPhysicalCameraIds();
                     for (String physicalId : physicalIdsSet) {
-                        if (mAllStaticInfo.get(physicalId).isCapabilitySupported(
-                                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_SECURE_IMAGE_DATA)) {
+                        StaticMetadata phyInfo = mAllStaticInfo.get(physicalId);
+                        boolean isUnavailable =
+                                unavailablePhysicalCameras.contains(new Pair<>(id, physicalId));
+                        if (phyInfo.isCapabilitySupported(CameraCharacteristics
+                                .REQUEST_AVAILABLE_CAPABILITIES_SECURE_IMAGE_DATA)
+                                && !isUnavailable) {
                             testCameraIds.add(physicalId);
                         }
                     }
@@ -995,7 +1026,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testImageReaderYuvAndRawWithUsageFlag() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "YUV and RAW testing for camera " + id);
                 if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
@@ -1019,7 +1050,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
     public void testAllOutputYUVResolutions() throws Exception {
         Integer[] sessionStates = {BlockingSessionCallback.SESSION_READY,
                 BlockingSessionCallback.SESSION_CONFIGURE_FAILED};
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing all YUV image resolutions for camera " + id);
 
@@ -1263,7 +1294,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testDiscardFreeBuffers() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing discardFreeBuffers for Camera " + id);
                 openDevice(id);
@@ -1307,7 +1338,7 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
             return;
         }
 
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             CameraCharacteristics c = mCameraManager.getCameraCharacteristics(
                     id, /*overrideToPortrait*/false);
             int[] modes = c.get(CameraCharacteristics.SCALER_AVAILABLE_ROTATE_AND_CROP_MODES);
@@ -1483,14 +1514,32 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
      */
     private void bufferFormatWithYuvTestByCamera(int format, boolean setUsageFlag)
             throws Exception {
+        bufferFormatWithYuvTestByCamera(format, setUsageFlag, /*useYuvSize*/false);
+    }
+
+    /**
+     * Test capture a given format stream with yuv stream simultaneously.
+     *
+     * <p>Compared to bufferFormatWithYuvTestByCamera(int, boolean), this function
+     * provide an option to use the same size between the 2 streams.</p>
+     *
+     * @param format The capture format to be tested along with yuv format.
+     * @param setUsageFlag The ImageReader factory method to be used (with or without specifying
+     *                     usage flag)
+     * @param useYuvSize The capture size will be the same as the yuv size
+     */
+    private void bufferFormatWithYuvTestByCamera(int format, boolean setUsageFlag,
+            boolean useYuvSize) throws Exception {
         if (format != ImageFormat.JPEG && format != ImageFormat.RAW_SENSOR
+                && format != ImageFormat.PRIVATE
                 && format != ImageFormat.YUV_420_888) {
             throw new IllegalArgumentException("Unsupported format: " + format);
         }
 
         final int NUM_SINGLE_CAPTURE_TESTED = MAX_NUM_IMAGES - 1;
         Size maxYuvSz = mOrderedPreviewSizes.get(0);
-        Size[] targetCaptureSizes = mStaticInfo.getAvailableSizesForFormatChecked(format,
+        Size[] targetCaptureSizes = useYuvSize ? new Size[]{maxYuvSz} :
+                mStaticInfo.getAvailableSizesForFormatChecked(format,
                 StaticMetadata.StreamDirection.Output);
 
         for (Size captureSz : targetCaptureSizes) {
@@ -1798,8 +1847,10 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
         Size[] availableSizes = mStaticInfo.getAvailableSizesForFormatChecked(format,
                 StaticMetadata.StreamDirection.Output);
 
+        Size[] testSizes = getMinAndMaxSizes(availableSizes);
+
         // for each resolution, test imageReader:
-        for (Size sz : availableSizes) {
+        for (Size sz : testSizes) {
             Log.v(TAG, "testing size " + sz.toString());
             try {
                 if (VERBOSE) {
@@ -1866,7 +1917,6 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
                                     getValueNotNull(result, CaptureResult.SENSOR_SENSITIVITY),
                                     TEST_SENSITIVITY_VALUE),
                             sensitivityDiff >= 0);
-
 
                     // Sleep to Simulate long porcessing before closing the image.
                     Thread.sleep(LONG_PROCESS_TIME_MS);
@@ -2084,6 +2134,36 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
         // Return all pending images to the ImageReader as the validateImage may
         // take a while to return and there could be many images pending.
         mListener.closePendingImages();
+    }
+
+    /**
+     * Gets the list of test sizes to run the test on, given the array of available sizes.
+     * For ImageReaderTest, where the sizes are not the most relevant, it is sufficient to test with
+     * just the min and max size, which helps reduce test time significantly.
+     */
+    private Size[] getMinAndMaxSizes(Size[] availableSizes) {
+        if (availableSizes.length <= 2) {
+            return availableSizes;
+        }
+
+        Size[] testSizes = new Size[2];
+        Size maxSize = availableSizes[0];
+        Size minSize = availableSizes[1];
+
+        for (Size size : availableSizes) {
+            if (size.getWidth() * size.getHeight() > maxSize.getWidth() * maxSize.getHeight()) {
+                maxSize = size;
+            }
+
+            if (size.getWidth() * size.getHeight() < minSize.getWidth() * minSize.getHeight()) {
+                minSize = size;
+            }
+        }
+
+        testSizes[0] = minSize;
+        testSizes[1] = maxSize;
+
+        return testSizes;
     }
 
     /** Load dynamic depth validation jni on initialization */

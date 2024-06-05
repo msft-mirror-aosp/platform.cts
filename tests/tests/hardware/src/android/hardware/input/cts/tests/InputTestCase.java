@@ -38,6 +38,7 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.cts.input.DebugInputRule;
 
 import org.junit.After;
 import org.junit.Before;
@@ -68,7 +69,7 @@ public abstract class InputTestCase {
     protected final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
 
     private final InputListener mInputListener;
-    private View mDecorView;
+    View mDecorView;
 
     // Stores the name of the currently running test
     protected String mCurrentTestCase;
@@ -174,7 +175,8 @@ public abstract class InputTestCase {
         if (event.getHistorySize() > 0) {
             failWithMessage("expected each MotionEvent to only have a single entry");
         }
-        assertEquals(mCurrentTestCase + " (action)",
+        assertEquals(mCurrentTestCase + " (action) expected: "
+                + MotionEvent.actionToString(expectedEvent.getAction()) + " received: " + event,
                 expectedEvent.getAction(), event.getAction());
         assertSource(mCurrentTestCase, expectedEvent, event);
         assertEquals(mCurrentTestCase + " (button state)",
@@ -199,13 +201,26 @@ public abstract class InputTestCase {
      * @param actualEvent actual event flag received in the test app.
      */
     void assertAxis(String testCase, MotionEvent expectedEvent, MotionEvent actualEvent) {
+        // Get the absolute location of the test activity, so we can ensure that axis x and axis y
+        // are valid on any surface, including the portrait ones (like car portrait).
+        final int[] locationOnScreen = new int[2];  // position 0 corresponds to x, and 1 to y
+        mDecorView.getLocationOnScreen(locationOnScreen);
+
         for (int i = 0; i < actualEvent.getPointerCount(); i++) {
             for (int axis = MotionEvent.AXIS_X; axis <= MotionEvent.AXIS_GENERIC_16; axis++) {
                 if (IGNORE_AXES.contains(axis)) continue;
+                float actualAxis = actualEvent.getAxisValue(axis, i);
+
+                // Adjust axis in case this test is running on car portrait surface.
+                if (axis == MotionEvent.AXIS_X) {
+                    actualAxis += locationOnScreen[0];
+                } else if (axis == MotionEvent.AXIS_Y) {
+                    actualAxis += locationOnScreen[1];
+                }
+
                 assertEquals(testCase + " pointer " + i
-                        + " (" + MotionEvent.axisToString(axis) + ")",
-                        expectedEvent.getAxisValue(axis, i), actualEvent.getAxisValue(axis, i),
-                        TOLERANCE);
+                                + " (" + MotionEvent.axisToString(axis) + ")",
+                        expectedEvent.getAxisValue(axis, i), actualAxis, TOLERANCE);
             }
         }
     }
@@ -266,7 +281,7 @@ public abstract class InputTestCase {
             // any unexpected event received caused by the HID report injection.
             InputEvent event = waitForEvent();
             if (event != null) {
-                fail(mCurrentTestCase + " : Received unexpected event " + event);
+                failWithMessage("Received unexpected event " + event);
             }
             return;
         }
@@ -282,9 +297,9 @@ public abstract class InputTestCase {
                     continue;
                 }
             } catch (AssertionError error) {
-                throw new AssertionError("Assertion on entry " + i + " failed.", error);
+                failWithMessage("Assertion on entry " + i + " failed: " + error);
             }
-            fail("Entry " + i + " is neither a KeyEvent nor a MotionEvent: " + event);
+            failWithMessage("Entry " + i + " is neither a KeyEvent nor a MotionEvent: " + event);
         }
     }
 
@@ -292,7 +307,7 @@ public abstract class InputTestCase {
         InputEvent event = waitForEvent();
         while (event != null) {
             if (event instanceof KeyEvent) {
-                fail(mCurrentTestCase + " : Received unexpected KeyEvent " + event);
+                failWithMessage(" : Received unexpected KeyEvent " + event);
             }
             event = waitForEvent();
         }
@@ -398,6 +413,7 @@ public abstract class InputTestCase {
      * Dump out the events queue to help debug.
      */
     private void failWithMessage(String message) {
+        DebugInputRule.dumpInputStateToLogcat();
         if (mEvents.isEmpty()) {
             Log.i(TAG, "The events queue is empty");
         } else {

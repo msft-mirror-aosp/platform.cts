@@ -30,16 +30,18 @@ java_test_helper_library {
         "platform-test-annotations",
     ],
     proto: {
-            type: "nano",
-        },
-        srcs: [
-            "src/**/*.java",
-            "protos/**/*.proto",
-        ],
-   sdk_version: "test_current",
+        type: "nano",
+    },
+    srcs: [
+        "src/**/*.java",
+        "protos/**/*.proto",
+    ],
+    sdk_version: "test_current",
 }
+
 android_test {
     name: "CtsLocationGnssTestCases",
+    team: "trendy_team_location_time",
     defaults: ["cts_defaults"],
     static_libs: [
         "LocationCtsCommon",
@@ -48,7 +50,7 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "truth-prebuilt",
+        "truth",
         "apache-commons-math",
     ],
     libs: [

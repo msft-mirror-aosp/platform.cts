@@ -16,15 +16,13 @@
 
 package android.bluetooth.cts;
 
-import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothHapPresetInfo;
 import android.bluetooth.BluetoothProfile;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
 import android.os.Build;
 import android.os.Parcel;
@@ -36,53 +34,50 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.After;
-import org.junit.Assume;
+import com.google.common.truth.Expect;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class BluetoothHapPresetInfoTest {
+    @Rule public final Expect expect = Expect.create();
+
     private static final int TEST_PRESET_INDEX = 15;
     private static final String TEST_PRESET_NAME = "Test";
 
-    private Context mContext;
-    private BluetoothAdapter mAdapter;
+    private static final Context sContext =
+            InstrumentationRegistry.getInstrumentation().getContext();
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
+        assumeTrue(TestUtils.isBleSupported(sContext));
+        assumeTrue(TestUtils.isProfileEnabled(BluetoothProfile.HAP_CLIENT));
 
-        Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
-        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-        Assume.assumeTrue(TestUtils.isProfileEnabled(BluetoothProfile.HAP_CLIENT));
-
-        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
-        mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-    }
-
-    @After
-    public void tearDown() {
-        mAdapter = null;
-        TestUtils.dropPermissionAsShellUid();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
-    public void testCreateHapPresetInfo() {
-        BluetoothHapPresetInfo presetInfo = createBluetoothHapPresetInfoForTest(TEST_PRESET_INDEX,
-                TEST_PRESET_NAME, true /* isAvailable */, false /* isWritable */);
-        assertEquals(TEST_PRESET_INDEX, presetInfo.getIndex());
-        assertEquals(TEST_PRESET_NAME, presetInfo.getName());
-        assertTrue(presetInfo.isAvailable());
-        assertFalse(presetInfo.isWritable());
+    public void createHapPresetInfo() {
+        BluetoothHapPresetInfo presetInfo =
+                createHapPresetInfo(
+                        TEST_PRESET_INDEX,
+                        TEST_PRESET_NAME,
+                        true /* isAvailable */,
+                        false /* isWritable */);
+        expect.that(presetInfo.getIndex()).isEqualTo(TEST_PRESET_INDEX);
+        expect.that(presetInfo.getName()).isEqualTo(TEST_PRESET_NAME);
+        expect.that(presetInfo.isAvailable()).isTrue();
+        expect.that(presetInfo.isWritable()).isFalse();
     }
 
-    static BluetoothHapPresetInfo createBluetoothHapPresetInfoForTest(int presetIndex,
-            String presetName, boolean isAvailable, boolean isWritable) {
+    private static BluetoothHapPresetInfo createHapPresetInfo(
+            int presetIndex, String presetName, boolean isAvailable, boolean isWritable) {
         Parcel out = Parcel.obtain();
         out.writeInt(presetIndex);
         out.writeString(presetName);

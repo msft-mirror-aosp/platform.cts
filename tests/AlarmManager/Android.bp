@@ -18,9 +18,9 @@ package {
 
 android_test {
     name: "CtsAlarmManagerTestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     static_libs: [
-        "ub-uiautomator",
         "androidx.test.rules",
         "compatibility-device-util-axt",
     ],

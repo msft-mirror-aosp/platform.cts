@@ -20,6 +20,7 @@ import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.ClipboardManager.OnPrimaryClipChangedListener;
 import android.net.Uri;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.test.ActivityInstrumentationTestCase2;
 
 import androidx.test.InstrumentationRegistry;
@@ -27,7 +28,8 @@ import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.PollingCheck;
 
-//@AppModeFull // TODO(Instant) Should clip board data be visible?
+// @AppModeFull // TODO(Instant) Should clip board data be visible?
+@AppModeNonSdkSandbox(reason = "SDK sandboxes cannot access ClipboardManager.")
 public class ClipboardManagerListenerTest
         extends ActivityInstrumentationTestCase2<ClipboardManagerListenerActivity> {
 

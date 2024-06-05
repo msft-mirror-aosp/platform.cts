@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2015 The Android Open Source Project
+<!-- Copyright (C) 2023 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -13,13 +13,14 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<configuration description="Config for CTS Media test cases">
+<configuration description="Config for CTS MediaProjection test cases">
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="media" />
     <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
-    <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
+    <!-- The sandbox cannot retrieve MediaProjection. -->
+    <option name="config-descriptor:metadata" key="parameter" value="not_run_on_sdk_sandbox" />
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
         <option name="force-skip-system-props" value="true" /> <!-- avoid restarting device -->
         <option name="set-test-harness" value="false" />
@@ -27,22 +28,6 @@
         <option name="screen-adaptive-brightness" value="off" />
         <option name="disable-audio" value="false"/>
         <option name="screen-saver" value="off"/>
-    </target_preparer>
-    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.DynamicConfigPusher">
-        <option name="target" value="host" />
-        <option name="config-filename" value="CtsMediaProjectionTestCases" />
-        <option name="dynamic-config-name" value="CtsMediaProjectionTestCases" />
-        <option name="version" value="9.0_r1"/>
-    </target_preparer>
-    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.DynamicConfigPusher">
-        <option name="target" value="device" />
-        <option name="config-filename" value="CtsMediaProjectionTestCases" />
-        <option name="version" value="1.0"/>
-    </target_preparer>
-    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.MediaPreparer">
-        <option name="push-all" value="true" />
-        <option name="media-folder-name" value="CtsMediaProjectionTestCases-2.1" />
-        <option name="dynamic-config-module" value="CtsMediaProjectionTestCases" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
@@ -59,4 +44,9 @@
         <!-- disable isolated storage so tests can access dynamic config stored in /sdcard. -->
         <option name="isolated-storage" value="false" />
     </test>
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.TestFailureModuleController">
+        <option name="screenshot-on-failure" value="true" />
+        <option name="bugreportz-on-failure" value="true" />
+        <option name="logcat-on-failure" value="true" />
+    </object>
 </configuration>

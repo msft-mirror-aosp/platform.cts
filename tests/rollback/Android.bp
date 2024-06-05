@@ -18,8 +18,18 @@ package {
 
 android_test {
     name: "CtsRollbackManagerTestCases",
+    team: "trendy_team_mainline_modularization",
     srcs: ["src/**/*.java"],
-    static_libs: ["androidx.test.rules", "cts-rollback-lib", "cts-install-lib"],
-    test_suites: ["general-tests"],
+    static_libs: [
+        "android.content.pm.flags-aconfig-java",
+        "androidx.test.rules",
+        "cts-rollback-lib",
+        "cts-install-lib",
+        "flag-junit",
+    ],
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
     sdk_version: "test_current",
 }

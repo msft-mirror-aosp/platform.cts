@@ -19,6 +19,9 @@ package android.app.appsearch.cts.app;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
+
+import android.app.appsearch.GenericDocument;
 import android.app.appsearch.PutDocumentsRequest;
 import android.app.appsearch.testutil.AppSearchEmail;
 
@@ -41,5 +44,111 @@ public class PutDocumentsRequestCtsTest {
 
         assertThat(request.getGenericDocuments().get(0).getId()).isEqualTo("test1");
         assertThat(request.getGenericDocuments().get(1).getId()).isEqualTo("test2");
+    }
+
+    @Test
+    public void duplicateIdForNormalAndTakenActionGenericDocumentThrowsException()
+            throws Exception {
+        GenericDocument normalDocument =
+                new GenericDocument.Builder<>("namespace", "id", "builtin:Thing").build();
+        GenericDocument takenActionGenericDocument =
+                new GenericDocument.Builder<>("namespace", "id", "builtin:ClickAction").build();
+
+        PutDocumentsRequest.Builder builder =
+                new PutDocumentsRequest.Builder()
+                        .addGenericDocuments(normalDocument)
+                        .addTakenActionGenericDocuments(takenActionGenericDocument);
+        IllegalArgumentException e =
+                assertThrows(IllegalArgumentException.class, () -> builder.build());
+        assertThat(e.getMessage())
+                .isEqualTo(
+                        "Document id "
+                                + takenActionGenericDocument.getId()
+                                + " cannot exist in both taken action and normal document");
+    }
+
+    @Test
+    public void addTakenActionGenericDocuments() throws Exception {
+        GenericDocument searchActionGenericDocument1 =
+                new GenericDocument.Builder<>("namespace", "search1", "builtin:SearchAction")
+                        .build();
+        GenericDocument clickActionGenericDocument1 =
+                new GenericDocument.Builder<>("namespace", "click1", "builtin:ClickAction").build();
+        GenericDocument clickActionGenericDocument2 =
+                new GenericDocument.Builder<>("namespace", "click2", "builtin:ClickAction").build();
+        GenericDocument searchActionGenericDocument2 =
+                new GenericDocument.Builder<>("namespace", "search2", "builtin:SearchAction")
+                        .build();
+        GenericDocument clickActionGenericDocument3 =
+                new GenericDocument.Builder<>("namespace", "click3", "builtin:ClickAction").build();
+        GenericDocument clickActionGenericDocument4 =
+                new GenericDocument.Builder<>("namespace", "click4", "builtin:ClickAction").build();
+        GenericDocument clickActionGenericDocument5 =
+                new GenericDocument.Builder<>("namespace", "click5", "builtin:ClickAction").build();
+
+        PutDocumentsRequest request =
+                new PutDocumentsRequest.Builder()
+                        .addTakenActionGenericDocuments(
+                                searchActionGenericDocument1,
+                                clickActionGenericDocument1,
+                                clickActionGenericDocument2,
+                                searchActionGenericDocument2,
+                                clickActionGenericDocument3,
+                                clickActionGenericDocument4,
+                                clickActionGenericDocument5)
+                        .build();
+
+        // Generic documents should contain nothing.
+        assertThat(request.getGenericDocuments()).isEmpty();
+
+        // Taken action generic documents should contain correct taken action generic documents.
+        assertThat(request.getTakenActionGenericDocuments()).hasSize(7);
+        assertThat(request.getTakenActionGenericDocuments().get(0).getId()).isEqualTo("search1");
+        assertThat(request.getTakenActionGenericDocuments().get(1).getId()).isEqualTo("click1");
+        assertThat(request.getTakenActionGenericDocuments().get(2).getId()).isEqualTo("click2");
+        assertThat(request.getTakenActionGenericDocuments().get(3).getId()).isEqualTo("search2");
+        assertThat(request.getTakenActionGenericDocuments().get(4).getId()).isEqualTo("click3");
+        assertThat(request.getTakenActionGenericDocuments().get(5).getId()).isEqualTo("click4");
+        assertThat(request.getTakenActionGenericDocuments().get(6).getId()).isEqualTo("click5");
+    }
+
+    @Test
+    public void addTakenActionGenericDocuments_byCollection() throws Exception {
+        Set<GenericDocument> takenActionGenericDocuments =
+                ImmutableSet.of(
+                        new GenericDocument.Builder<>(
+                                        "namespace", "search1", "builtin:SearchAction")
+                                .build(),
+                        new GenericDocument.Builder<>("namespace", "click1", "builtin:ClickAction")
+                                .build(),
+                        new GenericDocument.Builder<>("namespace", "click2", "builtin:ClickAction")
+                                .build(),
+                        new GenericDocument.Builder<>(
+                                        "namespace", "search2", "builtin:SearchAction")
+                                .build(),
+                        new GenericDocument.Builder<>("namespace", "click3", "builtin:ClickAction")
+                                .build(),
+                        new GenericDocument.Builder<>("namespace", "click4", "builtin:ClickAction")
+                                .build(),
+                        new GenericDocument.Builder<>("namespace", "click5", "builtin:ClickAction")
+                                .build());
+
+        PutDocumentsRequest request =
+                new PutDocumentsRequest.Builder()
+                        .addTakenActionGenericDocuments(takenActionGenericDocuments)
+                        .build();
+
+        // Generic documents should contain nothing.
+        assertThat(request.getGenericDocuments()).isEmpty();
+
+        // Taken action generic documents should contain correct taken action generic documents.
+        assertThat(request.getTakenActionGenericDocuments()).hasSize(7);
+        assertThat(request.getTakenActionGenericDocuments().get(0).getId()).isEqualTo("search1");
+        assertThat(request.getTakenActionGenericDocuments().get(1).getId()).isEqualTo("click1");
+        assertThat(request.getTakenActionGenericDocuments().get(2).getId()).isEqualTo("click2");
+        assertThat(request.getTakenActionGenericDocuments().get(3).getId()).isEqualTo("search2");
+        assertThat(request.getTakenActionGenericDocuments().get(4).getId()).isEqualTo("click3");
+        assertThat(request.getTakenActionGenericDocuments().get(5).getId()).isEqualTo("click4");
+        assertThat(request.getTakenActionGenericDocuments().get(6).getId()).isEqualTo("click5");
     }
 }

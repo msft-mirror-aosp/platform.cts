@@ -30,6 +30,7 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraDevice.CameraDeviceSetup;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
@@ -55,22 +56,21 @@ import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
 import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
 import com.android.ex.camera2.utils.StateWaiter;
+import com.android.internal.camera.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Set;
 import android.util.Size;
 
+import org.junit.Test;
 import org.junit.runners.Parameterized;
 import org.junit.runner.RunWith;
-import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import java.util.concurrent.Executor;
@@ -110,14 +110,6 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
             CameraDevice.TEMPLATE_PREVIEW - 1,
             CameraDevice.TEMPLATE_MANUAL + 1,
     };
-
-    // Request templates that are unsupported by LEGACY mode.
-    private static Set<Integer> sLegacySkipTemplates = new HashSet<>();
-    static {
-        sLegacySkipTemplates.add(CameraDevice.TEMPLATE_VIDEO_SNAPSHOT);
-        sLegacySkipTemplates.add(CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG);
-        sLegacySkipTemplates.add(CameraDevice.TEMPLATE_MANUAL);
-    }
 
     @Override
     public void setUp() throws Exception {
@@ -178,8 +170,9 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testCameraDevicePreviewTemplate() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
-            captureTemplateTestByCamera(mCameraIdsUnderTest[i], CameraDevice.TEMPLATE_PREVIEW);
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            captureTemplateTestByCamera(cameraIdsUnderTest[i], CameraDevice.TEMPLATE_PREVIEW);
         }
 
         // TODO: test the frame rate sustainability in preview use case test.
@@ -205,8 +198,9 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testCameraDeviceStillTemplate() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
-            captureTemplateTestByCamera(mCameraIdsUnderTest[i], CameraDevice.TEMPLATE_STILL_CAPTURE);
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            captureTemplateTestByCamera(cameraIdsUnderTest[i], CameraDevice.TEMPLATE_STILL_CAPTURE);
         }
     }
 
@@ -226,8 +220,9 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testCameraDeviceRecordingTemplate() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
-            captureTemplateTestByCamera(mCameraIdsUnderTest[i], CameraDevice.TEMPLATE_RECORD);
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            captureTemplateTestByCamera(cameraIdsUnderTest[i], CameraDevice.TEMPLATE_RECORD);
         }
 
         // TODO: test the frame rate sustainability in recording use case test.
@@ -243,8 +238,9 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testCameraDeviceVideoSnapShotTemplate() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
-            captureTemplateTestByCamera(mCameraIdsUnderTest[i], CameraDevice.TEMPLATE_VIDEO_SNAPSHOT);
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            captureTemplateTestByCamera(cameraIdsUnderTest[i], CameraDevice.TEMPLATE_VIDEO_SNAPSHOT);
         }
 
         // TODO: test the frame rate sustainability in video snapshot use case test.
@@ -259,8 +255,9 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testCameraDeviceZSLTemplate() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
-            captureTemplateTestByCamera(mCameraIdsUnderTest[i], CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG);
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            captureTemplateTestByCamera(cameraIdsUnderTest[i], CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG);
         }
     }
 
@@ -283,16 +280,18 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testCameraDeviceManualTemplate() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
-            captureTemplateTestByCamera(mCameraIdsUnderTest[i], CameraDevice.TEMPLATE_MANUAL);
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            captureTemplateTestByCamera(cameraIdsUnderTest[i], CameraDevice.TEMPLATE_MANUAL);
         }
     }
 
     @Test
     public void testCameraDeviceCreateCaptureBuilder() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 /**
                  * Test: that each template type is supported, and that its required fields are
                  * present.
@@ -345,7 +344,7 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                 try {
                     closeSession();
                 } finally {
-                    closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                    closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 }
             }
         }
@@ -353,9 +352,10 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
 
     @Test
     public void testCameraDeviceSetErrorListener() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 /**
                  * Test: that the error listener can be set without problems.
                  * Also, wait some time to check if device doesn't run into error.
@@ -370,7 +370,7 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                 try {
                     closeSession();
                 } finally {
-                    closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                    closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 }
             }
         }
@@ -436,9 +436,10 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testInvalidCapture() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 waitForDeviceState(STATE_OPENED, CAMERA_OPEN_TIMEOUT_MS);
 
                 prepareCapture();
@@ -448,7 +449,7 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                 closeSession();
             }
             finally {
-                closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
             }
         }
     }
@@ -606,14 +607,14 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
         }
 
         // Actual test code
-
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
                 Throwable result;
 
-                if (!(new StaticMetadata(mCameraManager.getCameraCharacteristics(mCameraIdsUnderTest[i]))).
+                if (!(new StaticMetadata(mCameraManager.getCameraCharacteristics(cameraIdsUnderTest[i]))).
                         isColorOutputSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support color outputs, skipping");
                     continue;
                 }
@@ -624,7 +625,7 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
 
                 // Start chained cascade
                 ChainedCameraListener cameraListener = new ChainedCameraListener();
-                mCameraManager.openCamera(mCameraIdsUnderTest[i], cameraListener, mHandler);
+                mCameraManager.openCamera(cameraIdsUnderTest[i], cameraListener, mHandler);
 
                 // Check if open succeeded
                 result = results.poll(CAMERA_OPEN_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -672,20 +673,21 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testPrepare() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isColorOutputSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support color outputs, skipping");
                     continue;
                 }
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 waitForDeviceState(STATE_OPENED, CAMERA_OPEN_TIMEOUT_MS);
 
                 prepareTestByCamera();
             }
             finally {
-                closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
             }
         }
     }
@@ -696,25 +698,26 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testPrepareForSharedSurfaces() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                StaticMetadata staticInfo = mAllStaticInfo.get(mCameraIdsUnderTest[i]);
+                StaticMetadata staticInfo = mAllStaticInfo.get(cameraIdsUnderTest[i]);
                 if (staticInfo.isHardwareLevelLegacy()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] + " is legacy, skipping");
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] + " is legacy, skipping");
                     continue;
                 }
                 if (!staticInfo.isColorOutputSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support color outputs, skipping");
                     continue;
                 }
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 waitForDeviceState(STATE_OPENED, CAMERA_OPEN_TIMEOUT_MS);
 
                 prepareTestForSharedSurfacesByCamera();
             }
             finally {
-                closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
             }
         }
     }
@@ -724,20 +727,21 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testCreateSessions() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isColorOutputSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support color outputs, skipping");
                     continue;
                 }
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 waitForDeviceState(STATE_OPENED, CAMERA_OPEN_TIMEOUT_MS);
 
-                testCreateSessionsByCamera(mCameraIdsUnderTest[i]);
+                testCreateSessionsByCamera(cameraIdsUnderTest[i]);
             }
             finally {
-                closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
             }
         }
     }
@@ -747,20 +751,21 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testCreateCustomSession() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isColorOutputSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support color outputs, skipping");
                     continue;
                 }
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 waitForDeviceState(STATE_OPENED, CAMERA_OPEN_TIMEOUT_MS);
 
-                testCreateCustomSessionByCamera(mCameraIdsUnderTest[i]);
+                testCreateCustomSessionByCamera(cameraIdsUnderTest[i]);
             }
             finally {
-                closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
             }
         }
     }
@@ -883,14 +888,15 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
         assertEquals("Session configuration input doesn't match",
                 highspeedSessionConfig.getInputConfiguration(), null);
 
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isColorOutputSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support color outputs, skipping");
                     continue;
                 }
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 waitForDeviceState(STATE_OPENED, CAMERA_OPEN_TIMEOUT_MS);
 
                 CaptureRequest.Builder builder =
@@ -908,7 +914,7 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                         highspeedSessionConfig.getSessionParameters());
             }
             finally {
-                closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
             }
         }
     }
@@ -918,20 +924,21 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testSessionParametersStateLeak() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isColorOutputSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support color outputs, skipping");
                     continue;
                 }
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 waitForDeviceState(STATE_OPENED, CAMERA_OPEN_TIMEOUT_MS);
 
-                testSessionParametersStateLeakByCamera(mCameraIdsUnderTest[i]);
+                testSessionParametersStateLeakByCamera(cameraIdsUnderTest[i]);
             }
             finally {
-                closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
             }
         }
     }
@@ -1089,21 +1096,22 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testCreateSessionWithParameters() throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                if (!mAllStaticInfo.get(mCameraIdsUnderTest[i]).isColorOutputSupported()) {
-                    Log.i(TAG, "Camera " + mCameraIdsUnderTest[i] +
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
                             " does not support color outputs, skipping");
                     continue;
                 }
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 waitForDeviceState(STATE_OPENED, CAMERA_OPEN_TIMEOUT_MS);
 
-                testCreateSessionWithParametersByCamera(mCameraIdsUnderTest[i], /*reprocessable*/false);
-                testCreateSessionWithParametersByCamera(mCameraIdsUnderTest[i], /*reprocessable*/true);
+                testCreateSessionWithParametersByCamera(cameraIdsUnderTest[i], /*reprocessable*/false);
+                testCreateSessionWithParametersByCamera(cameraIdsUnderTest[i], /*reprocessable*/true);
             }
             finally {
-                closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
             }
         }
     }
@@ -1620,9 +1628,10 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
      */
     private void runCaptureTest(boolean burst, boolean repeating, boolean abort,
             boolean useExecutor) throws Exception {
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 waitForDeviceState(STATE_OPENED, CAMERA_OPEN_TIMEOUT_MS);
 
                 prepareCapture();
@@ -1641,13 +1650,13 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                             continue;
                         }
 
-                        captureSingleShot(mCameraIdsUnderTest[i], sTemplates[j], repeating, abort,
+                        captureSingleShot(cameraIdsUnderTest[i], sTemplates[j], repeating, abort,
                                 useExecutor);
                     }
                 }
                 else {
                     // Test: burst of one shot
-                    captureBurstShot(mCameraIdsUnderTest[i], sTemplates, 1, repeating, abort, useExecutor);
+                    captureBurstShot(cameraIdsUnderTest[i], sTemplates, 1, repeating, abort, useExecutor);
 
                     int template = mStaticInfo.isColorOutputSupported() ?
                         CameraDevice.TEMPLATE_STILL_CAPTURE :
@@ -1661,12 +1670,12 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                     };
 
                     // Test: burst of 5 shots of the same template type
-                    captureBurstShot(mCameraIdsUnderTest[i], templates, templates.length, repeating, abort,
+                    captureBurstShot(cameraIdsUnderTest[i], templates, templates.length, repeating, abort,
                             useExecutor);
 
                     if (mStaticInfo.isColorOutputSupported()) {
                         // Test: burst of 6 shots of different template types
-                        captureBurstShot(mCameraIdsUnderTest[i], sTemplates, sTemplates.length, repeating,
+                        captureBurstShot(cameraIdsUnderTest[i], sTemplates, sTemplates.length, repeating,
                                 abort, useExecutor);
                     }
                 }
@@ -1682,7 +1691,7 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                 } catch (Exception e) {
                     mCollector.addError(e);
                 }finally {
-                    closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                    closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 }
             }
         }
@@ -2749,9 +2758,11 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
             CameraDevice.AUDIO_RESTRICTION_NONE,
             CameraDevice.AUDIO_RESTRICTION_VIBRATION,
         };
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
+
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
-                openDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                openDevice(cameraIdsUnderTest[i], mCameraMockListener);
                 waitForDeviceState(STATE_OPENED, CAMERA_OPEN_TIMEOUT_MS);
 
                 for (int mode : testModes) {
@@ -2770,7 +2781,7 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
                 }
             }
             finally {
-                closeDevice(mCameraIdsUnderTest[i], mCameraMockListener);
+                closeDevice(cameraIdsUnderTest[i], mCameraMockListener);
             }
         }
     }
@@ -2889,14 +2900,15 @@ public class CameraDeviceTest extends Camera2AndroidTestCase {
 
     @Test
     public void testAudioRestrictionMultipleDevices() throws Exception {
-        if (mCameraIdsUnderTest.length < 2) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        if (cameraIdsUnderTest.length < 2) {
             Log.i(TAG, "device doesn't have multiple cameras, skipping");
             return;
         }
 
-        for (int i = 0; i < mCameraIdsUnderTest.length; i++) {
-            for (int j = i+1; j < mCameraIdsUnderTest.length; j++) {
-                testTwoCameraDevicesAudioRestriction(mCameraIdsUnderTest[i], mCameraIdsUnderTest[j]);
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            for (int j = i+1; j < cameraIdsUnderTest.length; j++) {
+                testTwoCameraDevicesAudioRestriction(cameraIdsUnderTest[i], cameraIdsUnderTest[j]);
             }
         }
     }

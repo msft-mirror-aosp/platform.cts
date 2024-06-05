@@ -184,10 +184,10 @@ class HdrExtensionTest(its_base_test.ItsBaseTest):
       logging.debug('Supported extensions: %s', supported_extensions)
 
       # Check SKIP conditions
-      vendor_api_level = its_session_utils.get_vendor_api_level(self.dut.serial)
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       camera_properties_utils.skip_unless(
           _EXTENSION_HDR in supported_extensions and
-          vendor_api_level >= its_session_utils.ANDROID14_API_LEVEL)
+          first_api_level >= its_session_utils.ANDROID14_API_LEVEL)
 
       # Establish connection with lighting controller
       arduino_serial_port = lighting_control_utils.lighting_control(
@@ -198,10 +198,7 @@ class HdrExtensionTest(its_base_test.ItsBaseTest):
           arduino_serial_port, self.lighting_ch, 'OFF')
 
       # Check that tablet is connected and turn it off to validate lighting
-      if self.tablet:
-        lighting_control_utils.turn_off_device(self.tablet)
-      else:
-        raise AssertionError('Test must be run with tablet.')
+      self.turn_off_tablet()
 
       # Validate lighting
       cam.do_3a(do_af=False)

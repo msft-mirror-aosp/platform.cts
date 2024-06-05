@@ -26,6 +26,7 @@
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <uses-permission android:name="android.permission.WRITE_CONTACTS"/>
     <uses-permission android:name="android.permission.READ_CALL_LOG"/>
+    <uses-permission android:name="android.permission.READ_LOGS"/>
     <uses-permission android:name="android.permission.READ_ACTIVE_EMERGENCY_SESSION"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.SEND_SMS"/>
@@ -47,6 +48,9 @@
     <uses-permission android:name="android.permission.USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.SATELLITE_COMMUNICATION"/>
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
+    <uses-permission android:name="android.permission.READ_DROPBOX_DATA"/>
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <permission android:name="android.telephony.embms.cts.permission.TEST_BROADCAST"
          android:protectionLevel="signature"/>
@@ -171,6 +175,16 @@
             android:enabled="true">
             <intent-filter>
                 <action android:name="android.service.carrier.CarrierMessagingService" />
+            </intent-filter>
+        </service>
+
+        <service android:name="android.telephony.cts.TestDomainSelectionService"
+             android:directBootAware="true"
+             android:persistent="true"
+             android:permission="android.permission.BIND_DOMAIN_SELECTION_SERVICE"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.telephony.DomainSelectionService"/>
             </intent-filter>
         </service>
 
@@ -305,12 +319,9 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.telephony.cts"
          android:label="CTS tests of android.telephony">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 
-    <!-- Make sure the cts can connect to CarrierMessagingServices. This is needed for
-        CarrierMessagingServiceWrapperTest. -->
+    <!-- Make sure the cts can connect to the test services -->
     <queries>
         <intent>
             <action android:name="android.service.carrier.CarrierMessagingService" />
@@ -325,5 +336,8 @@
         <package android:name="android.telephony.cts.sms" />
         <package android:name="android.telephony.cts.sms23" />
         <package android:name="android.telephony.cts.externalimsservice" />
+        <package android:name="android.telephony.cts.externalsatellitegatewayservice" />
+        <package android:name="android.telephony.cts.externalsatelliteservice" />
+        <package android:name="android.telephony.cts.externalpointingui" />
     </queries>
 </manifest>

@@ -41,6 +41,9 @@ import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.os.Handler;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.InputEvent;
 import android.view.MotionEvent;
 import android.view.accessibility.AccessibilityEvent;
@@ -49,6 +52,7 @@ import android.view.accessibility.AccessibilityManager.AccessibilityServicesStat
 import android.view.accessibility.AccessibilityManager.AccessibilityStateChangeListener;
 import android.view.accessibility.AccessibilityManager.AudioDescriptionRequestedChangeListener;
 import android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener;
+import android.view.accessibility.Flags;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -127,6 +131,9 @@ public class AccessibilityManagerTest extends StsExtraBusinessLogicTestCase {
                     sInstrumentation.getContext(),
                     ENABLED_ACCESSIBILITY_AUDIO_DESCRIPTION_BY_DEFAULT,
                     "0");
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public final RuleChain mRuleChain = RuleChain
@@ -650,6 +657,15 @@ public class AccessibilityManagerTest extends StsExtraBusinessLogicTestCase {
         } finally {
             automan.destroy();
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FLASH_NOTIFICATION_SYSTEM_API)
+    public void testStartAndStopFlashNotificationSequence() throws Exception {
+        assertTrue("Start flash notification sequence failed.",
+                mAccessibilityManager.startFlashNotificationSequence(mTargetContext, 1));
+        assertTrue("Stop flash notification sequence failed.",
+                mAccessibilityManager.stopFlashNotificationSequence(mTargetContext));
     }
 
     private void checkServiceEnabled(Object waitObject, AccessibilityManager manager,

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_platform_security",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -26,11 +27,13 @@ android_test {
         "androidx.test.rules",
         "androidx.test.runner",
         "android-common",
+        "android.security.flags-aconfig-java",
         "ctstestserver",
         "ctstestrunner-axt",
         "cts-install-lib",
         "compatibility-device-util-axt",
         "compatibility-common-util-devicesidelib",
+        "flag-junit",
         "guava",
         "platform-test-annotations",
         "permission-test-util-lib",
@@ -80,10 +83,7 @@ android_test {
     certificate: ":security_cts_test_certificate",
     per_testcase_directory: true,
     data: [
-        ":DynamicPermissionTestAttackerApp",
         ":CtsDeviceInfo",
-        ":RolePermissionOverrideTestApp",
-        ":SplitBluetoothPermissionTestApp",
         ":CtsPermissionBackupAppCert1",
         ":CtsPermissionBackupAppCert1Dup",
         ":CtsPermissionBackupAppCert2",
@@ -94,6 +94,9 @@ android_test {
         ":CtsPermissionBackupAppCert34",
         ":CtsPermissionBackupAppCert123",
         ":CtsPermissionBackupAppCert4History124",
+        ":DynamicPermissionTestAttackerApp",
+        ":RolePermissionOverrideTestApp",
+        ":SplitBluetoothPermissionTestApp",
     ],
 }
 
@@ -249,48 +252,4 @@ filegroup {
     srcs: [
         "test-cert-with-1-2-4-in-rotation-history",
     ],
-}
-
-// PackageSignatureTest is split so that it can be part of GTS suite
-// See b/301094654
-android_test {
-    name: "GtsPackageSignatureTest",
-    defaults: ["cts_defaults"],
-    // Include both the 32 and 64 bit versions
-    compile_multilib: "both",
-    static_libs: [
-        "androidx.test.ext.junit",
-        "androidx.test.rules",
-        "androidx.test.runner",
-        "android-common",
-        "ctstestrunner-axt",
-        "cts-install-lib",
-        "compatibility-device-util-axt",
-        "compatibility-common-util-devicesidelib",
-        "guava",
-        "platform-test-annotations",
-        "permission-test-util-lib",
-        "sts-device-util",
-        "hamcrest-library",
-    ],
-    libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
-    ],
-    srcs: [
-        "src/android/security/cts/PackageSignatureTest.java",
-    ],
-    // Tag this module as a gts test artifact
-    test_suites: [
-        "gts",
-        "general-tests",
-    ],
-    certificate: ":security_cts_test_certificate",
-    per_testcase_directory: true,
-    test_config: "AndroidTest_PackageSignatureTest.xml",
-    manifest: "AndroidManifest_PackageSignatureTest.xml",
-    min_sdk_version: "30",
-    sdk_version: "system_34",
-    target_sdk_version: "34",
 }

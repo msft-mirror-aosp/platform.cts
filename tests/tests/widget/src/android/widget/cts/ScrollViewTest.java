@@ -31,6 +31,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import android.Manifest;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -67,6 +68,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
@@ -107,7 +109,13 @@ public class ScrollViewTest {
     private SurfaceView mSurfaceView;
     private float mDurationScale = 1f;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<ScrollViewCtsActivity> mActivityRule =
             new ActivityTestRule<>(ScrollViewCtsActivity.class);
 
@@ -729,6 +737,34 @@ public class ScrollViewTest {
 
         // HOME key should scroll up to top.
         assertEquals(0, mScrollViewCustom.getScrollY());
+    }
+
+    @UiThreadTest
+    @Test
+    public void testKeySpaceScroll() {
+        final KeyEvent spaceDownEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SPACE);
+        final KeyEvent spaceUpEvent = new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SPACE);
+
+        final KeyEvent shiftSpaceDownEvent = new KeyEvent(0 /* downTime */, 0 /* eventTime */,
+                KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SPACE, 0 /* repeat */,
+                KeyEvent.META_SHIFT_ON);
+        final KeyEvent shiftSpaceUpEvent = new KeyEvent(0 /* downTime */, 0 /* eventTime */,
+                KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SPACE, 0 /* repeat */, KeyEvent.META_SHIFT_ON);
+
+        mScrollViewCustom.setSmoothScrollingEnabled(false);
+        assertEquals(0, mScrollViewCustom.getScrollY());
+
+        // Send SPACE KeyEvent at scroll view top
+        assertTrue(mScrollViewCustom.dispatchKeyEvent(spaceDownEvent));
+        mScrollViewCustom.dispatchKeyEvent(spaceUpEvent);
+        assertEquals(mPageHeight, mScrollViewCustom.getScrollY(), TOLERANCE);
+
+        mScrollViewCustom.scrollTo(mPageWidth, mScrollBottom);
+
+        // Send SHIFT + SPACE at scroll view bottom
+        assertTrue(mScrollViewCustom.dispatchKeyEvent(shiftSpaceDownEvent));
+        mScrollViewCustom.dispatchKeyEvent(shiftSpaceUpEvent);
+        assertEquals(mScrollBottom - mPageHeight, mScrollViewCustom.getScrollY(), TOLERANCE);
     }
 
     @Test

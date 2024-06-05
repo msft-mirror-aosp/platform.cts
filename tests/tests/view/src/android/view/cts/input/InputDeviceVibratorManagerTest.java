@@ -27,6 +27,7 @@ import android.os.SystemClock;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.cts.R;
@@ -35,6 +36,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.input.DebugInputRule;
 import com.android.cts.input.InputJsonParser;
 import com.android.cts.input.UinputDevice;
 import com.android.cts.input.UinputResultData;
@@ -42,6 +44,7 @@ import com.android.cts.input.UinputVibratorManagerTestData;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,6 +58,7 @@ import java.util.List;
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputDeviceVibratorManagerTest {
     private static final String TAG = "InputDeviceVibratorTest";
     private InputManager mInputManager;
@@ -64,6 +68,9 @@ public class InputDeviceVibratorManagerTest {
     private VibratorManager mVibratorManager;
     /** The device id inside the resource file (register command) */
     private int mDeviceId;
+
+    @Rule
+    public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     /**
      * Get a vibrator manager from input device with specified Vendor Id and Product Id.
@@ -92,8 +99,7 @@ public class InputDeviceVibratorManagerTest {
         assertNotNull(mInputManager);
         mParser = new InputJsonParser(mInstrumentation.getTargetContext());
 
-        mUinputDevice = UinputDevice.create(mInstrumentation, R.raw.google_gamepad_register,
-                InputDevice.SOURCE_KEYBOARD);
+        mUinputDevice = new UinputGoogleGamepad(mInstrumentation);
         mDeviceId = mUinputDevice.getRegisterCommandDeviceId();
         mVibratorManager = getVibratorManager(mUinputDevice.getVendorId(),
                 mUinputDevice.getProductId());
@@ -198,6 +204,7 @@ public class InputDeviceVibratorManagerTest {
         }
     }
 
+    @DebugInputRule.DebugInput(bug = 329219118)
     @Test
     public void testInputVibratorManager() {
         testInputVibratorManagerEvents(R.raw.google_gamepad_vibratormanagertests);

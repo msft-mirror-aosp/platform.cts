@@ -21,6 +21,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="all_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsViewTestCases.apk" />
@@ -34,11 +35,22 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.view.cts" />
         <option name="runtime-hint" value="6m47s" />
+        <!-- 5 minutes: -->
+        <option name="test-timeout" value="300000" />
         <option name="hidden-api-checks" value="false" />
         <option name="isolated-storage" value="false" />
+        <option name="device-listeners" value="android.device.collectors.ScreenshotOnFailureCollector"/>
+        <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
+        <!-- DefaultUITraceListener args -->
+        <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
+        <option name="instrumentation-arg" key="per_class" value="true"/>
     </test>
     <!-- Collect the dumped files for debugging -->
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
         <option name="pull-pattern-keys" value="view_.*" />
+        <!-- Collect the files generated on error -->
+        <option name="pull-pattern-keys" value="android.device.collectors.ScreenshotOnFailureCollector.*\.png"/>
+        <option name="directory-keys" value="/data/user/0/android.view.cts/files" />
+        <option name="collect-on-run-ended-only" value="false" />
     </metrics_collector>
 </configuration>

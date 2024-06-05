@@ -23,6 +23,7 @@ import android.app.UiAutomation;
 import android.content.Context;
 import android.os.StrictMode;
 import android.os.StrictMode.ThreadPolicy;
+import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -107,11 +108,16 @@ public final class SharedWebViewTestEnvironment {
         });
     }
 
-    /** Invokes sendPointerSync on the {@link Instrumentation} in the activity. */
-    public void sendPointerSync(MotionEvent event) {
-        ExceptionWrapper.unwrap(() -> {
-            mHostAppInvoker.sendPointerSync(event);
-        });
+    /**
+     * Invokes sendPointerSync to press down and up to either the
+     * {@link Instrumentation} or {@link UiAutomation} in the activity depending
+     * on the host app invoker configuration.
+     */
+    public void sendTapSync(int x, int y) {
+        ExceptionWrapper.unwrap(
+                () -> {
+                    mHostAppInvoker.sendTapSync(x, y);
+                });
     }
 
     /** Returns a web server that can be used for web based testing. */
@@ -208,34 +214,38 @@ public final class SharedWebViewTestEnvironment {
             private Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
             private UiAutomation mUiAutomation;
 
+            @Override
             public void waitForIdleSync() {
                 ExceptionWrapper.wrap(() -> {
                     mInstrumentation.waitForIdleSync();
                 });
             }
 
+            @Override
             public void sendKeyDownUpSync(int keyCode) {
                 ExceptionWrapper.wrap(() -> {
                     mInstrumentation.sendKeyDownUpSync(keyCode);
                 });
             }
 
-            public void sendPointerSync(MotionEvent event) {
-                ExceptionWrapper.wrap(() -> {
-                    if (allowUiAutomation) {
-                        sendPointerSyncWithUiAutomation(event);
-                    } else {
-                        sendPointerSyncWithInstrumentation(event);
-                    }
-                });
+            @Override
+            public void sendTapSync(int x, int y) {
+                long downTime = SystemClock.uptimeMillis();
+                sendPointerSync(
+                        MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0));
+
+                long upTime = SystemClock.uptimeMillis();
+                sendPointerSync(MotionEvent.obtain(upTime, upTime, MotionEvent.ACTION_UP, x, y, 0));
             }
 
+            @Override
             public byte[] getEncodingBytes(String data, String charset) {
                 return ExceptionWrapper.wrap(() -> {
                     return EncodingUtils.getBytes(data, charset);
                 });
             }
 
+            @Override
             public IWebServer getWebServer() {
                 return new IWebServer.Stub() {
                     private CtsTestServer mWebServer;
@@ -425,6 +435,16 @@ public final class SharedWebViewTestEnvironment {
                         return new HttpRequest(url, apacheRequest);
                     }
                 };
+            }
+
+            private void sendPointerSync(MotionEvent event) {
+                ExceptionWrapper.wrap(() -> {
+                    if (allowUiAutomation) {
+                        sendPointerSyncWithUiAutomation(event);
+                    } else {
+                        sendPointerSyncWithInstrumentation(event);
+                    }
+                });
             }
 
             private void sendPointerSyncWithInstrumentation(MotionEvent event) {

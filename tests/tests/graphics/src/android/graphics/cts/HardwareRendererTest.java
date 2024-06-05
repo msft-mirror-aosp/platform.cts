@@ -16,14 +16,31 @@
 
 package android.graphics.cts;
 
+import static android.graphics.cts.utils.LeakTest.runNotLeakingTest;
+
 import static com.google.common.truth.Truth.assertThat;
 
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.HardwareBufferRenderer;
 import android.graphics.HardwareRenderer;
+import android.graphics.RenderNode;
+import android.graphics.SurfaceTexture;
+import android.hardware.HardwareBuffer;
+import android.view.PixelCopy;
+import android.view.Surface;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
+import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.SynchronousPixelCopy;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 @RunWith(AndroidJUnit4.class)
 public class HardwareRendererTest {
@@ -41,5 +58,43 @@ public class HardwareRendererTest {
 
         HardwareRenderer.setDrawingEnabled(true);
         assertThat(HardwareRenderer.isDrawingEnabled()).isTrue();
+    }
+
+    @Test
+    public void lockHardwareCanvasSingleBuffer() {
+        SurfaceTexture st = new SurfaceTexture(true);
+        st.setDefaultBufferSize(50, 50);
+        Surface surface = new Surface(st);
+        Canvas canvas = surface.lockHardwareCanvas();
+        canvas.drawColor(Color.BLUE);
+        surface.unlockCanvasAndPost(canvas);
+        PixelCopy.Result result = SynchronousPixelCopy.copySurface(surface);
+        assertThat(result.getStatus()).isEqualTo(PixelCopy.SUCCESS);
+        Bitmap bitmap = result.getBitmap();
+        assertThat(bitmap).isNotNull();
+        assertThat(bitmap.getColor(1, 1).toArgb()).isEqualTo(Color.BLUE);
+    }
+
+    @Test
+    @LargeTest
+    public void hardwareBufferRendererLeakTest() {
+        HardwareBuffer buffer = HardwareBuffer.create(128, 128, HardwareBuffer.RGBA_8888,
+                1, HardwareBuffer.USAGE_GPU_COLOR_OUTPUT | HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE);
+        HardwareBufferRenderer renderer = new HardwareBufferRenderer(buffer);
+        RenderNode content = new RenderNode("leaktest");
+        content.setPosition(0, 0, 128, 128);
+        renderer.setContentRoot(content);
+
+        Executor executor = Runnable::run;
+        Consumer<HardwareBufferRenderer.RenderResult> resultListener = renderResult -> {
+            renderResult.getFence().close();
+        };
+
+        runNotLeakingTest(() -> {
+            Canvas canvas = content.beginRecording();
+            canvas.drawColor(Color.RED);
+            content.endRecording();
+            renderer.obtainRenderRequest().draw(executor, resultListener);
+        });
     }
 }

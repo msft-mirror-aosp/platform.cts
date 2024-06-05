@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_media_audio_framework",
     // See: http://go/android-license-faq
     default_applicable_licenses: [
         "Android-Apache-2.0",
@@ -74,14 +75,23 @@ android_test {
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
     static_libs: [
+        "android.media.audio-aconfig-java",
+        "com.android.media.audioserver-aconfig-java",
+        "CtsVirtualDeviceCommonLib",
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-        "hamcrest-library",
         "cts-media-common",
-        "CtsVirtualDeviceCommonLib",
+        "cts-wm-util",
+        "ctstestrunner-axt",
+        "flag-junit",
+        "guava-android-testlib",
+        "hamcrest-library",
         "junit-params",
+        "mediatestutils",
+        "platform-test-annotations",
         "testng",
+        "Nene",
+        "Harrier",
     ],
     jni_libs: [
         "libaudiocts_jni",

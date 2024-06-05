@@ -25,7 +25,7 @@ java_library {
         "framework-appsearch.impl",
         "guava",
         "service-appsearch-for-tests",
-        "truth-prebuilt",
+        "truth",
     ],
     sdk_version: "system_server_current",
     visibility: [

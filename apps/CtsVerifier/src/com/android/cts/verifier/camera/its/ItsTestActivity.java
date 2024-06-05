@@ -16,7 +16,9 @@
 
 package com.android.cts.verifier.camera.its;
 
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -24,11 +26,15 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.hardware.camera2.CameraManager;
 import android.hardware.cts.helpers.CameraUtils;
+import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
+import android.mediapc.cts.common.CameraRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.provider.MediaStore;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.util.Pair;
@@ -36,9 +42,12 @@ import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.FileProvider;
+
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.ArrayTestListAdapter;
+import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.DialogTestListActivity;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestResult;
@@ -49,11 +58,16 @@ import org.json.JSONObject;
 import org.junit.rules.TestName;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -80,6 +94,14 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String CURRENT_VERSION = "1.0";
     private static final String ACTION_ITS_RESULT =
             "com.android.cts.verifier.camera.its.ACTION_ITS_RESULT";
+    private static final String ACTION_ITS_DO_JCA_CAPTURE =
+            "com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE";
+    private static final int REQUEST_IMAGE_CAPTURE = 1;
+    private static final String JCA_PACKAGE_NAME = "com.google.jetpackcamera";
+    private static final String JCA_ACTIVITY_NAME = "MainActivity";
+    private static final String JCA_FILES_CHILD_PATHNAME = "Images/JCATestCaptures";
+    public static final String JCA_CAPTURE_PATH_TAG = "JCA_CAPTURE_PATH";
+    public static final String JCA_CAPTURE_STATUS_TAG = "JCA_CAPTURE_STATUS";
 
     private static final String RESULT_PASS = "PASS";
     private static final String RESULT_FAIL = "FAIL";
@@ -92,9 +114,44 @@ public class ItsTestActivity extends DialogTestListActivity {
             Pattern.compile("camera_launch_time_ms:(\\d+(\\.\\d+)?)");
     private static final Pattern MPC12_JPEG_CAPTURE_PATTERN =
             Pattern.compile("1080p_jpeg_capture_time_ms:(\\d+(\\.\\d+)?)");
+    private static final Pattern MPC15_ULTRA_HDR_PATTERN =
+            Pattern.compile("has_gainmap.*");
     private static final int AVAILABILITY_TIMEOUT_MS = 10;
 
+    private static final Pattern PERF_METRICS_YUV_PLUS_JPEG_PATTERN =
+            Pattern.compile("test_yuv_plus_jpeg_rms_diff:(\\d+(\\.\\d+)?)");
+    private static final Pattern PERF_METRICS_YUV_PLUS_RAW_PATTERN =
+            Pattern.compile("test_yuv_plus_(raw|raw10|raw12)_rms_diff:(\\d+(\\.\\d+)?)");
+    private static final Pattern PERF_METRICS_IMU_DRIFT_PATTERN =
+            Pattern.compile("test_imu_drift_.*");
+    private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
+            Pattern.compile("test_burst_capture_.*");
+
+    private static final Pattern PERF_METRICS_DISTORTION_PATTERN =
+            Pattern.compile("test_preview_distortion_.*");
+
+    private static final Pattern PERF_METRICS_INTRINSIC_PATTERN =
+            Pattern.compile("test_lens_intrinsic_calibration_.*");
+
+    private static final String REPORT_LOG_NAME = "CtsCameraItsTestCases";
+
+    private static final String ZOOM = "zoom";
+    private static final String TEST_PATTERN = "^test_";
+
     private final ResultReceiver mResultsReceiver = new ResultReceiver();
+    private final BroadcastReceiver mCommandReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Logt.i(TAG, "Received ITS test command");
+            if (ACTION_ITS_DO_JCA_CAPTURE.equals(intent.getAction())) {
+                Logt.i(TAG, "Doing JCA intent capture");
+                doJcaCapture();
+            } else {
+                Logt.e(TAG, "Unknown intent action " + intent.getAction());
+            }
+        }
+    };
+    private String mJcaCapturePath = "";
     private boolean mReceiverRegistered = false;
 
     public final TestName mTestName = new TestName();
@@ -134,9 +191,15 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene4",
             "scene5",
             "scene6",
+            "scene7",
+            "scene8",
+            "scene9",
             "scene_extensions/scene_hdr",
-            "scene_extensions/scene_night",
-            "sensor_fusion");
+            "scene_extensions/scene_low_light",
+            "scene_video",
+            "sensor_fusion",
+            "feature_combination",
+            "scene_flash");
 
     // This must match scenes of SUB_CAMERA_TESTS in tools/run_all_tests.py
     private static final List<String> mHiddenPhysicalCameraSceneIds = List.of(
@@ -145,6 +208,7 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene1_2",
             "scene2_a",
             "scene4",
+            "scene_video",
             "sensor_fusion");
 
     // TODO: cache the following in saved bundle
@@ -157,12 +221,19 @@ public class ItsTestActivity extends DialogTestListActivity {
     private Set<ResultKey> mExecutedMpcTests = null;
     private static final String MPC_LAUNCH_REQ_NUM = "2.2.7.2/7.5/H-1-6";
     private static final String MPC_JPEG_CAPTURE_REQ_NUM = "2.2.7.2/7.5/H-1-5";
+    private static final String MPC_ULTRA_HDR_REQ_NUM = "2.2.7.2/7.5/H-1-20";
     // Performance class evaluator used for writing test result
     PerformanceClassEvaluator mPce = new PerformanceClassEvaluator(mTestName);
-    PerformanceClassEvaluator.CameraLatencyRequirement mJpegLatencyReq =
+    CameraRequirement.CameraLatencyRequirement mJpegLatencyReq =
             mPce.addR7_5__H_1_5();
-    PerformanceClassEvaluator.CameraLatencyRequirement mLaunchLatencyReq =
+    CameraRequirement.CameraLatencyRequirement mLaunchLatencyReq =
             mPce.addR7_5__H_1_6();
+    CameraRequirement.CameraUltraHdrRequirement mUltraHdrReq =
+            mPce.addR7_5__H_1_20();
+    private CtsVerifierReportLog mReportLog;
+    // Json Array to store all jsob objects with ITS metrics information
+    // stored in the report log
+    private final JSONArray mFinalPerfMetricsArr = new JSONArray();
 
     private static class HandlerExecutor implements Executor {
         private final Handler mHandler;
@@ -285,6 +356,8 @@ public class ItsTestActivity extends DialogTestListActivity {
                         scenes.add(keys.next());
                     }
 
+                    JSONObject camJsonObj = new JSONObject();
+                    camJsonObj.put("camera_id", cameraId);
                     // Update test execution results
                     for (String scene : scenes) {
                         JSONObject sceneResult = jsonResults.getJSONObject(scene);
@@ -327,11 +400,34 @@ public class ItsTestActivity extends DialogTestListActivity {
                                 return;
                             }
                         }
+
+                        if (sceneResult.isNull("performance_metrics")) {
+                            continue;
+                        }
+
+                        // Update performance metrics with metrics data from all
+                        // scenes for each camera
+                        JSONArray mArr = sceneResult.getJSONArray("performance_metrics");
+                        for (int i = 0; i < mArr.length(); i++) {
+                            String perfResult = mArr.getString(i);
+                            if (!matchPerfMetricsResult(perfResult, camJsonObj)) {
+                                Log.e(TAG, "Error parsing perf result string:" + perfResult);
+                                return;
+                            }
+                        }
                     }
+                    // Add performance metrics for all scenes along with camera_id as json arr
+                    // to CtsVerifierReportLog for each camera.
+                    mFinalPerfMetricsArr.put(camJsonObj);
+                    mReportLog.addValues("perf_metrics", mFinalPerfMetricsArr);
                 } catch (org.json.JSONException e) {
                     Log.e(TAG, "Error reading json result string:" + results , e);
                     return;
                 }
+
+                // Submitting the report log generates a CtsCameraITSTestCases.reportlog.json
+                // on device at path /sdcard/ReportLogFiles
+                mReportLog.submit();
 
                 // Set summary if all scenes reported
                 if (mSummaryMap.keySet().containsAll(mAllScenes)) {
@@ -416,7 +512,11 @@ public class ItsTestActivity extends DialogTestListActivity {
             Matcher jpegMatcher = MPC12_JPEG_CAPTURE_PATTERN.matcher(mpcResult);
             boolean jpegMatches = jpegMatcher.matches();
 
-            if (!launchMatches && !jpegMatches) {
+            Matcher gainmapMatcher = MPC15_ULTRA_HDR_PATTERN.matcher(mpcResult);
+            boolean gainmapMatches = gainmapMatcher.matches();
+            Log.i(TAG, "mpcResult: " + mpcResult);
+
+            if (!launchMatches && !jpegMatches && !gainmapMatches) {
                 return false;
             }
             if (!cameraId.equals(mPrimaryRearCameraId) &&
@@ -432,7 +532,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                     mLaunchLatencyReq.setFrontCameraLatency(latency);
                 }
                 mExecutedMpcTests.add(new ResultKey(cameraId, MPC_LAUNCH_REQ_NUM));
-            } else {
+            } else if (jpegMatches) {
                 float latency = Float.parseFloat(jpegMatcher.group(1));
                 if (cameraId.equals(mPrimaryRearCameraId)) {
                     mJpegLatencyReq.setRearCameraLatency(latency);
@@ -440,6 +540,19 @@ public class ItsTestActivity extends DialogTestListActivity {
                     mJpegLatencyReq.setFrontCameraLatency(latency);
                 }
                 mExecutedMpcTests.add(new ResultKey(cameraId, MPC_JPEG_CAPTURE_REQ_NUM));
+            } else {
+                Log.i(TAG, "Gainmap pattern matches");
+                String result = mpcResult.split(":")[1];
+                boolean hasGainMap = false;
+                if (result.equals("true")) {
+                    hasGainMap = true;
+                }
+                if (cameraId.equals(mPrimaryRearCameraId)) {
+                    mUltraHdrReq.setRearCameraUltraHdrSupported(hasGainMap);
+                } else {
+                    mUltraHdrReq.setFrontCameraUltraHdrSupported(hasGainMap);
+                }
+                mExecutedMpcTests.add(new ResultKey(cameraId, MPC_ULTRA_HDR_REQ_NUM));
             }
 
             // Save MPC info once both front primary and rear primary data are collected.
@@ -448,7 +561,118 @@ public class ItsTestActivity extends DialogTestListActivity {
             }
             return true;
         }
+
+        private void parsePerfMetrics(String perfMetricsResult, JSONObject obj,
+                List<String> floatKeys, List<String> booleanKeys, List<String> integerKeys)
+                throws org.json.JSONException {
+            String result = perfMetricsResult.replaceFirst(TEST_PATTERN, "");
+            String resultKey = result.split(":")[0].strip();
+            String strValue = result.split(":")[1].strip();
+
+            if (strValue.equalsIgnoreCase("None")) {
+                obj.put(resultKey, strValue);
+            } else if (floatKeys.stream().anyMatch(resultKey::contains)) {
+                float value = Float.parseFloat(strValue);
+                obj.put(resultKey, value);
+            } else if (booleanKeys.stream().anyMatch(resultKey::contains)) {
+                boolean value = Boolean.parseBoolean(strValue);
+                obj.put(resultKey, value);
+            } else if (integerKeys.stream().anyMatch(resultKey::contains)) {
+                int value = Integer.parseInt(strValue);
+                obj.put(resultKey, value);
+            } else {
+                obj.put(resultKey, strValue);
+            }
+        }
+
+        private boolean matchPerfMetricsResult(String perfMetricsResult, JSONObject obj) {
+            Matcher yuvPlusJpegMetricsMatcher = PERF_METRICS_YUV_PLUS_JPEG_PATTERN.matcher(
+                        perfMetricsResult);
+            boolean yuvPlusJpegMetricsMatches = yuvPlusJpegMetricsMatcher.matches();
+
+            Matcher yuvPlusRawMetricsMatcher = PERF_METRICS_YUV_PLUS_RAW_PATTERN.matcher(
+                        perfMetricsResult);
+            boolean yuvPlusRawMetricsMatches = yuvPlusRawMetricsMatcher.matches();
+
+            Matcher imuDriftMetricsMatcher = PERF_METRICS_IMU_DRIFT_PATTERN.matcher(
+                        perfMetricsResult);
+            boolean imuDriftMetricsMatches = imuDriftMetricsMatcher.matches();
+
+            Matcher burstCaptureMetricsMatcher = PERF_METRICS_BURST_CAPTURE_PATTERN.matcher(
+                        perfMetricsResult);
+            boolean burstCaptureMetricsMatches = burstCaptureMetricsMatcher.matches();
+
+            Matcher distortionMetricsMatcher = PERF_METRICS_DISTORTION_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean distortionMetricsMatches = distortionMetricsMatcher.matches();
+
+            Matcher intrinsicMetricsMatcher = PERF_METRICS_INTRINSIC_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean intrinsicMetricsMatches = intrinsicMetricsMatcher.matches();
+
+            if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
+                        && !imuDriftMetricsMatches && !distortionMetricsMatches
+                        && !intrinsicMetricsMatches) {
+                return false;
+            }
+
+            try {
+                if (yuvPlusJpegMetricsMatches) {
+                    Log.i(TAG, "jpeg pattern  matches");
+                    float diff = Float.parseFloat(yuvPlusJpegMetricsMatcher.group(1));
+                    obj.put("yuv_plus_jpeg_rms_diff", diff);
+                }
+
+                if (yuvPlusRawMetricsMatches) {
+                    Log.i(TAG, "raw pattern  matches");
+                    String fmtMatcher = yuvPlusRawMetricsMatcher.group(1); // "raw", "raw10", etc.
+                    float diff = Float.parseFloat(yuvPlusRawMetricsMatcher.group(2));
+                    String keyname = "yuv_plus_" + fmtMatcher + "_rms_diff";
+                    obj.put(keyname, diff);
+                }
+
+                if (imuDriftMetricsMatches) {
+                    Log.i(TAG, "imu drift matches");
+                    // remove "test_" from the result
+                    String result = perfMetricsResult.replaceFirst(TEST_PATTERN, "");
+                    String resultKey = result.split(":")[0].strip();
+                    if (resultKey.contains("seconds") || resultKey.contains("hz")) {
+                        float value = Float.parseFloat(result.split(":")[1].strip());
+                        obj.put(resultKey, value);
+                    } else {
+                        String value = result.split(":")[1].strip();
+                        obj.put(resultKey, value);
+                    }
+                }
+
+                if (burstCaptureMetricsMatches) {
+                    Log.i(TAG, "burst capture  matches");
+                    float value = Float.parseFloat(burstCaptureMetricsMatcher.group(1));
+                    obj.put("burst_capture_max_frame_time_minus_frameDuration_ns", value);
+                }
+
+                if (distortionMetricsMatches) {
+                    List<String> floatKeys = Arrays.asList(ZOOM, "distortion_error",
+                            "chart_coverage");
+                    List<String> integerKeys = Arrays.asList("physical_id");
+                    parsePerfMetrics(perfMetricsResult, obj, floatKeys, Collections.emptyList(),
+                            integerKeys);
+                }
+                if (intrinsicMetricsMatches) {
+                    List<String> floatKeys = Arrays.asList("max_principal_point_diff");
+                    List<String> booleanKeys = Arrays.asList(
+                            "samples_principal_points_diff_detected");
+                    parsePerfMetrics(perfMetricsResult, obj, floatKeys, booleanKeys,
+                            Collections.emptyList());
+                }
+            } catch (org.json.JSONException e) {
+                Log.e(TAG, "Error when serializing the metrics into a JSONObject" , e);
+            }
+
+            return true;
+        }
     }
+
 
     private class FoldStateListener implements
             DeviceStateManager.DeviceStateCallback {
@@ -463,8 +687,9 @@ public class ItsTestActivity extends DialogTestListActivity {
         }
 
         @Override
-        public final void onStateChanged(int state) {
-            boolean folded = ArrayUtils.contains(mFoldedDeviceStates, state);
+        public final void onDeviceStateChanged(DeviceState state) {
+            int stateIdentifier = state.getIdentifier();
+            boolean folded = ArrayUtils.contains(mFoldedDeviceStates, stateIdentifier);
             Log.i(TAG, "Is device folded? " + mIsDeviceFolded);
             if (!mFirstFoldCheck || mIsDeviceFolded != folded) {
                 mIsDeviceFolded = folded;
@@ -491,6 +716,10 @@ public class ItsTestActivity extends DialogTestListActivity {
     protected void onCreate(Bundle savedInstanceState) {
         // Hide the test if all camera devices are legacy
         mCameraManager = this.getSystemService(CameraManager.class);
+        if (mReportLog == null) {
+            mReportLog =
+                    new CtsVerifierReportLog(REPORT_LOG_NAME, "camera_its_results");
+        }
         Context context = this.getApplicationContext();
         if (mAllScenes == null) {
             mAllScenes = new TreeSet<>(mComparator);
@@ -745,9 +974,11 @@ public class ItsTestActivity extends DialogTestListActivity {
         if (mCameraManager == null) {
             showToast(R.string.no_camera_manager);
         } else {
-            Log.d(TAG, "register ITS result receiver");
+            Log.d(TAG, "register ITS result receiver and command receiver");
             IntentFilter filter = new IntentFilter(ACTION_ITS_RESULT);
             registerReceiver(mResultsReceiver, filter, Context.RECEIVER_EXPORTED);
+            filter = new IntentFilter(ACTION_ITS_DO_JCA_CAPTURE);
+            registerReceiver(mCommandReceiver, filter, Context.RECEIVER_EXPORTED);
             mReceiverRegistered = true;
         }
     }
@@ -757,6 +988,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         Log.d(TAG, "unregister ITS result receiver");
         if (mReceiverRegistered) {
             unregisterReceiver(mResultsReceiver);
+            unregisterReceiver(mCommandReceiver);
         }
         super.onDestroy();
     }
@@ -769,5 +1001,51 @@ public class ItsTestActivity extends DialogTestListActivity {
         setPassFailButtonClickListeners();
         // Changing folded state can incorrectly enable pass button
         ItsTestActivity.this.getPassButton().setEnabled(false);
+    }
+
+    @Override
+    public void handleActivityResult(int requestCode, int resultCode, Intent data) {
+        Logt.i(TAG, "request code: " + requestCode + ", result code: " + resultCode);
+        if (requestCode == REQUEST_IMAGE_CAPTURE) {
+            if (resultCode != RESULT_OK) {
+                Logt.e(TAG, "Capture failed!");
+            }
+            Intent serviceIntent = new Intent(this, ItsService.class);
+            serviceIntent.putExtra(JCA_CAPTURE_PATH_TAG, mJcaCapturePath);
+            serviceIntent.putExtra(JCA_CAPTURE_STATUS_TAG, resultCode);
+            startService(serviceIntent);
+        } else {
+            super.handleActivityResult(requestCode, resultCode, data);
+        }
+    }
+
+    private void doJcaCapture() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        File imageDir = new File(this.getExternalFilesDir(null), JCA_FILES_CHILD_PATHNAME);
+        imageDir.mkdirs();
+        if (!imageDir.exists()) {
+            Logt.e(TAG, "Could not create image directory");
+            return;
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+                .withZone(ZoneId.systemDefault());
+        String timestamp = formatter.format(Instant.now());
+        File imageFile = new File(imageDir, "ITS_JCA_" + timestamp + ".jpg");
+        Logt.i(TAG, "file path: " + imageFile.toString());
+        mJcaCapturePath = imageFile.toString();
+        Uri photoUri = FileProvider.getUriForFile(
+                this,
+                "com.android.cts.verifier.managedprovisioning.fileprovider",
+                imageFile);
+        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+        takePictureIntent.setComponent(new ComponentName(
+                JCA_PACKAGE_NAME, JCA_PACKAGE_NAME + "." + JCA_ACTIVITY_NAME));
+        takePictureIntent.setFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        try {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        } catch (ActivityNotFoundException e) {
+            Logt.e(TAG, "Error starting image capture intent activity: " + e);
+        }
     }
 }

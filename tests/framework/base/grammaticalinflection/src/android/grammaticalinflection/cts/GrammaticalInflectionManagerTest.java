@@ -20,24 +20,39 @@ import static android.content.res.Configuration.GRAMMATICAL_GENDER_NOT_SPECIFIED
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.fail;
+
+import android.app.Flags;
 import android.app.GrammaticalInflectionManager;
 import android.content.ComponentName;
-import android.content.Context;
 import android.content.res.Configuration;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TestJournalProvider;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.SystemUtil;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-//TODO(b/263201531): Add test cases that handle onConfigurationChanged in test activity
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 @RunWith(AndroidJUnit4.class)
 public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
+    private static final String CMD_GET_GRAMMATICAL_GENDER =
+            "cmd grammatical_inflection get-system-grammatical-gender";
+    private static final String CMD_SET_GRAMMATICAL_GENDER_ENABLED =
+            "cmd grammatical_inflection set-system-grammatical-gender";
+
     private final ComponentName TEST_APP_MAIN_ACTIVITY = new ComponentName(
             TestMainActivity.class.getPackageName(),
             TestMainActivity.class.getCanonicalName());
@@ -45,21 +60,38 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
             TestHandleConfigChangeActivity.class.getPackageName(),
             TestHandleConfigChangeActivity.class.getCanonicalName());
 
+    private String mOriginalGrammaticalGender;
     private GrammaticalInflectionManager mGrammaticalInflectionManager;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-
-        final Context context = InstrumentationRegistry.getContext();
-        mGrammaticalInflectionManager = context.getSystemService(
+        mGrammaticalInflectionManager = mContext.getSystemService(
                 GrammaticalInflectionManager.class);
     }
 
     @After
     public void tearDown() throws Exception {
-        mGrammaticalInflectionManager.setRequestedApplicationGrammaticalGender(
-                GRAMMATICAL_GENDER_NOT_SPECIFIED);
+        if (mOriginalGrammaticalGender == null) {
+            // clear gender value and wait the configuration change
+            TestJournalProvider.TestJournalContainer.start();
+            launchActivity(TEST_APP_MAIN_ACTIVITY);
+            mGrammaticalInflectionManager.setRequestedApplicationGrammaticalGender(
+                    GRAMMATICAL_GENDER_NOT_SPECIFIED);
+            assertActivityLifecycle(TEST_APP_MAIN_ACTIVITY, true /* relaunch */);
+        } else {
+            // Reset grammatical gender and flag.
+            Pattern pattern = Pattern.compile("\\((\\d+)\\)");
+            Matcher matcher = pattern.matcher(mOriginalGrammaticalGender);
+            if (matcher.find()) {
+                mOriginalGrammaticalGender = matcher.group(1);
+            }
+            setGrammaticalGender(mOriginalGrammaticalGender);
+        }
     }
 
     @Test
@@ -104,8 +136,39 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
                 .isEqualTo(Configuration.GRAMMATICAL_GENDER_MASCULINE);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testSetApplicationGender_setInvalidValue_throwException() {
-        mGrammaticalInflectionManager.setRequestedApplicationGrammaticalGender(Integer.MIN_VALUE);
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_TERMS_OF_ADDRESS_ENABLED)
+    public void testGetSystemGrammaticalGender_setMasculineForSysApp_returnMasculineToSysApp() {
+        mOriginalGrammaticalGender = SystemUtil.runShellCommand(String.format(
+                CMD_GET_GRAMMATICAL_GENDER + " --user %d ", mContext.getUserId()));
+
+        setGrammaticalGender(String.valueOf(Configuration.GRAMMATICAL_GENDER_MASCULINE));
+
+        String value = SystemUtil.runShellCommand(String.format(
+                CMD_GET_GRAMMATICAL_GENDER + " --user %d ", mContext.getUserId()));
+        Pattern pattern = Pattern.compile("\\((\\d+)\\)");
+        Matcher matcher = pattern.matcher(value);
+        if (matcher.find()) {
+            value = matcher.group(1);
+        }
+        assertThat(Integer.parseInt(value)).isEqualTo(Configuration.GRAMMATICAL_GENDER_MASCULINE);
+    }
+
+    @Test(expected = SecurityException.class)
+    @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_TERMS_OF_ADDRESS_ENABLED)
+    public void testGetSystemGrammaticalGender_setNeutralForSysApp_throwExceptionTo3rdApp() {
+        mOriginalGrammaticalGender = SystemUtil.runShellCommand(String.format(
+                CMD_GET_GRAMMATICAL_GENDER + " --user %d ", mContext.getUserId()));
+        setGrammaticalGender(String.valueOf(Configuration.GRAMMATICAL_GENDER_NEUTRAL));
+        mGrammaticalInflectionManager.getSystemGrammaticalGender();
+    }
+
+    private void setGrammaticalGender(String grammaticalGender) {
+        SystemUtil.runShellCommand(String.format(
+                CMD_SET_GRAMMATICAL_GENDER_ENABLED + " --user %d "
+                        + "--grammaticalGender %s",
+                mContext.getUserId(),
+                grammaticalGender
+        ));
     }
 }

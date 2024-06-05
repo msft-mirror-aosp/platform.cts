@@ -1689,7 +1689,7 @@ public class MediaDrmClearkeyTest extends MediaCodecPlayerTestBase<MediaStubActi
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testGetKeyRequestDefaultUrl()
             throws UnsupportedSchemeException, NotProvisionedException {
-        if (watchHasNoClearkeySupport() || !FIRST_RELEASE_IS_AT_LEAST_U) {
+        if (watchHasNoClearkeySupport() || !FIRST_RELEASE_IS_AT_LEAST_U || !VNDK_IS_AT_LEAST_U) {
             return;
         }
 

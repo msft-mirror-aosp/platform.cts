@@ -61,7 +61,7 @@ public class ListeningPortsTest extends AndroidTestCase {
     static {
         // IPv4 exceptions
         // Patterns containing ":" are allowed address port combinations
-        // Pattterns contains " " are allowed address UID combinations
+        // Patterns contains " " are allowed address UID combinations
         // Patterns containing both are allowed address, port, and UID combinations
         EXCEPTION_PATTERNS.add("0.0.0.0:5555");     // emulator port
         EXCEPTION_PATTERNS.add("0.0.0.0:9101");     // verified ports
@@ -82,6 +82,14 @@ public class ListeningPortsTest extends AndroidTestCase {
         EXCEPTION_PATTERNS.add("192.168.17.10:48897");
         EXCEPTION_PATTERNS.add("192.168.17.10:48898");
         EXCEPTION_PATTERNS.add("192.168.17.10:48899");
+        // Thread network exceptions; all Thread processes should run under uid 1084 and can
+        // potentially listen on ephemeral ports.
+        EXCEPTION_PATTERNS.add("127.0.0.1 1084");
+        EXCEPTION_PATTERNS.add("::1 1084");
+        EXCEPTION_PATTERNS.add("224.0.0.116 1084");
+        EXCEPTION_PATTERNS.add("ff02::116 1084");
+        EXCEPTION_PATTERNS.add("0.0.0.0 1084");
+        EXCEPTION_PATTERNS.add(":: 1084");
         //no current patterns involve address, port and UID combinations
         //Example for when necessary: EXCEPTION_PATTERNS.add("0.0.0.0:5555 10000")
 

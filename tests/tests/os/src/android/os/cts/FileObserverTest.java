@@ -20,6 +20,7 @@ import android.os.Environment;
 import android.os.FileObserver;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 import android.util.Pair;
 
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class FileObserverTest extends AndroidTestCase {
     private static final String PATH = "/PATH";
     private static final String TEST_FILE = "file_observer_test.txt";
@@ -205,19 +207,27 @@ public class FileObserverTest extends AndroidTestCase {
 
     private void verifyTriggeredEventsOnFile(MockFileObserver fileObserver,
             File testFile, boolean isEmulated) throws Exception {
+        // We create, write, close the file
+        // The effects of this vary - create first truncates the existing file,
+        // then opens it, then modifies it, then closes it
+        // Prior to kernel 6.6, this produced a modify/open/modify/close-write
+        // In 6.6, the behavior was changed to combine the two modifies
+        // See:
+        // https://lore.kernel.org/all/CAL=UVf5hZNVUPv4WdLsyMw5X8kP-3=gwU9mymWS_3APTVuSacQ@mail.gmail.com/T/
+        // though unfortunately the reply from the maintainer seems to have been lost
         final FileOutputStream out = new FileOutputStream(testFile);
 
         out.write(FILE_DATA); // modify, open, write, modify
         out.close(); // close_write
 
         final int[] expected = {
-                FileObserver.MODIFY,
                 FileObserver.OPEN,
                 FileObserver.MODIFY,
                 FileObserver.CLOSE_WRITE
         };
 
         final FileEvent[] moveEvents = waitForEvent(fileObserver);
+
         assertEventsContains(testFile, expected, moveEvents);
     }
 

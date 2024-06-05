@@ -19,6 +19,7 @@ package android.media.audio.cts;
 import static android.Manifest.permission.ACTIVITY_EMBEDDING;
 import static android.Manifest.permission.ADD_ALWAYS_UNLOCKED_DISPLAY;
 import static android.Manifest.permission.CREATE_VIRTUAL_DEVICE;
+import static android.Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED;
 import static android.Manifest.permission.QUERY_AUDIO_STATE;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_AUDIO;
@@ -31,6 +32,8 @@ import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Uninterruptibles.tryAcquireUninterruptibly;
+
+import static org.junit.Assume.assumeNotNull;
 
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
@@ -48,6 +51,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.internal.annotations.GuardedBy;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -74,10 +78,20 @@ public class AudioFocusWithVdmTest {
             ACTIVITY_EMBEDDING,
             ADD_ALWAYS_UNLOCKED_DISPLAY,
             CREATE_VIRTUAL_DEVICE,
+            MODIFY_AUDIO_SETTINGS_PRIVILEGED, // ensures focus request is independent of proc state
             QUERY_AUDIO_STATE);
 
     @Rule
     public FakeAssociationRule mFakeAssociationRule = new FakeAssociationRule();
+
+    private VirtualDeviceManager mVirtualDeviceManager;
+
+    @Before
+    public void setUp() {
+        Context context = getApplicationContext();
+        mVirtualDeviceManager = context.getSystemService(VirtualDeviceManager.class);
+        assumeNotNull(mVirtualDeviceManager);
+    }
 
 
     /**
@@ -93,8 +107,7 @@ public class AudioFocusWithVdmTest {
     @Test
     public void testAudioFocusRequestOnVdmContextWithCustomDevicePolicy() {
         Context defaultContext = getApplicationContext();
-        VirtualDeviceManager vdm = defaultContext.getSystemService(VirtualDeviceManager.class);
-        try (VirtualDeviceManager.VirtualDevice vd = vdm.createVirtualDevice(
+        try (VirtualDeviceManager.VirtualDevice vd = mVirtualDeviceManager.createVirtualDevice(
                 mFakeAssociationRule.getAssociationInfo().getId(),
                 VIRTUAL_DEVICE_PARAMS_CUSTOM_POLICY);
              PlaybackHelperForTest defaultDevicePlayback = new PlaybackHelperForTest(
@@ -127,8 +140,7 @@ public class AudioFocusWithVdmTest {
     @Test
     public void testAudioFocusRequestOnVdmContextWithDefaultDevicePolicy() {
         Context defaultContext = getApplicationContext();
-        VirtualDeviceManager vdm = defaultContext.getSystemService(VirtualDeviceManager.class);
-        try (VirtualDeviceManager.VirtualDevice vd = vdm.createVirtualDevice(
+        try (VirtualDeviceManager.VirtualDevice vd = mVirtualDeviceManager.createVirtualDevice(
                 mFakeAssociationRule.getAssociationInfo().getId(),
                 VIRTUAL_DEVICE_PARAMS_DEFAULT);
              PlaybackHelperForTest defaultDevicePlayback = new PlaybackHelperForTest(
@@ -143,7 +155,7 @@ public class AudioFocusWithVdmTest {
 
             int vdmFocusRequestResult = vdmDevicePlayback.requestFocus();
             assertThat(vdmFocusRequestResult).isEqualTo(AUDIOFOCUS_REQUEST_GRANTED);
-            // Since the vdm is configured with default device polic
+            // Since the mVirtualDeviceManager is configured with default device polic
             assertThat(defaultDevicePlayback.getLastFocusChange().isPresent()).isTrue();
             assertThat(defaultDevicePlayback.getLastFocusChange().get()).isEqualTo(AUDIOFOCUS_LOSS);
             assertThat(vdmDevicePlayback.getLastFocusChange().isEmpty()).isTrue();
@@ -174,7 +186,6 @@ public class AudioFocusWithVdmTest {
             mAudioFocusRequest = new AudioFocusRequest.Builder(AUDIOFOCUS_GAIN)
                     .setOnAudioFocusChangeListener(mFocusListener).build();
             return mAudioManager.requestAudioFocus(mAudioFocusRequest);
-
         }
 
         public Optional<Integer> getLastFocusChange() {

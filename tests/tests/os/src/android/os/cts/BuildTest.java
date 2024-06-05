@@ -16,11 +16,21 @@
 
 package android.os.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.os.Build;
 import android.os.SystemProperties;
-import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.ravenwood.RavenwoodRule;
 
-import junit.framework.TestCase;
+import com.android.compatibility.common.util.CddTest;
+
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,28 +40,51 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-public class BuildTest extends TestCase {
+/**
+ * CTS for the {@link Build} class.
+ *
+ * This class contains tests that must pass without having a {@link RavenwoodRule},
+ * so do not add one in this class. {@link #setUp()} has a check to ensure it.
+ *
+ * For tests that do require a {@link RavenwoodRule}, use {@link BuildExtTest} instead.
+ */
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+public class BuildTest {
 
-    private static final String RO_PRODUCT_CPU_ABILIST = "ro.product.cpu.abilist";
-    private static final String RO_PRODUCT_CPU_ABILIST32 = "ro.product.cpu.abilist32";
-    private static final String RO_PRODUCT_CPU_ABILIST64 = "ro.product.cpu.abilist64";
+    static final String RO_PRODUCT_CPU_ABILIST = "ro.product.cpu.abilist";
+    static final String RO_PRODUCT_CPU_ABILIST32 = "ro.product.cpu.abilist32";
+    static final String RO_PRODUCT_CPU_ABILIST64 = "ro.product.cpu.abilist64";
+    static final String DEVICE = "ro.product.device";
+    static final String MANUFACTURER = "ro.product.manufacturer";
+    static final String MODEL = "ro.product.model";
+
+    @Before
+    public void setUp() {
+        // Ensure this class doesn't have a RavenwoodRule.
+        for (var field : this.getClass().getFields()) {
+            if (field.getType() == RavenwoodRule.class) {
+                fail("This clsas is not supposed to have a RavenwoodRule. See the class javadoc.");
+            }
+        }
+    }
 
     /**
-     * Verify that the values of the various CPU ABI fields are consistent.
+     * Check if minimal properties are set (note that these might come from either
+     * /system/build.props or /oem/oem.props.
      */
-    @AppModeFull(reason = "Instant apps cannot access APIs")
-    public void testCpuAbi() throws Exception {
-        runTestCpuAbiCommon();
-        if (android.os.Process.is64Bit()) {
-            runTestCpuAbi64();
-        } else {
-            runTestCpuAbi32();
-        }
+    @Test
+    @CddTest(requirements = {"3.2.2/C-0-1"})
+    public void testBuildProperties() throws Exception {
+        assertNotNull("Build.DEVICE should be defined", Build.DEVICE);
+        assertNotNull("Build.MANUFACTURER should be defined", Build.MANUFACTURER);
+        assertNotNull("Build.MODEL should be defined", Build.MODEL);
     }
 
     /**
      * Verify that the CPU ABI fields on device match the permitted ABIs defined by CDD.
      */
+    @Test
+    @CddTest(requirements = {"3.3.1/C-0-6"})
     public void testCpuAbi_valuesMatchPermitted() throws Exception {
         for (String abi : Build.SUPPORTED_ABIS) {
             if (abi.endsWith("-hwasan")) {
@@ -79,7 +112,7 @@ public class BuildTest extends TestCase {
         assertValuesAreAllowed(just64, Build.SUPPORTED_64_BIT_ABIS);
     }
 
-    private void runTestCpuAbiCommon() throws Exception {
+    static void runTestCpuAbiCommon() throws Exception {
         // The build property must match Build.SUPPORTED_ABIS exactly.
         final String[] abiListProperty = getStringList(RO_PRODUCT_CPU_ABILIST);
         assertEquals(Arrays.toString(abiListProperty), Arrays.toString(Build.SUPPORTED_ABIS));
@@ -105,7 +138,7 @@ public class BuildTest extends TestCase {
         }
     }
 
-    private void runTestCpuAbi32() throws Exception {
+    static void runTestCpuAbi32() throws Exception {
         List<String> abi32 = Arrays.asList(Build.SUPPORTED_32_BIT_ABIS);
         assertTrue(abi32.contains(Build.CPU_ABI));
 
@@ -114,7 +147,7 @@ public class BuildTest extends TestCase {
         }
     }
 
-    private void runTestCpuAbi64() {
+    static void runTestCpuAbi64() {
         List<String> abi64 = Arrays.asList(Build.SUPPORTED_64_BIT_ABIS);
         assertTrue(abi64.contains(Build.CPU_ABI));
 
@@ -123,7 +156,7 @@ public class BuildTest extends TestCase {
         }
     }
 
-    private String[] getStringList(String property) throws IOException {
+    static String[] getStringList(String property) throws IOException {
         String value = getProperty(property);
         if (value.isEmpty()) {
             return new String[0];
@@ -188,6 +221,7 @@ public class BuildTest extends TestCase {
         Pattern.compile("^([0-9A-Za-z._-]+)$");
 
     /** Tests that check for valid values of constants in Build. */
+    @Test
     public void testBuildConstants() {
         // Build.VERSION.* constants tested by BuildVersionTest
 
@@ -242,6 +276,7 @@ public class BuildTest extends TestCase {
      * Verify that SDK versions are bounded by both high and low expected
      * values.
      */
+    @Test
     public void testSdkInt() {
         assertTrue(
                 "Current SDK version " + Build.VERSION.SDK_INT
@@ -265,6 +300,7 @@ public class BuildTest extends TestCase {
     /**
      * Verify that MEDIA_PERFORMANCE_CLASS are bounded by both high and low expected values.
      */
+    @Test
     public void testMediaPerformanceClass() {
         // media performance class value of 0 is valid
         if (Build.VERSION.MEDIA_PERFORMANCE_CLASS == 0) {

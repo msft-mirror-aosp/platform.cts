@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
@@ -35,5 +34,8 @@ android_library {
         "src/**/*.aidl",
     ],
     platform_apis: true,
-    min_sdk_version: "20",
+    min_sdk_version: "21",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }

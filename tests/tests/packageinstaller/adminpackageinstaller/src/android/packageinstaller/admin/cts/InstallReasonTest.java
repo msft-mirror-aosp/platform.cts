@@ -17,10 +17,10 @@
 package android.packageinstaller.admin.cts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.PackageManager;
 
+import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 
 import org.junit.Test;
@@ -30,12 +30,10 @@ import org.junit.runner.RunWith;
  * This class tests that the install reason is correctly recorded for packages.
  */
 @RunWith(BedsteadJUnit4.class)
+@RequireRunOnSystemUser
 public class InstallReasonTest extends BasePackageInstallTest {
     @Test
     public void testInstallReason() throws Exception {
-        assumeTrue("FEATURE_DEVICE_ADMIN unavailable", mHasFeature);
-        assumeTrue("Could not set BasicAdminReceiver.class as device owner", mAmIDeviceOwner);
-
         // Verify that since the Device Owner was sideloaded, its install reason is unknown.
         assertEquals(PackageManager.INSTALL_REASON_UNKNOWN, getInstallReason(PACKAGE_NAME));
 

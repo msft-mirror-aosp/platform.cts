@@ -9,6 +9,10 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.CallAttributes;
 import android.telephony.CallState;
 import android.telephony.PhoneStateListener;
@@ -20,8 +24,10 @@ import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.telephony.TelephonyManager.CarrierPrivilegesCallback;
 import android.telephony.TelephonyRegistryManager;
+import android.telephony.emergency.EmergencyNumber;
 import android.telephony.ims.ImsCallProfile;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
@@ -29,13 +35,18 @@ import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,13 +56,17 @@ public class TelephonyRegistryManagerTest {
     private TelephonyRegistryManager mTelephonyRegistryMgr;
     private static final long TIMEOUT_MILLIS = 1000;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() throws Exception {
         assumeTrue(InstrumentationRegistry.getContext().getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
 
         mTelephonyRegistryMgr = (TelephonyRegistryManager) InstrumentationRegistry.getContext()
-            .getSystemService(Context.TELEPHONY_REGISTRY_SERVICE);
+                .getSystemService(Context.TELEPHONY_REGISTRY_SERVICE);
     }
 
     /**
@@ -252,6 +267,7 @@ public class TelephonyRegistryManagerTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_NOTIFY_DATA_ACTIVITY_CHANGED_WITH_SLOT)
     public void testNotifyDataActivityChanged() throws Exception {
         Context context = InstrumentationRegistry.getContext();
 
@@ -270,6 +286,35 @@ public class TelephonyRegistryManagerTest {
         int testValue = TelephonyManager.DATA_ACTIVITY_DORMANT;
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
                 (trm) -> trm.notifyDataActivityChanged(
+                        SubscriptionManager.getDefaultSubscriptionId(),
+                        testValue));
+
+        int result = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        assertEquals(testValue, result);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_DATA_ACTIVITY_CHANGED_WITH_SLOT)
+    public void testNotifyDataActivityChangedWithSlot() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+
+        LinkedBlockingQueue<Integer> queue = new LinkedBlockingQueue<>(1);
+        PhoneStateListener psl = new PhoneStateListener(context.getMainExecutor()) {
+            @Override
+            public void onDataActivity(int activity) {
+                queue.offer(activity);
+            }
+        };
+        TelephonyManager tm = context.getSystemService(TelephonyManager.class);
+        tm.listen(psl, PhoneStateListener.LISTEN_DATA_ACTIVITY);
+        // clear the initial result from registering the listener.
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        int testValue = TelephonyManager.DATA_ACTIVITY_DORMANT;
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                (trm) -> trm.notifyDataActivityChanged(
+                        SubscriptionManager.getSlotIndex(
+                                SubscriptionManager.getDefaultSubscriptionId()),
                         SubscriptionManager.getDefaultSubscriptionId(),
                         testValue));
 
@@ -415,6 +460,53 @@ public class TelephonyRegistryManagerTest {
         public void onCarrierServiceChanged(@Nullable String carrierServicePackageName,
                 int carrierServiceUid) {
             mCarrierServiceQueue.offer(new Pair<>(carrierServicePackageName, carrierServiceUid));
+        }
+    }
+
+
+    private static class SimultaneousCallingListener extends TelephonyCallback implements
+            TelephonyCallback.SimultaneousCellularCallingSupportListener {
+
+        private final LinkedBlockingQueue<Set<Integer>> mQueue;
+
+        SimultaneousCallingListener(LinkedBlockingQueue<Set<Integer>> queue) {
+            mQueue = queue;
+        }
+
+        @Override
+        public void onSimultaneousCellularCallingSubscriptionsChanged(
+                @NonNull Set<Integer> simultaneousCallingSubscriptionIds) {
+            mQueue.offer(simultaneousCallingSubscriptionIds);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SIMULTANEOUS_CALLING_INDICATIONS)
+    @Test
+    public void testSimultaneousCellularCallingNotifications() throws Exception {
+        LinkedBlockingQueue<Set<Integer>> queue = new LinkedBlockingQueue<>(2);
+        SimultaneousCallingListener listener = new SimultaneousCallingListener(queue);
+        Context context = InstrumentationRegistry.getContext();
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), listener),
+                "android.permission.READ_PRIVILEGED_PHONE_STATE");
+        // get the current value
+        Set<Integer> initialVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        Set<Integer> testVal = new HashSet<>();
+        testVal.add(1000);
+        testVal.add(1100);
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifySimultaneousCellularCallingSubscriptionsChanged(testVal));
+            Set<Integer> resultVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertEquals(testVal, resultVal);
+        } finally {
+            // set back the initial value so that we do not cause an invalid value to be returned.
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifySimultaneousCellularCallingSubscriptionsChanged(initialVal));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                    (tm) -> tm.unregisterTelephonyCallback(listener));
         }
     }
 
@@ -604,15 +696,60 @@ public class TelephonyRegistryManagerTest {
                 (tm) -> tm.listen(psl, PhoneStateListener.LISTEN_NONE));
     }
 
+    @Test
+    public void testNotifyOutgoingEmergencyCall() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+        String testEmergencyNumber = "9998887776655443210";
+        EmergencyNumber emergencyNumber = new EmergencyNumber(
+                testEmergencyNumber,
+                "us",
+                "30",
+                EmergencyNumber.EMERGENCY_SERVICE_CATEGORY_UNSPECIFIED,
+                new ArrayList<>(),
+                EmergencyNumber.EMERGENCY_NUMBER_SOURCE_NETWORK_SIGNALING,
+                EmergencyNumber.EMERGENCY_CALL_ROUTING_NORMAL);
+        int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
+        int phoneId = SubscriptionManager.getSlotIndex(defaultSubId);
+
+        LinkedBlockingQueue<List<CallState>> queue = new LinkedBlockingQueue<>(1);
+        TestTelephonyCallback testCb = new TestTelephonyCallback(queue);
+
+        // Register telephony callback.
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), testCb));
+        // clear the initial result from registering the listener.
+        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                (trm) -> trm.notifyOutgoingEmergencyCall(phoneId, defaultSubId, emergencyNumber));
+        assertTrue(testCb.mCallbackSemaphore.tryAcquire(15, TimeUnit.SECONDS));
+        assertEquals(emergencyNumber, testCb.mLastOutgoingEmergencyNumber);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.unregisterTelephonyCallback(testCb));
+    }
+
     private class TestTelephonyCallback extends TelephonyCallback
-            implements TelephonyCallback.CallAttributesListener {
+            implements TelephonyCallback.CallAttributesListener,
+            TelephonyCallback.OutgoingEmergencyCallListener {
+        public Semaphore mCallbackSemaphore = new Semaphore(0);
         LinkedBlockingQueue<List<CallState>> mTestCallStatesQueue;
+        private EmergencyNumber mLastOutgoingEmergencyNumber;
+
         TestTelephonyCallback(LinkedBlockingQueue<List<CallState>> queue) {
             mTestCallStatesQueue = queue;
         }
         @Override
         public void onCallStatesChanged(@NonNull List<CallState> callStateList) {
             mTestCallStatesQueue.offer(callStateList);
+        }
+
+        @Override
+        public void onOutgoingEmergencyCall(EmergencyNumber placedEmergencyNumber,
+                int subscriptionId) {
+            Log.i("telecomTag", "onOutgoingEmergencyCall: telephony callback");
+            mLastOutgoingEmergencyNumber = placedEmergencyNumber;
+            mCallbackSemaphore.release();
         }
     }
 
@@ -625,6 +762,55 @@ public class TelephonyRegistryManagerTest {
         @Override
         public void onCallAttributesChanged(@NonNull CallAttributes callAttributes) {
             mTestCallAttributes.offer(callAttributes);
+        }
+    }
+
+    private static class CarrierRoamingNtnModeListener extends TelephonyCallback
+            implements TelephonyCallback.CarrierRoamingNtnModeListener {
+
+        private final LinkedBlockingQueue<Boolean> mQueue;
+
+        CarrierRoamingNtnModeListener(LinkedBlockingQueue<Boolean> queue) {
+            mQueue = queue;
+        }
+
+        @Override
+        public void onCarrierRoamingNtnModeChanged(boolean active) {
+            mQueue.offer(active);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
+    public void testCarrierRoamingNtnModeChanged() throws Exception {
+        LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
+        CarrierRoamingNtnModeListener listener = new CarrierRoamingNtnModeListener(queue);
+
+        Context context = InstrumentationRegistry.getContext();
+        TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
+        telephonyManager = telephonyManager.createForSubscriptionId(
+                SubscriptionManager.getDefaultSubscriptionId());
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                (tm) -> tm.registerTelephonyCallback(context.getMainExecutor(), listener),
+                "android.permission.READ_PRIVILEGED_PHONE_STATE");
+
+        // Get the current value
+        boolean initialValue = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifyCarrierRoamingNtnModeChanged(
+                            SubscriptionManager.getDefaultSubscriptionId(), true));
+            boolean resultVal = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            assertTrue(resultVal);
+        } finally {
+            // set back the initial value so that we do not cause an invalid value to be returned.
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyRegistryMgr,
+                    (trm) -> trm.notifyCarrierRoamingNtnModeChanged(
+                            SubscriptionManager.getDefaultSubscriptionId(), initialValue));
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(telephonyManager,
+                    (tm) -> tm.unregisterTelephonyCallback(listener));
         }
     }
 }

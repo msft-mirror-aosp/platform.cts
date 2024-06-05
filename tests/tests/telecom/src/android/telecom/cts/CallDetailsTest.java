@@ -52,6 +52,7 @@ import android.telephony.TelephonyManager;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FileUtils;
+import com.android.server.telecom.flags.Flags;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -490,6 +491,17 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
     }
 
     /**
+     * Tests whether the getId() getter returns the correct object.
+     */
+    public void testCallId() {
+        if (!mShouldTestTelecom || !Flags.callDetailsIdChanges()) {
+            return;
+        }
+
+        assertThat(mCall.getDetails().getId(), instanceOf(String.class));
+    }
+
+    /**
      * Tests whether the getConnectTimeMillis() getter returns the correct object.
      */
     public void testConnectTimeMillis() {
@@ -715,6 +727,23 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         assertFalse(callExtras.containsKey("cna"));
         assertFalse(callExtras.containsKey("oir"));
         assertFalse(callExtras.containsKey("cnap"));
+    }
+
+    /**
+     * Verify the {@link  android.telecom.Call#EXTRA_IS_BUSINESS_CALL} and the
+     * {@link android.telecom.Call#EXTRA_ASSERTED_DISPLAY_NAME} can be set and fetched
+     * via the {@link android.telecom.Connection#setExtras(Bundle)} method.
+     */
+    public void testBusinessComposerExtras() {
+        if (!mShouldTestTelecom || !Flags.businessCallComposer()) {
+            return;
+        }
+        Bundle exampleExtras = new Bundle();
+        exampleExtras.putBoolean(Call.EXTRA_IS_BUSINESS_CALL, true);
+        exampleExtras.putString(Call.EXTRA_ASSERTED_DISPLAY_NAME, "Google");
+        mConnection.setExtras(exampleExtras);
+        assertCallExtras(mCall, Call.EXTRA_IS_BUSINESS_CALL);
+        assertCallExtras(mCall, Call.EXTRA_ASSERTED_DISPLAY_NAME);
     }
 
     /**

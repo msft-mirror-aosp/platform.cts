@@ -40,18 +40,19 @@ import android.provider.Settings;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.test.AndroidTestCase;
-import android.test.suitebuilder.annotation.Suppress;
 import android.util.Log;
+
+import androidx.test.filters.Suppress;
 
 import java.io.ByteArrayInputStream;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 /**
  * TODO: Make sure DO APIs are not called by PO.
  * Test that exercises {@link DevicePolicyManager}. The test requires that the
@@ -124,19 +125,6 @@ public class DevicePolicyManagerTest extends AndroidTestCase {
         assertTrue(mDevicePolicyManager.isAdminActive(mComponent));
     }
 
-    public void testRequestRemoteBugreport_failIfNotDeviceOwner() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testRequestRemoteBugreport_failIfNotDeviceOwner");
-            return;
-        }
-        try {
-            mDevicePolicyManager.requestBugreport(mComponent);
-            fail("did not throw expected SecurityException");
-        } catch (SecurityException e) {
-            assertDeviceOwnerMessage(e.getMessage());
-        }
-    }
-
     public void testRemoveUser_failIfNotDeviceOwner() {
         if (!mDeviceAdmin) {
             Log.w(TAG, "Skipping testRemoveUser_failIfNotDeviceOwner");
@@ -160,34 +148,6 @@ public class DevicePolicyManagerTest extends AndroidTestCase {
             fail("did not throw expected SecurityException");
         } catch (SecurityException e) {
             assertDeviceOwnerMessage(e.getMessage());
-        }
-    }
-
-    public void testSetGlobalSetting_failIfNotDeviceOwner() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testSetGlobalSetting_failIfNotDeviceOwner");
-            return;
-        }
-        try {
-            mDevicePolicyManager.setGlobalSetting(mComponent,
-                    Settings.Global.WIFI_NETWORKS_AVAILABLE_NOTIFICATION_ON, "1");
-            fail("did not throw expected SecurityException");
-        } catch (SecurityException e) {
-            assertDeviceOwnerMessage(e.getMessage());
-        }
-    }
-
-    public void testSetSecureSetting_failIfNotDeviceOrProfileOwner() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testSetSecureSetting_failIfNotDeviceOrProfileOwner");
-            return;
-        }
-        try {
-            mDevicePolicyManager.setSecureSetting(mComponent,
-                    Settings.Secure.SKIP_FIRST_USE_HINTS, "1");
-            fail("did not throw expected SecurityException");
-        } catch (SecurityException e) {
-            assertProfileOwnerMessage(e.getMessage());
         }
     }
 
@@ -271,99 +231,6 @@ public class DevicePolicyManagerTest extends AndroidTestCase {
             fail("did not throw expected SecurityException");
         } catch (SecurityException e) {
             assertDeviceOwnerMessage(e.getMessage());
-        }
-    }
-
-    public void testCreateAndManageUser_failIfNotDeviceOwner() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testCreateAndManageUser_failIfNotDeviceOwner");
-            return;
-        }
-        try {
-            mDevicePolicyManager.createAndManageUser(mComponent, "name", mComponent, null, 0);
-            fail("did not throw expected SecurityException");
-        } catch (SecurityException e) {
-            assertDeviceOwnerMessage(e.getMessage());
-        }
-    }
-
-    public void testInstallCaCert_failIfNotProfileOwner() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testInstallCaCert_failIfNotProfileOwner");
-            return;
-        }
-        try {
-            mDevicePolicyManager.installCaCert(mComponent,
-                    TEST_CA_STRING1.getBytes());
-            fail("did not throw expected SecurityException");
-        } catch (SecurityException e) {
-            assertProfileOwnerMessage(e.getMessage());
-        }
-    }
-
-    public void testInstallCaCert_failIfNotCertInstaller() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testInstallCaCert_failIfNotCertInstaller");
-            return;
-        }
-        try {
-            // Delegated cert installer is identified by using null as the first argument.
-            mDevicePolicyManager.installCaCert(null, TEST_CA_STRING1.getBytes());
-            fail("did not throw expected SecurityException");
-        } catch (SecurityException expected) {
-        }
-    }
-
-    public void testUninstallCaCert_failIfNotProfileOwner() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testUninstallCaCert_failIfNotProfileOwner");
-            return;
-        }
-        try {
-            mDevicePolicyManager.uninstallCaCert(mComponent,
-                    TEST_CA_STRING1.getBytes());
-            fail("did not throw expected SecurityException");
-        } catch (SecurityException e) {
-            assertProfileOwnerMessage(e.getMessage());
-        }
-    }
-
-    public void testUninstallCaCert_failIfNotCertInstaller() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testUninstallCaCert_failIfNotCertInstaller");
-            return;
-        }
-        try {
-            // Delegated cert installer is identified by using null as the first argument.
-            mDevicePolicyManager.uninstallCaCert(null, TEST_CA_STRING1.getBytes());
-            fail("did not throw expected SecurityException");
-        } catch (SecurityException expected) {
-        }
-    }
-
-    public void testGetInstalledCaCerts_failIfNotProfileOwner() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testGetInstalledCaCerts_failIfNotProfileOwner");
-            return;
-        }
-        try {
-            mDevicePolicyManager.getInstalledCaCerts(mComponent);
-            fail("did not throw expected SecurityException");
-        } catch (SecurityException e) {
-            assertProfileOwnerMessage(e.getMessage());
-        }
-    }
-
-    public void testGetInstalledCaCerts_failIfNotCertInstaller() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testGetInstalledCaCerts_failIfNotCertInstaller");
-            return;
-        }
-        try {
-            // Delegated cert installer is identified by using null as the first argument.
-            mDevicePolicyManager.getInstalledCaCerts(null);
-            fail("did not throw expected SecurityException");
-        } catch (SecurityException expected) {
         }
     }
 
@@ -499,22 +366,6 @@ public class DevicePolicyManagerTest extends AndroidTestCase {
         assertTrue("message is: "+ message, ok);
     }
 
-    private void assertOrganizationOwnedProfileOwnerMessage(String message) {
-        assertTrue("message is: " + message, message.contains(
-                "is not the profile owner on organization-owned device")
-                || message.contains("Calling identity is not authorized")
-                || message.contains("does not have the required permissions"));
-    }
-
-    private void assertDeviceOwnerOrManageUsersMessage(String message) {
-        assertTrue("message is: "+ message, message.contains("does not own the device")
-                || message.contains("can only be called by the device owner")
-                || (message.startsWith("Neither user ") && message.endsWith(
-                        " nor current process has android.permission.MANAGE_USERS."))
-                || message.contains("Calling identity is not authorized")
-                || message.contains("does not have the required permissions"));
-    }
-
     private void assertProfileOwnerMessage(String message) {
         assertTrue("message is: "+ message, message.contains("does not own the profile")
                 || message.contains("is not profile owner")
@@ -559,18 +410,6 @@ public class DevicePolicyManagerTest extends AndroidTestCase {
         } catch (SecurityException e) {
             assertDeviceOwnerMessage(e.getMessage());
         }
-    }
-
-    public void testCreateAdminSupportIntent_returnNullIfRestrictionIsNotSet() {
-        if (!mDeviceAdmin) {
-            Log.w(TAG, "Skipping testCreateAdminSupportIntent");
-            return;
-        }
-        Intent intent = mDevicePolicyManager.createAdminSupportIntent(
-                DevicePolicyManager.POLICY_DISABLE_CAMERA);
-        assertNull(intent);
-        intent = mDevicePolicyManager.createAdminSupportIntent(UserManager.DISALLOW_ADJUST_VOLUME);
-        assertNull(intent);
     }
 
     public void testIsUsingUnifiedPassword_failIfNotProfileOwner() {
@@ -656,7 +495,11 @@ public class DevicePolicyManagerTest extends AndroidTestCase {
         } catch (SecurityException e) {
             assertProfileOwnerMessage(e.getMessage());
         } finally {
-            mNotificationManager.setNotificationPolicy(origPolicy);
+            try {
+                mNotificationManager.setNotificationPolicy(origPolicy);
+            } catch (Exception e) {
+                // Might fail clean up - don't suppress other errors
+            }
         }
     }
 

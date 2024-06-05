@@ -37,6 +37,8 @@ android_test {
     static_libs: [
         "compatibility-device-util-axt",
         "MediaPerformanceClassCommon",
+        "mediapc-auto-constants",
+        "mediapc-requirements",
     ],
     platform_apis: true,
     srcs: ["tests/src/**/*.java"],
@@ -44,4 +46,35 @@ android_test {
         "general-tests",
     ],
     min_sdk_version: "30",
+}
+
+genrule {
+    name: "mediapc-auto-constants-gen",
+    srcs: ["src/android/mediapc/cts/common/AutoConstants.java.tmpl"],
+    tools: ["genreqsrc"],
+    tool_files: [":mpc_requirements_binarypb"],
+    cmd: "cat $(in) | $(location genreqsrc) -f $(location :mpc_requirements_binarypb) > $(out) ",
+    out: ["android/mediapc/cts/common/AutoConstants.java"],
+}
+
+java_library {
+    name: "mediapc-auto-constants",
+    srcs: [
+        ":mediapc-auto-constants-gen",
+    ],
+}
+
+genrule {
+    name: "mediapc-requirements-gen",
+    srcs: ["src/android/mediapc/cts/common/Requirements.java.tmpl"],
+    tools: ["genreqsrc"],
+    tool_files: [":mpc_requirements_binarypb"],
+    cmd: "cat $(in) | $(location genreqsrc) -f $(location :mpc_requirements_binarypb) > $(out) ",
+    out: ["android/mediapc/cts/common/Requirements.java"],
+}
+
+java_library {
+    name: "mediapc-requirements",
+    srcs: [":mediapc-requirements-gen"],
+    libs: ["MediaPerformanceClassCommon"],
 }

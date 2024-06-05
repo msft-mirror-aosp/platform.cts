@@ -18,6 +18,7 @@ package android.text.method.cts;
 
 import static android.provider.Settings.System.TEXT_AUTO_CAPS;
 
+import android.Manifest;
 import android.app.AppOpsManager;
 import android.app.Instrumentation;
 import android.content.ContentResolver;
@@ -30,12 +31,13 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsKeyEventUtil;
-import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,7 +57,12 @@ public abstract class KeyListenerTestCase {
     protected EditText mTextView;
     private int mAutoCapSetting;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<KeyListenerCtsActivity> mActivityRule =
             new ActivityTestRule<>(KeyListenerCtsActivity.class);
 
@@ -65,9 +72,8 @@ public abstract class KeyListenerTestCase {
         mContext = mInstrumentation.getTargetContext();
         mCtsKeyEventUtil = new CtsKeyEventUtil(mContext);
         mActivity = mActivityRule.getActivity();
+        WindowUtil.waitForFocus(mActivity);
         mTextView = mActivity.findViewById(R.id.keylistener_textview);
-
-        PollingCheck.waitFor(10000, mActivity::hasWindowFocus);
     }
 
     protected void enableAutoCapSettings() throws IOException {

@@ -16,6 +16,7 @@
 
 package android.provider.cts;
 
+import android.Manifest;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -24,12 +25,16 @@ import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.UserManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.BlockedNumberContract;
 import android.provider.BlockedNumberContract.BlockedNumbers;
+import android.provider.BlockedNumberContract.SystemContract;
+import android.provider.BlockedNumbersManager;
+import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import junit.framework.Assert;
 
@@ -46,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 // run cts -m CtsProviderTestCases --test android.provider.cts.BlockedNumberContractTest
 public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnabled {
     private static final String TAG = "BlockedNumberContractTest";
+    private static final String TEST_PHONE_NUMBER = "1234567890";
     private ContentResolver mContentResolver;
     private Context mContext;
     private ArrayList<Uri> mAddedUris;
@@ -410,6 +416,189 @@ public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnab
         } catch (IllegalArgumentException expected) {
             assertTrue(expected.getMessage().contains("Unsupported method"));
         }
+    }
+
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_TELECOM_MAINLINE_BLOCKED_NUMBERS_MANAGER)
+    public void testBlockSuppression() throws Exception {
+        if (!mIsSystemUser
+                || !com.android.server.telecom.flags.Flags.telecomMainlineBlockedNumbersManager()) {
+            Log.i(TAG, "skipping BlockedNumberContractTest");
+            return;
+        }
+
+        try {
+            setDefaultSmsApp(true);
+            BlockedNumbersManager blockedNumbersManager = mContext.getSystemService(
+                    BlockedNumbersManager.class);
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            Manifest.permission.WRITE_BLOCKED_NUMBERS,
+                            Manifest.permission.READ_BLOCKED_NUMBERS);
+
+            // Enable enhanced block setting.
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED, true);
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE, true);
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE, true);
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN, true);
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE, true);
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_SHOW_EMERGENCY_CALL_NOTIFICATION, true);
+
+            // Notify emergency contact and verify that blocks are suppressed.
+            blockedNumbersManager.notifyEmergencyContact();
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_ALLOWED, false);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_RESTRICTED, false);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_PAYPHONE, false);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_UNKNOWN, false);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_UNAVAILABLE, false);
+            // Verify block suppression.
+            BlockedNumbersManager.BlockSuppressionStatus suppressionStatus =
+                    blockedNumbersManager.getBlockSuppressionStatus();
+            assertTrue(suppressionStatus.getIsSuppressed());
+            // Verify that emergency call notification is shown.
+            assertTrue(blockedNumbersManager.shouldShowEmergencyCallNotification());
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_SHOW_EMERGENCY_CALL_NOTIFICATION, false);
+            assertFalse(blockedNumbersManager.shouldShowEmergencyCallNotification());
+
+            // End block suppression and verify blocks are no longer suppressed.
+            blockedNumbersManager.endBlockSuppression();
+            assertShouldSystemBlock(blockedNumbersManager, true, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_ALLOWED, false);
+            assertShouldSystemBlock(blockedNumbersManager, true, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_RESTRICTED, false);
+            assertShouldSystemBlock(blockedNumbersManager, true, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_PAYPHONE, false);
+            assertShouldSystemBlock(blockedNumbersManager, true, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_UNKNOWN, false);
+            // Verify that block suppression is not enabled.
+            suppressionStatus = blockedNumbersManager.getBlockSuppressionStatus();
+            assertFalse(suppressionStatus.getIsSuppressed());
+            assertEquals(0, suppressionStatus.getUntilTimestampMillis());
+            // Verify that emergency call notification is not shown.
+            assertFalse(blockedNumbersManager.shouldShowEmergencyCallNotification());
+        }  finally {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_TELECOM_MAINLINE_BLOCKED_NUMBERS_MANAGER)
+    public void testEnhancedBlocking() throws Exception {
+        if (!mIsSystemUser
+                || !com.android.server.telecom.flags.Flags.telecomMainlineBlockedNumbersManager()) {
+            Log.i(TAG, "skipping BlockedNumberContractTest");
+            return;
+        }
+
+        try {
+            setDefaultSmsApp(true);
+            BlockedNumbersManager blockedNumbersManager = mContext.getSystemService(
+                    BlockedNumbersManager.class);
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            Manifest.permission.WRITE_BLOCKED_NUMBERS,
+                            Manifest.permission.READ_BLOCKED_NUMBERS);
+
+            // Check whether block numbers not in contacts setting works as expected.
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED, true);
+            assertShouldSystemBlock(blockedNumbersManager, true, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_ALLOWED, false);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_ALLOWED, true);
+            assertTrue(blockedNumbersManager.getBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED));
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED, false);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_ALLOWED, false);
+            assertFalse(blockedNumbersManager.getBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNREGISTERED));
+
+            // Check whether block private number calls setting works as expected.
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE, true);
+            assertShouldSystemBlock(blockedNumbersManager, true, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_RESTRICTED, false);
+            assertTrue(blockedNumbersManager.getBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE));
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE, false);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_RESTRICTED, false);
+            assertFalse(blockedNumbersManager.getBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PRIVATE));
+
+            // Check whether block payphone calls setting works as expected.
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE, true);
+            assertShouldSystemBlock(blockedNumbersManager, true, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_PAYPHONE, false);
+            assertTrue(blockedNumbersManager.getBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE));
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE, false);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_PAYPHONE, false);
+            assertFalse(blockedNumbersManager.getBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_PAYPHONE));
+
+            // Check whether block unknown calls setting works as expected.
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN, true);
+            assertShouldSystemBlock(blockedNumbersManager, true, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_UNKNOWN, false);
+            assertShouldSystemBlock(blockedNumbersManager, true, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_UNAVAILABLE, false);
+            assertTrue(blockedNumbersManager.getBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN));
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN, false);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_UNKNOWN, false);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_UNAVAILABLE, false);
+            assertFalse(blockedNumbersManager.getBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNKNOWN));
+
+            // Check whether block unavailable calls setting works as expected.
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE, true);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_UNAVAILABLE, false);
+            assertTrue(blockedNumbersManager.getBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE));
+            blockedNumbersManager.setBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE, false);
+            assertShouldSystemBlock(blockedNumbersManager, false, TEST_PHONE_NUMBER,
+                    TelecomManager.PRESENTATION_UNAVAILABLE, false);
+            assertFalse(blockedNumbersManager.getBlockedNumberSetting(
+                    SystemContract.ENHANCED_SETTING_KEY_BLOCK_UNAVAILABLE));
+        } finally {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
+    private void assertShouldSystemBlock(BlockedNumbersManager blockedNumbersManager,
+            boolean expected, String phoneNumber, int presentationNumber,
+            boolean isNumberInContacts) {
+        assertEquals(expected, blockedNumbersManager.shouldSystemBlockNumber(phoneNumber,
+                presentationNumber, isNumberInContacts)
+                != BlockedNumberContract.STATUS_NOT_BLOCKED);
     }
 
     private Uri assertInsertBlockedNumberSucceeds(

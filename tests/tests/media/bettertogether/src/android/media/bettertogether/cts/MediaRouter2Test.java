@@ -23,18 +23,24 @@ import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
 import static android.media.MediaRoute2Info.PLAYBACK_VOLUME_VARIABLE;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.FEATURES_SPECIAL;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.FEATURE_SAMPLE;
+import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.FEATURE_SPECIAL;
+import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.FEATURE_SPECIAL_ROUTE_IDS;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID1;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID2;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID3_SESSION_CREATION_FAILED;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID4_TO_SELECT_AND_DESELECT;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID5_TO_TRANSFER_TO;
-import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID_SPECIAL_FEATURE;
+import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID7_STATIC_GROUP;
+import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.STATIC_GROUP_SELECTED_ROUTES_IDS;
 
 import static androidx.test.ext.truth.os.BundleSubject.assertThat;
+
+import static com.android.media.flags.Flags.FLAG_ENABLE_GET_TRANSFERABLE_ROUTES;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.annotation.NonNull;
@@ -44,7 +50,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaRoute2Info;
-import android.media.MediaRoute2ProviderService;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.ControllerCallback;
 import android.media.MediaRouter2.OnGetControllerHintsListener;
@@ -54,12 +59,20 @@ import android.media.MediaRouter2.TransferCallback;
 import android.media.RouteDiscoveryPreference;
 import android.media.RouteListingPreference;
 import android.media.RoutingSessionInfo;
+import android.media.VolumeProvider;
+import android.media.session.MediaSession;
+import android.media.session.MediaSessionManager;
+import android.media.session.PlaybackState;
 import android.os.Bundle;
-import android.os.ConditionVariable;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.LargeTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 
+import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -67,8 +80,11 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.PollingCheck;
+
+import com.google.common.truth.Correspondence;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -84,17 +100,24 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 @RunWith(BedsteadJUnit4.class)
 @AppModeFull(reason = "The system should be able to bind to StubMediaRoute2ProviderService")
 @LargeTest
+@FrameworkSpecificTest
 @NonMainlineTest
 public class MediaRouter2Test {
     private static final String TAG = "MR2Test";
+    private static final String DEFAULT_ROUTE_ID = "DEFAULT_ROUTE";
+    private static final int SAMPLE_CURRENT_VOLUME = 10;
+    private static final int SAMPLE_MAX_VOLUME = 12;
 
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
@@ -116,16 +139,26 @@ public class MediaRouter2Test {
     private static final RouteDiscoveryPreference LIVE_AUDIO_DISCOVERY_PREFERENCE =
             new RouteDiscoveryPreference.Builder(
                     Collections.singletonList(FEATURE_LIVE_AUDIO), false).build();
+    private static final Correspondence<MediaRoute2Info, String> ROUTE_HAS_ORIGINAL_ID =
+            Correspondence.transforming(MediaRoute2Info::getOriginalId, "has original id");
 
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        mRouter2 = MediaRouter2.getInstance(mContext);
         mExecutor = Executors.newSingleThreadExecutor();
         mAudioManager = (AudioManager) mContext.getSystemService(AUDIO_SERVICE);
 
+        mRouter2 = MediaRouter2.getInstance(mContext);
         MediaRouter2TestActivity.startActivity(mContext);
 
+        if (isAutomotive()) {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        }
+    }
+
+    private void setUpStubProvider() {
         // In order to make the system bind to the test service,
         // set a non-empty discovery preference while app is in foreground.
         List<String> features = new ArrayList<>();
@@ -151,13 +184,24 @@ public class MediaRouter2Test {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity();
         mRouter2.unregisterRouteCallback(mRouterDummyCallback);
+        // Clearing RouteListingPreference.
+        mRouter2.setRouteListingPreference(null);
         MediaRouter2TestActivity.finishActivity();
         if (mService != null) {
             mService.clear();
             mService = null;
         }
+    }
+
+    @Test
+    public void testMediaRouter2ReturnsRoutingSessionInfoWithNonEmptyClientName() {
+        RoutingController routingController = mRouter2.getSystemController();
+        RoutingSessionInfo sessionInfo = routingController.getRoutingSessionInfo();
+        assertThat(sessionInfo.getClientPackageName()).isEqualTo(mContext.getPackageName());
     }
 
     @Test
@@ -184,17 +228,17 @@ public class MediaRouter2Test {
     @UserTest({UserType.PRIMARY_USER, UserType.WORK_PROFILE})
     @Test
     public void testGetRoutes() throws Exception {
+        setUpStubProvider();
+
         Map<String, MediaRoute2Info> routes = waitAndGetRoutes(FEATURES_SPECIAL);
+        List<MediaRoute2Info> nonSystemRoutes =
+                routes.values().stream()
+                        .filter(route -> !route.isSystemRoute())
+                        .collect(Collectors.toList());
 
-        int remoteRouteCount = 0;
-        for (MediaRoute2Info route : routes.values()) {
-            if (!route.isSystemRoute()) {
-                remoteRouteCount++;
-            }
-        }
-
-        assertThat(remoteRouteCount).isEqualTo(1);
-        assertThat(routes.get(ROUTE_ID_SPECIAL_FEATURE)).isNotNull();
+        assertThat(nonSystemRoutes)
+                .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                .containsExactlyElementsIn(FEATURE_SPECIAL_ROUTE_IDS);
     }
 
     @Test
@@ -219,31 +263,9 @@ public class MediaRouter2Test {
     }
 
     @Test
-    public void activeScanRouteListingPreference_scansOnSelfScanProvider() {
-        RouteDiscoveryPreference activeScanRouteDiscoveryPreference =
-                new RouteDiscoveryPreference.Builder(
-                                List.of("placeholder_feature"), /* activeScan= */ true)
-                        .build();
-        RouteCallback routeCallback = new RouteCallback() {};
-        ConditionVariable conditionVariable = new ConditionVariable();
-        PlaceholderService.setOnBindCallback(
-                action -> {
-                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
-                        conditionVariable.open();
-                    }
-                });
-        try {
-            mRouter2.registerRouteCallback(
-                    Runnable::run, routeCallback, activeScanRouteDiscoveryPreference);
-            assertThat(conditionVariable.block(WAIT_MS)).isTrue();
-        } finally {
-            PlaceholderService.setOnBindCallback(action -> {});
-            mRouter2.unregisterRouteCallback(routeCallback);
-        }
-    }
-
-    @Test
     public void testTransferToSuccess() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteFeature = new ArrayList<>();
         sampleRouteFeature.add(FEATURE_SAMPLE);
 
@@ -294,6 +316,8 @@ public class MediaRouter2Test {
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testTransferToFailure() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -341,6 +365,8 @@ public class MediaRouter2Test {
 
     @Test
     public void testTransferToTwice() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -434,6 +460,8 @@ public class MediaRouter2Test {
 
     @Test
     public void testSetOnGetControllerHintsListener() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteFeature = new ArrayList<>();
         sampleRouteFeature.add(FEATURE_SAMPLE);
 
@@ -498,6 +526,8 @@ public class MediaRouter2Test {
 
     @Test
     public void testSetSessionVolume() throws Exception {
+        setUpStubProvider();
+
         List<String> sampleRouteFeature = new ArrayList<>();
         sampleRouteFeature.add(FEATURE_SAMPLE);
 
@@ -568,7 +598,133 @@ public class MediaRouter2Test {
     }
 
     @Test
+    public void testVolumeAdjustmentEventsReachOnlyExistingActiveRemoteSession() throws Exception {
+        // TODO (b/308994839): Remove this once MediaRouter2 supports multiuser interaction.
+        // Change MediaSessionRecord check from MediaRouter2Manager to MediaRouter2.
+        assumeFalse("Shouldn't run in HSUM mode", UserManager.isHeadlessSystemUserMode());
+
+        setUpStubProvider();
+
+        List<String> sampleRouteFeature = new ArrayList<>();
+        sampleRouteFeature.add(FEATURE_SAMPLE);
+
+        Map<String, MediaRoute2Info> routes = waitAndGetRoutes(sampleRouteFeature);
+        MediaRoute2Info route = routes.get(ROUTE_ID1);
+        assertThat(route).isNotNull();
+
+        CountDownLatch onTransferLatch = new CountDownLatch(1);
+        List<RoutingController> controllers = new ArrayList<>();
+
+        TransferCallback controllerCallback =
+                new TransferCallback() {
+                    @Override
+                    public void onTransfer(
+                            RoutingController oldController, RoutingController newController) {
+                        assertThat(oldController).isEqualTo(mRouter2.getSystemController());
+                        assertThat(
+                                        createRouteMap(newController.getSelectedRoutes())
+                                                .containsKey(ROUTE_ID1))
+                                .isTrue();
+                        controllers.add(newController);
+                        onTransferLatch.countDown();
+                    }
+                };
+
+        // TODO: Remove this once the MediaRouter2 becomes always connected to the service.
+        RouteCallback routeCallback = new RouteCallback() {};
+        mRouter2.registerRouteCallback(mExecutor, routeCallback, EMPTY_DISCOVERY_PREFERENCE);
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        try {
+            mRouter2.registerTransferCallback(mExecutor, controllerCallback);
+
+            // This call is needed to create a routing session with the same package name as the
+            // media session so that volume key events are sent to mSession. Some devices block
+            // volume messages remote media sessions with no associated routing session.
+            // See b/228021646 for details.
+            mRouter2.transferTo(route);
+
+            // Make sure the transfer succeeded.
+            assertThat(onTransferLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+
+            // Define the media session
+            MediaSession mSession = new MediaSession(mContext, /* tag= */ "sample_session");
+
+            CountDownLatch volumeAdjustedLatch = new CountDownLatch(1);
+            VolumeProvider volumeProvider =
+                    new VolumeProvider(
+                            VolumeProvider.VOLUME_CONTROL_RELATIVE,
+                            SAMPLE_MAX_VOLUME,
+                            SAMPLE_CURRENT_VOLUME,
+                            /* volumeControlId= */ "sample_volume_control_id") {
+                        @Override
+                        public void onAdjustVolume(int direction) {
+                            super.onAdjustVolume(direction);
+                            setCurrentVolume(getCurrentVolume() + direction);
+                            volumeAdjustedLatch.countDown();
+                        }
+
+                        @Override
+                        public void onSetVolumeTo(int volume) {
+                            super.onSetVolumeTo(volume);
+                            setCurrentVolume(volume);
+                            volumeAdjustedLatch.countDown();
+                        }
+                    };
+            mSession.setPlaybackToRemote(volumeProvider);
+
+            assertThat(volumeProvider.getCurrentVolume()).isEqualTo(SAMPLE_CURRENT_VOLUME);
+
+            PlaybackState playbackState =
+                    new PlaybackState.Builder()
+                            .setState(
+                                    PlaybackState.STATE_PLAYING,
+                                    /* position= */ 0L,
+                                    /* playbackSpeed= */ 0.0f)
+                            .build();
+            mSession.setActive(true);
+            mSession.setPlaybackState(playbackState);
+
+            // Set a callback for volume provider to receive the volume updates.
+            mSession.setCallback(new MediaSession.Callback() {}, handler);
+
+            long downTime = System.currentTimeMillis();
+
+            // Simulate the volume key event
+            MediaSessionManager mSessionManager =
+                    mContext.getSystemService(MediaSessionManager.class);
+            mSessionManager.dispatchVolumeKeyEvent(
+                    new KeyEvent(
+                            downTime,
+                            downTime,
+                            KeyEvent.ACTION_DOWN,
+                            KeyEvent.KEYCODE_VOLUME_DOWN,
+                            0),
+                    AudioManager.USE_DEFAULT_STREAM_TYPE,
+                    false);
+            mSessionManager.dispatchVolumeKeyEvent(
+                    new KeyEvent(
+                            downTime,
+                            System.currentTimeMillis(),
+                            KeyEvent.ACTION_UP,
+                            KeyEvent.KEYCODE_VOLUME_DOWN,
+                            0),
+                    AudioManager.USE_DEFAULT_STREAM_TYPE,
+                    false);
+
+            assertThat(volumeAdjustedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(volumeProvider.getCurrentVolume()).isEqualTo(SAMPLE_CURRENT_VOLUME - 1);
+        } finally {
+            releaseControllers(controllers);
+            mRouter2.unregisterRouteCallback(routeCallback);
+            mRouter2.unregisterTransferCallback(controllerCallback);
+        }
+    }
+
+    @Test
     public void testTransferCallbackIsNotCalledAfterUnregistered() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -620,6 +776,8 @@ public class MediaRouter2Test {
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testRoutingControllerSelectAndDeselectRoute() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -718,8 +876,210 @@ public class MediaRouter2Test {
         }
     }
 
+    @RequiresFlagsEnabled(FLAG_ENABLE_GET_TRANSFERABLE_ROUTES)
+    @ApiTest(apis = "android.media.MediaRouter2.RoutingController#getTransferableRoutes")
+    @Test
+    public void routingController_getTransferableRoutes_returnsNonFeatureMatchingRoutes()
+            throws Exception {
+        setUpStubProvider();
+
+        // Set discovery preference to FEATURE_SPECIAL.
+        Map<String, MediaRoute2Info> routes = waitAndGetRoutes(List.of(FEATURE_SPECIAL));
+        MediaRoute2Info route = routes.get(ROUTE_ID7_STATIC_GROUP);
+        assertThat(route).isNotNull();
+
+        final CountDownLatch successLatch = new CountDownLatch(1);
+        TransferCallback transferCallback =
+                new TransferCallback() {
+                    @Override
+                    public void onTransfer(
+                            @NonNull RoutingController oldController,
+                            @NonNull RoutingController newController) {
+                        assertThat(newController.getTransferableRoutes())
+                                .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                                .containsExactly(ROUTE_ID5_TO_TRANSFER_TO);
+
+                        // Make sure ROUTE_ID5_TO_TRANSFER_TO does not match FEATURE_SPECIAL.
+                        assertThat(mRouter2.getRoutes())
+                                .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                                .doesNotContain(ROUTE_ID5_TO_TRANSFER_TO);
+
+                        successLatch.countDown();
+                    }
+                };
+        // We need to keep this callback to unregister the RouteCallback.
+        RouteCallback placeholderRouteCallback = new RouteCallback() {};
+
+        try {
+            RouteDiscoveryPreference preference =
+                    new RouteDiscoveryPreference.Builder(
+                                    List.of(FEATURE_SPECIAL), /* isActiveScan */ true)
+                            .build();
+            mRouter2.registerTransferCallback(mExecutor, transferCallback);
+            mRouter2.registerRouteCallback(mExecutor, placeholderRouteCallback, preference);
+            mRouter2.transferTo(route);
+            assertThat(successLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        } finally {
+            mRouter2.stop();
+            mRouter2.unregisterTransferCallback(transferCallback);
+            mRouter2.unregisterRouteCallback(placeholderRouteCallback);
+        }
+    }
+
+    @Test
+    public void routingController_getSelectedRoutes_returnsNonFeatureMatchingRoutes()
+            throws Exception {
+        setUpStubProvider();
+
+        // Set discovery preference to FEATURE_SPECIAL.
+        Map<String, MediaRoute2Info> routes = waitAndGetRoutes(List.of(FEATURE_SPECIAL));
+        MediaRoute2Info route = routes.get(ROUTE_ID7_STATIC_GROUP);
+        assertThat(route).isNotNull();
+
+        final CountDownLatch successLatch = new CountDownLatch(1);
+        final List<RoutingController> controllers = new ArrayList<>();
+        TransferCallback transferCallback =
+                new TransferCallback() {
+                    @Override
+                    public void onTransfer(
+                            RoutingController oldController, RoutingController newController) {
+                        if (newController != null) {
+                            controllers.add(newController);
+                            successLatch.countDown();
+                        }
+                    }
+                };
+        RouteCallback placeholderRouteCallback = new RouteCallback() {};
+
+        try {
+            RouteDiscoveryPreference preference =
+                    new RouteDiscoveryPreference.Builder(List.of(FEATURE_SPECIAL), true).build();
+            mRouter2.registerTransferCallback(mExecutor, transferCallback);
+            mRouter2.registerRouteCallback(mExecutor, placeholderRouteCallback, preference);
+            mRouter2.transferTo(route);
+            assertThat(successLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+
+            RoutingController newController = controllers.get(0);
+            assertThat(newController.getSelectedRoutes())
+                    .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                    .containsExactlyElementsIn(STATIC_GROUP_SELECTED_ROUTES_IDS);
+
+            // Make sure ROUTE_ID1 does not match FEATURE_SPECIAL.
+            assertThat(mRouter2.getRoutes())
+                    .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                    .doesNotContain(ROUTE_ID1);
+
+        } finally {
+            releaseControllers(controllers);
+            mRouter2.unregisterTransferCallback(transferCallback);
+            mRouter2.unregisterRouteCallback(placeholderRouteCallback);
+        }
+    }
+
+    @Test
+    public void routingController_getSelectableRoutes_returnsNonFeatureMatchingRoutes()
+            throws Exception {
+        setUpStubProvider();
+
+        // Set discovery preference to FEATURE_SPECIAL.
+        Map<String, MediaRoute2Info> routes = waitAndGetRoutes(List.of(FEATURE_SPECIAL));
+        MediaRoute2Info route = routes.get(ROUTE_ID7_STATIC_GROUP);
+        assertThat(route).isNotNull();
+
+        final CountDownLatch successLatch = new CountDownLatch(1);
+        final List<RoutingController> controllers = new ArrayList<>();
+        TransferCallback transferCallback =
+                new TransferCallback() {
+                    @Override
+                    public void onTransfer(
+                            RoutingController oldController, RoutingController newController) {
+                        if (newController != null) {
+                            controllers.add(newController);
+                            successLatch.countDown();
+                        }
+                    }
+                };
+        RouteCallback placeholderRouteCallback = new RouteCallback() {};
+
+        try {
+            RouteDiscoveryPreference preference =
+                    new RouteDiscoveryPreference.Builder(List.of(FEATURE_SPECIAL), true).build();
+            mRouter2.registerTransferCallback(mExecutor, transferCallback);
+            mRouter2.registerRouteCallback(mExecutor, placeholderRouteCallback, preference);
+            mRouter2.transferTo(route);
+            assertThat(successLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+
+            RoutingController newController = controllers.get(0);
+            assertThat(newController.getSelectableRoutes())
+                    .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                    .containsExactly(ROUTE_ID4_TO_SELECT_AND_DESELECT);
+
+            // Make sure ROUTE_ID4_TO_SELECT_AND_DESELECT does not match FEATURE_SPECIAL.
+            assertThat(mRouter2.getRoutes())
+                    .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                    .doesNotContain(ROUTE_ID4_TO_SELECT_AND_DESELECT);
+
+        } finally {
+            releaseControllers(controllers);
+            mRouter2.unregisterTransferCallback(transferCallback);
+            mRouter2.unregisterRouteCallback(placeholderRouteCallback);
+        }
+    }
+
+    @Test
+    public void routingController_getDeselectableRoutes_returnsNonFeatureMatchingRoutes()
+            throws Exception {
+        setUpStubProvider();
+
+        // Set discovery preference to FEATURE_SPECIAL.
+        Map<String, MediaRoute2Info> routes = waitAndGetRoutes(List.of(FEATURE_SPECIAL));
+        MediaRoute2Info route = routes.get(ROUTE_ID7_STATIC_GROUP);
+        assertThat(route).isNotNull();
+
+        final CountDownLatch successLatch = new CountDownLatch(1);
+        final List<RoutingController> controllers = new ArrayList<>();
+        TransferCallback transferCallback =
+                new TransferCallback() {
+                    @Override
+                    public void onTransfer(
+                            RoutingController oldController, RoutingController newController) {
+                        if (newController != null) {
+                            controllers.add(newController);
+                            successLatch.countDown();
+                        }
+                    }
+                };
+        RouteCallback placeholderRouteCallback = new RouteCallback() {};
+
+        try {
+            RouteDiscoveryPreference preference =
+                    new RouteDiscoveryPreference.Builder(List.of(FEATURE_SPECIAL), true).build();
+            mRouter2.registerTransferCallback(mExecutor, transferCallback);
+            mRouter2.registerRouteCallback(mExecutor, placeholderRouteCallback, preference);
+            mRouter2.transferTo(route);
+            assertThat(successLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+
+            RoutingController newController = controllers.get(0);
+            assertThat(newController.getDeselectableRoutes())
+                    .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                    .containsExactly(ROUTE_ID1);
+
+            // Make sure ROUTE_ID1 does not match FEATURE_SPECIAL.
+            assertThat(mRouter2.getRoutes())
+                    .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                    .doesNotContain(ROUTE_ID1);
+
+        } finally {
+            releaseControllers(controllers);
+            mRouter2.unregisterTransferCallback(transferCallback);
+            mRouter2.unregisterRouteCallback(placeholderRouteCallback);
+        }
+    }
+
     @Test
     public void testRoutingControllerTransferToRoute() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -750,7 +1110,7 @@ public class MediaRouter2Test {
                     public void onControllerUpdated(RoutingController controller) {
                         if (onTransferLatch.getCount() != 0
                                 || !TextUtils.equals(
-                                controllers.get(0).getId(), controller.getId())) {
+                                        controllers.get(0).getId(), controller.getId())) {
                             return;
                         }
 
@@ -770,17 +1130,16 @@ public class MediaRouter2Test {
 
         try {
             mRouter2.registerTransferCallback(mExecutor, transferCallback);
-            mRouter2.registerControllerCallback(mExecutor, controllerCallback);
             mRouter2.transferTo(routeToBegin);
             assertThat(onTransferLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
 
             assertThat(controllers).hasSize(1);
-            RoutingController controller = controllers.get(0);
 
             // Transfer to ROUTE_ID5_TO_TRANSFER_TO
             MediaRoute2Info routeToTransferTo = routes.get(ROUTE_ID5_TO_TRANSFER_TO);
             assertThat(routeToTransferTo).isNotNull();
 
+            mRouter2.registerControllerCallback(mExecutor, controllerCallback);
             mRouter2.transferTo(routeToTransferTo);
             assertThat(onControllerUpdatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
         } finally {
@@ -793,6 +1152,8 @@ public class MediaRouter2Test {
 
     @Test
     public void testControllerCallbackUnregister() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -822,8 +1183,8 @@ public class MediaRouter2Test {
                     public void onControllerUpdated(RoutingController controller) {
                         if (onTransferLatch.getCount() != 0
                                 || !TextUtils.equals(
-                                mRouter2.getSystemController().getId(),
-                                controller.getId())) {
+                                        mRouter2.getSystemController().getId(),
+                                        controller.getId())) {
                             return;
                         }
 
@@ -867,6 +1228,8 @@ public class MediaRouter2Test {
     // TODO: Add tests for onStop() when provider releases the session.
     @Test
     public void testStop() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -949,6 +1312,8 @@ public class MediaRouter2Test {
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testRoutingControllerRelease() throws Exception {
+        setUpStubProvider();
+
         final List<String> sampleRouteType = new ArrayList<>();
         sampleRouteType.add(FEATURE_SAMPLE);
 
@@ -1041,6 +1406,16 @@ public class MediaRouter2Test {
     }
 
     @Test
+    public void getInstance_withoutSystemRoutingPermissions_fetchesOnlyDefaultSystemRoute() {
+        // MR2 needs a LIVE_AUDIO discovery preference to not filter out system routes.
+        mRouter2.registerRouteCallback(
+                mExecutor, mRouterDummyCallback, LIVE_AUDIO_DISCOVERY_PREFERENCE);
+        assertThat(mRouter2.getRoutes())
+                .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
+                .containsExactly(DEFAULT_ROUTE_ID);
+    }
+
+    @Test
     public void testGetControllers() {
         List<RoutingController> controllers = mRouter2.getControllers();
         assertThat(controllers).isNotNull();
@@ -1113,9 +1488,65 @@ public class MediaRouter2Test {
     }
 
     @Test
+    public void adjustSelectedRouteVolume_callsOnControlledUpdated() throws InterruptedException {
+        if (mAudioManager.isVolumeFixed()) {
+            return;
+        }
+
+        final int maxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        final int minVolume = mAudioManager.getStreamMinVolume(AudioManager.STREAM_MUSIC);
+        final int originalVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+
+        MediaRoute2Info selectedSystemRoute =
+                mRouter2.getSystemController().getSelectedRoutes().get(0);
+
+        assertThat(selectedSystemRoute.getVolumeMax()).isEqualTo(maxVolume);
+        assertThat(selectedSystemRoute.getVolume()).isEqualTo(originalVolume);
+        assertThat(selectedSystemRoute.getVolumeHandling()).isEqualTo(PLAYBACK_VOLUME_VARIABLE);
+
+        final int targetVolume =
+                originalVolume == minVolume ? originalVolume + 1 : originalVolume - 1;
+        final CountDownLatch volumeUpdatedLatch = new CountDownLatch(1);
+
+        ControllerCallback callback =
+                new ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(@NonNull RoutingController controller) {
+                        if (!TextUtils.equals(
+                                controller.getId(), mRouter2.getSystemController().getId())) {
+                            return;
+                        }
+                        MediaRoute2Info controllerSelectedRoute =
+                                controller.getSelectedRoutes().get(0);
+
+                        if (controllerSelectedRoute.getVolume() == targetVolume) {
+                            volumeUpdatedLatch.countDown();
+                        }
+                    }
+                };
+
+        // Register a route callback for the router to connect to the service.
+        RouteCallback routeCallback = new RouteCallback() {};
+        mRouter2.registerRouteCallback(mExecutor, routeCallback, EMPTY_DISCOVERY_PREFERENCE);
+
+        mRouter2.registerControllerCallback(mExecutor, callback);
+        try {
+            mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetVolume, 0);
+            assertThat(volumeUpdatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        } finally {
+            mRouter2.unregisterControllerCallback(callback);
+            mRouter2.unregisterRouteCallback(routeCallback);
+            mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, originalVolume, 0);
+        }
+    }
+
+    @Test
     public void testGettingSystemMediaRouter2WithoutPermissionThrowsSecurityException() {
         // Make sure that the permission is not given.
         assertThat(mContext.checkSelfPermission(Manifest.permission.MEDIA_CONTENT_CONTROL))
+                .isNotEqualTo(PackageManager.PERMISSION_GRANTED);
+
+        assertThat(mContext.checkSelfPermission(Manifest.permission.MEDIA_ROUTING_CONTROL))
                 .isNotEqualTo(PackageManager.PERMISSION_GRANTED);
 
         assertThrows(SecurityException.class,
@@ -1196,7 +1627,44 @@ public class MediaRouter2Test {
                 IllegalArgumentException.class,
                 () ->
                         setRouteListingPreferenceWithComponentName(
-                                new ComponentName(mContext, PlaceholderService.class)));
+                                new ComponentName(mContext, SimpleMediaBrowserService.class)));
+    }
+
+    @Test
+    public void setRouteListingPreference_callsOnRouteListingPreferenceChanged()
+            throws InterruptedException {
+        assertThat(mRouter2.getRouteListingPreference()).isNull();
+
+        RouteListingPreference testPreference = new RouteListingPreference.Builder().build();
+        CountDownLatch preferenceChangedLatch = new CountDownLatch(1);
+        Consumer<RouteListingPreference> callback =
+                (preference) -> {
+                    if (Objects.equals(preference, testPreference)) {
+                        preferenceChangedLatch.countDown();
+                    }
+                };
+
+        try {
+            mRouter2.registerRouteListingPreferenceUpdatedCallback(mExecutor, callback);
+
+            mRouter2.setRouteListingPreference(testPreference);
+            assertThat(preferenceChangedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        } finally {
+            mRouter2.unregisterRouteListingPreferenceUpdatedCallback(callback);
+        }
+    }
+
+    @Test
+    public void getRouteListingPreference_returnsLastSetPreference() {
+        RouteListingPreference testPreference = new RouteListingPreference.Builder().build();
+
+        mRouter2.setRouteListingPreference(testPreference);
+        assertThat(mRouter2.getRouteListingPreference()).isEqualTo(testPreference);
+    }
+
+    @Test
+    public void getRouteListingPreference_withNoSetPreference_returnsNull() {
+        assertThat(mRouter2.getRouteListingPreference()).isNull();
     }
 
     private void setRouteListingPreferenceWithComponentName(ComponentName componentName) {
@@ -1259,5 +1727,9 @@ public class MediaRouter2Test {
             result.add(route.getOriginalId());
         }
         return result;
+    }
+
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }

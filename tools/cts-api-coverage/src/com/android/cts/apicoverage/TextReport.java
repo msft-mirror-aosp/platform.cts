@@ -16,6 +16,13 @@
 
 package com.android.cts.apicoverage;
 
+import com.android.cts.apicommon.ApiClass;
+import com.android.cts.apicommon.ApiConstructor;
+import com.android.cts.apicommon.ApiCoverage;
+import com.android.cts.apicommon.ApiMethod;
+import com.android.cts.apicommon.ApiPackage;
+import com.android.cts.apicommon.CoverageComparator;
+
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;

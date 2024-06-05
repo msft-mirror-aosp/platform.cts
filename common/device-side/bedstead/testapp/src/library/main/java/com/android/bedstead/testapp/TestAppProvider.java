@@ -18,11 +18,13 @@ package com.android.bedstead.testapp;
 
 import android.content.Context;
 import android.content.IntentFilter;
+import android.os.Bundle;
 import android.util.Log;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.info.ActivityInfo;
+import com.android.queryable.info.ReceiverInfo;
 import com.android.queryable.info.ServiceInfo;
 
 import java.io.IOException;
@@ -86,6 +88,17 @@ public final class TestAppProvider {
         mTestApps.addAll(mTestAppsSnapshot);
     }
 
+    /**
+     * Release resources.
+     * <br><br>
+     * Note: This method is intended for internal use and should <b>not</b> be called outside core
+     * Bedstead infrastructure.
+     */
+    public void releaseResources() {
+        mTestApps.clear();
+        mTestAppsSnapshot.clear();
+    }
+
     private void initTestApps() {
         if (mTestAppsInitialised) {
             return;
@@ -110,6 +123,7 @@ public final class TestAppProvider {
     private void loadApk(TestappProtos.AndroidApp app) {
         TestAppDetails details = new TestAppDetails();
         details.mApp = app;
+
         details.mResourceIdentifier = sContext.getResources().getIdentifier(
                 "raw/" + getApkNameWithoutSuffix(app.getApkName()),
                 /* defType= */ null, sContext.getPackageName());
@@ -135,12 +149,35 @@ public final class TestAppProvider {
                     .build());
         }
 
+        for (int i = 0; i < app.getActivityAliasesCount(); i++) {
+            TestappProtos.ActivityAlias activityAliasEntry = app.getActivityAliases(i);
+            ActivityInfo activityInfo = ActivityInfo.builder()
+                    .activityClass(activityAliasEntry.getName())
+                    .exported(activityAliasEntry.getExported())
+                    .intentFilters(intentFilterSetFromProtoList(
+                            activityAliasEntry.getIntentFiltersList()))
+                    .permission(activityAliasEntry.getPermission().equals("") ? null
+                            : activityAliasEntry.getPermission())
+                    .build();
+
+            details.mActivityAliases.add(activityInfo);
+
+        }
+
         for (int i = 0; i < app.getServicesCount(); i++) {
             TestappProtos.Service serviceEntry = app.getServices(i);
             details.mServices.add(ServiceInfo.builder()
                     .serviceClass(serviceEntry.getName())
                     .intentFilters(intentFilterSetFromProtoList(
                             serviceEntry.getIntentFiltersList()))
+                    .build());
+        }
+
+        for (int i = 0; i < app.getReceiversCount(); i++) {
+            TestappProtos.Receiver receiverEntry = app.getReceivers(i);
+            details.mReceivers.add(ReceiverInfo.builder()
+                    .name(receiverEntry.getName())
+                    .metadata(metadataSetFromProtoList(receiverEntry.getMetadataList()))
                     .build());
         }
 
@@ -170,6 +207,19 @@ public final class TestAppProvider {
         }
 
         return filter;
+    }
+
+    private Set<Bundle> metadataSetFromProtoList(
+            List<TestappProtos.Metadata> list) {
+        Set<Bundle> metadataSet = new HashSet<>();
+
+        for (TestappProtos.Metadata metadata : list) {
+            Bundle metadataBundle = new Bundle();
+            metadataBundle.putString(metadata.getName(), metadata.getValue());
+            metadataSet.add(metadataBundle);
+        }
+
+        return metadataSet;
     }
 
     private String getApkNameWithoutSuffix(String apkName) {

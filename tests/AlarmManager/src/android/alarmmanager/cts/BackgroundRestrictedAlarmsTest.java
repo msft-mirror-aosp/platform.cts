@@ -39,7 +39,6 @@ import android.content.IntentFilter;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.DeviceConfig;
-import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -79,14 +78,12 @@ public class BackgroundRestrictedAlarmsTest {
     private Context mContext;
     private ComponentName mAlarmScheduler;
     private AlarmManagerDeviceConfigHelper mConfigHelper = new AlarmManagerDeviceConfigHelper();
-    private UiDevice mUiDevice;
     private DeviceConfigStateHelper mActivityManagerDeviceConfigStateHelper =
             new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER);
-    private DeviceConfigStateHelper mTareDeviceConfigStateHelper =
-            new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_TARE);
 
     private volatile int mAlarmCount;
     private volatile String mFgsResult;
+    private int mInitialSyncDisabledMode = -1;
 
     private final BroadcastReceiver mAlarmStateReceiver = new BroadcastReceiver() {
         @Override
@@ -104,7 +101,6 @@ public class BackgroundRestrictedAlarmsTest {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getTargetContext();
-        mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         mAlarmScheduler = new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER);
         mAlarmCount = 0;
         final IntentFilter intentFilter = new IntentFilter();
@@ -114,8 +110,10 @@ public class BackgroundRestrictedAlarmsTest {
         updateAlarmManagerConstants();
         mActivityManagerDeviceConfigStateHelper
                 .set("bg_auto_restricted_bucket_on_bg_restricted", "false");
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                DeviceConfig.setSyncDisabledMode(DeviceConfig.SYNC_DISABLED_MODE_UNTIL_REBOOT));
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            mInitialSyncDisabledMode = DeviceConfig.getSyncDisabledMode();
+            DeviceConfig.setSyncDisabledMode(DeviceConfig.SYNC_DISABLED_MODE_UNTIL_REBOOT);
+        });
         AppOpsUtils.setOpMode(TEST_APP_PACKAGE, OPSTR_RUN_ANY_IN_BACKGROUND, MODE_IGNORED);
         makeUidIdle();
         setAppStandbyBucket("active");
@@ -169,7 +167,6 @@ public class BackgroundRestrictedAlarmsTest {
     @Ignore("Feature auto_restricted_bucket_on_bg_restricted is disabled right now")
     @Test
     public void testRepeatingAlarmAllowedWhenAutoRestrictedBucketFeatureOn() throws Exception {
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0"); // Test requires app standby
         final long interval = MIN_REPEATING_INTERVAL;
         final long triggerElapsed = SystemClock.elapsedRealtime() + interval;
         toggleAutoRestrictedBucketOnBgRestricted(false);
@@ -205,12 +202,13 @@ public class BackgroundRestrictedAlarmsTest {
 
     @After
     public void tearDown() throws Exception {
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                DeviceConfig.setSyncDisabledMode(DeviceConfig.SYNC_DISABLED_MODE_NONE));
+        if (mInitialSyncDisabledMode != -1) {
+            SystemUtil.runWithShellPermissionIdentity(() ->
+                    DeviceConfig.setSyncDisabledMode(mInitialSyncDisabledMode));
+        }
         deleteAlarmManagerConstants();
         AppOpsUtils.reset(TEST_APP_PACKAGE);
         mActivityManagerDeviceConfigStateHelper.restoreOriginalValues();
-        mTareDeviceConfigStateHelper.restoreOriginalValues();
         // Cancel any leftover alarms
         final Intent cancelAlarmsIntent = new Intent(TestAlarmScheduler.ACTION_CANCEL_ALL_ALARMS);
         cancelAlarmsIntent.setComponent(mAlarmScheduler);
@@ -234,12 +232,12 @@ public class BackgroundRestrictedAlarmsTest {
     }
 
     private void setAppStandbyBucket(String bucket) throws IOException {
-        mUiDevice.executeShellCommand("am set-standby-bucket " + TEST_APP_PACKAGE + " " + bucket);
+        SystemUtil.runShellCommand("am set-standby-bucket " + TEST_APP_PACKAGE + " " + bucket);
     }
 
     private void makeUidIdle() throws IOException {
-        mUiDevice.executeShellCommand("cmd deviceidle tempwhitelist -r " + TEST_APP_PACKAGE);
-        mUiDevice.executeShellCommand("am make-uid-idle " + TEST_APP_PACKAGE);
+        SystemUtil.runShellCommand("cmd deviceidle tempwhitelist -r " + TEST_APP_PACKAGE);
+        SystemUtil.runShellCommand("am make-uid-idle " + TEST_APP_PACKAGE);
     }
 
     private void toggleAutoRestrictedBucketOnBgRestricted(boolean enable) {

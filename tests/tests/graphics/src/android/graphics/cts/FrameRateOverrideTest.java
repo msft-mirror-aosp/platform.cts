@@ -35,6 +35,8 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -68,7 +70,13 @@ public final class FrameRateOverrideTest {
     private final Handler mHandler = new Handler(Looper.getMainLooper());
 
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<FrameRateOverrideCtsActivity> mActivityRule =
             new ActivityTestRule<>(FrameRateOverrideCtsActivity.class);
 

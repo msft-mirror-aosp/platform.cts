@@ -44,6 +44,7 @@ public final class UserBuilder {
     private @Nullable UserType mType;
     private @Nullable UserReference mParent;
     private boolean mForTesting = true;
+    private boolean mEphemeral = false;
 
     private static final String LOG_TAG = "UserBuilder";
 
@@ -104,6 +105,17 @@ public final class UserBuilder {
     @CheckResult
     public UserBuilder forTesting(boolean forTesting) {
         mForTesting = forTesting;
+        return this;
+    }
+
+    /**
+     * Set if this user is ephemeral.
+     *
+     * <p>This defaults to false
+     */
+    @CheckResult
+    public UserBuilder ephemeral(boolean ephemeral) {
+        mEphemeral = ephemeral;
         return this;
     }
 
@@ -169,6 +181,10 @@ public final class UserBuilder {
             // Marking all created users as test users means we don't block changing device
             // management states
             commandBuilder.addOperand("--for-testing");
+        }
+
+        if (mEphemeral) {
+            commandBuilder.addOperand("--ephemeral");
         }
 
         commandBuilder.addOperand(mName);

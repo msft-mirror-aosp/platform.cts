@@ -1,4 +1,7 @@
 # Bug component: 21000
+include platform/frameworks/base:/OWNERS
+include platform/frameworks/base:/core/java/android/database/OWNERS
+
 zezeozue@google.com
 nandana@google.com
 narayan@google.com

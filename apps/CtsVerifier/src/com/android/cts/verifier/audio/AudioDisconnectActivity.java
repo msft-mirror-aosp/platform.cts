@@ -28,6 +28,7 @@ import android.widget.TextView;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 
 // MegaAudio
 import org.hyphonate.megaaudio.common.BuilderBase;
@@ -515,6 +516,8 @@ public class AudioDisconnectActivity
         setTestConfigs();
 
         enableTestButtons(false, false);
+
+        DisplayUtils.setKeepScreenOn(this, true);
     }
 
     @Override
@@ -539,7 +542,6 @@ public class AudioDisconnectActivity
             stopAudio();
         }
 
-        boolean wasMMapEnabled = Globals.isMMapEnabled();
         Globals.setMMapEnabled(config.isMMap());
         if (config.mDirection == TestConfiguration.IO_OUTPUT) {
             AudioSourceProvider sourceProvider = new SilenceAudioSourceProvider();
@@ -588,7 +590,7 @@ public class AudioDisconnectActivity
                 mIsAudioRunning = false;
             }
         }
-        Globals.setMMapEnabled(wasMMapEnabled);
+        Globals.setMMapEnabled(Globals.isMMapSupported());
 
         Log.i(TAG, "  mIsAudioRunning: " + mIsAudioRunning);
         return mIsAudioRunning;

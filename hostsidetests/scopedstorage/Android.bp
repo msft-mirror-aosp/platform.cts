@@ -196,7 +196,7 @@ android_test_helper_app {
     manifest: "AndroidManifest.xml",
     srcs: ["src/**/*.java"],
     static_libs: [
-        "truth-prebuilt",
+        "truth",
         "cts-scopedstorage-lib",
         "modules-utils-build_system",
     ],
@@ -220,7 +220,7 @@ android_test_helper_app {
     manifest: "AndroidManifest.xml",
     srcs: ["src/**/*.java"],
     static_libs: [
-        "truth-prebuilt",
+        "truth",
         "cts-scopedstorage-lib",
         "modules-utils-build_system",
     ],
@@ -242,7 +242,7 @@ android_test_helper_app {
     manifest: "legacy/AndroidManifest.xml",
     srcs: ["legacy/src/**/*.java"],
     static_libs: [
-        "truth-prebuilt",
+        "truth",
         "cts-scopedstorage-lib",
     ],
     compile_multilib: "both",
@@ -380,6 +380,23 @@ android_test_helper_app {
     static_libs: ["cts-scopedstorage-lib"],
     sdk_version: "test_current",
     target_sdk_version: "30",
+    min_sdk_version: "29",
+    srcs: ["ScopedStorageTestHelper/src/**/*.java"],
+    // Tag as a CTS artifact
+    test_suites: [
+        "general-tests",
+        "mts-mediaprovider",
+        "mcts-mediaprovider",
+        "cts",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsScopedStorageTestAppVUSelected",
+    manifest: "ScopedStorageTestHelper/TestAppVUSelected.xml",
+    static_libs: ["cts-scopedstorage-lib"],
+    sdk_version: "test_current",
+    target_sdk_version: "33",
     min_sdk_version: "29",
     srcs: ["ScopedStorageTestHelper/src/**/*.java"],
     // Tag as a CTS artifact
@@ -540,10 +557,12 @@ android_test {
     test_config: "device/AndroidTest.xml",
     srcs: ["device/**/*.java"],
     static_libs: [
-        "truth-prebuilt",
+        "truth",
         "cts-scopedstorage-lib",
         "androidx.test.uiautomator_uiautomator",
         "modules-utils-build_system",
+        "mediaprovider_flags_java_lib",
+        "flag-junit",
     ],
     compile_multilib: "both",
     test_suites: [
@@ -569,6 +588,7 @@ android_test {
         ":CtsTestAppWithQueryAllPackagesPermission",
         ":CtsTestAppWithAccessMediaOwnerPackageNamePermission",
         ":CtsTestAppWithQueriesTag",
+        ":CtsScopedStorageTestAppVUSelected",
     ],
     data: [
         ":CtsScopedStorageTestAppFileManager",
@@ -579,6 +599,7 @@ android_test {
         ":CtsTestAppWithQueryAllPackagesPermission",
         ":CtsTestAppWithAccessMediaOwnerPackageNamePermission",
         ":CtsTestAppWithQueriesTag",
+        ":CtsScopedStorageTestAppVUSelected",
     ],
     per_testcase_directory: true,
 }

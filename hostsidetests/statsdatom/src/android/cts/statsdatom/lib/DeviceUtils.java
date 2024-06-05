@@ -266,20 +266,37 @@ public final class DeviceUtils {
     }
 
     /**
-     * Returns the UID of the test app.
+     * Returns the UID of the test app for the current user.
      */
     public static int getAppUid(ITestDevice device, String pkgName)
             throws DeviceNotAvailableException {
         int currentUser = device.getCurrentUser();
-        String uidLine = device.executeShellCommand("cmd package list packages -U --user "
-                + currentUser + " " + pkgName);
-        String[] uidLineArr = uidLine.split(":");
+        return getAppUidForUser(device, pkgName, currentUser);
+    }
 
-        // Package uid is located at index 2.
-        assertThat(uidLineArr.length).isGreaterThan(2);
-        int appUid = Integer.parseInt(uidLineArr[2].trim());
-        assertThat(appUid).isGreaterThan(10000);
-        return appUid;
+    /**
+     * Returns the UID of the test app for the given user.
+     */
+    public static int getAppUidForUser(ITestDevice device, String pkgName, int userId)
+            throws DeviceNotAvailableException {
+        String uidLine = device.executeShellCommand("cmd package list packages -U --user "
+                + userId + " " + pkgName);
+
+        // Split package list by lines
+        // Sample packages response:
+        // package:com.android.server.cts.device.statsd.host uid:1010033
+        // package:com.android.server.cts.device.statsd uid:1010034
+        final String[] lines = uidLine.split("\\R+");
+        for (final String line : lines) {
+            if (line.startsWith("package:" + pkgName + " ")) {
+                final int uidIndex = line.lastIndexOf(":") + 1;
+                final int uid = Integer.parseInt(line.substring(uidIndex).trim());
+                assertThat(uid).isGreaterThan(10_000);
+                return uid;
+            }
+        }
+        throw new Error(
+                String.format("Could not find installed package: %s", pkgName));
     }
 
     /**

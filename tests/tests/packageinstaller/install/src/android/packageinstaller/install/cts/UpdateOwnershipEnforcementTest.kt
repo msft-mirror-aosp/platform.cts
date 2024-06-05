@@ -17,12 +17,14 @@
 package android.packageinstaller.install.cts
 
 import android.Manifest
+import android.app.Activity
 import android.content.pm.PackageInstaller
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
-import org.junit.After
-import java.io.File
+import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.fail
@@ -31,6 +33,7 @@ import org.junit.runner.RunWith
 
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
+@ScreenRecord
 class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
 
     companion object {
@@ -185,6 +188,32 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity()
+        }
+    }
+
+    /**
+     * Checks that an installer needs user action to update a package when
+     * it's not the update owner even if it has granted INSTALL_PACKAGES permission.
+     * This test simulates sideloading an APK when an installed app has an update owner set.
+     */
+    @Test
+    fun updateOwnershipEnforcement_updateViaIntentByNonOwner_hasUserAction() {
+        // Install the test app and enable update ownership enforcement with another package
+        installTestPackage("--update-ownership -i $TEST_INSTALLER_APK_PACKAGE_NAME")
+
+        try {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
+            val result = startInstallationViaIntent()
+
+            // The dialog to confirm update ownership will be shown
+            clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+            assertThat(result.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)
+            assertInstalled()
+        } finally {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity()
         }
     }
 

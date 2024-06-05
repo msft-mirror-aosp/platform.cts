@@ -16,7 +16,7 @@
 
 package android.devicepolicy.cts.utils;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
 import static org.junit.Assert.fail;
 
@@ -32,7 +32,7 @@ import android.content.ComponentName;
 import android.os.UserHandle;
 
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 
 import java.util.List;
 import java.util.Set;
@@ -43,6 +43,8 @@ public final class PolicyEngineUtils {
 
     public static final List<Boolean> TRUE_MORE_RESTRICTIVE = List.of(true, false);
 
+    public static final List<Boolean> FALSE_MORE_RESTRICTIVE = List.of(false, true);
+
     public static String FINANCED_DEVICE_CONTROLLER_ROLE =
             "android.app.role.SYSTEM_FINANCED_DEVICE_CONTROLLER";
 
@@ -51,7 +53,7 @@ public final class PolicyEngineUtils {
                 MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
             DevicePolicyManager dpm = TestApis.context().instrumentedContext().getSystemService(
                     DevicePolicyManager.class);
-             DevicePolicyState state = dpm.getDevicePolicyState();
+            DevicePolicyState state = dpm.getDevicePolicyState();
             if (state.getPoliciesForUser(user).get(policyKey) != null) {
                 return (PolicyState<Boolean>) state.getPoliciesForUser(user).get(policyKey);
             } else {

@@ -28,14 +28,15 @@ import its_session_utils
 import opencv_processing_utils
 import video_processing_utils
 
-_NAME = os.path.splitext(os.path.basename(__file__))[0]
-_VIDEO_RECORDING_DURATION_SECONDS = 3
-_FOV_PERCENT_RTOL = 0.15  # Relative tolerance on circle FoV % to expected.
 _AR_CHECKED_PRE_API_30 = ('4:3', '16:9', '18:9')
 _AR_DIFF_ATOL = 0.01
 _AR_FOR_JPEG_REFERENCE = (4/3, 16/9)
+_FOV_PERCENT_RTOL = 0.15  # Relative tolerance on circle FoV % to expected.
+_HGL10_TESTED_QUALITIES = ('HIGH', '480P', '720P', '1080P', '2160P')
 _MAX_8BIT_IMGS = 255
 _MAX_10BIT_IMGS = 1023
+_NAME = os.path.splitext(os.path.basename(__file__))[0]
+_VIDEO_RECORDING_DURATION_SECONDS = 3
 
 
 def _print_failed_test_results(failed_ar, failed_fov, failed_crop, quality):
@@ -154,7 +155,6 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
       logging.debug('Supported video qualities: %s', supported_video_qualities)
       full_or_better = camera_properties_utils.full_or_better(props)
       raw_avlb = camera_properties_utils.raw16(props)
-      debug = self.debug_mode
 
       # Converge 3A.
       cam.do_3a()
@@ -194,9 +194,10 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
         if quality in video_processing_utils.ITS_SUPPORTED_QUALITIES:
           logging.debug('Testing video recording for quality: %s', quality)
           hlg10_params = [False]
-          hlg10_supported = cam.is_hlg10_recording_supported(profile_id)
+          hlg10_supported = cam.is_hlg10_recording_supported_for_profile(
+              profile_id)
           logging.debug('HLG10 supported: %s', hlg10_supported)
-          if hlg10_supported:
+          if hlg10_supported and quality in _HGL10_TESTED_QUALITIES:
             hlg10_params.append(hlg10_supported)
 
           for hlg10_param in hlg10_params:
@@ -220,37 +221,30 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
                 'recordedOutputPath'].split('/')[-1]
             logging.debug('video_file_name: %s', video_file_name)
 
-            key_frame_files = []
-            key_frame_files = (
-                video_processing_utils.extract_key_frames_from_video(
+            # Validate colorspace
+            colorspace = video_processing_utils.get_video_colorspace(
+                self.log_path, video_file_name)
+            if (hlg10_param and
+                video_processing_utils.COLORSPACE_HDR not in colorspace):
+              raise AssertionError('colorspace check failed for HDR.')
+            logging.debug('Colorspace test passed, video colorspace is %s',
+                          colorspace)
+
+            # Extract last key frame as numpy image
+            last_key_frame = (
+                video_processing_utils.extract_last_key_frame_from_recording(
                     self.log_path, video_file_name)
             )
-            logging.debug('key_frame_files:%s', key_frame_files)
 
-            # Get the key frame file to process.
-            last_key_frame_file = (
-                video_processing_utils.get_key_frame_to_process(
-                    key_frame_files)
-            )
-            logging.debug('last_key_frame: %s', last_key_frame_file)
-            last_key_frame_path = os.path.join(
-                self.log_path, last_key_frame_file)
-
-            # Convert lastKeyFrame to numpy array
-            np_image = image_processing_utils.convert_image_to_numpy_array(
-                last_key_frame_path)
-            logging.debug('numpy image shape: %s', np_image.shape)
-
-            # Check fov
+            # Check FoV
             ref_img_name = (f'{name_with_log_path}_{quality}'
                             f'_w{width}_h{height}_circle.png')
             circle = opencv_processing_utils.find_circle(
-                np_image, ref_img_name, image_fov_utils.CIRCLE_MIN_AREA,
+                last_key_frame, ref_img_name, image_fov_utils.CIRCLE_MIN_AREA,
                 image_fov_utils.CIRCLE_COLOR)
 
-            if debug:
-              opencv_processing_utils.append_circle_center_to_img(
-                  circle, np_image, ref_img_name)
+            opencv_processing_utils.append_circle_center_to_img(
+                circle, last_key_frame, ref_img_name)
 
             max_img_value = _MAX_8BIT_IMGS
             if hlg10_param:
@@ -265,7 +259,7 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
               fov_chk_quality_msg = f'Quality: {quality} {fov_chk_msg}'
               failed_fov.append(fov_chk_quality_msg)
               image_processing_utils.write_image(
-                  np_image/max_img_value, img_name, True)
+                  last_key_frame/max_img_value, img_name, True)
 
             # Check pass/fail for aspect ratio.
             ar_chk_msg = image_fov_utils.check_ar(
@@ -275,7 +269,7 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
               img_name = f'{img_name_stem}_ar.png'
               failed_ar.append(ar_chk_msg)
               image_processing_utils.write_image(
-                  np_image/max_img_value, img_name, True)
+                  last_key_frame/max_img_value, img_name, True)
 
             # Check pass/fail for crop.
             if run_crop_test:
@@ -290,7 +284,7 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
               if crop_chk_msg:
                 crop_img_name = f'{img_name_stem}_crop.png'
                 failed_crop.append(crop_chk_msg)
-                image_processing_utils.write_image(np_image/max_img_value,
+                image_processing_utils.write_image(last_key_frame/max_img_value,
                                                    crop_img_name, True)
             else:
               logging.debug('Crop test skipped')

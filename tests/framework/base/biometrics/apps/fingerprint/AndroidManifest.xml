@@ -21,7 +21,7 @@
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
 
     <queries>
-        <package android:name="android.server.biometrics.cts" />
+        <package android:name="android.server.biometrics.fingerprint.cts" />
     </queries>
 
     <application>

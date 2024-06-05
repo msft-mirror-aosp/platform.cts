@@ -16,6 +16,8 @@
 
 package android.provider.cts.settings;
 
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -27,9 +29,12 @@ import android.net.Uri;
 import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.provider.Settings.SettingNotFoundException;
+import android.support.test.uiautomator.UiDevice;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.ApiTest;
 
 import com.android.compatibility.common.util.FeatureUtil;
 
@@ -52,7 +57,7 @@ public class Settings_SecureTest {
 
     @Before
     public void setUp() throws Exception {
-        cr = InstrumentationRegistry.getTargetContext().getContentResolver();
+        cr = InstrumentationRegistry.getInstrumentation().getTargetContext().getContentResolver();
         assertNotNull(cr);
         assertSettingsForTests();
     }
@@ -232,5 +237,26 @@ public class Settings_SecureTest {
                 fail("Settings.Secure contains " + name + ": " + c.getString(2));
             }
         }
+    }
+
+    // Test inserting and retrieving a setting that is not predefined in the Settings class
+    @Test
+    @ApiTest(apis = {"android.provider.Setting.Secure#getString"})
+    public void testUnsetSetting() {
+        final UiDevice uiDevice = UiDevice.getInstance(
+                InstrumentationRegistry.getInstrumentation());
+        final String unsetSetting = "some_random_setting";
+        String value = Settings.Secure.getString(cr, unsetSetting);
+        assertNull(value);
+        runWithShellPermissionIdentity(
+                () -> Settings.Secure.putString(cr, unsetSetting, "1"));
+        uiDevice.waitForIdle();
+        value = Settings.Secure.getString(cr, unsetSetting);
+        assertEquals("1", value);
+        runWithShellPermissionIdentity(
+                () -> Settings.Secure.putString(cr, unsetSetting, "0"));
+        uiDevice.waitForIdle();
+        value = Settings.Secure.getString(cr, unsetSetting);
+        assertEquals("0", value);
     }
 }

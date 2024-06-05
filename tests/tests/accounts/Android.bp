@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsAccountManagerTestCases",
+    team: "trendy_team_authentication",
     defaults: ["cts_defaults"],
     static_libs: [
         "CtsAccountTestsCommon",
@@ -41,4 +42,17 @@ android_test {
         ":CtsUnaffiliatedAccountAuthenticators",
     ],
     per_testcase_directory: true,
+}
+
+android_ravenwood_test {
+    name: "CtsAccountManagerTestCasesRavenwood",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.test.rules",
+    ],
+    srcs: [
+        "src/android/accounts/cts/AccountTest.java",
+    ],
+    auto_gen_config: true,
 }

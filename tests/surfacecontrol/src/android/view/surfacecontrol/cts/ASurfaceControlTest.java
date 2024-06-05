@@ -34,6 +34,7 @@ import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setBuffer;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setDamageRegion;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setDataSpace;
+import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setDesiredHdrHeadroom;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setDesiredPresentTime;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setExtendedRangeBrightness;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setFrameTimeline;
@@ -60,6 +61,7 @@ import static android.view.cts.util.FrameCallbackData.nGetFrameTimelines;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -68,7 +70,6 @@ import android.hardware.DataSpace;
 import android.os.SystemClock;
 import android.os.Trace;
 import android.platform.test.annotations.RequiresDevice;
-import android.test.suitebuilder.annotation.LargeTest;
 import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
@@ -83,8 +84,10 @@ import android.view.cts.util.FrameCallbackData.FrameTimeline;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.DisableAnimationRule;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
 import org.junit.Assert;
@@ -100,6 +103,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 @LargeTest
@@ -118,6 +122,9 @@ public class ASurfaceControlTest {
     private static final PixelColor MAGENTA = new PixelColor(Color.MAGENTA);
     private static final PixelColor GREEN = new PixelColor(Color.GREEN);
     private static final PixelColor YELLOW = new PixelColor(Color.YELLOW);
+
+    @Rule
+    public DisableAnimationRule mDisableAnimationRule = new DisableAnimationRule();
 
     @Rule
     public ActivityScenarioRule<ASurfaceControlTestActivity> mActivityRule =
@@ -2091,7 +2098,7 @@ public class ASurfaceControlTest {
         } catch (InterruptedException e) {
             Assert.fail("interrupted");
         }
-        if (!verifySetFrameTimeline(true, mActivity.getSurfaceView().getHolder())) return;
+        if (!verifySetFrameTimeline(false, mActivity.getSurfaceView().getHolder())) return;
         mActivity.verifyScreenshot(
                 new PixelChecker(Color.RED) { //10000
                     @Override
@@ -2397,5 +2404,87 @@ public class ASurfaceControlTest {
                 throw listenerErrors[0];
             }
         }
+    }
+
+    private float getStableHdrSdrRatio(Display display) {
+        float ratio = -1f;
+        float incomingRatio = display.getHdrSdrRatio();
+        long startMillis = SystemClock.uptimeMillis();
+        try {
+            do {
+                ratio = incomingRatio;
+                TimeUnit.MILLISECONDS.sleep(500);
+                incomingRatio = display.getHdrSdrRatio();
+                // Bail if the ratio settled or if it's been way too long.
+            } while (Math.abs(ratio - incomingRatio) > 0.01
+                    && SystemClock.uptimeMillis() - startMillis < 10000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return ratio;
+    }
+
+    @Test
+    public void testSetDesiredHdrHeadroom() throws Exception {
+        mActivity.awaitReadyState();
+        Display display = mActivity.getDisplay();
+        assumeTrue(display.isHdrSdrRatioAvailable());
+
+        final int dataspace = DataSpace.DATASPACE_BT2020_HLG;
+
+        AtomicLong surfaceControlContainer = new AtomicLong();
+
+        final CountDownLatch readyFence = new CountDownLatch(1);
+        ASurfaceControlTestActivity.SurfaceHolderCallback surfaceHolderCallback =
+                new ASurfaceControlTestActivity.SurfaceHolderCallback(
+                        new SurfaceHolderCallback(new BasicSurfaceHolderCallback() {
+                            @Override
+                            public void surfaceCreated(SurfaceHolder holder) {
+                                long surfaceTransaction = nSurfaceTransaction_create();
+                                long surfaceControl = createFromWindow(holder.getSurface());
+                                surfaceControlContainer.set(surfaceControl);
+                                setSolidBuffer(surfaceControl, surfaceTransaction,
+                                        DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT, Color.WHITE);
+                                nSurfaceTransaction_setDataSpace(surfaceControl, surfaceTransaction,
+                                        dataspace);
+                                nSurfaceTransaction_apply(surfaceTransaction);
+                                nSurfaceTransaction_delete(surfaceTransaction);
+                            }
+                        }),
+                        readyFence,
+                        mActivity.getParentFrameLayout().getRootSurfaceControl());
+        mActivity.createSurface(surfaceHolderCallback);
+        try {
+            assertTrue("timeout", readyFence.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Assert.fail("interrupted");
+        }
+
+        float headroom = getStableHdrSdrRatio(display);
+        // Require some small threshold for allowable headroom
+        assumeTrue(headroom > 1.02f);
+        float targetHeadroom = 1.f + (headroom - 1.f) / 2;
+
+        mActivity.runOnUiThread(() -> {
+            long surfaceTransaction = nSurfaceTransaction_create();
+            nSurfaceTransaction_setDesiredHdrHeadroom(
+                    surfaceControlContainer.get(), surfaceTransaction, targetHeadroom);
+            nSurfaceTransaction_apply(surfaceTransaction);
+            nSurfaceTransaction_delete(surfaceTransaction);
+        });
+
+        assertTrue("Headroom restriction is not respected",
+                getStableHdrSdrRatio(display) <= (targetHeadroom + 0.01));
+
+        mActivity.runOnUiThread(() -> {
+            long surfaceTransaction = nSurfaceTransaction_create();
+            nSurfaceTransaction_setDesiredHdrHeadroom(
+                    surfaceControlContainer.get(), surfaceTransaction, 0.f);
+            nSurfaceTransaction_apply(surfaceTransaction);
+            nSurfaceTransaction_delete(surfaceTransaction);
+        });
+
+        assertTrue("Removed headroom restriction is not respected",
+                getStableHdrSdrRatio(display) > targetHeadroom);
     }
 }

@@ -18,13 +18,14 @@ package {
 
 android_test {
     name: "CtsContentCaptureServiceTestCases",
+    team: "trendy_team_machine_learning",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "truth-prebuilt",
+        "truth",
         // TODO: remove once Android migrates to JUnit 4.12,
         // which provides assertThrows
         "testng",

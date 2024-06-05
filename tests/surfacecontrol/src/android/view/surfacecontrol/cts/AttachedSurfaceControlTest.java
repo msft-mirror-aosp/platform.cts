@@ -18,13 +18,15 @@ package android.view.surfacecontrol.cts;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
+import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
 import static android.view.cts.surfacevalidator.BitmapPixelChecker.validateScreenshot;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
@@ -33,6 +35,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.Rect;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
@@ -40,19 +45,22 @@ import android.view.AttachedSurfaceControl;
 import android.view.Gravity;
 import android.view.Surface;
 import android.view.SurfaceControl;
+import android.view.SurfaceControlViewHost;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.cts.surfacevalidator.BitmapPixelChecker;
 import android.widget.FrameLayout;
 
-import androidx.lifecycle.Lifecycle;
+import androidx.annotation.NonNull;
 import androidx.test.core.app.ActivityScenario;
-import androidx.test.filters.LargeTest;
-import androidx.test.filters.RequiresDevice;
+import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -61,16 +69,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntConsumer;
 
-@RunWith(AndroidJUnit4.class)
-@LargeTest
-@SuppressLint("RtlHardcoded")
-@RequiresDevice
+@SmallTest
 public class AttachedSurfaceControlTest {
     private static final String TAG = "AttachedSurfaceControlTest";
     private static final String FIXED_TO_USER_ROTATION_COMMAND =
@@ -82,6 +86,16 @@ public class AttachedSurfaceControlTest {
 
     @Rule
     public TestName mName = new TestName();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public ActivityTestRule<HandleConfigurationActivity> mActivityRule = new ActivityTestRule<>(
+            HandleConfigurationActivity.class);
+
+    private HandleConfigurationActivity mActivity;
+
 
     private static class TransformHintListener implements
             AttachedSurfaceControl.OnBufferTransformHintChangedListener {
@@ -104,6 +118,14 @@ public class AttachedSurfaceControlTest {
                     + " expected=" + expectedOrientation + " transformHint=" + hint);
             Assert.assertEquals("Failed to switch orientation hint=" + hint, orientation,
                     expectedOrientation);
+
+            // Check the callback value matches the call to get the transform hint.
+            int actualTransformHint =
+                    activity.getWindow().getRootSurfaceControl().getBufferTransformHint();
+            Assert.assertEquals(
+                    "Callback " + hint + " doesn't match transform hint=" + actualTransformHint,
+                    hint,
+                    actualTransformHint);
             hintConsumer.accept(hint);
             latch.countDown();
             activity.getWindow().getRootSurfaceControl()
@@ -112,9 +134,11 @@ public class AttachedSurfaceControlTest {
     }
 
     @Before
-    public void setup() {
+    public void setup() throws InterruptedException {
         mOrientationSession = new IgnoreOrientationRequestSession(false /* enable */);
         mWmState = new WindowManagerStateHelper();
+        mActivity = mActivityRule.getActivity();
+        waitForWindowOnTop(mActivity.getWindow());
     }
 
     private void supportRotationCheck() {
@@ -141,47 +165,31 @@ public class AttachedSurfaceControlTest {
         final int[] transformHintResult = new int[2];
         final CountDownLatch[] firstCallback = new CountDownLatch[1];
         final CountDownLatch[] secondCallback = new CountDownLatch[1];
-        try (ActivityScenario<HandleConfigurationActivity> scenario =
-                     ActivityScenario.launch(HandleConfigurationActivity.class)) {
-            scenario.moveToState(Lifecycle.State.RESUMED);
-            scenario.onActivity(activity -> {
-                mWmState.computeState();
-                assumeFalse("Skipping test: display area is ignoring orientation request",
-                        mWmState.isTaskDisplayAreaIgnoringOrientationRequest(
-                                activity.getComponentName()));
-                int requestedOrientation = getRequestedOrientation(activity);
-                TransformHintListener listener = new TransformHintListener(activity,
-                        requestedOrientation, hint -> transformHintResult[0] = hint);
-                firstCallback[0] = listener.latch;
-                activity.getWindow().getRootSurfaceControl()
-                        .addOnBufferTransformHintChangedListener(listener);
-                setRequestedOrientation(activity, requestedOrientation);
-            });
-            // Check we get a callback since the orientation has changed and we expect transform
-            // hint to change.
-            Assert.assertTrue(firstCallback[0].await(3, TimeUnit.SECONDS));
+        mWmState.computeState();
+        assumeFalse("Skipping test: display area is ignoring orientation request",
+                mWmState.isTaskDisplayAreaIgnoringOrientationRequest(
+                        mActivity.getComponentName()));
+        int requestedOrientation = getRequestedOrientation(mActivity);
+        TransformHintListener listener = new TransformHintListener(mActivity,
+                requestedOrientation, hint -> transformHintResult[0] = hint);
+        firstCallback[0] = listener.latch;
+        mActivity.getWindow().getRootSurfaceControl()
+                .addOnBufferTransformHintChangedListener(listener);
+        setRequestedOrientation(mActivity, requestedOrientation);
+        // Check we get a callback since the orientation has changed and we expect transform
+        // hint to change.
+        Assert.assertTrue(firstCallback[0].await(10, TimeUnit.SECONDS));
 
-            // Check the callback value matches the call to get the transform hint.
-            scenario.onActivity(activity -> Assert.assertEquals(transformHintResult[0],
-                    activity.getWindow().getRootSurfaceControl().getBufferTransformHint()));
-
-            scenario.onActivity(activity -> {
-                int requestedOrientation = getRequestedOrientation(activity);
-                TransformHintListener listener = new TransformHintListener(activity,
-                        requestedOrientation, hint -> transformHintResult[1] = hint);
-                secondCallback[0] = listener.latch;
-                activity.getWindow().getRootSurfaceControl()
-                        .addOnBufferTransformHintChangedListener(listener);
-                setRequestedOrientation(activity, requestedOrientation);
-            });
-            // Check we get a callback since the orientation has changed and we expect transform
-            // hint to change.
-            Assert.assertTrue(secondCallback[0].await(3, TimeUnit.SECONDS));
-
-            // Check the callback value matches the call to get the transform hint.
-            scenario.onActivity(activity -> Assert.assertEquals(transformHintResult[1],
-                    activity.getWindow().getRootSurfaceControl().getBufferTransformHint()));
-        }
+        requestedOrientation = getRequestedOrientation(mActivity);
+        TransformHintListener secondListener = new TransformHintListener(mActivity,
+                requestedOrientation, hint -> transformHintResult[1] = hint);
+        secondCallback[0] = secondListener.latch;
+        mActivity.getWindow().getRootSurfaceControl()
+                .addOnBufferTransformHintChangedListener(secondListener);
+        setRequestedOrientation(mActivity, requestedOrientation);
+        // Check we get a callback since the orientation has changed and we expect transform
+        // hint to change.
+        Assert.assertTrue(secondCallback[0].await(10, TimeUnit.SECONDS));
 
         // If the app orientation was changed, we should get a different transform hint
         Assert.assertNotEquals(transformHintResult[0], transformHintResult[1]);
@@ -211,51 +219,41 @@ public class AttachedSurfaceControlTest {
         final int[] transformHintResult = new int[2];
         final CountDownLatch[] firstCallback = new CountDownLatch[1];
         final CountDownLatch[] secondCallback = new CountDownLatch[1];
-        try (ActivityScenario<HandleConfigurationActivity> scenario =
-                     ActivityScenario.launch(HandleConfigurationActivity.class)) {
-            scenario.moveToState(Lifecycle.State.RESUMED);
-            scenario.onActivity(activity -> {
-                mWmState.computeState();
-                assumeFalse("Skipping test: display area is ignoring orientation request",
-                        mWmState.isTaskDisplayAreaIgnoringOrientationRequest(
-                                activity.getComponentName()));
-                if (activity.getResources().getConfiguration().orientation
-                        == ORIENTATION_LANDSCAPE) {
-                    return;
-                }
-                TransformHintListener listener = new TransformHintListener(activity,
-                        ORIENTATION_LANDSCAPE, hint -> transformHintResult[0] = hint);
-                firstCallback[0] = listener.latch;
-                activity.getWindow().getRootSurfaceControl()
-                        .addOnBufferTransformHintChangedListener(listener);
-                setRequestedOrientation(activity, ORIENTATION_LANDSCAPE);
+        mWmState.computeState();
+        assumeFalse("Skipping test: display area is ignoring orientation request",
+                mWmState.isTaskDisplayAreaIgnoringOrientationRequest(
+                        mActivity.getComponentName()));
+        if (mActivity.getResources().getConfiguration().orientation
+                != ORIENTATION_LANDSCAPE) {
+            Log.d(TAG, "Request landscape orientation");
+            TransformHintListener listener = new TransformHintListener(mActivity,
+                    ORIENTATION_LANDSCAPE, hint -> {
+                transformHintResult[0] = hint;
+                Log.d(TAG, "firstListener fired with hint =" + hint);
             });
-
-            // If the device is already in landscape, do nothing.
-            if (firstCallback[0] != null) {
-                Assert.assertTrue(firstCallback[0].await(3, TimeUnit.SECONDS));
-                scenario.onActivity(activity -> Assert.assertEquals(transformHintResult[0],
-                        activity.getWindow().getRootSurfaceControl().getBufferTransformHint()));
-            }
-
-            scenario.onActivity(activity -> {
-                TransformHintListener listener = new TransformHintListener(activity,
-                        ORIENTATION_LANDSCAPE, hint -> transformHintResult[1] = hint);
-                secondCallback[0] = listener.latch;
-                activity.getWindow().getRootSurfaceControl()
-                        .addOnBufferTransformHintChangedListener(listener);
-                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
-            });
-            // Check we get a callback since the orientation has changed and we expect transform
-            // hint to change.
-            Assert.assertTrue(secondCallback[0].await(3, TimeUnit.SECONDS));
-
-            // Check the callback value matches the call to get the transform hint.
-            scenario.onActivity(activity -> Assert.assertEquals(transformHintResult[1],
-                    activity.getWindow().getRootSurfaceControl().getBufferTransformHint()));
+            firstCallback[0] = listener.latch;
+            mActivity.getWindow().getRootSurfaceControl()
+                    .addOnBufferTransformHintChangedListener(listener);
+            setRequestedOrientation(mActivity, ORIENTATION_LANDSCAPE);
+            Assert.assertTrue(firstCallback[0].await(10, TimeUnit.SECONDS));
+        } else {
+            transformHintResult[0] =
+                    mActivity.getWindow().getRootSurfaceControl().getBufferTransformHint();
+            Log.d(TAG, "Skipped request landscape orientation: hint=" + transformHintResult[0]);
         }
 
-        // If the app orientation was changed, we should get a different transform hint
+        TransformHintListener secondListener = new TransformHintListener(mActivity,
+                ORIENTATION_LANDSCAPE, hint -> {
+            transformHintResult[1] = hint;
+            Log.d(TAG, "secondListener fired with hint =" + hint);
+        });
+        secondCallback[0] = secondListener.latch;
+        mActivity.getWindow().getRootSurfaceControl()
+                .addOnBufferTransformHintChangedListener(secondListener);
+        Log.d(TAG, "Requesting reverse landscape");
+        mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
+
+        Assert.assertTrue(secondCallback[0].await(10, TimeUnit.SECONDS));
         Assert.assertNotEquals(transformHintResult[0], transformHintResult[1]);
     }
 
@@ -369,6 +367,156 @@ public class AttachedSurfaceControlTest {
             validateScreenshot(mName, activity[0],
                     new BitmapPixelChecker(Color.GREEN, new Rect(0, 10, 100, 100)),
                     9000 /* expectedMatchingPixels */, Insets.NONE);
+        }
+    }
+
+    private static class ScvhSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
+        CountDownLatch mReadyLatch = new CountDownLatch(1);
+        SurfaceControlViewHost mScvh;
+        final View mView;
+
+        ScvhSurfaceView(Context context, View view) {
+            super(context);
+            getHolder().addCallback(this);
+            mView = view;
+        }
+
+        @Override
+        public void surfaceCreated(@NonNull SurfaceHolder surfaceHolder) {
+            mView.getViewTreeObserver().addOnWindowAttachListener(
+                    new ViewTreeObserver.OnWindowAttachListener() {
+                        @Override
+                        public void onWindowAttached() {
+                            mReadyLatch.countDown();
+                        }
+
+                        @Override
+                        public void onWindowDetached() {
+                        }
+                    });
+            mScvh = new SurfaceControlViewHost(getContext(), getDisplay(), getHostToken());
+            mScvh.setView(mView, getWidth(), getHeight());
+            setChildSurfacePackage(mScvh.getSurfacePackage());
+        }
+
+        @Override
+        public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+
+        }
+
+        @Override
+        public void surfaceDestroyed(@NonNull SurfaceHolder surfaceHolder) {
+
+        }
+
+        public void waitForReady() throws InterruptedException {
+            assertTrue("Failed to wait for ScvhSurfaceView to get added",
+                    mReadyLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
+    public void testGetHostToken() throws Throwable {
+        try (ActivityScenario<TestActivity> scenario =
+                     ActivityScenario.launch(TestActivity.class)) {
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            final ScvhSurfaceView[] scvhSurfaceView = new ScvhSurfaceView[1];
+            final View[] view = new View[1];
+            final Activity[] activity = new Activity[1];
+            scenario.onActivity(a -> {
+                activity[0] = a;
+                view[0] = new View(a);
+                FrameLayout parentLayout = a.getParentLayout();
+                scvhSurfaceView[0] = new ScvhSurfaceView(a, view[0]);
+                parentLayout.addView(scvhSurfaceView[0]);
+
+                countDownLatch.countDown();
+            });
+            assertTrue("Failed to wait for activity to start",
+                    countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+
+            final AttachedSurfaceControl attachedSurfaceControl =
+                    scvhSurfaceView[0].getRootSurfaceControl();
+            assertThat(attachedSurfaceControl.getInputTransferToken())
+                    .isNotEqualTo(null);
+        }
+    }
+
+    /**
+     * Ensure the synced transaction is applied even if the view isn't visible and won't draw a
+     * frame.
+     */
+    @Test
+    public void testSyncTransactionViewNotVisible() throws Throwable {
+        try (ActivityScenario<TestActivity> scenario =
+                     ActivityScenario.launch(TestActivity.class)) {
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            final ScvhSurfaceView[] scvhSurfaceView = new ScvhSurfaceView[1];
+            final View[] view = new View[1];
+            final Activity[] activity = new Activity[1];
+            scenario.onActivity(a -> {
+                activity[0] = a;
+                view[0] = new View(a);
+                FrameLayout parentLayout = a.getParentLayout();
+                scvhSurfaceView[0] = new ScvhSurfaceView(a, view[0]);
+                parentLayout.addView(scvhSurfaceView[0],
+                        new FrameLayout.LayoutParams(100, 100, Gravity.LEFT | Gravity.TOP));
+
+                countDownLatch.countDown();
+            });
+            assertTrue("Failed to wait for activity to start",
+                    countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+
+            scvhSurfaceView[0].waitForReady();
+
+            CountDownLatch committedLatch = new CountDownLatch(1);
+            activity[0].runOnUiThread(() -> {
+                view[0].setVisibility(View.INVISIBLE);
+                SurfaceControl.Transaction transaction = new SurfaceControl.Transaction();
+                transaction.addTransactionCommittedListener(Runnable::run,
+                        committedLatch::countDown);
+                view[0].getRootSurfaceControl().applyTransactionOnDraw(transaction);
+            });
+
+            assertTrue("Failed to receive transaction committed callback for scvh with no view",
+                    committedLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+        }
+    }
+
+    /**
+     * Ensure the synced transaction is applied even if there was nothing new to draw
+     */
+    @Test
+    public void testSyncTransactionNothingToDraw() throws Throwable {
+        try (ActivityScenario<TestActivity> scenario =
+                     ActivityScenario.launch(TestActivity.class)) {
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            final View[] view = new View[1];
+            final Activity[] activity = new Activity[1];
+            scenario.onActivity(a -> {
+                activity[0] = a;
+                view[0] = new View(a);
+                FrameLayout parentLayout = a.getParentLayout();
+                parentLayout.addView(view[0],
+                        new FrameLayout.LayoutParams(100, 100, Gravity.LEFT | Gravity.TOP));
+
+                countDownLatch.countDown();
+            });
+            assertTrue("Failed to wait for activity to start",
+                    countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+
+            CountDownLatch committedLatch = new CountDownLatch(1);
+            activity[0].runOnUiThread(() -> {
+                SurfaceControl.Transaction transaction = new SurfaceControl.Transaction();
+                transaction.addTransactionCommittedListener(Runnable::run,
+                        committedLatch::countDown);
+                view[0].getRootSurfaceControl().applyTransactionOnDraw(transaction);
+                view[0].requestLayout();
+            });
+
+            assertTrue("Failed to receive transaction committed callback for scvh with no view",
+                    committedLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
         }
     }
 }

@@ -17,7 +17,7 @@ from pathlib import Path
 import subprocess
 import queue
 from src.library.main.proto.testapp_protos_pb2 import TestAppIndex, AndroidApp, UsesSdk,\
-    Permission, Activity, IntentFilter, Service, Metadata
+    Permission, Activity, ActivityAlias, IntentFilter, Service, Metadata, Receiver
 
 ELEMENT = "E"
 ATTRIBUTE = "A"
@@ -143,9 +143,11 @@ def parse(manifest_content, file_name):
     android_app.label = application_element.attributes.get("label", "")
     android_app.cross_profile = application_element.attributes.get("crossProfile", "false") == "true"
 
+    parse_activity_aliases(application_element, android_app)
     parse_activities(application_element, android_app)
     parse_services(application_element, android_app)
     parse_metadata(application_element, android_app)
+    parse_receiver(application_element, android_app)
 
     return android_app
 
@@ -188,6 +190,20 @@ def parse_activities(application_element, android_app):
         parse_intent_filters(activity_element, activity)
         android_app.activities.append(activity)
 
+def parse_activity_aliases(application_element, android_app):
+    for activity_alias_element in find_elements(application_element.children, "activity-alias"):
+        activity_alias = ActivityAlias()
+
+        activity_alias.name = activity_alias_element.attributes["name"]
+        if activity_alias.name.startswith("androidx"):
+            continue # Special case: androidx adds non-logging activity-aliases
+
+        activity_alias.exported = activity_alias_element.attributes.get("exported", "false") == "true"
+        activity_alias.permission = activity_alias_element.attributes.get("permission", "")
+
+        parse_intent_filters(activity_alias_element, activity_alias)
+        android_app.activityAliases.append(activity_alias)
+
 def parse_intent_filters(element, parent):
     for intent_filter_element in find_elements(element.children, "intent-filter"):
         intent_filter = IntentFilter()
@@ -217,9 +233,24 @@ def parse_metadata(application_element, android_app):
     for meta_data_element in find_elements(application_element.children, "meta-data"):
         metadata = Metadata()
         metadata.name = meta_data_element.attributes["name"]
-        # This forces every value into a string
-        metadata.value = meta_data_element.attributes["value"]
+
+        if "value" in meta_data_element.attributes:
+            # This forces every value into a string
+            metadata.value = meta_data_element.attributes["value"]
+
         android_app.metadata.append(metadata)
+
+def parse_receiver(application_element, android_app):
+    for receiver_element in find_elements(application_element.children, "receiver"):
+        parse_metadata(receiver_element, android_app)
+
+        receiver = Receiver()
+        receiver.name = receiver_element.attributes["name"]
+        receiver.permission = receiver_element.attributes.get("permission", "")
+        receiver.exported = receiver_element.attributes.get("exported", "false") == "true"
+        parse_metadata(receiver_element, receiver)
+        parse_intent_filters(receiver_element, receiver)
+        android_app.receivers.append(receiver)
 
 def find_single_element(element_collection, element_name):
     for e in element_collection:

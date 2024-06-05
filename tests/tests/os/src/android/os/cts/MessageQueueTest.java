@@ -16,20 +16,33 @@
 
 package android.os.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.MessageQueue;
+import android.os.MessageQueue.IdleHandler;
 import android.os.MessageQueue.OnFileDescriptorEventListener;
 import android.os.ParcelFileDescriptor;
 import android.os.ParcelFileDescriptor.AutoCloseInputStream;
 import android.os.ParcelFileDescriptor.AutoCloseOutputStream;
+import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.system.ErrnoException;
 import android.system.Os;
-import android.os.SystemClock;
-import android.os.MessageQueue.IdleHandler;
-import android.test.AndroidTestCase;
+
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
@@ -38,12 +51,20 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public class MessageQueueTest extends AndroidTestCase {
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+@RunWith(AndroidJUnit4.class)
+public class MessageQueueTest {
+    @Rule
+    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
+            .setProvideMainThread(true).build();
 
     private static final long TIMEOUT = 1000;
+    private static final long TEST_TIMEOUT = 1000;
+    private static final long TEST_INTERVAL = 50;
 
+    @Test
     public void testAddIdleHandler() throws InterruptedException {
-        TestLooperThread looperThread = new TestLooperThread(Test.ADD_IDLE_HANDLER);
+        TestLooperThread looperThread = new TestLooperThread(TestMode.ADD_IDLE_HANDLER);
         looperThread.start();
 
         try {
@@ -55,8 +76,9 @@ public class MessageQueueTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testRemoveIdleHandler() throws InterruptedException {
-        TestLooperThread looperThread = new TestLooperThread(Test.REMOVE_IDLE_HANDLER);
+        TestLooperThread looperThread = new TestLooperThread(TestMode.REMOVE_IDLE_HANDLER);
         looperThread.start();
 
         try {
@@ -68,10 +90,10 @@ public class MessageQueueTest extends AndroidTestCase {
         }
     }
 
-    private enum Test {ADD_IDLE_HANDLER, REMOVE_IDLE_HANDLER}
+    private enum TestMode {ADD_IDLE_HANDLER, REMOVE_IDLE_HANDLER}
 
     /**
-     * {@link HandlerThread} that adds or removes an idle handler depending on the {@link Test}
+     * {@link HandlerThread} that adds or removes an idle handler depending on the {@link TestMode}
      * given. It uses a {@link CountDownLatch} with an initial count of 2. The first count down
      * occurs right before the looper's run thread had started running. The final count down
      * occurs when the idle handler was executed. Tests can call {@link #hasIdleHandlerBeenCalled()}
@@ -79,11 +101,11 @@ public class MessageQueueTest extends AndroidTestCase {
      */
     private static class TestLooperThread extends HandlerThread {
 
-        private final Test mTestMode;
+        private final TestMode mTestMode;
 
         private final CountDownLatch mIdleLatch = new CountDownLatch(2);
 
-        TestLooperThread(Test testMode) {
+        TestLooperThread(TestMode testMode) {
             super("TestLooperThread");
             mTestMode = testMode;
         }
@@ -100,7 +122,7 @@ public class MessageQueueTest extends AndroidTestCase {
                 }
             };
 
-            if (mTestMode == Test.ADD_IDLE_HANDLER) {
+            if (mTestMode == TestMode.ADD_IDLE_HANDLER) {
                 Looper.myQueue().addIdleHandler(idleHandler);
             } else {
                 Looper.myQueue().addIdleHandler(idleHandler);
@@ -123,6 +145,7 @@ public class MessageQueueTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testIsIdle() throws Exception {
         HandlerThread thread = new HandlerThread("testIsIdle");
         thread.start();
@@ -168,6 +191,7 @@ public class MessageQueueTest extends AndroidTestCase {
     /**
      * Use MessageQueue, send message by order
      */
+    @Test
     public void testMessageOrder() throws Exception {
 
         OrderTestHelper tester = new OrderTestHelper() {
@@ -185,12 +209,13 @@ public class MessageQueueTest extends AndroidTestCase {
             }
 
         };
-        tester.doTest(1000, 50);
+        tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
     }
 
     /**
      * Use MessageQueue, send message at front of queue.
      */
+    @Test
     public void testAtFrontOfQueue() throws Exception {
 
         OrderTestHelper tester = new OrderTestHelper() {
@@ -214,9 +239,44 @@ public class MessageQueueTest extends AndroidTestCase {
             }
         };
 
-        tester.doTest(1000, 50);
+        tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
     }
 
+    /**
+     * Use MessageQueue, remove messages.
+     */
+    @Test
+    public void testRemoveMessages() throws Exception {
+
+        OrderTestHelper tester = new OrderTestHelper() {
+            @Override
+            public void init() {
+                super.init();
+                long now = SystemClock.uptimeMillis() + 200;
+                mLastMessage = 4;
+
+                /* Queue up some messages, then remove from the front, the middle and the back. */
+                Object object = new Object();
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(5, object), now + 5);
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(2), now + 2);
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(3), now + 3);
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(4), now + 4);
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(0), now + 0);
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(1), now + 1);
+                mHandler.removeMessages(3, null);
+                mHandler.removeMessages(2, null);
+                mHandler.removeCallbacksAndMessages(object);
+                /* Re-add these messages as OrderTestHelper will be looking for them */
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(2), now + 2);
+                mHandler.sendMessageAtTime(mHandler.obtainMessage(3), now + 3);
+            }
+        };
+        tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
+    }
+
+
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testRegisterFileDescriptorCallbackThrowsWhenFdIsNull() {
         MessageQueue queue = Looper.getMainLooper().getQueue();
         try {
@@ -233,6 +293,8 @@ public class MessageQueueTest extends AndroidTestCase {
         }
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testRegisterFileDescriptorCallbackThrowsWhenCallbackIsNull() throws Exception {
         MessageQueue queue = Looper.getMainLooper().getQueue();
         ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
@@ -247,6 +309,8 @@ public class MessageQueueTest extends AndroidTestCase {
         }
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testUnregisterFileDescriptorCallbackThrowsWhenFdIsNull() throws Exception {
         MessageQueue queue = Looper.getMainLooper().getQueue();
         try {
@@ -257,6 +321,8 @@ public class MessageQueueTest extends AndroidTestCase {
         }
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testUnregisterFileDescriptorCallbackDoesNothingWhenFdNotRegistered()
             throws Exception {
         MessageQueue queue = Looper.getMainLooper().getQueue();
@@ -267,6 +333,8 @@ public class MessageQueueTest extends AndroidTestCase {
         }
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testFileDescriptorCallbacks() throws Throwable {
         // Prepare a special looper that we can catch exceptions from.
         AssertableHandlerThread thread = new AssertableHandlerThread();
@@ -398,6 +466,8 @@ public class MessageQueueTest extends AndroidTestCase {
      *
      * This test exercises special logic in Looper.cpp for EPOLL_CTL_DEL handling EBADF.
      */
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testPathologicalFileDescriptorReuseCallbacks1() throws Throwable {
         // Prepare a special looper that we can catch exceptions from.
         AssertableHandlerThread thread = new AssertableHandlerThread();
@@ -477,6 +547,8 @@ public class MessageQueueTest extends AndroidTestCase {
      *
      * This test exercises special logic in Looper.cpp for EPOLL_CTL_DEL handling ENOENT.
      */
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testPathologicalFileDescriptorReuseCallbacks2() throws Throwable {
         // Prepare a special looper that we can catch exceptions from.
         AssertableHandlerThread thread = new AssertableHandlerThread();
@@ -566,6 +638,8 @@ public class MessageQueueTest extends AndroidTestCase {
      * ENOENT and fallback to EPOLL_CTL_ADD as well as sequence number checks when removing
      * the fd after the callback returns.
      */
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testPathologicalFileDescriptorReuseCallbacks3() throws Throwable {
         // Prepare a special looper that we can catch exceptions from.
         AssertableHandlerThread thread = new AssertableHandlerThread();
@@ -652,6 +726,8 @@ public class MessageQueueTest extends AndroidTestCase {
      * This test exercises special logic in Looper.cpp for rebuilding the epoll set
      * in case it contains a file descriptor which has been closed and cannot be removed.
      */
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testPathologicalFileDescriptorReuseCallbacks4() throws Throwable {
         // Prepare a special looper that we can catch exceptions from.
         ParcelFileDescriptor dup = null;
@@ -715,6 +791,7 @@ public class MessageQueueTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testSyncBarriers() throws Exception {
         OrderTestHelper tester = new OrderTestHelper() {
             private int mBarrierToken1;
@@ -757,9 +834,38 @@ public class MessageQueueTest extends AndroidTestCase {
             }
         };
 
-        tester.doTest(1000, 50);
+        tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
     }
 
+    /**
+     * Test that async messages are delivered, in order, even when submitted out of order.
+     * Also ensures that we don't miss wake-ups in next() when we enqueue async messages
+     * and a barrier is present.
+     */
+    @Test
+    public void testLateSyncBarriers() throws Exception {
+        OrderTestHelper tester = new OrderTestHelper() {
+            @Override
+            public void init() {
+                super.init();
+                mLastMessage = 1;
+                long now = SystemClock.uptimeMillis() + 100;
+
+                sendAsyncMessageAtTime(1, now + 4);
+                sendAsyncMessageAtTime(0, now + 2);
+            }
+
+            private void sendAsyncMessageAtTime(int what, long when) {
+                Message msg = mHandler.obtainMessage(what);
+                msg.setAsynchronous(true);
+                mHandler.sendMessageAtTime(msg, when);
+            }
+        };
+
+        tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
+    }
+
+    @Test
     public void testReleaseSyncBarrierThrowsIfTokenNotValid() throws Exception {
         MessageQueue queue = Looper.getMainLooper().getQueue();
 

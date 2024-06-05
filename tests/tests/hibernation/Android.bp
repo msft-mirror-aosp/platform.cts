@@ -18,12 +18,14 @@ package {
 
 android_test {
     name: "CtsHibernationTestCases",
+    team: "trendy_team_android_go",
     defaults: [
         "cts_defaults",
         "mts-target-sdk-version-current",
     ],
     compile_multilib: "both",
     static_libs: [
+        "android.content.pm.flags-aconfig-java",
         "androidx.test.core",
         "androidx.test.ext.junit",
         "androidx.test.rules",
@@ -31,7 +33,7 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "testng",
-        "truth-prebuilt",
+        "truth",
         "guava",
         "junit",
         "hamcrest-library",
@@ -47,6 +49,7 @@ android_test {
         "cts",
         "general-tests",
         "mts-permission",
+        "mcts-permission",
     ],
     sdk_version: "test_current",
     libs: [

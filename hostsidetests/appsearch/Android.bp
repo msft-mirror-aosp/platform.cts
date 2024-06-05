@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsAppSearchHostTestCases",
+    team: "trendy_team_appsearch",
     defaults: ["cts_defaults"],
     static_libs: [
         "cts-statsd-atom-host-test-utils",
@@ -29,7 +30,7 @@ java_test_host {
         "tools-common-prebuilt",
         "cts-tradefed",
         "tradefed",
-        "truth-prebuilt",
+        "truth",
     ],
     test_suites: [
         "cts",
@@ -53,6 +54,7 @@ android_test_helper_app {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "testng",
+        "service-appsearch-for-tests",
     ],
     srcs: [
         "test-apps/AppSearchHostTestHelperA/src/**/*.java",

@@ -28,19 +28,21 @@ import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUti
 import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUtils.filterWindowsChangedWithChangeTypes;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.findWindowByTitleWithList;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.getActivityTitle;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.supportsMultiDisplay;
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.dispatchGesture;
 import static android.accessibilityservice.cts.utils.MultiProcessUtils.ACCESSIBILITY_SERVICE_STATE;
+import static android.accessibilityservice.cts.utils.MultiProcessUtils.ACCESSIBILITY_STATE;
 import static android.accessibilityservice.cts.utils.MultiProcessUtils.EXTRA_ENABLED;
 import static android.accessibilityservice.cts.utils.MultiProcessUtils.EXTRA_ENABLED_SERVICES;
 import static android.accessibilityservice.cts.utils.MultiProcessUtils.SEPARATE_PROCESS_ACTIVITY_TITLE;
 import static android.accessibilityservice.cts.utils.MultiProcessUtils.TOUCH_EXPLORATION_STATE;
 import static android.accessibilityservice.cts.utils.WindowCreationUtils.TOP_WINDOW_TITLE;
 import static android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES;
+import static android.app.UiAutomation.FLAG_DONT_USE_ACCESSIBILITY;
 import static android.companion.AssociationRequest.DEVICE_PROFILE_APP_STREAMING;
 import static android.content.pm.PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED;
@@ -62,6 +64,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
@@ -97,11 +100,16 @@ import android.graphics.PixelFormat;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.drawable.Icon;
+import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.hardware.display.VirtualDisplayConfig;
 import android.media.ImageReader;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.SparseArray;
@@ -123,13 +131,19 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.Configurator;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.TestUtils;
+import com.android.server.accessibility.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -140,6 +154,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -212,7 +227,8 @@ public class AccessibilityDisplayProxyTest {
             "android.accessibilityservice.cts";
 
     private static Instrumentation sInstrumentation;
-    private static UiAutomation sUiAutomation;
+    private static UiDevice sUiDevice;
+    private  UiAutomation mUiAutomation;
     private static String sEnabledServices;
     private static RoleManager sRoleManager;
     // The manager representing the app registering/unregistering the proxy.
@@ -224,12 +240,14 @@ public class AccessibilityDisplayProxyTest {
     private MyA11yProxy mA11yProxy;
     private int mVirtualDisplayId;
     private VirtualDisplay mVirtualDisplay;
+    private ActivityScenario<ProxyDisplayActivity> mProxiedVirtualDisplayActivityScenario;
     private AccessibilityKeyEventTestActivity mProxiedVirtualDisplayActivity;
     private CharSequence mProxiedVirtualDisplayActivityTitle;
 
     // Activity used for checking accessibility and input focus behavior. An activity in a separate
     // process is not required, since touch exploration is enabled for both the proxy and non-proxy
     // i.e. the AccessibilityManagers have the same state.
+    private ActivityScenario<NonProxyActivity> mNonProxiedConcurrentActivityScenario;
     private AccessibilityKeyEventTestActivity mNonProxiedConcurrentActivity;
 
     private Intent mSeparateProcessActivityIntent = new Intent(Intent.ACTION_MAIN)
@@ -247,6 +265,10 @@ public class AccessibilityDisplayProxyTest {
     @Rule
     public FakeAssociationRule mFakeAssociationRule = new FakeAssociationRule();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private ListenerChangeBroadcastReceiver mReceiver =
             new ListenerChangeBroadcastReceiver();
 
@@ -254,21 +276,19 @@ public class AccessibilityDisplayProxyTest {
             mNonProxyServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
             StubProxyConcurrentAccessibilityService.class, false);
 
-    private final ActivityTestRule<NonProxyActivity> mNonProxyActivityRule =
-            new ActivityTestRule<>(NonProxyActivity.class, false, false);
-
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
 
     @Rule
     public final RuleChain mRuleChain = RuleChain
             .outerRule(mNonProxyServiceRule)
-            .around(mNonProxyActivityRule)
             .around(mDumpOnFailureRule);
 
     @BeforeClass
     public static void oneTimeSetup() {
+        Configurator.getInstance().setUiAutomationFlags(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
+        sUiDevice = UiDevice.getInstance(sInstrumentation);
         // Save enabled accessibility services before disabling them so they can be re-enabled after
         // the test.
         sEnabledServices = Settings.Secure.getString(
@@ -278,11 +298,6 @@ public class AccessibilityDisplayProxyTest {
         // that depends on which services are enabled.
         InstrumentedAccessibilityService.disableAllServices();
 
-        sUiAutomation =
-                sInstrumentation.getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
-        final AccessibilityServiceInfo info = sUiAutomation.getServiceInfo();
-        info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
-        sUiAutomation.setServiceInfo(info);
         sRoleManager = sInstrumentation.getContext().getSystemService(RoleManager.class);
         runWithShellPermissionIdentity(() -> sRoleManager.setBypassingRoleQualification(true));
     }
@@ -300,12 +315,17 @@ public class AccessibilityDisplayProxyTest {
         final Context context = sInstrumentation.getContext();
         assumeTrue(supportsMultiDisplay(context));
         final PackageManager packageManager = context.getPackageManager();
-        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP));
         // TODO(b/261155110): Re-enable tests once freeform mode is supported in Virtual Display.
         assumeFalse("Skipping test: VirtualDisplay window policy doesn't support freeform.",
                 packageManager.hasSystemFeature(FEATURE_FREEFORM_WINDOW_MANAGEMENT));
+        mUiAutomation =
+                sInstrumentation.getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+        final AccessibilityServiceInfo info = mUiAutomation.getServiceInfo();
+        info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
+        mUiAutomation.setServiceInfo(info);
         mA11yManager = context.getSystemService(AccessibilityManager.class);
         mVirtualDeviceManager = context.getSystemService(VirtualDeviceManager.class);
+        assumeNotNull(mVirtualDeviceManager);
         mVirtualDisplay = createVirtualDeviceAndLaunchVirtualDisplay();
         assertThat(mVirtualDisplay).isNotNull();
         mVirtualDisplayId = mVirtualDisplay.getDisplay().getDisplayId();
@@ -315,25 +335,35 @@ public class AccessibilityDisplayProxyTest {
         proxyInfo.eventTypes = AccessibilityEvent.TYPES_ALL_MASK;
         infos.add(proxyInfo);
         mA11yProxy = new MyA11yProxy(mVirtualDisplayId, Executors.newSingleThreadExecutor(), infos);
-        mProxiedVirtualDisplayActivity = launchActivityOnVirtualDisplay(
-                mVirtualDisplay.getDisplay().getDisplayId());
-        mProxiedVirtualDisplayActivityTitle = getActivityTitle(sInstrumentation,
-                mProxiedVirtualDisplayActivity);
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchDisplayId(mVirtualDisplay.getDisplay().getDisplayId());
+
+        mUiAutomation.adoptShellPermissionIdentity();
+        mProxiedVirtualDisplayActivityScenario = ActivityScenario.launch(
+                ProxyDisplayActivity.class, options.toBundle())
+                .moveToState(Lifecycle.State.RESUMED);
+        mUiAutomation.dropShellPermissionIdentity();
+        mProxiedVirtualDisplayActivityScenario.onActivity(activity -> {
+            mProxiedVirtualDisplayActivity = activity;
+            mProxiedVirtualDisplayActivityTitle = activity.getTitle();
+        });
         mProxyActivityA11yManager =
                 mProxiedVirtualDisplayActivity.getSystemService(AccessibilityManager.class);
         addAppStreamingRole();
+        sUiDevice.waitForIdle();
     }
 
     @After
     public void tearDown() throws TimeoutException {
-        sUiAutomation.adoptShellPermissionIdentity(
-                MANAGE_ACCESSIBILITY, CREATE_VIRTUAL_DEVICE, WAKE_LOCK);
+        if (mUiAutomation != null) {
+            mUiAutomation.adoptShellPermissionIdentity(
+                    MANAGE_ACCESSIBILITY, CREATE_VIRTUAL_DEVICE, WAKE_LOCK);
+        }
         if (mA11yProxy != null) {
             mA11yManager.unregisterDisplayProxy(mA11yProxy);
         }
-        if (mProxiedVirtualDisplayActivity != null) {
-            mProxiedVirtualDisplayActivity.runOnUiThread(
-                    () -> mProxiedVirtualDisplayActivity.finish());
+        if (mProxiedVirtualDisplayActivityScenario != null) {
+            mProxiedVirtualDisplayActivityScenario.close();
         }
         if (mVirtualDisplay != null) {
             mVirtualDisplay.release();
@@ -344,9 +374,14 @@ public class AccessibilityDisplayProxyTest {
         if (mImageReader != null) {
             mImageReader.close();
         }
-        if (mNonProxiedConcurrentActivity != null)      {
-            mNonProxiedConcurrentActivity.runOnUiThread(
-                    () -> mNonProxiedConcurrentActivity.finish());
+        if (mNonProxiedConcurrentActivityScenario != null)      {
+            mNonProxiedConcurrentActivityScenario.close();
+        }
+        try {
+            sInstrumentation.getContext().unregisterReceiver(mReceiver);
+        } catch (IllegalArgumentException e) {
+            // Ignore this exception when unregistering fails. The test has failed before the
+            // receiver could be registered.
         }
         removeAppStreamingRole();
     }
@@ -355,7 +390,7 @@ public class AccessibilityDisplayProxyTest {
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testRegisterDisplayProxy_withPermission_successfullyRegisters() {
         removeAppStreamingRole();
-        runWithShellPermissionIdentity(sUiAutomation,
+        runWithShellPermissionIdentity(mUiAutomation,
                 () -> assertThat(mA11yManager.registerDisplayProxy(mA11yProxy)).isTrue(),
                 CREATE_VIRTUAL_DEVICE, MANAGE_ACCESSIBILITY);
     }
@@ -363,7 +398,7 @@ public class AccessibilityDisplayProxyTest {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testRegisterDisplayProxy_withStreamingRole_successfullyRegisters() {
-        runWithShellPermissionIdentity(sUiAutomation,
+        runWithShellPermissionIdentity(mUiAutomation,
                 () -> assertThat(mA11yManager.registerDisplayProxy(mA11yProxy)).isTrue(),
                 CREATE_VIRTUAL_DEVICE);
     }
@@ -379,7 +414,7 @@ public class AccessibilityDisplayProxyTest {
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testRegisterDisplayProxy_withoutA11yPermissionOrRole_throwsSecurityException() {
         removeAppStreamingRole();
-        runWithShellPermissionIdentity(sUiAutomation,
+        runWithShellPermissionIdentity(mUiAutomation,
                 () -> assertThrows(SecurityException.class, () ->
                 mA11yManager.registerDisplayProxy(mA11yProxy)), CREATE_VIRTUAL_DEVICE);
     }
@@ -387,7 +422,7 @@ public class AccessibilityDisplayProxyTest {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testRegisterDisplayProxy_withoutDevicePermission_throwsSecurityException() {
-        runWithShellPermissionIdentity(sUiAutomation,
+        runWithShellPermissionIdentity(mUiAutomation,
                 () -> assertThrows(SecurityException.class, () ->
                         mA11yManager.registerDisplayProxy(mA11yProxy)), MANAGE_ACCESSIBILITY);
     }
@@ -395,10 +430,10 @@ public class AccessibilityDisplayProxyTest {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testRegisterDisplayProxy_alreadyProxied_throwsIllegalArgumentException() {
-        runWithShellPermissionIdentity(sUiAutomation,
+        runWithShellPermissionIdentity(mUiAutomation,
                 () -> assertThat(mA11yManager.registerDisplayProxy(mA11yProxy)).isTrue());
 
-        runWithShellPermissionIdentity(sUiAutomation, () ->
+        runWithShellPermissionIdentity(mUiAutomation, () ->
                 assertThrows(IllegalArgumentException.class, () ->
                         mA11yManager.registerDisplayProxy(mA11yProxy)));
     }
@@ -409,33 +444,44 @@ public class AccessibilityDisplayProxyTest {
         final MyA11yProxy invalidProxy = new MyA11yProxy(
                 Display.DEFAULT_DISPLAY, Executors.newSingleThreadExecutor(), new ArrayList<>());
         try {
-            runWithShellPermissionIdentity(sUiAutomation, () ->
+            runWithShellPermissionIdentity(mUiAutomation, () ->
                     assertThrows(SecurityException.class, () ->
                     mA11yManager.registerDisplayProxy(invalidProxy)));
         } finally {
-            runWithShellPermissionIdentity(sUiAutomation, () ->
+            runWithShellPermissionIdentity(mUiAutomation, () ->
                     mA11yManager.unregisterDisplayProxy(invalidProxy));
         }
     }
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
-    public void testRegisterAccessibilityProxy_withNonDeviceDisplay_throwsSecurityException() {
+    public void testRegisterAccessibilityProxy_withNonDeviceDisplay_throwsSecurityException()
+            throws Exception {
         try (DisplayUtils.VirtualDisplaySession displaySession =
                      new DisplayUtils.VirtualDisplaySession()) {
             final int virtualDisplayId =
                     displaySession.createDisplayWithDefaultDisplayMetricsAndWait(
                             sInstrumentation.getContext(), false).getDisplayId();
+            // Launches an activity on virtual display to guarantee the display is tracked by
+            // accessibility.
+            final Activity activityOnVirtualDisplay =
+                    launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(sInstrumentation,
+                            mUiAutomation,
+                            NonProxyActivity.class,
+                            virtualDisplayId);
 
             final MyA11yProxy invalidProxy = new MyA11yProxy(
                     virtualDisplayId, Executors.newSingleThreadExecutor(), new ArrayList<>());
             try {
-                runWithShellPermissionIdentity(sUiAutomation, () ->
+                runWithShellPermissionIdentity(mUiAutomation, () ->
                         assertThrows(SecurityException.class, () ->
                                 mA11yManager.registerDisplayProxy(invalidProxy)));
             } finally {
-                runWithShellPermissionIdentity(sUiAutomation, () ->
+                runWithShellPermissionIdentity(mUiAutomation, () ->
                         mA11yManager.unregisterDisplayProxy(invalidProxy));
+                if (activityOnVirtualDisplay != null) {
+                    activityOnVirtualDisplay.finish();
+                }
             }
         }
     }
@@ -443,7 +489,7 @@ public class AccessibilityDisplayProxyTest {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#unregisterDisplayProxy"})
     public void testUnregisterDisplayProxy_withoutDevicePermission_throwsSecurityException() {
-        runWithShellPermissionIdentity(sUiAutomation,
+        runWithShellPermissionIdentity(mUiAutomation,
                 () -> assertThrows(SecurityException.class, () ->
                         mA11yManager.unregisterDisplayProxy(mA11yProxy)), MANAGE_ACCESSIBILITY);
     }
@@ -452,7 +498,7 @@ public class AccessibilityDisplayProxyTest {
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#unregisterDisplayProxy"})
     public void testUnregisterDisplayProxy_withoutA11yPermissionOrRole_throwsSecurityException() {
         removeAppStreamingRole();
-        runWithShellPermissionIdentity(sUiAutomation,
+        runWithShellPermissionIdentity(mUiAutomation,
                 () -> assertThrows(SecurityException.class, () ->
                         mA11yManager.unregisterDisplayProxy(mA11yProxy)), CREATE_VIRTUAL_DEVICE);
     }
@@ -461,7 +507,7 @@ public class AccessibilityDisplayProxyTest {
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#unregisterDisplayProxy"})
     public void testUnregisterDisplayProxy_withPermission_successfullyUnregisters() {
         removeAppStreamingRole();
-        runWithShellPermissionIdentity(sUiAutomation, () -> {
+        runWithShellPermissionIdentity(mUiAutomation, () -> {
             assertThat(mA11yManager.registerDisplayProxy(mA11yProxy)).isTrue();
             assertThat(mA11yManager.unregisterDisplayProxy(mA11yProxy)).isTrue();
         }, CREATE_VIRTUAL_DEVICE, MANAGE_ACCESSIBILITY);
@@ -470,7 +516,7 @@ public class AccessibilityDisplayProxyTest {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testUnregisterAccessibilityProxy_withStreamingRole_successfullyUnRegisters() {
-        runWithShellPermissionIdentity(sUiAutomation, () -> {
+        runWithShellPermissionIdentity(mUiAutomation, () -> {
             assertThat(mA11yManager.registerDisplayProxy(mA11yProxy)).isTrue();
             assertThat(mA11yManager.unregisterDisplayProxy(mA11yProxy)).isTrue();
         }, CREATE_VIRTUAL_DEVICE);
@@ -481,7 +527,7 @@ public class AccessibilityDisplayProxyTest {
     public void testUnregisterDisplayProxy_withPermission_failsToUnregister() {
         final MyA11yProxy invalidProxy = new MyA11yProxy(
                 INVALID_DISPLAY_ID, Executors.newSingleThreadExecutor(), new ArrayList<>());
-        runWithShellPermissionIdentity(sUiAutomation, () -> {
+        runWithShellPermissionIdentity(mUiAutomation, () -> {
             assertThat(mA11yManager.unregisterDisplayProxy(invalidProxy)).isFalse();
         });
     }
@@ -519,14 +565,14 @@ public class AccessibilityDisplayProxyTest {
             mProxiedVirtualDisplayActivity.setExpectedKeyCode(KeyEvent.KEYCODE_DPAD_UP);
 
             // The proxy activity should not receive the key event.
-            sUiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_DPAD_UP);
+            mUiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_DPAD_UP);
             assertThrows(AssertionError.class, () -> PollingCheck.waitFor(()
                     -> mProxiedVirtualDisplayActivity.mReceivedKeyCode));
 
-            mNonProxiedConcurrentActivity = launchProxyConcurrentActivityOnDefaultDisplay(service);
+            mNonProxiedConcurrentActivity = launchProxyConcurrentActivityOnDefaultDisplay();
             mNonProxiedConcurrentActivity.setExpectedKeyCode(KeyEvent.KEYCODE_DPAD_UP);
             // The non-proxy activity on the default display should receive the key event.
-            sUiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_DPAD_UP);
+            mUiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_DPAD_UP);
             PollingCheck.waitFor(() -> mNonProxiedConcurrentActivity.mReceivedKeyCode);
         } finally {
             service.disableSelfAndRemove();
@@ -550,8 +596,8 @@ public class AccessibilityDisplayProxyTest {
                 "test", "test", p);
         mA11yManager.registerSystemAction(testAction, TEST_SYSTEM_ACTION_ID);
 
-        sUiAutomation.executeAndWaitForEvent(
-                () -> sUiAutomation.performGlobalAction(TEST_SYSTEM_ACTION_ID),
+        mUiAutomation.executeAndWaitForEvent(
+                () -> mUiAutomation.performGlobalAction(TEST_SYSTEM_ACTION_ID),
                 (event) -> displayFocused(event, 0), TIMEOUT_MS);
 
         mA11yManager.unregisterSystemAction(TEST_SYSTEM_ACTION_ID);
@@ -585,7 +631,7 @@ public class AccessibilityDisplayProxyTest {
             final DisplayMetrics metrics = new DisplayMetrics();
             windowManager.getDefaultDisplay().getRealMetrics(metrics);
             assumeTrue(areaOfActivityWindowOnDisplay.width() > MIN_SCREEN_WIDTH_TAP_PX);
-            sUiAutomation.executeAndWaitForEvent(() -> {
+            mUiAutomation.executeAndWaitForEvent(() -> {
                 final int xOnScreen =
                         areaOfActivityWindowOnDisplay.centerX();
                 final int yOnScreen =
@@ -663,7 +709,7 @@ public class AccessibilityDisplayProxyTest {
         try {
             registerProxyAndEnableTouchExploration();
             // Launch an activity on the default display.
-            mNonProxiedConcurrentActivity = launchProxyConcurrentActivityOnDefaultDisplay(service);
+            mNonProxiedConcurrentActivity = launchProxyConcurrentActivityOnDefaultDisplay();
             final EditText serviceEditText = mNonProxiedConcurrentActivity.findViewById(
                     R.id.editText);
             setAccessibilityFocus(serviceEditText);
@@ -677,6 +723,7 @@ public class AccessibilityDisplayProxyTest {
         }
     }
     @Test
+    @FlakyTest
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#findFocus(int)"})
     public void testGetFocus_proxySetsAccessibilityFocus_serviceGetsNullFocus() throws Exception {
         final StubProxyConcurrentAccessibilityService service =
@@ -763,7 +810,7 @@ public class AccessibilityDisplayProxyTest {
         waitOn(mA11yProxy.mWaitObject, ()-> mA11yProxy.mReceivedEvent.get(), TIMEOUT_MS,
                 "WINDOWS_CHANGE_ACCESSIBILITY_FOCUSED received");
 
-        WindowCreationUtils.removeWindow(sUiAutomation, sInstrumentation,
+        WindowCreationUtils.removeWindow(mUiAutomation, sInstrumentation,
                 mProxiedVirtualDisplayActivity, topWindowView);
     }
 
@@ -789,7 +836,7 @@ public class AccessibilityDisplayProxyTest {
             assertThat(proxyA11yFocusedNode).isEqualTo(proxyEditText.createAccessibilityNodeInfo());
 
             // Launch an activity on the default display.
-            mNonProxiedConcurrentActivity = launchProxyConcurrentActivityOnDefaultDisplay(service);
+            mNonProxiedConcurrentActivity = launchProxyConcurrentActivityOnDefaultDisplay();
 
             final EditText serviceEditText =
                     mNonProxiedConcurrentActivity.findViewById(R.id.editText);
@@ -829,7 +876,7 @@ public class AccessibilityDisplayProxyTest {
         try {
             registerProxyAndWaitForConnection();
             // Launch an activity on the default display.
-            mNonProxiedConcurrentActivity = launchProxyConcurrentActivityOnDefaultDisplay(service);
+            mNonProxiedConcurrentActivity = launchProxyConcurrentActivityOnDefaultDisplay();
             // Make sure that the default display is the top-focused display.
             setTopFocusedDisplayIfNeeded(Display.DEFAULT_DISPLAY, mNonProxiedConcurrentActivity,
                     service.getWindows());
@@ -856,7 +903,7 @@ public class AccessibilityDisplayProxyTest {
         // Try to trigger touch exploration, but fail.
         final MotionEvent downEvent = getDownMotionEvent(mProxiedVirtualDisplayActivityTitle,
                 mA11yProxy.getWindows(), mVirtualDisplayId);
-        sUiAutomation.injectInputEventToInputFilter(downEvent);
+        mUiAutomation.injectInputEventToInputFilter(downEvent);
 
         assertThrows("The TYPE_TOUCH_INTERACTION_START event was received for a display"
                 + " with disabled input.", AssertionError.class, () ->
@@ -873,7 +920,7 @@ public class AccessibilityDisplayProxyTest {
         try {
             registerProxyAndWaitForConnection();
             // Launch an activity on the default display.
-            mNonProxiedConcurrentActivity = launchProxyConcurrentActivityOnDefaultDisplay(service);
+            mNonProxiedConcurrentActivity = launchProxyConcurrentActivityOnDefaultDisplay();
             service.setEventFilter(filterForEventType(
                     AccessibilityEvent.TYPE_TOUCH_INTERACTION_START));
 
@@ -881,7 +928,7 @@ public class AccessibilityDisplayProxyTest {
             final MotionEvent downEvent = getDownMotionEvent(getActivityTitle(sInstrumentation,
                             mNonProxiedConcurrentActivity), service.getWindows(),
                     mNonProxiedConcurrentActivity.getDisplayId());
-            sUiAutomation.injectInputEventToInputFilter(downEvent);
+            mUiAutomation.injectInputEventToInputFilter(downEvent);
 
             service.waitOnEvent(TIMEOUT_MS,
                     "Expected event was not received within " + TIMEOUT_MS + " ms");
@@ -946,12 +993,90 @@ public class AccessibilityDisplayProxyTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS)
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityManager"
+            + ".AccessibilityServicesStateChangeListener#onAccessibilityServicesStateChanged"})
+    public void onAccessibilityServicesStateChanged_updateProxyEnabledList_closeVirtualDevice_notifiesProxiedApp() {
+        // Test that the proxy activity is notified that the services state is changed after
+        // a proxy update of installed and enabled services.
+        registerProxyAndWaitForConnection();
+        final MyAccessibilityServicesStateChangeListener listener =
+                new MyAccessibilityServicesStateChangeListener(0, 0);
+        mProxyActivityA11yManager.addAccessibilityServicesStateChangeListener(listener);
+        try {
+            mA11yProxy.setInstalledAndEnabledServices(getTestAccessibilityServiceInfoAsList());
+
+            runWithShellPermissionIdentity(() -> mVirtualDevice.close());
+
+            waitOn(listener.mWaitObject, () -> listener.mAtomicBoolean.get(), TIMEOUT_MS,
+                    "Services state listener should be called when proxy installed and"
+                            + "virtual device is closed.");
+        } finally {
+            mProxyActivityA11yManager.removeAccessibilityServicesStateChangeListener(listener);
+        }
+    }
+
+    @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager"
             + ".TouchExplorationStateChangeListener#onTouchExplorationStateChanged"})
     public void onTouchExplorationStateChanged_enableProxyTouchExploration_notifiesProxiedApp() {
         // Test that the proxy activity is notified that touch exploration is enabled after
         // proxy registration.
         registerProxyAndEnableTouchExploration();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityManager"
+            + ".AccessibilityStateChangeListener#onAccessibilityStateChanged"})
+    public void onAccessibilityStateChanged_registerProxy_isCalledForProxiedApp() {
+        final MyAccessibilityStateChangeListener listener =
+                new MyAccessibilityStateChangeListener(/* initialState */ true);
+        try {
+            mProxyActivityA11yManager.addAccessibilityStateChangeListener(listener);
+            mUiAutomation =
+                    sInstrumentation.getUiAutomation(FLAG_DONT_USE_ACCESSIBILITY);
+            // Ensure a11y is disabled when FLAG_DONT_USE_ACCESSIBILITY is set.
+            waitOn(listener.mWaitObject, ()-> !listener.mAtomicBoolean.get(), TIMEOUT_MS,
+                    "Accessibility state change listener called");
+
+            runWithShellPermissionIdentity(mUiAutomation,
+                    () -> mA11yManager.registerDisplayProxy(mA11yProxy));
+
+            waitOn(listener.mWaitObject, ()-> listener.mAtomicBoolean.get(), TIMEOUT_MS,
+                    "Accessibility state change listener called");
+        } finally {
+            mProxyActivityA11yManager.removeAccessibilityStateChangeListener(listener);
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityManager"
+            + ".AccessibilityStateChangeListener#onAccessibilityStateChanged"})
+    public void onAccessibilityStateChanged_registerProxy_isNotCalledForNonProxiedApp()
+            throws TimeoutException, InterruptedException {
+        try {
+            registerBroadcastReceiverForAction(ACCESSIBILITY_STATE);
+            startActivityInSeparateProcess();
+            final CountDownLatch a11yDisabled = new CountDownLatch(1);
+            mReceiver.setLatchAndExpectedEnabledResult(a11yDisabled,
+                    ACCESSIBILITY_STATE,
+                    false);
+            mUiAutomation =
+                    sInstrumentation.getUiAutomation(FLAG_DONT_USE_ACCESSIBILITY);
+            // Ensure a11y is disabled when FLAG_DONT_USE_ACCESSIBILITY is set.
+            assertThat(a11yDisabled.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+            final CountDownLatch a11yEnabled = new CountDownLatch(1);
+            mReceiver.setLatchAndExpectedEnabledResult(a11yEnabled,
+                    ACCESSIBILITY_STATE,
+                    true);
+
+            runWithShellPermissionIdentity(mUiAutomation,
+                    () -> mA11yManager.registerDisplayProxy(mA11yProxy));
+
+            assertThat(a11yEnabled.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isFalse();
+        } finally {
+            stopSeparateProcess();
+        }
     }
 
     @Test
@@ -978,7 +1103,7 @@ public class AccessibilityDisplayProxyTest {
                             NON_PROXY_SERVICE_TIMEOUT);
             mProxyActivityA11yManager.addAccessibilityServicesStateChangeListener(listener);
             try {
-                runWithShellPermissionIdentity(sUiAutomation, () ->
+                runWithShellPermissionIdentity(mUiAutomation, () ->
                         mA11yManager.unregisterDisplayProxy(mA11yProxy));
                 waitOn(listener.mWaitObject, () -> listener.mAtomicBoolean.get(), TIMEOUT_MS,
                         "Services state change listener should be called when proxy is"
@@ -1017,7 +1142,7 @@ public class AccessibilityDisplayProxyTest {
         mProxyActivityA11yManager.addTouchExplorationStateChangeListener(listener);
         try {
             // Test that touch exploration is disabled for the app when the proxy is unregistered.
-            runWithShellPermissionIdentity(sUiAutomation, () ->
+            runWithShellPermissionIdentity(mUiAutomation, () ->
                     mA11yManager.unregisterDisplayProxy(mA11yProxy));
             waitOn(listener.mWaitObject, () -> !listener.mAtomicBoolean.get(), TIMEOUT_MS,
                     "The touch exploration listener should be notified when the proxy is"
@@ -1029,6 +1154,7 @@ public class AccessibilityDisplayProxyTest {
     }
 
     @Test
+    @FlakyTest
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager"
             + ".AccessibilityServicesStateChangeListener#onAccessibilityServicesStateChanged"})
     public void testOnA11yServicesStateChanged_updateServiceTimeout_doesNotNotifyProxiedApp() {
@@ -1126,7 +1252,6 @@ public class AccessibilityDisplayProxyTest {
 
             assertThat(serviceEnabled.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
         } finally {
-            sInstrumentation.getContext().unregisterReceiver(mReceiver);
             if (mNonProxyServiceRule.getService() != null) {
                 mNonProxyServiceRule.getService().disableSelfAndRemove();
             } else if (enabledServices != null) {
@@ -1175,7 +1300,6 @@ public class AccessibilityDisplayProxyTest {
 
             assertThat(touchExplorationDisabled.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
         } finally {
-            sInstrumentation.getContext().unregisterReceiver(mReceiver);
             final InstrumentedAccessibilityService service = mNonProxyServiceRule.getService();
             if (service != null) {
                 // Reset touch exploration for the non-proxy service.
@@ -1199,13 +1323,12 @@ public class AccessibilityDisplayProxyTest {
             final CountDownLatch servicesChanged = new CountDownLatch(1);
             mReceiver.setLatchAndExpectedAction(servicesChanged, ACCESSIBILITY_SERVICE_STATE);
 
-            runWithShellPermissionIdentity(sUiAutomation,
+            runWithShellPermissionIdentity(mUiAutomation,
                     () -> mA11yManager.registerDisplayProxy(mA11yProxy));
 
             assertThat(servicesChanged.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isFalse();
 
         } finally {
-            sInstrumentation.getContext().unregisterReceiver(mReceiver);
             stopSeparateProcess();
         }
     }
@@ -1228,13 +1351,47 @@ public class AccessibilityDisplayProxyTest {
             mReceiver.setLatchAndExpectedEnabledResult(touchExplorationEnabled,
                     TOUCH_EXPLORATION_STATE, true);
 
-            runWithShellPermissionIdentity(sUiAutomation,
+            runWithShellPermissionIdentity(mUiAutomation,
                     () -> mA11yManager.registerDisplayProxy(mA11yProxy));
 
             assertThat(touchExplorationEnabled.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isFalse();
         } finally {
-            sInstrumentation.getContext().unregisterReceiver(mReceiver);
             service.disableSelfAndRemove();
+            stopSeparateProcess();
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityManager"
+            + ".AccessibilityServicesStateChangeListener#onAccessibilityServicesStateChanged"})
+    @RequiresFlagsEnabled(Flags.FLAG_PROXY_USE_APPS_ON_VIRTUAL_DEVICE_LISTENER)
+    public void testOnA11yServicesStateChanged_moveAppToVirtualDisplay_notifiesApp()
+            throws TimeoutException, InterruptedException {
+        // TODO: b/336552993 - Investigate and re-enable this test on Android Auto.
+        assumeFalse(isAutomotive(sInstrumentation.getTargetContext()));
+        try {
+            mA11yProxy = new MyA11yProxy(mVirtualDisplayId, Executors.newSingleThreadExecutor(),
+                    getTestAccessibilityServiceInfoAsList());
+            runWithShellPermissionIdentity(mUiAutomation,
+                    () -> mA11yManager.registerDisplayProxy(mA11yProxy));
+            waitOn(mA11yProxy.mWaitObject, ()-> mA11yProxy.mConnected.get(), TIMEOUT_MS,
+                    "Proxy connected");
+
+            final String proxyName =
+                    mA11yProxy.getInstalledAndEnabledServices().get(0).getResolveInfo()
+                            .serviceInfo.name;
+
+            registerBroadcastReceiverForAction(ACCESSIBILITY_SERVICE_STATE);
+            startActivityInSeparateProcess();
+            final CountDownLatch serviceEnabled = new CountDownLatch(1);
+            mReceiver.setLatchAndExpectedServiceResult(serviceEnabled, ACCESSIBILITY_SERVICE_STATE,
+                    proxyName);
+
+            // Move activity to the virtual device virtual display.
+            mUiAutomation.adoptShellPermissionIdentity();
+            startActivityInSeparateProcess(mVirtualDisplayId);
+            assertThat(serviceEnabled.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        } finally {
             stopSeparateProcess();
         }
     }
@@ -1282,7 +1439,7 @@ public class AccessibilityDisplayProxyTest {
     }
 
     private void registerProxyAndWaitForConnection() {
-        runWithShellPermissionIdentity(sUiAutomation,
+        runWithShellPermissionIdentity(mUiAutomation,
                 () -> mA11yManager.registerDisplayProxy(mA11yProxy));
 
         waitOn(mA11yProxy.mWaitObject, ()-> mA11yProxy.mConnected.get(), TIMEOUT_MS,
@@ -1331,7 +1488,7 @@ public class AccessibilityDisplayProxyTest {
                         NON_INTERACTIVE_UI_TIMEOUT);
         mProxyActivityA11yManager.addAccessibilityServicesStateChangeListener(listener);
         try {
-            runWithShellPermissionIdentity(sUiAutomation,
+            runWithShellPermissionIdentity(mUiAutomation,
                     () -> mA11yManager.registerDisplayProxy(mA11yProxy));
             waitOn(listener.mWaitObject, () -> listener.mAtomicBoolean.get(), TIMEOUT_MS,
                     "Proxy AccessibilityServicesStateChangeListener called when proxy"
@@ -1401,7 +1558,7 @@ public class AccessibilityDisplayProxyTest {
 
     private void setAccessibilityFocus(View view) throws TimeoutException {
         if (!view.isAccessibilityFocused()) {
-            sUiAutomation.executeAndWaitForEvent(
+            mUiAutomation.executeAndWaitForEvent(
                     () -> mProxiedVirtualDisplayActivity.runOnUiThread(
                             () -> view.performAccessibilityAction(
                                     AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)),
@@ -1428,7 +1585,7 @@ public class AccessibilityDisplayProxyTest {
 
     private void setInputFocusIfNeeded(View view) throws TimeoutException {
         if (!view.isFocused()) {
-            sUiAutomation.executeAndWaitForEvent(
+            mUiAutomation.executeAndWaitForEvent(
                     () -> mProxiedVirtualDisplayActivity.runOnUiThread(() -> {
                         // Ensure state for taking input focus.
                         view.setVisibility(View.VISIBLE);
@@ -1451,36 +1608,37 @@ public class AccessibilityDisplayProxyTest {
             }
         }
         if (!isTopFocusedDisplay) {
-            final AccessibilityServiceInfo info = sUiAutomation.getServiceInfo();
+            final AccessibilityServiceInfo info = mUiAutomation.getServiceInfo();
             info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
-            sUiAutomation.setServiceInfo(info);
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> DisplayUtils.touchDisplay(sUiAutomation, displayId, activity.getTitle()),
+            mUiAutomation.setServiceInfo(info);
+            mUiAutomation.executeAndWaitForEvent(
+                    () -> DisplayUtils.touchDisplay(mUiAutomation, displayId, activity.getTitle()),
                     filterWindowsChangedWithChangeTypes(WINDOWS_CHANGE_FOCUSED
                             | WINDOWS_CHANGE_ACTIVE), TIMEOUT_MS);
         }
     }
 
     private void assertVirtualDisplayActivityExistsToProxy() {
-        final List<AccessibilityWindowInfo> proxyWindows = mA11yProxy.getWindows();
-        assertThat(findWindowByTitleWithList(
-                mProxiedVirtualDisplayActivityTitle, proxyWindows)).isNotNull();
+        waitOn(mA11yProxy.mWaitObject, () -> {
+            final List<AccessibilityWindowInfo> proxyWindows = mA11yProxy.getWindows();
+            return findWindowByTitleWithList(
+                    mProxiedVirtualDisplayActivityTitle, proxyWindows) != null;
+        }, TIMEOUT_MS, "Find virtual display activity");
     }
 
-    private AccessibilityKeyEventTestActivity launchProxyConcurrentActivityOnDefaultDisplay(
-            InstrumentedAccessibilityService service)
-            throws Exception {
-        final AccessibilityKeyEventTestActivity nonProxyActivity =
-                launchActivityAndWaitForItToBeOnscreen(
-                        sInstrumentation, sUiAutomation,
-                        mNonProxyActivityRule);
-        final List<AccessibilityWindowInfo> serviceWindows = service.getWindows();
-        assertThat(findWindowByTitleWithList(getActivityTitle(sInstrumentation,
-                nonProxyActivity), serviceWindows)).isNotNull();
-        return nonProxyActivity;
+    private AccessibilityKeyEventTestActivity launchProxyConcurrentActivityOnDefaultDisplay() {
+        final AccessibilityKeyEventTestActivity[] tempActivity =
+                new AccessibilityKeyEventTestActivity[1];
+        mNonProxiedConcurrentActivityScenario = ActivityScenario.launch(
+                NonProxyActivity.class).moveToState(Lifecycle.State.RESUMED);
+        mNonProxiedConcurrentActivityScenario.onActivity(activity ->
+                tempActivity[0] = activity
+        );
+        sUiDevice.waitForIdle();
+        return tempActivity[0];
     }
 
-    private View showTopWindowAndWaitForItToShowUp() throws TimeoutException {
+    private View showTopWindowAndWaitForItToShowUp() throws Exception {
         final WindowManager wm =
                 mProxiedVirtualDisplayActivity.getSystemService(WindowManager.class);
         final Rect windowBounds = wm.getCurrentWindowMetrics().getBounds();
@@ -1490,10 +1648,13 @@ public class AccessibilityDisplayProxyTest {
                         WindowManager.LayoutParams.MATCH_PARENT, windowBounds.height() / 2);
         final Button button = new Button(mProxiedVirtualDisplayActivity);
         button.setText(sInstrumentation.getContext().getString(R.string.button1));
-        WindowCreationUtils.addWindowAndWaitForEvent(sUiAutomation, sInstrumentation,
+        WindowCreationUtils.addWindowAndWaitForEvent(mUiAutomation, sInstrumentation,
                 mProxiedVirtualDisplayActivity,
-                button, paramsForTop, (event) -> (event.getEventType() == TYPE_WINDOWS_CHANGED)
-                        && (findWindowByTitleWithList(mProxiedVirtualDisplayActivityTitle,
+                button, paramsForTop, (event) -> (event.getEventType() == TYPE_WINDOWS_CHANGED));
+
+        TestUtils.waitUntil(
+                "", Duration.ofSeconds(5).toSecondsPart(),
+                () -> (findWindowByTitleWithList(mProxiedVirtualDisplayActivityTitle,
                         mA11yProxy.getWindows())
                         != null)
                         && (findWindowByTitleWithList(TOP_WINDOW_TITLE, mA11yProxy.getWindows())
@@ -1502,7 +1663,7 @@ public class AccessibilityDisplayProxyTest {
     }
 
     private VirtualDisplay createVirtualDeviceAndLaunchVirtualDisplay() {
-        sUiAutomation.adoptShellPermissionIdentity(ADD_TRUSTED_DISPLAY, CREATE_VIRTUAL_DEVICE);
+        mUiAutomation.adoptShellPermissionIdentity(ADD_TRUSTED_DISPLAY, CREATE_VIRTUAL_DEVICE);
         VirtualDisplay display;
         mVirtualDevice = mVirtualDeviceManager.createVirtualDevice(
                         mFakeAssociationRule.getAssociationInfo().getId(),
@@ -1512,11 +1673,13 @@ public class AccessibilityDisplayProxyTest {
                 /* height= */ 100,
                 PixelFormat.RGBA_8888, /* maxImages= */ 1);
         display = mVirtualDevice.createVirtualDisplay(
-                /* width= */ mImageReader.getWidth(),
-                /* height= */ mImageReader.getHeight(),
-                /* densityDpi= */ 240,
-                mImageReader.getSurface(),
-                0,
+                new VirtualDisplayConfig.Builder(
+                        "VirtualDisplay", mImageReader.getWidth(), mImageReader.getHeight(),
+                        /* densityDpi= */ 240)
+                        .setSurface(mImageReader.getSurface())
+                        .setFlags(DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                                | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY)
+                        .build(),
                 Runnable::run,
                 new VirtualDisplay.Callback(){});
         return display;
@@ -1526,26 +1689,31 @@ public class AccessibilityDisplayProxyTest {
             throws Exception {
         final AccessibilityKeyEventTestActivity activityOnVirtualDisplay =
                 launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(sInstrumentation,
-                        sUiAutomation,
+                        mUiAutomation,
                         ProxyDisplayActivity.class,
                         virtualDisplayId);
         return activityOnVirtualDisplay;
     }
 
     private void startActivityInSeparateProcess() throws TimeoutException {
-        final AccessibilityServiceInfo info = sUiAutomation.getServiceInfo();
+        startActivityInSeparateProcess(Display.DEFAULT_DISPLAY);
+    }
+
+    private void startActivityInSeparateProcess(int displayId) throws TimeoutException {
+        final AccessibilityServiceInfo info = mUiAutomation.getServiceInfo();
         info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
-        sUiAutomation.setServiceInfo(info);
+        mUiAutomation.setServiceInfo(info);
 
         // Specify the default display, else this may get launched on the virtual display.
         ActivityOptions options = ActivityOptions.makeBasic();
-        options.setLaunchDisplayId(Display.DEFAULT_DISPLAY);
+        options.setLaunchDisplayId(displayId);
 
-        sUiAutomation.executeAndWaitForEvent(() ->
+        mUiAutomation.executeAndWaitForEvent(() ->
                         sInstrumentation.getContext().startActivity(
                                 mSeparateProcessActivityIntent, options.toBundle()),
-                AccessibilityEventFilterUtils.filterWindowsChangeTypesAndWindowTitle(sUiAutomation,
-                        WINDOWS_CHANGE_ADDED, SEPARATE_PROCESS_ACTIVITY_TITLE), TIMEOUT_MS);
+                AccessibilityEventFilterUtils.filterWindowsChangeTypesAndWindowTitle(mUiAutomation,
+                        WINDOWS_CHANGE_ADDED, SEPARATE_PROCESS_ACTIVITY_TITLE, displayId),
+                TIMEOUT_MS);
     }
 
     private void stopSeparateProcess() {
@@ -1565,7 +1733,7 @@ public class AccessibilityDisplayProxyTest {
         if (event.getEventType() == TYPE_WINDOWS_CHANGED
                 && (event.getWindowChanges() & WINDOWS_CHANGE_FOCUSED) != 0) {
             List<AccessibilityWindowInfo> windows =
-                    sUiAutomation.getWindowsOnAllDisplays().valueAt(i);
+                    mUiAutomation.getWindowsOnAllDisplays().valueAt(i);
             for (AccessibilityWindowInfo window : windows) {
                 if (window.isFocused()) {
                     return true;
@@ -1687,6 +1855,23 @@ public class AccessibilityDisplayProxyTest {
         }
     }
 
+    static class MyAccessibilityStateChangeListener implements
+            AccessibilityManager.AccessibilityStateChangeListener {
+        AtomicBoolean mAtomicBoolean;
+        final Object mWaitObject = new Object();
+
+        MyAccessibilityStateChangeListener(boolean initialState) {
+            mAtomicBoolean = new AtomicBoolean(initialState);
+        }
+        @Override
+        public void onAccessibilityStateChanged(boolean enabled) {
+            synchronized (mWaitObject) {
+                mAtomicBoolean.set(enabled);
+                mWaitObject.notifyAll();
+            }
+        }
+    }
+
     /**
      * Class for testing AccessibilityDisplayProxy.
      */
@@ -1787,6 +1972,17 @@ public class AccessibilityDisplayProxyTest {
                     case TOUCH_EXPLORATION_STATE:
                         if (mExpectedAction == null || mLatch == null
                                 || !mExpectedAction.equals(TOUCH_EXPLORATION_STATE)) {
+                            return;
+                        }
+                        if (intent.getExtras() != null) {
+                            if (mExpectedEnabled == intent.getExtras().getBoolean(EXTRA_ENABLED)) {
+                                mLatch.countDown();
+                            }
+                        }
+                        break;
+                    case ACCESSIBILITY_STATE:
+                        if (mExpectedAction == null || mLatch == null
+                                || !mExpectedAction.equals(ACCESSIBILITY_STATE)) {
                             return;
                         }
                         if (intent.getExtras() != null) {

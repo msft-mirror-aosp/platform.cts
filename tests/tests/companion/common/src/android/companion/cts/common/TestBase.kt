@@ -18,6 +18,7 @@ package android.companion.cts.common
 
 import android.Manifest
 import android.annotation.CallSuper
+import android.annotation.UserIdInt
 import android.app.Instrumentation
 import android.app.UiAutomation
 import android.companion.AssociationInfo
@@ -27,6 +28,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.net.MacAddress
+import android.os.ParcelUuid
 import android.os.Process
 import android.os.SystemClock.sleep
 import android.os.SystemClock.uptimeMillis
@@ -42,6 +44,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.test.fail
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -178,6 +181,26 @@ abstract class TestBase {
             }
         }
     }
+
+    fun simulateDeviceEvent(associationId: Int, event: Int) =
+            runShellCommand("cmd companiondevice simulate-device-event $associationId $event")
+
+    fun simulateDeviceUuidEvent(uuid: ParcelUuid, event: Int) =
+            runShellCommand(
+                    "cmd companiondevice simulate-device-uuid-event " +
+                            "$uuid $targetPackageName $userId $event"
+            )
+
+    fun simulateDeviceEventDeviceLocked(associationId: Int, userId: Int, event: Int, uuid: String) {
+        runShellCommand(
+            "cmd companiondevice simulate-device-event-device-locked " +
+                "$associationId $userId $event $uuid"
+        )
+    }
+
+    fun simulateDeviceEventDeviceUnlocked(userId: Int) {
+        runShellCommand("cmd companiondevice simulate-device-event-device-unlocked $userId")
+    }
 }
 
 const val TAG = "CtsCompanionDeviceManagerTestCases"
@@ -218,14 +241,13 @@ fun <T> assertEmpty(list: Collection<T>) = assertTrue("Collection is not empty")
 fun assertAssociations(
     actual: List<AssociationInfo>,
     expected: Set<Pair<String, MacAddress?>>
-) = assertEquals(actual = actual.map { it.packageName to it.deviceMacAddress }.toSet(),
-        expected = expected)
+) = assertEquals(actual = actual.map {
+    it.packageName to it.deviceMacAddress }.toSet(), expected = expected)
 
 fun assertSelfManagedAssociations(
     actual: List<AssociationInfo>,
     expected: Set<Pair<String, Int>>
-) = assertEquals(actual = actual.map { it.packageName to it.id }.toSet(),
-        expected = expected)
+) = assertEquals(actual = actual.map { it.packageName to it.id }.toSet(), expected = expected)
 
 /**
  * Assert that CDM binds valid CompanionDeviceServices, both primary and secondary.
@@ -276,9 +298,11 @@ fun assertValidCompanionDeviceServicesRemainUnbound() =
  * (i.e. missing permission or intent-filter).
  */
 fun assertInvalidCompanionDeviceServicesNotBound() =
-        assertFalse("CompanionDeviceServices that do not require " +
+        assertFalse(
+                "CompanionDeviceServices that do not require " +
                 "BIND_COMPANION_DEVICE_SERVICE permission or do not declare an intent-filter for " +
-                "\"android.companion.CompanionDeviceService\" action should not be bound") {
+                "\"android.companion.CompanionDeviceService\" action should not be bound"
+        ) {
             MissingPermissionCompanionService.isBound ||
                     MissingIntentFilterActionCompanionService.isBound
     }
@@ -298,8 +322,9 @@ fun assertOnlyPrimaryCompanionDeviceServiceNotified(associationId: Int, appeared
         assertContains(PrimaryCompanionService.associationIdsForConnectedDevices, associationId)
     } else {
         PrimaryCompanionService.waitAssociationToDisappear(associationId)
-        assertFalse(PrimaryCompanionService.associationIdsForConnectedDevices
-                .contains(associationId))
+        assertFalse(
+                PrimaryCompanionService.associationIdsForConnectedDevices.contains(associationId)
+        )
     }
 
     // ... while neither the non-primary nor incorrectly defined CompanionDeviceServices -
@@ -308,6 +333,14 @@ fun assertOnlyPrimaryCompanionDeviceServiceNotified(associationId: Int, appeared
     assertContentEquals(snapshotSecondary, SecondaryCompanionService.connectedDevices)
     assertContentEquals(snapshotUnauthorized, MissingPermissionCompanionService.connectedDevices)
     assertContentEquals(snapshotInvalid, MissingIntentFilterActionCompanionService.connectedDevices)
+}
+
+fun assertDevicePresenceEvent(expected: Int, actual: Int) {
+    assertTrue("Expected event: $expected, but actual: $actual") {
+        waitFor (timeout = 2.seconds, interval = 100.milliseconds ) {
+            actual == expected
+        }
+    }
 }
 
 /**
@@ -369,3 +402,12 @@ fun killProcess(name: String) {
         }
     }
 }
+
+fun getAssociationForPackage(
+        @UserIdInt userId: Int,
+        packageName: String,
+        macAddress: MacAddress,
+        cdm: CompanionDeviceManager
+): AssociationInfo = cdm.allAssociations.find {
+    it.belongsToPackage(userId, packageName) && it.deviceMacAddress == macAddress
+} ?: fail("Association for u$userId/$packageName linked to address $macAddress does not exist")

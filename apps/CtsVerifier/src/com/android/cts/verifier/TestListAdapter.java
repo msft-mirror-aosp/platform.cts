@@ -910,10 +910,8 @@ public abstract class TestListAdapter extends BaseAdapter {
         if (deviceStateManager == null) {
             return false;
         }
-        Set<Integer> supportedStates =
-                Arrays.stream(deviceStateManager.getSupportedStates())
-                        .boxed()
-                        .collect(Collectors.toSet());
+        Set<Integer> supportedStates = deviceStateManager.getSupportedDeviceStates().stream().map(
+                state -> state.getIdentifier()).collect(Collectors.toSet());
         int identifier =
                 mContext.getResources()
                         .getIdentifier("config_foldedDeviceStates", "array", "android");

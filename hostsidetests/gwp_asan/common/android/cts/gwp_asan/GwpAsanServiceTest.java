@@ -36,9 +36,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.TimeUnit;
+
 @RunWith(AndroidJUnit4.class)
 public class GwpAsanServiceTest {
-    @Rule public final ServiceTestRule mServiceRule = new ServiceTestRule();
+    // Increase service bind time to deal with slower coverage builds: b/310330730
+    @Rule public final ServiceTestRule mServiceRule =
+        ServiceTestRule.withTimeout(15, TimeUnit.SECONDS);
     private Context mContext;
 
     @Before
@@ -69,33 +73,38 @@ public class GwpAsanServiceTest {
         runServiceAndCheckSuccess(GwpAsanDisabledService.class, Utils.TEST_IS_GWP_ASAN_DISABLED);
     }
 
-    @Test
-    public void testCrashToDropboxEnabled() throws Exception {
-        DropBoxReceiver receiver = Utils.getDropboxReceiver(mContext, "gwp_asan_enabled");
-        runService(GwpAsanEnabledService.class, Utils.TEST_USE_AFTER_FREE);
+    public void testCrash(Class<?> cls, String processNameSuffix, String crashTag,
+            boolean shouldRecover) throws Exception {
+        DropBoxReceiver receiver = Utils.getDropboxReceiver(mContext, processNameSuffix, crashTag);
+        if (shouldRecover) {
+            runServiceAndCheckSuccess(cls, Utils.TEST_USE_AFTER_FREE);
+        } else {
+            runService(cls, Utils.TEST_USE_AFTER_FREE);
+        }
         assertTrue(receiver.await());
     }
 
     @Test
-    public void testCrashToDropboxDefault() throws Exception {
-        DropBoxReceiver receiver = Utils.getDropboxReceiver(mContext, "gwp_asan_default");
-        runService(GwpAsanDefaultService.class, Utils.TEST_USE_AFTER_FREE);
-        assertTrue(receiver.await());
+    public void testCrashToDropboxNonRecoverableEnabled() throws Exception {
+        testCrash(GwpAsanEnabledService.class, "gwp_asan_enabled",
+                Utils.DROPBOX_NON_RECOVERABLE_TAG, /*shouldRecover=*/false);
+    }
+
+    @Test
+    public void testCrashToDropboxNonRecoverableDefault() throws Exception {
+        testCrash(GwpAsanDefaultService.class, "gwp_asan_default",
+                Utils.DROPBOX_NON_RECOVERABLE_TAG, /*shouldRecover=*/false);
     }
 
     @Test
     public void testCrashToDropboxRecoverableEnabled() throws Exception {
-        DropBoxReceiver receiver = Utils.getDropboxReceiver(mContext, "gwp_asan_enabled");
-        runService(GwpAsanEnabledService.class, Utils.TEST_USE_AFTER_FREE);
-        assertTrue(receiver.await());
+        testCrash(GwpAsanEnabledService.class, "gwp_asan_enabled", Utils.DROPBOX_RECOVERABLE_TAG,
+                /*shouldRecover=*/true);
     }
 
     @Test
     public void testCrashToDropboxRecoverableDefault() throws Exception {
-        DropBoxReceiver receiver =
-                Utils.getDropboxReceiver(
-                        mContext, "gwp_asan_default", Utils.DROPBOX_RECOVERABLE_TAG);
-        runServiceAndCheckSuccess(GwpAsanDefaultService.class, Utils.TEST_USE_AFTER_FREE);
-        assertTrue(receiver.await());
+        testCrash(GwpAsanDefaultService.class, "gwp_asan_default", Utils.DROPBOX_RECOVERABLE_TAG,
+                /*shouldRecover=*/true);
     }
 }

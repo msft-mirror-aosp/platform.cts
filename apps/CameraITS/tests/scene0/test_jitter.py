@@ -87,13 +87,19 @@ class JitterTest(its_base_test.ItsBaseTest):
 
       # Test for pass/fail.
       if avg <= _MIN_AVG_FRAME_DELTA:
-        raise AssertionError(f'avg: {avg:.4f}ms, TOL: {_MIN_AVG_FRAME_DELTA}ms')
+        raise AssertionError(
+            f'avg: {avg:.4f}ms, ATOL: {_MIN_AVG_FRAME_DELTA}ms'
+        )
       if var >= _MAX_VAR_FRAME_DELTA:
-        raise AssertionError(f'var: {var:.4f}ms, TOL: {_MAX_VAR_FRAME_DELTA}ms')
+        raise AssertionError(
+            f'var: {var:.4f}ms, ATOL: {_MAX_VAR_FRAME_DELTA}ms'
+        )
       if (abs(range0) >= _MAX_FRAME_DELTA_JITTER or
           abs(range1) >= _MAX_FRAME_DELTA_JITTER):
-        raise AssertionError(f'range0: {range0:.4f}ms, range1: {range1:.4f}ms, '
-                             f'TOL: {_MAX_FRAME_DELTA_JITTER}')
+        raise AssertionError(
+            f'range0: {range0:.4f}ms, range1: {range1:.4f}ms, '
+            f'ATOL: {_MAX_FRAME_DELTA_JITTER}'
+        )
 
 
 if __name__ == '__main__':

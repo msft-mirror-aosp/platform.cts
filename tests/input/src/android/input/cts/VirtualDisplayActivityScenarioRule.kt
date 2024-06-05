@@ -17,33 +17,38 @@
 package android.input.cts
 
 import android.Manifest
+import android.app.Activity
 import android.app.ActivityOptions
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
 import android.os.Handler
 import android.os.Looper
-import android.server.wm.CtsWindowInfoUtils
 import android.server.wm.WindowManagerStateHelper
 import android.view.Surface
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
+import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.rules.ExternalResource
+import org.junit.rules.TestName
 
 /**
- * A test rule that sets up a virtual display, and launches the [CaptureEventActivity] on that
- * display.
+ * A test rule that sets up a virtual display, and launches the specified activity on that display.
  */
-class VirtualDisplayActivityScenarioRule : ExternalResource() {
-
+class VirtualDisplayActivityScenarioRule<A : Activity>(
+    val testName: TestName,
+    val type: Class<A>
+) : ExternalResource() {
     companion object {
+        const val TAG = "VirtualDisplayActivityScenarioRule"
         const val VIRTUAL_DISPLAY_NAME = "CtsTouchScreenTestVirtualDisplay"
         const val WIDTH = 480
         const val HEIGHT = 800
@@ -58,17 +63,23 @@ class VirtualDisplayActivityScenarioRule : ExternalResource() {
 
         /** See [DisplayManager.VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT].  */
         const val VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT = 1 shl 7
+        inline operator fun <reified A : Activity> invoke(
+            testName: TestName
+        ): VirtualDisplayActivityScenarioRule<A> = VirtualDisplayActivityScenarioRule(
+            testName,
+            A::class.java
+        )
     }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var reader: ImageReader
 
     lateinit var virtualDisplay: VirtualDisplay
-    lateinit var activity: CaptureEventActivity
+    lateinit var activity: A
     val displayId: Int get() = virtualDisplay.display.displayId
 
     /**
-     * Before the test starts, set up the virtual display and start the [CtsEventActivity] on that
+     * Before the test starts, set up the virtual display and start the activity A on that
      * display.
      */
     override fun before() {
@@ -79,10 +90,11 @@ class VirtualDisplayActivityScenarioRule : ExternalResource() {
             ActivityOptions.makeBasic().setLaunchDisplayId(displayId)
                 .toBundle()
         val intent = Intent(Intent.ACTION_VIEW)
-            .setClass(instrumentation.targetContext, CaptureEventActivity::class.java)
+            .setClass(instrumentation.targetContext, type)
             .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         SystemUtil.runWithShellPermissionIdentity({
-            activity = instrumentation.startActivitySync(intent, bundle) as CaptureEventActivity
+            @Suppress("UNCHECKED_CAST")
+            activity = instrumentation.startActivitySync(intent, bundle) as A
         }, Manifest.permission.INTERNAL_SYSTEM_WINDOW)
         waitUntilActivityReadyForInput()
     }
@@ -115,7 +127,8 @@ class VirtualDisplayActivityScenarioRule : ExternalResource() {
             runnable()
         } finally {
             SystemUtil.runShellCommandOrThrow(
-                "wm user-rotation -d $displayId $initialUserRotation")
+                "wm user-rotation -d $displayId $initialUserRotation"
+            )
         }
     }
 
@@ -154,10 +167,43 @@ class VirtualDisplayActivityScenarioRule : ExternalResource() {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
         // to process them before making sure the window is visible.
-        WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(displayId)
-        instrumentation.uiAutomation.syncInputTransactions()
-        instrumentation.waitForIdleSync()
-        assertTrue("Window did not become visible",
-            CtsWindowInfoUtils.waitForWindowOnTop(activity.window!!))
+        WindowManagerStateHelper().waitUntilActivityReadyForInputInjection(
+            activity,
+            TAG,
+            "test: ${testName.methodName}, virtualDisplayId=$displayId"
+        )
+    }
+
+    /**
+     * Retrieves a Bitmap screenshot from the internal ImageReader this virtual display writes to.
+     *
+     * <p>Currently only supports screenshots in the RGBA_8888.
+     */
+    fun getScreenshot(): Bitmap? {
+        val image = reader.acquireNextImage()
+        if (image == null || image.format != PixelFormat.RGBA_8888) {
+            return null
+        }
+        val buffer = image.planes[0].getBuffer()
+        val pixelStrideBytes: Int = image.planes[0].getPixelStride()
+        val rowStrideBytes: Int = image.planes[0].getRowStride()
+        val pixelBytesPerRow = pixelStrideBytes * image.width
+        val rowPaddingBytes = rowStrideBytes - pixelBytesPerRow
+
+        // Remove the row padding bytes from the buffer before converting to a Bitmap
+        val trimmedBuffer = ByteBuffer.allocate(buffer.remaining())
+        buffer.rewind()
+        while (buffer.hasRemaining()) {
+            for (i in 0 until pixelBytesPerRow) {
+                trimmedBuffer.put(buffer.get())
+            }
+            // Skip the padding bytes
+            buffer.position(buffer.position() + rowPaddingBytes)
+        }
+        trimmedBuffer.flip() // Prepare the trimmed buffer for reading
+
+        val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+        bitmap.copyPixelsFromBuffer(trimmedBuffer)
+        return bitmap
     }
 }

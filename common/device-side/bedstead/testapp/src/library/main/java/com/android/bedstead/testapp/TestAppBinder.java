@@ -26,7 +26,7 @@ import android.content.ServiceConnection;
 import android.util.Log;
 
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 
 import com.google.android.enterprise.connectedapps.ConnectionBinder;
 import com.google.android.enterprise.connectedapps.annotations.AvailabilityRestrictions;

@@ -16,11 +16,13 @@
 package android.os.cts;
 
 import android.os.OperationCanceledException;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import com.android.compatibility.common.util.ApiTest;
 
 import junit.framework.TestCase;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @ApiTest(apis = {"android.os.OperationCanceledException#OperationCanceledException"})
 public class OperationCanceledExceptionTest extends TestCase {
     public void testOperationCanceledException() {

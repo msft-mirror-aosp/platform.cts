@@ -15,6 +15,13 @@
  */
 package android.content.res.cts;
 
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertNotSame;
+import static junit.framework.TestCase.assertTrue;
+
+import android.content.Context;
 import android.content.cts.R;
 import android.content.pm.ActivityInfo;
 import android.content.res.ColorStateList;
@@ -22,14 +29,25 @@ import android.content.res.Resources;
 import android.content.res.Resources.Theme;
 import android.graphics.Color;
 import android.os.Parcel;
-import android.test.AndroidTestCase;
-import android.test.suitebuilder.annotation.SmallTest;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.core.graphics.ColorUtils;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
-public class ColorStateListTest extends AndroidTestCase {
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+@RunWith(AndroidJUnit4.class)
+public class ColorStateListTest {
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
 
     @SmallTest
+    @Test
     public void testConstructor() {
         final int[][] state = new int[][]{{0}, {0}};
         final int[] colors = new int[]{Color.RED, Color.BLUE};
@@ -39,6 +57,7 @@ public class ColorStateListTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testCreateFromXml() throws Exception {
         final int xmlId = R.color.testcolor;
         final int colorInXml = 0xFFA6C839; // this color value is defined in testcolor.xml file.
@@ -52,6 +71,7 @@ public class ColorStateListTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testCreateFromXmlThemed() throws Exception {
         final int xmlId = R.color.testcolor_themed;
         final int colorInXml = Color.BLACK; // this color value is defined in styles.xml file.
@@ -67,6 +87,7 @@ public class ColorStateListTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testGetChangingConfigurations() {
         final Resources res = getContext().getResources();
         ColorStateList c;
@@ -79,6 +100,7 @@ public class ColorStateListTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testWithAlpha() {
         final int[][] state = new int[][]{{0}, {0}};
         final int[] colors = new int[]{Color.RED, Color.BLUE};
@@ -91,6 +113,7 @@ public class ColorStateListTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testWithLStar() {
         final int[][] state = new int[][]{{0}, {0}};
         final int[] colors = new int[]{Color.RED, Color.BLUE};
@@ -107,6 +130,7 @@ public class ColorStateListTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testCreateFromXmlWithLStar() throws Exception {
         final int xmlId = R.color.testcolor_lstar;
         final double lStarInXml = 50.0;
@@ -125,12 +149,14 @@ public class ColorStateListTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testValueOf() {
         final ColorStateList c = ColorStateList.valueOf(Color.GRAY);
         assertEquals(Color.GRAY, c.getDefaultColor());
     }
 
     @SmallTest
+    @Test
     public void testParcelable() {
         final ColorStateList c = ColorStateList.valueOf(Color.GRAY);
         final Parcel parcel = Parcel.obtain();
@@ -145,6 +171,7 @@ public class ColorStateListTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testIsOpaque() {
         ColorStateList c;
 

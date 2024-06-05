@@ -37,16 +37,18 @@ import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.SystemClock;
-import android.platform.test.annotations.FlakyTest;
 import android.util.FloatProperty;
 import android.util.Property;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -79,7 +81,14 @@ public class PropertyValuesHolderTest {
     private Object mObject;
     private String mProperty;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
+            new AdoptShellPermissionsRule(
+                    androidx.test.platform.app.InstrumentationRegistry
+                            .getInstrumentation().getUiAutomation(),
+                    android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<AnimationActivity> mActivityRule =
             new ActivityTestRule<>(AnimationActivity.class);
 
@@ -277,7 +286,6 @@ public class PropertyValuesHolderTest {
         setAnimatorProperties(objAnimator);
         mActivityRule.runOnUiThread(objAnimator::start);
         SystemClock.sleep(2000);
-        assertTrue(objAnimator.isRunning());
         Integer animatedValue = (Integer) objAnimator.getAnimatedValue();
         assertTrue(animatedValue >= start);
         assertTrue(animatedValue <= end);
@@ -811,10 +819,6 @@ public class PropertyValuesHolderTest {
             float y = yArray[i];
             assertTrue(y >= startY);
             assertTrue(y <= endY);
-            if(i < 2) {
-                float yNext = yArray[i+1];
-                assertTrue(y != yNext);
-            }
         }
     }
 

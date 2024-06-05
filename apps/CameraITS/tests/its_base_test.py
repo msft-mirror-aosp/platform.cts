@@ -16,13 +16,14 @@
 import logging
 import os
 import time
+import cv2
 
 import its_session_utils
 import lighting_control_utils
-from mobly import asserts
 from mobly import base_test
 from mobly import utils
 from mobly.controllers import android_device
+from snippet_uiautomator import uiautomator
 
 
 ADAPTIVE_BRIGHTNESS_OFF = '0'
@@ -32,30 +33,7 @@ CTS_VERIFIER_PKG = 'com.android.cts.verifier'
 WAIT_TIME_SEC = 5
 SCROLLER_TIMEOUT_MS = 3000
 VALID_NUM_DEVICES = (1, 2)
-NOT_YET_MANDATED_ALL = 100
 FRONT_CAMERA_ID_PREFIX = '1'
-
-# Not yet mandated tests ['test', first_api_level not yet mandatory]
-# ie. ['test_test_patterns', 30] is MANDATED for first_api_level > 30
-NOT_YET_MANDATED = {
-    'scene0': [['test_test_patterns', 30],
-               ['test_tonemap_curve', 30]],
-    'scene1_1': [['test_ae_precapture_trigger', 28]],
-    'scene1_2': [],
-    'scene2_a': [['test_jpeg_quality', 30]],
-    'scene2_b': [['test_auto_per_frame_control', NOT_YET_MANDATED_ALL]],
-    'scene2_c': [],
-    'scene2_d': [['test_num_faces', 30]],
-    'scene2_e': [['test_num_faces', 30], ['test_continuous_picture', 30]],
-    'scene2_f': [['test_num_faces', 30]],
-    'scene3': [],
-    'scene4': [],
-    'scene5': [],
-    'scene6': [['test_zoom', 30]],
-    'sensor_fusion': [],
-    'scene_hdr': [],
-    'scene_night': [],
-}
 
 logging.getLogger('matplotlib.font_manager').disabled = True
 
@@ -109,12 +87,13 @@ class ItsBaseTest(base_test.BaseTestClass):
         self.tablet = devices[1]
         self.tablet_screen_brightness = self.user_params['brightness']
         tablet_name_unencoded = self.tablet.adb.shell(
-            ['getprop', 'ro.build.product']
+            ['getprop', 'ro.product.device']
         )
         tablet_name = str(tablet_name_unencoded.decode('utf-8')).strip()
         logging.debug('tablet name: %s', tablet_name)
-        its_session_utils.validate_tablet_brightness(
-            tablet_name, self.tablet_screen_brightness)
+        its_session_utils.validate_tablet(
+            tablet_name, self.tablet_screen_brightness,
+            self.tablet.serial)
       except KeyError:
         logging.debug('Not all tablet arguments set.')
     else:  # sensor_fusion or manual run
@@ -141,7 +120,7 @@ class ItsBaseTest(base_test.BaseTestClass):
 
     # Check if current foldable state matches scene, if applicable
     if self.user_params.get('foldable_device', 'False') == 'True':
-      foldable_state_unencoded = tablet_name_unencoded = self.dut.adb.shell(
+      foldable_state_unencoded = self.dut.adb.shell(
           ['cmd', 'device_state', 'state']
       )
       foldable_state = str(foldable_state_unencoded.decode('utf-8')).strip()
@@ -159,6 +138,9 @@ class ItsBaseTest(base_test.BaseTestClass):
           )
       else:
         logging.debug('Testing without `run_all_tests`')
+
+    cv2_version = cv2.__version__
+    logging.debug('cv2_version: %s', cv2_version)
 
   def _setup_devices(self, num):
     """Sets up each device in parallel if more than one device."""
@@ -257,6 +239,13 @@ class ItsBaseTest(base_test.BaseTestClass):
                            'Requested brightness: {brightness_level}, '
                            'Actual brightness: {actual_brightness}')
 
+  def turn_off_tablet(self):
+    """Turns off tablet, raising AssertionError if tablet is not found."""
+    if self.tablet:
+      lighting_control_utils.turn_off_device_screen(self.tablet)
+    else:
+      raise AssertionError('Test must be run with tablet.')
+
   def parse_hidden_camera_id(self):
     """Parse the string of camera ID into an array.
 
@@ -266,43 +255,11 @@ class ItsBaseTest(base_test.BaseTestClass):
     camera_id_combo = self.camera.split(its_session_utils.SUB_CAMERA_SEPARATOR)
     return camera_id_combo
 
-  def determine_not_yet_mandated_tests(self, device_id, scene):
-    """Determine not_yet_mandated tests from NOT_YET_MANDATED list & phone info.
-
-    Args:
-     device_id: string of device id number.
-     scene: scene to which tests belong to.
-
-    Returns:
-       dict of not yet mandated tests
-    """
-    # Initialize not_yet_mandated.
-    not_yet_mandated = {}
-    not_yet_mandated[scene] = []
-
-    # Determine first API level for device.
-    first_api_level = its_session_utils.get_first_api_level(device_id)
-
-    # Determine which test are not yet mandated for first api level.
-    tests = NOT_YET_MANDATED[scene]
-    for [test, first_api_level_not_mandated] in tests:
-      logging.debug('First API level %s NOT MANDATED: %d',
-                    test, first_api_level_not_mandated)
-      if first_api_level <= first_api_level_not_mandated:
-        not_yet_mandated[scene].append(test)
-    return not_yet_mandated
-
   def on_pass(self, record):
     logging.debug('%s on PASS.', record.test_name)
 
   def on_fail(self, record):
     logging.debug('%s on FAIL.', record.test_name)
-    if self.user_params.get('scene'):
-      not_yet_mandated_tests = self.determine_not_yet_mandated_tests(
-          self.dut.serial, self.scene)
-      if self.current_test_info.name in not_yet_mandated_tests[self.scene]:
-        logging.debug('%s is not yet mandated.', self.current_test_info.name)
-        asserts.fail('Not yet mandated test', extras='Not yet mandated test')
 
   def teardown_class(self):
     # edit root_output_path and summary_writer path
@@ -317,3 +274,19 @@ class ItsBaseTest(base_test.BaseTestClass):
     # Note: Do not replace print with logging.debug here.
     print('root_output_path:',
           f'{self.root_output_path}_{self.__class__.__name__}')
+
+
+class UiAutomatorItsBaseTest(ItsBaseTest):
+  def setup_class(self):
+    super().setup_class()
+    self.ui_app = None
+    self.dut.services.register(
+        uiautomator.ANDROID_SERVICE_NAME, uiautomator.UiAutomatorService
+    )
+
+  def setup_test(self):
+    super().setup_test()
+    if not self.ui_app:
+      raise AssertionError(
+          'UiAutomator ITS tests must specify an app for UI interaction!')
+    its_session_utils.check_apk_installed(self.dut.serial, self.ui_app)

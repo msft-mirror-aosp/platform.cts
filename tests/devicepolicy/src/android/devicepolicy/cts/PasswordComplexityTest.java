@@ -25,22 +25,31 @@ import static android.app.admin.DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.FEATURE_SECURE_LOCK_SCREEN;
 
+import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
+import android.app.admin.DevicePolicyManager;
+import android.app.admin.flags.Flags;
 import android.content.Intent;
+import android.stats.devicepolicy.EventId;
 
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
 import com.android.bedstead.harrier.policies.PasswordComplexity;
+import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.devicepolicy.DeviceOwner;
+import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.utils.Assert;
 import com.android.bedstead.nene.utils.IgnoreExceptions;
@@ -55,6 +64,7 @@ import com.android.interactive.steps.settings.password.SetPin15911591Step;
 import com.android.interactive.steps.settings.password.SetPin1591Step;
 import com.android.interactive.steps.settings.password.SetPin4444Step;
 
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
@@ -77,6 +87,22 @@ public final class PasswordComplexityTest { // Skipped checking on headless beca
     private static final String ALPHABETIC_PASSWORD_LENGTH_4 = "abcd";
     private static final String ALPHANUMERIC_PASSWORD_LENGTH_4 = "12ab";
     private static final String ALPHANUMERIC_PASSWORD_LENGTH_8 = "1a2b3c4e";
+
+    @Before
+    public void skipRoleHolderAndFinancedDeviceOwnerTestIfFlagNotEnabled() {
+        DeviceOwner deviceOwner = TestApis.devicePolicy().getDeviceOwner();
+        boolean isFinancedDo = deviceOwner != null
+                && deviceOwner.getType() == DeviceOwnerType.FINANCED;
+        try {
+            if (isFinancedDo || sDeviceState.dpc() == sDeviceState.dpmRoleHolder()) {
+                assumeTrue("This test only runs with flag "
+                        + Flags.FLAG_UNMANAGED_MODE_MIGRATION
+                        + " is enabled", Flags.unmanagedModeMigration());
+            }
+        } catch (IllegalStateException e) {
+            // Fine - DMRH is not set
+        }
+    }
 
     @CannotSetPolicyTest(policy = PasswordComplexity.class, includeNonDeviceAdminStates = false)
     @Postsubmit(reason = "new test")
@@ -548,8 +574,13 @@ public final class PasswordComplexityTest { // Skipped checking on headless beca
 
     private void removeAllPasswordRestrictions() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
-                    sDeviceState.dpc().componentName(), PASSWORD_QUALITY_UNSPECIFIED);
+            // In some states (such as DMRH runs), the DPC's componentName is null, in which
+            // case skip the setPasswordQuality() call (otherwise this will be a NPE). This is
+            // fine since the "DPC" won't be able to set password quality to start with in this case
+            if (sDeviceState.dpc().componentName() != null) {
+                sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                        sDeviceState.dpc().componentName(), PASSWORD_QUALITY_UNSPECIFIED);
+            }
         } catch (SecurityException e) {
             if (
                     e.getMessage().contains(
@@ -569,4 +600,29 @@ public final class PasswordComplexityTest { // Skipped checking on headless beca
                 () -> TestApis.users().instrumented().setPassword(password));
         assertThat(ex).hasMessageThat().contains("doesn't satisfy admin policies");
     }
+
+    @Postsubmit(reason = "new test")
+    @CanSetPolicyTest(policy = PasswordComplexity.class)
+    public void setRequiredPasswordComplexity_isLogged() {
+        int initialPasswordComplexity =
+                sDeviceState.dpc().devicePolicyManager().getRequiredPasswordComplexity();
+
+        try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
+
+            sDeviceState.dpc().devicePolicyManager().setRequiredPasswordComplexity(
+                    DevicePolicyManager.PASSWORD_COMPLEXITY_HIGH);
+
+            assertThat(
+                    metrics.query()
+                            .whereType().isEqualTo(EventId.SET_PASSWORD_COMPLEXITY_VALUE)
+                            .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                            .whereInteger().isEqualTo(DevicePolicyManager.PASSWORD_COMPLEXITY_HIGH)
+                            .whereBoolean().isEqualTo(sDeviceState.dpc().isParentInstance())
+            ).wasLogged();
+        } finally {
+            sDeviceState.dpc().devicePolicyManager().setRequiredPasswordComplexity(
+                    initialPasswordComplexity);
+        }
+    }
+
 }

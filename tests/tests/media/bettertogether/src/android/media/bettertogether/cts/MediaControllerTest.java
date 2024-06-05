@@ -45,6 +45,7 @@ import android.view.KeyEvent;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
@@ -55,6 +56,7 @@ import org.junit.runner.RunWith;
 /**
  * Test {@link android.media.session.MediaController}.
  */
+@FrameworkSpecificTest
 @NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 public class MediaControllerTest {
@@ -833,11 +835,16 @@ public class MediaControllerTest {
         @Override
         public void onCommand(String command, Bundle extras, ResultReceiver cb) {
             synchronized (mWaitLock) {
+                final RemoteUserInfo currentControllerInfo = mSession.getCurrentControllerInfo();
+                if (!compareRemoteUserInfo(mControllerInfo, currentControllerInfo)) {
+                    // Ignore this command we did not send
+                    return;
+                }
                 mOnCommandCalled = true;
                 mCommand = command;
                 mExtras = extras;
                 mCommandCallback = cb;
-                mCallerInfo = mSession.getCurrentControllerInfo();
+                mCallerInfo = currentControllerInfo;
                 mWaitLock.notify();
             }
         }

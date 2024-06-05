@@ -46,10 +46,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
-/** Tests Wi-Fi Neighbor Awareness Networking (Wi-Fi NAN) Presence calibration requirements. */
+/**
+ * Tests Wi-Fi Neighbor Awareness Networking (Wi-Fi NAN) Presence calibration requirements.
+ *
+ * <p>
+ * Link to requirement documentation is at <a
+ * href="https://source.android.com/docs/core/connect/presence-requirements#requirement_7425h-1-1
+ * ">...</a>.
+ * Bandwidth is assumed fixed for all devices at 80 MHz
+ * </p>
+ */
 public class NanAccuracyActivity extends PassFailButtons.Activity {
     private static final String TAG = NanAccuracyActivity.class.getName();
-    private static final int MAX_ACCEPTABLE_RANGE = 2;
+
+    // Represents the max acceptable absolute range of deviation from the true range at 80 MHz
+    private static final int MAX_ACCEPTABLE_RANGE_METERS = 2;
+    private static final int NUMBER_OF_TEST_SAMPLES = 100;
 
     // Report log schema
     private static final String KEY_REFERENCE_DEVICE = "reference_device";
@@ -78,7 +90,7 @@ public class NanAccuracyActivity extends PassFailButtons.Activity {
             Log.i(TAG, "Discovered NAN Peer");
             mReceivedSamples.put(peerHandle, new ArrayList<>());
             mDeviceFoundTextView.setText(getString(R.string.device_found_presence,
-                    mReceivedSamples.get(peerHandle).size(), 100));
+                    mReceivedSamples.get(peerHandle).size(), NUMBER_OF_TEST_SAMPLES));
             mDeviceFoundTextView.setVisibility(View.VISIBLE);
             updateTestStatus(TestStatus.IN_PROGRESS);
         }
@@ -208,13 +220,13 @@ public class NanAccuracyActivity extends PassFailButtons.Activity {
             Double distanceRangeMeters = result.getDistanceMm() / 1000.0;
             mReceivedSamples.get(result.getPeerHandle()).add(distanceRangeMeters);
             mDeviceFoundTextView.setText(getString(R.string.device_found_presence,
-                    mReceivedSamples.get(result.getPeerHandle()).size(), 100));
+                    mReceivedSamples.get(result.getPeerHandle()).size(), NUMBER_OF_TEST_SAMPLES));
             checkDataCollectionStatus(result.getPeerHandle());
         }
     }
 
     private void checkDataCollectionStatus(PeerHandle peerHandle) {
-        if (mReceivedSamples.get(peerHandle).size() >= 100) {
+        if (mReceivedSamples.get(peerHandle).size() >= NUMBER_OF_TEST_SAMPLES) {
             stopTest();
             computeTestResults(mReceivedSamples.get(peerHandle));
         }
@@ -223,10 +235,10 @@ public class NanAccuracyActivity extends PassFailButtons.Activity {
     private void computeTestResults(ArrayList<Double> data) {
         data.removeIf(
                 measurementValue -> Math.abs(measurementValue - mCurrentTestDistance.getValue())
-                        > MAX_ACCEPTABLE_RANGE);
+                        > MAX_ACCEPTABLE_RANGE_METERS);
 
         // Calculate range at 68th percentile
-        if (data.size() >= 68) {
+        if (data.size() >= (0.68 * NUMBER_OF_TEST_SAMPLES)) {
             updateTestStatus(TestStatus.PASSED);
             makeToast("Test passed for " + mCurrentTestDistance
                     + "\r\nPercentage of results in range: "

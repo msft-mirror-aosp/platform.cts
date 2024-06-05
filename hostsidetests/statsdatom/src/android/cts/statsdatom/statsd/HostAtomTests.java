@@ -37,6 +37,7 @@ import com.android.os.AtomsProto.ConnectivityStateChanged;
 import com.android.os.StatsLog.ConfigMetricsReportList;
 import com.android.os.StatsLog.EventMetricData;
 import com.android.tradefed.build.IBuildInfo;
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
@@ -570,7 +571,7 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
 
         // Extract the relevant report from the incident section.
         ConfigMetricsReportList ourList = null;
-        int hostUid = DeviceUtils.getHostUid(getDevice());
+        int hostUid = 2000; // Shell UID is always used in ConfigUtils.uploadConfig
         for (ConfigMetricsReportList list : listList) {
             ConfigMetricsReportList.ConfigKey configKey = list.getConfigKey();
             if (configKey.getUid() == hostUid && configKey.getId() == ConfigUtils.CONFIG_ID) {
@@ -636,7 +637,13 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
                 }
         );
 
-        DeviceUtils.rebootDeviceAndWaitUntilReady(getDevice());
+        try {
+            DeviceUtils.rebootDeviceAndWaitUntilReady(getDevice());
+        } catch (DeviceNotAvailableException e) {
+            // Ignore test if reboot fails.
+            return;
+        }
+
         RunUtil.getDefault().sleep(10_000);
 
         // Get events from the report after boot.

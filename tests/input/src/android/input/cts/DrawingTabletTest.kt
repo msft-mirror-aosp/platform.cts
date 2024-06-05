@@ -16,6 +16,7 @@
 
 package android.input.cts
 
+import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.graphics.PointF
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
@@ -24,18 +25,24 @@ import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATIO
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_270
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_90
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.WIDTH
-import android.util.Size
 import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.UinputDrawingTablet
+import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.inputeventmatchers.withCoords
+import com.android.cts.input.inputeventmatchers.withMotionAction
+import com.android.cts.input.inputeventmatchers.withSource
+import com.android.cts.input.inputeventmatchers.withToolType
+import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestName
 import org.junit.runner.RunWith
 
 @MediumTest
@@ -45,18 +52,14 @@ class DrawingTabletTest {
     private lateinit var verifier: EventVerifier
 
     @get:Rule
-    val virtualDisplayRule = VirtualDisplayActivityScenarioRule()
+    val testName = TestName()
+    @get:Rule
+    val virtualDisplayRule = VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
 
     @Before
     fun setUp() {
-        drawingTablet =
-            UinputTouchDevice(
-                InstrumentationRegistry.getInstrumentation(),
-                virtualDisplayRule.virtualDisplay.display,
-                Size(WIDTH, HEIGHT),
-                R.raw.test_drawing_tablet_register,
-                InputDevice.SOURCE_MOUSE or InputDevice.SOURCE_STYLUS,
-            )
+        drawingTablet = UinputDrawingTablet(
+            InstrumentationRegistry.getInstrumentation(), virtualDisplayRule.virtualDisplay.display)
         verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
     }
 
@@ -95,6 +98,60 @@ class DrawingTabletTest {
         }
     }
 
+    @Test
+    fun testHover() {
+        val pointerId = 0
+        val commonMatcher =
+            allOf(
+                withSource(InputDevice.SOURCE_STYLUS or InputDevice.SOURCE_MOUSE),
+                withToolType(MotionEvent.TOOL_TYPE_STYLUS),
+            )
+
+        // Inject and verify HOVER_ENTER
+        drawingTablet.sendBtnTouch(false)
+        drawingTablet.sendDown(pointerId, INJECTION_POINTS[0], UinputTouchDevice.MT_TOOL_PEN)
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_ENTER),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
+                commonMatcher
+            )
+        )
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
+                commonMatcher
+            )
+        )
+
+        // Inject and verify HOVER_MOVE
+        drawingTablet.sendMove(pointerId, INJECTION_POINTS[1])
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[1])!!),
+                commonMatcher
+            )
+        )
+
+        // Inject and verify HOVER_EXIT
+        drawingTablet.sendUp(pointerId)
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_EXIT),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[1])!!),
+                commonMatcher
+            )
+        )
+    }
+
     /**
      * Taps at each point in [INJECTION_POINTS] and ensures that the event is received at the
      * corresponding point in [expectedPoints].
@@ -104,11 +161,14 @@ class DrawingTabletTest {
         transformToExpectedPoint: (Point) -> PointF?
     ) {
         for (i in INJECTION_POINTS.indices) {
+            val pointerId = 0
             drawingTablet.sendBtnTouch(true)
-            drawingTablet.sendDown(0 /*id*/, INJECTION_POINTS[i], UinputTouchDevice.MT_TOOL_PEN)
+            drawingTablet.sendDown(pointerId, INJECTION_POINTS[i], UinputTouchDevice.MT_TOOL_PEN)
+            drawingTablet.sync()
 
             drawingTablet.sendBtnTouch(false)
-            drawingTablet.sendUp(0 /*id*/)
+            drawingTablet.sendUp(pointerId)
+            drawingTablet.sync()
 
             val expected = expectedPoints[i]
             // Ensure the hard-coded expected points and the transformation function agree for the
@@ -116,16 +176,19 @@ class DrawingTabletTest {
             assertEquals(transformToExpectedPoint(INJECTION_POINTS[i]), expected)
 
             if (expected != null) {
-                val downEvent = verifier.getMotionEvent()
-                assertEquals("action", MotionEvent.ACTION_DOWN, downEvent.actionMasked)
-                assertTrue("source",
-                    downEvent.isFromSource(InputDevice.SOURCE_STYLUS or InputDevice.SOURCE_MOUSE))
-                assertEquals("tool type", MotionEvent.TOOL_TYPE_STYLUS, downEvent.getToolType(0))
-                assertEquals("x", expected.x, downEvent.x, EPSILON)
-                assertEquals("y", expected.y, downEvent.y, EPSILON)
+                verifier.assertReceivedMotion(allOf(
+                    withMotionAction(MotionEvent.ACTION_DOWN),
+                    withSource(InputDevice.SOURCE_STYLUS or InputDevice.SOURCE_MOUSE),
+                    withToolType(MotionEvent.TOOL_TYPE_STYLUS),
+                    withCoords(expected)
+                ))
 
-                verifier.assertReceivedMove(expected)
-                verifier.assertReceivedUp(expected)
+                verifier.assertReceivedMotion(
+                    allOf(withMotionAction(MotionEvent.ACTION_MOVE), withCoords(expected))
+                )
+                verifier.assertReceivedMotion(
+                    allOf(withMotionAction(MotionEvent.ACTION_UP), withCoords(expected))
+                )
             }
         }
         virtualDisplayRule.activity.assertNoEvents()

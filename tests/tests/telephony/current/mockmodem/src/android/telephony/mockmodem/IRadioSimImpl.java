@@ -18,6 +18,7 @@ package android.telephony.mockmodem;
 
 import static android.telephony.mockmodem.MockSimService.COMMAND_GET_RESPONSE;
 import static android.telephony.mockmodem.MockSimService.COMMAND_READ_BINARY;
+import static android.telephony.mockmodem.MockSimService.EF_GID1;
 import static android.telephony.mockmodem.MockSimService.EF_ICCID;
 
 import android.hardware.radio.RadioError;
@@ -40,6 +41,7 @@ import android.telephony.mockmodem.MockSimService.SimAppData;
 import android.util.Log;
 
 import java.util.ArrayList;
+import com.android.internal.telephony.flags.Flags;
 
 public class IRadioSimImpl extends IRadioSim.Stub {
     private static final String TAG = "MRSIM";
@@ -62,8 +64,11 @@ public class IRadioSimImpl extends IRadioSim.Stub {
     private ArrayList<SimAppData> mSimAppList;
 
     private Carrier[] mCarrierList;
-    private int mCarrierRestrictionStatus =
-            CarrierRestrictions.CarrierRestrictionStatus.UNKNOWN;
+    private int mCarrierRestrictionStatus = CarrierRestrictions.CarrierRestrictionStatus.UNKNOWN;
+
+    private int mMultiSimPolicy =
+            android.hardware.radio.sim.SimLockMultiSimPolicy.NO_MULTISIM_POLICY;
+    private CarrierRestrictions mCarrierRestrictionRules;
 
     public IRadioSimImpl(
             MockModemService service, MockModemConfigInterface configInterface, int instanceId) {
@@ -229,7 +234,7 @@ public class IRadioSimImpl extends IRadioSim.Stub {
     @Override
     public void getAllowedCarriers(int serial) {
         Log.d(mTag, "getAllowedCarriers");
-
+        RadioResponseInfo rsp = mService.makeSolRsp(serial);
         android.hardware.radio.sim.CarrierRestrictions carriers =
                 new android.hardware.radio.sim.CarrierRestrictions();
         if (mCarrierList == null || mCarrierList.length < 1) {
@@ -241,13 +246,19 @@ public class IRadioSimImpl extends IRadioSim.Stub {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU) {
             carriers.status = mCarrierRestrictionStatus;
         }
-        int multiSimPolicy = android.hardware.radio.sim.SimLockMultiSimPolicy.NO_MULTISIM_POLICY;
-
-        RadioResponseInfo rsp = mService.makeSolRsp(serial);
+        if (Flags.carrierRestrictionRulesEnhancement() && mCarrierRestrictionRules != null) {
+            Log.e(mTag, "Updating carrierInfo information in CarrierRestrictions");
+            carriers.allowedCarrierInfoList = mCarrierRestrictionRules.allowedCarrierInfoList;
+            carriers.excludedCarrierInfoList = mCarrierRestrictionRules.excludedCarrierInfoList;
+        }
         try {
-            mRadioSimResponse.getAllowedCarriersResponse(rsp, carriers, multiSimPolicy);
+            mRadioSimResponse.getAllowedCarriersResponse(rsp, carriers, mMultiSimPolicy);
         } catch (RemoteException ex) {
             Log.e(mTag, "Failed to getAllowedCarriers from AIDL. Exception" + ex);
+        } finally {
+            // resetting the mCarrierRestrictionRules
+            mCarrierRestrictionRules = null;
+            mMultiSimPolicy = android.hardware.radio.sim.SimLockMultiSimPolicy.NO_MULTISIM_POLICY;
         }
     }
 
@@ -510,6 +521,41 @@ public class IRadioSimImpl extends IRadioSim.Stub {
                                             + Integer.toHexString(fileId));
                             iccIoResult.sw1 = 0x6A;
                             iccIoResult.sw2 = 0x82;
+                        }
+                        break;
+                    case EF_GID1:
+                        if (command == COMMAND_READ_BINARY) {
+                            String gid1 = mSimAppList.get(simAppIdx).getGid1();
+                            if (gid1 != null) {
+                                iccIoResult.simResponse = gid1;
+                                Log.d(
+                                        mTag,
+                                        "COMMAND_READ_BINARY result: GID1 = "
+                                                + iccIoResult.simResponse);
+                                iccIoResult.sw1 = 0x90;
+                                iccIoResult.sw2 = 0x00;
+                                responseError = RadioError.NONE;
+                            } else {
+                                Log.d(mTag, "No COMMAND_READ_BINARY result for GID1");
+                                iccIoResult.sw1 = 0x6A;
+                                iccIoResult.sw2 = 0x82;
+                            }
+                        } else if (command == COMMAND_GET_RESPONSE) {
+                            String gid1Info = mSimAppList.get(simAppIdx).getGid1Info();
+                            if (gid1Info != null) {
+                                iccIoResult.simResponse = gid1Info;
+                                Log.d(
+                                        mTag,
+                                        "COMMAND_GET_RESPONSE result: GID1 = "
+                                                + iccIoResult.simResponse);
+                                iccIoResult.sw1 = 0x90;
+                                iccIoResult.sw2 = 0x00;
+                                responseError = RadioError.NONE;
+                            } else {
+                                Log.d(mTag, "No COMMAND_GET_RESPONSE result for GID1");
+                                iccIoResult.sw1 = 0x6A;
+                                iccIoResult.sw2 = 0x82;
+                            }
                         }
                         break;
                     default:
@@ -1022,8 +1068,16 @@ public class IRadioSimImpl extends IRadioSim.Stub {
         return IRadioSim.VERSION;
     }
 
-    public void updateCarrierRestrictionStatusInfo(Carrier[] carrierList, int carrierRestrictionStatus) {
+    public void updateCarrierRestrictionStatusInfo(
+            Carrier[] carrierList, int carrierRestrictionStatus) {
         mCarrierList = carrierList;
         mCarrierRestrictionStatus = carrierRestrictionStatus;
+    }
+
+    public void updateCarrierRestrictionRules(CarrierRestrictions carrierRestrictionRules,
+            int multiSimPolicy) {
+        Log.d(mTag, "updateCarrierRestrictionRules");
+        mCarrierRestrictionRules = carrierRestrictionRules;
+        mMultiSimPolicy = multiSimPolicy;
     }
 }

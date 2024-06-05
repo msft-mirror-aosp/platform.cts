@@ -22,9 +22,9 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+import android.wifi.mockwifi.nl80211.IClientInterfaceImp;
+import android.wifi.mockwifi.nl80211.IWifiScannerImp;
 import android.wifi.mockwifi.nl80211.WifiNL80211ManagerImp;
-
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +42,6 @@ public class MockWifiModemService extends Service {
     public static final String CLASS_IDENTIFIER = "-";
     private static final int NUM_MOCKED_INTERFACES = 1; // The number of HAL, now only support
                                                         // nl80211 HAL
-
     public static final String NL80211_INTERFACE_NAME = "android.wifi.mockwifimodem.nl80211";
 
     private static CountDownLatch[] sLatches;
@@ -62,7 +61,7 @@ public class MockWifiModemService extends Service {
     @Override
     public void onCreate() {
         Log.d(TAG, "Mock Wifi Modem Service Created");
-        sContext = InstrumentationRegistry.getInstrumentation().getContext();
+        sContext = getBaseContext();
         sLatches = new CountDownLatch[LATCH_MAX];
         for (int i = 0; i < LATCH_MAX; i++) {
             if (i == LATCH_WIFI_INTERFACES_READY) {
@@ -122,14 +121,27 @@ public class MockWifiModemService extends Service {
         return complete;
     }
 
-    public boolean configureSignalPoll(String ifaceName, int currentRssiDbm, int txBitrateMbps,
-            int rxBitrateMbps, int associationFrequencyMHz) {
+    /**
+     * Configures a mock client interface.
+     */
+    public boolean configureClientInterfaceMock(String ifaceName,
+            IClientInterfaceImp.ClientInterfaceMock clientInterfaceMock) {
         if (sWifiNL80211ManagerImp == null) {
             return false;
         }
-        if (sWifiNL80211ManagerImp == null) return false;
-        return sWifiNL80211ManagerImp.configureSignalPoll(ifaceName, currentRssiDbm, txBitrateMbps,
-                rxBitrateMbps, associationFrequencyMHz);
+        return sWifiNL80211ManagerImp.configureClientInterfaceMock(ifaceName, clientInterfaceMock);
+    }
+
+    /**
+     * Configures a mock Wifi scanner interface.
+     */
+    public boolean configureWifiScannerInterfaceMock(String ifaceName,
+            IWifiScannerImp.WifiScannerInterfaceMock wifiScannerInterfaceMock) {
+        if (sWifiNL80211ManagerImp == null) {
+            return false;
+        }
+        return sWifiNL80211ManagerImp.configureWifiScannerInterfaceMock(ifaceName,
+                wifiScannerInterfaceMock);
     }
 
     /**
@@ -138,5 +150,9 @@ public class MockWifiModemService extends Service {
     public String getAllConfiguredMethods() {
         // Get configured methods from all mocked HALs. (Now only supports WifiNL80211ManagerImp).
         return sWifiNL80211ManagerImp.getConfiguredMethods();
+    }
+
+    public WifiNL80211ManagerImp getWifiNL80211ManagerImp() {
+        return sWifiNL80211ManagerImp;
     }
 }

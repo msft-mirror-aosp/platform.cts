@@ -1,17 +1,64 @@
 {
+  "mainline-presubmit": [
+    {
+        "name": "CtsAppCloningHostTest[com.google.android.mediaprovider.apex]",
+        "options": [
+          {
+            "exclude-annotation": "android.platform.test.annotations.LargeTest"
+          },
+          {
+            "exclude-annotation": "android.platform.test.annotations.FlakyTest"
+          }
+        ]
+    }
+  ],
+  "mediaprovider-mainline-presubmit": [
+    {
+        "name": "CtsAppCloningHostTest",
+        "options": [
+          {
+            "exclude-annotation": "android.platform.test.annotations.LargeTest"
+          }
+        ]
+    }
+  ],
+  "mainline-postsubmit": [
+    {
+        "name": "CtsAppCloningHostTest[com.google.android.mediaprovider.apex]",
+        "options": [
+          {
+            "include-annotation": "android.platform.test.annotations.LargeTest"
+          },
+          {
+            "include-annotation": "android.platform.test.annotations.FlakyTest"
+          }
+        ]
+    }
+  ],
   "presubmit": [
     {
       "name": "CtsAppCloningHostTest",
       "options": [
         {
           "exclude-annotation": "android.platform.test.annotations.LargeTest"
+        },
+        {
+          "exclude-annotation": "android.platform.test.annotations.FlakyTest"
         }
       ]
     }
   ],
   "postsubmit": [
     {
-      "name": "CtsAppCloningHostTest"
+      "name": "CtsAppCloningHostTest",
+      "options": [
+        {
+          "include-annotation": "android.platform.test.annotations.LargeTest"
+        },
+        {
+          "include-annotation": "android.platform.test.annotations.FlakyTest"
+        }
+      ]
     }
   ]
 }

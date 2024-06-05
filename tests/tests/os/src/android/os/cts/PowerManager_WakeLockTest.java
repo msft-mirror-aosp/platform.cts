@@ -22,12 +22,14 @@ import android.content.Context;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.test.AndroidTestCase;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
+@AppModeNonSdkSandbox(reason = "SDK sandbox does not have android.permission.WAKE_LOCK.")
 public class PowerManager_WakeLockTest extends AndroidTestCase {
     private static final String TAG = "PowerManager_WakeLockTest";
 

@@ -17,34 +17,19 @@
 package android.input.cts
 
 import android.hardware.input.InputManager
-import android.view.InputDevice
 import android.view.KeyEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
-import com.android.cts.input.UinputDevice
+import com.android.cts.input.UinputKeyboard
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-
-private fun injectEvents(device: UinputDevice, events: IntArray) {
-    device.injectEvents(events.joinToString(prefix = "[", postfix = "]", separator = ","))
-}
-
-private fun injectKeyDown(device: UinputDevice, scanCode: Int) {
-    injectEvents(device, intArrayOf(/* EV_KEY */ 1, scanCode, /* KEY_DOWN */ 1,
-            /* EV_SYN */ 0, /* SYN_REPORT */ 0, 0))
-}
-
-private fun injectKeyUp(device: UinputDevice, scanCode: Int) {
-    injectEvents(device, intArrayOf(/* EV_KEY */ 1, scanCode, /* KEY_UP */ 0,
-            /* EV_SYN */ 0, /* SYN_REPORT */ 0, 0))
-}
 
 /**
  * Create virtual keyboard devices and inject 'hardware' key combinations for Back shortcuts
@@ -55,6 +40,7 @@ private fun injectKeyUp(device: UinputDevice, scanCode: Int) {
 class BackKeyShortcutsTest {
 
     companion object {
+        // Linux keycodes defined in the "linux/input-event-codes.h" header.
         const val KEY_LEFTMETA = 125
         const val KEY_ESC = 1
         const val KEY_BACKSPACE = 14
@@ -93,13 +79,10 @@ class BackKeyShortcutsTest {
 
     @Test
     fun testBackKeyMetaShortcuts() {
-        UinputDevice.create(
-                instrumentation, R.raw.test_keyboard_register,
-                InputDevice.SOURCE_KEYBOARD
-        ).use { keyboardDevice ->
+        UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
 
-            for (scanCode in intArrayOf(KEY_BACKSPACE, KEY_LEFT)) {
+            for (scanCode in intArrayOf(KEY_ESC, KEY_BACKSPACE, KEY_LEFT)) {
                 injectKeyDown(keyboardDevice, KEY_LEFTMETA)
                 injectKeyDown(keyboardDevice, scanCode)
                 injectKeyUp(keyboardDevice, scanCode)

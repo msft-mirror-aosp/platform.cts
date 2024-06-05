@@ -16,12 +16,14 @@
 
 package com.android.bedstead.harrier.annotations.enterprise;
 
+import static com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner.DO_PO_PRIORITY;
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner.DO_PO_WEIGHT;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.UserType;
-import com.android.bedstead.harrier.annotations.AnnotationRunPrecedence;
-import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -29,35 +31,31 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark that a test requires that there is no dpc on the device.
- *
- * <p>This checks that there is no device owner, the current user has no work profiles, and the
- * current user has no profile owner.
- *
- * <p>Your test configuration may be configured so that this test is only run on a device which has
- * no dpc. Otherwise, you can use {@code Devicestate} to ensure that the device enters
- * the correct state for the method.
+ * This is just a temporary class for compatibility with other repositories
+ * use {@link com.android.bedstead.enterprise.annotations.EnsureHasNoDpc} instead
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @EnsureHasNoDeviceOwner
 @EnsureHasNoWorkProfile
 @EnsureHasNoProfileOwner
+@Deprecated
 public @interface EnsureHasNoDpc {
 
     /** This is currently non-functional. */
     // TODO(264845059): Add support for EnsureHasNoDpc across users
     UserType onUser() default INSTRUMENTED_USER;
 
-    /**
-     * Weight sets the order that annotations will be resolved.
+     /**
+     * Priority sets the order that annotations will be resolved.
      *
-     * <p>Annotations with a lower weight will be resolved before annotations with a higher weight.
+     * <p>Annotations with a lower priority will be resolved before annotations with a higher
+     * priority.
      *
-     * <p>If there is an order requirement between annotations, ensure that the weight of the
+     * <p>If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     * <p>Weight can be set to a {@link AnnotationRunPrecedence} constant, or to any {@link int}.
+     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int weight() default DO_PO_WEIGHT;
+    int priority() default DO_PO_PRIORITY;
 }

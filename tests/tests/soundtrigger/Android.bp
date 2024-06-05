@@ -13,11 +13,13 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_media_audio_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 java_library {
     name: "CtsSoundTriggerInstrumentation",
+    sdk_version: "test_current",
     libs: [
         "guava",
         "androidx.annotation_annotation",

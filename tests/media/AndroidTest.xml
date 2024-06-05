@@ -35,7 +35,7 @@
     </target_preparer>
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.MediaPreparer">
         <option name="push-all" value="true" />
-        <option name="media-folder-name" value="CtsMediaV2TestCases-3.6" />
+        <option name="media-folder-name" value="CtsMediaV2TestCases-4.1" />
         <option name="dynamic-config-module" value="CtsMediaV2TestCases" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -44,5 +44,8 @@
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.mediav2.cts" />
+        <!-- Handle the CTS/MCTS differentiation -->
+        <option name="exclude-annotation" value="com.android.compatibility.common.util.ModuleSpecificTest" />
+        <option name="instrumentation-arg" key="media-testing-mode" value="cts" />
     </test>
 </configuration>

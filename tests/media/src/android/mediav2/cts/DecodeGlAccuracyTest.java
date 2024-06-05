@@ -589,7 +589,7 @@ public class DecodeGlAccuracyTest extends CodecDecoderTestBase {
         if (mUseYuvSampling) {
             String message = "Device doesn't support EXT_YUV_target GL extension \n" + mTestConfig
                     + mTestEnv;
-            if (IS_AT_LEAST_T && IS_HDR_EDITING_SUPPORTED) {
+            if (IS_AT_LEAST_T && (IS_HDR_EDITING_SUPPORTED || IS_HLG_EDITING_SUPPORTED)) {
                 assertTrue(message, mEGLWindowOutSurface.getEXTYuvTargetSupported());
             } else {
                 assumeTrue(message, mEGLWindowOutSurface.getEXTYuvTargetSupported());

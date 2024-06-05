@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_permissions",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -59,7 +60,10 @@ cc_test_library {
 
 android_test {
     name: "CtsAppOpsTestCases",
-
+    defaults: [
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
     compile_multilib: "both",
 
     srcs: ["src/**/*.kt"],
@@ -73,8 +77,11 @@ android_test {
         "compatibility-device-util-axt",
         "androidx.legacy_legacy-support-v4",
         "platform-test-annotations",
-        "truth-prebuilt",
+        "truth",
         "androidx.test.uiautomator_uiautomator",
+        "flag-junit",
+        "android.permission.flags-aconfig-java",
+        "CtsVirtualDeviceCommonLib",
     ],
 
     jni_libs: [
@@ -115,7 +122,6 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts",
     ],
     data: [
         ":AppWithLongAttributionTag",
@@ -132,6 +138,7 @@ android_test {
         ":AppInBackground",
         ":AppWithAttributionInheritingFromSelf",
         ":AppWithAttributionInheritingFromExisting",
+        ":AppInstalledOnMultipleUsers",
     ],
     per_testcase_directory: true,
 }

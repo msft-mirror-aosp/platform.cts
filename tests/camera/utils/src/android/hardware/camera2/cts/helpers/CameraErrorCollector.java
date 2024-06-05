@@ -25,15 +25,19 @@ import android.hardware.camera2.params.MeteringRectangle;
 import android.media.Image;
 import android.util.Log;
 import android.util.Size;
+
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matcher;
+import org.junit.rules.ErrorCollector;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.Matcher;
-import org.junit.rules.ErrorCollector;
+import java.util.stream.Collectors;
 
 /**
  * A camera test ErrorCollector class to gather the test failures during a test,
@@ -45,6 +49,8 @@ public class CameraErrorCollector extends ErrorCollector {
     private static final boolean LOG_ERRORS = Log.isLoggable(TAG, Log.ERROR);
 
     private String mCameraMsg = "";
+
+    private boolean mMPCStatus = true;
 
     @Override
     public void verify() throws Throwable {
@@ -69,6 +75,13 @@ public class CameraErrorCollector extends ErrorCollector {
     @Override
     public void addError(Throwable error) {
         addErrorSuper(new Throwable(mCameraMsg + error.getMessage(), error));
+    }
+
+    public boolean getMPCStatus() {
+        return mMPCStatus;
+    }
+    public void addMPCFailure() {
+        mMPCStatus = false;
     }
 
     private void addErrorSuper(Throwable error) {
@@ -139,13 +152,32 @@ public class CameraErrorCollector extends ErrorCollector {
      * @throws IllegalArgumentException if {@code expected} was {@code null}
      */
     public <T> boolean expectEquals(String msg, T expected, T actual) {
+        return expectEquals(msg, expected, actual, /*mpc*/false);
+    }
+
+    /**
+     * Check if the two values are equal.
+     *
+     * @param msg Message to be logged when check fails.
+     * @param expected Expected value to be checked against.
+     * @param actual Actual value to be checked.
+     * @param mpc Whether to mark as error or MPC requirement failure
+     * @return {@code true} if the two values are equal, {@code false} otherwise.
+     *
+     * @throws IllegalArgumentException if {@code expected} was {@code null}
+     */
+    public <T> boolean expectEquals(String msg, T expected, T actual, boolean mpc) {
         if (expected == null) {
             throw new IllegalArgumentException("expected value shouldn't be null");
         }
 
         if (!Objects.equals(expected, actual)) {
-            addMessage(String.format("%s (expected = %s, actual = %s) ", msg, expected,
-                    actual));
+            if (mpc) {
+                mMPCStatus = false;
+            } else {
+                addMessage(String.format("%s (expected = %s, actual = %s) ", msg, expected,
+                        actual));
+            }
             return false;
         }
 
@@ -217,6 +249,38 @@ public class CameraErrorCollector extends ErrorCollector {
         }
 
         return true;
+    }
+
+    /**
+     * Check if {@code values} contains all elements in {@code expected}. Duplicates in
+     * {@code expected} are ignored.
+     *
+     * @param msg      Message to be logged when check fails.
+     * @param values   Collection to check membership in.
+     * @param expected Collection which must be entirely present in {@code values}.
+     * @return {@code true} if the two collection are equal, {@code false} otherwise
+     */
+    public <T> boolean expectContainsAll(String msg, Collection<T> values, Collection<T> expected) {
+        Objects.requireNonNull(values);
+        Objects.requireNonNull(expected);
+
+        List<T> missing = expected.stream()
+                .filter(e -> !values.contains(e))
+                .collect(Collectors.toList());
+        if (missing.isEmpty()) {
+            return true;
+        }
+
+        String missingElems = missing.stream()
+                .map(Objects::toString)
+                .collect(Collectors.joining(/*delimiter=*/";", /*prefix=*/"{", /*suffix=*/"}"));
+        String expectedElems = expected.stream()
+                .map(Objects::toString)
+                .collect(Collectors.joining(/*delimiter=*/";", /*prefix=*/"{", /*suffix=*/"}"));
+
+        addMessage(String.format("%s (%s missing in %s)",
+                msg, missingElems, expectedElems));
+        return false;
     }
 
     /**
@@ -982,9 +1046,37 @@ public class CameraErrorCollector extends ErrorCollector {
         checkThat(reason, expected, InMatcher.in(values));
     }
 
+    /**
+     * Check if the {@code values} Collection contains the expected element.
+     *
+     * @param reason   reason to print for failure.
+     * @param values   Collection to check for membership in.
+     * @param expected the value to check.
+     */
+    public <T> void expectContains(String reason, Collection<T> values, T expected) {
+        if (values == null) {
+            throw new NullPointerException();
+        }
+        checkThat(reason, expected, InMatcher.in(values));
+    }
+
     public <T> void expectContains(T[] values, T expected) {
         String reason = "Expected value " + expected
                 + " is not contained in the given values " + Arrays.toString(values);
+        expectContains(reason, values, expected);
+    }
+
+    /**
+     * Check if the {@code values} list contains the expected element.
+     *
+     * @param values   List to check for membership in
+     * @param expected the value to check
+     */
+    public <T> void expectContains(List<T> values, T expected) {
+        String prettyList = values.stream().map(String::valueOf).collect(
+                Collectors.joining(/*delimiter=*/ ",", /*prefix=*/ "[", /*suffix=*/ "]"));
+        String reason = "Expected value " + expected + " is not contained in the given values "
+                + prettyList;
         expectContains(reason, values, expected);
     }
 

@@ -32,6 +32,7 @@ import android.service.voice.HotwordDetectedResult;
 import android.util.Log;
 
 import com.android.compatibility.common.util.PropertyUtil;
+import com.android.compatibility.common.util.SystemUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -59,7 +60,9 @@ public class Utils {
 
     private static final String TAG = Utils.class.getSimpleName();
 
-    public static final long OPERATION_TIMEOUT_MS = 5000;
+    public static final long OPERATION_TIMEOUT_MS = 10000;
+
+    private static long sAdjustedOperationTimeoutMs = -1;
 
     /** CDD restricts the max size of each successful hotword result is 100 bytes. */
     public static final int MAX_HOTWORD_DETECTED_RESULT_SIZE = 100;
@@ -112,6 +115,9 @@ public class Utils {
     public static final int VISIBLE_ACTIVITY_CALLBACK_REGISTER_NORMAL = 0;
     public static final int VISIBLE_ACTIVITY_CALLBACK_REGISTER_WITHOUT_EXECUTOR = 1;
     public static final int VISIBLE_ACTIVITY_CALLBACK_REGISTER_WITHOUT_CALLBACK = 2;
+
+    public static final int NUM_TEST_RESOURCE_FILE_MULTIPLE = 50;
+    public static final int NUM_TEST_QUERY_SESSION_MULTIPLE = 20;
 
     public static final String TEST_APP_PACKAGE = "android.voiceinteraction.testapp";
     public static final String TESTCASE_TYPE = "testcase_type";
@@ -185,6 +191,13 @@ public class Utils {
     public static final String KEY_TEST_SCENARIO = "testScenario";
     public static final String KEY_DETECTION_DELAY_MS = "detectionDelayMs";
     public static final String KEY_DETECTION_REJECTED = "detection_rejected";
+
+    /**
+     * The options key to indicate whether the MainHotwordDetectionService should accept the hotword
+     * audio stream no matter what it is.
+     */
+    public static final String KEY_ACCEPT_DETECTION = "accept_detection";
+
     public static final String KEY_INITIALIZATION_STATUS = "initialization_status";
     /**
      * It only works when the test scenario is
@@ -194,6 +207,23 @@ public class Utils {
      */
     public static final String KEY_AUDIO_EGRESS_USE_ILLEGAL_COPY_BUFFER_SIZE =
             "useIllegalCopyBufferSize";
+
+    /**
+     * The AlwaysOnHotwordDetector#updateState options key to indicate whether the
+     * MainHotwordDetectionService should close the audio stream received from an external source
+     * immediately after reading from it.
+     */
+    public static final String KEY_AUDIO_EGRESS_CLOSE_AUDIO_STREAM_AFTER_READ =
+            "closeAudioStreamAfterRead";
+
+    /**
+     * The AlwaysOnHotwordDetector#updateState options key to indicate whether the
+     * MainHotwordDetectionService should close the input audio stream if the output audio pipe is
+     * broken.
+     */
+    public static final String KEY_CLOSE_INPUT_AUDIO_STREAM_IF_OUTPUT_PIPE_BROKEN =
+            "closeInputAudioStreamIfOutputPipeBroken";
+
     public static final String KEY_TIMESTAMP_MILLIS = "timestamp_millis";
 
     public static final String VOICE_INTERACTION_KEY_CALLBACK = "callback";
@@ -233,7 +263,9 @@ public class Utils {
                     + PROXY_VOICE_INTERACTION_SERVICE_CLASS_NAME;
     public static final String VOICE_INTERACTION_SERVICE_BINDING_HELPER_CLASS_NAME =
             "android.voiceinteraction.service.VoiceInteractionServiceBindingHelper";
-
+    // File opening related
+    public static final String TEST_RESOURCE_FILE_NAME = "test_resource";
+    public static final String TEST_RESOURCE_FILE_CONTENT = "This file contains test resource";
     private static final String KEY_FAKE_DATA = "fakeData";
     private static final String VALUE_FAKE_DATA = "fakeData";
 
@@ -243,12 +275,11 @@ public class Utils {
     private static final byte[] FAKE_HOTWORD_AUDIO_DATA =
             new byte[]{'h', 'o', 't', 'w', 'o', 'r', 'd', '!'};
 
-    private static final HotwordAudioStream HOTWORD_AUDIO_STREAM =
-            new HotwordAudioStream.Builder(createFakeAudioFormat(), createFakeAudioStream())
-                    .setInitialAudio(FAKE_HOTWORD_AUDIO_DATA)
-                    .setMetadata(createFakePersistableBundleData())
-                    .setTimestamp(createFakeAudioTimestamp())
-                    .build();
+    public static final int FAKE_HOTWORD_TRAINING_AUDIO_TYPE = 7;
+    public static final int FAKE_HOTWORD_OFFSET_MILLIS = 9;
+    public static final int FAKE_HOTWORD_TRAINING_DATA_TIMEOUT_STAGE = 8;
+
+    private static final HotwordAudioStream HOTWORD_AUDIO_STREAM = createNewHotwordAudioStream();
 
     private static final HotwordAudioStream HOTWORD_AUDIO_STREAM_WRONG_COPY_BUFFER_SIZE =
             new HotwordAudioStream.Builder(createFakeAudioFormat(), createFakeAudioStream())
@@ -258,15 +289,38 @@ public class Utils {
                     .build();
 
     public static final HotwordDetectedResult AUDIO_EGRESS_DETECTED_RESULT =
-            new HotwordDetectedResult.Builder().setAudioStreams(
-                    List.of(HOTWORD_AUDIO_STREAM)).build();
+            createNewAudioEgressDetectedResult(HOTWORD_AUDIO_STREAM);
 
     public static final HotwordDetectedResult AUDIO_EGRESS_DETECTED_RESULT_WRONG_COPY_BUFFER_SIZE =
-            new HotwordDetectedResult.Builder().setAudioStreams(
-                    List.of(HOTWORD_AUDIO_STREAM_WRONG_COPY_BUFFER_SIZE)).build();
+            createNewAudioEgressDetectedResult(HOTWORD_AUDIO_STREAM_WRONG_COPY_BUFFER_SIZE);
 
     public static final boolean SYSPROP_VISUAL_QUERY_SERVICE_ENABLED =
             SystemProperties.getBoolean("ro.hotword.visual_query_service_enabled", false);
+
+    /**
+     * Creates a new instance of HotwordDetectedResult that contains the provided
+     * hotwordAudioStream.
+     */
+    public static HotwordDetectedResult createNewAudioEgressDetectedResult(
+            HotwordAudioStream hotwordAudioStream) {
+        return new HotwordDetectedResult.Builder()
+                .setAudioStreams(List.of(hotwordAudioStream))
+                .build();
+    }
+
+    /** Creates an audio stream with FAKE_HOTWORD_AUDIO_DATA. */
+    public static HotwordAudioStream createNewHotwordAudioStream() {
+        return createNewHotwordAudioStream(createFakeAudioStream());
+    }
+
+    /** Creates an audio stream with FAKE_HOTWORD_AUDIO_DATA. */
+    public static HotwordAudioStream createNewHotwordAudioStream(ParcelFileDescriptor audioStream) {
+        return new HotwordAudioStream.Builder(createFakeAudioFormat(), audioStream)
+                .setInitialAudio(FAKE_HOTWORD_AUDIO_DATA)
+                .setMetadata(createFakePersistableBundleData())
+                .setTimestamp(createFakeAudioTimestamp())
+                .build();
+    }
 
     /**
      * Returns the PersistableBundle data that is used for testing.
@@ -379,8 +433,9 @@ public class Utils {
     }
 
     public static boolean await(CountDownLatch latch) {
+        final long timeoutMs = getAdjustedOperationTimeoutMs();
         try {
-            if (latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) return true;
+            if (latch.await(timeoutMs, TimeUnit.MILLISECONDS)) return true;
             Log.e(TAG, "latch timed out");
         } catch (InterruptedException e) {
             /* ignore */
@@ -390,8 +445,9 @@ public class Utils {
     }
 
     public static boolean await(Condition condition) {
+        final long timeoutMs = getAdjustedOperationTimeoutMs();
         try {
-            if (condition.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) return true;
+            if (condition.await(timeoutMs, TimeUnit.MILLISECONDS)) return true;
             Log.e(TAG, "condition timed out");
         } catch (InterruptedException e) {
             /* ignore */
@@ -423,4 +479,36 @@ public class Utils {
         Log.v(TAG, "virtual device property=" + property);
         return Objects.equals(property, "1");
     }
+
+    /**
+     * Returns an operation timeout (in milliseconds) adjusted when running on
+     * a slower device.
+     */
+    public static long getAdjustedOperationTimeoutMs() {
+        // We cache the value in sAdjustedOperationTimeoutMs so we don't need to
+        // send a command to the device every time this method is called.  The
+        // hw_timeout_multiplier is not a dynamic value.
+        if (sAdjustedOperationTimeoutMs == -1) {
+            final String property = PropertyUtil.getProperty("ro.hw_timeout_multiplier");
+            int multiplier = 1;
+            if (property != null) {
+                try {
+                    multiplier = Integer.parseInt(property);
+                } catch (NumberFormatException e) {
+                    // Ignore and keep 'multiplier' at 1.
+                }
+            }
+            sAdjustedOperationTimeoutMs = OPERATION_TIMEOUT_MS * multiplier;
+        }
+        return sAdjustedOperationTimeoutMs;
+    }
+
+    /** Sets the secure accessibility settings for visual query detector */
+    public static void toggleVisualQueryAccessibilitySettings(boolean enable) {
+        final StringBuilder cmd = new StringBuilder("settings put secure ")
+                .append("visual_query_accessibility_detection_enabled").append(" ")
+                .append(enable ? "1" : "0");
+        SystemUtil.runShellCommand(cmd.toString());
+    }
+
 }

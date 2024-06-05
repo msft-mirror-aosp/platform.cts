@@ -35,10 +35,13 @@ import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.Helper;
 import android.content.Context;
 import android.content.Intent;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.View;
 
 import com.android.compatibility.common.util.CddTest;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -46,6 +49,9 @@ import org.junit.Test;
  */
 public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivityLaunch {
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     // This does not assert that icon is actually hidden, this has to be done manually.
     @Test
@@ -234,7 +240,144 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
     @Test
     @CddTest(requirement = "9.8.14/C1-1")
     // This test asserts save dialog is suppressed when there is credman field in screen
-    public void testSuppressingSaveDialogOnActivityThatOnlyHasCredmanField() throws Exception {
+    public void testSuppressSaveDialog_onOnlyCredmanFields_withIsCredential() throws Exception {
+        testSuppressSaveDialog_OnCredmanOnlyFields(false);
+    }
+
+    @Test
+    @CddTest(requirement = "9.8.14/C1-1")
+    // This test asserts save dialog is suppressed when there is credman field in screen
+    public void testSuppressSaveDialog_onOnlyCredmanFields_withAutofillHint() throws Exception {
+        testSuppressSaveDialog_OnCredmanOnlyFields(true);
+    }
+
+    @Test
+    @CddTest(requirement = "9.8.14/C1-1")
+    // This test asserts save dialog is suppressed when there is both credman and non-credman fields
+    // in activity
+    public void testSuppressSaveDialog_onMixedFields_withIsCredential()
+            throws Exception {
+        testSuppressSaveDialog_onMixedFields(false);
+    }
+
+    @Test
+    @CddTest(requirement = "9.8.14/C1-1")
+    // This test asserts save dialog is suppressed when there is both credman and non-credman fields
+    // in activity
+    public void testSuppressSaveDialog_onMixedFields_withAutofillHint()
+            throws Exception {
+        testSuppressSaveDialog_onMixedFields(true);
+    }
+
+    @Test
+    public void testShowSaveUiAfterLoginViewReset() throws Exception {
+        // Set service.
+        enableService();
+
+        // Start SimpleBeforeLoginActivity before login activity.
+        startActivityWithFlag(mContext, SimpleBeforeLoginActivity.class,
+                Intent.FLAG_ACTIVITY_NEW_TASK);
+        mUiBot.assertShownByRelativeId(SimpleBeforeLoginActivity.ID_BEFORE_LOGIN);
+
+        // Start LoginActivity.
+        startActivityWithFlag(SimpleBeforeLoginActivity.getCurrentActivity(), LoginActivity.class,
+                /* flags= */ 0);
+        mUiBot.assertShownByRelativeId(LoginActivity.ID_USERNAME_CONTAINER);
+
+        sReplier.addResponse(new CannedFillResponse.Builder()
+                .addDataset(new CannedFillResponse.CannedDataset.Builder()
+                        .setField(ID_USERNAME, "placeholder")
+                        .setField(ID_PASSWORD, "placeholder")
+                        .setPresentation(createPresentation("placeholder"))
+                        .setInlinePresentation(createInlinePresentation("placeholder"))
+                        .build())
+                .setRequiredSavableIds(SAVE_DATA_TYPE_USERNAME, ID_USERNAME)
+                .build());
+
+        // Trigger autofill on username.
+        LoginActivity loginActivity = LoginActivity.getCurrentActivity();
+        loginActivity.onUsername(View::requestFocus);
+
+        // Wait for fill request to be processed.
+        sReplier.getNextFillRequest();
+
+        // Set data.
+        loginActivity.onUsername((v) -> v.setText("test"));
+
+        // Reset view
+        loginActivity.onUsername((v) -> v.setText(""));
+
+        // Check suggestion shows after clearing the text (verifying fix ag/27270423)
+        mUiBot.assertDatasets("placeholder");
+
+        // Start SimpleAfterLoginActivity after login activity.
+        startActivityWithFlag(loginActivity, SimpleAfterLoginActivity.class, /* flags= */ 0);
+        mUiBot.assertShownByRelativeId(SimpleAfterLoginActivity.ID_AFTER_LOGIN);
+
+        mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_USERNAME);
+
+        // Restart SimpleBeforeLoginActivity with CLEAR_TOP and SINGLE_TOP.
+        startActivityWithFlag(SimpleAfterLoginActivity.getCurrentActivity(),
+                SimpleBeforeLoginActivity.class,
+                Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        assertActivityShownInBackground(SimpleBeforeLoginActivity.class);
+
+        // Verify save ui dialog.
+        mUiBot.assertSaveShowing(SAVE_DATA_TYPE_USERNAME);
+    }
+
+    @Test
+    public void testDontShowSaveUiIfViewIsResetToEmptyProgressively() throws Exception {
+        // Set service.
+        enableService();
+
+        // Start SimpleBeforeLoginActivity before login activity.
+        startActivityWithFlag(mContext, SimpleBeforeLoginActivity.class,
+                Intent.FLAG_ACTIVITY_NEW_TASK);
+        mUiBot.assertShownByRelativeId(SimpleBeforeLoginActivity.ID_BEFORE_LOGIN);
+
+        // Start LoginActivity.
+        startActivityWithFlag(SimpleBeforeLoginActivity.getCurrentActivity(), LoginActivity.class,
+                /* flags= */ 0);
+        mUiBot.assertShownByRelativeId(LoginActivity.ID_USERNAME_CONTAINER);
+
+        sReplier.addResponse(new CannedFillResponse.Builder()
+                .setRequiredSavableIds(SAVE_DATA_TYPE_USERNAME, ID_USERNAME)
+                .build());
+
+        // Trigger autofill on username.
+        LoginActivity loginActivity = LoginActivity.getCurrentActivity();
+        loginActivity.onUsername(View::requestFocus);
+
+        // Wait for fill request to be processed.
+        sReplier.getNextFillRequest();
+
+        // Set data.
+        loginActivity.onUsername((v) -> v.setText("test"));
+        // Reset view progressively
+        loginActivity.onUsername((v) -> v.setText("tes"));
+        loginActivity.onUsername((v) -> v.setText("te"));
+        loginActivity.onUsername((v) -> v.setText("t"));
+        loginActivity.onUsername((v) -> v.setText(""));
+
+        // Start SimpleAfterLoginActivity after login activity.
+        startActivityWithFlag(loginActivity, SimpleAfterLoginActivity.class, /* flags= */ 0);
+        mUiBot.assertShownByRelativeId(SimpleAfterLoginActivity.ID_AFTER_LOGIN);
+
+        mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_USERNAME);
+
+        // Restart SimpleBeforeLoginActivity with CLEAR_TOP and SINGLE_TOP.
+        startActivityWithFlag(SimpleAfterLoginActivity.getCurrentActivity(),
+                SimpleBeforeLoginActivity.class,
+                Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        assertActivityShownInBackground(SimpleBeforeLoginActivity.class);
+
+        // Verify save ui dialog.
+        mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_USERNAME);
+    }
+
+    private void testSuppressSaveDialog_OnCredmanOnlyFields(boolean useAutofillHint)
+            throws Exception {
         // Set service.
         enableService();
 
@@ -245,7 +388,7 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
 
         // Start LoginActivity.
         startActivityWithFlag(SimpleBeforeLoginActivity.getCurrentActivity(),
-                LoginImportantForCredentialManagerActivity.class, /* flags= */ 0);
+                LoginImportantForCredentialManagerActivity.class, /* flags= */ 0, useAutofillHint);
         mUiBot.assertShownByRelativeId(
                 LoginImportantForCredentialManagerActivity.ID_USERNAME_CONTAINER);
 
@@ -273,11 +416,7 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
         mUiBot.assertSaveNotShowing();
     }
 
-    @Test
-    @CddTest(requirement = "9.8.14/C1-1")
-    // This test asserts save dialog is suppressed when there is both credman and non-credman fields
-    // in activity
-    public void testSuppressingSaveDialogOnActivityThatHasBothCredmanFieldAndNonCredmanField()
+    private void testSuppressSaveDialog_onMixedFields(boolean useAutofillHint)
             throws Exception {
         // Set service.
         enableService();
@@ -289,7 +428,8 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
 
         // Start LoginActivity.
         startActivityWithFlag(SimpleBeforeLoginActivity.getCurrentActivity(),
-                LoginMixedImportantForCredentialManagerActivity.class, /* flags= */ 0);
+                LoginMixedImportantForCredentialManagerActivity.class, /* flags= */ 0,
+                useAutofillHint);
         mUiBot.assertShownByRelativeId(
                 LoginMixedImportantForCredentialManagerActivity.ID_USERNAME_CONTAINER);
 
@@ -319,8 +459,15 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
     }
 
     private void startActivityWithFlag(Context context, Class<?> clazz, int flags) {
-        final Intent intent = new Intent(context, clazz);
-        intent.setFlags(flags);
+        startActivityWithFlag(context, clazz, flags, false);
+    }
+
+    private void startActivityWithFlag(Context context, Class<?> clazz, int flags,
+                                       boolean useAutofillHint) {
+        final Intent intent = new Intent(context, clazz)
+                .setFlags(flags)
+                .putExtra("useAutofillHint", useAutofillHint);
+
         context.startActivity(intent);
     }
 }

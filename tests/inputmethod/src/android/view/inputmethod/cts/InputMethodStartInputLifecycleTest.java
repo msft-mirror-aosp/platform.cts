@@ -22,6 +22,7 @@ import static android.view.View.SCREEN_STATE_ON;
 import static android.view.View.VISIBLE;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
@@ -41,8 +42,8 @@ import android.graphics.Color;
 import android.inputmethodservice.InputMethodService;
 import android.os.IBinder;
 import android.os.Process;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.Selection;
@@ -73,6 +74,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
+import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
@@ -85,10 +87,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
     @Rule
     public final DisableScreenDozeRule mDisableScreenDozeRule = new DisableScreenDozeRule();
@@ -100,13 +102,6 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.FocusHandlingTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
@@ -156,12 +151,11 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
             TestUtils.waitOnMainUntil(() -> screenStateCallbackRef.get() == SCREEN_STATE_OFF
                             && editText.getWindowVisibility() != VISIBLE, TIMEOUT);
 
-            if (MockImeSession.isFinishInputNoFallbackConnectionEnabled()) {
+            if (imeSession.isFinishInputNoFallbackConnectionEnabled()) {
                 // Expected only onFinishInput and the EditText is inactive for input method.
                 expectEvent(stream, onFinishInputMatcher(), TIMEOUT);
                 notExpectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-                assertFalse(TestUtils.getOnMainSync(() -> imm.isActive(editText)));
-                assertFalse(TestUtils.getOnMainSync(() -> imm.isAcceptingText()));
+                assertFalse(TestUtils.getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
             } else {
                 expectEvent(stream, onFinishInputMatcher(), TIMEOUT);
             }
@@ -179,12 +173,11 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
             mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            if (MockImeSession.isFinishInputNoFallbackConnectionEnabled()) {
+            if (imeSession.isFinishInputNoFallbackConnectionEnabled()) {
                 // Expected only onStartInput and the EditText is active for input method.
                 notExpectEvent(stream, onFinishInputMatcher(), TIMEOUT);
             }
-            assertTrue(TestUtils.getOnMainSync(
-                    () -> imm.isActive(editText) && imm.isAcceptingText()));
+            assertTrue(TestUtils.getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
             final ImeCommand commit1 = imeSession.callCommitText("Hello!", 1);
             expectCommand(stream, commit1, TIMEOUT);
             TestUtils.waitOnMainUntil(() -> TextUtils.equals(editText.getText(), "Hello!"), TIMEOUT,
@@ -235,14 +228,14 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
 
             // Not expect the input connection will be started or finished even gaining non-IME
             // focusable window focus.
-            notExpectEvent(stream, event -> "onFinishInput".equals(event.getEventName())
-                    || "onStartInput".equals(event.getEventName()), TIMEOUT);
+            notExpectEvent(stream, withDescription("onFinishInput OR onStartInput",
+                    event -> "onFinishInput".equals(event.getEventName())
+                            || "onStartInput".equals(event.getEventName())), TIMEOUT);
 
             // Verify the input connection of the EditText is still active and can accept text.
             final InputMethodManager imm = editText.getContext().getSystemService(
                     InputMethodManager.class);
-            assertTrue(TestUtils.getOnMainSync(() -> imm.isActive(editText)));
-            assertTrue(TestUtils.getOnMainSync(() -> imm.isAcceptingText()));
+            assertTrue(TestUtils.getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
         }
     }
 
@@ -307,7 +300,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final boolean instant =
                 instrumentation.getTargetContext().getPackageManager().isInstantApp();
-        final String marker1 = getTestMarker();
+        final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
         try (AutoCloseable closeable = MockTestActivityUtil.launchSync(instant,
                 TIMEOUT, Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker1))) {
 
@@ -321,7 +314,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
 
                 expectCommand(stream, imeSession.suspendCreateSession(), TIMEOUT);
 
-                final String marker2 = getTestMarker();
+                final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
                 final EditText editText = launchTestActivity(marker2);
                 TestUtils.runOnMainSync(() -> editText.getContext().getSystemService(
                         InputMethodManager.class).invalidateInput(editText));
@@ -345,8 +338,11 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
                 return false;
             }
         });
+    }
 
-        // Of course IMM#invalidateInput() should just work for ICs that support
+    @Test
+    public void testInvalidateInputOnInputConnectionWithBatchEdit() throws Exception {
+        // IMM#invalidateInput() should just work for ICs that support
         // {begin,end}BatchEdit().
         expectNativeInvalidateInput((view, editable) -> new TestInputConnection(view, editable) {
             private int mBatchEditCount = 0;
@@ -364,7 +360,10 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
                 return mBatchEditCount > 0;
             }
         });
+    }
 
+    @Test
+    public void testInvalidateInputFallback() throws Exception {
         // If IC#takeSnapshot() returns false, then fall back to IMM#restartInput()
         expectFallbackInvalidateInput((view, editable) -> new TestInputConnection(view, editable) {
             @Override
@@ -380,7 +379,10 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
                 return null;
             }
         });
+    }
 
+    @Test
+    public void testInvalidateInputOnInputConnectionWithBrokenBatchEdit() throws Exception {
         // Bug 209958658 should not prevent the system from using the native invalidateInput().
         expectNativeInvalidateInput((view, editable) -> new TestInputConnection(view, editable) {
             private int mBatchEditCount = 0;
@@ -400,7 +402,10 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
                 return true;
             }
         });
+    }
 
+    @Test
+    public void testInvalidateInputFallbackOnInputConnectionWithBrokenBatchEdit() throws Exception {
         // Even if IC#endBatchEdit() never returns false, the system should be able to fall back
         // to IMM#restartInput().  This is a regression test for Bug 208941904.
         expectFallbackInvalidateInput((view, editable) -> new TestInputConnection(view, editable) {
@@ -554,12 +559,12 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
                 imm.updateSelection(myEditor, newSelStart, newSelEnd, -1, -1);
             });
 
-            notExpectEvent(stream, event -> "onUpdateSelection".equals(event.getEventName()),
+            notExpectEvent(stream, eventMatcher("onUpdateSelection"),
                     NOT_EXPECT_TIMEOUT);
         }
     }
 
-    private static Predicate<ImeEvent> onFinishInputMatcher() {
+    private static DescribedPredicate<ImeEvent> onFinishInputMatcher() {
         return withDescription("onFinishInput()",
                 event -> TextUtils.equals("onFinishInput", event.getEventName()));
     }

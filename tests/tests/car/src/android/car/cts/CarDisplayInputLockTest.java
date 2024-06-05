@@ -31,7 +31,6 @@ import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.car.Car;
 import android.car.CarOccupantZoneManager;
-import android.car.annotation.ApiRequirements;
 import android.car.settings.CarSettings;
 import android.car.test.PermissionsCheckerRule.EnsureHasPermission;
 import android.content.ContentResolver;
@@ -42,7 +41,6 @@ import android.os.ConditionVariable;
 import android.os.SystemClock;
 import android.os.UserManager;
 import android.provider.Settings;
-import android.test.suitebuilder.annotation.SmallTest;
 import android.view.Display;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -51,8 +49,10 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
 import androidx.test.core.app.ActivityScenario;
+import androidx.test.filters.FlakyTest;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
@@ -66,6 +66,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.List;
 
+@FlakyTest(bugId = 336489418)
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class CarDisplayInputLockTest extends AbstractCarTestCase {
@@ -102,8 +103,6 @@ public class CarDisplayInputLockTest extends AbstractCarTestCase {
     }
 
     @CddTest(requirements = {"TODO(b/262236403)"})
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.UPSIDE_DOWN_CAKE_0,
-            minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
     @Test
     public void testDisplayInputLockForEachPassengerDisplay() throws Exception {
         Display[] displays = getPassengerMainDisplays();
@@ -126,8 +125,6 @@ public class CarDisplayInputLockTest extends AbstractCarTestCase {
     }
 
     @CddTest(requirements = {"TODO(b/262236403)"})
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.UPSIDE_DOWN_CAKE_0,
-            minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
     @Test
     public void testDisplayInputLockForTwoPassengerDisplaysAtOnce() throws Exception {
         Display[] displays = getPassengerMainDisplays();
@@ -163,8 +160,6 @@ public class CarDisplayInputLockTest extends AbstractCarTestCase {
     }
 
     @CddTest(requirements = {"TODO(b/262236403)"})
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.UPSIDE_DOWN_CAKE_0,
-            minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
     @Test
     @EnsureHasPermission(Car.ACCESS_PRIVATE_DISPLAY_ID)
     public void testPassengerDisplayInputLockDoesNotAffectDriverDisplay() throws Exception {

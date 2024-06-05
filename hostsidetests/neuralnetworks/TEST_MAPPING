@@ -4,6 +4,11 @@
       "name": "CtsNNAPIStatsdAtomHostTestCases[com.google.android.neuralnetworks.apex]"
     }
   ],
+  "neuralnetworks-mainline-presubmit": [
+    {
+      "name": "CtsNNAPIStatsdAtomHostTestCases"
+    }
+  ],
   "presubmit": [
     {
       "name": "CtsNNAPIStatsdAtomHostTestCases"

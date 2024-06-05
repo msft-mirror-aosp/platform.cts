@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_permissions",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -28,7 +29,7 @@ android_test_helper_app {
         "CtsPermissionDeclareUtilLib",
         "androidx.test.rules",
         "testng",
-        "truth-prebuilt",
+        "truth",
     ],
     libs: ["android.test.base"],
     // tag this module as a cts test artifact

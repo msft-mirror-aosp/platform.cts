@@ -42,8 +42,12 @@ import java.util.List;
  * utils to update shortcut targets to Accessibility Shortcut Settings.
  */
 public final class AccessibilityShortcutSettingsRule extends ExternalResource {
-    public static final int ACCESSIBILITY_BUTTON = 0;
-    public static final int ACCESSIBILITY_SHORTCUT_KEY = 1;
+    // SOFTWARE should match the int defined in com.android.internal.accessibility
+    // .common.ShortcutConstants.UserShortcutType.SOFTWARE
+    public static final int SOFTWARE = 1;
+    // HARDWARE should match the int defined in com.android.internal
+    // .accessibility.common.ShortcutConstants.UserShortcutType.HARDWARE
+    private static final int HARDWARE = 2;
 
     private static final String ACCESSIBILITY_BUTTON_TARGETS =
             "accessibility_button_targets";
@@ -79,8 +83,8 @@ public final class AccessibilityShortcutSettingsRule extends ExternalResource {
         // Rollback all settings
         final UiAutomation uiAutomation = mInstrumentation.getUiAutomation(
                 FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
-        updateShortcutSetting(uiAutomation, ACCESSIBILITY_SHORTCUT_KEY, mA11yShortcutTargetSetting);
-        updateShortcutSetting(uiAutomation, ACCESSIBILITY_BUTTON, mA11yButtonTargetSetting);
+        updateShortcutSetting(uiAutomation, HARDWARE, mA11yShortcutTargetSetting);
+        updateShortcutSetting(uiAutomation, SOFTWARE, mA11yButtonTargetSetting);
     }
 
     /**
@@ -93,7 +97,7 @@ public final class AccessibilityShortcutSettingsRule extends ExternalResource {
     public boolean configureAccessibilityShortcut(UiAutomation uiAutomation,
             String ... newUseShortcutList) {
         final String useShortcutList = getComponentIdString(newUseShortcutList);
-        return updateShortcutSetting(uiAutomation, ACCESSIBILITY_SHORTCUT_KEY, useShortcutList);
+        return updateShortcutSetting(uiAutomation, HARDWARE, useShortcutList);
     }
 
     /**
@@ -106,7 +110,7 @@ public final class AccessibilityShortcutSettingsRule extends ExternalResource {
     public boolean configureAccessibilityButton(UiAutomation uiAutomation,
             String ... newUseShortcutList) {
         final String useShortcutList = getComponentIdString(newUseShortcutList);
-        return updateShortcutSetting(uiAutomation, ACCESSIBILITY_BUTTON, useShortcutList);
+        return updateShortcutSetting(uiAutomation, SOFTWARE, useShortcutList);
     }
 
     /**
@@ -119,7 +123,7 @@ public final class AccessibilityShortcutSettingsRule extends ExternalResource {
      */
     public void waitForAccessibilityShortcutStateChange(UiAutomation uiAutomation,
             List<String> expectedList) {
-        waitForShortcutStateChange(uiAutomation, ACCESSIBILITY_SHORTCUT_KEY, expectedList);
+        waitForShortcutStateChange(uiAutomation, HARDWARE, expectedList);
     }
 
     /**
@@ -132,7 +136,7 @@ public final class AccessibilityShortcutSettingsRule extends ExternalResource {
      */
     public void waitForAccessibilityButtonStateChange(UiAutomation uiAutomation,
             List<String> expectedList) {
-        waitForShortcutStateChange(uiAutomation, ACCESSIBILITY_BUTTON, expectedList);
+        waitForShortcutStateChange(uiAutomation, SOFTWARE, expectedList);
     }
 
     /**
@@ -188,8 +192,8 @@ public final class AccessibilityShortcutSettingsRule extends ExternalResource {
 
     private String shortcutTypeToSettingName(int shortcutType) {
         switch (shortcutType) {
-            case ACCESSIBILITY_BUTTON: return ACCESSIBILITY_BUTTON_TARGETS;
-            case ACCESSIBILITY_SHORTCUT_KEY: return ACCESSIBILITY_SHORTCUT_TARGET_SERVICE;
+            case SOFTWARE: return ACCESSIBILITY_BUTTON_TARGETS;
+            case HARDWARE: return ACCESSIBILITY_SHORTCUT_TARGET_SERVICE;
             default: return "";
         }
     }
@@ -226,8 +230,8 @@ public final class AccessibilityShortcutSettingsRule extends ExternalResource {
 
     private String shortcutTypeToString(int shortcutType) {
         switch (shortcutType) {
-            case ACCESSIBILITY_BUTTON: return "ACCESSIBILITY_BUTTON";
-            case ACCESSIBILITY_SHORTCUT_KEY: return "ACCESSIBILITY_SHORTCUT_KEY";
+            case SOFTWARE: return "SOFTWARE";
+            case HARDWARE: return "HARDWARE";
             default: return "";
         }
     }

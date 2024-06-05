@@ -33,10 +33,10 @@ public class OboePlayer extends Player {
         super(sourceProvider);
 
         mPlayerSubtype = playerSubtype;
-        NativeAudioSource nativeAudioSource = mSourceProvider.getNativeSource();
-        if (nativeAudioSource != null) {
-            mAudioSource = nativeAudioSource;
-            mNativePlayer = allocNativePlayer(nativeAudioSource.getNativeObject(), mPlayerSubtype);
+        mAudioSource = mSourceProvider.getNativeSource();
+        if (mAudioSource != null) {
+            mNativePlayer = allocNativePlayer(
+                    ((NativeAudioSource) mAudioSource).getNativeObject(), mPlayerSubtype);
         } else {
             // No native source provided, so wrap a Java source in a native provider wrapper
             mAudioSource = mSourceProvider.getJavaSource();
@@ -56,24 +56,42 @@ public class OboePlayer extends Player {
         return getRoutedDeviceIdN(mNativePlayer);
     }
 
+    @Override
+    public int getSharingMode() {
+        return getSharingModeN(mNativePlayer);
+    }
+
+    @Override
+    public int getChannelCount() {
+        return getChannelCountN(mNativePlayer);
+    }
+
+    @Override
+    public boolean isMMap() {
+        return isMMapN(mNativePlayer);
+    }
+
     private int setupStream(PlayerBuilder builder) {
         mChannelCount = builder.getChannelCount();
+        mChannelMask = builder.getChannelMask();
         mSampleRate = builder.getSampleRate();
         mNumExchangeFrames = builder.getNumExchangeFrames();
         mPerformanceMode = builder.getPerformanceMode();
         mSharingMode = builder.getSharingMode();
         int routeDeviceId = builder.getRouteDeviceId();
         if (LOG) {
-            Log.i(TAG, "setupStream()");
-            Log.i(TAG, "  chans:" + mChannelCount);
-            Log.i(TAG, "  rate: " + mSampleRate);
-            Log.i(TAG, "  frames: " + mNumExchangeFrames);
-            Log.i(TAG, "  perf mode: " + mPerformanceMode);
-            Log.i(TAG, "  route device: " + routeDeviceId);
-            Log.i(TAG, "  sharing mode: " + mSharingMode);
+            Log.d(TAG, "setupStream()");
+            Log.d(TAG, "  chans:" + mChannelCount);
+            Log.d(TAG, "  mask:0x" + Integer.toHexString(mChannelMask));
+            Log.d(TAG, "  rate: " + mSampleRate);
+            Log.d(TAG, "  frames: " + mNumExchangeFrames);
+            Log.d(TAG, "  perf mode: " + mPerformanceMode);
+            Log.d(TAG, "  route device: " + routeDeviceId);
+            Log.d(TAG, "  sharing mode: " + mSharingMode);
         }
         return setupStreamN(
-                mNativePlayer, mChannelCount, mSampleRate, mPerformanceMode, mSharingMode,
+                mNativePlayer, mChannelCount, mChannelMask, mSampleRate,
+                mPerformanceMode, mSharingMode,
                 routeDeviceId);
     }
 
@@ -122,8 +140,9 @@ public class OboePlayer extends Player {
 
     private native long allocNativePlayer(long nativeSource, int playerSubtype);
 
-    private native int setupStreamN(long nativePlayer, int channelCount, int sampleRate,
-                                    int performanceMode, int sharingMode, int routeDeviceId);
+    private native int setupStreamN(long nativePlayer, int channelCount, int channelMask,
+                                    int sampleRate, int performanceMode, int sharingMode,
+                                    int routeDeviceId);
 
     private native int teardownStreamN(long nativePlayer);
 
@@ -134,6 +153,12 @@ public class OboePlayer extends Player {
     private native int getBufferFrameCountN(long mNativePlayer);
 
     private native int getRoutedDeviceIdN(long nativePlayer);
+
+    private native int getSharingModeN(long nativePlayer);
+
+    private native int getChannelCountN(long nativePlayer);
+
+    private native boolean isMMapN(long nativePlayer);
 
     private native boolean getTimestampN(long nativePlayer, AudioTimestamp timestamp);
 

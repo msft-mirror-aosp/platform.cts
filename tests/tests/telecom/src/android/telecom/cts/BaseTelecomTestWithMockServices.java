@@ -16,6 +16,7 @@
 
 package android.telecom.cts;
 
+import static android.content.Context.RECEIVER_EXPORTED;
 import static android.telecom.cts.TestUtils.PACKAGE;
 import static android.telecom.cts.TestUtils.TAG;
 import static android.telecom.cts.TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
@@ -27,8 +28,10 @@ import static org.junit.Assert.assertThat;
 import android.app.AppOpsManager;
 import android.app.UiAutomation;
 import android.app.UiModeManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
@@ -80,6 +83,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 /**
@@ -242,7 +246,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         EmergencyNumber mLastOutgoingEmergencyNumber;
 
         LinkedBlockingQueue<Map<Integer, List<EmergencyNumber>>> mEmergencyNumberListQueue =
-               new LinkedBlockingQueue<>(2);
+                new LinkedBlockingQueue<>();
 
         @Override
         public void onCallStateChanged(int state) {
@@ -269,6 +273,10 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         public Map<Integer, List<EmergencyNumber>> waitForEmergencyNumberListUpdate(
                 long timeoutMillis) throws Throwable {
             return mEmergencyNumberListQueue.poll(timeoutMillis, TimeUnit.MILLISECONDS);
+        }
+
+        public void clearEmergencyNumberQueue() {
+            mEmergencyNumberListQueue.clear();
         }
     }
 
@@ -631,10 +639,70 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mOnHandoverFailedCounter = new TestUtils.InvokeCounter("mOnHandoverFailedCounter");
         mOnPhoneAccountChangedCounter = new TestUtils.InvokeCounter(
                 "mOnPhoneAccountChangedCounter");
-        mOnCallEndpointChangedCounter = new TestUtils.InvokeCounter("OnCallEndpointChanged");
+        mOnCallEndpointChangedCounter = new TestUtils.InvokeCounter("IcsOnCallEndpointChanged");
         mOnAvailableEndpointsChangedCounter = new TestUtils.InvokeCounter(
                 "OnAvailableEndpointsChanged");
         mOnMuteStateChangedCounter = new TestUtils.InvokeCounter("OnMuteStateChanged");
+    }
+
+    void registerAndEnablePhoneAccount(PhoneAccount phoneAccount) throws Exception {
+        mTelecomManager.registerPhoneAccount(phoneAccount);
+        TestUtils.enablePhoneAccount(getInstrumentation(), phoneAccount.getAccountHandle());
+        // Wait till the adb commands have executed and account is enabled in Telecom database.
+        assertPhoneAccountEnabled(phoneAccount.getAccountHandle());
+    }
+
+    void registerAccountsAndVerify(List<PhoneAccount> accountsToRegister) throws Exception {
+        for (PhoneAccount account : accountsToRegister) {
+            if (account.hasCapabilities(PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)) {
+                ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelecomManager,
+                        tm -> tm.registerPhoneAccount(account),
+                        "android.permission.REGISTER_SIM_SUBSCRIPTION");
+            } else {
+                registerAndEnablePhoneAccount(account);
+            }
+            verifyAccountRegistration(account.getAccountHandle(), account);
+        }
+    }
+
+    void unregisterAccountsAndVerify(List<PhoneAccount> accountsToRegister) {
+        for (PhoneAccount account : accountsToRegister) {
+            mTelecomManager.unregisterPhoneAccount(account.getAccountHandle());
+            assertNull(mTelecomManager.getPhoneAccount(account.getAccountHandle()));
+        }
+    }
+
+    /**
+     * helper method to set the default outgoing account handle and verify it was successfully set
+     *
+     * @param handle that will be the new default.
+     */
+    void setDefaultOutgoingPhoneAccountAndVerify(PhoneAccountHandle handle)
+            throws Exception {
+        // set the default outgoing as a self-managed account
+        TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(), handle);
+
+        // assert the self-managed is returned
+        assertEquals(handle, mTelecomManager.getUserSelectedOutgoingPhoneAccount());
+    }
+
+    void verifyAccountRegistration(PhoneAccountHandle handle, PhoneAccount phoneAccount) {
+        // The phone account is registered in the setup method.
+        assertPhoneAccountRegistered(handle);
+        assertPhoneAccountEnabled(handle);
+        PhoneAccount registeredAccount = mTelecomManager.getPhoneAccount(handle);
+
+        // It should exist and be the same as the previously registered one.
+        assertNotNull(registeredAccount);
+
+        // We cannot just check for equality of the PhoneAccount since the one we registered is not
+        // enabled, and the one we get back after registration is.
+        assertPhoneAccountEquals(phoneAccount, registeredAccount);
+
+        // An important assumption is that self-managed PhoneAccounts are automatically
+        // enabled by default.
+        assertTrue("Self-managed PhoneAccounts must be enabled by default.",
+                registeredAccount.isEnabled());
     }
 
     void addAndVerifyNewFailedIncomingCall(Uri incomingHandle, Bundle extras) {
@@ -1954,7 +2022,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     }
 
     void assertCtsConnectionServiceUnbound() {
-        if (CtsConnectionService.isBound()) {
+        if (CtsConnectionService.isServiceRegisteredToTelecom()) {
             assertTrue("CtsConnectionService not yet unbound!",
                     CtsConnectionService.waitForUnBinding());
         }
@@ -2346,5 +2414,62 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
             }
         }
         return true;
+    }
+
+    /**
+     * Change the enabled state of a package and wait for confirmation that it has happened.
+     * @param enabledSettings The component enabled settings.
+     * @throws InterruptedException
+     * @throws TimeoutException
+     */
+    public void setComponentEnabledSettingsAndWaitForBroadcasts(
+            PackageManager.ComponentEnabledSetting enabledSettings)
+            throws InterruptedException, TimeoutException {
+        final String enabledComponentName = enabledSettings.getComponentName().flattenToString();
+        final PackageManager packageManager = mContext.getPackageManager();
+        final IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_PACKAGE_CHANGED);
+        filter.addDataScheme("package");
+
+        if (packageManager.getComponentEnabledSetting(
+                enabledSettings.getComponentName()) == enabledSettings.getEnabledState()) {
+            // enabled state already correct
+            return;
+        }
+
+        final CountDownLatch latch = new CountDownLatch(1 /* count */);
+        final BroadcastReceiver br = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                final String packageName = intent.getData() != null
+                        ? intent.getData().getSchemeSpecificPart() : null;
+                final String[] receivedComponents = intent.getStringArrayExtra(
+                        Intent.EXTRA_CHANGED_COMPONENT_NAME_LIST);
+                if (packageName == null) {
+                    return;
+                }
+
+                for (String componentString : receivedComponents) {
+                    // Use contains since the componentstring is just the class name, not the full
+                    // component name sometimes.
+                    if (enabledComponentName.contains(componentString)) {
+                        latch.countDown();
+                        break;
+                    }
+                }
+            }
+        };
+        mContext.registerReceiver(br, filter, RECEIVER_EXPORTED);
+        try {
+            mContext.getPackageManager().setComponentEnabledSettings(List.of(enabledSettings));
+            if (!latch.await(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                throw new TimeoutException("Package changed broadcasts for " + enabledSettings
+                        + " not received in " + WAIT_FOR_STATE_CHANGE_TIMEOUT_MS + "ms");
+            }
+            assertEquals(packageManager.getComponentEnabledSetting(
+                    enabledSettings.getComponentName()), enabledSettings.getEnabledState());
+        } finally {
+            mContext.unregisterReceiver(br);
+        }
     }
 }

@@ -23,7 +23,6 @@ import static android.content.res.Configuration.SCREENLAYOUT_SIZE_LARGE;
 import static android.content.res.Configuration.SCREENLAYOUT_SIZE_MASK;
 import static android.content.res.Configuration.SCREENLAYOUT_SIZE_NORMAL;
 import static android.content.res.Configuration.SCREENLAYOUT_SIZE_XLARGE;
-import static android.server.wm.ActivityManagerTestBase.isTablet;
 import static android.view.WindowInsets.Type.displayCutout;
 import static android.view.WindowInsets.Type.systemBars;
 
@@ -39,6 +38,8 @@ import android.server.wm.WindowManagerStateHelper;
 import android.test.ActivityInstrumentationTestCase2;
 import android.view.WindowInsets;
 import android.view.WindowMetrics;
+
+import com.android.window.flags.Flags;
 
 public class ConfigurationScreenLayoutTest
         extends ActivityInstrumentationTestCase2<OrientationActivity> {
@@ -68,12 +69,6 @@ public class ConfigurationScreenLayoutTest
             // with non-rotated landscape physical screen, the portrait window/activity has special
             // behavior with black background on both sides to make the window/activity look
             // portrait, which returns smaller screen layout size.
-            tearDown();
-            return;
-        }
-        if (isTablet()) {
-            // TODO (b/228380863): re-enable it once the configuration calculation issue is resolved
-            // on taskbar devices.
             tearDown();
             return;
         }
@@ -138,9 +133,14 @@ public class ConfigurationScreenLayoutTest
      *         {@link Configuration#SCREENLAYOUT_SIZE_MASK} defined
      */
     private int computeScreenLayout(Activity activity) {
-        final WindowInsets windowInsets = activity.getWindowManager().getCurrentWindowMetrics()
-                .getWindowInsets();
-        final Insets insets = windowInsets.getInsets(systemBars() | displayCutout());
+        final Insets insets;
+        if (!Flags.insetsDecoupledConfiguration()) {
+            final WindowInsets windowInsets = activity.getWindowManager().getCurrentWindowMetrics()
+                    .getWindowInsets();
+            insets = windowInsets.getInsets(systemBars() | displayCutout());
+        } else {
+            insets = Insets.NONE;
+        }
         return reduceScreenLayout(activity, insets, BIGGEST_LAYOUT);
     }
 

@@ -66,6 +66,10 @@ import android.os.SystemClock;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.server.wm.settings.SettingsSession;
@@ -77,10 +81,12 @@ import androidx.test.filters.LargeTest;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.server.am.Flags;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -138,6 +144,9 @@ public class ActivityManagerFgsBgStartTest {
     private int mOrigDeviceDemoMode = 0;
     private boolean mOrigFgsTypeStartPermissionEnforcement;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -169,6 +178,7 @@ public class ActivityManagerFgsBgStartTest {
         cleanupResiduals();
         enableFgsRestriction(true, true, null);
         for (String packageName : PACKAGE_NAMES) {
+            resetFgsSawRestrictionEnabled(packageName);
             resetFgsRestriction(packageName);
         }
     }
@@ -1100,6 +1110,7 @@ public class ActivityManagerFgsBgStartTest {
      */
     @Presubmit
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_FGS_DISABLE_SAW)
     public void testFgsStartSystemAlertWindow() throws Exception {
         ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
                 PACKAGE_NAME_APP1, 0);
@@ -1108,6 +1119,9 @@ public class ActivityManagerFgsBgStartTest {
         try {
             // Enable the FGS background startForeground() restriction.
             enableFgsRestriction(true, true, null);
+            for (String packageName : PACKAGE_NAMES) {
+                enableFgsSawRestriction(false, packageName);
+            }
             // Start FGS in BG state.
             WaitForBroadcast waiter = new WaitForBroadcast(mInstrumentation.getTargetContext());
             waiter.prepare(ACTION_START_FGS_RESULT);
@@ -1136,6 +1150,51 @@ public class ActivityManagerFgsBgStartTest {
                     CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
             uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
+        } finally {
+            uid1Watcher.finish();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FGS_DISABLE_SAW)
+    public void testFgsStartSystemAlertWindowDisabled() throws Exception {
+        ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
+                WAITFOR_MSEC);
+        try {
+            // Enable the FGS background startForeground() restriction.
+            enableFgsRestriction(true, true, null);
+            for (String packageName : PACKAGE_NAMES) {
+                enableFgsSawRestriction(true, packageName);
+            }
+            // Start FGS in BG state.
+            WaitForBroadcast waiter = new WaitForBroadcast(mInstrumentation.getTargetContext());
+            waiter.prepare(ACTION_START_FGS_RESULT);
+            CommandReceiver.sendCommand(mContext,
+                    CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
+                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            // APP1 does not enter FGS state
+            try {
+                waiter.doWait(WAITFOR_MSEC);
+                fail("Service should not enter foreground service state");
+            } catch (Exception e) {
+            }
+
+            PermissionUtils.grantPermission(
+                    PACKAGE_NAME_APP1, android.Manifest.permission.SYSTEM_ALERT_WINDOW);
+            waiter = new WaitForBroadcast(mInstrumentation.getTargetContext());
+            waiter.prepare(ACTION_START_FGS_RESULT);
+            // It should still fail
+            CommandReceiver.sendCommand(mContext,
+                    CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
+                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            // STOPSHIP(b/296558535): Update to test with a system alert overlay
+            try {
+                waiter.doWait(WAITFOR_MSEC);
+                fail("Service should not enter foreground service state");
+            } catch (Exception e) {
+            }
         } finally {
             uid1Watcher.finish();
         }
@@ -2527,5 +2586,23 @@ public class ActivityManagerFgsBgStartTest {
             }
         }
         return defaultBehavior;
+    }
+
+    private void enableFgsSawRestriction(boolean enable, String packageName)
+            throws Exception {
+        runWithShellPermissionIdentity(() -> {
+                    DeviceConfig.setProperty("activity_manager",
+                            "fgs_saw_restrictions_enabled",
+                            Boolean.toString(enable), false);
+                }
+        );
+        final String action = enable ? "enable" : "disable";
+        CtsAppTestUtils.executeShellCmd(mInstrumentation, "am compat " + action
+                + " --no-kill FGS_SAW_RESTRICTIONS " + packageName);
+    }
+
+    private void resetFgsSawRestrictionEnabled(String packageName) {
+        mInstrumentation.getUiAutomation().executeShellCommand(
+                "am compat reset --no-kill FGS_SAW_RESTRICTIONS " + packageName);
     }
 }

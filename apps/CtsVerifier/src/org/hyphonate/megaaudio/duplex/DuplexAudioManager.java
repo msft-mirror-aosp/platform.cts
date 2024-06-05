@@ -37,6 +37,8 @@ public class DuplexAudioManager {
     // Player
     //TODO - explain these constants
     private int mNumPlayerChannels = 2;
+    private int mPlayerChannelMask = 0;
+
     private int mPlayerSampleRate = 48000;
     private int mNumPlayerBurstFrames;
 
@@ -53,6 +55,9 @@ public class DuplexAudioManager {
     private AudioSinkProvider mSinkProvider;
     private AudioDeviceInfo mRecorderSelectedDevice;
     private int mInputPreset = Recorder.INPUT_PRESET_NONE;
+
+    private int mPlayerSharingMode = BuilderBase.SHARING_MODE_SHARED;
+    private int mRecorderSharingMode = BuilderBase.SHARING_MODE_SHARED;
 
     public DuplexAudioManager(AudioSourceProvider sourceProvider, AudioSinkProvider sinkProvider) {
         setSources(sourceProvider, sinkProvider);
@@ -97,8 +102,22 @@ public class DuplexAudioManager {
         mRecorderSelectedDevice = deviceInfo;
     }
 
+    /**
+     * Specifies the number of player (index) channels.
+     * @param numChannels The number of index channels for the player.
+     */
     public void setNumPlayerChannels(int numChannels) {
         mNumPlayerChannels = numChannels;
+        mPlayerChannelMask = 0;
+    }
+
+    /**
+     * Specifies the positional-mask for the player.
+     * @param mask - An AudioFormat position mask.
+     */
+    public void setPlayerChannelMask(int mask) {
+        mPlayerChannelMask = mask;
+        mNumPlayerChannels = 0;
     }
 
     public void setNumRecorderChannels(int numChannels) {
@@ -106,6 +125,22 @@ public class DuplexAudioManager {
     }
     public void setRecorderSampleRate(int sampleRate) {
         mRecorderSampleRate = sampleRate;
+    }
+
+    public void setPlayerSharingMode(int mode) {
+        mPlayerSharingMode = mode;
+    }
+
+    public void setRecorderSharingMode(int mode) {
+        mRecorderSharingMode = mode;
+    }
+
+    public int getPlayerChannelCount() {
+        return mPlayer != null ? mPlayer.getChannelCount() : -1;
+    }
+
+    public int getRecorderChannelCount() {
+        return mRecorder != null ? mRecorder.getChannelCount() : -1;
     }
 
     /**
@@ -116,17 +151,22 @@ public class DuplexAudioManager {
         mInputPreset = preset;
     }
 
-    public int setupStreams(int playerType, int recorderType) {
+    /**
+     * Initializes (but does not start) the player and recorder streams.
+     * @param playerType    The API constant for the player
+     * @param recorderType  The API constant for the recorder
+     * @return a StreamBase status code specifying the result.
+     */
+    public int buildStreams(int playerType, int recorderType) {
         // Recorder
         if ((recorderType & BuilderBase.TYPE_MASK) != BuilderBase.TYPE_NONE) {
             try {
-//                mNumRecorderBufferFrames = Recorder.calcMinBufferFramesStatic(
-//                        mNumRecorderChannels, mRecorderSampleRate);
                 mNumRecorderBufferFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
                 RecorderBuilder builder = (RecorderBuilder) new RecorderBuilder()
                         .setRecorderType(recorderType)
                         .setAudioSinkProvider(mSinkProvider)
                         .setInputPreset(mInputPreset)
+                        .setSharingMode(mRecorderSharingMode)
                         .setRouteDevice(mRecorderSelectedDevice)
                         .setSampleRate(mRecorderSampleRate)
                         .setChannelCount(mNumRecorderChannels)
@@ -147,9 +187,15 @@ public class DuplexAudioManager {
                         .setSourceProvider(mSourceProvider)
                         .setSampleRate(mPlayerSampleRate)
                         .setChannelCount(mNumPlayerChannels)
+                        .setSharingMode(mPlayerSharingMode)
                         .setRouteDevice(mPlayerSelectedDevice)
                         .setNumExchangeFrames(mNumPlayerBurstFrames)
                         .setPerformanceMode(BuilderBase.PERFORMANCE_MODE_LOWLATENCY);
+                if (mNumPlayerChannels == 0) {
+                    builder.setChannelMask(mPlayerChannelMask);
+                } else {
+                    builder.setChannelCount(mNumPlayerChannels);
+                }
                 mPlayer = builder.build();
             } catch (PlayerBuilder.BadStateException ex) {
                 Log.e(TAG, "Player - BadStateException" + ex);
@@ -164,37 +210,38 @@ public class DuplexAudioManager {
 
     public int start() {
         if (LOG) {
-            Log.i(TAG, "start()...");
+            Log.d(TAG, "start()...");
         }
+
         int result = StreamBase.OK;
-        if (mRecorder != null && (result = mRecorder.startStream()) != StreamBase.OK) {
+        if (mPlayer != null && (result = mPlayer.startStream()) != StreamBase.OK) {
             if (LOG) {
-                Log.i(TAG, "  recorder fails result:" + result);
+                Log.d(TAG, "  player fails result:" + result);
             }
             return result;
         }
 
-        if (mPlayer != null && (result = mPlayer.startStream()) != StreamBase.OK) {
+        if (mRecorder != null && (result = mRecorder.startStream()) != StreamBase.OK) {
             if (LOG) {
-                Log.i(TAG, "  player fails result:" + result);
+                Log.d(TAG, "  recorder fails result:" + result);
             }
+            // Shut down
+            stop();
+
             return result;
         }
 
         if (LOG) {
-            Log.i(TAG, "  result:" + result);
+            Log.d(TAG, "  result:" + result);
         }
         return result;
     }
 
     public int stop() {
         if (LOG) {
-            Log.i(TAG, "stop()");
+            Log.d(TAG, "stop()");
         }
         int playerResult = StreamBase.OK;
-        if (LOG) {
-            Log.i(TAG, "  mPlayer:" + mPlayer);
-        }
         if (mPlayer != null) {
             int result1 = mPlayer.stopStream();
             int result2 = mPlayer.teardownStream();
@@ -202,9 +249,6 @@ public class DuplexAudioManager {
         }
 
         int recorderResult = StreamBase.OK;
-        if (LOG) {
-            Log.i(TAG, "  mRecorder:" + mRecorder);
-        }
         if (mRecorder != null) {
             int result1 = mRecorder.stopStream();
             int result2 = mRecorder.teardownStream();
@@ -214,7 +258,7 @@ public class DuplexAudioManager {
         int ret = playerResult != StreamBase.OK ? playerResult : recorderResult;
 
         if (LOG) {
-            Log.i(TAG, "  returns:" + ret);
+            Log.d(TAG, "  returns:" + ret);
         }
         return ret;
     }
@@ -258,5 +302,51 @@ public class DuplexAudioManager {
 
         // Everything checks out OK.
         return true;
+    }
+
+    /**
+     * Don't call this until the streams are started
+     * @return true if the player is using the specified sharing mode set with
+     * setPlayerSharingMode().
+     */
+    public boolean isSpecifiedPlayerSharingMode() {
+        boolean playerOK = false;
+        if (mPlayer != null) {
+            int sharingMode = mPlayer.getSharingMode();
+            playerOK = sharingMode == mPlayerSharingMode
+                    || sharingMode == BuilderBase.SHARING_MODE_NOTSUPPORTED;
+        }
+        return playerOK;
+    }
+
+    /**
+     * Don't call this until the streams are started
+     * @return true if the recorder is using the specified sharing mode set with
+     * setRecorderSharingMode().
+     */
+    public boolean isSpecifiedRecorderSharingMode() {
+        boolean recorderOK = false;
+        if (mRecorder != null) {
+            int sharingMode = mRecorder.getSharingMode();
+            recorderOK = sharingMode == mRecorderSharingMode
+                    || sharingMode == BuilderBase.SHARING_MODE_NOTSUPPORTED;
+        }
+        return recorderOK;
+    }
+
+    /**
+     * Don't call this until the streams are started
+     * @return true if the player is using MMAP.
+     */
+    public boolean isPlayerStreamMMap() {
+        return mPlayer.isMMap();
+    }
+
+    /**
+     * Don't call this until the streams are started
+     * @return true if the recorders is using MMAP.
+     */
+    public boolean isRecorderStreamMMap() {
+        return mRecorder.isMMap();
     }
 }

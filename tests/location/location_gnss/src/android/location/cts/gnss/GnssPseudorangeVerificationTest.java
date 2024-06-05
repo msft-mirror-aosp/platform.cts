@@ -28,6 +28,7 @@ import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
 import android.location.cts.gnss.pseudorange.PseudorangePositionVelocityFromRealTimeEvents;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import androidx.test.filters.RequiresDevice;
@@ -103,11 +104,12 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
 
   /**
    * Tests that one can listen for {@link GnssMeasurementsEvent} for collection purposes.
-   * It only performs sanity checks for the measurements received.
+   * It only performs initial checks for the measurements received.
    * This tests uses actual data retrieved from Gnss HAL.
    */
   @CddTest(requirement="7.3.3")
   @RequiresDevice  // emulated devices do not support real measurements so far.
+  @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
   public void testPseudorangeValue() throws Exception {
     // Checks if Gnss hardware feature is present, skips test (pass) if not
     if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
@@ -145,7 +147,7 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
         eventCount > 0);
 
     boolean hasEventWithEnoughMeasurements = false;
-    // we received events, so perform a quick sanity check on mandatory fields
+    // we received events, so perform a quick initial check on mandatory fields
     for (GnssMeasurementsEvent event : events) {
       // Verify Gnss Event mandatory fields are in required ranges
       assertNotNull("GnssMeasurementEvent cannot be null.", event);

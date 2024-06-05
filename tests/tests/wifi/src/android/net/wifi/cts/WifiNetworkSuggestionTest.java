@@ -23,6 +23,7 @@ import static android.net.wifi.WifiEnterpriseConfig.Eap.WAPI_CERT;
 import static android.os.Process.myUid;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -39,6 +40,7 @@ import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.MacAddress;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiEnterpriseConfig;
 import android.net.wifi.WifiManager;
@@ -50,6 +52,7 @@ import android.net.wifi.hotspot2.pps.HomeSp;
 import android.os.Build;
 import android.os.ParcelUuid;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.support.test.uiautomator.UiDevice;
 import android.telephony.TelephonyManager;
 
@@ -59,8 +62,10 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.wifi.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -148,6 +153,9 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
                 () -> sWifiManager.isScanThrottleEnabled());
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> sWifiManager.setScanThrottleEnabled(false));
+        // turn screen on
+        sTestHelper.turnScreenOn();
+
 
         // enable Wifi
         sWasWifiEnabled = ShellIdentityUtils.invokeWithShellPermissions(
@@ -205,8 +213,6 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     public void setUp() throws Exception {
         assumeTrue(sShouldRunTest);
         mExecutorService = Executors.newSingleThreadScheduledExecutor();
-        // turn screen on
-        sTestHelper.turnScreenOn();
 
         // Disconnect current network if any.
         ShellIdentityUtils.invokeWithShellPermissions(
@@ -219,10 +225,8 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
                 () -> sWifiManager.getConnectionInfo().getNetworkId() == -1);
 
         // Clear any existing app state before each test.
-        if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
-            ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> sWifiManager.removeAppState(myUid(), sContext.getPackageName()));
-        }
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> sWifiManager.removeAppState(myUid(), sContext.getPackageName()));
     }
 
     @After
@@ -234,11 +238,8 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
         }
         mExecutorService.shutdownNow();
         // Clear any existing app state after each test.
-        if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
-            ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> sWifiManager.removeAppState(myUid(), sContext.getPackageName()));
-        }
-        sTestHelper.turnScreenOff();
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> sWifiManager.removeAppState(myUid(), sContext.getPackageName()));
     }
 
     private static final String CA_SUITE_B_RSA3072_CERT_STRING =
@@ -1188,8 +1189,10 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
         // Should not disconnect immediately
         assertFalse(callback.onLostCalled);
         // After linger time out, should disconnect.
-        Thread.sleep(DURATION_NETWORK_LINGER_MILLIS);
-        assertTrue(callback.onLostCalled);
+        PollingCheck.check(
+                "Wifi not disconnected",
+                DURATION_NETWORK_LINGER_MILLIS,
+                () -> callback.onLostCalled);
     }
 
     /**
@@ -1325,5 +1328,98 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
                         .build();
         sNsNetworkCallback = sTestHelper.testConnectionFailureFlowWithSuggestion(
                 sTestNetwork, suggestion, mExecutorService, Set.of(NET_CAPABILITY_OEM_PRIVATE));
+    }
+
+    /**
+     * Tests {@link WifiNetworkSuggestion.Builder#setWifi7Enabled(boolean)}. Validate default
+     * behavior.
+     */
+    @ApiTest(apis = {"android.net.wifi.WifiNetworkSuggestion.Builder#setWifi7Enabled",
+            "android.net.wifi.WifiNetworkSuggestion#isWifi7Enabled"})
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testWifi7EnabledDefaultBehavior() throws Exception {
+        // Make sure device supports Wi-Fi 7
+        assumeTrue(sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE));
+        List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
+                () -> sWifiManager.getPrivilegedConfiguredNetworks());
+        assertWithMessage("Need at least one saved network").that(
+                savedNetworks.isEmpty()).isFalse();
+        WifiConfiguration wifi7Network = TestHelper.findFirstAvailableSavedNetwork(sWifiManager,
+                savedNetworks, TestHelper.AP_CAPABILITY_BIT_WIFI7);
+        // TODO: b/322011012
+        assumeTrue("Unable to locate Wi-Fi 7 networks in range.\n", wifi7Network != null);
+        WifiNetworkSuggestion suggestion =
+                TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
+                        wifi7Network).build();
+        assertTrue(suggestion.isWifi7Enabled());
+        // Connect with default behavior: Enable Wi-Fi 7
+        sNsNetworkCallback = sTestHelper.testConnectionFlowWithSuggestion(wifi7Network, suggestion,
+                mExecutorService, Set.of(), false);
+        // Check new connection is Wi-Fi 7
+        assertTrue(sWifiManager.getConnectionInfo().getWifiStandard()
+                == ScanResult.WIFI_STANDARD_11BE);
+    }
+
+    /**
+     * Tests {@link WifiNetworkSuggestion.Builder#setWifi7Enabled(boolean)}. Validate disable
+     * Wi-Fi 7.
+     */
+    @ApiTest(apis = {"android.net.wifi.WifiNetworkSuggestion.Builder#setWifi7Enabled",
+            "android.net.wifi.WifiNetworkSuggestion#isWifi7Enabled"})
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testWifi7Disabled() throws Exception {
+        // Make sure device supports Wi-Fi 7
+        assumeTrue(sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE));
+        List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
+                () -> sWifiManager.getPrivilegedConfiguredNetworks());
+        assertWithMessage("Need at least one saved network").that(
+                savedNetworks.isEmpty()).isFalse();
+        WifiConfiguration wifi7Network = TestHelper.findFirstAvailableSavedNetwork(sWifiManager,
+                savedNetworks, TestHelper.AP_CAPABILITY_BIT_WIFI7);
+        // TODO: b/322011012
+        assumeTrue("Unable to locate Wi-Fi 7 networks in range.\n", wifi7Network != null);
+        WifiNetworkSuggestion suggestion =
+                TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
+                        wifi7Network).setWifi7Enabled(false).build();
+        assertFalse(suggestion.isWifi7Enabled());
+        // Disable Wi-Fi 7 and connect
+        sNsNetworkCallback = sTestHelper.testConnectionFlowWithSuggestion(wifi7Network, suggestion,
+                mExecutorService, Set.of(), false);
+        // Check new connection is not Wi-Fi 7
+        assertTrue(sWifiManager.getConnectionInfo().getWifiStandard()
+                != ScanResult.WIFI_STANDARD_11BE);
+    }
+
+    /**
+     * Tests {@link WifiNetworkSuggestion.Builder#setWifi7Enabled(boolean)}. Validate enable
+     * Wi-Fi 7.
+     */
+    @ApiTest(apis = {"android.net.wifi.WifiNetworkSuggestion.Builder#setWifi7Enabled",
+            "android.net.wifi.WifiNetworkSuggestion#isWifi7Enabled"})
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testWifi7Enabled() throws Exception {
+        // Make sure device supports Wi-Fi 7
+        assumeTrue(sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE));
+        List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
+                () -> sWifiManager.getPrivilegedConfiguredNetworks());
+        assertWithMessage("Need at least one saved network").that(
+                savedNetworks.isEmpty()).isFalse();
+        WifiConfiguration wifi7Network = TestHelper.findFirstAvailableSavedNetwork(sWifiManager,
+                savedNetworks, TestHelper.AP_CAPABILITY_BIT_WIFI7);
+        // TODO: b/322011012
+        assumeTrue("Unable to locate Wi-Fi 7 networks in range.\n", wifi7Network != null);
+        WifiNetworkSuggestion suggestion =
+                TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
+                        wifi7Network).setWifi7Enabled(true).build();
+        assertTrue(suggestion.isWifi7Enabled());
+        // Enable Wi-Fi 7 and connect
+        sNsNetworkCallback = sTestHelper.testConnectionFlowWithSuggestion(wifi7Network, suggestion,
+                mExecutorService, Set.of(), false);
+        // Check new connection is Wi-Fi 7
+        assertTrue(sWifiManager.getConnectionInfo().getWifiStandard()
+                == ScanResult.WIFI_STANDARD_11BE);
     }
 }

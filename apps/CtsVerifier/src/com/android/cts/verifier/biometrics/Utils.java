@@ -19,6 +19,7 @@ package com.android.cts.verifier.biometrics;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.hardware.biometrics.BiometricPrompt;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
@@ -27,6 +28,7 @@ import java.security.PrivateKey;
 import java.security.Signature;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyAgreement;
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -122,6 +124,22 @@ public class Utils {
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(secretKey);
         return mac;
+    }
+
+    static KeyAgreement initKeyAgreement(String keyName) throws Exception {
+        String keyAgreementAlgorithm = "ECDH";
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+
+        // Uses KeyAgreement based on Provider search order.
+        KeyAgreement keyAgreement = KeyAgreement.getInstance(keyAgreementAlgorithm);
+        keyAgreement.init(keyStore.getKey(keyName, null));
+        return keyAgreement;
+    }
+
+    static BiometricPrompt.CryptoObject initCryptoObjectWithOperationHandle(long operationHandle)
+            throws Exception {
+        return new BiometricPrompt.CryptoObject(operationHandle);
     }
 
     static byte[] doEncrypt(Cipher cipher, byte[] data) throws Exception {

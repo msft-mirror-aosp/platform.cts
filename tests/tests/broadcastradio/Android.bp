@@ -18,12 +18,15 @@ package {
 
 android_test {
     name: "CtsBroadcastRadioTestCases",
+    team: "trendy_team_aaos_framework",
     defaults: ["cts_defaults"],
     static_libs: [
+        "android.hardware.radio.flags-aconfig-java",
         "androidx.test.rules",
         "androidx.media_media",
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
+        "flag-junit",
         "platform-test-annotations",
     ],
     srcs: ["src/**/*.java"],

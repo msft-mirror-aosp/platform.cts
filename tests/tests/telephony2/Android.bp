@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_fwk_telephony",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -23,6 +24,7 @@ android_test {
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "telephony-cts-utils",
+        "telephony_flags_core_java_lib",
     ],
     srcs: [
         "src/**/*.java",

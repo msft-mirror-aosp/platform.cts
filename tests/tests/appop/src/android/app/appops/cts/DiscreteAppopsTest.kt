@@ -15,20 +15,22 @@
 
 package android.app.appops.cts
 
+import android.app.ActivityManager
+import android.app.ActivityManager.PROCESS_STATE_IMPORTANT_BACKGROUND
 import android.app.AppOpsManager
 import android.app.AppOpsManager.HISTORICAL_MODE_ENABLED_ACTIVE
 import android.app.AppOpsManager.HISTORICAL_MODE_ENABLED_PASSIVE
-import android.app.AppOpsManager.HistoricalOps
+import android.app.AppOpsManager.HISTORY_FLAGS_ALL
 import android.app.AppOpsManager.HISTORY_FLAG_AGGREGATE
 import android.app.AppOpsManager.HISTORY_FLAG_DISCRETE
-import android.app.AppOpsManager.HISTORY_FLAGS_ALL
+import android.app.AppOpsManager.HistoricalOps
+import android.app.AppOpsManager.KEY_BG_STATE_SETTLE_TIME
 import android.app.AppOpsManager.KEY_FG_SERVICE_STATE_SETTLE_TIME
 import android.app.AppOpsManager.KEY_TOP_STATE_SETTLE_TIME
-import android.app.AppOpsManager.KEY_BG_STATE_SETTLE_TIME
 import android.app.AppOpsManager.MODE_ALLOWED
 import android.app.AppOpsManager.MODE_IGNORED
-import android.app.AppOpsManager.OPSTR_CAMERA
 import android.app.AppOpsManager.OPSTR_FINE_LOCATION
+import android.app.AppOpsManager.OPSTR_RESERVED_FOR_TESTING
 import android.app.AppOpsManager.OP_FLAGS_ALL
 import android.app.AppOpsManager.OP_FLAG_SELF
 import android.app.AppOpsManager.OP_FLAG_TRUSTED_PROXIED
@@ -40,22 +42,26 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.provider.DeviceConfig
 import android.provider.DeviceConfig.NAMESPACE_PRIVACY
 import android.provider.Settings
+import android.util.Log
+import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+import java.util.function.Consumer
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 
+private const val LOG_TAG = "DiscreteAppopsTest"
 private const val PACKAGE_NAME = "android.app.appops.cts.appfordiscretetest"
 private const val TIMEOUT_MILLIS = 45000L
 private const val DEFAULT_TIME_QUANT_MILLIS = 60000L
@@ -85,13 +91,13 @@ class DiscreteAppopsTest {
     private lateinit var foregroundControlService: IAppOpsForegroundControlService
     private lateinit var serviceConnection: ServiceConnection
 
-    private var wasPermissionsHubEnabled = false
     private var previousDiscreteHistoryCutoffMillis: String? = null
     private var previousDiscreteHistoryQuantizationMillis: String? = null
     private var previousDiscreteHistoryOpFlags: String? = null
     private var previousDiscreteHistoryOpsCslist: String? = null
 
     private lateinit var appOpsManager: AppOpsManager
+    private lateinit var activityManager: ActivityManager
     private val uiDevice = UiDevice.getInstance(instrumentation)
 
     private val testPkgAppOpMode: Int
@@ -104,6 +110,7 @@ class DiscreteAppopsTest {
     @Before
     fun setUpTest() {
         appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
+        activityManager = context.getSystemService(ActivityManager::class.java)!!
         runWithShellPermissionIdentity {
             previousDiscreteHistoryCutoffMillis = DeviceConfig.getString(
                     NAMESPACE_PRIVACY, PROPERTY_CUTOFF, null)
@@ -114,11 +121,6 @@ class DiscreteAppopsTest {
             previousDiscreteHistoryOpsCslist = DeviceConfig.getString(
                     NAMESPACE_PRIVACY, PROPERTY_OPS_LIST, null)
 
-            wasPermissionsHubEnabled = DeviceConfig.getBoolean(NAMESPACE_PRIVACY,
-                    PROPERTY_PERMISSIONS_HUB_ENABLED, false)
-
-            DeviceConfig.setProperty(NAMESPACE_PRIVACY,
-                    PROPERTY_PERMISSIONS_HUB_ENABLED, true.toString(), false)
             appOpsManager.clearHistory()
             appOpsManager.resetHistoryParameters()
 
@@ -166,8 +168,6 @@ class DiscreteAppopsTest {
         runWithShellPermissionIdentity {
             appOpsManager.clearHistory()
             appOpsManager.resetHistoryParameters()
-            DeviceConfig.setProperty(NAMESPACE_PRIVACY, PROPERTY_PERMISSIONS_HUB_ENABLED,
-                    wasPermissionsHubEnabled.toString(), false)
         }
         foregroundControlService.cleanup()
         context.unbindService(serviceConnection)
@@ -187,9 +187,10 @@ class DiscreteAppopsTest {
     }
 
     @Test
+    @RequiresFlagsEnabled
     fun testRecordAndCheckAppOp() {
         waitUntilSafelyInTimeQuant(DEFAULT_TIME_QUANT_MILLIS, SAFETY_MARGIN_MILLIS)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, null, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null, null)
         val timeStamp = System.currentTimeMillis() /
                 DEFAULT_TIME_QUANT_MILLIS * DEFAULT_TIME_QUANT_MILLIS
         Thread.sleep(250)
@@ -212,7 +213,7 @@ class DiscreteAppopsTest {
 
         var op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         var discrete = op.getDiscreteAccessAt(0)
 
@@ -236,7 +237,7 @@ class DiscreteAppopsTest {
 
         op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         discrete = op.getDiscreteAccessAt(0)
 
@@ -260,15 +261,15 @@ class DiscreteAppopsTest {
 
         op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(0)
     }
 
     @Test
     fun testNotedTwiceRecordedOnce() {
         waitUntilSafelyInTimeQuant(DEFAULT_TIME_QUANT_MILLIS, SAFETY_MARGIN_MILLIS)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, null, null)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, null, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null, null)
 
         val timeStamp = System.currentTimeMillis() /
                 DEFAULT_TIME_QUANT_MILLIS * DEFAULT_TIME_QUANT_MILLIS
@@ -289,7 +290,7 @@ class DiscreteAppopsTest {
 
         var op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         var discrete = op.getDiscreteAccessAt(0)
 
@@ -303,13 +304,13 @@ class DiscreteAppopsTest {
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
         val timeStamp = System.currentTimeMillis() /
                 SHORT_TIME_QUANT_MILLIS * SHORT_TIME_QUANT_MILLIS
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
         Thread.sleep(100)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
         Thread.sleep(100)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
         var allOps = getHistoricalOps()
         assertThat(allOps).isNotNull()
         assertThat(allOps!!.uidCount).isEqualTo(1)
@@ -326,7 +327,7 @@ class DiscreteAppopsTest {
 
         var op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(2)
         var discrete = op.getDiscreteAccessAt(0)
 
@@ -345,7 +346,7 @@ class DiscreteAppopsTest {
         waitUntilSafelyInTimeQuant(DEFAULT_TIME_QUANT_MILLIS, SAFETY_MARGIN_MILLIS)
         val timeStamp = System.currentTimeMillis() /
                 DEFAULT_TIME_QUANT_MILLIS * DEFAULT_TIME_QUANT_MILLIS
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, null, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null, null)
 
         var allOps = getHistoricalOps()
 
@@ -364,7 +365,7 @@ class DiscreteAppopsTest {
 
         var op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         var discrete = op.getDiscreteAccessAt(0)
 
@@ -390,7 +391,7 @@ class DiscreteAppopsTest {
 
         op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         discrete = op.getDiscreteAccessAt(0)
 
@@ -404,7 +405,7 @@ class DiscreteAppopsTest {
         waitUntilSafelyInTimeQuant(DEFAULT_TIME_QUANT_MILLIS, SAFETY_MARGIN_MILLIS)
         var timeStamp = System.currentTimeMillis() /
                 DEFAULT_TIME_QUANT_MILLIS * DEFAULT_TIME_QUANT_MILLIS - TEN_MINUTES_MILLIS
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
 
         runWithShellPermissionIdentity {
             appOpsManager.offsetHistory(TEN_MINUTES_MILLIS)
@@ -427,7 +428,7 @@ class DiscreteAppopsTest {
 
         var op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         var discrete = op.getDiscreteAccessAt(0)
 
@@ -442,6 +443,7 @@ class DiscreteAppopsTest {
     }
 
     @Test
+    @FlakyTest
     fun testDeduplicationUidState() {
         makeTop() // pre-warm application uid state change to make it faster during test run
         makeBackground()
@@ -450,16 +452,16 @@ class DiscreteAppopsTest {
         val timestamp = System.currentTimeMillis() /
             SHORT_TIME_QUANT_MILLIS * SHORT_TIME_QUANT_MILLIS
 
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
 
         makeTop()
 
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
 
         makeBackground()
 
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
 
         var allOps = getHistoricalOps()
         assertThat(allOps).isNotNull()
@@ -474,7 +476,7 @@ class DiscreteAppopsTest {
         assertThat(packageOps).isNotNull()
         assertThat(packageOps.packageName).isEqualTo(PACKAGE_NAME)
 
-        var op = packageOps.getOp(OPSTR_CAMERA)
+        var op = packageOps.getOp(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op).isNotNull()
         assertThat(op!!.discreteAccessCount).isEqualTo(2)
         var discrete = op!!.getDiscreteAccessAt(0)
@@ -491,16 +493,17 @@ class DiscreteAppopsTest {
     }
 
     @Test
+    @FlakyTest
     fun testDeduplicationAttributions() {
         setQuantization(SHORT_TIME_QUANT_MILLIS)
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
         val timestamp = System.currentTimeMillis() /
                 SHORT_TIME_QUANT_MILLIS * SHORT_TIME_QUANT_MILLIS
 
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG1)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG2)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG1)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG2)
         Thread.sleep(SHORT_TIME_QUANT_MILLIS)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG1)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG1)
         var allOps = getHistoricalOps(HISTORY_FLAG_DISCRETE)
         assertThat(allOps).isNotNull()
         assertThat(allOps!!.uidCount).isEqualTo(1)
@@ -517,7 +520,7 @@ class DiscreteAppopsTest {
 
         var op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(2)
         var discrete = op.getDiscreteAccessAt(0)
         assertThat(discrete.getLastDuration(OP_FLAGS_ALL)).isEqualTo(-1)
@@ -534,7 +537,7 @@ class DiscreteAppopsTest {
         assertThat(attribution!!.opCount).isEqualTo(1)
         op = attribution.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(2)
         discrete = op.getDiscreteAccessAt(0)
         assertThat(discrete.getLastDuration(OP_FLAGS_ALL)).isEqualTo(-1)
@@ -550,7 +553,7 @@ class DiscreteAppopsTest {
         assertThat(attribution!!.opCount).isEqualTo(1)
         op = attribution.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         discrete = op.getDiscreteAccessAt(0)
         assertThat(discrete.getLastDuration(OP_FLAGS_ALL)).isEqualTo(-1)
@@ -558,6 +561,7 @@ class DiscreteAppopsTest {
     }
 
     @Test
+    @FlakyTest
     fun testCutoffTime() {
         runWithShellPermissionIdentity {
             DeviceConfig.setProperty(NAMESPACE_PRIVACY, PROPERTY_CUTOFF, 120000L.toString(), false)
@@ -569,7 +573,7 @@ class DiscreteAppopsTest {
         val timeStamp = System.currentTimeMillis() /
                 DEFAULT_TIME_QUANT_MILLIS * DEFAULT_TIME_QUANT_MILLIS
 
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
         var allOps = getHistoricalOps()
         assertThat(allOps).isNotNull()
         assertThat(allOps!!.uidCount).isEqualTo(1)
@@ -586,7 +590,7 @@ class DiscreteAppopsTest {
 
         var op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         var discrete = op.getDiscreteAccessAt(0)
 
@@ -603,6 +607,7 @@ class DiscreteAppopsTest {
     }
 
     @Test
+    @FlakyTest
     fun testMixedDeduplication() {
         setQuantization(SHORT_TIME_QUANT_MILLIS)
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
@@ -614,29 +619,29 @@ class DiscreteAppopsTest {
         val timestamp3 = timestamp2 + SHORT_TIME_QUANT_MILLIS
         val timestamp4 = timestamp3 + SHORT_TIME_QUANT_MILLIS
         // first quant - foreground access in tag1, background in tag2
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG2)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG2)
         makeTop()
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG1)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG1)
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
 
         // second quant - background access in tag1, foreground in tag2
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG2, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG2, null)
         makeBackground()
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG1, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG1, null)
         makeTop()
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
 
         // third quant - single foreground access in tag1, nothing in tag2
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG1, null)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG1, null)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG1, null)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG1, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG1, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG1, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG1, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG1, null)
         makeBackground()
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
 
         // fourth quant - single background access in tag2, nothing in tag1
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG2, null)
-        noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, TAG2, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG2, null)
+        noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG2, null)
         var allOps = getHistoricalOps(HISTORY_FLAG_DISCRETE)
         assertThat(allOps).isNotNull()
         assertThat(allOps!!.uidCount).isEqualTo(1)
@@ -650,7 +655,7 @@ class DiscreteAppopsTest {
         assertThat(packageOps).isNotNull()
         assertThat(packageOps.packageName).isEqualTo(PACKAGE_NAME)
 
-        var op = packageOps.getOp(OPSTR_CAMERA)
+        var op = packageOps.getOp(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op).isNotNull()
         assertThat(op!!.discreteAccessCount).isEqualTo(4)
         var discrete = op!!.getDiscreteAccessAt(0)
@@ -674,7 +679,7 @@ class DiscreteAppopsTest {
         assertThat(attribution!!.opCount).isEqualTo(1)
         op = attribution.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(3)
         discrete = op.getDiscreteAccessAt(0)
         assertThat(discrete.getLastAccessForegroundTime(OP_FLAGS_ALL)).isEqualTo(timestamp)
@@ -693,7 +698,7 @@ class DiscreteAppopsTest {
         assertThat(attribution!!.opCount).isEqualTo(1)
         op = attribution.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(3)
         discrete = op.getDiscreteAccessAt(0)
         assertThat(discrete.getLastAccessForegroundTime(OP_FLAGS_ALL)).isEqualTo(-1)
@@ -725,6 +730,7 @@ class DiscreteAppopsTest {
     }
 
     @Test
+    @FlakyTest
     fun testOperationWithDuration() {
         setQuantization(SHORT_TIME_QUANT_MILLIS)
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
@@ -732,7 +738,7 @@ class DiscreteAppopsTest {
                 SHORT_TIME_QUANT_MILLIS * SHORT_TIME_QUANT_MILLIS
 
         runWithShellPermissionIdentity {
-            appOpsManager.startOp(OPSTR_CAMERA, uid, PACKAGE_NAME, null, null)
+            appOpsManager.startOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null, null)
         }
 
         // First test that unfinished op was added without duration
@@ -752,7 +758,7 @@ class DiscreteAppopsTest {
 
         var op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         var discrete = op.getDiscreteAccessAt(0)
 
@@ -760,7 +766,7 @@ class DiscreteAppopsTest {
         assertThat(discrete.getLastAccessTime(OP_FLAGS_ALL)).isEqualTo(timestamp)
         Thread.sleep(SHORT_TIME_QUANT_MILLIS)
         runWithShellPermissionIdentity {
-            appOpsManager.finishOp(OPSTR_CAMERA, uid, PACKAGE_NAME, null)
+            appOpsManager.finishOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null)
         }
 
         allOps = getHistoricalOps()
@@ -779,7 +785,7 @@ class DiscreteAppopsTest {
 
         op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         discrete = op.getDiscreteAccessAt(0)
 
@@ -795,7 +801,7 @@ class DiscreteAppopsTest {
                 SHORT_TIME_QUANT_MILLIS * SHORT_TIME_QUANT_MILLIS
 
         runWithShellPermissionIdentity {
-            appOpsManager.startOp(OPSTR_CAMERA, uid, PACKAGE_NAME, null, null)
+            appOpsManager.startOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null, null)
         }
 
         // Force persistence
@@ -820,7 +826,7 @@ class DiscreteAppopsTest {
 
         var op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         var discrete = op.getDiscreteAccessAt(0)
 
@@ -828,7 +834,7 @@ class DiscreteAppopsTest {
         assertThat(discrete.getLastAccessTime(OP_FLAGS_ALL)).isEqualTo(timestamp)
         Thread.sleep(SHORT_TIME_QUANT_MILLIS)
         runWithShellPermissionIdentity {
-            appOpsManager.finishOp(OPSTR_CAMERA, uid, PACKAGE_NAME, null)
+            appOpsManager.finishOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null)
         }
 
         allOps = getHistoricalOps()
@@ -847,7 +853,7 @@ class DiscreteAppopsTest {
 
         op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         discrete = op.getDiscreteAccessAt(0)
 
@@ -859,8 +865,8 @@ class DiscreteAppopsTest {
     fun testOpFlagsAndDeduplication() {
         waitUntilSafelyInTimeQuant(DEFAULT_TIME_QUANT_MILLIS, SAFETY_MARGIN_MILLIS)
         runWithShellPermissionIdentity {
-            appOpsManager.noteProxyOp(OPSTR_CAMERA, PACKAGE_NAME, uid, null, null)
-            appOpsManager.noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, null, null)
+            appOpsManager.noteProxyOp(OPSTR_RESERVED_FOR_TESTING, PACKAGE_NAME, uid, null, null)
+            appOpsManager.noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null, null)
         }
 
         val timeStamp = System.currentTimeMillis() /
@@ -883,7 +889,7 @@ class DiscreteAppopsTest {
 
         var op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         var discrete = op.getDiscreteAccessAt(0)
 
@@ -909,7 +915,7 @@ class DiscreteAppopsTest {
 
         op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         discrete = op.getDiscreteAccessAt(0)
 
@@ -938,8 +944,8 @@ class DiscreteAppopsTest {
         for (i in 1..3) {
             waitUntilSafelyInTimeQuant(DEFAULT_TIME_QUANT_MILLIS, SAFETY_MARGIN_MILLIS)
             runWithShellPermissionIdentity {
-                appOpsManager.noteProxyOp(OPSTR_CAMERA, PACKAGE_NAME, uid, null, null)
-                appOpsManager.noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, null, null)
+                appOpsManager.noteProxyOp(OPSTR_RESERVED_FOR_TESTING, PACKAGE_NAME, uid, null, null)
+                appOpsManager.noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null, null)
             }
             allOps = getHistoricalOps(HISTORY_FLAG_DISCRETE)
             if (allOps!!.getUidOpsAt(0).getPackageOpsAt(0).getOpAt(0).getDiscreteAccessAt(0)
@@ -971,7 +977,7 @@ class DiscreteAppopsTest {
 
         var op = packageOps.getOpAt(0)
         assertThat(op).isNotNull()
-        assertThat(op.opName).isEqualTo(OPSTR_CAMERA)
+        assertThat(op.opName).isEqualTo(OPSTR_RESERVED_FOR_TESTING)
         assertThat(op.discreteAccessCount).isEqualTo(1)
         var discrete = op.getDiscreteAccessAt(0)
 
@@ -992,7 +998,7 @@ class DiscreteAppopsTest {
         for (i in 1..3) {
             waitUntilSafelyInTimeQuant(DEFAULT_TIME_QUANT_MILLIS, SAFETY_MARGIN_MILLIS)
             noteOp(OPSTR_FINE_LOCATION, uid, PACKAGE_NAME, null, null)
-            noteOp(OPSTR_CAMERA, uid, PACKAGE_NAME, null, null)
+            noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null, null)
             allOps = getHistoricalOps(HISTORY_FLAG_DISCRETE)
             if (allOps!!.getUidOpsAt(0).getPackageOpsAt(0).opCount == 1) break
             runWithShellPermissionIdentity {
@@ -1122,8 +1128,17 @@ class DiscreteAppopsTest {
                     ComponentName(PACKAGE_NAME,
                             "$PACKAGE_NAME.AppOpsForegroundControlActivity"))
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            // b/294950507: Make sure the UidState is also foreground to avoid the race condition
+            // between AppOpsService#noteOperationUnchecked and
+            // ActivityManagerService#noteUidProcessState that caused flakiness
             if (testPkgAppOpMode == MODE_ALLOWED) {
-                break
+                if (activityManager.getUidProcessState(uid) < PROCESS_STATE_IMPORTANT_BACKGROUND) {
+                    break
+                } else {
+                    Log.i(LOG_TAG, "AppOpMode is MODE_ALLOWED. However, the UidProcessState" +
+                        "is still not in foreground, waiting until the UidProcessState is in" +
+                        "foreground.")
+                }
             }
             Thread.sleep(100)
         }

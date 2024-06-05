@@ -91,12 +91,13 @@
 
         <activity android:name=".DaveyActivity"
              android:exported="true"/>
+        <activity android:name=".MediaProjectionTests$MediaProjectionActivity"
+            android:exported="true"/>
         <activity android:name=".ANRActivity"
              android:label="ANR Test Activity"
              android:launchMode="singleInstance"
              android:process=":ANRProcess"
              android:exported="true"/>
-
         <service android:name=".StatsdAuthenticator"
              android:exported="false">
             <intent-filter>
@@ -141,7 +142,5 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="com.android.server.cts.device.statsdatom"
          android:label="CTS tests of android.os.statsdatom stats collection">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 </manifest>

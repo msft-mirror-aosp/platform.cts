@@ -16,6 +16,7 @@
 
 package android.mediapc.cts;
 
+import static android.mediapc.cts.common.CodecMetrics.getMetrics;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
 import static android.mediapc.cts.CodecTestBase.areFormatsSupported;
 
@@ -26,6 +27,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.mediapc.cts.common.CodecMetrics;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;
@@ -40,10 +42,12 @@ public class CodecTranscoderTestBase {
     private static final String LOG_TAG = CodecTranscoderTestBase.class.getSimpleName();
     private static final boolean ENABLE_LOGS = false;
     static final String mInpPrefix = WorkDir.getMediaDirString();
-    String mMime;
+    String mMediaType;
     String mTestFile;
     int mBitrate;
     int mFrameRate;
+    double mFrameDrops;
+    long mLastPresentationTimeUs = -1;
     boolean mUseHighBitDepth;
     MediaExtractor mExtractor;
     int mMaxBFrames;
@@ -54,6 +58,8 @@ public class CodecTranscoderTestBase {
     MediaCodec mDecoder;
     CodecAsyncHandler mAsyncHandleDecoder;
     Surface mSurface;
+    InputSurface mInputSurface;
+    OutputSurface mOutputSurface;
 
     boolean mSawDecInputEOS;
     boolean mSawDecOutputEOS;
@@ -65,9 +71,9 @@ public class CodecTranscoderTestBase {
     int mDecOutputCount;
     int mEncOutputCount;
 
-    CodecTranscoderTestBase(String mime, String testfile, int bitrate, int frameRate,
+    CodecTranscoderTestBase(String mediaType, String testfile, int bitrate, int frameRate,
             boolean useHighBitDepth) {
-        mMime = mime;
+        mMediaType = mediaType;
         mTestFile = testfile;
         mBitrate = bitrate;
         mFrameRate = frameRate;
@@ -88,8 +94,8 @@ public class CodecTranscoderTestBase {
         mExtractor.setDataSource(mInpPrefix + srcFile);
         for (int trackID = 0; trackID < mExtractor.getTrackCount(); trackID++) {
             MediaFormat format = mExtractor.getTrackFormat(trackID);
-            String mime = format.getString(MediaFormat.KEY_MIME);
-            if (mime.startsWith("video/")) {
+            String mediaType = format.getString(MediaFormat.KEY_MIME);
+            if (mediaType.startsWith("video/")) {
                 mExtractor.selectTrack(trackID);
                 format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                         MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
@@ -113,6 +119,8 @@ public class CodecTranscoderTestBase {
         mDecInputCount = 0;
         mDecOutputCount = 0;
         mEncOutputCount = 0;
+        mFrameDrops = 0;
+        mLastPresentationTimeUs = -1;
     }
 
     void configureCodec(MediaFormat decFormat, MediaFormat encFormat, boolean isAsync,
@@ -170,6 +178,14 @@ public class CodecTranscoderTestBase {
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             mSawDecOutputEOS = true;
         }
+        long expectedFrameDurationUs = 1000000 / mFrameRate;
+        long presentationTimeUs = info.presentationTimeUs;
+        if (mLastPresentationTimeUs != -1) {
+            if (presentationTimeUs > mLastPresentationTimeUs + expectedFrameDurationUs) {
+                mFrameDrops++;
+            }
+        }
+        mLastPresentationTimeUs = presentationTimeUs;
         if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
             mDecOutputCount++;
         }
@@ -180,6 +196,14 @@ public class CodecTranscoderTestBase {
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             mSawEncOutputEOS = true;
         }
+        long expectedFrameDurationUs = 1000000 / mFrameRate;
+        long presentationTimeUs = info.presentationTimeUs;
+        if (mLastPresentationTimeUs != -1) {
+            if (presentationTimeUs > mLastPresentationTimeUs + expectedFrameDurationUs) {
+                mFrameDrops++;
+            }
+        }
+        mLastPresentationTimeUs = presentationTimeUs;
         if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
             mEncOutputCount++;
         }
@@ -344,7 +368,7 @@ public class CodecTranscoderTestBase {
 
     MediaFormat setUpEncoderFormat(MediaFormat decoderFormat) {
         MediaFormat encoderFormat = new MediaFormat();
-        encoderFormat.setString(MediaFormat.KEY_MIME, mMime);
+        encoderFormat.setString(MediaFormat.KEY_MIME, mMediaType);
         encoderFormat.setInteger(MediaFormat.KEY_WIDTH,
                 decoderFormat.getInteger(MediaFormat.KEY_WIDTH));
         encoderFormat.setInteger(MediaFormat.KEY_HEIGHT,
@@ -359,7 +383,7 @@ public class CodecTranscoderTestBase {
                 decoderFormat.getInteger(MediaFormat.KEY_PRIORITY));
         if (mUseHighBitDepth) {
             encoderFormat.setInteger(MediaFormat.KEY_PROFILE,
-                    Objects.requireNonNull(PROFILE_HLG_MAP.get(mMime))[0]);
+                    Objects.requireNonNull(PROFILE_HLG_MAP.get(mMediaType))[0]);
             encoderFormat.setInteger(MediaFormat.KEY_LEVEL, 1);
         }
         return encoderFormat;
@@ -369,28 +393,28 @@ public class CodecTranscoderTestBase {
 /**
  * The following class transcodes the given testFile and returns the achieved fps for transcoding.
  */
-class Transcode extends CodecTranscoderTestBase implements Callable<Double> {
+class Transcode extends CodecTranscoderTestBase implements Callable<CodecMetrics> {
     private static final String LOG_TAG = Transcode.class.getSimpleName();
 
-    private final String mDecoderName;
-    private final String mEncoderName;
-    private final boolean mIsAsync;
+    final String mDecoderName;
+    final String mEncoderName;
+    final boolean mIsAsync;
 
-    Transcode(String mime, String testFile, String decoderName, String encoderName,
+    Transcode(String mediaType, String testFile, String decoderName, String encoderName,
             boolean isAsync, boolean useHighBitDepth) {
-        super(mime, testFile, 3000000, 30, useHighBitDepth);
+        super(mediaType, testFile, 3000000, 30, useHighBitDepth);
         mDecoderName = decoderName;
         mEncoderName = encoderName;
         mIsAsync = isAsync;
     }
 
-    public Double doTranscode() throws Exception {
+    public CodecMetrics doTranscode() throws Exception {
         MediaFormat decoderFormat = setUpSource(mTestFile);
         ArrayList<MediaFormat> formats = new ArrayList<>();
         formats.add(decoderFormat);
         // If the decoder doesn't support the formats, then return 0 to indicate that decode failed
         if (!areFormatsSupported(mDecoderName, formats)) {
-            return (Double) 0.0;
+            return getMetrics(0.0, 0.0);
         }
 
         mDecoder = MediaCodec.createByCodecName(mDecoderName);
@@ -412,14 +436,20 @@ class Transcode extends CodecTranscoderTestBase implements Callable<Double> {
         mEncoder.release();
         mExtractor.release();
         double fps = mEncOutputCount / ((end - start) / 1000.0);
-        Log.d(LOG_TAG, "Mime: " + mMime + " Decoder: " + mDecoderName + " Encoder: " +
-                mEncoderName + " Achieved fps: " + fps);
-        return fps;
+        Log.d(LOG_TAG, "MediaType: " + mMediaType + " Decoder: " + mDecoderName + " Encoder: "
+                + mEncoderName + " Achieved fps: " + fps);
+        return getMetrics(fps, mFrameDrops / 30);
     }
 
     @Override
-    public Double call() throws Exception {
-        return doTranscode();
+    public CodecMetrics call() throws Exception {
+        try {
+            return doTranscode();
+        } catch (Exception e) {
+            Log.d(LOG_TAG, "MediaType: " + mMediaType + " Decoder: " + mDecoderName + " Encoder: "
+                    + mEncoderName + " Failed due to: " + e);
+            return getMetrics(-1.0, 0.0);
+        }
     }
 }
 
@@ -428,17 +458,46 @@ class Transcode extends CodecTranscoderTestBase implements Callable<Double> {
  * If input reaches eos, it will rewind the input to start position.
  */
 class TranscodeLoad extends Transcode {
+    private static final String LOG_TAG = TranscodeLoad.class.getSimpleName();
+    private static final boolean DEBUG = false;
+    private static final int TARGET_WIDTH = 1280;
+    private static final int TARGET_HEIGHT = 720;
     private final LoadStatus mLoadStatus;
 
     private long mMaxPts;
     private long mBasePts;
 
-    TranscodeLoad(String mime, String testFile, String decoderName, String encoderName,
+    TranscodeLoad(String mediaType, String testFile, String decoderName, String encoderName,
             LoadStatus loadStatus) {
-        super(mime, testFile, decoderName, encoderName, false, false);
+        super(mediaType, testFile, decoderName, encoderName, false, false);
         mLoadStatus = loadStatus;
         mMaxPts = 0;
         mBasePts = 0;
+    }
+
+    @Override
+    MediaFormat setUpEncoderFormat(MediaFormat decoderFormat) {
+        MediaFormat encoderFormat = new MediaFormat();
+        encoderFormat.setString(MediaFormat.KEY_MIME, mMediaType);
+        encoderFormat.setInteger(MediaFormat.KEY_FRAME_RATE, mFrameRate);
+        encoderFormat.setInteger(MediaFormat.KEY_BIT_RATE, mBitrate);
+        encoderFormat.setFloat(MediaFormat.KEY_I_FRAME_INTERVAL, 1.0f);
+        encoderFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
+                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
+        encoderFormat.setInteger(MediaFormat.KEY_MAX_B_FRAMES, mMaxBFrames);
+        encoderFormat.setInteger(MediaFormat.KEY_PRIORITY,
+                decoderFormat.getInteger(MediaFormat.KEY_PRIORITY));
+        if ((decoderFormat.getInteger(MediaFormat.KEY_WIDTH) != TARGET_WIDTH)
+                || (decoderFormat.getInteger(MediaFormat.KEY_HEIGHT) != TARGET_HEIGHT)) {
+            encoderFormat.setInteger(MediaFormat.KEY_WIDTH, TARGET_WIDTH);
+            encoderFormat.setInteger(MediaFormat.KEY_HEIGHT, TARGET_HEIGHT);
+        } else {
+            encoderFormat.setInteger(MediaFormat.KEY_WIDTH,
+                    decoderFormat.getInteger(MediaFormat.KEY_WIDTH));
+            encoderFormat.setInteger(MediaFormat.KEY_HEIGHT,
+                    decoderFormat.getInteger(MediaFormat.KEY_HEIGHT));
+        }
+        return encoderFormat;
     }
 
     @Override
@@ -455,8 +514,140 @@ class TranscodeLoad extends Transcode {
         }
         mSurface = mEncoder.createInputSurface();
         assertTrue("Surface is not valid", mSurface.isValid());
+        mInputSurface = new InputSurface(mSurface);
+        mInputSurface.updateSize(TARGET_WIDTH, TARGET_HEIGHT);
+        mInputSurface.makeCurrent();
         mAsyncHandleDecoder.setCallBack(mDecoder, isAsync);
-        mDecoder.configure(decFormat, mSurface, null, 0);
+        mOutputSurface = new OutputSurface();
+        mDecoder.configure(decFormat, mOutputSurface.getSurface(), null, 0);
+    }
+
+    @Override
+    public CodecMetrics doTranscode() throws Exception {
+        MediaFormat decoderFormat = setUpSource(mTestFile);
+        mDecoder = MediaCodec.createByCodecName(mDecoderName);
+        MediaFormat encoderFormat = setUpEncoderFormat(decoderFormat);
+        mEncoder = MediaCodec.createByCodecName(mEncoderName);
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        configureCodec(decoderFormat, encoderFormat, false, false);
+        mEncoder.start();
+        mDecoder.start();
+        long start = System.currentTimeMillis();
+        doWork(Integer.MAX_VALUE);
+        long end = System.currentTimeMillis();
+        mSurface.release();
+        mInputSurface.release();
+        mOutputSurface.release();
+        mDecoder.stop();
+        mDecoder.release();
+        mEncoder.stop();
+        mEncoder.release();
+        mExtractor.release();
+        double fps = mEncOutputCount / ((end - start) / 1000.0);
+        Log.d(LOG_TAG,
+                "MediaType: " + mMediaType + " Decoder: " + mDecoderName + " Encoder: "
+                        + mEncoderName + " Achieved fps: " + fps);
+        return getMetrics(fps, mFrameDrops / 30);
+    }
+
+    @Override
+    void doWork(int frameLimit) {
+        MediaCodec.BufferInfo outInfo = new MediaCodec.BufferInfo();
+        boolean outputDone = false;
+        boolean inputDone = false;
+        boolean decoderDone = false;
+
+        while (!outputDone) {
+            // Feed data to the decoder
+            if (!inputDone) {
+                int inputBufferId = mDecoder.dequeueInputBuffer(CodecTestBase.Q_DEQ_TIMEOUT_US);
+                if (inputBufferId != -1) {
+                    enqueueDecoderInput(inputBufferId);
+                    if (mSawDecInputEOS) {
+                        inputDone = true;
+                        if (DEBUG) Log.d(LOG_TAG, "Sent input EOS");
+                    }
+                } else {
+                    if (DEBUG) Log.e(LOG_TAG, "Input buffer not available");
+                }
+            }
+
+            // Assume output is available.  Loop until both assumptions are false.
+            boolean decoderOutputAvailable = !decoderDone;
+            boolean encoderOutputAvailable = true;
+            while (decoderOutputAvailable || encoderOutputAvailable) {
+                // Start by draining any pending output from the encoder.  It's important to
+                // do this before we try to stuff any more data in.
+                int outputBufferId =
+                        mEncoder.dequeueOutputBuffer(outInfo, CodecTestBase.Q_DEQ_TIMEOUT_US);
+                if (outputBufferId == MediaCodec.INFO_TRY_AGAIN_LATER) {
+                    // no output available yet
+                    if (DEBUG) Log.d(LOG_TAG, "no output from encoder available");
+                    encoderOutputAvailable = false;
+                } else if (outputBufferId == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
+                    if (DEBUG) Log.d(LOG_TAG, "encoder output buffers changed");
+                } else if (outputBufferId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                    MediaFormat newFormat = mEncoder.getOutputFormat();
+                    if (DEBUG) Log.d(LOG_TAG, "encoder output format changed: " + newFormat);
+                } else if (outputBufferId < 0) {
+                    fail("unexpected result from encoder.dequeueOutputBuffer: " + outputBufferId);
+                } else { // outputBufferId >= 0
+                    dequeueEncoderOutput(outputBufferId, outInfo);
+                    if (mSawEncOutputEOS) {
+                        outputDone = true;
+                    }
+                }
+                if (outputBufferId != MediaCodec.INFO_TRY_AGAIN_LATER) {
+                    continue;
+                }
+
+                if (!decoderDone) {
+                    outputBufferId =
+                            mDecoder.dequeueOutputBuffer(outInfo, CodecTestBase.Q_DEQ_TIMEOUT_US);
+                    if (outputBufferId == MediaCodec.INFO_TRY_AGAIN_LATER) {
+                        // no output available yet
+                        if (DEBUG) Log.d(LOG_TAG, "no output from decoder available");
+                        decoderOutputAvailable = false;
+                    } else if (outputBufferId == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
+                        if (DEBUG) Log.d(LOG_TAG, "decoder output buffers changed (we don't care)");
+                    } else if (outputBufferId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                        // expected before first buffer of data
+                        MediaFormat newFormat = mDecoder.getOutputFormat();
+                        if (DEBUG) Log.d(LOG_TAG, "decoder output format changed: " + newFormat);
+                    } else if (outputBufferId < 0) {
+                        fail("unexpected result from decoder.dequeueOutputBuffer: "
+                                + outputBufferId);
+                    } else {  // outputBufferId >= 0
+                        // The ByteBuffers are null references, but we still get a nonzero
+                        // size for the decoded data.
+                        boolean doRender = (outInfo.size != 0);
+
+                        // As soon as we call releaseOutputBuffer, the buffer will be forwarded
+                        // to SurfaceTexture to convert to a texture.  The API doesn't
+                        // guarantee that the texture will be available before the call
+                        // returns, so we need to wait for the onFrameAvailable callback to
+                        // fire.  If we don't wait, we risk rendering from the previous frame.
+                        mDecoder.releaseOutputBuffer(outputBufferId, doRender);
+                        if (doRender) {
+                            // This waits for the image and renders it after it arrives.
+                            if (DEBUG) Log.d(LOG_TAG, "awaiting frame");
+                            mOutputSurface.awaitNewImage();
+                            mOutputSurface.drawImage();
+
+                            // Send it to the encoder.
+                            mInputSurface.setPresentationTime(outInfo.presentationTimeUs * 1000);
+                            if (DEBUG) Log.d(LOG_TAG, "swapBuffers");
+                            mInputSurface.swapBuffers();
+                        }
+                        if ((outInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                            // forward decoder EOS to encoder
+                            if (DEBUG) Log.d(LOG_TAG, "signaling input EOS");
+                            mEncoder.signalEndOfInputStream();
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override

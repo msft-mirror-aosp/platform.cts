@@ -17,6 +17,7 @@
 package android.media.metrics.cts;
 
 import static android.media.cts.MediaMetricsTestConstants.LOG_SESSION_ID_KEY;
+import static android.os.statsd.media.MediaEditingExtensionAtoms.MEDIA_EDITING_ENDED_REPORTED_FIELD_NUMBER;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -25,6 +26,7 @@ import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
+import android.os.statsd.media.MediaEditingExtensionAtoms;
 
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
@@ -41,6 +43,7 @@ import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 import com.android.tradefed.util.RunUtil;
 
 import com.google.common.truth.Correspondence;
+import com.google.protobuf.ExtensionRegistry;
 
 import org.junit.After;
 import org.junit.Before;
@@ -439,6 +442,169 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         assertThat(result.getExperimentIds()).isNotEqualTo(null);
         // TODO: needs Base64 decoders to verify the data
         assertThat(result.getDrmSessionId()).isNotEqualTo(null);
+    }
+
+    @Test
+    public void testEditingEndedEvent_default() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(), TEST_PKG, MEDIA_EDITING_ENDED_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaEditingExtensionAtoms.registerAllExtensions(registry);
+
+        DeviceUtils.runDeviceTests(
+                getDevice(),
+                TEST_PKG,
+                "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
+                "testEditingEndedEvent_default",
+                new LogSessionIdListener());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).hasSize(1);
+        MediaEditingExtensionAtoms.MediaEditingEndedReported atom =
+                data.get(0)
+                        .getAtom()
+                        .getExtension(MediaEditingExtensionAtoms.mediaEditingEndedReported);
+        assertThat(atom.getFinalProgressPercent()).isEqualTo(-1f);
+        assertThat(atom.getTimeSinceEditingCreatedMillis()).isEqualTo(-1L);
+        assertThat(atom.getExporterName()).isEqualTo("");
+        assertThat(atom.getMuxerName()).isEqualTo("");
+        assertThat(atom.getFinalState().toString()).isEqualTo("FINAL_STATE_SUCCEEDED");
+        assertThat(atom.getErrorCode().toString()).isEqualTo("ERROR_CODE_NONE");
+    }
+
+    @Test
+    public void testEditingEndedEvent_error() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(), TEST_PKG, MEDIA_EDITING_ENDED_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaEditingExtensionAtoms.registerAllExtensions(registry);
+
+        DeviceUtils.runDeviceTests(
+                getDevice(),
+                TEST_PKG,
+                "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
+                "testEditingEndedEvent_error",
+                new LogSessionIdListener());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).hasSize(1);
+        MediaEditingExtensionAtoms.MediaEditingEndedReported atom =
+                data.get(0)
+                        .getAtom()
+                        .getExtension(MediaEditingExtensionAtoms.mediaEditingEndedReported);
+        assertThat(atom.getTimeSinceEditingCreatedMillis()).isEqualTo(17630000L);
+        assertThat(atom.getExporterName()).isEqualTo("");
+        assertThat(atom.getMuxerName()).isEqualTo("androidx.media3:media3-muxer:1.2.1");
+        assertThat(atom.getFinalState().toString()).isEqualTo("FINAL_STATE_ERROR");
+        assertThat(atom.getFinalProgressPercent()).isEqualTo(10f);
+        assertThat(atom.getErrorCode().toString()).isEqualTo("ERROR_CODE_FAILED_RUNTIME_CHECK");
+        assertThat(atom.getOperationTypeVideoTranscode()).isFalse();
+        assertThat(atom.getOperationTypeAudioTranscode()).isFalse();
+        assertThat(atom.getOperationTypeVideoEdit()).isTrue();
+        assertThat(atom.getOperationTypeAudioEdit()).isFalse();
+        assertThat(atom.getOperationTypeVideoTransmux()).isFalse();
+        assertThat(atom.getOperationTypeAudioTransmux()).isTrue();
+        assertThat(atom.getOperationTypeWasPaused()).isFalse();
+        assertThat(atom.getOperationTypeWasResumed()).isFalse();
+    }
+
+    @Test
+    public void testEditingEndedEvent_transcodeAndClip() throws Exception {
+        ConfigUtils.uploadConfigForPushedAtom(
+                getDevice(), TEST_PKG, MEDIA_EDITING_ENDED_REPORTED_FIELD_NUMBER);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        MediaEditingExtensionAtoms.registerAllExtensions(registry);
+
+        DeviceUtils.runDeviceTests(
+                getDevice(),
+                TEST_PKG,
+                "android.media.metrics.cts.MediaMetricsAtomHostSideTests",
+                "testEditingEndedEvent_transcodeAndClip",
+                new LogSessionIdListener());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).hasSize(1);
+        MediaEditingExtensionAtoms.MediaEditingEndedReported atom =
+                data.get(0)
+                        .getAtom()
+                        .getExtension(MediaEditingExtensionAtoms.mediaEditingEndedReported);
+        assertThat(atom.getTimeSinceEditingCreatedMillis()).isEqualTo(2_000L);
+        assertThat(atom.getExporterName())
+                .isEqualTo("androidx.media3:media3-transformer:1.3.0-beta01");
+        assertThat(atom.getMuxerName()).isEqualTo("androidx.media3:media3-muxer:1.3.0-beta01");
+        assertThat(atom.getFinalState().toString()).isEqualTo("FINAL_STATE_SUCCEEDED");
+        assertThat(atom.getFinalProgressPercent()).isEqualTo(100f);
+        assertThat(atom.getErrorCode().toString()).isEqualTo("ERROR_CODE_NONE");
+        assertThat(atom.getInputMediaItemCount()).isEqualTo(1);
+        assertThat(atom.getInputMediaItem1SourceType().toString()).isEqualTo("SOURCE_TYPE_CAMERA");
+        assertThat(atom.getInputMediaItem1HasDataTypeImage()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeVideo()).isTrue();
+        assertThat(atom.getInputMediaItem1HasDataTypeAudio()).isTrue();
+        assertThat(atom.getInputMediaItem1HasDataTypeMetadata()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeDepth()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeGainMap()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeHighFrameRate()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeCuePoints()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeGapless()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeSpatialAudio()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeHighDynamicRangeVideo()).isTrue();
+        assertThat(atom.getInputMediaItem1DurationMillis()).isEqualTo(3_750L);
+        assertThat(atom.getInputMediaItem1ClipDurationMillis()).isEqualTo(1_875L);
+        assertThat(atom.getInputMediaItem1ContainerMimeType()).isEqualTo("video/mp4");
+        assertThat(atom.getInputMediaItem1AudioSampleMimeType()).isEqualTo("audio/mp4a-latm");
+        assertThat(atom.getInputMediaItem1VideoSampleMimeType()).isEqualTo("video/hevc");
+        assertThat(atom.getInputMediaItem1CommonVideoCodec().toString()).isEqualTo("CODEC_HEVC");
+        assertThat(atom.getInputMediaItem1CodecName1()).isEqualTo("c2.android.hevc.decoder");
+        assertThat(atom.getInputMediaItem1CodecName2()).isEqualTo("c2.android.aac.decoder");
+        assertThat(atom.getInputMediaItem1AudioSampleRateHz()).isEqualTo(44100);
+        assertThat(atom.getInputMediaItem1AudioChannelCount()).isEqualTo(2);
+        assertThat(atom.getInputMediaItem1AudioSampleCount()).isEqualTo(10_000L);
+        assertThat(atom.getInputMediaItem1VideoRawWidthPixels()).isEqualTo(1080);
+        assertThat(atom.getInputMediaItem1VideoRawHeightPixels()).isEqualTo(1920);
+        assertThat(atom.getInputMediaItem1VideoResolution().toString())
+                .isEqualTo("RESOLUTION_1080P_FHD");
+        assertThat(atom.getInputMediaItem1VideoResolutionAspectRatio().toString())
+                .isEqualTo("RESOLUTION_ASPECT_RATIO_PORTRAIT");
+        assertThat(atom.getInputMediaItem1VideoDataSpace())
+                .isEqualTo(/* BT2020 | HLG | FULL */ 0b1010000001100000000000000000);
+        assertThat(atom.getInputMediaItem1VideoFrameRate()).isEqualTo(25);
+        assertThat(atom.getThroughputFps()).isEqualTo(50);
+        assertThat(atom.getOutputMediaItemHasDataTypeImage()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeVideo()).isTrue();
+        assertThat(atom.getOutputMediaItemHasDataTypeAudio()).isTrue();
+        assertThat(atom.getOutputMediaItemHasDataTypeMetadata()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeDepth()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeGainMap()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeHighFrameRate()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeCuePoints()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeGapless()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeSpatialAudio()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeHighDynamicRangeVideo()).isFalse();
+        assertThat(atom.getOutputMediaItemDurationMillis()).isEqualTo(1_875L);
+        assertThat(atom.getOutputMediaItemContainerMimeType()).isEqualTo("video/mp4");
+        assertThat(atom.getOutputMediaItemAudioSampleMimeType()).isEqualTo("audio/mp4a-latm");
+        assertThat(atom.getOutputMediaItemVideoSampleMimeType()).isEqualTo("video/avc");
+        assertThat(atom.getOutputMediaItemCommonVideoCodec().toString()).isEqualTo("CODEC_AVC");
+        assertThat(atom.getOutputMediaItemCodecName1()).isEqualTo("c2.android.avc.encoder");
+        assertThat(atom.getOutputMediaItemCodecName2()).isEqualTo("c2.android.aac.encoder");
+        assertThat(atom.getOutputMediaItemAudioSampleRateHz()).isEqualTo(44100);
+        assertThat(atom.getOutputMediaItemAudioChannelCount()).isEqualTo(2);
+        assertThat(atom.getOutputMediaItemAudioSampleCount()).isEqualTo(10_000L);
+        assertThat(atom.getOutputMediaItemVideoRawWidthPixels()).isEqualTo(720);
+        assertThat(atom.getOutputMediaItemVideoRawHeightPixels()).isEqualTo(1280);
+        assertThat(atom.getOutputMediaItemVideoResolution().toString())
+                .isEqualTo("RESOLUTION_720P_HD");
+        assertThat(atom.getOutputMediaItemVideoResolutionAspectRatio().toString())
+                .isEqualTo("RESOLUTION_ASPECT_RATIO_PORTRAIT");
+        assertThat(atom.getOutputMediaItemVideoDataSpace())
+                .isEqualTo(/* BT709 | LINEAR | FULL */ 0b1000010000010000000000000000);
+        assertThat(atom.getOutputMediaItemVideoFrameRate()).isEqualTo(25);
     }
 
     @Test

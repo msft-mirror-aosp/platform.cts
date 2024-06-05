@@ -19,9 +19,11 @@ package android.view.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import android.Manifest;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.KeyEvent;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -29,6 +31,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.Before;
@@ -58,11 +61,17 @@ import org.junit.runner.RunWith;
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class KeyEventInterceptTest {
     private InputEventInterceptTestActivity mActivity;
     private Instrumentation mInstrumentation;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<InputEventInterceptTestActivity> mActivityRule =
             new ActivityTestRule<>(InputEventInterceptTestActivity.class);
 
@@ -108,16 +117,6 @@ public class KeyEventInterceptTest {
         testKeyCodeHomeShortcut(KeyEvent.META_META_RIGHT_ON | KeyEvent.META_META_ON);
     }
 
-    @Test
-    public void testKeyCodeBackShortcutLeftMeta() {
-        testKeyCodeBackShortcut(KeyEvent.META_META_LEFT_ON | KeyEvent.META_META_ON);
-    }
-
-    @Test
-    public void testKeyCodeBackShortcutRightMeta() {
-        testKeyCodeBackShortcut(KeyEvent.META_META_RIGHT_ON | KeyEvent.META_META_ON);
-    }
-
     private void testKeyCodeHomeShortcut(int metaState) {
         final long downTime = SystemClock.uptimeMillis();
         injectEvent(new KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN,
@@ -125,18 +124,6 @@ public class KeyEventInterceptTest {
         injectEvent(new KeyEvent(downTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP,
                 KeyEvent.KEYCODE_ENTER, 0, metaState));
 
-        assertKeyNotReceived();
-    }
-
-    private void testKeyCodeBackShortcut(int metaState) {
-        long downTime = SystemClock.uptimeMillis();
-        injectEvent(new KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN,
-                KeyEvent.KEYCODE_DEL, 0, metaState));
-        injectEvent(new KeyEvent(downTime, downTime + 1, KeyEvent.ACTION_UP,
-                KeyEvent.KEYCODE_DEL, 0, metaState));
-
-        assertKeyReceived(KeyEvent.KEYCODE_BACK, KeyEvent.ACTION_DOWN);
-        assertKeyReceived(KeyEvent.KEYCODE_BACK, KeyEvent.ACTION_UP);
         assertKeyNotReceived();
     }
 

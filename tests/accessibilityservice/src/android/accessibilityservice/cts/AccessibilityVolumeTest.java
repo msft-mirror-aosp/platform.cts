@@ -13,6 +13,7 @@
  */
 package android.accessibilityservice.cts;
 
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.content.Context.AUDIO_SERVICE;
 
 import static org.junit.Assert.assertEquals;
@@ -24,7 +25,6 @@ import android.app.Instrumentation;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.Presubmit;
 
 import androidx.test.InstrumentationRegistry;
@@ -75,8 +75,7 @@ public class AccessibilityVolumeTest {
         mSingleVolume = (pm != null) && (pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                 || pm.hasSystemFeature(PackageManager.FEATURE_TELEVISION))
                 || mAudioManager.isVolumeFixed();
-        mIsPlatformAutomotive = (pm != null)
-                && (pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+        mIsPlatformAutomotive = isAutomotive(mInstrumentation.getContext());
         final int MIN = mAudioManager.getStreamMinVolume(AudioManager.STREAM_ACCESSIBILITY);
         final int MAX = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_ACCESSIBILITY);
         mFixedA11yVolume = (MIN == MAX);
@@ -99,7 +98,6 @@ public class AccessibilityVolumeTest {
 
     @Test
     @AppModeFull
-    @FlakyTest
     public void testChangeAccessibilityVolume_inAccessibilityService_shouldWork() {
         // TODO(b/233287010): Fix voice interaction and a11y concurrency in audio policy service
         // Automotive product would prevent setting a given UID as accessibility service

@@ -46,6 +46,8 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -72,7 +74,14 @@ public class AnimatorSetTest {
     Set<Integer> identityHashes = new HashSet<>();
     private static final float EPSILON = 0.001f;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
+            new AdoptShellPermissionsRule(
+                    androidx.test.platform.app.InstrumentationRegistry
+                            .getInstrumentation().getUiAutomation(),
+                    android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<AnimationActivity> mActivityRule =
             new ActivityTestRule<>(AnimationActivity.class);
 
@@ -1267,6 +1276,23 @@ public class AnimatorSetTest {
 
         mActivityRule.runOnUiThread(() -> {
             set.end();
+        });
+    }
+
+    @Test
+    public void hugeDuration() throws Throwable {
+        AnimatorSet animators = new AnimatorSet();
+        TargetObj target = new TargetObj();
+        ObjectAnimator animator = ObjectAnimator.ofFloat(target, "val", 1, 0);
+
+        // The duration + repeat count will cause a total duration > MAXINT, which caused a
+        // failure due to casting a resulting difference to an int (b/265674577)
+        animator.setDuration(1000);
+        animator.setRepeatCount(2147483);
+
+        mActivityRule.runOnUiThread(() -> {
+            animators.play(animator);
+            animators.start();
         });
     }
 

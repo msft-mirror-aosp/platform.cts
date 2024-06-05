@@ -19,6 +19,9 @@
     <include name="cts-on-gsi-exclude" />
     <include name="cts-on-gsi-exclude-non-hal" />
 
+    <!-- b/326998687 No deqp -->
+    <option name="compatibility:exclude-filter" value="CtsDeqpTestCases" />
+
     <option name="plan" value="cts-on-gsi" />
 
 </configuration>

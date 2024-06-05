@@ -21,11 +21,10 @@ import android.os.Bundle;
 import android.widget.TextView;
 
 import com.android.compatibility.common.util.CddTest;
-
+import com.android.cts.verifier.R; // needed to access resource in CTSVerifier project namespace.
 import com.android.cts.verifier.audio.audiolib.AudioUtils;
 import com.android.cts.verifier.audio.peripheralprofile.ListsHelper;
 import com.android.cts.verifier.audio.peripheralprofile.PeripheralProfile;
-import com.android.cts.verifier.R;  // needed to access resource in CTSVerifier project namespace.
 
 @CddTest(requirement = "7.7.2/H-1-1,H-4-4,H-4-5,H-4-6,H-4-7")
 public class USBAudioPeripheralAttributesActivity extends USBAudioPeripheralActivity {
@@ -219,27 +218,9 @@ public class USBAudioPeripheralAttributesActivity extends USBAudioPeripheralActi
                             " p" + ListsHelper.textFormatHex(attribs.mSampleRates) + "\n");
                 }
 
-                // Channel Masks
-                if (deviceInfo.getChannelIndexMasks().length == 0 &&
-                    deviceInfo.getChannelMasks().length == 0) {
-                    sb.append("Output - No Peripheral Channel Masks\n");
-                } else {
-                    // Channel Index Masks
-                    if (!ListsHelper.isSubset(deviceInfo.getChannelIndexMasks(),
-                            attribs.mChannelIndexMasks)) {
-                        sb.append("Output - Channel Index Masks Mismatch" +
-                                " d" + ListsHelper.textFormatHex(deviceInfo.getChannelIndexMasks()) +
-                                " p" + ListsHelper.textFormatHex(attribs.mChannelIndexMasks) + "\n");
-                    }
-
-                    // Channel Position Masks
-                    if (!ListsHelper.isSubset(deviceInfo.getChannelMasks(),
-                            attribs.mChannelPositionMasks)) {
-                        sb.append("Output - Channel Position Masks Mismatch" +
-                                " d" + ListsHelper.textFormatHex(deviceInfo.getChannelMasks()) +
-                                " p" + ListsHelper.textFormatHex(attribs.mChannelPositionMasks) + "\n");
-                    }
-                }
+                // Do not compare channel masks here as the USB devices may only report
+                // supported channel counts. In that case, different HALs may have different
+                // mapping from channel count to channel mask.
 
                 // Report
                 if (sb.toString().length() == 0){
@@ -287,24 +268,9 @@ public class USBAudioPeripheralAttributesActivity extends USBAudioPeripheralActi
                             " p" + ListsHelper.textFormatDecimal(attribs.mSampleRates) + "\n");
                 }
 
-                // Channel Masks
-                if (deviceInfo.getChannelIndexMasks().length == 0 &&
-                        deviceInfo.getChannelMasks().length == 0) {
-                    sb.append("Input - No Peripheral Channel Masks\n");
-                } else {
-                    if (!ListsHelper.isSubset(deviceInfo.getChannelIndexMasks(),
-                            attribs.mChannelIndexMasks)) {
-                        sb.append("Input - Channel Index Masks Mismatch" +
-                                " d" + ListsHelper.textFormatHex(deviceInfo.getChannelIndexMasks()) +
-                                " p" + ListsHelper.textFormatHex(attribs.mChannelIndexMasks) + "\n");
-                    }
-                    if (!ListsHelper.isSubset(deviceInfo.getChannelMasks(),
-                            attribs.mChannelPositionMasks)) {
-                        sb.append("Input - Channel Position Masks Mismatch" +
-                                " d" + ListsHelper.textFormatHex(deviceInfo.getChannelMasks()) +
-                                " p" + ListsHelper.textFormatHex(attribs.mChannelPositionMasks) + "\n");
-                    }
-                }
+                // Do not compare channel masks here as the USB devices may only report
+                // supported channel counts. In that case, different HALs may have different
+                // mapping from channel count to channel mask.
                 if (sb.toString().length() == 0){
                     metaSb.append("Input - Match\n");
                     inPass = true;
@@ -326,7 +292,8 @@ public class USBAudioPeripheralAttributesActivity extends USBAudioPeripheralActi
             mTestStatusTx.setText("No Peripheral or No Matching Profile.");
         }
 
+        mHasPassedTest = (outPass && inPass);
         // Headset not publicly available, violates CTS Verifier additional equipment guidelines.
-        getPassButton().setEnabled(outPass && inPass);
+        getPassButton().setEnabled(mHasPassedTest);
     }
 }

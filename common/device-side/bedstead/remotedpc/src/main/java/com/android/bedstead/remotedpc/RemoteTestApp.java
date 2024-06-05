@@ -20,18 +20,34 @@ import android.content.ComponentName;
 
 import androidx.annotation.Nullable;
 
+import com.android.bedstead.nene.appops.AppOps;
+import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
+import com.android.bedstead.testapp.TestAppInstancePermissions;
 
 /** {@link RemotePolicyManager} which wraps an existing {@link TestAppInstance}. */
 public class RemoteTestApp extends RemotePolicyManager {
 
+    private final TestAppInstance testAppInstance;
+
     public RemoteTestApp(TestAppInstance testAppInstance) {
         super(testAppInstance.testApp(), testAppInstance.user());
+        this.testAppInstance = testAppInstance;
     }
 
     @Nullable
     @Override
     public ComponentName componentName() {
         return null;
+    }
+
+    @Override
+    public TestAppInstancePermissions permissions() {
+        return testAppInstance.permissions();
+    }
+
+    @Override
+    public AppOps appOps() {
+        return testAppInstance.appOps();
     }
 }

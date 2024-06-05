@@ -33,6 +33,8 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.SystemUtil;
+
 import com.google.common.base.Objects;
 
 import java.io.FileInputStream;
@@ -63,7 +65,17 @@ public class NotificationHelper {
          * Search for the notification across all apps. Looks only in the list of notifications
          * that the listener has been informed about via onNotificationPosted.
          */
-        POSTED
+        POSTED,
+        /**
+         * Search for the notification across all apps. Looks only in the list of notifications
+         * that the listener has been informed about via onNotificationRemoved.
+         */
+        REMOVED,
+        /**
+         * Search for the notification across all apps. Looks only in the list of notifications
+         * that are snoozed by the system
+         */
+        SNOOZED,
     }
 
     private final Context mContext;
@@ -112,7 +124,7 @@ public class NotificationHelper {
         for (long totalWait = 0; totalWait < MAX_WAIT_TIME; totalWait += SHORT_WAIT_TIME) {
             // Need reset flag.
             found = false;
-            for (StatusBarNotification sbn : getActiveNotifications(searchType)) {
+            for (StatusBarNotification sbn : getNotifications(searchType)) {
                 Log.d(TAG, "Found " + sbn.getKey());
                 if (sbn.getId() == id) {
                     found = true;
@@ -134,7 +146,7 @@ public class NotificationHelper {
      */
     public boolean isNotificationGone(String key) {
         for (long totalWait = 0; totalWait < MAX_WAIT_TIME; totalWait += SHORT_WAIT_TIME) {
-            if (mNotificationListener.mRemoved.containsKey(key)) {
+            if (mNotificationListener.mRemovedReasons.containsKey(key)) {
                 return true;
             }
             try {
@@ -148,7 +160,7 @@ public class NotificationHelper {
 
     private StatusBarNotification findNotificationNoWait(String tag, int id,
             SEARCH_TYPE searchType) {
-        for (StatusBarNotification sbn : getActiveNotifications(searchType)) {
+        for (StatusBarNotification sbn : getNotifications(searchType)) {
             if (sbn.getId() == id && Objects.equal(sbn.getTag(), tag)) {
                 return sbn;
             }
@@ -156,13 +168,18 @@ public class NotificationHelper {
         return null;
     }
 
-    private ArrayList<StatusBarNotification> getActiveNotifications(SEARCH_TYPE searchType) {
+    private ArrayList<StatusBarNotification> getNotifications(SEARCH_TYPE searchType) {
         switch (searchType) {
             case APP:
                 return new ArrayList<>(
                         Arrays.asList(mNotificationManager.getActiveNotifications()));
             case POSTED:
                 return new ArrayList(mNotificationListener.mPosted);
+            case REMOVED:
+                return new ArrayList<>(mNotificationListener.mRemoved);
+            case SNOOZED:
+                return new ArrayList<>(
+                        Arrays.asList(mNotificationListener.getSnoozedNotifications()));
             case LISTENER:
             default:
                 return new ArrayList<>(
@@ -211,6 +228,18 @@ public class NotificationHelper {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation().dropShellPermissionIdentity();
         return mAssistant;
+    }
+
+    // For a NAS not owned by the test package, we need to check/enable the NAS with the shell
+    public void enableOtherPkgAssistantIfNeeded(String componentName) {
+        if (componentName == null || componentName.equals(getEnabledAssistant())) {
+            return;
+        }
+        SystemUtil.runShellCommand("cmd notification allow_assistant " + componentName);
+    }
+
+    public String getEnabledAssistant() {
+        return SystemUtil.runShellCommand("cmd notification get_approved_assistant");
     }
 
     public void disableAssistant(String pkg) throws IOException {

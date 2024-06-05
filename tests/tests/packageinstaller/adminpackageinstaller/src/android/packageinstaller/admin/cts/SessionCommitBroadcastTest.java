@@ -35,6 +35,7 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.text.TextUtils;
 
+import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.cts.install.lib.Install;
 import com.android.cts.install.lib.InstallUtils;
@@ -54,6 +55,7 @@ import java.util.concurrent.TimeUnit;
  * launcher app.
  */
 @RunWith(BedsteadJUnit4.class)
+@RequireRunOnSystemUser
 public class SessionCommitBroadcastTest extends BasePackageInstallTest {
 
     private static final long BROADCAST_TIMEOUT_SECS = 20;
@@ -76,9 +78,6 @@ public class SessionCommitBroadcastTest extends BasePackageInstallTest {
 
     @Test
     public void testBroadcastNotReceivedForDifferentLauncher() throws Exception {
-        assumeTrue("FEATURE_DEVICE_ADMIN unavailable", mHasFeature);
-        assumeTrue("Could not set BasicAdminReceiver.class as device owner", mAmIDeviceOwner);
-
         if (mDefaultLauncher.equals(mThisAppLauncher)) {
             // Find a different launcher
             Intent homeIntent = new Intent(Intent.ACTION_MAIN)
@@ -112,9 +111,6 @@ public class SessionCommitBroadcastTest extends BasePackageInstallTest {
 
     @Test
     public void testBroadcastNotReceivedForUpdateInstall() throws Exception {
-        assumeTrue("FEATURE_DEVICE_ADMIN unavailable", mHasFeature);
-        assumeTrue("Could not set BasicAdminReceiver.class as device owner", mAmIDeviceOwner);
-
         try {
             setLauncher(mThisAppLauncher.flattenToString());
 
@@ -142,9 +138,6 @@ public class SessionCommitBroadcastTest extends BasePackageInstallTest {
 
     @Test
     public void testBroadcastReceivedForNewInstall() throws Exception {
-        assumeTrue("FEATURE_DEVICE_ADMIN unavailable", mHasFeature);
-        assumeTrue("Could not set BasicAdminReceiver.class as device owner", mAmIDeviceOwner);
-
         setLauncher(mThisAppLauncher.flattenToString());
 
         // install the app
@@ -164,9 +157,7 @@ public class SessionCommitBroadcastTest extends BasePackageInstallTest {
 
     @Test
     public void testBroadcastReceivedForEnablingApp() throws Exception {
-        assumeTrue("FEATURE_DEVICE_ADMIN unavailable", mHasFeature);
         assumeTrue("Cannot add multiple users", UserManager.supportsMultipleUsers());
-        assumeTrue("Could not set BasicAdminReceiver.class as device owner", mAmIDeviceOwner);
 
         setLauncher(mThisAppLauncher.flattenToString());
 

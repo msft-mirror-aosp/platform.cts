@@ -40,6 +40,17 @@
                   android:supportsPictureInPicture="true"
                   android:screenOrientation="landscape"
         />
+        <activity android:name="android.server.wm.jetpack.utils.TestLetterboxPortraitSlimActivity"
+                  android:screenOrientation="portrait"
+                  android:resizeableActivity="false"
+                  android:minAspectRatio="3"
+        />
+        <activity android:name="android.server.wm.jetpack.utils.TestLetterboxLandscapeSlimActivity"
+                  android:supportsPictureInPicture="true"
+                  android:screenOrientation="landscape"
+                  android:resizeableActivity="false"
+                  android:minAspectRatio="3"
+        />
         <activity android:name="android.server.wm.jetpack.utils.TestGetWindowLayoutInfoActivity" />
         <activity android:name="android.server.wm.jetpack.utils.TestActivityWithId"
                   android:supportsPictureInPicture="true"
@@ -63,8 +74,19 @@
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"
                   android:exported="true"
         />
+        <activity android:name="android.server.wm.jetpack.utils.TestRearDisplayCrashingActivity"
+                  android:process=":Rear_display_crash_process"
+                  android:exported="true"
+        />
+        <activity android:name="android.server.wm.jetpack.utils.TestFocusPrimaryActivity"
+                  android:label="TestFocusPrimaryActivity"
+                  android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen" />
+        <activity android:name="android.server.wm.jetpack.utils.TestFocusSecondaryActivity"
+                  android:label="TestFocusSecondaryActivity"
+                  android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen" />
+
         <!-- The provider properties must match the shared one defined in the util module. -->
-        <provider android:name="android.server.wm.lifecycle.EventLog"
+        <provider android:name="android.server.wm.activity.lifecycle.EventLog"
                   android:authorities="android.server.wm.jetpack.logprovider"
                   android:exported="true"/>
 

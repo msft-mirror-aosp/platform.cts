@@ -16,7 +16,8 @@
 
 package android.view.cts;
 
-import static android.server.wm.ActivityManagerTestBase.isTablet;
+import static android.view.flags.Flags.FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY;
+import static android.view.flags.Flags.FLAG_VIEW_VELOCITY_API;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -27,7 +28,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
@@ -42,6 +42,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import android.Manifest;
 import android.app.Instrumentation;
 import android.content.ClipData;
 import android.content.Context;
@@ -66,6 +67,11 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.os.Vibrator;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.format.DateUtils;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -115,6 +121,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsMouseUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
@@ -143,6 +150,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ViewTest {
     /** timeout delta when wait in case the system is sluggish */
     private static final long TIMEOUT_DELTA = 10000;
@@ -157,13 +165,23 @@ public class ViewTest {
     private MockViewParent mMockParent;
     private Context mContext;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<ViewTestCtsActivity> mActivityRule =
             new ActivityTestRule<>(ViewTestCtsActivity.class);
 
-    @Rule
+    @Rule(order = 1)
     public ActivityTestRule<CtsActivity> mCtsActivityRule =
             new ActivityTestRule<>(CtsActivity.class, false, false);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setup() {
@@ -4010,9 +4028,6 @@ public class ViewTest {
 
     @Test
     public void testGetWindowVisibleDisplayFrame() {
-        // TODO (b/228380863): re-enable the test once the configuration calculation issue resolved
-        // on device with taskbar.
-        assumeFalse(isTablet());
         Rect outRect = new Rect();
         View view = new View(mActivity);
         // mAttachInfo is null
@@ -4100,7 +4115,7 @@ public class ViewTest {
 
         KeyEvent keyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_0);
         mInstrumentation.sendKeySync(keyEvent);
-        assertTrue(mockView.isFocused());
+        mActivityRule.runOnUiThread(() -> assertTrue(mockView.isFocused()));
         assertFalse(fitWindowsView.isFocused());
         mActivityRule.runOnUiThread(fitWindowsView::requestFocus);
         mInstrumentation.waitForIdleSync();
@@ -4114,24 +4129,29 @@ public class ViewTest {
                 CtsMouseUtil.obtainMouseEvent(MotionEvent.ACTION_SCROLL, mockView,
                         mockView.getWidth() - 1, 0);
         mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
 
         mInstrumentation.sendKeySync(keyEvent);
-        assertFalse(fitWindowsView.isInTouchMode());
+        mInstrumentation.waitForIdleSync();
+        mActivityRule.runOnUiThread(() -> assertFalse(fitWindowsView.isInTouchMode()));
 
         event.setAction(MotionEvent.ACTION_DOWN);
         mInstrumentation.sendPointerSync(event);
         event.setAction(MotionEvent.ACTION_UP);
         mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
 
         mInstrumentation.sendKeySync(keyEvent);
-        assertFalse(fitWindowsView.isInTouchMode());
+        mInstrumentation.waitForIdleSync();
+        mActivityRule.runOnUiThread(() -> assertFalse(fitWindowsView.isInTouchMode()));
 
         // Stylus events should trigger touch mode.
         event.setAction(MotionEvent.ACTION_DOWN);
         event.setSource(InputDevice.SOURCE_STYLUS);
         mInstrumentation.sendPointerSync(event);
+        mInstrumentation.waitForIdleSync();
         assertTrue(fitWindowsView.isInTouchMode());
     }
 
@@ -4459,7 +4479,7 @@ public class ViewTest {
         });
         mInstrumentation.waitForIdleSync();
 
-        mInstrumentation.sendKeySync(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK));
+        mInstrumentation.sendKeySync(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A));
         assertTrue(view.hasCalledDispatchKeyEventPreIme());
         assertTrue(view.hasCalledOnKeyPreIme());
     }
@@ -4752,11 +4772,15 @@ public class ViewTest {
     }
 
     private boolean startDragAndDrop(View view, View.DragShadowBuilder shadowBuilder) {
-        final Point size = new Point();
-        mActivity.getWindowManager().getDefaultDisplay().getSize(size);
+        final int[] viewOnScreenXY = new int[2];
+        View decorView = mActivity.getWindow().getDecorView();
+        decorView.getLocationOnScreen(viewOnScreenXY);
+        int xOnScreen = viewOnScreenXY[0] + decorView.getWidth() / 2;
+        int yOnScreen = viewOnScreenXY[1] + decorView.getHeight() / 2;
+
         final MotionEvent event = MotionEvent.obtain(
                 SystemClock.uptimeMillis(), SystemClock.uptimeMillis(),
-                MotionEvent.ACTION_DOWN, size.x / 2, size.y / 2, 1);
+                MotionEvent.ACTION_DOWN, xOnScreen, yOnScreen, 1);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         mInstrumentation.sendPointerSync(event);
 
@@ -4819,6 +4843,113 @@ public class ViewTest {
         View.DragShadowBuilder shadowBuilder = createDragShadowBuidler();
         view.updateDragShadow(shadowBuilder);
         verify(shadowBuilder, never()).onDrawShadow(any(Canvas.class));
+    }
+
+    /**
+     * Test for velocity APIs - it requires the flag to be enabled.
+     * To enable the flag:
+     * adb shell device_config put toolkit android.view.flags.view_velocity_api true
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_VIEW_VELOCITY_API)
+    public void testVelocityAPIsFlagEnabled() throws Throwable {
+        final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+        view.reset();
+        mActivityRule.runOnUiThread(() -> {
+            // The values of the velocities should be 0 by default
+            assertTrue(view.getFrameContentVelocity() == 0);
+
+            view.setFrameContentVelocity(-10);
+            assertTrue(view.getFrameContentVelocity() == 10);
+
+            view.setFrameContentVelocity(20);
+            assertTrue(view.getFrameContentVelocity() == 20);
+
+            view.requestLayout();
+        });
+        mInstrumentation.waitForIdleSync();
+        // the velocities should be reset once the view is drawn.
+        assertTrue(view.getFrameContentVelocity() == 0);
+    }
+
+    /**
+     * Test for velocity APIs - it requires the flag to be disabled (default value).
+     * To disable the flag:
+     * adb shell device_config put toolkit android.view.flags.view_velocity_api false
+     */
+    @Test
+    @RequiresFlagsDisabled(FLAG_VIEW_VELOCITY_API)
+    public void testVelocityAPIsFlagDisabled() throws Throwable {
+        final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+        view.reset();
+        mActivityRule.runOnUiThread(() -> {
+            // The values of the velocities should be 0 by default
+            assertTrue(view.getFrameContentVelocity() == 0);
+
+            view.setFrameContentVelocity(-10);
+            assertTrue(view.getFrameContentVelocity() == 0);
+
+            view.setFrameContentVelocity(20);
+            assertTrue(view.getFrameContentVelocity() == 0);
+
+            view.requestLayout();
+        });
+        mInstrumentation.waitForIdleSync();
+        // the velocities should be reset once the view is drawn.
+        assertTrue(view.getFrameContentVelocity() == 0);
+    }
+
+    /**
+     * Test for requested frame rate APIs
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY)
+    public void testFrameRateAPIsFlagEnabled() throws Throwable {
+        final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+        view.reset();
+        mActivityRule.runOnUiThread(() -> {
+            // The values of the velocities should be 0 by default
+            assertEquals(view.getRequestedFrameRate(),
+                    view.REQUESTED_FRAME_RATE_CATEGORY_DEFAULT, 0.1);
+
+            view.setRequestedFrameRate(10);
+            assertEquals(view.getRequestedFrameRate(), 10, 0.1);
+
+            view.setRequestedFrameRate(view.REQUESTED_FRAME_RATE_CATEGORY_LOW);
+            assertEquals(view.getRequestedFrameRate(), view.REQUESTED_FRAME_RATE_CATEGORY_LOW, 0.1);
+
+            view.requestLayout();
+        });
+
+        mInstrumentation.waitForIdleSync();
+        // the value should be remained the same
+        assertEquals(view.getRequestedFrameRate(), view.REQUESTED_FRAME_RATE_CATEGORY_LOW, 0.1);
+    }
+
+    /**
+     * Test for requested frame rate APIs
+     */
+    @Test
+    @RequiresFlagsDisabled(FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY)
+    public void testFrameRateAPIsFlagDisabled() throws Throwable {
+        final MockView view = (MockView) mActivity.findViewById(R.id.mock_view);
+        view.reset();
+        mActivityRule.runOnUiThread(() -> {
+            // The values of the velocities should be 0 by default
+            assertEquals(view.getRequestedFrameRate(), 0, 0.1);
+
+            view.setRequestedFrameRate(10);
+            assertEquals(view.getRequestedFrameRate(), 0, 0.1);
+
+            view.setRequestedFrameRate(-1);
+            assertEquals(view.getRequestedFrameRate(), 0, 0.1);
+
+            view.requestLayout();
+        });
+
+        mInstrumentation.waitForIdleSync();
+        // the value should be 0
+        assertEquals(view.getRequestedFrameRate(), 0, 0.1);
     }
 
     private void setVisibilityOnUiThread(final View view, final int visibility) throws Throwable {

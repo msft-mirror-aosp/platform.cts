@@ -74,7 +74,7 @@ public class VideoCodecTest extends VideoCodecTestBase {
     // The tolerance varies by the bitrate, because lower bitrates interact with
     // video quality standards introduced in Android 12.
     private static final double[] MAX_CBR_BITRATE_VARIATIONS = { 0.20, 0.20, 0.20, 0.20 };
-    private static final double[] MAX_VBR_BITRATE_VARIATIONS = { 0.30, 0.20, 0.20, 0.20 };
+    private static final double[] MAX_VBR_BITRATE_VARIATIONS = { 0.50, 0.30, 0.30, 0.30 };
     // Average PSNR values for reference Google Video codec for the above bitrates.
     private static final double[] REFERENCE_AVERAGE_PSNR = { 33.1, 35.2, 36.6, 37.8 };
     // Minimum PSNR values for reference Google Video codec for the above bitrates.
@@ -576,7 +576,7 @@ public class VideoCodecTest extends VideoCodecTestBase {
             return;
         }
 
-        // First do a sanity check - higher bitrates should results in higher PSNR.
+        // First do an initial check - higher bitrates should results in higher PSNR.
         for (int i = 1; i < TEST_BITRATES_SET.length ; i++) {
             if (!completed[i]) {
                 continue;

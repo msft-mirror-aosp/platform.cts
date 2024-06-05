@@ -24,18 +24,15 @@ import android.media.AudioManager;
 import android.media.AudioPlaybackConfiguration;
 import android.media.MediaPlayer;
 import android.media.session.MediaSessionManager.RemoteUserInfo;
-import android.net.Uri;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
-import androidx.test.platform.app.InstrumentationRegistry;
+import com.android.compatibility.common.util.AmUtils;
 
 import junit.framework.Assert;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,30 +62,26 @@ public class Utils {
         }
     }
 
-    public static String getMediaPath() {
-        Bundle bundle = InstrumentationRegistry.getArguments();
-        String mediaPath = bundle.getString(MEDIA_PATH_INSTR_ARG_KEY);
-        Log.i(TAG, "Media Path value is: " + mediaPath);
-
-        if (mediaPath != null && !mediaPath.isEmpty()) {
-            if (mediaPath.startsWith("http") || mediaPath.startsWith("file")) {
-                return mediaPath;
-            }
-            // Otherwise, assume a file path that is not already Uri formatted
-            return Uri.fromFile(new File(mediaPath)).toString();
-        }
-        return "https://storage.googleapis.com/wvmedia";
-    }
-
     private static void setAppOps(String packageName, String operation,
             Instrumentation instrumentation, boolean enable) {
+        UiAutomation uiAutomation = instrumentation.getUiAutomation();
         StringBuilder cmd = new StringBuilder();
         cmd.append("appops set ");
         cmd.append(packageName);
         cmd.append(" ");
         cmd.append(operation);
         cmd.append(enable ? " allow" : " deny");
-        instrumentation.getUiAutomation().executeShellCommand(cmd.toString());
+        try (InputStream inputStream =
+                new ParcelFileDescriptor.AutoCloseInputStream(
+                        uiAutomation.executeShellCommand(cmd.toString()))) {
+            String result = convertStreamToString(inputStream);
+            if (!result.isEmpty()) {
+                Log.e(TAG, result);
+                return;
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "Failure closing ParcelFileDescriptor");
+        }
 
         StringBuilder query = new StringBuilder();
         query.append("appops get ");
@@ -98,12 +91,14 @@ public class Utils {
         String queryStr = query.toString();
 
         String expectedResult = enable ? "allow" : "deny";
-        String result = "";
-        while(!result.contains(expectedResult)) {
-            ParcelFileDescriptor pfd = instrumentation.getUiAutomation().executeShellCommand(
-                                                            queryStr);
-            InputStream inputStream = new FileInputStream(pfd.getFileDescriptor());
-            result = convertStreamToString(inputStream);
+        try (InputStream inputStream =
+                new ParcelFileDescriptor.AutoCloseInputStream(
+                        uiAutomation.executeShellCommand(queryStr.toString()))) {
+            if (!convertStreamToString(inputStream).contains(expectedResult)) {
+                Log.w(TAG, "setAppOps did not return " + expectedResult);
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "Failure closing ParcelFileDescriptor");
         }
     }
 
@@ -128,10 +123,13 @@ public class Utils {
             uiAutomation.destroy();
         }
 
+        AmUtils.waitForBroadcastBarrier();
+
         NotificationManager nm = (NotificationManager) instrumentation.getContext()
                 .getSystemService(Context.NOTIFICATION_SERVICE);
-        Assert.assertEquals("Wrote setting should be the same as the read one", on,
-                nm.isNotificationPolicyAccessGranted());
+        Assert.assertEquals("Notification Policy Access Grant is "
+                + nm.isNotificationPolicyAccessGranted() + " not " + on + " for "
+                + packageName, on, nm.isNotificationPolicyAccessGranted());
     }
 
     public static boolean compareRemoteUserInfo(RemoteUserInfo a, RemoteUserInfo b) {

@@ -1,8 +1,4 @@
-# Bug component: 1172134
+# Bug component: 1171888
 
 # primary owners
 include platform/frameworks/base:/services/companion/java/com/android/server/companion/virtual/OWNERS
-
-# other owners
-asargent@google.com
-tkourim@google.com

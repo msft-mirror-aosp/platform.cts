@@ -34,20 +34,26 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.test.filters.SmallTest
+import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.CddTest
 import com.google.common.truth.Truth.assertThat
 import kotlin.test.assertFailsWith
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 class NotificationTemplateTest : NotificationTemplateTestBase() {
 
-    override fun setUp() {
-        assertThat(mContext.applicationInfo.targetSdkVersion).isGreaterThan(30)
-        super.setUp()
+    @Before
+    public fun setUp() {
+        assertThat(context.applicationInfo.targetSdkVersion).isGreaterThan(30)
     }
 
+    @Test
     fun testWideIcon_inCollapsedState_cappedTo16By9() {
         val icon = createBitmap(200, 100)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -60,9 +66,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inCollapsedState_canShowExact4By3() {
         val icon = createBitmap(40, 30)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -75,10 +82,11 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inCollapsedState_canShowUriIcon() {
         val uri = Uri.parse("content://android.app.stubs.assets/picture_400_by_300.png")
         val icon = Icon.createWithContentUri(uri)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -91,9 +99,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inCollapsedState_neverNarrowerThanSquare() {
         val icon = createBitmap(200, 300)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -104,9 +113,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inBigBaseState_cappedTo16By9() {
         val icon = createBitmap(200, 100)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -119,9 +129,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inBigBaseState_canShowExact4By3() {
         val icon = createBitmap(40, 30)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -134,9 +145,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inBigBaseState_neverNarrowerThanSquare() {
         val icon = createBitmap(200, 300)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -147,6 +159,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inBigPicture_cappedTo16By9() {
         if (skipIfPlatformDoesNotSupportNotificationStyles()) {
             return
@@ -154,7 +167,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
 
         val picture = createBitmap(40, 30)
         val icon = createBitmap(200, 100)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -168,6 +181,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inBigPicture_canShowExact4By3() {
         if (skipIfPlatformDoesNotSupportNotificationStyles()) {
             return
@@ -175,7 +189,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
 
         val picture = createBitmap(40, 30)
         val icon = createBitmap(40, 30)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -189,6 +203,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inBigPicture_neverNarrowerThanSquare() {
         if (skipIfPlatformDoesNotSupportNotificationStyles()) {
             return
@@ -196,7 +211,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
 
         val picture = createBitmap(40, 30)
         val icon = createBitmap(200, 300)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -208,9 +223,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inBigText_cappedTo16By9() {
         val icon = createBitmap(200, 100)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -224,9 +240,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inBigText_canShowExact4By3() {
         val icon = createBitmap(40, 30)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -240,9 +257,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testWideIcon_inBigText_neverNarrowerThanSquare() {
         val icon = createBitmap(200, 300)
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
@@ -254,6 +272,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testBigPictureStyle_populatesExtrasCompatibly() {
         if (skipIfPlatformDoesNotSupportNotificationStyles()) {
             return
@@ -264,15 +283,16 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         val iconWithUri = Icon.createWithContentUri(uri)
         val iconWithBitmap = Icon.createWithBitmap(bitmap)
         val style = Notification.BigPictureStyle()
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setStyle(style)
 
         style.bigPicture(bitmap)
         builder.build().let {
-            assertThat(it.extras.getParcelable<Bitmap>(Notification.EXTRA_PICTURE)
-            !!.sameAs(bitmap)).isTrue()
+            assertThat(
+                it.extras.getParcelable<Bitmap>(Notification.EXTRA_PICTURE)!!.sameAs(bitmap)
+            ).isTrue()
             assertThat(it.extras.get(Notification.EXTRA_PICTURE_ICON)).isNull()
         }
 
@@ -285,12 +305,14 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
 
         style.bigPicture(iconWithBitmap)
         builder.build().let {
-            assertThat(it.extras.getParcelable<Bitmap>(Notification.EXTRA_PICTURE)
-            !!.sameAs(bitmap)).isTrue()
+            assertThat(
+                it.extras.getParcelable<Bitmap>(Notification.EXTRA_PICTURE)!!.sameAs(bitmap)
+            ).isTrue()
             assertThat(it.extras.get(Notification.EXTRA_PICTURE_ICON)).isNull()
         }
     }
 
+    @Test
     @CddTest(requirement = "3.8.3.1/C-2-1")
     fun testBigPictureStyle_bigPictureUriIcon() {
         if (skipIfPlatformDoesNotSupportNotificationStyles()) {
@@ -299,7 +321,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
 
         val pictureUri = Uri.parse("content://android.app.stubs.assets/picture_400_by_300.png")
         val pictureIcon = Icon.createWithContentUri(pictureUri)
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setStyle(Notification.BigPictureStyle().bigPicture(pictureIcon))
@@ -310,6 +332,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     @CddTest(requirement = "3.8.3.1/C-2-1")
     fun testPromoteBigPicture_withBigPictureUriIcon() {
         if (skipIfPlatformDoesNotSupportNotificationStyles()) {
@@ -318,10 +341,11 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
 
         val pictureUri = Uri.parse("content://android.app.stubs.assets/picture_800_by_600.png")
         val pictureIcon = Icon.createWithContentUri(pictureUri)
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
-                .setStyle(Notification.BigPictureStyle()
+                .setStyle(
+                    Notification.BigPictureStyle()
                         .bigPicture(pictureIcon)
                         .showBigPictureWhenCollapsed(true)
                 )
@@ -334,16 +358,18 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testPromoteBigPicture_withoutLargeIcon() {
         if (skipIfPlatformDoesNotSupportNotificationStyles()) {
             return
         }
 
         val picture = createBitmap(40, 30)
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
-                .setStyle(Notification.BigPictureStyle()
+                .setStyle(
+                    Notification.BigPictureStyle()
                         .bigPicture(picture)
                         .showBigPictureWhenCollapsed(true)
                 )
@@ -359,6 +385,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testPromoteBigPicture_withLargeIcon() {
         if (skipIfPlatformDoesNotSupportNotificationStyles()) {
             return
@@ -366,11 +393,12 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
 
         val picture = createBitmap(40, 30)
         val icon = createBitmap(80, 65)
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setLargeIcon(icon)
-                .setStyle(Notification.BigPictureStyle()
+                .setStyle(
+                    Notification.BigPictureStyle()
                         .bigPicture(picture)
                         .showBigPictureWhenCollapsed(true)
                 )
@@ -391,6 +419,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     @CddTest(requirement = "3.8.3.1/C-2-1")
     fun testPromoteBigPicture_withBigLargeIcon() {
         if (skipIfPlatformDoesNotSupportNotificationStyles()) {
@@ -401,10 +430,11 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         val inputWidth = 400
         val inputHeight = 300
         val bigIcon = createBitmap(inputWidth, inputHeight)
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
-                .setStyle(Notification.BigPictureStyle()
+                .setStyle(
+                    Notification.BigPictureStyle()
                         .bigPicture(picture)
                         .bigLargeIcon(bigIcon)
                         .showBigPictureWhenCollapsed(true)
@@ -424,10 +454,14 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
                     .of((iconView.height * 4 / 3).toFloat())
             assertThat(iconView.scaleType).isEqualTo(ImageView.ScaleType.CENTER_CROP)
         }
-        assertThat(builder.build().extras.getParcelable<Bitmap>(Notification.EXTRA_PICTURE)
-        !!.sameAs(picture)).isTrue()
+        assertThat(
+            builder.build().extras.getParcelable<Bitmap>(
+                Notification.EXTRA_PICTURE
+            )!!.sameAs(picture)
+        ).isTrue()
     }
 
+    @Test
     @CddTest(requirement = "3.8.3.1/C-2-1")
     fun testBigPicture_withBigLargeIcon_withContentUri() {
     if (skipIfPlatformDoesNotSupportNotificationStyles()) {
@@ -436,7 +470,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
 
         val iconUri = Uri.parse("content://android.app.stubs.assets/picture_800_by_600.png")
         val icon = Icon.createWithContentUri(iconUri)
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setStyle(Notification.BigPictureStyle().bigLargeIcon(icon))
@@ -449,18 +483,20 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     @SmallTest
     fun testBaseTemplate_hasExpandedStateWithoutActions() {
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .createBigContentView()
         assertThat(views).isNotNull()
     }
 
+    @Test
     fun testDecoratedCustomViewStyle_collapsedState() {
         val customContent = makeCustomContent()
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setCustomContentView(customContent)
@@ -478,9 +514,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testDecoratedCustomViewStyle_expandedState() {
         val customContent = makeCustomContent()
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setCustomBigContentView(customContent)
@@ -502,9 +539,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testCustomViewNotification_collapsedState_isDecorated() {
         val customContent = makeCustomContent()
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setCustomContentView(customContent)
@@ -522,9 +560,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testCustomViewNotification_expandedState_isDecorated() {
         val customContent = makeCustomContent()
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setCustomBigContentView(customContent)
@@ -545,9 +584,10 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testCustomViewNotification_headsUpState_isDecorated() {
         val customContent = makeCustomContent()
-        val views = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val views = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setContentTitle("Title")
                 .setCustomHeadsUpContentView(customContent)
@@ -564,6 +604,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     @SmallTest
     fun testCallStyle_forIncomingCall_validatesArguments() {
         val namedPerson = Person.Builder().setName("Named Person").build()
@@ -580,22 +621,27 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         assertFailsWith(NullPointerException::class, "answerIntent is required") {
             Notification.CallStyle.forIncomingCall(namedPerson, pendingIntent, platformNull())
         }
-        Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
-                .setStyle(Notification.CallStyle
-                        .forIncomingCall(namedPerson, pendingIntent, pendingIntent))
+        Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
+                .setStyle(
+                    Notification.CallStyle
+                        .forIncomingCall(namedPerson, pendingIntent, pendingIntent)
+                )
                 .build()
     }
 
+    @Test
     fun testCallStyle_forIncomingCall_hasCorrectActions() {
         val namedPerson = Person.Builder().setName("Named Person").build()
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
-                .setStyle(Notification.CallStyle
-                        .forIncomingCall(namedPerson, pendingIntent, pendingIntent))
+                .setStyle(
+                    Notification.CallStyle
+                        .forIncomingCall(namedPerson, pendingIntent, pendingIntent)
+                )
         assertThat(builder.build()).isNotNull()
-        val answerText = mContext.getString(getAndroidRString("call_notification_answer_action"))
-        val declineText = mContext.getString(getAndroidRString("call_notification_decline_action"))
-        val hangUpText = mContext.getString(getAndroidRString("call_notification_hang_up_action"))
+        val answerText = context.getString(getAndroidRString("call_notification_answer_action"))
+        val declineText = context.getString(getAndroidRString("call_notification_decline_action"))
+        val hangUpText = context.getString(getAndroidRString("call_notification_hang_up_action"))
         val views = builder.createBigContentView()
         checkViews(views) {
             assertThat(requireViewWithTextContaining(answerText).visibility).isEqualTo(View.VISIBLE)
@@ -606,20 +652,24 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testCallStyle_forIncomingCall_isVideo_hasCorrectActions() {
         val namedPerson = Person.Builder().setName("Named Person").build()
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
-                .setStyle(Notification.CallStyle
+                .setStyle(
+                    Notification.CallStyle
                         .forIncomingCall(namedPerson, pendingIntent, pendingIntent)
-                        .setIsVideo(true))
+                        .setIsVideo(true)
+                )
         val notification = builder.build()
         assertThat(notification).isNotNull()
         assertThat(notification.extras.getBoolean(Notification.EXTRA_CALL_IS_VIDEO)).isTrue()
-        val answerText = mContext.getString(
-                getAndroidRString("call_notification_answer_video_action"))
-        val declineText = mContext.getString(getAndroidRString("call_notification_decline_action"))
-        val hangUpText = mContext.getString(getAndroidRString("call_notification_hang_up_action"))
+        val answerText = context.getString(
+                getAndroidRString("call_notification_answer_video_action")
+        )
+        val declineText = context.getString(getAndroidRString("call_notification_decline_action"))
+        val hangUpText = context.getString(getAndroidRString("call_notification_hang_up_action"))
         val views = builder.createBigContentView()
         checkViews(views) {
             assertThat(requireViewWithTextContaining(answerText).visibility).isEqualTo(View.VISIBLE)
@@ -630,6 +680,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     @SmallTest
     fun testCallStyle_forOngoingCall_validatesArguments() {
         val namedPerson = Person.Builder().setName("Named Person").build()
@@ -643,20 +694,21 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         assertFailsWith(NullPointerException::class, "hangUpIntent is required") {
             Notification.CallStyle.forOngoingCall(namedPerson, platformNull())
         }
-        Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setStyle(Notification.CallStyle.forOngoingCall(namedPerson, pendingIntent))
                 .build()
     }
 
+    @Test
     fun testCallStyle_forOngoingCall_hasCorrectActions() {
         val namedPerson = Person.Builder().setName("Named Person").build()
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setStyle(Notification.CallStyle.forOngoingCall(namedPerson, pendingIntent))
         assertThat(builder.build()).isNotNull()
-        val answerText = mContext.getString(getAndroidRString("call_notification_answer_action"))
-        val declineText = mContext.getString(getAndroidRString("call_notification_decline_action"))
-        val hangUpText = mContext.getString(getAndroidRString("call_notification_hang_up_action"))
+        val answerText = context.getString(getAndroidRString("call_notification_answer_action"))
+        val declineText = context.getString(getAndroidRString("call_notification_decline_action"))
+        val hangUpText = context.getString(getAndroidRString("call_notification_hang_up_action"))
         val views = builder.createBigContentView()
         checkViews(views) {
             assertThat(findViewWithTextContaining(answerText)).isNull()
@@ -665,6 +717,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     @SmallTest
     fun testCallStyle_forScreeningCall_validatesArguments() {
         val namedPerson = Person.Builder().setName("Named Person").build()
@@ -681,22 +734,27 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         assertFailsWith(NullPointerException::class, "answerIntent is required") {
             Notification.CallStyle.forScreeningCall(namedPerson, pendingIntent, platformNull())
         }
-        Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
-                .setStyle(Notification.CallStyle
-                        .forScreeningCall(namedPerson, pendingIntent, pendingIntent))
+        Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
+                .setStyle(
+                    Notification.CallStyle
+                        .forScreeningCall(namedPerson, pendingIntent, pendingIntent)
+                )
                 .build()
     }
 
+    @Test
     fun testCallStyle_forScreeningCall_hasCorrectActions() {
         val namedPerson = Person.Builder().setName("Named Person").build()
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
-                .setStyle(Notification.CallStyle
-                        .forScreeningCall(namedPerson, pendingIntent, pendingIntent))
+                .setStyle(
+                    Notification.CallStyle
+                        .forScreeningCall(namedPerson, pendingIntent, pendingIntent)
+                )
         assertThat(builder.build()).isNotNull()
-        val answerText = mContext.getString(getAndroidRString("call_notification_answer_action"))
-        val declineText = mContext.getString(getAndroidRString("call_notification_decline_action"))
-        val hangUpText = mContext.getString(getAndroidRString("call_notification_hang_up_action"))
+        val answerText = context.getString(getAndroidRString("call_notification_answer_action"))
+        val declineText = context.getString(getAndroidRString("call_notification_decline_action"))
+        val hangUpText = context.getString(getAndroidRString("call_notification_hang_up_action"))
         val views = builder.createBigContentView()
         checkViews(views) {
             assertThat(requireViewWithTextContaining(answerText).visibility).isEqualTo(View.VISIBLE)
@@ -705,12 +763,15 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testCallStyle_hidesVerification_whenNotProvided() {
         val person = Person.Builder().setName("Person").build()
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
-                .setStyle(Notification.CallStyle
-                        .forIncomingCall(person, pendingIntent, pendingIntent))
+                .setStyle(
+                    Notification.CallStyle
+                        .forIncomingCall(person, pendingIntent, pendingIntent)
+                )
 
         val notification = builder.build()
         val extras = notification.extras
@@ -727,14 +788,17 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testCallStyle_showsVerification_whenProvided() {
         val person = Person.Builder().setName("Person").build()
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
-                .setStyle(Notification.CallStyle
+                .setStyle(
+                    Notification.CallStyle
                         .forIncomingCall(person, pendingIntent, pendingIntent)
-                        .setVerificationIcon(Icon.createWithResource(mContext, R.drawable.ic_info))
-                        .setVerificationText("Verified!"))
+                        .setVerificationIcon(Icon.createWithResource(context, R.drawable.ic_info))
+                        .setVerificationText("Verified!")
+                )
 
         val notification = builder.build()
         val extras = notification.extras
@@ -754,21 +818,28 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testCallStyle_ignoresCustomColors_whenNotColorized() {
-        if (!mContext.resources.getBoolean(getAndroidRBool(
-                        "config_callNotificationActionColorsRequireColorized"))) {
-            Log.i(TAG, "Skipping: testCallStyle_ignoresCustomColors_whenNotColorized" +
-                    " - Test will not run when config disabled.")
+        if (!context.resources.getBoolean(getAndroidRBool(
+                        "config_callNotificationActionColorsRequireColorized"
+            ))) {
+            Log.i(
+                TAG,
+                "Skipping: testCallStyle_ignoresCustomColors_whenNotColorized" +
+                    " - Test will not run when config disabled."
+            )
             return
         }
         val person = Person.Builder().setName("Person").build()
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setColor(Color.WHITE)
-                .setStyle(Notification.CallStyle
+                .setStyle(
+                    Notification.CallStyle
                         .forIncomingCall(person, pendingIntent, pendingIntent)
                         .setAnswerButtonColorHint(Color.BLUE)
-                        .setDeclineButtonColorHint(Color.MAGENTA))
+                        .setDeclineButtonColorHint(Color.MAGENTA)
+                )
 
         val notification = builder.build()
         assertThat(notification.extras.getInt(Notification.EXTRA_ANSWER_COLOR, -1))
@@ -776,8 +847,8 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         assertThat(notification.extras.getInt(Notification.EXTRA_DECLINE_COLOR, -1))
                 .isEqualTo(Color.MAGENTA)
 
-        val answerText = mContext.getString(getAndroidRString("call_notification_answer_action"))
-        val declineText = mContext.getString(getAndroidRString("call_notification_decline_action"))
+        val answerText = context.getString(getAndroidRString("call_notification_answer_action"))
+        val declineText = context.getString(getAndroidRString("call_notification_decline_action"))
         val views = builder.createBigContentView()
         checkViews(views) {
             assertThat(
@@ -789,16 +860,19 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
         }
     }
 
+    @Test
     fun testCallStyle_usesCustomColors_whenColorized() {
         val person = Person.Builder().setName("Person").build()
-        val builder = Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+        val builder = Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_media_play)
                 .setColorized(true)
                 .setColor(Color.WHITE)
-                .setStyle(Notification.CallStyle
+                .setStyle(
+                    Notification.CallStyle
                         .forIncomingCall(person, pendingIntent, pendingIntent)
                         .setAnswerButtonColorHint(Color.BLUE)
-                        .setDeclineButtonColorHint(Color.MAGENTA))
+                        .setDeclineButtonColorHint(Color.MAGENTA)
+                )
 
         val notification = builder.build()
         assertThat(notification.extras.getInt(Notification.EXTRA_ANSWER_COLOR, -1))
@@ -808,8 +882,8 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
 
         // Setting this flag ensures that createBigContentView allows colorization.
         notification.flags = notification.flags or Notification.FLAG_FOREGROUND_SERVICE
-        val answerText = mContext.getString(getAndroidRString("call_notification_answer_action"))
-        val declineText = mContext.getString(getAndroidRString("call_notification_decline_action"))
+        val answerText = context.getString(getAndroidRString("call_notification_answer_action"))
+        val declineText = context.getString(getAndroidRString("call_notification_decline_action"))
         val views = builder.createBigContentView()
         checkViews(views) {
             // TODO(b/184896890): diagnose/fix flaky bgContainsColor method
@@ -839,7 +913,7 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
     }
 
     private val pendingIntent by lazy {
-        PendingIntent.getBroadcast(mContext, 0, Intent("test"), PendingIntent.FLAG_IMMUTABLE)
+        PendingIntent.getBroadcast(context, 0, Intent("test"), PendingIntent.FLAG_IMMUTABLE)
     }
 
     /**
@@ -848,8 +922,8 @@ class NotificationTemplateTest : NotificationTemplateTestBase() {
      * If the current platform does not support notification styles, skip this test without failure.
      */
     private fun skipIfPlatformDoesNotSupportNotificationStyles(): Boolean {
-        return mContext.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE) ||
-                        mContext.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+        return context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE) ||
+                        context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
     }
 
     companion object {

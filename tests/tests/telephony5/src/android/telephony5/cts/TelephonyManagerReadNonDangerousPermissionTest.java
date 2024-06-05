@@ -64,7 +64,7 @@ public class TelephonyManagerReadNonDangerousPermissionTest {
 
     @Test
     @AppModeFull
-    public void testReadNonDangerousPermission() throws Exception {
+    public void testReadNonDangerousPermission() {
         if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
             return;
         }
@@ -82,7 +82,8 @@ public class TelephonyManagerReadNonDangerousPermissionTest {
 
     @Test
     public void testPremiumCapabilities() throws Exception {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
             return;
         }
 
@@ -99,6 +100,7 @@ public class TelephonyManagerReadNonDangerousPermissionTest {
         hardFailures.add(TelephonyManager.PURCHASE_PREMIUM_CAPABILITY_RESULT_CARRIER_DISABLED);
         hardFailures.add(TelephonyManager.PURCHASE_PREMIUM_CAPABILITY_RESULT_FEATURE_NOT_SUPPORTED);
         hardFailures.add(TelephonyManager.PURCHASE_PREMIUM_CAPABILITY_RESULT_REQUEST_FAILED);
+        hardFailures.add(TelephonyManager.PURCHASE_PREMIUM_CAPABILITY_RESULT_NOT_FOREGROUND);
 
         LinkedBlockingQueue<Integer> purchaseRequests =
                 new LinkedBlockingQueue<>(premiumCapabilities.size());

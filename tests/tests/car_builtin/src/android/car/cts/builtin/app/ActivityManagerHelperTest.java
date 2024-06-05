@@ -160,9 +160,7 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
     }
 
     @Test
-    public void testSetFocusedRootTask() throws Exception {
-        // Don't run this test on automotive targets with splitscreen multitasking enabled due to
-        // it having root tasks which are not the leaf nodes in the view hierarchy.
+    public void testSetFocusedTask() throws Exception {
         assumeFalse(hasAutomotiveSplitscreenMultitaskingFeature());
         // setup
         ActivityA task1BottomActivity = launchTestActivity(ActivityA.class);
@@ -188,7 +186,7 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
             mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                     PERMISSION_MANAGE_ACTIVITY_TASKS);
 
-            ActivityManagerHelper.setFocusedRootTask(task1BottomActivity.getTaskId());
+            ActivityManagerHelper.setFocusedTask(task1BottomActivity.getTaskId());
         } finally {
             mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
@@ -559,13 +557,5 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
         Log.d(TAG, activityType.name() + " has simple activity: " + foundSimpleActivity);
 
         return foundSimpleActivity;
-    }
-
-    /**
-     * Checks whether the device has automotive splitscreen multitasking feature enabled
-     */
-    private boolean hasAutomotiveSplitscreenMultitaskingFeature() {
-        PackageManager pm = mContext.getPackageManager();
-        return isCar() && pm.hasSystemFeature("android.software.car.splitscreen_multitasking");
     }
 }

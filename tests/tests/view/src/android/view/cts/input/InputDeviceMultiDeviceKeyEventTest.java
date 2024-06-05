@@ -21,8 +21,10 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import android.Manifest;
 import android.app.Instrumentation;
 import android.hardware.input.InputManager;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 
@@ -32,12 +34,12 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WindowUtil;
+import com.android.cts.input.ConfigurationItem;
 import com.android.cts.input.UinputDevice;
+import com.android.cts.input.UinputRegisterCommand;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,6 +47,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * CTS test cases for multi device key events verification.
@@ -57,16 +61,14 @@ import java.util.Arrays;
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputDeviceMultiDeviceKeyEventTest {
     private static final String TAG = "InputDeviceMultiDeviceKeyEventTest";
     private static final String LABEL_PREFIX = "KEYCODE_";
-    private static final int DEVICE_ID = 1;
     private static final int EV_SYN = 0;
     private static final int EV_KEY = 1;
     private static final int EV_KEY_DOWN = 1;
     private static final int EV_KEY_UP = 0;
-    private static final int UI_SET_EVBIT = 100;
-    private static final int UI_SET_KEYBIT = 101;
     private static final int EV_KEY_CODE_1 = 2;
     private static final int EV_KEY_CODE_2 = 3;
     private static final int GOOGLE_VENDOR_ID = 0x18d1;
@@ -79,12 +81,14 @@ public class InputDeviceMultiDeviceKeyEventTest {
     private InputManager mInputManager;
     private UinputDevice[] mUinputDevices = new UinputDevice[NUM_DEVICES];
     private int[] mInputManagerDeviceIds = new int[NUM_DEVICES];
-    private final int[] mEvKeys = {
-            EV_KEY_CODE_1,
-            EV_KEY_CODE_2
-    };
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<InputDeviceKeyLayoutMapTestActivity> mActivityRule =
             new ActivityTestRule<>(InputDeviceKeyLayoutMapTestActivity.class);
 
@@ -94,10 +98,8 @@ public class InputDeviceMultiDeviceKeyEventTest {
         WindowUtil.waitForFocus(mActivityRule.getActivity());
         for (int i = 0; i < NUM_DEVICES; i++) {
             final int jsonDeviceId = i + 1;
-            mUinputDevices[i] = new UinputDevice(mInstrumentation, jsonDeviceId,
-                GOOGLE_VENDOR_ID, GOOGLE_VIRTUAL_KEYBOARD_ID + jsonDeviceId,
-                InputDevice.SOURCE_KEYBOARD,
-                createDeviceRegisterCommand(jsonDeviceId, mEvKeys));
+            mUinputDevices[i] = new UinputDevice(mInstrumentation,
+                InputDevice.SOURCE_KEYBOARD, createDeviceRegisterCommand(jsonDeviceId));
         }
 
         mInputManager = mInstrumentation.getContext().getSystemService(InputManager.class);
@@ -121,46 +123,23 @@ public class InputDeviceMultiDeviceKeyEventTest {
         }
     }
 
-    /**
-     * Create the uinput device registration command, in JSON format of uinput commandline tool.
-     * Refer to {@link framework/base/cmds/uinput/README.md}
-     */
-    private String createDeviceRegisterCommand(int deviceId, int[] keys) {
-        JSONObject json = new JSONObject();
-        JSONArray arrayConfigs =  new JSONArray();
-        try {
-            json.put("id", deviceId);
-            json.put("type", "uinput");
-            json.put("command", "register");
-            json.put("name", "Virtual All Buttons Device (Test)");
-            json.put("vid", GOOGLE_VENDOR_ID);
-            json.put("pid", GOOGLE_VIRTUAL_KEYBOARD_ID + deviceId);
-            json.put("bus", "bluetooth");
+    private UinputRegisterCommand createDeviceRegisterCommand(int deviceId) {
+        List<ConfigurationItem> configurationItems = Arrays.asList(
+                new ConfigurationItem("UI_SET_EVBIT", List.of("EV_KEY")),
+                new ConfigurationItem("UI_SET_KEYBIT", List.of(EV_KEY_CODE_1, EV_KEY_CODE_2))
+        );
 
-            JSONObject jsonSetEvBit = new JSONObject();
-            JSONArray arraySetEvBit =  new JSONArray();
-            arraySetEvBit.put(EV_KEY);
-            jsonSetEvBit.put("type", UI_SET_EVBIT);
-            jsonSetEvBit.put("data", arraySetEvBit);
-            arrayConfigs.put(jsonSetEvBit);
-
-            // Configure device have all keys from key layout map.
-            JSONArray arraySetKeyBit = new JSONArray();
-            for (int i = 0; i < keys.length; i++) {
-                arraySetKeyBit.put(keys[i]);
-            }
-
-            JSONObject jsonSetKeyBit = new JSONObject();
-            jsonSetKeyBit.put("type", UI_SET_KEYBIT);
-            jsonSetKeyBit.put("data", arraySetKeyBit);
-            arrayConfigs.put(jsonSetKeyBit);
-            json.put("configuration", arrayConfigs);
-        } catch (JSONException e) {
-            throw new RuntimeException(
-                    "Could not create JSON object");
-        }
-
-        return json.toString();
+        return new UinputRegisterCommand(
+                deviceId,
+                "Virtual All Buttons Device (Test)",
+                GOOGLE_VENDOR_ID,
+                GOOGLE_VIRTUAL_KEYBOARD_ID + deviceId,
+                "bluetooth",
+                "bluetooth:1",
+                configurationItems,
+                Map.of(),
+                /* ffEffectsMax= */ null
+        );
     }
 
     /**

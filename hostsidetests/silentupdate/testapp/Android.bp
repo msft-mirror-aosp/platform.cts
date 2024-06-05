@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -29,7 +30,7 @@ android_test_helper_app {
         "androidx.annotation_annotation",
         "androidx.core_core",
         "androidx.test.runner",
-        "truth-prebuilt",
+        "truth",
         "TestApp",
         "Nene",
     ],
@@ -42,7 +43,7 @@ android_test_helper_app {
     ],
     java_resources: [
         ":SilentInstallCurrent",
-        ":SilentInstallR",
         ":SilentInstallS",
+        ":SilentInstallT",
     ],
 }

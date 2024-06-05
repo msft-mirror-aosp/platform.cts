@@ -48,6 +48,9 @@ import android.provider.MediaStore.MediaColumns;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiScrollable;
+import androidx.test.uiautomator.UiSelector;
 
 import com.android.cts.mediastorageapp.MediaStoreUtils.PendingParams;
 import com.android.cts.mediastorageapp.MediaStoreUtils.PendingSession;

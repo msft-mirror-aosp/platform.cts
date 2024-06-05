@@ -33,8 +33,8 @@ import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
-import android.server.biometrics.SensorStates;
-import android.server.biometrics.Utils;
+import android.server.biometrics.util.SensorStates;
+import android.server.biometrics.util.Utils;
 import android.server.wm.UiDeviceUtils;
 import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.BySelector;
@@ -188,7 +188,8 @@ public class BiometricsAtomsHostSideTests {
                 Utils.waitForIdleService();
 
                 // The framework may require confirmation even if not requested by the API
-                final UiObject2 confirmButton = findView(VIEW_BIOMETRIC_PROMPT_CONFIRM_ID);
+                final UiObject2 confirmButton = mDevice.wait(Until.findObject(
+                        getBySelector(VIEW_BIOMETRIC_PROMPT_CONFIRM_ID)), WAIT_MS);
                 if (confirmButton != null) {
                     Log.d(TAG, "click confirmButton");
                     confirmButton.click();
@@ -204,10 +205,6 @@ public class BiometricsAtomsHostSideTests {
 
     private BySelector getBySelector(String id) {
         return By.res(mUiPackage, id);
-    }
-
-    private UiObject2 findView(String id) throws Exception {
-        return mDevice.findObject(getBySelector(id));
     }
 
     private static List<Integer> getAcquiredCodesForEnroll(int sensorId) throws Exception {

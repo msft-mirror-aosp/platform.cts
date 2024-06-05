@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_windowing_infra_",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -25,8 +26,10 @@ cc_test_library {
     gtest: false,
     srcs: [
         "CtsSurfaceControlJniOnLoad.cpp",
+        "android_view_cts_AInputTransferTokenTest.cpp",
         "android_view_cts_ASurfaceControlTest.cpp",
         "android_view_surfacecontrol_cts_ChoreographerNativeTest.cpp",
+        "android_window_cts_ASurfaceControlInputReceiverTest.cpp",
     ],
     shared_libs: [
         "libandroid",

@@ -18,7 +18,7 @@
 #include <jni.h>
 #include <sys/types.h>
 #include <unistd.h>
-
+#include <sstream>
 #include <vector>
 
 #include <android/performance_hint.h>
@@ -53,6 +53,22 @@ private:
 static SessionWrapper createSession(APerformanceHintManager* manager) {
     int32_t pid = getpid();
     return SessionWrapper(APerformanceHint_createSession(manager, &pid, 1u, DEFAULT_TARGET_NS));
+}
+
+struct WorkDurationCreator {
+    int64_t workPeriodStart;
+    int64_t totalDuration;
+    int64_t cpuDuration;
+    int64_t gpuDuration;
+};
+
+static AWorkDuration * createWorkDuration(WorkDurationCreator creator) {
+    AWorkDuration* out = AWorkDuration_create();
+    AWorkDuration_setWorkPeriodStartTimestampNanos(out, creator.workPeriodStart);
+    AWorkDuration_setActualTotalDurationNanos(out, creator.totalDuration);
+    AWorkDuration_setActualCpuDurationNanos(out, creator.cpuDuration);
+    AWorkDuration_setActualGpuDurationNanos(out, creator.gpuDuration);
+    return out;
 }
 
 static jstring nativeTestCreateHintSession(JNIEnv *env, jobject) {
@@ -170,12 +186,152 @@ static jstring nativeTestSetThreadsWithInvalidTid(JNIEnv* env, jobject) {
     std::vector<pid_t> tids;
     tids.push_back(2);
     int result = APerformanceHint_setThreads(wrapper.session(), tids.data(), 1);
-    if (result != EINVAL && result != EPERM) {
-        return toJString(env, "setThreads did not return EINVAL nor EPERM");
+    if (result != EPERM) {
+        return toJString(env, "setThreads did not return EPERM");
     }
     return nullptr;
 }
 
+
+static jstring nativeSetPreferPowerEfficiency(JNIEnv* env, jobject) {
+    APerformanceHintManager* manager = APerformanceHint_getManager();
+    if (!manager) return toJString(env, "null manager");
+    SessionWrapper wrapper = createSession(manager);
+    if (wrapper.session() == nullptr) return nullptr;
+
+    int result = APerformanceHint_setPreferPowerEfficiency(wrapper.session(), false);
+    if (result != 0) {
+        return toJString(env, "setPreferPowerEfficiency(false) did not return 0");
+    }
+
+    result = APerformanceHint_setPreferPowerEfficiency(wrapper.session(), true);
+    if (result != 0) {
+        return toJString(env, "setPreferPowerEfficiency(true) did not return 0");
+    }
+
+    result = APerformanceHint_setPreferPowerEfficiency(wrapper.session(), true);
+    if (result != 0) {
+        return toJString(env, "setPreferPowerEfficiency(true) did not return 0");
+    }
+    return nullptr;
+}
+
+static jstring nativeTestReportActualWorkDuration2(JNIEnv* env, jobject) {
+    APerformanceHintManager* manager = APerformanceHint_getManager();
+    if (!manager) return toJString(env, "null manager");
+    SessionWrapper wrapper = createSession(manager);
+    if (wrapper.session() == nullptr) return nullptr;
+
+    std::vector<WorkDurationCreator> testCases = {
+        {
+            .workPeriodStart = 1000,
+            .totalDuration = 14,
+            .cpuDuration = 11,
+            .gpuDuration = 8
+        },
+        {
+            .workPeriodStart = 1016,
+            .totalDuration = 14,
+            .cpuDuration = 12,
+            .gpuDuration = 4
+        },
+        {
+            .workPeriodStart = 1016,
+            .totalDuration = 14,
+            .cpuDuration = 12,
+            .gpuDuration = 4
+        },
+        {
+            .workPeriodStart = 900,
+            .totalDuration = 20,
+            .cpuDuration = 20,
+            .gpuDuration = 0
+        },
+        {
+            .workPeriodStart = 800,
+            .totalDuration = 20,
+            .cpuDuration = 0,
+            .gpuDuration = 20
+        }
+    };
+
+    for (auto && testCase : testCases) {
+        AWorkDuration * testObj = createWorkDuration(testCase);
+        int result = APerformanceHint_reportActualWorkDuration2(wrapper.session(), testObj);
+        if (result != 0) {
+            std::stringstream stream;
+            stream << "APerformanceHint_reportActualWorkDuration2({"
+            << "workPeriodStartTimestampNanos = " << testCase.workPeriodStart << ", "
+            << "actualTotalDurationNanos = " << testCase.totalDuration << ", "
+            << "actualCpuDurationNanos = " << testCase.cpuDuration << ", "
+            << "actualGpuDurationNanos = " << testCase.gpuDuration << "}) did not return 0";
+            AWorkDuration_release(testObj);
+            return toJString(env, stream.str().c_str());
+        }
+        AWorkDuration_release(testObj);
+    }
+
+    return nullptr;
+}
+
+static jstring nativeTestReportActualWorkDuration2WithIllegalArgument(JNIEnv* env, jobject) {
+    APerformanceHintManager* manager = APerformanceHint_getManager();
+    if (!manager) return toJString(env, "null manager");
+    SessionWrapper wrapper = createSession(manager);
+    if (wrapper.session() == nullptr) return nullptr;
+
+
+    std::vector<WorkDurationCreator> testCases = {
+        {
+            .workPeriodStart = -1,
+            .totalDuration = 14,
+            .cpuDuration = 11,
+            .gpuDuration = 8
+        },
+        {
+            .workPeriodStart = 1000,
+            .totalDuration = -1,
+            .cpuDuration = 11,
+            .gpuDuration = 8
+        },
+        {
+            .workPeriodStart = 1000,
+            .totalDuration = 14,
+            .cpuDuration = -1,
+            .gpuDuration = 8
+        },
+        {
+            .workPeriodStart = 1000,
+            .totalDuration = 14,
+            .cpuDuration = 11,
+            .gpuDuration = -1
+        },
+        {
+            .workPeriodStart = 1000,
+            .totalDuration = 14,
+            .cpuDuration = 0,
+            .gpuDuration = 0
+        }
+    };
+
+    for (auto && testCase : testCases) {
+        AWorkDuration * testObj = createWorkDuration(testCase);
+        int result = APerformanceHint_reportActualWorkDuration2(wrapper.session(), testObj);
+        if (result != EINVAL) {
+            std::stringstream stream;
+            stream << "APerformanceHint_reportActualWorkDuration2({"
+            << "workPeriodStartTimestampNanos = " << testCase.workPeriodStart << ", "
+            << "actualTotalDurationNanos = " << testCase.totalDuration << ", "
+            << "actualCpuDurationNanos = " << testCase.cpuDuration << ", "
+            << "actualGpuDurationNanos = " << testCase.gpuDuration << "}) did not return EINVAL";
+            AWorkDuration_release(testObj);
+            return toJString(env, stream.str().c_str());
+        }
+        AWorkDuration_release(testObj);
+    }
+
+    return nullptr;
+}
 
 static JNINativeMethod gMethods[] = {
     {"nativeTestCreateHintSession", "()Ljava/lang/String;",
@@ -192,6 +348,12 @@ static JNINativeMethod gMethods[] = {
      (void*)nativeReportActualWorkDurationWithIllegalArgument},
     {"nativeTestSetThreadsWithInvalidTid", "()Ljava/lang/String;",
      (void*)nativeTestSetThreadsWithInvalidTid},
+    {"nativeSetPreferPowerEfficiency", "()Ljava/lang/String;",
+     (void*)nativeSetPreferPowerEfficiency},
+    {"nativeTestReportActualWorkDuration2", "()Ljava/lang/String;",
+     (void*)nativeTestReportActualWorkDuration2},
+    {"nativeTestReportActualWorkDuration2WithIllegalArgument", "()Ljava/lang/String;",
+     (void*)nativeTestReportActualWorkDuration2WithIllegalArgument},
 };
 
 int register_android_os_cts_PerformanceHintManagerTest(JNIEnv *env) {

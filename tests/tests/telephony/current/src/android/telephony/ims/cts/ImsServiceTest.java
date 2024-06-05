@@ -19,18 +19,23 @@ package android.telephony.ims.cts;
 import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_NONE;
 import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_TRIGGER_PLMN_BLOCK;
 import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_TRIGGER_PLMN_BLOCK_WITH_TIMEOUT;
+import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_TRIGGER_RAT_BLOCK;
+import static android.telephony.ims.RegistrationManager.SUGGESTED_ACTION_TRIGGER_CLEAR_RAT_BLOCKS;
 import static android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_LTE;
 import static android.telephony.ims.stub.ImsRegistrationImplBase.REGISTRATION_TECH_NONE;
+
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.annotation.Nullable;
 import android.app.Activity;
 import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
@@ -41,6 +46,9 @@ import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Build;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.PhoneAccount;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CarrierConfigManager;
@@ -86,6 +94,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -93,6 +102,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -112,6 +122,9 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 public class ImsServiceTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static ImsServiceConnector sServiceConnector;
 
@@ -253,6 +266,10 @@ public class ImsServiceTest {
     private static final int TEST_PACKET_LOSS_RATE_THRESHOLD = 17;
     private static final int TEST_JITTER_THRESHOLD = 74;
     private static final long TEST_INACTIVITY_MILLIS = 4779;
+
+    // When ImsService notifies registration or unregistration, framework needs time to handle
+    // that event.
+    public static final int TEST_OPERATION_TIME_MS = 1000;
 
     private static CarrierConfigReceiver sReceiver;
     private static SingleRegistrationCapabilityReceiver sSrcReceiver;
@@ -976,6 +993,9 @@ public class ImsServiceTest {
             SmsManager.getSmsManagerForSubscriptionId(sTestSub)
                         .setStorageMonitorMemoryStatusOverride(false);
 
+            // Clear cached data before starting test.
+            AsyncSmsMessageListener.getInstance().clear();
+
             //Message received
             sServiceConnector.getCarrierService().getMmTelFeature().getSmsImplementation()
                     .receiveSmsWaitForAcknowledgeMemoryFull(123456789, SmsMessage.FORMAT_3GPP,
@@ -1004,6 +1024,9 @@ public class ImsServiceTest {
         }
         setupImsServiceForSms();
 
+        // Clear cached data before starting test.
+        AsyncSmsMessageListener.getInstance().clear();
+
         // Message received
         sServiceConnector.getCarrierService().getMmTelFeature().getSmsImplementation()
                 .receiveSmsWaitForAcknowledge(123456789, SmsMessage.FORMAT_3GPP,
@@ -1029,6 +1052,9 @@ public class ImsServiceTest {
         }
 
         setupImsServiceForSms();
+
+        // Clear cached data before starting test.
+        AsyncSmsMessageListener.getInstance().clear();
 
         // Message received
         sServiceConnector.getCarrierService().getMmTelFeature().getSmsImplementation()
@@ -1191,6 +1217,129 @@ public class ImsServiceTest {
             ImsMmTelManager mmTelManager = imsManager.getImsMmTelManager(sTestSub);
             mmTelManager.unregisterImsRegistrationCallback(callback);
             fail("unregisterImsRegistrationCallback requires READ_PRECISE_PHONE_STATE permission.");
+        } catch (SecurityException e) {
+            //expected
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EMERGENCY_REGISTRATION_STATE)
+    public void testMmTelManagerEmergencyRegistrationCallback() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        final ArraySet<String> featureTags = new ArraySet<>();
+        featureTags.add("featureTag1");
+        featureTags.add("featureTag2");
+
+        triggerFrameworkConnectToCarrierImsService();
+
+        // Start deregistered for emergency registration
+        sServiceConnector.getCarrierService().getImsRegistration().onDeregistered(
+            new ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_NOT_REGISTERED,
+                ImsReasonInfo.CODE_UNSPECIFIED, ""), SUGGESTED_ACTION_NONE,
+            new ImsRegistrationAttributes.Builder(IMS_REGI_TECH_LTE)
+                .setFlagRegistrationTypeEmergency().build());
+
+        LinkedBlockingQueue<ImsRegistrationAttributes> mEmerRegQueue =
+                new LinkedBlockingQueue<>();
+
+        LinkedBlockingQueue<Integer> mEmerDeregQueue =
+                new LinkedBlockingQueue<>();
+
+        RegistrationManager.RegistrationCallback emerRegCallback =
+                new RegistrationManager.RegistrationCallback() {
+                    @Override
+                    public void onRegistered(ImsRegistrationAttributes attributes) {
+                        mEmerRegQueue.offer(attributes);
+                    }
+
+                    @Override
+                    public void onRegistering(ImsRegistrationAttributes attributes) {
+                        mEmerRegQueue.offer(attributes);
+                    }
+
+                    @Override
+                    public void onUnregistered(ImsReasonInfo info, int suggestedAction,
+                            int imsRadioTech) {
+                        mEmerDeregQueue.offer(info.getCode());
+                    }
+                    @Override
+                    public void onTechnologyChangeFailed(int imsTransportType, ImsReasonInfo info) {
+                        mEmerDeregQueue.offer(imsTransportType);
+                        mEmerDeregQueue.offer(info.getCode());
+                    }
+                };
+
+        ImsManager imsManager = getContext().getSystemService(ImsManager.class);
+        ImsMmTelManager mmTelManager = imsManager.getImsMmTelManager(sTestSub);
+        try {
+            // First try without the correct permissions.
+            mmTelManager.registerImsEmergencyRegistrationCallback(getContext().getMainExecutor(),
+                    emerRegCallback);
+            fail("registerImsEmergencyRegistrationCallback requires READ_PRECISE_PHONE_STATE "
+                    + "permission.");
+        } catch (SecurityException e) {
+            //expected
+        }
+
+        // Latch will count down here (we callback on the state during registration).
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mmTelManager, (mm) -> {
+                        try {
+                            mm.registerImsEmergencyRegistrationCallback(
+                                    getContext().getMainExecutor(), emerRegCallback);
+                        } catch (ImsException e) {
+                            fail("registerImsEmergencyRegistrationCallback failed " + e);
+                        }
+                });
+
+        assertEquals(ImsReasonInfo.CODE_LOCAL_NOT_REGISTERED, waitForIntResult(mEmerDeregQueue));
+
+        // Start registration for emergency registration
+        verifyEmergencyRegistering(IMS_REGI_TECH_LTE, featureTags, mEmerRegQueue,
+                AccessNetworkConstants.TRANSPORT_TYPE_WWAN,
+                ImsRegistrationAttributes.ATTR_REGISTRATION_TYPE_EMERGENCY);
+
+        // Complete registration for emergency registration
+        verifyEmergencyRegistered(IMS_REGI_TECH_LTE, featureTags, mEmerRegQueue,
+                AccessNetworkConstants.TRANSPORT_TYPE_WWAN,
+                ImsRegistrationAttributes.ATTR_REGISTRATION_TYPE_EMERGENCY);
+
+        // fail handover to IWLAN for emergency registration
+        sServiceConnector.getCarrierService().getImsRegistration().onTechnologyChangeFailed(
+            new ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_HO_NOT_FEASIBLE,
+                ImsReasonInfo.CODE_UNSPECIFIED, ""), new ImsRegistrationAttributes.Builder(
+                IMS_REGI_TECH_IWLAN).setFlagRegistrationTypeEmergency().build());
+        assertEquals(AccessNetworkConstants.TRANSPORT_TYPE_WLAN, waitForIntResult(mEmerDeregQueue));
+        assertEquals(ImsReasonInfo.CODE_LOCAL_HO_NOT_FEASIBLE, waitForIntResult(mEmerDeregQueue));
+
+        // handover to NR successfully for emergency registration
+        verifyEmergencyRegistering(IMS_REGI_TECH_NR, featureTags, mEmerRegQueue,
+                AccessNetworkConstants.TRANSPORT_TYPE_WWAN,
+                ImsRegistrationAttributes.ATTR_REGISTRATION_TYPE_EMERGENCY);
+
+        verifyEmergencyRegistered(IMS_REGI_TECH_NR, featureTags, mEmerRegQueue,
+                AccessNetworkConstants.TRANSPORT_TYPE_WWAN,
+                ImsRegistrationAttributes.ATTR_REGISTRATION_TYPE_EMERGENCY);
+
+        // Deregister registration for emergency registration with null reason info
+        sServiceConnector.getCarrierService().getImsRegistration().onDeregistered(null,
+                SUGGESTED_ACTION_NONE, new ImsRegistrationAttributes.Builder(
+                ImsRegistrationImplBase.REGISTRATION_TECH_LTE).setFlagRegistrationTypeEmergency()
+                .build());
+        assertEquals(ImsReasonInfo.CODE_UNSPECIFIED, waitForIntResult(mEmerDeregQueue));
+
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                mmTelManager, (mm) -> {
+                    mm.unregisterImsEmergencyRegistrationCallback(emerRegCallback);
+                });
+
+        try {
+            mmTelManager.unregisterImsEmergencyRegistrationCallback(emerRegCallback);
+            fail("unregisterImsEmergencyRegistrationCallback requires READ_PRECISE_PHONE_STATE "
+                    + "permission.");
         } catch (SecurityException e) {
             //expected
         }
@@ -3392,7 +3541,10 @@ public class ImsServiceTest {
         // We should not have voice availability here, we notified the framework earlier.
         MmTelFeature.MmTelCapabilities capCb = waitForResult(mQueue);
         assertFalse(capCb.isCapable(MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER));
-
+        if (com.android.server.telecom.flags.Flags.businessCallComposer()) {
+            assertFalse(capCb.isCapable(
+                    MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER_BUSINESS_ONLY));
+        }
         // Now enable call composer availability
         sServiceConnector.getCarrierService().getMmTelFeature()
                 .notifyCapabilitiesStatusChanged(new MmTelFeature.MmTelCapabilities(
@@ -3400,16 +3552,42 @@ public class ImsServiceTest {
         capCb = waitForResult(mQueue);
         assertNotNull(capCb);
         assertTrue(capCb.isCapable(MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER));
+        if (com.android.server.telecom.flags.Flags.businessCallComposer()) {
+            assertFalse(capCb.isCapable(
+                    MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER_BUSINESS_ONLY));
+        }
 
         try {
             automan.adoptShellPermissionIdentity();
             assertTrue(ImsUtils.retryUntilTrue(() -> mmTelManager.isAvailable(
                     MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER,
                     IMS_REGI_TECH_LTE)));
-
-            mmTelManager.unregisterMmTelCapabilityCallback(callback);
         } finally {
             automan.dropShellPermissionIdentity();
+        }
+
+        if (com.android.server.telecom.flags.Flags.businessCallComposer()) {
+            // Now enable call composer availability
+            sServiceConnector.getCarrierService().getMmTelFeature()
+                    .notifyCapabilitiesStatusChanged(new MmTelFeature.MmTelCapabilities(
+                            MmTelFeature.MmTelCapabilities
+                                    .CAPABILITY_TYPE_CALL_COMPOSER_BUSINESS_ONLY));
+            capCb = waitForResult(mQueue);
+            assertNotNull(capCb);
+            assertTrue(capCb.isCapable(MmTelFeature.MmTelCapabilities
+                    .CAPABILITY_TYPE_CALL_COMPOSER_BUSINESS_ONLY));
+            assertFalse(capCb.isCapable(MmTelFeature.MmTelCapabilities
+                    .CAPABILITY_TYPE_CALL_COMPOSER));
+
+            try {
+                automan.adoptShellPermissionIdentity();
+                assertTrue(ImsUtils.retryUntilTrue(() -> mmTelManager.isAvailable(
+                        MmTelFeature.MmTelCapabilities.CAPABILITY_TYPE_CALL_COMPOSER_BUSINESS_ONLY,
+                        IMS_REGI_TECH_LTE)));
+                mmTelManager.unregisterMmTelCapabilityCallback(callback);
+            } finally {
+                automan.dropShellPermissionIdentity();
+            }
         }
 
         try {
@@ -3786,6 +3964,11 @@ public class ImsServiceTest {
                     TelephonyUtils.CTS_APP_PACKAGE,
                     SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
 
+            // Clear Q before testing
+            // When Callback registered the initial provisioning value can be notified.
+            mIntQueue.clear();
+            mOnFeatureChangedQueue.clear();
+
             // test get/setProvisioningStatusForCapability for VoLTE
             assertTrue(provisioningManager.isProvisioningRequiredForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE));
@@ -3914,6 +4097,8 @@ public class ImsServiceTest {
                     SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
             automan.dropShellPermissionIdentity();
         }
+
+        overrideCarrierConfig(null);
     }
 
     @Test
@@ -4017,6 +4202,206 @@ public class ImsServiceTest {
         } finally {
             automan.dropShellPermissionIdentity();
         }
+
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
+    public void testInitialNotificationForMmTelWhenCallbackRegistered() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        // Change carrier config as MmTel provisioning required
+        PersistableBundle bundle = new PersistableBundle();
+        PersistableBundle innerBundle = new PersistableBundle();
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_VOICE_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE, IMS_REGI_TECH_IWLAN, IMS_REGI_TECH_NR}
+        );
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_VIDEO_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE}
+        );
+        bundle.putPersistableBundle(
+                CarrierConfigManager.Ims.KEY_MMTEL_REQUIRES_PROVISIONING_BUNDLE,
+                innerBundle);
+        overrideCarrierConfig(bundle);
+
+        ProvisioningManager provisioningManager =
+                ProvisioningManager.createForSubscriptionId(sTestSub);
+
+        // Create Q to check whether callback is called or not
+        LinkedBlockingQueue<Pair<Integer, Pair<Integer, Boolean>>> mOnFeatureChangedQueue =
+                new LinkedBlockingQueue<>();
+        ProvisioningManager.FeatureProvisioningCallback featureProvisioningCallback =
+                new ProvisioningManager.FeatureProvisioningCallback() {
+                    @Override
+                    public void onFeatureProvisioningChanged(
+                            @MmTelFeature.MmTelCapabilities.MmTelCapability int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                        mOnFeatureChangedQueue.offer(new Pair<>(capability,
+                                new Pair<>(tech, isProvisioned)));
+                    }
+
+                    @Override
+                    public void onRcsFeatureProvisioningChanged(
+                            @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned){
+                    }
+                };
+
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+
+            // Set provisioning before registering callback
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_LTE, true);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_IWLAN, true);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_NR, false);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VIDEO,
+                    IMS_REGI_TECH_LTE, true);
+
+            TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            // Register callback
+            provisioningManager.registerFeatureProvisioningChangedCallback(
+                    getContext().getMainExecutor(), featureProvisioningCallback);
+
+            // Verify notification initial provisioning status when the callback registered
+            // Voice(3) - LTE, IWLAN, NR
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_NR, false))));
+            // Video(1) - LTE
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, true))));
+
+            mOnFeatureChangedQueue.clear();
+            provisioningManager.unregisterFeatureProvisioningChangedCallback(
+                    featureProvisioningCallback);
+        } finally {
+            TelephonyUtils.resetCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+            automan.dropShellPermissionIdentity();
+        }
+
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
+    public void testInitialNotificationForMmTelWhenImsServiceConnected() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        // Change carrier config as MmTel provisioning required
+        PersistableBundle bundle = new PersistableBundle();
+        PersistableBundle innerBundle = new PersistableBundle();
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_VOICE_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE, IMS_REGI_TECH_IWLAN, IMS_REGI_TECH_NR}
+        );
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_VIDEO_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE}
+        );
+        bundle.putPersistableBundle(
+                CarrierConfigManager.Ims.KEY_MMTEL_REQUIRES_PROVISIONING_BUNDLE,
+                innerBundle);
+        overrideCarrierConfig(bundle);
+
+        ProvisioningManager provisioningManager =
+                ProvisioningManager.createForSubscriptionId(sTestSub);
+
+        // Create Q to check whether callback is called or not
+        LinkedBlockingQueue<Pair<Integer, Pair<Integer, Boolean>>> mOnFeatureChangedQueue =
+                new LinkedBlockingQueue<>();
+        ProvisioningManager.FeatureProvisioningCallback featureProvisioningCallback =
+                new ProvisioningManager.FeatureProvisioningCallback() {
+                    @Override
+                    public void onFeatureProvisioningChanged(
+                            @MmTelFeature.MmTelCapabilities.MmTelCapability int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                        mOnFeatureChangedQueue.offer(new Pair<>(capability,
+                                new Pair<>(tech, isProvisioned)));
+                    }
+
+                    @Override
+                    public void onRcsFeatureProvisioningChanged(
+                            @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned){
+                    }
+                };
+
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+
+            // Set provisioning before registering callback
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_LTE, true);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_IWLAN, true);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_NR, false);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VIDEO,
+                    IMS_REGI_TECH_LTE, true);
+
+            TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            // Register callback
+            provisioningManager.registerFeatureProvisioningChangedCallback(
+                    getContext().getMainExecutor(), featureProvisioningCallback);
+            // Wait until callback is received
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            // Clear Q : delete provisioning value received when registering callback
+            mOnFeatureChangedQueue.clear();
+
+            // Connect ImsService
+            triggerFrameworkConnectToCarrierImsService();
+
+            // Verify notification initial provisioning status when ImsService connected
+            // Voice(3) - LTE, IWLAN, NR
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_NR, false))));
+            // Video(1) - LTE
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, true))));
+
+            mOnFeatureChangedQueue.clear();
+            provisioningManager.unregisterFeatureProvisioningChangedCallback(
+                    featureProvisioningCallback);
+        } finally {
+            TelephonyUtils.resetCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+            automan.dropShellPermissionIdentity();
+        }
+
+        overrideCarrierConfig(null);
     }
 
     @Test
@@ -4072,8 +4457,8 @@ public class ImsServiceTest {
                     @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
                     @ImsRegistrationImplBase.ImsRegistrationTech int tech,
                     boolean isProvisioned) {
-                mOnRcsFeatureChangedQueue.offer(new Pair<>(capability,
-                        new Pair<>(tech, isProvisioned)));
+                mOnRcsFeatureChangedQueue.offer(
+                        new Pair<>(capability, new Pair<>(tech, isProvisioned)));
             }
         };
 
@@ -4098,6 +4483,11 @@ public class ImsServiceTest {
             assertTrue(provisioningManager.isRcsProvisioningRequiredForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
 
+            // Clear Q before testing
+            // When Callback registered the initial provisioning value can be notified.
+            mIntQueue.clear();
+            mOnRcsFeatureChangedQueue.clear();
+
             // test get/setRcsProvisioningStatusForCapability for PRESENCE over LTE
             boolean isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE);
@@ -4108,63 +4498,16 @@ public class ImsServiceTest {
             assertTrue(waitForParam(mIntQueue,
                     new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
 
+            // Wait until framework finishes running
+            Thread.sleep(TEST_OPERATION_TIME_MS);
+            // Clear Q before running other test
+            mIntQueue.clear();
+            mOnRcsFeatureChangedQueue.clear();
+
             provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
                     IMS_REGI_TECH_LTE, isProvisioned);
             assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
                     new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
-
-            // test get/setRcsProvisioningStatusForCapability for PRESENCE over IWLAN
-            isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN);
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_IWLAN, !isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
-
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_IWLAN, isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
-
-            // test get/setRcsProvisioningStatusForCapability for PRESENCE over CROSS SIM
-            isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM);
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_CROSS_SIM, !isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE,
-                            new Pair<>(IMS_REGI_TECH_CROSS_SIM, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
-
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_CROSS_SIM, isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE,
-                            new Pair<>(IMS_REGI_TECH_CROSS_SIM, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
-
-            // test get/setRcsProvisioningStatusForCapability for PRESENCE over NR
-            isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_NR);
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_NR, !isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
-
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_NR, isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, isProvisioned))));
             assertTrue(waitForParam(mIntQueue,
                     new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
 
@@ -4181,6 +4524,9 @@ public class ImsServiceTest {
 
             automan.dropShellPermissionIdentity();
         }
+
+        overrideCarrierConfig(null);
+
     }
 
     @Test
@@ -4291,6 +4637,204 @@ public class ImsServiceTest {
 
             automan.dropShellPermissionIdentity();
         }
+
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
+    public void testInitialNotificationForRcsWhenCallbackRegistered() throws Exception {
+        if (!ImsUtils.shouldTestImsSingleRegistration()) {
+            return;
+        }
+
+        // Change carrier config as Rcs provisioning required
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.Ims.KEY_IMS_SINGLE_REGISTRATION_REQUIRED_BOOL,
+                true);
+        PersistableBundle innerBundle = new PersistableBundle();
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_PRESENCE_UCE_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE, IMS_REGI_TECH_IWLAN, IMS_REGI_TECH_CROSS_SIM,
+                        IMS_REGI_TECH_NR}
+        );
+        bundle.putPersistableBundle(
+                CarrierConfigManager.Ims.KEY_RCS_REQUIRES_PROVISIONING_BUNDLE,
+                innerBundle);
+        overrideCarrierConfig(bundle);
+
+        ProvisioningManager provisioningManager =
+                ProvisioningManager.createForSubscriptionId(sTestSub);
+
+        // Create Q to check whether callback is called or not
+        LinkedBlockingQueue<Pair<Integer, Pair<Integer, Boolean>>> mOnRcsFeatureChangedQueue =
+                new LinkedBlockingQueue<>();
+        ProvisioningManager.FeatureProvisioningCallback featureProvisioningCallback =
+                new ProvisioningManager.FeatureProvisioningCallback() {
+                    @Override
+                    public void onFeatureProvisioningChanged(
+                            @MmTelFeature.MmTelCapabilities.MmTelCapability int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                    }
+
+                    @Override
+                    public void onRcsFeatureProvisioningChanged(
+                            @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                        mOnRcsFeatureChangedQueue.offer(new Pair<>(capability,
+                                new Pair<>(tech, isProvisioned)));
+                    }
+                };
+
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+
+            // Set provisioning before registering callback
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_LTE, true);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_IWLAN, true);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_CROSS_SIM, false);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_NR, true);
+
+            TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            provisioningManager.registerFeatureProvisioningChangedCallback(
+                    getContext().getMainExecutor(), featureProvisioningCallback);
+
+            // Verify notification initial provisioning status when the callback registered
+            // PRESENCE (4) - LTE, IWLAN, CROSS_SIM, NR
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_CROSS_SIM, false))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
+
+            mOnRcsFeatureChangedQueue.clear();
+            provisioningManager.unregisterFeatureProvisioningChangedCallback(
+                    featureProvisioningCallback);
+        } finally {
+            TelephonyUtils.resetCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            automan.dropShellPermissionIdentity();
+        }
+
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
+    public void testInitialNotificationForRcsWhenImsServiceConnected() throws Exception {
+        if (!ImsUtils.shouldTestImsSingleRegistration()) {
+            return;
+        }
+
+        // Change carrier config as Rcs provisioning required
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.Ims.KEY_IMS_SINGLE_REGISTRATION_REQUIRED_BOOL,
+                true);
+        PersistableBundle innerBundle = new PersistableBundle();
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_PRESENCE_UCE_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE, IMS_REGI_TECH_IWLAN, IMS_REGI_TECH_CROSS_SIM,
+                        IMS_REGI_TECH_NR}
+        );
+        bundle.putPersistableBundle(
+                CarrierConfigManager.Ims.KEY_RCS_REQUIRES_PROVISIONING_BUNDLE,
+                innerBundle);
+        overrideCarrierConfig(bundle);
+
+        ProvisioningManager provisioningManager =
+                ProvisioningManager.createForSubscriptionId(sTestSub);
+
+        // Create Q to check whether callback is called or not
+        LinkedBlockingQueue<Pair<Integer, Pair<Integer, Boolean>>> mOnRcsFeatureChangedQueue =
+                new LinkedBlockingQueue<>();
+        ProvisioningManager.FeatureProvisioningCallback featureProvisioningCallback =
+                new ProvisioningManager.FeatureProvisioningCallback() {
+                    @Override
+                    public void onFeatureProvisioningChanged(
+                            @MmTelFeature.MmTelCapabilities.MmTelCapability int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                    }
+
+                    @Override
+                    public void onRcsFeatureProvisioningChanged(
+                            @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                        mOnRcsFeatureChangedQueue.offer(new Pair<>(capability,
+                                new Pair<>(tech, isProvisioned)));
+                    }
+                };
+
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+
+            // Set provisioning before registering callback
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_LTE, true);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_IWLAN, true);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_CROSS_SIM, false);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_NR, true);
+
+            TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            // Register callback
+            provisioningManager.registerFeatureProvisioningChangedCallback(
+                    getContext().getMainExecutor(), featureProvisioningCallback);
+
+            // Wait until callback is received
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
+            // Clear Q : delete provisioning value received when registering callback
+            mOnRcsFeatureChangedQueue.clear();
+
+            // Connect ImsService
+            triggerFrameworkConnectToImsServiceBindMmTelAndRcsFeature();
+
+            // Verify notification initial provisioning status when ImsService connected
+            // PRESENCE (4) - LTE, IWLAN, CROSS_SIM, NR
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_CROSS_SIM, false))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
+
+            mOnRcsFeatureChangedQueue.clear();
+            provisioningManager.unregisterFeatureProvisioningChangedCallback(
+                    featureProvisioningCallback);
+        } finally {
+            TelephonyUtils.resetCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            automan.dropShellPermissionIdentity();
+        }
+
+        overrideCarrierConfig(null);
     }
 
     @Ignore("The ProvisioningManager constants were moved back to @hide for now, don't want to "
@@ -4588,7 +5132,7 @@ public class ImsServiceTest {
 
     @Test
     public void testProvisioningManagerRcsProvisioningChangedCallback() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsSingleRegistration()) {
             return;
         }
 
@@ -4688,7 +5232,7 @@ public class ImsServiceTest {
 
     @Test
     public void testProvisioningManagerNotifyRcsAutoConfigurationReceived() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsSingleRegistration()) {
             return;
         }
 
@@ -4755,7 +5299,7 @@ public class ImsServiceTest {
 
     @Test
     public void testProvisioningManagerTriggerRcsReconfiguration() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsSingleRegistration()) {
             return;
         }
 
@@ -4813,7 +5357,7 @@ public class ImsServiceTest {
 
     @Test
     public void testProvisioningManagerSetRcsClientConfiguration() throws Exception {
-        if (!ImsUtils.shouldTestImsService()) {
+        if (!ImsUtils.shouldTestImsSingleRegistration()) {
             return;
         }
         RcsClientConfiguration rcc = new RcsClientConfiguration(
@@ -5290,6 +5834,29 @@ public class ImsServiceTest {
 
         triggerFrameworkConnectToCarrierImsService();
 
+        ImsManager imsManager = getContext().getSystemService(ImsManager.class);
+        if (imsManager == null) {
+            fail("Cannot find IMS service");
+        }
+
+        LinkedBlockingQueue<Integer> stateQueue = new LinkedBlockingQueue<>();
+        ImsStateCallback stateCallback = buildImsStateCallback(stateQueue);
+
+        ImsMmTelManager mmTelManager = null;
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+            mmTelManager = imsManager.getImsMmTelManager(sTestSub);
+            mmTelManager.registerImsStateCallback(getContext().getMainExecutor(), stateCallback);
+        } finally {
+            automan.dropShellPermissionIdentity();
+        }
+
+        // expects FEATURE_MMTEL STATE_READY
+        assertEquals(FEATURE_STATE_READY, waitForIntResult(stateQueue));
+
+        mmTelManager.unregisterImsStateCallback(stateCallback);
+
         // Start de-registered
         ImsReasonInfo reasonInfo = new ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_NETWORK_NO_SERVICE,
                 ImsReasonInfo.CODE_UNSPECIFIED, "");
@@ -5305,11 +5872,8 @@ public class ImsServiceTest {
             }
         };
 
-        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             automan.adoptShellPermissionIdentity();
-            ImsManager imsManager = getContext().getSystemService(ImsManager.class);
-            ImsMmTelManager mmTelManager = imsManager.getImsMmTelManager(sTestSub);
             mmTelManager.registerImsRegistrationCallback(getContext().getMainExecutor(), callback);
         } finally {
             automan.dropShellPermissionIdentity();
@@ -5328,6 +5892,13 @@ public class ImsServiceTest {
         receivedInfo = waitForResult(mDeregQueue);
         assertNotNull(receivedInfo);
         assertEquals(reasonInfo, receivedInfo);
+
+        try {
+            automan.adoptShellPermissionIdentity();
+            mmTelManager.unregisterImsRegistrationCallback(callback);
+        } finally {
+            automan.dropShellPermissionIdentity();
+        }
     }
 
     @Ignore("RegistrationManager.RegistrationCallback#onUnregistered(ImsReasonInfo,int,int)"
@@ -5400,6 +5971,74 @@ public class ImsServiceTest {
     @Ignore("RegistrationManager.RegistrationCallback#onUnregistered(ImsReasonInfo,int,int)"
             + " is hidden. Internal use only.")
     @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ADD_RAT_RELATED_SUGGESTED_ACTION_TO_IMS_REGISTRATION)
+    public void testMmTelManagerRegistrationBlockWithRatSuggestedAction() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        assumeTrue(sSupportsImsHal);
+
+        triggerFrameworkConnectToCarrierImsService();
+
+        ImsReasonInfo reasonInfo = new ImsReasonInfo(ImsReasonInfo.CODE_REGISTRATION_ERROR,
+                ImsReasonInfo.CODE_UNSPECIFIED, "");
+
+        // Start de-registered
+        sServiceConnector.getCarrierService().getImsRegistration().onDeregistered(
+                reasonInfo, SUGGESTED_ACTION_NONE, REGISTRATION_TECH_NONE);
+
+        LinkedBlockingQueue<Integer> mDeregQueue =
+                new LinkedBlockingQueue<>();
+        RegistrationManager.RegistrationCallback callback =
+                new RegistrationManager.RegistrationCallback() {
+                    @Override
+                    public void onUnregistered(ImsReasonInfo info, int suggestedAction,
+                            int imsRadioTech) {
+                        mDeregQueue.offer(suggestedAction);
+                    }
+                };
+
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+            ImsManager imsManager = getContext().getSystemService(ImsManager.class);
+            ImsMmTelManager mmTelManager = imsManager.getImsMmTelManager(sTestSub);
+            mmTelManager.registerImsRegistrationCallback(getContext().getMainExecutor(), callback);
+        } finally {
+            automan.dropShellPermissionIdentity();
+        }
+
+        int suggestedAction = waitForResult(mDeregQueue);
+        assertNotEquals(SUGGESTED_ACTION_TRIGGER_RAT_BLOCK, suggestedAction);
+        assertNotEquals(SUGGESTED_ACTION_TRIGGER_CLEAR_RAT_BLOCKS, suggestedAction);
+
+        sServiceConnector.getCarrierService().getImsRegistration().onDeregistered(
+                reasonInfo, SUGGESTED_ACTION_TRIGGER_RAT_BLOCK,
+                REGISTRATION_TECH_LTE);
+
+        suggestedAction = waitForResult(mDeregQueue);
+        assertEquals(SUGGESTED_ACTION_TRIGGER_RAT_BLOCK, suggestedAction);
+
+        // rat block clear
+        sServiceConnector.getCarrierService().getImsRegistration().onDeregistered(
+                reasonInfo, SUGGESTED_ACTION_TRIGGER_CLEAR_RAT_BLOCKS,
+                REGISTRATION_TECH_LTE);
+
+        suggestedAction = waitForResult(mDeregQueue);
+        assertEquals(SUGGESTED_ACTION_TRIGGER_CLEAR_RAT_BLOCKS, suggestedAction);
+
+        // without extra
+        sServiceConnector.getCarrierService().getImsRegistration().onDeregistered(reasonInfo);
+
+        suggestedAction = waitForResult(mDeregQueue);
+        assertEquals(SUGGESTED_ACTION_NONE, suggestedAction);
+    }
+
+    @Ignore("RegistrationManager.RegistrationCallback#onUnregistered(ImsReasonInfo,int,int)"
+            + " is hidden. Internal use only.")
+    @Test
     public void testMmTelManagerRegistrationDeregisteredRadioTech() throws Exception {
         if (!ImsUtils.shouldTestImsService()) {
             return;
@@ -5445,6 +6084,268 @@ public class ImsServiceTest {
 
         imsRadioTech = waitForResult(mDeregQueue);
         assertEquals(REGISTRATION_TECH_NONE, imsRadioTech);
+    }
+
+    @Test
+    public void testImsPhoneNumberWithImsAssociatedUri() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        // bind TestImsService
+        triggerFrameworkConnectToCarrierImsService();
+
+        // deregistered to set initial state
+        sServiceConnector.getCarrierService().getImsRegistration().onDeregistered(
+                new ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_NOT_REGISTERED,
+                        ImsReasonInfo.CODE_UNSPECIFIED, ""));
+
+        // To check when framework completes its operation
+        LinkedBlockingQueue<Integer> mSubscriberQueue = new LinkedBlockingQueue<>(1);
+        RegistrationManager.RegistrationCallback callback =
+                new RegistrationManager.RegistrationCallback() {
+                    @Override
+                    public void onSubscriberAssociatedUriChanged(@Nullable Uri[] uris) {
+                        mSubscriberQueue.offer(uris.length);
+                    }
+                };
+
+        // register callback
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+            ImsManager imsManager = getContext().getSystemService(ImsManager.class);
+            ImsMmTelManager mmTelManager = imsManager.getImsMmTelManager(sTestSub);
+            mmTelManager.registerImsRegistrationCallback(getContext().getMainExecutor(), callback);
+        } finally {
+            automan.dropShellPermissionIdentity();
+        }
+
+        // trigger complete registration
+        sServiceConnector.getCarrierService().getImsRegistration().onRegistered(
+                IMS_REGI_TECH_LTE);
+
+        // trigger notify the associated URI has changed.
+        Uri[] associatedUris = new Uri[] {
+                Uri.parse("sip:+447539447777@ims.x.com"),
+                Uri.parse("tel:+447539446666")
+        };
+        sServiceConnector.getCarrierService().getImsRegistration()
+                .onSubscriberAssociatedUriChanged(associatedUris);
+
+        assertNotEquals(Integer.MAX_VALUE,
+                waitForIntResult(mSubscriberQueue, ImsUtils.TEST_TIMEOUT_MS));
+
+        // Wait a second for the onSubscriberAssociatedUriChanged indication to be processed on the
+        // main telephony thread. Although telephony extracts and stores phone number, accessing to
+        // phone number is through the SubscriptionManager. Before calling the
+        // SubscriptionManager#getPhoneNumber, a guard time is required for telephony.
+        // currently no better way of knowing that telephony has processed this command.
+        Thread.sleep(TEST_OPERATION_TIME_MS);
+
+        try {
+            automan.adoptShellPermissionIdentity();
+            SubscriptionManager sm = (SubscriptionManager) getContext()
+                    .getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+            String phoneNumber = sm.getPhoneNumber(sTestSub,
+                    SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+
+            // verify Ims phone number
+            assertEquals("+447539447777", phoneNumber);
+        } finally {
+            automan.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testImsPhoneNumberWithImsAssociatedUriForNonGlobalNumberFormat() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        // Change carrier config
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(
+                CarrierConfigManager.Ims.KEY_ALLOW_NON_GLOBAL_PHONE_NUMBER_FORMAT_BOOL, true);
+        overrideCarrierConfig(bundle);
+
+        // bind TestImsService
+        triggerFrameworkConnectToCarrierImsService();
+
+        // deregistered to set initial state
+        sServiceConnector.getCarrierService().getImsRegistration().onDeregistered(
+                new ImsReasonInfo(ImsReasonInfo.CODE_LOCAL_NOT_REGISTERED,
+                        ImsReasonInfo.CODE_UNSPECIFIED, ""));
+
+        // To check when framework completes its operation
+        LinkedBlockingQueue<Integer> mSubscriberQueue = new LinkedBlockingQueue<>(1);
+        RegistrationManager.RegistrationCallback callback =
+                new RegistrationManager.RegistrationCallback() {
+                    @Override
+                    public void onSubscriberAssociatedUriChanged(@Nullable Uri[] uris) {
+                        mSubscriberQueue.offer(uris.length);
+                    }
+                };
+
+        // register callback
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+            ImsManager imsManager = getContext().getSystemService(ImsManager.class);
+            ImsMmTelManager mmTelManager = imsManager.getImsMmTelManager(sTestSub);
+            mmTelManager.registerImsRegistrationCallback(getContext().getMainExecutor(), callback);
+        } finally {
+            automan.dropShellPermissionIdentity();
+        }
+
+        // trigger complete registration
+        sServiceConnector.getCarrierService().getImsRegistration().onRegistered(
+                IMS_REGI_TECH_LTE);
+
+        // trigger notify the associated URI has changed.
+        Uri[] associatedUris = new Uri[] {
+                Uri.parse("sip:447539447777@ims.x.com"),
+                Uri.parse("tel:447539446666")
+        };
+        sServiceConnector.getCarrierService().getImsRegistration()
+                .onSubscriberAssociatedUriChanged(associatedUris);
+
+        assertNotEquals(Integer.MAX_VALUE,
+                waitForIntResult(mSubscriberQueue, ImsUtils.TEST_TIMEOUT_MS));
+
+        // Wait a second for the onSubscriberAssociatedUriChanged indication to be processed on the
+        // main telephony thread. Although telephony extracts and stores phone number, accessing to
+        // phone number is through the SubscriptionManager. Before calling the
+        // SubscriptionManager#getPhoneNumber, a guard time is required for telephony.
+        // currently no better way of knowing that telephony has processed this command.
+        Thread.sleep(TEST_OPERATION_TIME_MS);
+
+        try {
+            automan.adoptShellPermissionIdentity();
+            SubscriptionManager sm = (SubscriptionManager) getContext()
+                    .getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+            String phoneNumber = sm.getPhoneNumber(sTestSub,
+                    SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+
+            // verify Ims phone number
+            assertEquals("447539447777", phoneNumber);
+        } finally {
+            automan.dropShellPermissionIdentity();
+        }
+
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_CLEAR_CACHED_IMS_PHONE_NUMBER_WHEN_DEVICE_LOST_IMS_REGISTRATION)
+    public void testClearImsPhoneNumberWithImsAssociatedUri() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        // Bind TestImsService
+        triggerFrameworkConnectToCarrierImsService();
+
+        ImsReasonInfo reasonInfo = new ImsReasonInfo(ImsReasonInfo.CODE_REGISTRATION_ERROR,
+                ImsReasonInfo.CODE_UNSPECIFIED, "");
+
+        // IMS is deregistered to set initial state
+        sServiceConnector.getCarrierService().getImsRegistration().onDeregistered(
+                reasonInfo, RegistrationManager.SUGGESTED_ACTION_NONE, REGISTRATION_TECH_NONE);
+
+        // To check when framework completes its operation
+        LinkedBlockingQueue<Integer> mSubscriberQueue = new LinkedBlockingQueue<>(1);
+        LinkedBlockingQueue<Integer> mUnregiQueue = new LinkedBlockingQueue<>(1);
+        RegistrationManager.RegistrationCallback callback =
+                new RegistrationManager.RegistrationCallback() {
+                    @Override
+                    public void onUnregistered(ImsReasonInfo info, int suggestedAction,
+                            int imsRadioTech) {
+                        if (imsRadioTech != REGISTRATION_TECH_NONE) {
+                            mUnregiQueue.offer(imsRadioTech);
+                        }
+                    }
+
+                    @Override
+                    public void onSubscriberAssociatedUriChanged(@Nullable Uri[] uris) {
+                        mSubscriberQueue.offer(uris.length);
+                    }
+                };
+
+        // Register callback
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+            android.telephony.ims.ImsManager imsManager = getContext().getSystemService(
+                    android.telephony.ims.ImsManager.class);
+            ImsMmTelManager mmTelManager = imsManager.getImsMmTelManager(sTestSub);
+            mmTelManager.registerImsRegistrationCallback(getContext().getMainExecutor(), callback);
+        } finally {
+            automan.dropShellPermissionIdentity();
+        }
+
+        // Trigger IMS registration
+        sServiceConnector.getCarrierService().getImsRegistration().onRegistered(
+                IMS_REGI_TECH_LTE);
+
+        // Trigger the associated URI has changed.
+        Uri[] associatedUris = new Uri[] {
+                Uri.parse("sip:+447539447777@ims.x.com"),
+                Uri.parse("tel:+447539446666")
+        };
+        sServiceConnector.getCarrierService().getImsRegistration()
+                .onSubscriberAssociatedUriChanged(associatedUris);
+
+        assertNotEquals(Integer.MAX_VALUE,
+                waitForIntResult(mSubscriberQueue, ImsUtils.TEST_TIMEOUT_MS));
+
+        // Wait a second for the onSubscriberAssociatedUriChanged indication to be processed on the
+        // main telephony thread. Although telephony extracts and stores phone number, accessing to
+        // phone number is through the SubscriptionManager. Before calling the
+        // SubscriptionManager#getPhoneNumber, a guard time is required for telephony.
+        // Currently no better way of knowing that telephony has processed this command.
+        Thread.sleep(TEST_OPERATION_TIME_MS);
+
+        SubscriptionManager sm = (SubscriptionManager) getContext()
+                .getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+        try {
+            automan.adoptShellPermissionIdentity();
+
+            String phoneNumber = sm.getPhoneNumber(sTestSub,
+                    SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+
+            // Verify Ims phone number
+            assertEquals("+447539447777", phoneNumber);
+        } finally {
+            automan.dropShellPermissionIdentity();
+        }
+
+        // Trigger IMS de-registration
+        sServiceConnector.getCarrierService().getImsRegistration().onDeregistered(
+                reasonInfo, RegistrationManager.SUGGESTED_ACTION_NONE, REGISTRATION_TECH_LTE);
+
+        assertNotEquals(Integer.MAX_VALUE,
+                waitForIntResult(mUnregiQueue, ImsUtils.TEST_TIMEOUT_MS));
+
+        // Wait a second for the onDeregistered indication to be processed on the
+        // main telephony thread. Although telephony clear phone number, accessing to
+        // phone number is through the SubscriptionManager. Before calling the
+        // SubscriptionManager#getPhoneNumber, a guard time is required for telephony.
+        // Currently no better way of knowing that telephony has processed this command.
+        Thread.sleep(TEST_OPERATION_TIME_MS);
+
+        try {
+            automan.adoptShellPermissionIdentity();
+
+            String phoneNumber = sm.getPhoneNumber(sTestSub,
+                    SubscriptionManager.PHONE_NUMBER_SOURCE_IMS);
+
+            // verify Ims phone number
+            assertEquals("", phoneNumber);
+        } finally {
+            automan.dropShellPermissionIdentity();
+        }
     }
 
     private void verifyIntKey(ProvisioningManager pm,
@@ -5706,6 +6607,33 @@ public class ImsServiceTest {
             int expectedAttrFlags) throws Exception {
         ImsRegistrationAttributes attr = new ImsRegistrationAttributes.Builder(tech)
                 .setFeatureTags(featureTags).build();
+        sServiceConnector.getCarrierService().getImsRegistration().onRegistered(attr);
+        ImsRegistrationAttributes attrResult = waitForResult(attrQueue);
+        assertNotNull(attrResult);
+        assertEquals(tech, attrResult.getRegistrationTechnology());
+        assertEquals(expectedTransport, attrResult.getTransportType());
+        assertEquals(expectedAttrFlags, attrResult.getAttributeFlags());
+        assertEquals(featureTags, attrResult.getFeatureTags());
+    }
+    private void verifyEmergencyRegistering(int tech, ArraySet<String> featureTags,
+            LinkedBlockingQueue<ImsRegistrationAttributes> attrQueue, int expectedTransport,
+            int expectedAttrFlags) throws Exception {
+        ImsRegistrationAttributes attr = new ImsRegistrationAttributes.Builder(tech)
+                    .setFeatureTags(featureTags).setFlagRegistrationTypeEmergency().build();
+        sServiceConnector.getCarrierService().getImsRegistration().onRegistering(attr);
+        ImsRegistrationAttributes attrResult = waitForResult(attrQueue);
+        assertNotNull(attrResult);
+        assertEquals(tech, attrResult.getRegistrationTechnology());
+        assertEquals(expectedTransport, attrResult.getTransportType());
+        assertEquals(expectedAttrFlags, attrResult.getAttributeFlags());
+        assertEquals(featureTags, attrResult.getFeatureTags());
+    }
+
+    private void verifyEmergencyRegistered(int tech, ArraySet<String> featureTags,
+            LinkedBlockingQueue<ImsRegistrationAttributes> attrQueue, int expectedTransport,
+            int expectedAttrFlags) throws Exception {
+        ImsRegistrationAttributes attr = new ImsRegistrationAttributes.Builder(tech)
+                    .setFeatureTags(featureTags).setFlagRegistrationTypeEmergency().build();
         sServiceConnector.getCarrierService().getImsRegistration().onRegistered(attr);
         ImsRegistrationAttributes attrResult = waitForResult(attrQueue);
         assertNotNull(attrResult);

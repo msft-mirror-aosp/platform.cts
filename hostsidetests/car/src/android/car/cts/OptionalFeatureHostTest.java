@@ -16,13 +16,22 @@
 
 package android.car.cts;
 
-import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.junit.Assume.assumeThat;
 
+import android.car.feature.Flags;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
+
+import com.android.car.CarFeatureControlDumpProto;
+import com.android.compatibility.common.util.ProtoUtils;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -63,27 +72,68 @@ public class OptionalFeatureHostTest extends CarHostJUnit4TestCase {
             "vendor_extension"
     };
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+
     /**
      * Partners can use the same system image for multiple product configs with variation in
      * optional feature support. But CTS should run in a config where VHAL
      * DISABLED_OPTIONAL_FEATURES property does not disable any optional features.
+     * Use text dump to get the number of features.
      */
     @Test
-    public void testNoDisabledFeaturesFromVHAL() throws Exception {
+    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testNoDisabledFeaturesFromVHAL_textDump() throws Exception {
         List<String> features = findFeatureListFromCarServiceDump("mDisabledFeaturesFromVhal");
-        assertThat(features).isEmpty();
+        assertWithMessage("Number of features disabled from VHAL").that(features).isEmpty();
+    }
+
+    /**
+     * Partners can use the same system image for multiple product configs with variation in
+     * optional feature support. But CTS should run in a config where VHAL
+     * DISABLED_OPTIONAL_FEATURES property does not disable any optional features.
+     * Use proto dump to get the number of features.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testNoDisabledFeaturesFromVHAL_protoDump() throws Exception {
+        CarFeatureControlDumpProto featureControlDump = getFeatureControlDumpProto();
+
+        int numDisabledFeaturesFromVhal = featureControlDump.getDisabledFeaturesFromVhalCount();
+
+        assertWithMessage("Number of features disabled from VHAL").that(
+                numDisabledFeaturesFromVhal).isEqualTo(0);
     }
 
     /**
      * Experimental features cannot be shipped. There should be no experimental features available
-     * in the device.
+     * in the device. Use text dump to get the number of available experimental features.
      */
     @Test
-    public void testNoExperimentalFeatures() throws Exception {
+    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testNoExperimentalFeatures_textDump() throws Exception {
         // experimental feature disabled in user build
         assumeUserBuild();
         List<String> features = findFeatureListFromCarServiceDump("mAvailableExperimentalFeatures");
-        assertThat(features).isEmpty();
+        assertWithMessage("Number of experimental features available").that(features).isEmpty();
+    }
+
+    /**
+     * Experimental features cannot be shipped. There should be no experimental features available
+     * in the device. Use proto dump to get the number of available experimental features.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testNoExperimentalFeatures_protoDump() throws Exception {
+        // experimental feature disabled in user build
+        assumeUserBuild();
+        CarFeatureControlDumpProto featureControlDump = getFeatureControlDumpProto();
+
+        int numExperimentalFeatures = featureControlDump.getAvailableExperimentalFeaturesCount();
+
+        assertWithMessage("Number of experimental features available").that(
+                numExperimentalFeatures).isEqualTo(0);
     }
 
     /**
@@ -96,78 +146,139 @@ public class OptionalFeatureHostTest extends CarHostJUnit4TestCase {
         // Only check for user 0 as experimental car service is launched as user 0.
         String output = getDevice().executeShellCommand(
                 "pm list package com.android.experimentalcar").strip();
-        assertThat(output).isEmpty();
+        assertWithMessage("Experimental car service package").that(output).isEmpty();
     }
 
     /**
      * All optional features declared from {@code mDefaultEnabledFeaturesFromConfig} should be
-     * enabled for CTS test.
+     * enabled for CTS test. Use text dump to get the optional features list.
      */
     @Test
-    public void testAllOptionalFeaturesEnabled() throws Exception {
+    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testAllOptionalFeaturesEnabled_textDump() throws Exception {
         List<String> enabledFeatures = findFeatureListFromCarServiceDump("mEnabledFeatures");
         List<String> optionalFeaturesFromConfig = findFeatureListFromCarServiceDump(
                 "mDefaultEnabledFeaturesFromConfig");
-        List<String> missingFeatures = new ArrayList<>();
-        for (String optional : optionalFeaturesFromConfig) {
-            if (!enabledFeatures.contains(optional)) {
-                missingFeatures.add(optional);
-            }
-        }
-        assertThat(missingFeatures).isEmpty();
+        assertWithMessage("Missing optional features from config").that(
+                enabledFeatures).containsAtLeastElementsIn(optionalFeaturesFromConfig);
+    }
+
+    /**
+     * All optional features declared from {@code mDefaultEnabledFeaturesFromConfig} should be
+     * enabled for CTS test. Use proto dump to get the optional features list.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testAllOptionalFeaturesEnabled_protoDump() throws Exception {
+        List<String> enabledFeatures = getEnabledFeatures();
+        CarFeatureControlDumpProto featureControlDump = getFeatureControlDumpProto();
+        List<String> optionalFeaturesFromConfig =
+                featureControlDump.getDefaultEnabledFeaturesFromConfigList();
+        assertWithMessage("Missing optional features from config").that(
+                enabledFeatures).containsAtLeastElementsIn(optionalFeaturesFromConfig);
     }
 
     /**
      * Confirms that selected mandatory features are enabled.
      */
     @Test
-    public void testAllMandatoryFeaturesEnabled() throws Exception {
+    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testAllMandatoryFeaturesEnabled_textDump() throws Exception {
         List<String> enabledFeatures = findFeatureListFromCarServiceDump("mEnabledFeatures");
-        List<String> missingFeatures = new ArrayList<>();
-        for (String optional : MANDATORY_FEATURES) {
-            if (!enabledFeatures.contains(optional)) {
-                missingFeatures.add(optional);
-            }
-        }
-        assertThat(missingFeatures).isEmpty();
+
+        assertWithMessage("Missing mandatory features").that(
+                enabledFeatures).containsAtLeastElementsIn(MANDATORY_FEATURES);
+    }
+
+    /**
+     * Confirms that selected mandatory features are enabled.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testAllMandatoryFeaturesEnabled_protoDump() throws Exception {
+        List<String> enabledFeatures = getEnabledFeatures();
+
+        assertWithMessage("Missing mandatory features").that(
+                enabledFeatures).containsAtLeastElementsIn(MANDATORY_FEATURES);
     }
 
     /**
      * Confirms that adb command cannot drop feature.
      */
     @Test
-    public void testNoFeatureChangeAfterRebootForAdbCommand() throws Exception {
+    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testNoFeatureChangeAfterRebootForAdbCommand_textDump() throws Exception {
         List<String> enabledFeaturesOrig = findFeatureListFromCarServiceDump("mEnabledFeatures");
-        for (String feature : enabledFeaturesOrig) {
-            getDevice().executeShellCommand("cmd car_service disable-feature %s" + feature);
-        }
+        disableFeatures(enabledFeaturesOrig);
+
         getDevice().reboot();
         List<String> enabledFeaturesAfterReboot = findFeatureListFromCarServiceDump(
                 "mEnabledFeatures");
-        for (String feature : enabledFeaturesAfterReboot) {
-            enabledFeaturesOrig.remove(feature);
-        }
-        assertThat(enabledFeaturesOrig).isEmpty();
+
+        assertWithMessage(
+                "Comparison between enabled features before and after device reboot").that(
+                        enabledFeaturesOrig).containsExactlyElementsIn(enabledFeaturesAfterReboot);
+    }
+
+    /**
+     * Confirms that adb command cannot drop feature.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
+    public void testNoFeatureChangeAfterRebootForAdbCommand_protoDump() throws Exception {
+        List<String> enabledFeaturesOrig = getEnabledFeatures();
+        disableFeatures(enabledFeaturesOrig);
+
+        getDevice().reboot();
+        List<String> enabledFeaturesAfterReboot = getEnabledFeatures();
+
+        assertWithMessage(
+                "Comparison between enabled features before and after device reboot").that(
+                enabledFeaturesOrig).containsExactlyElementsIn(enabledFeaturesAfterReboot);
     }
 
     private List<String> findFeatureListFromCarServiceDump(String featureDumpName)
             throws Exception {
         String output = getDevice().executeShellCommand(
                 "dumpsys car_service --services CarFeatureController");
-        Pattern pattern = Pattern.compile(featureDumpName + ":\\[(.*)\\]");
-        Matcher m = pattern.matcher(output);
-        if (!m.find()) {
+        Pattern listPattern = Pattern.compile(featureDumpName + ":\\[(.*)\\]");
+        Pattern setPattern = Pattern.compile(featureDumpName + ":\\{(.*)\\}");
+        Matcher listMatcher = listPattern.matcher(output);
+        Matcher setMatcher = setPattern.matcher(output);
+        Matcher matcher;
+        if (listMatcher.find()) {
+            matcher = listMatcher;
+        } else if (setMatcher.find()) {
+            matcher = setMatcher;
+        } else {
             return Collections.EMPTY_LIST;
         }
-        String[] features = m.group(1).split(", ");
+        String[] features = matcher.group(1).split(", ");
         ArrayList<String> featureList = new ArrayList<>(features.length);
-        for (String feature : features) {
+        for (int i = 0; i < features.length; i++) {
+            String feature = features[i];
             if (feature.isEmpty()) {
                 continue;
             }
             featureList.add(feature);
         }
         return featureList;
+    }
+
+    private CarFeatureControlDumpProto getFeatureControlDumpProto() throws Exception {
+        return ProtoUtils.getProto(getDevice(), CarFeatureControlDumpProto.parser(),
+                "dumpsys car_service --services CarFeatureController --proto");
+    }
+
+    private List<String> getEnabledFeatures() throws Exception {
+        CarFeatureControlDumpProto featureControlDump = getFeatureControlDumpProto();
+        return featureControlDump.getEnabledFeaturesList();
+    }
+
+    private void disableFeatures(List<String> enabledFeaturesOrig) throws Exception {
+        for (String feature : enabledFeaturesOrig) {
+            getDevice().executeShellCommand("cmd car_service disable-feature %s" + feature);
+        }
     }
 
     private void assumeUserBuild() throws Exception {

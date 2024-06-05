@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsLocationFineTestCases",
+    team: "trendy_team_location_time",
     defaults: ["cts_defaults"],
     static_libs: [
         "LocationCtsCommon",
@@ -26,7 +27,7 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "truth-prebuilt",
+        "truth",
     ],
     libs: [
         "android.test.base",

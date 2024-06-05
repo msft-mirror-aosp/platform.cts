@@ -136,7 +136,9 @@ public class CodecEncoderTestBase extends CodecTestBase {
             int trackID = muxer.addTrack(format);
             muxer.start();
             for (MediaCodec.BufferInfo info : infos) {
-                muxer.writeSampleData(trackID, buffer, info);
+                if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                    muxer.writeSampleData(trackID, buffer, info);
+                }
             }
             muxer.stop();
         } finally {
@@ -525,6 +527,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
                         info.flags);
                 mInfoList.add(copy);
 
+                mOutputBuff.checksum(buf, info);
                 mOutputBuff.saveToMemory(buf, info);
             }
             if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
@@ -536,7 +539,9 @@ public class CodecEncoderTestBase extends CodecTestBase {
                     mTrackID = mMuxer.addTrack(mCodec.getOutputFormat());
                     mMuxer.start();
                 }
-                mMuxer.writeSampleData(mTrackID, buf, info);
+                if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                    mMuxer.writeSampleData(mTrackID, buf, info);
+                }
             }
         }
         mCodec.releaseOutputBuffer(bufferIndex, false);
@@ -554,7 +559,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
     }
 
     @Override
-    public void waitForAllOutputs() throws InterruptedException {
+    protected void waitForAllOutputs() throws InterruptedException {
         super.waitForAllOutputs();
         if (mMuxOutput) {
             if (mTrackID != -1) {
@@ -579,11 +584,11 @@ public class CodecEncoderTestBase extends CodecTestBase {
     }
 
     public void encodeToMemory(String encoder, EncoderConfigParams cfg, RawResource res,
-            int frameLimit, boolean saveToMem, boolean muxOutput)
+            OutputManager outputBuff, int frameLimit, boolean saveToMem, boolean muxOutput)
             throws IOException, InterruptedException {
         mSaveToMem = saveToMem;
         mMuxOutput = muxOutput;
-        mOutputBuff = new OutputManager();
+        mOutputBuff = outputBuff;
         mInfoList.clear();
         mActiveEncCfg = cfg;
         mActiveRawRes = res;
@@ -602,6 +607,12 @@ public class CodecEncoderTestBase extends CodecTestBase {
         mMuxOutput = false;
     }
 
+    public void encodeToMemory(String encoder, EncoderConfigParams cfg, RawResource res,
+            int frameLimit, boolean saveToMem, boolean muxOutput)
+            throws IOException, InterruptedException {
+        encodeToMemory(encoder, cfg, res, new OutputManager(), frameLimit, saveToMem, muxOutput);
+    }
+
     public void setLoopBack(boolean loopBack) {
         mIsLoopBack = loopBack;
     }
@@ -610,7 +621,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
         return mMuxedOutputFile;
     }
 
-    void validateTestState() {
+    protected void validateTestState() {
         super.validateTestState();
         if ((mIsAudio || (mIsVideo && mActiveEncCfg.mMaxBFrames == 0))
                 && !mOutputBuff.isPtsStrictlyIncreasing(mPrevOutputPts)) {

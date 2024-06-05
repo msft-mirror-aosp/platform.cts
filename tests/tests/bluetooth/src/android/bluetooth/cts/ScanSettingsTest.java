@@ -21,9 +21,9 @@ import static org.junit.Assert.assertThrows;
 
 import android.bluetooth.le.ScanSettings;
 import android.os.Parcel;
-import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
@@ -48,7 +48,7 @@ public class ScanSettingsTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testDefaultSettings() {
+    public void defaultSettings() {
         ScanSettings settings = new ScanSettings.Builder().build();
         assertEquals(ScanSettings.CALLBACK_TYPE_ALL_MATCHES, settings.getCallbackType());
         assertEquals(ScanSettings.SCAN_MODE_LOW_POWER, settings.getScanMode());
@@ -61,7 +61,7 @@ public class ScanSettingsTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testBuilderSettings() {
+    public void builderSettings() {
         ScanSettings.Builder builder = new ScanSettings.Builder();
 
         // setScanMode boundary check
@@ -132,7 +132,7 @@ public class ScanSettingsTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testDescribeContents() {
+    public void describeContents() {
         ScanSettings settings = new ScanSettings.Builder().build();
         assertEquals(0, settings.describeContents());
     }
@@ -140,7 +140,7 @@ public class ScanSettingsTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testReadWriteParcel() {
+    public void readWriteParcel() {
         final long reportDelayMillis = 60 * 1000;
         Parcel parcel = Parcel.obtain();
         ScanSettings settings = new ScanSettings.Builder()

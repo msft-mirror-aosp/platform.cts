@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_art_mainline",
 }
 
 java_defaults {
@@ -25,20 +26,25 @@ java_defaults {
     java_resource_dirs: ["assets/"],
     java_resources: [
         ":AppUsedByOtherApp",
+        ":AppUsedByOtherApp_1_disable_embedded_profile_dm",
         ":AppUsedByOtherApp_1_dm",
         ":AppUsedByOtherApp_2_prof",
         ":AppUsingOtherApp",
-        ":CompilationTestCases_package-dex-usage",
+        ":CompilationTestCases-package-dex-usage",
         ":CtsCompilationApp",
         ":CtsCompilationApp_profile",
         ":CtsCompilationApp_dm",
+        ":CtsCompilationApp_with_bad_profile",
+        ":CtsCompilationApp_with_good_profile",
+        ":disable_embedded_profile_dm",
+        ":empty_config_dm",
     ],
     libs: [
         "cts-tradefed",
         "tradefed",
         "compatibility-host-util",
         "guava",
-        "truth-prebuilt",
+        "truth",
     ],
 }
 
@@ -76,15 +82,22 @@ genrule_defaults {
         "--reference-profile-file=$(out)",
 }
 
-// Generates a DM file from a binary profile.
-// The input must be the binary profile.
+sh_binary {
+    name: "generate_dm",
+    host_supported: true,
+    src: "scripts/generate_dm.sh",
+}
+
+// Generates a DM file.
+// Each input must be a binary profile or a config file in binary protobuf
+// format.
 genrule_defaults {
     name: "dm_defaults",
-    tools: ["soong_zip"],
-    cmd: "cp $(in) $(genDir)/primary.prof && " +
-        "$(location soong_zip) " +
-        "-j -f $(genDir)/primary.prof " +
-        "-o $(out)",
+    tools: [
+        "generate_dm",
+        "soong_zip",
+    ],
+    cmd: "$(location generate_dm) $(location soong_zip) $(out) $(in)",
 }
 
 genrule {
@@ -136,12 +149,69 @@ genrule {
 }
 
 genrule {
-    name: "CompilationTestCases_package-dex-usage",
+    name: "CompilationTestCases-package-dex-usage",
+    srcs: [
+        ":libartservice_protos",
+        "assets/package-dex-usage.textproto",
+    ],
     tools: ["aprotoc"],
     cmd: "$(location aprotoc) " +
         "--encode=com.android.server.art.proto.DexUseProto " +
-        "art/libartservice/service/proto/dex_use.proto " +
-        "< $(in) > $(out)",
-    srcs: ["assets/package-dex-usage.textproto"],
+        "$(locations :libartservice_protos) " +
+        "< $(location assets/package-dex-usage.textproto) > $(out)",
     out: ["package-dex-usage.pb"],
+}
+
+genrule {
+    name: "CompilationTestCases-config-empty",
+    srcs: [
+        ":libartservice_protos",
+    ],
+    tools: ["aprotoc"],
+    cmd: "$(location aprotoc) " +
+        "--encode=com.android.server.art.proto.DexMetadataConfig " +
+        "$(locations :libartservice_protos) " +
+        "<<<'' > $(out)",
+    out: ["config-empty.pb"],
+}
+
+genrule {
+    name: "empty_config_dm",
+    defaults: ["dm_defaults"],
+    srcs: [
+        ":CompilationTestCases-config-empty",
+    ],
+    out: ["empty_config.dm"],
+}
+
+genrule {
+    name: "CompilationTestCases-config-disable_embedded_profile",
+    srcs: [
+        ":libartservice_protos",
+    ],
+    tools: ["aprotoc"],
+    cmd: "$(location aprotoc) " +
+        "--encode=com.android.server.art.proto.DexMetadataConfig " +
+        "$(locations :libartservice_protos) " +
+        "<<<'enable_embedded_profile: false' > $(out)",
+    out: ["config-disable_embedded_profile.pb"],
+}
+
+genrule {
+    name: "disable_embedded_profile_dm",
+    defaults: ["dm_defaults"],
+    srcs: [
+        ":CompilationTestCases-config-disable_embedded_profile",
+    ],
+    out: ["disable_embedded_profile.dm"],
+}
+
+genrule {
+    name: "AppUsedByOtherApp_1_disable_embedded_profile_dm",
+    defaults: ["dm_defaults"],
+    srcs: [
+        ":AppUsedByOtherApp_1_prof",
+        ":CompilationTestCases-config-disable_embedded_profile",
+    ],
+    out: ["AppUsedByOtherApp_1_disable_embedded_profile.dm"],
 }

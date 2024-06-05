@@ -16,19 +16,31 @@
 
 package android.content.res.cts;
 
+import android.content.Context;
 import android.content.res.Resources;
 import android.os.Build;
-import android.test.AndroidTestCase;
-import android.util.TypedValue;
+import android.platform.test.annotations.AppModeSdkSandbox;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Tests that private attributes are correctly placed in a separate type to
  * prevent future releases from stomping over private attributes with new public ones.
  */
-public class PrivateAttributeTest extends AndroidTestCase {
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+@RunWith(AndroidJUnit4.class)
+public class PrivateAttributeTest {
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
 
     private static final int sLastPublicAttr = 0x010c001a;
 
+    @Test
     public void testNoAttributesAfterLastPublicAttribute() throws Exception {
         if (!Build.VERSION.CODENAME.equals("REL")) {
             // Skip the test if this is not a release build.

@@ -20,16 +20,14 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 
 import android.content.pm.PackageManager;
 import android.media.MediaDrm;
-import android.media.cts.ConnectionStatus;
-import android.media.cts.IConnectionStatus;
 import android.net.Uri;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.Presubmit;
 import android.util.Log;
 import android.view.Surface;
 
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
@@ -47,7 +45,6 @@ import java.util.UUID;
 public class NativeMediaDrmClearkeyTest extends MediaPlayerDrmTestBase {
     private static final String TAG = NativeMediaDrmClearkeyTest.class.getSimpleName();
 
-    private static final int CONNECTION_RETRIES = 10;
     private static final int VIDEO_WIDTH_CENC = 1280;
     private static final int VIDEO_HEIGHT_CENC = 720;
     private static final String ISO_BMFF_VIDEO_MIME_TYPE = "video/avc";
@@ -230,27 +227,6 @@ public class NativeMediaDrmClearkeyTest extends MediaPlayerDrmTestBase {
         if (!isCryptoSchemeSupportedNative(uuidByteArray(drmSchemeUuid))) {
             throw new Error("Crypto scheme is not supported.");
         }
-
-        IConnectionStatus connectionStatus = new ConnectionStatus(mContext);
-        if (!connectionStatus.isAvailable()) {
-            throw new Error("Network is not available, reason: " +
-                    connectionStatus.getNotConnectedReason());
-        }
-
-        // If device is not online, recheck the status a few times.
-        int retries = 0;
-        while (!connectionStatus.isConnected()) {
-            if (retries++ >= CONNECTION_RETRIES) {
-                throw new Error("Device is not online, reason: " +
-                        connectionStatus.getNotConnectedReason());
-            }
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                // do nothing
-            }
-        }
-        connectionStatus.testConnection(videoUrl);
 
         if (!MediaUtils.checkCodecsForPath(mContext, videoUrl.toString())) {
             Log.i(TAG, "Device does not support " +

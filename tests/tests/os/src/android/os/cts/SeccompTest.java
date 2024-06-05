@@ -30,6 +30,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 import android.util.Log;
 
@@ -46,21 +47,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class SeccompTest extends AndroidTestCase {
     final static String TAG = "SeccompTest";
 
     static {
         System.loadLibrary("ctsos_jni");
-    }
-
-    // As this test validates a kernel system call interface, if the CTS tests
-    // were built for ARM but are running on an x86 CPU, the system call numbers
-    // will not be correct, so skip those tests.
-    private boolean isRunningUnderEmulatedAbi() {
-        final String primaryAbi = Build.SUPPORTED_ABIS[0];
-        return ((CpuFeatures.isArmCpu() || CpuFeatures.isArm64Cpu()) &&
-               !(primaryAbi.equals("armeabi-v7a") || primaryAbi.equals("arm64-v8a"))) ||
-               CpuFeatures.isNativeBridgedCpu();
     }
 
     public void testSeccomp() {
@@ -75,7 +67,7 @@ public class SeccompTest extends AndroidTestCase {
         if (!OSFeatures.needsSeccompSupport())
             return;
 
-        if (isRunningUnderEmulatedAbi()) {
+        if (CpuFeatures.isNativeBridgedCpu()) {
             Log.d(TAG, "Skipping test running under an emulated ABI");
             return;
         }
@@ -158,7 +150,7 @@ public class SeccompTest extends AndroidTestCase {
         if (!OSFeatures.needsSeccompSupport())
             return;
 
-        if (isRunningUnderEmulatedAbi()) {
+        if (CpuFeatures.isNativeBridgedCpu()) {
             Log.d(TAG, "Skipping test running under an emulated ABI");
             return;
         }
@@ -201,7 +193,7 @@ public class SeccompTest extends AndroidTestCase {
         if (!OSFeatures.needsSeccompSupport())
             return;
 
-        if (isRunningUnderEmulatedAbi()) {
+        if (CpuFeatures.isNativeBridgedCpu()) {
             Log.d(TAG, "Skipping test running under an emulated ABI");
             return;
         }
@@ -232,7 +224,7 @@ public class SeccompTest extends AndroidTestCase {
         if (!OSFeatures.needsSeccompSupport())
             return;
 
-        if (isRunningUnderEmulatedAbi()) {
+        if (CpuFeatures.isNativeBridgedCpu()) {
             Log.d(TAG, "Skipping test running under an emulated ABI");
             return;
         }

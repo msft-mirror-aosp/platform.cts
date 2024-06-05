@@ -25,8 +25,10 @@ import android.os.IBinder;
 import android.os.IInterface;
 import android.os.RemoteCallbackList;
 import android.os.RemoteException;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class RemoteCallbackListTest extends AndroidTestCase {
     private static final String SERVICE_ACTION = "android.app.REMOTESERVICE";
 

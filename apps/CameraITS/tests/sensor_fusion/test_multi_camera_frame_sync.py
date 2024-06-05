@@ -13,7 +13,6 @@
 # limitations under the License.
 """Verify multiple cameras take images in same time base."""
 
-
 import logging
 import os
 import threading
@@ -38,9 +37,6 @@ _ANGLE_JUMP_90 = 60  # 90 - 2*ANGLE_90_MASK - 2*5 degree slop on top/bottom
 _ANGULAR_DIFF_THRESH_API30 = 10  # degrees
 _ANGULAR_DIFF_THRESH_CALIBRATED = 1.8  # degrees (180 deg / 1000 ms * 10 ms)
 _ANGULAR_MOVEMENT_THRESHOLD = 35  # degrees
-_ARDUINO_ANGLES = (0, 90)
-_ARDUINO_MOVE_TIME = 2  # seconds
-_ARDUINO_SERVO_SPEED = 20
 _FRAMES_WITH_SQUARES_MIN = 20  # min number of frames with angles extracted
 _NAME = os.path.basename(__file__).split('.')[0]
 _NUM_CAPTURES = 100
@@ -187,9 +183,9 @@ class MultiCameraFrameSyncTest(its_base_test.ItsBaseTest):
             rot_rig['cntl'],
             rot_rig['ch'],
             _NUM_ROTATIONS,
-            _ARDUINO_ANGLES,
-            _ARDUINO_SERVO_SPEED,
-            _ARDUINO_MOVE_TIME,
+            sensor_fusion_utils.ARDUINO_ANGLES_SENSOR_FUSION,
+            sensor_fusion_utils.ARDUINO_SERVO_SPEED_SENSOR_FUSION,
+            sensor_fusion_utils.ARDUINO_MOVE_TIME_SENSOR_FUSION,
             serial_port,
         ),
     )
@@ -244,7 +240,9 @@ class MultiCameraFrameSyncTest(its_base_test.ItsBaseTest):
     if diff > angular_diff_thresh:
       raise AssertionError(
           f'Too much difference between cameras! Angle 1: {angle_1:.2f}, 2: '
-          f'{angle_2:.2f}, diff: {diff:.3f}, TOL: {angular_diff_thresh}.')
+          f'{angle_2:.2f}, diff: {diff:.3f}, ATOL: {angular_diff_thresh}.')
+    else:  # remove frames on PASS
+      its_session_utils.remove_tmp_files(self.log_path, f'{_NAME}_?_*.png')
 
   def test_multi_camera_frame_sync(self):
     rot_rig = {}
@@ -260,10 +258,12 @@ class MultiCameraFrameSyncTest(its_base_test.ItsBaseTest):
       name_with_log_path = os.path.join(self.log_path, _NAME)
       unavailable_physical_cameras = cam.get_unavailable_physical_cameras(
           self.camera_id)
-      unavailable_physical_ids = unavailable_physical_cameras['unavailablePhysicalCamerasArray']
+      unavailable_physical_ids = unavailable_physical_cameras[
+          'unavailablePhysicalCamerasArray']
       # find available physical camera IDs
-      all_physical_ids = camera_properties_utils.logical_multi_camera_physical_ids(
-          props)
+      all_physical_ids = (
+          camera_properties_utils.logical_multi_camera_physical_ids(props)
+      )
       for i in unavailable_physical_ids:
         if i in all_physical_ids:
           all_physical_ids.remove(i)

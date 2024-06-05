@@ -27,10 +27,9 @@ import zoom_capture_utils
 from mobly import test_runner
 import numpy as np
 
-_NUM_STEPS = 10
-_ZOOM_MIN_THRESH = 2.0
-_THRESHOLD_MAX_RMS_DIFF_CROPPED_RAW_USE_CASE = 0.06
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
+_NUM_STEPS = 10
+_THRESHOLD_MAX_RMS_DIFF_CROPPED_RAW_USE_CASE = 0.06
 
 
 class InSensorZoomTest(its_base_test.ItsBaseTest):
@@ -42,9 +41,10 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
         device_id=self.dut.serial,
         camera_id=self.camera_id,
         hidden_physical_id=self.hidden_physical_id) as cam:
-      props = cam.get_camera_properties()
-      props = cam.override_with_hidden_physical_camera_props(props)
+      logical_props = cam.get_camera_properties()
+      props = cam.override_with_hidden_physical_camera_props(logical_props)
       name_with_log_path = os.path.join(self.log_path, _NAME)
+      debug = self.debug_mode
       # Skip the test if CROPPED_RAW is not present in stream use cases
       camera_properties_utils.skip_unless(
           camera_properties_utils.cropped_raw_stream_use_case(props))
@@ -57,7 +57,8 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
       logging.debug('In sensor zoom: testing zoomRatioRange: %s', str(z_range))
 
       z_min, z_max = float(z_range[0]), float(z_range[1])
-      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
+      camera_properties_utils.skip_unless(
+          z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
       z_list = np.arange(z_min, z_max, float(z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)
 
@@ -79,6 +80,7 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
       # CROPPED_RAW set
       for _, z in enumerate(z_list):
         req['android.control.zoomRatio'] = z
+        cam.do_3a(zoom_ratio=z)
         cap_zoomed_raw = cam.do_capture(req, cam.CAP_CROPPED_RAW)
         rgb_zoomed_raw = image_processing_utils.convert_capture_to_rgb_image(
             cap_zoomed_raw, props=props)
@@ -101,15 +103,27 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
         # Effective zoom ratio. May not be == z since its possible the HAL
         # wasn't able to crop RAW.
         effective_zoom_ratio = aw / rw
+        logging.debug('Effective zoom ratio: %f', effective_zoom_ratio)
         inv_scale_factor = rw / aw
         if aw / rw != ah / rh:
           raise AssertionError('RAW_CROP_REGION width and height aspect ratio'
                                f' != active array AR, region size: {rw} x {rh} '
                                f' active array size: {aw} x {ah}')
-       # Find the center circle in img
-        circle = zoom_capture_utils.get_center_circle(
+        # Find FoV to determine minimum circle size for
+        # find_center_circle's parameter
+        fov_ratio = zoom_capture_utils._DEFAULT_FOV_RATIO
+        if self.hidden_physical_id is not None:
+          logical_cam_fov = float(cam.calc_camera_fov(logical_props))
+          cam_fov = float(cam.calc_camera_fov(props))
+          logging.debug('Logical camera FoV: %f', logical_cam_fov)
+          logging.debug(
+              'Camera %s under test FoV: %f', self.hidden_physical_id, cam_fov)
+          if cam_fov > logical_cam_fov:
+            fov_ratio = logical_cam_fov / cam_fov
+        # Find the center circle in img
+        circle = zoom_capture_utils.find_center_circle(
             rgb_zoomed_raw, img_name, size_raw, effective_zoom_ratio,
-            z_list[0], debug=True)
+            z_list[0], fov_ratio=fov_ratio, debug=True)
         # Zoom is too large to find center circle, break out
         if circle is None:
           break
@@ -141,7 +155,7 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
         msg = f'RMS diff for CROPPED_RAW use case: {rms_diff:.4f}'
         logging.debug('%s', msg)
         if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_CROPPED_RAW_USE_CASE:
-          raise AssertionError(f'{_NAME} failed! test_log.DEBUG has errors')
+          raise AssertionError('RMS diff of downscaled cropped RAW & full > 1%')
 
 
 if __name__ == '__main__':

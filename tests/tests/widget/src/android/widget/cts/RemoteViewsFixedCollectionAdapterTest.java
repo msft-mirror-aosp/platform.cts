@@ -28,6 +28,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.PendingIntent;
@@ -60,6 +61,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
 import com.google.common.collect.Lists;
@@ -82,7 +84,13 @@ import java.util.stream.Collectors;
 public class RemoteViewsFixedCollectionAdapterTest {
     private static final String PACKAGE_NAME = "android.widget.cts";
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<RemoteViewsCtsActivity> mActivityRule =
             new ActivityTestRule<>(RemoteViewsCtsActivity.class);
 
@@ -474,18 +482,10 @@ public class RemoteViewsFixedCollectionAdapterTest {
         assertTrue(adapter.hasStableIds());
 
         assertEquals(2, mListView.getChildCount());
-        TextView textView0;
-        TextView textView1;
-        try {
-            AppWidgetHostView child0 = (AppWidgetHostView) mListView.getChildAt(0);
-            AppWidgetHostView child1 = (AppWidgetHostView) mListView.getChildAt(1);
-            textView0 = (TextView) child0.getChildAt(0);
-            textView1 = (TextView) child1.getChildAt(0);
-        } catch (ClassCastException ce) {
-            textView0 = (TextView) mListView.getChildAt(0);
-            textView1 = (TextView) mListView.getChildAt(1);
-        }
-
+        AppWidgetHostView child0 = (AppWidgetHostView) mListView.getChildAt(0);
+        AppWidgetHostView child1 = (AppWidgetHostView) mListView.getChildAt(1);
+        TextView textView0 = (TextView) child0.getChildAt(0);
+        TextView textView1 = (TextView) child1.getChildAt(0);
         assertEquals("Hello", textView0.getText());
         assertEquals("World", textView1.getText());
     }
@@ -542,23 +542,13 @@ public class RemoteViewsFixedCollectionAdapterTest {
         assertTrue(adapter.hasStableIds());
 
         assertEquals(3, listView.getChildCount());
-
-        TextView textView0;
-        TextView textView1;
-        CompoundButton checkBox2Temp;
-        try {
-            AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
-            AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
-            AppWidgetHostView child2 = (AppWidgetHostView) listView.getChildAt(2);
-            textView0 = (TextView) child0.getChildAt(0);
-            textView1 = (TextView) child1.getChildAt(0);
-            checkBox2Temp = (CompoundButton) ((ViewGroup) child2.getChildAt(0)).getChildAt(0);
-        } catch (ClassCastException ce) {
-            textView0 = (TextView) listView.getChildAt(0);
-            textView1 = (TextView) listView.getChildAt(1);
-            checkBox2Temp = (CompoundButton) ((ViewGroup) listView.getChildAt(2)).getChildAt(0);
-        }
-        final CompoundButton checkBox2 = checkBox2Temp;
+        AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
+        AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
+        AppWidgetHostView child2 = (AppWidgetHostView) listView.getChildAt(2);
+        TextView textView0 = (TextView) child0.getChildAt(0);
+        TextView textView1 = (TextView) child1.getChildAt(0);
+        CompoundButton checkBox2 =
+                (CompoundButton) ((ViewGroup) child2.getChildAt(0)).getChildAt(0);
         assertEquals("Hello", textView0.getText());
         assertEquals("World", textView1.getText());
         assertEquals("Checkbox", checkBox2.getText());
@@ -624,14 +614,8 @@ public class RemoteViewsFixedCollectionAdapterTest {
         runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
 
         Adapter initialAdapter = listView.getAdapter();
-        TextView initialFirstItemView;
-        try {
-            AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
-            initialFirstItemView = (TextView) child0.getChildAt(0);
-        } catch (ClassCastException ce) {
-            initialFirstItemView = (TextView) listView.getChildAt(0);
-        }
-
+        AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
+        TextView initialFirstItemView = (TextView) child0.getChildAt(0);
         int initialFirstItemViewType = initialAdapter.getItemViewType(0);
 
         items = new RemoteCollectionItems.Builder()
@@ -646,16 +630,9 @@ public class RemoteViewsFixedCollectionAdapterTest {
         // layoutId should have been maintained (as 0) and the next view type assigned to the
         // checkbox layout. The view for the row should have been recycled without inflating a new
         // view.
-
-        TextView secondItemView;
-        try {
-            AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
-            secondItemView = (TextView) child1.getChildAt(0);
-        } catch (ClassCastException ce) {
-            secondItemView = (TextView) listView.getChildAt(1);
-        }
+        AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
         assertSame(initialAdapter, listView.getAdapter());
-        assertSame(initialFirstItemView, secondItemView);
+        assertSame(initialFirstItemView, child1.getChildAt(0));
         assertEquals(initialFirstItemViewType, listView.getAdapter().getItemViewType(1));
         assertNotEquals(initialFirstItemViewType, listView.getAdapter().getItemViewType(0));
     }
@@ -672,14 +649,8 @@ public class RemoteViewsFixedCollectionAdapterTest {
         runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
 
         Adapter initialAdapter = listView.getAdapter();
-
-        TextView initialFirstItemView;
-        try {
-            AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
-            initialFirstItemView = (TextView) child0.getChildAt(0);
-        } catch (ClassCastException ce) {
-            initialFirstItemView = (TextView) listView.getChildAt(0);
-        }
+        AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
+        TextView initialFirstItemView = (TextView) child0.getChildAt(0);
 
         items = new RemoteCollectionItems.Builder()
                 .addItem(8 /* id= */, new RemoteViews(PACKAGE_NAME, R.layout.checkbox_layout))
@@ -689,16 +660,10 @@ public class RemoteViewsFixedCollectionAdapterTest {
         runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
 
         // The adapter should have been replaced, which is required when the view type increases.
-        TextView secondItemView;
-        try {
-            AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
-            secondItemView = (TextView) child1.getChildAt(0);
-        } catch (ClassCastException ce) {
-            secondItemView = (TextView) listView.getChildAt(1);
-        }
+        AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
         assertEquals(2, listView.getAdapter().getViewTypeCount());
         assertNotSame(initialAdapter, listView.getAdapter());
-        assertNotSame(initialFirstItemView, secondItemView);
+        assertNotSame(initialFirstItemView, child1.getChildAt(0));
     }
 
     @Test
@@ -715,13 +680,8 @@ public class RemoteViewsFixedCollectionAdapterTest {
         runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
 
         Adapter initialAdapter = listView.getAdapter();
-        TextView initialSecondItemView;
-        try {
-            AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
-            initialSecondItemView = (TextView) child1.getChildAt(0);
-        } catch (ClassCastException ce) {
-            initialSecondItemView = (TextView) listView.getChildAt(1);
-        }
+        AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
+        TextView initialSecondItemView = (TextView) child1.getChildAt(0);
         assertEquals(1, initialAdapter.getItemViewType(1));
 
         items = new RemoteCollectionItems.Builder()
@@ -733,16 +693,10 @@ public class RemoteViewsFixedCollectionAdapterTest {
 
         // The adapter should have been kept, and the second item should have maintained its view
         // type of 1 even though its now the only view type.
-        TextView firstItemView;
-        try {
-            AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
-            firstItemView = (TextView) child0.getChildAt(0);
-        } catch (ClassCastException ce) {
-            firstItemView = (TextView) listView.getChildAt(0);
-        }
+        AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
         assertEquals(2, listView.getAdapter().getViewTypeCount());
         assertSame(initialAdapter, listView.getAdapter());
-        assertSame(initialSecondItemView, firstItemView);
+        assertSame(initialSecondItemView, child0.getChildAt(0));
         assertEquals(1, listView.getAdapter().getItemViewType(0));
     }
 
@@ -759,13 +713,8 @@ public class RemoteViewsFixedCollectionAdapterTest {
         runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
 
         Adapter initialAdapter = listView.getAdapter();
-        TextView initialSecondItemView;
-        try {
-            AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
-            initialSecondItemView = (TextView) child1.getChildAt(0);
-        } catch (ClassCastException ce) {
-            initialSecondItemView = (TextView) listView.getChildAt(1);
-        }
+        AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
+        TextView initialSecondItemView = (TextView) child1.getChildAt(0);
         assertEquals(1, initialAdapter.getItemViewType(1));
 
         items = new RemoteCollectionItems.Builder()
@@ -776,16 +725,10 @@ public class RemoteViewsFixedCollectionAdapterTest {
 
         // The adapter should have been kept, and kept its higher view count to allow for views to
         // be recycled.
-        TextView firstItemView;
-        try {
-            AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
-            firstItemView = (TextView) child0.getChildAt(0);
-        } catch (ClassCastException ce) {
-            firstItemView = (TextView) listView.getChildAt(0);
-        }
+        AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
         assertEquals(2, listView.getAdapter().getViewTypeCount());
         assertSame(initialAdapter, listView.getAdapter());
-        assertSame(initialSecondItemView, firstItemView);
+        assertSame(initialSecondItemView, child0.getChildAt(0));
         assertEquals(1, listView.getAdapter().getItemViewType(0));
     }
 
@@ -833,25 +776,14 @@ public class RemoteViewsFixedCollectionAdapterTest {
         assertEquals(13, adapter.getItemId(3));
 
         assertEquals(4, mGridView.getChildCount());
-        TextView textView0;
-        TextView textView1;
-        TextView textView2;
-        TextView textView3;
-        try {
-            AppWidgetHostView child0 = (AppWidgetHostView) mGridView.getChildAt(0);
-            AppWidgetHostView child1 = (AppWidgetHostView) mGridView.getChildAt(1);
-            AppWidgetHostView child2 = (AppWidgetHostView) mGridView.getChildAt(2);
-            AppWidgetHostView child3 = (AppWidgetHostView) mGridView.getChildAt(3);
-            textView0 = (TextView) child0.getChildAt(0);
-            textView1 = (TextView) child1.getChildAt(0);
-            textView2 = (TextView) child2.getChildAt(0);
-            textView3 = (TextView) child3.getChildAt(0);
-        } catch (ClassCastException ce) {
-            textView0 = (TextView) mGridView.getChildAt(0);
-            textView1 = (TextView) mGridView.getChildAt(1);
-            textView2 = (TextView) mGridView.getChildAt(2);
-            textView3 = (TextView) mGridView.getChildAt(3);
-        }
+        AppWidgetHostView child0 = (AppWidgetHostView) mGridView.getChildAt(0);
+        AppWidgetHostView child1 = (AppWidgetHostView) mGridView.getChildAt(1);
+        AppWidgetHostView child2 = (AppWidgetHostView) mGridView.getChildAt(2);
+        AppWidgetHostView child3 = (AppWidgetHostView) mGridView.getChildAt(3);
+        TextView textView0 = (TextView) child0.getChildAt(0);
+        TextView textView1 = (TextView) child1.getChildAt(0);
+        TextView textView2 = (TextView) child2.getChildAt(0);
+        TextView textView3 = (TextView) child3.getChildAt(0);
         assertEquals("Hello", textView0.getText());
         assertEquals("World", textView1.getText());
         assertEquals("Hola", textView2.getText());

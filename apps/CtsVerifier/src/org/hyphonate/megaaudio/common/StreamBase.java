@@ -79,9 +79,11 @@ public abstract class StreamBase {
     // Stream attributes
     //
     /**
-     * The number of channels in this stream.
+     * The number of channels requested for this stream.
      */
     protected int mChannelCount;
+
+    protected int mChannelMask;
 
     /**
      * The sample rate for this stream
@@ -104,6 +106,11 @@ public abstract class StreamBase {
      * The sharing mode for this stream. See Sharing Mode Constants in Builder class.
      */
     protected int mSharingMode;
+
+    /**
+     * @return the sharing mode for the (open) stream
+     */
+    public abstract int getSharingMode();
 
     //TODO - Add methods for changing the routing of an instantiated stream.
 
@@ -133,11 +140,6 @@ public abstract class StreamBase {
     //
     // Attributes
     //
-
-    /**
-     * @return The number of channels associated with this stream.
-     */
-    public int getChannelCount() { return mChannelCount; }
 
     /**
      * @return The sample rate for this stream.
@@ -250,6 +252,19 @@ public abstract class StreamBase {
      * @return See StreamState constants
      */
     public abstract int getStreamState();
+
+    /**
+     * @return the ACTUAL number of channels in this stream
+     * (as opposed to the number requested).
+     * -1 if there is no valid stream.
+     */
+    public abstract int getChannelCount();
+
+    /**
+     * Note: The stream must be created before calling this method.
+     * @return true if the underlying stream is an MMAP stream, false otherwise.
+     */
+    public abstract boolean isMMap();
 
     /**
      * @return The last error callback result (these must match Oboe). See Oboe constants

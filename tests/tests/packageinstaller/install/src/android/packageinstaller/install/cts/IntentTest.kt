@@ -15,22 +15,43 @@
  */
 package android.packageinstaller.install.cts
 
+import android.Manifest
 import android.app.Activity.RESULT_CANCELED
 import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.content.pm.InstallSourceInfo
 import android.net.Uri
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Until
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
+import com.android.compatibility.common.util.SystemUtil
+import com.android.xts.root.annotations.RequireAdbRoot
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.ClassRule
+import org.junit.Ignore
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @AppModeFull(reason = "Instant apps cannot install packages")
+@ScreenRecord
 class IntentTest : PackageInstallerTestBase() {
+
+    @get:Rule
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     companion object {
         // An invalid package name that exceeds the maximum file name length.
@@ -38,6 +59,15 @@ class IntentTest : PackageInstallerTestBase() {
                 "27jEBRNRG3ozwBsGr1sVIM9U0bVTI2TdyIyeRkZgW4JrJefwNIBAmCg4AzqXiCvG6JjqA0u" +
                 "TCWSFu2YqAVxVdiRKAay19k5VFlSaM7QW9uhvlrLQqsTW01ofFzxNDbp2QfIFHZR6rebKzK" +
                 "Bz6byQFM0DYQnYMwFWXjWkMPNdqkRLykoFLyBup53G68k2n8wl27jEBRNRG3ozwBsGr"
+        const val NO_INSTALL_APPS_RESTRICTION_TEXT = "This user is not allowed to install apps"
+        const val DISABLED_LAUNCHER_ACTIVITY_PKG_NAME =
+                "android.packageinstaller.disabledlauncheractivity.cts"
+        const val INSTALL_SUCCESS_TEXT = "App installed."
+
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
     }
 
     @After
@@ -54,8 +84,15 @@ class IntentTest : PackageInstallerTestBase() {
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         // Install should have succeeded
-        assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertInstalled()
+        var originatingPackageName: String? = null
+        SystemUtil.runWithShellPermissionIdentity(
+            { originatingPackageName = getInstallSourceInfo().originatingPackageName },
+            Manifest.permission.INSTALL_PACKAGES
+        )
+        assertNotNull(originatingPackageName)
+        assertEquals(context.packageName, originatingPackageName)
     }
 
     /**
@@ -68,7 +105,7 @@ class IntentTest : PackageInstallerTestBase() {
         clickInstallerUIButton(CANCEL_BUTTON_ID)
 
         // Install should have been aborted
-        assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertNotInstalled()
     }
 
@@ -84,7 +121,7 @@ class IntentTest : PackageInstallerTestBase() {
 
         // Install should have succeeded, and system will use the given installer package name
         // in EXTRA_INSTALLER_PACKAGE_NAME as the installer.
-        assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(context.opPackageName, getInstallSourceInfo().installingPackageName)
     }
 
@@ -92,6 +129,7 @@ class IntentTest : PackageInstallerTestBase() {
      * Install an app via a package-installer intent, but assign another package as installer
      * package name.
      */
+    @Ignore("b/317736655")
     @Test
     fun installWithAnotherInstallerPackageName() {
         val intent = getInstallationIntent()
@@ -101,9 +139,11 @@ class IntentTest : PackageInstallerTestBase() {
 
         // Install should have succeeded, but system won't use the given installer package name
         // in EXTRA_INSTALLER_PACKAGE_NAME as the installer.
-        assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
-        assertEquals(getInstallSourceInfo().initiatingPackageName,
-                getInstallSourceInfo().installingPackageName)
+        assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(
+            getInstallSourceInfo().initiatingPackageName,
+                getInstallSourceInfo().installingPackageName
+        )
     }
 
     /**
@@ -119,9 +159,11 @@ class IntentTest : PackageInstallerTestBase() {
 
         // Install should have succeeded, but system won't use the given installer package name
         // in EXTRA_INSTALLER_PACKAGE_NAME as the installer.
-        assertEquals(RESULT_OK, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
-        assertEquals(getInstallSourceInfo().initiatingPackageName,
-                getInstallSourceInfo().installingPackageName)
+        assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(
+            getInstallSourceInfo().initiatingPackageName,
+                getInstallSourceInfo().installingPackageName
+        )
     }
 
     /**
@@ -143,7 +185,7 @@ class IntentTest : PackageInstallerTestBase() {
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         // Install should have succeeded
-        assertEquals(RESULT_OK, reinstall.get(TIMEOUT, TimeUnit.MILLISECONDS))
+        assertEquals(RESULT_OK, reinstall.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertInstalled()
     }
 
@@ -151,6 +193,7 @@ class IntentTest : PackageInstallerTestBase() {
      * Check that we can't install an app via a package-installer intent if Secure FRP is enabled
      */
     @Test
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_FRP_ENFORCEMENT)
     fun packageNotInstalledSecureFrp() {
         setSecureFrp(true)
         try {
@@ -162,6 +205,52 @@ class IntentTest : PackageInstallerTestBase() {
         } finally {
             setSecureFrp(false)
         }
+    }
+
+    @Test
+    @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
+    fun disallowInstallApps_installFails() {
+        try {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, true)
+
+            val installation = startInstallationViaIntent()
+
+            assertNotNull(
+                "Error dialog not shown",
+                uiDevice.wait(
+                    Until.findObject(By.text(NO_INSTALL_APPS_RESTRICTION_TEXT)),
+                    GLOBAL_TIMEOUT
+                )
+            )
+            clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+            assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+        } finally {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, false)
+        }
+    }
+
+    @Test
+    fun launcherActivityDisabled_cannotLaunchApp() {
+        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
+        intent.data = Uri.fromParts("package", DISABLED_LAUNCHER_ACTIVITY_PKG_NAME, null)
+        intent.putExtra(Intent.EXTRA_RETURN_RESULT, false)
+        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+
+        installDialogStarter.activity.startActivityForResult(intent)
+        clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+        // Wait for success dialog
+        assertNotNull(
+            "Success dialog not shown",
+            uiDevice.wait(Until.findObject(By.text(INSTALL_SUCCESS_TEXT)), GLOBAL_TIMEOUT)
+        )
+
+        // Since the dialog is already visible, no need to wait for long for the "Open" button.
+        assertNull(
+            "Open button should not be shown",
+            uiDevice.wait(Until.findObject(getBySelector(INSTALL_BUTTON_ID)), 5000)
+        )
     }
 
     private fun getInstallSourceInfo(): InstallSourceInfo {

@@ -24,7 +24,6 @@
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
     <uses-feature android:name="android.hardware.camera"/>
 
     <application android:label="Android TestCase"
@@ -55,6 +54,7 @@
         </activity>
 
         <activity android:name="android.view.cts.UsingViewsCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:screenOrientation="locked"
              android:label="Using Views Test"
              android:exported="true">
@@ -86,6 +86,7 @@
         </activity>
 
         <activity android:name="android.view.cts.ViewTestCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:enableOnBackInvokedCallback="false"
              android:screenOrientation="locked"
              android:label="ViewTestCtsActivity"
@@ -140,7 +141,7 @@
         </activity>
 
         <activity android:name="android.view.cts.TextureViewCtsActivity"
-             android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement.NoActionBar"
              android:screenOrientation="locked"
              android:label="TextureViewCtsActivity"
              android:exported="true">
@@ -190,11 +191,13 @@
 
         <activity android:name="android.view.cts.PixelCopyVideoSourceActivity"
              android:screenOrientation="locked"
-             android:label="PixelCopyVideoSourceActivity"/>
+             android:label="PixelCopyVideoSourceActivity"
+             android:exported="true"/>
 
         <activity android:name="android.view.cts.PixelCopyGLProducerCtsActivity"
              android:screenOrientation="locked"
-             android:label="PixelCopyGLProducerCtsActivity"/>
+             android:label="PixelCopyGLProducerCtsActivity"
+             android:exported="true"/>
 
 
         <activity android:name="android.view.cts.PixelCopyViewProducerActivity"
@@ -202,7 +205,8 @@
              android:screenOrientation="portrait"
              android:rotationAnimation="jumpcut"
              android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
-             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"/>
+             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
+             android:exported="true"/>
 
         <activity android:name="android.view.cts.PixelCopyWideGamutViewProducerActivity"
              android:label="PixelCopyWideGamutViewProducerActivity"
@@ -210,14 +214,16 @@
              android:rotationAnimation="jumpcut"
              android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
              android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
-             android:colorMode="wideColorGamut"/>
+             android:colorMode="wideColorGamut"
+             android:exported="true"/>
 
         <activity android:name="android.view.cts.PixelCopyViewProducerDialogActivity"
              android:label="PixelCopyViewProducerDialogActivity"
              android:screenOrientation="portrait"
              android:rotationAnimation="jumpcut"
              android:theme="@android:style/Theme.Material.Dialog.NoActionBar"
-             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"/>
+             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
+             android:exported="true"/>
 
         <activity android:name="android.view.cts.FocusFinderCtsActivity"
              android:screenOrientation="locked"
@@ -232,35 +238,43 @@
         <activity android:name="android.view.cts.GestureDetectorCtsActivity"
              android:label="GestureDetectorCtsActivity"
              android:screenOrientation="locked"
-             android:theme="@android:style/Theme.NoTitleBar.Fullscreen"/>
+             android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+             android:exported="true"/>
 
         <activity android:name="android.view.cts.ScaleGestureDetectorCtsActivity"
              android:label="ScaleGestureDetectorCtsActivity"
              android:screenOrientation="locked"
-             android:theme="@android:style/Theme.NoTitleBar.Fullscreen"/>
+             android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+             android:exported="true"/>
 
         <activity android:name="android.view.cts.DisplayRefreshRateCtsActivity"
-             android:label="DisplayRefreshRateCtsActivity"/>
+             android:label="DisplayRefreshRateCtsActivity"
+             android:exported="true"/>
 
         <activity android:name="android.view.cts.MockActivity"
              android:label="MockActivity"
-             android:screenOrientation="locked">
+             android:screenOrientation="locked"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
+             android:exported="true">
             <meta-data android:name="android.view.merge"
                  android:resource="@xml/merge"/>
         </activity>
 
         <activity android:name="android.view.cts.MenuTestActivity"
              android:screenOrientation="locked"
-             android:label="MenuTestActivity"/>
+             android:label="MenuTestActivity"
+             android:exported="true"/>
 
         <activity android:name="android.view.cts.MenuItemCtsActivity"
              android:theme="@android:style/Theme.Material.Light.NoActionBar"
              android:screenOrientation="locked"
-             android:label="MenuItemCtsActivity"/>
+             android:label="MenuItemCtsActivity"
+             android:exported="true"/>
 
         <activity android:name="android.view.cts.ActionModeCtsActivity"
              android:screenOrientation="locked"
-             android:label="ActionModeCtsActivity">
+             android:label="ActionModeCtsActivity"
+             android:exported="true">
         </activity>
 
         <activity android:name="android.view.cts.ViewOverlayCtsActivity"
@@ -335,16 +349,6 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="android.view.cts.surfacevalidator.CapturedActivity"
-             android:screenOrientation="locked"
-             android:theme="@style/WhiteBackgroundTheme"
-             android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-
         <activity android:name="android.view.cts.surfacevalidator.ASurfaceControlTestActivity"
             android:screenOrientation="locked"
             android:theme="@style/WhiteBackgroundTheme"
@@ -355,22 +359,8 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="android.view.cts.surfacevalidator.CapturedActivityWithResource"
-             android:screenOrientation="locked"
-             android:theme="@style/WhiteBackgroundTheme"
-             android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-
-        <service android:name="android.view.cts.surfacevalidator.LocalMediaProjectionService"
-             android:foregroundServiceType="mediaProjection"
-             android:enabled="true">
-        </service>
-
         <activity android:name="android.view.cts.HoverCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:screenOrientation="locked"
              android:exported="true">
             <intent-filter>
@@ -380,6 +370,7 @@
         </activity>
 
         <activity android:name="android.view.cts.TooltipActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:screenOrientation="locked"
              android:label="TooltipActivity"
              android:exported="true">
@@ -390,6 +381,7 @@
         </activity>
 
         <activity android:name="android.view.cts.PointerCaptureCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:screenOrientation="locked"
              android:label="PointerCaptureCtsActivity"
              android:exported="true">
@@ -426,6 +418,7 @@
         </activity>
 
         <activity android:name="android.view.cts.TouchDelegateTestActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -440,6 +433,7 @@
         </activity>
 
         <activity android:name="android.view.cts.SystemGestureExclusionActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -504,6 +498,15 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="android.view.cts.SurfaceOOMTestActivity"
+            android:screenOrientation="locked"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
         <service android:name="android.view.textclassifier.cts.CtsTextClassifierService"
              android:exported="true"
              android:permission="android.permission.BIND_TEXTCLASSIFIER_SERVICE">
@@ -516,8 +519,6 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.view.cts"
          android:label="CTS tests of android.view">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 
 </manifest>

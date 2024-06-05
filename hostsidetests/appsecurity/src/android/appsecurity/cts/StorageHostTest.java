@@ -18,6 +18,11 @@ package android.appsecurity.cts;
 
 import static org.junit.Assume.assumeTrue;
 
+import android.app.usage.Flags;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
+
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.result.TestDescription;
@@ -38,6 +43,7 @@ import junit.framework.AssertionFailedError;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -51,9 +57,12 @@ public class StorageHostTest extends BaseHostJUnit4Test {
     private static final String PKG_STATS = "com.android.cts.storagestatsapp";
     private static final String PKG_A = "com.android.cts.storageapp_a";
     private static final String PKG_B = "com.android.cts.storageapp_b";
+    private static final String PKG_C = "com.android.cts.storageapp_c";
     private static final String APK_STATS = "CtsStorageStatsApp.apk";
     private static final String APK_A = "CtsStorageAppA.apk";
     private static final String APK_B = "CtsStorageAppB.apk";
+    private static final String APK_C = "CtsStorageAppC.apk";
+    private static final String DM_C = "CtsStorageAppC.dm";
     private static final String CLASS_STATS = "com.android.cts.storagestatsapp.StorageStatsTest";
     private static final String CLASS = "com.android.cts.storageapp.StorageTest";
     private static final String EXTERNAL_STORAGE_PATH = "/storage/emulated/%d/";
@@ -63,6 +72,10 @@ public class StorageHostTest extends BaseHostJUnit4Test {
 
     private int[] mUsers;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+
     @Before
     public void setUp() throws Exception {
         mUsers = Utils.prepareMultipleUsers(getDevice());
@@ -70,6 +83,8 @@ public class StorageHostTest extends BaseHostJUnit4Test {
         installPackage(APK_STATS);
         installPackage(APK_A);
         installPackage(APK_B);
+        installPackage(APK_C);
+        new InstallMultiple().addFile(APK_C).addFile(DM_C).disableFileNamePrefix().run();
 
         for (int user : mUsers) {
             getDevice().executeShellCommand("appops set --user " + user + " " + PKG_STATS
@@ -84,6 +99,7 @@ public class StorageHostTest extends BaseHostJUnit4Test {
         getDevice().uninstallPackage(PKG_STATS);
         getDevice().uninstallPackage(PKG_A);
         getDevice().uninstallPackage(PKG_B);
+        getDevice().uninstallPackage(PKG_C);
     }
 
     @Test
@@ -134,6 +150,14 @@ public class StorageHostTest extends BaseHostJUnit4Test {
     public void testVerifyStats() throws Exception {
         for (int user : mUsers) {
             runDeviceTests(PKG_STATS, CLASS_STATS, "testVerifyStats", user);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GET_APP_BYTES_BY_DATA_TYPE_API)
+    public void testVerifyStatsByDataType() throws Exception {
+        for (int user : mUsers) {
+            runDeviceTests(PKG_STATS, CLASS_STATS, "testVerifyStatsByDataType", user);
         }
     }
 
@@ -343,5 +367,11 @@ public class StorageHostTest extends BaseHostJUnit4Test {
         }
         String stderr = result.getStderr();
         return (stderr == null || stderr.trim().isEmpty());
+    }
+
+    private class InstallMultiple extends BaseInstallMultiple<InstallMultiple> {
+        public InstallMultiple() {
+            super(getDevice(), getBuild(), getAbi());
+        }
     }
 }

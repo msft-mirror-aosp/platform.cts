@@ -22,9 +22,9 @@ import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.le.ScanRecord;
 import android.os.ParcelUuid;
-import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
@@ -46,7 +46,7 @@ public class ScanRecordTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testParser() {
+    public void parser() {
         Assume.assumeTrue(TestUtils.isBleSupported(
                 InstrumentationRegistry.getInstrumentation().getContext()));
 

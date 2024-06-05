@@ -20,6 +20,8 @@ import static android.app.admin.DevicePolicyManager.ID_TYPE_IMEI;
 import static android.app.admin.DevicePolicyManager.ID_TYPE_INDIVIDUAL_ATTESTATION;
 import static android.app.admin.DevicePolicyManager.ID_TYPE_MEID;
 import static android.app.admin.DevicePolicyManager.ID_TYPE_SERIAL;
+import static android.content.pm.PackageManager.FEATURE_TELEPHONY_CDMA;
+import static android.content.pm.PackageManager.FEATURE_TELEPHONY_GSM;
 import static android.keystore.cts.CertificateUtils.createCertificate;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -44,8 +46,9 @@ import android.security.KeyChainException;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.StrongBoxUnavailableException;
-import android.support.test.uiautomator.UiDevice;
 import android.telephony.TelephonyManager;
+
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.FakeKeys.FAKE_RSA_1;
 
@@ -165,33 +168,6 @@ public class KeyManagementTest extends BaseDeviceAdminTest {
             certChain.get(i - 1).verify(certChain.get(i).getPublicKey());
         }
         return certChain;
-    }
-
-    public void testCanInstallCertChain() throws Exception {
-        // Use assets/generate-client-cert-chain.sh to regenerate the client cert chain.
-        final PrivateKey privKey = loadPrivateKeyFromAsset("user-cert-chain.key");
-        final Certificate[] certChain = loadCertificateChain("user-cert-chain.crt")
-                .toArray(new Certificate[0]);
-        final String alias = "com.android.test.clientkeychain";
-
-        // Install keypairs.
-        assertThat(mDevicePolicyManager.installKeyPair(getWho(), privKey, certChain, alias, true))
-                .isTrue();
-        try {
-            // Verify only the requested key was actually granted.
-            assertGranted(alias, true);
-
-            // Verify the granted key is actually obtainable in PrivateKey form.
-            assertThat(KeyChain.getPrivateKey(mActivity, alias).getAlgorithm()).isEqualTo("RSA");
-
-            // Verify the certificate chain is correct
-            assertThat(KeyChain.getCertificateChain(mActivity, alias)).isEqualTo(certChain);
-        } finally {
-            // Delete both keypairs.
-            assertThat(mDevicePolicyManager.removeKeyPair(getWho(), alias)).isTrue();
-        }
-        // Verify they're actually gone.
-        assertGranted(alias, false);
     }
 
     byte[] signDataWithKey(String algoIdentifier, PrivateKey privateKey) throws Exception {
@@ -487,15 +463,19 @@ public class KeyManagementTest extends BaseDeviceAdminTest {
             assertWithMessage("Need to be able to read device identifiers")
                     .that(telephonyService)
                     .isNotNull();
-            imei = telephonyService.getImei(0);
-            meid = telephonyService.getMeid(0);
-            // If the device has a valid IMEI it must support attestation for it.
-            if (imei != null) {
-                modesToTest.add(ID_TYPE_IMEI);
+            if (mContext.getPackageManager().hasSystemFeature(FEATURE_TELEPHONY_GSM)) {
+                imei = telephonyService.getImei(0);
+                // If the device has a valid IMEI it must support attestation for it.
+                if (imei != null) {
+                    modesToTest.add(ID_TYPE_IMEI);
+                }
             }
-            // Same for MEID
-            if (meid != null) {
-                modesToTest.add(ID_TYPE_MEID);
+            if (mContext.getPackageManager().hasSystemFeature(FEATURE_TELEPHONY_CDMA)) {
+                meid = telephonyService.getMeid(0);
+                // Same for MEID
+                if (meid != null) {
+                    modesToTest.add(ID_TYPE_MEID);
+                }
             }
         }
         int numCombinations = 1 << modesToTest.size();

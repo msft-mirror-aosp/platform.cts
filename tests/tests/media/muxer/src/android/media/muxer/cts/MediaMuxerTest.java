@@ -63,6 +63,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
+// runs in both CTS and MCTS
 @AppModeFull(reason = "No interaction with system server")
 @RunWith(AndroidJUnit4.class)
 public class MediaMuxerTest {

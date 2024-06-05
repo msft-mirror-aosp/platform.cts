@@ -18,6 +18,9 @@ package android.view.cts.surfacevalidator;
 
 import static android.view.WindowInsets.Type.displayCutout;
 import static android.view.WindowInsets.Type.systemBars;
+import static android.view.cts.surfacevalidator.CapturedActivity.STORAGE_DIR;
+
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -30,6 +33,7 @@ import android.graphics.Rect;
 import android.os.Environment;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.rules.TestName;
@@ -53,6 +57,7 @@ public class BitmapPixelChecker {
     }
 
     public int getNumMatchingPixels(Bitmap bitmap, Rect bounds) {
+        Log.d(TAG, "Checking bounds " + bounds + " boundsToLog=" + mBoundToLog);
         Rect boundsToLog = mBoundToLog;
         if (boundsToLog == null) {
             boundsToLog = new Rect(bounds);
@@ -86,46 +91,88 @@ public class BitmapPixelChecker {
         }
     }
 
+    /**
+     * Asserts that {@code pixelChecker} matches at least {@code expectedMatchRatio} of the pixels
+     * in a screenshot of {@code activity}'s window with {@code insets} applied.
+     *
+     * Saves the screenshot if the test fails.
+     */
+    public static void validateScreenshot(TestName testName, Activity activity,
+            BitmapPixelChecker pixelChecker, float expectedMatchRatio, Insets insets) {
+        Bitmap swBitmap = takeScreenshot(activity);
+        Rect bounds = getBounds(swBitmap, insets);
+        pixelChecker.applyInsetsToLogBounds(insets);
+        int numMatchingPixels = pixelChecker.getNumMatchingPixels(swBitmap, bounds);
+        float matchedRatio = ((float) numMatchingPixels) / (bounds.width() * bounds.height());
+
+        if (matchedRatio < expectedMatchRatio) {
+            saveFailureCaptures(swBitmap, activity.getClass(), testName);
+        }
+        assertWithMessage("Expected " + expectedMatchRatio + "; matched "
+                + matchedRatio + " of pixels in bitmap(" + bounds.width() + "," + bounds.height()
+                + ")")
+                .that(matchedRatio).isAtLeast(expectedMatchRatio);
+
+        swBitmap.recycle();
+    }
+
+    /**
+     * @param expectedMatchingPixels Pass in -1 if you want all the pixels to match.
+     */
     public static void validateScreenshot(TestName testName, Activity activity,
             BitmapPixelChecker pixelChecker, int expectedMatchingPixels, Insets insets) {
-        Bitmap screenshot =
-                InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot(
-                        activity.getWindow());
-        assertNotNull("Failed to generate a screenshot", screenshot);
-        Bitmap swBitmap = screenshot.copy(Bitmap.Config.ARGB_8888, false);
-        screenshot.recycle();
+        Bitmap swBitmap = takeScreenshot(activity);
+        Rect bounds = getBounds(swBitmap, insets);
+        pixelChecker.applyInsetsToLogBounds(insets);
+        int numMatchingPixels = pixelChecker.getNumMatchingPixels(swBitmap, bounds);
 
+        if (expectedMatchingPixels == -1) {
+            expectedMatchingPixels = bounds.width() * bounds.height();
+        }
+        boolean numMatches = expectedMatchingPixels == numMatchingPixels;
+        if (!numMatches) {
+            saveFailureCaptures(swBitmap, activity.getClass(), testName);
+        }
+        assertTrue("Expected " + expectedMatchingPixels + " received " + numMatchingPixels
+                + " matching pixels in bitmap(" + bounds.width() + "," + bounds.height() + ")",
+                numMatches);
+
+        swBitmap.recycle();
+    }
+
+    @NonNull
+    private static Rect getBounds(Bitmap swBitmap, Insets insets) {
         int width = swBitmap.getWidth();
         int height = swBitmap.getHeight();
 
         // Exclude insets in case the device doesn't support hiding insets.
         Rect bounds = new Rect(0, 0, width, height);
         bounds.inset(insets);
-        pixelChecker.applyInsetsToLogBounds(insets);
-        Log.d(TAG, "Checking bounds " + bounds + " boundsToLog=" + pixelChecker.mBoundToLog);
-        int numMatchingPixels = pixelChecker.getNumMatchingPixels(swBitmap, bounds);
-        boolean numMatches = expectedMatchingPixels == numMatchingPixels;
-        if (!numMatches) {
-            saveFailureCaptures(swBitmap, activity.getClass(), testName);
-        }
-        assertTrue("Expected " + expectedMatchingPixels + " received " + numMatchingPixels
-                + " matching pixels in bitmap(" + width + "," + height + ")", numMatches);
+        return bounds;
+    }
 
-        swBitmap.recycle();
+    private static Bitmap takeScreenshot(Activity activity) {
+        Bitmap screenshot =
+                InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot(
+                        activity.getWindow());
+        assertNotNull("Failed to generate a screenshot", screenshot);
+        Bitmap swBitmap = screenshot.copy(Bitmap.Config.ARGB_8888, false);
+        screenshot.recycle();
+        return swBitmap;
     }
 
     private static void saveFailureCaptures(Bitmap failFrame, Class<?> clazz, TestName name) {
         String directoryName = Environment.getExternalStorageDirectory()
+                + "/" + STORAGE_DIR
                 + "/" + clazz.getSimpleName()
                 + "/" + name.getMethodName();
         File testDirectory = new File(directoryName);
         if (testDirectory.exists()) {
             String[] children = testDirectory.list();
-            if (children == null) {
-                return;
-            }
-            for (String file : children) {
-                new File(testDirectory, file).delete();
+            if (children != null) {
+                for (String file : children) {
+                    new File(testDirectory, file).delete();
+                }
             }
         } else {
             testDirectory.mkdirs();

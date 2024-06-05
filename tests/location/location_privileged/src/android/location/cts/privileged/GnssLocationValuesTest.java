@@ -24,6 +24,7 @@ import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
 import android.os.Build;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -74,6 +75,7 @@ public class GnssLocationValuesTest extends GnssTestCase {
      * 2. Get low-power GNSS locations.
      * 3. Check whether all fields' value make sense.
      */
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testLowPowerModeGnssLocation() throws Exception {
         // Checks if GPS hardware feature is present, skips test (pass) if not,
         if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {

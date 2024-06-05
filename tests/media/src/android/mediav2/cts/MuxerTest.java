@@ -35,6 +35,9 @@ import androidx.test.filters.LargeTest;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
@@ -396,6 +399,7 @@ public class MuxerTest {
      * setOrientationHint are dependent on the media type and OutputFormat. Legality of these APIs
      * are tested in this class.
      */
+    @FrameworkSpecificTest
     @NonMainlineTest
     @SmallTest
     @RunWith(Parameterized.class)
@@ -505,6 +509,7 @@ public class MuxerTest {
             retriever.release();
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#setLocation")
         @Test
         public void testSetLocation() throws IOException {
             Assume.assumeTrue(shouldRunTest(mOutFormat));
@@ -604,6 +609,7 @@ public class MuxerTest {
             }
         }
 
+        @ApiTest(apis = "android.media.MediaMuxer#setOrientationHint")
         @Test
         public void testSetOrientationHint() throws IOException {
             Assume.assumeTrue(shouldRunTest(mOutFormat));
@@ -671,6 +677,7 @@ public class MuxerTest {
             }
         }
 
+        @ApiTest(apis = "AMediaMuxer_setLocation")
         @Test
         public void testSetLocationNative() throws IOException {
             Assume.assumeTrue(shouldRunTest(mOutFormat));
@@ -678,6 +685,7 @@ public class MuxerTest {
             verifyLocationInFile(mOutPath);
         }
 
+        @ApiTest(apis = "AMediaMuxer_setOrientationHint")
         @Test
         public void testSetOrientationHintNative() throws IOException {
             Assume.assumeTrue(shouldRunTest(mOutFormat));
@@ -685,12 +693,14 @@ public class MuxerTest {
             verifyOrientation(mOutPath);
         }
 
+        @ApiTest(apis = "AMediaMuxer_getTrackCount")
         @Test
         public void testGetTrackCountNative() {
             Assume.assumeTrue(Build.VERSION.SDK_INT > Build.VERSION_CODES.R);
             assertTrue(nativeTestGetTrackCount(mInpPath, mOutPath, mOutFormat, mTrackCount));
         }
 
+        @ApiTest(apis = "AMediaMuxer_getTrackFormat")
         @Test
         public void testGetTrackFormatNative() {
             Assume.assumeTrue(Build.VERSION.SDK_INT > Build.VERSION_CODES.R);
@@ -701,6 +711,7 @@ public class MuxerTest {
     /**
      * Tests muxing multiple Video/Audio Tracks
      */
+    @FrameworkSpecificTest
     @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
@@ -769,6 +780,9 @@ public class MuxerTest {
         private native boolean nativeTestMultiTrack(int format, String fileA, String fileB,
                 String fileR, String fileO);
 
+        @ApiTest(apis = {"android.media.MediaMuxer#MediaMuxer", "android.media.MediaMuxer#addTrack",
+                "android.media.MediaMuxer#start", "android.media.MediaMuxer#writeSampleData",
+                "android.media.MediaMuxer#stop", "android.media.MediaMuxer#release"})
         @Test
         public void testMultiTrack() throws IOException {
             Assume.assumeTrue(shouldRunTest(mOutFormat));
@@ -827,6 +841,8 @@ public class MuxerTest {
             }
         }
 
+        @ApiTest(apis = {"AMediaMuxer_new", "AMediaMuxer_addTrack", "AMediaMuxer_start",
+                "AMediaMuxer_writeSampleData", "AMediaMuxer_stop", "AMediaMuxer_delete"})
         @Test
         public void testMultiTrackNative() {
             Assume.assumeTrue(shouldRunTest(mOutFormat));
@@ -840,6 +856,7 @@ public class MuxerTest {
      * Add an offset to the presentation time of samples of a track. Mux with the added offset,
      * validate by re-extracting the muxer output file and compare with original.
      */
+    @FrameworkSpecificTest
     @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
@@ -895,6 +912,7 @@ public class MuxerTest {
         private native boolean nativeTestOffsetPts(int format, String srcFile, String dstFile,
                 int[] offsetIndices);
 
+        @ApiTest(apis = "android.media.MediaMuxer#writeSampleData")
         @Test
         public void testOffsetPresentationTime() throws IOException {
             // values sohuld be in sync with nativeTestOffsetPts
@@ -934,6 +952,7 @@ public class MuxerTest {
             }
         }
 
+        @ApiTest(apis = "AMediaMuxer_writeSampleData")
         @Test
         public void testOffsetPresentationTimeNative() {
             Assume.assumeTrue(shouldRunTest(mOutFormat));
@@ -953,6 +972,10 @@ public class MuxerTest {
      * Tests whether appending audio and/or video data to an existing media file works in all
      * supported append modes.
      */
+    @ApiTest(apis = {"AMediaMuxer_append", "AMEDIAMUXER_APPEND_IGNORE_LAST_VIDEO_GOP",
+            "AMEDIAMUXER_APPEND_TO_EXISTING_DATA"})
+    @FrameworkSpecificTest
+    @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
     public static class TestSimpleAppend {
@@ -1048,6 +1071,8 @@ public class MuxerTest {
      * This test takes the output of a codec and muxes it in to all possible container formats.
      * The results are checked for inconsistencies with the requirements of CDD.
      */
+    @CddTest(requirements = {"5.1.3", "5.1.8"})
+    @FrameworkSpecificTest
     @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
@@ -1176,6 +1201,7 @@ public class MuxerTest {
          * TODO(b/156767190): Make a separate class, like TestNoCSDMux, instead of being part of
          * TestSimpleMux?
          */
+        @ApiTest(apis = "android.media.MediaMuxer#addTrack")
         @Test
         public void testNoCSDMux() throws IOException {
             Assume.assumeTrue(doesCodecRequireCSD(mMediaType));
@@ -1201,6 +1227,8 @@ public class MuxerTest {
         }
     }
 
+    @ApiTest(apis = {"android.media.MediaMuxer#start", "android.media.MediaMuxer#stop"})
+    @FrameworkSpecificTest
     @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)

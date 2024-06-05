@@ -16,7 +16,10 @@
 
 package android.companion.cts.core
 
-import android.Manifest
+import android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
+import android.companion.DevicePresenceEvent.EVENT_BLE_APPEARED
+import android.companion.DevicePresenceEvent.EVENT_BLE_DISAPPEARED
+import android.companion.Flags
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.MAC_ADDRESS_B
 import android.companion.cts.common.PrimaryCompanionService
@@ -53,8 +56,11 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         // Create a regular (not self-managed) association.
         targetApp.associate(MAC_ADDRESS_A)
         val associationId = cdm.myAssociations[0].id
-
-        simulateDeviceAppeared(associationId)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(associationId, EVENT_BLE_APPEARED)
+        } else {
+            simulateDeviceAppeared(associationId)
+        }
 
         // Make sure CDM does not bind application
         assertValidCompanionDeviceServicesRemainUnbound()
@@ -63,7 +69,11 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         assertEmpty(PrimaryCompanionService.connectedDevices)
         assertEmpty(SecondaryCompanionService.connectedDevices)
 
-        simulateDeviceDisappeared(associationId)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(associationId, EVENT_BLE_DISAPPEARED)
+        } else {
+            simulateDeviceDisappeared(associationId)
+        }
     }
 
     @Test
@@ -79,7 +89,7 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         }
 
         // Same call with the REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE permissions should succeed.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
         }
     }
@@ -91,12 +101,15 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         val associationId = cdm.myAssociations[0].id
 
         // Start observing presence.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
         }
-
         // Simulate device appeared.
-        simulateDeviceAppeared(associationId)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(associationId, EVENT_BLE_APPEARED)
+        } else {
+            simulateDeviceAppeared(associationId)
+        }
 
         // Make sure valid CompanionDeviceServices are bound
         assertValidCompanionDeviceServicesBind()
@@ -111,7 +124,11 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         // Make sure that both primary and secondary CompanionDeviceServices still bind.
         assertValidCompanionDeviceServicesRemainBound()
 
-        simulateDeviceDisappeared(associationId)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(associationId, EVENT_BLE_DISAPPEARED)
+        } else {
+            simulateDeviceDisappeared(associationId)
+        }
 
         // Check that only the primary services has received the onDeviceDisappeared() callback.
         assertOnlyPrimaryCompanionDeviceServiceNotified(associationId, appeared = false)
@@ -127,13 +144,17 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         val associationId = cdm.myAssociations[0].id
 
         // Start and stop observing presence.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
             cdm.stopObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
         }
 
         // Simulate device appeared.
-        simulateDeviceAppeared(associationId)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(associationId, EVENT_BLE_APPEARED)
+        } else {
+            simulateDeviceAppeared(associationId)
+        }
 
         // Make sure CDM does not bind application
         assertValidCompanionDeviceServicesRemainUnbound()
@@ -143,7 +164,11 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         assertEmpty(SecondaryCompanionService.connectedDevices)
 
         // Simulate device disappeared.
-        simulateDeviceDisappeared(associationId)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(associationId, EVENT_BLE_DISAPPEARED)
+        } else {
+            simulateDeviceDisappeared(associationId)
+        }
     }
 
     @Test
@@ -151,15 +176,17 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         // Create a regular (not self-managed) association.
         targetApp.associate(MAC_ADDRESS_A)
         val associationId = cdm.myAssociations[0].id
-
         // Simulate device appearing before observing it
-        simulateDeviceAppeared(associationId)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(associationId, EVENT_BLE_APPEARED)
+        } else {
+            simulateDeviceAppeared(associationId)
+        }
 
         // Make sure CDM doesn't bind application yet
         assertValidCompanionDeviceServicesRemainUnbound()
-
         // Start observing presence of an already present device.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
         }
 
@@ -168,7 +195,11 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         assertInvalidCompanionDeviceServicesNotBound()
 
         // Clean-up
-        simulateDeviceDisappeared(associationId)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(associationId, EVENT_BLE_DISAPPEARED)
+        } else {
+            simulateDeviceDisappeared(associationId)
+        }
     }
 
     @Test
@@ -180,12 +211,15 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         val idB = cdm.myAssociations[1].id
 
         // Start observing presence of both devices.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
             cdm.startObservingDevicePresence(MAC_ADDRESS_B.toUpperCaseString())
         }
-
-        simulateDeviceAppeared(idA)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(idA, EVENT_BLE_APPEARED)
+        } else {
+            simulateDeviceAppeared(idA)
+        }
 
         // Assert only the valid CompanionDeviceServices (primary + secondary) bind
         assertValidCompanionDeviceServicesBind()
@@ -198,7 +232,11 @@ class ObservingDevicePresenceTest : CoreTestBase() {
                 expected = setOf(idA)
         )
 
-        simulateDeviceAppeared(idB)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(idB, EVENT_BLE_APPEARED)
+        } else {
+            simulateDeviceAppeared(idB)
+        }
 
         // Assert only the primary CompanionDeviceService is notified of device B's appearance
         assertOnlyPrimaryCompanionDeviceServiceNotified(idB, appeared = true)
@@ -211,7 +249,11 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         assertValidCompanionDeviceServicesRemainBound()
 
         // "Disconnect" first device (A).
-        simulateDeviceDisappeared(idA)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(idA, EVENT_BLE_DISAPPEARED)
+        } else {
+            simulateDeviceDisappeared(idA)
+        }
 
         // Assert only the primary CompanionDeviceService is notified of device A's disappearance
         assertOnlyPrimaryCompanionDeviceServiceNotified(idA, appeared = false)
@@ -221,7 +263,11 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         assertValidCompanionDeviceServicesRemainBound()
 
         // "Disconnect" second (and last remaining) device (B).
-        simulateDeviceDisappeared(idB)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(idB, EVENT_BLE_DISAPPEARED)
+        } else {
+            simulateDeviceDisappeared(idB)
+        }
 
         // Assert only the primary CompanionDeviceService is notified of device B's disappearance
         assertOnlyPrimaryCompanionDeviceServiceNotified(idB, appeared = false)
@@ -239,13 +285,18 @@ class ObservingDevicePresenceTest : CoreTestBase() {
         val idB = cdm.myAssociations[1].id
 
         // Start observing presence of both devices.
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
             cdm.startObservingDevicePresence(MAC_ADDRESS_B.toUpperCaseString())
         }
 
-        simulateDeviceAppeared(idA)
-        simulateDeviceAppeared(idB)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(idA, EVENT_BLE_APPEARED)
+            simulateDeviceEvent(idB, EVENT_BLE_APPEARED)
+        } else {
+            simulateDeviceAppeared(idA)
+            simulateDeviceAppeared(idB)
+        }
 
         // Assert only the valid CompanionDeviceServices (primary + secondary) bind
         assertValidCompanionDeviceServicesBind()
@@ -253,7 +304,7 @@ class ObservingDevicePresenceTest : CoreTestBase() {
 
         // Stop observing presence of device A.
         PrimaryCompanionService.forgetDevicePresence(idA)
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.stopObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
         }
 
@@ -262,20 +313,26 @@ class ObservingDevicePresenceTest : CoreTestBase() {
 
         // Stop observing presence of device B.
         PrimaryCompanionService.forgetDevicePresence(idB)
-        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+        withShellPermissionIdentity(REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
             cdm.stopObservingDevicePresence(MAC_ADDRESS_B.toUpperCaseString())
         }
 
         // Both valid services should unbind now.
         assertValidCompanionDeviceServicesUnbind()
-
-        simulateDeviceDisappeared(idA)
-        simulateDeviceDisappeared(idB)
+        if (Flags.devicePresence()) {
+            simulateDeviceEvent(idA, EVENT_BLE_DISAPPEARED)
+            simulateDeviceEvent(idB, EVENT_BLE_DISAPPEARED)
+        } else {
+            simulateDeviceDisappeared(idA)
+            simulateDeviceDisappeared(idB)
+        }
     }
 
     private fun simulateDeviceAppeared(associationId: Int) = runShellCommand(
-            "cmd companiondevice simulate-device-appeared $associationId")
+            "cmd companiondevice simulate-device-appeared $associationId"
+    )
 
     private fun simulateDeviceDisappeared(associationId: Int) = runShellCommand(
-            "cmd companiondevice simulate-device-disappeared $associationId")
+            "cmd companiondevice simulate-device-disappeared $associationId"
+    )
 }

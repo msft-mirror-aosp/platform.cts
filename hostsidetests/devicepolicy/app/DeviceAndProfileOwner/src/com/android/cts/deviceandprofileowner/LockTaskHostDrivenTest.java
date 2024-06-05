@@ -16,26 +16,17 @@
 package com.android.cts.deviceandprofileowner;
 
 import android.app.ActivityManager;
-import android.app.ActivityOptions;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.SystemClock;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.Until;
-import android.telecom.TelecomManager;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
-import java.time.Duration;
 import com.android.compatibility.common.util.PollingCheck;
 
 /**
@@ -121,10 +112,12 @@ public class LockTaskHostDrivenTest extends BaseDeviceAdminTest {
         mUiDevice.waitForIdle();
     }
 
-    private void checkLockedActivityIsRunning() {
-        String activityName =
-                mActivityManager.getAppTasks().get(0).getTaskInfo().topActivity.getClassName();
-        assertEquals(LOCK_TASK_ACTIVITY, activityName);
+    private void checkLockedActivityIsRunning() throws Exception {
+        waitAndCheckLockedActivityIsResumed();
+
+        ComponentName topActivity = mActivityManager.getAppTasks().get(0).getTaskInfo().topActivity;
+        assertNotNull(topActivity);
+        assertEquals(LOCK_TASK_ACTIVITY, topActivity.getClassName());
 
         PollingCheck.waitFor(
                 () -> (mActivityManager.getLockTaskModeState()
@@ -159,8 +152,10 @@ public class LockTaskHostDrivenTest extends BaseDeviceAdminTest {
     }
 
     private void launchLockTaskUtilityActivityWithoutStartingLockTask() {
-        final Intent intent = new Intent(mContext, LockTaskUtilityActivityIfAllowed.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        final Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
     }
 

@@ -33,34 +33,6 @@ filegroup {
     srcs: ["src/android/server/wm/IgnoreOrientationRequestSession.java"],
 }
 
-filegroup {
-    name: "cts-wm-nested-shell-permission",
-    srcs: ["src/android/server/wm/NestedShellPermission.java"],
-}
-
-java_test_helper_library {
-    name: "cts-wm-window-manager-helper",
-
-    srcs: [
-        "src/android/server/wm/Condition.java",
-        "src/android/server/wm/ComponentNameUtils.java",
-        "src/android/server/wm/CtsWindowInfoUtils.java",
-        "src/android/server/wm/ProtoExtractors.java",
-        "src/android/server/wm/StateLogger.java",
-        "src/android/server/wm/WaitForValidActivityState.java",
-        "src/android/server/wm/WindowManagerState.java",
-        "src/android/server/wm/WindowManagerStateHelper.java",
-    ],
-
-    static_libs: [
-        "compatibility-device-util-axt",
-        "platformprotosnano",
-        "hamcrest-library",
-    ],
-
-    sdk_version: "test_current",
-}
-
 java_test_helper_library {
     name: "cts-wm-util",
 
@@ -77,7 +49,14 @@ java_test_helper_library {
         "androidx.test.rules",
         "hamcrest-library",
         "CtsMockInputMethodLib",
+        "com.android.window.flags.window-aconfig-java",
     ],
 
     sdk_version: "test_current",
+}
+
+android_test_helper_app {
+    name: "CtsWindowManagerExternalApp",
+    srcs: ["src/android/server/wm/ExternalActivity.java"],
+    test_suites: ["cts"],
 }

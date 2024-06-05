@@ -15,21 +15,30 @@
 //
 
 package {
+    default_team: "trendy_team_android_permissions",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test {
     name: "CtsAttributionSourceTestCases",
+    defaults: [
+        "mts-target-sdk-version-current",
+    ],
     sdk_version: "test_current",
+    min_sdk_version: "30",
     srcs: [
         "src/**/*.kt",
+        "src/**/*.java",
     ],
     static_libs: [
         "androidx.test.core",
         "compatibility-device-util-axt",
-        "truth-prebuilt",
+        "truth",
         "ctstestrunner-axt",
         "platform-test-annotations",
+        "flag-junit",
+        "kotlin-test",
+        "android.permission.flags-aconfig-java",
     ],
     data: [
         ":CtsBlamedPermissionApp",

@@ -18,8 +18,9 @@ package android.wifi.mockwifi;
 
 import android.content.Context;
 import android.util.Log;
-
-import androidx.test.InstrumentationRegistry;
+import android.wifi.mockwifi.nl80211.IClientInterfaceImp;
+import android.wifi.mockwifi.nl80211.IWifiScannerImp;
+import android.wifi.mockwifi.nl80211.WifiNL80211ManagerImp;
 
 import java.util.concurrent.TimeUnit;
 
@@ -30,8 +31,8 @@ public class MockWifiModemManager {
     private static MockWifiModemServiceConnector sServiceConnector;
     private MockWifiModemService mMockWifiModemService;
 
-    public MockWifiModemManager() {
-        sContext = InstrumentationRegistry.getInstrumentation().getContext();
+    public MockWifiModemManager(Context context) {
+        sContext = context;
     }
 
     private void waitForWifiFrameworkDone(int delayInSec) throws Exception {
@@ -45,10 +46,10 @@ public class MockWifiModemManager {
      *
      * @return boolean true if the operation is successful, otherwise false.
      */
-    public boolean connectMockWifiModemService() throws Exception {
+    public boolean connectMockWifiModemService(Context context) throws Exception {
         if (sServiceConnector == null) {
             sServiceConnector =
-                    new MockWifiModemServiceConnector(InstrumentationRegistry.getInstrumentation());
+                    new MockWifiModemServiceConnector(context);
         }
 
         if (sServiceConnector == null) {
@@ -108,15 +109,35 @@ public class MockWifiModemManager {
     }
 
     /**
-     * Configures the return result for signalPoll API for the target iface name.
-     *
+     * Configures a mock client interface.
      */
-    public boolean configureSignalPoll(String ifaceName, int currentRssiDbm, int txBitrateMbps,
-            int rxBitrateMbps, int associationFrequencyMHz) {
+    public boolean configureClientInterfaceMock(String ifaceName,
+            IClientInterfaceImp.ClientInterfaceMock clientInterfaceMock) {
         if (mMockWifiModemService == null) {
             return false;
         }
-        return mMockWifiModemService.configureSignalPoll(ifaceName, currentRssiDbm, txBitrateMbps,
-                rxBitrateMbps, associationFrequencyMHz);
+        return mMockWifiModemService.configureClientInterfaceMock(ifaceName, clientInterfaceMock);
+    }
+
+    /**
+     * Configures a mock Wifi scanner interface.
+     */
+    public boolean configureWifiScannerInterfaceMock(String ifaceName,
+            IWifiScannerImp.WifiScannerInterfaceMock wifiScannerInterfaceMock) {
+        if (mMockWifiModemService == null) {
+            return false;
+        }
+        return mMockWifiModemService.configureWifiScannerInterfaceMock(ifaceName,
+                wifiScannerInterfaceMock);
+    }
+
+    /**
+     * Returns mocked WifiNl80211Manager.
+     */
+    public WifiNL80211ManagerImp getWifiNL80211ManagerImp() {
+        if (mMockWifiModemService == null) {
+            return null;
+        }
+        return mMockWifiModemService.getWifiNL80211ManagerImp();
     }
 }

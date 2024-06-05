@@ -26,6 +26,7 @@ filegroup {
 
 android_test {
     name: "CtsAppWidgetTestCases",
+    team: "trendy_team_launcher",
     defaults: ["cts_defaults"],
     srcs: [
         "src/**/*.java",
@@ -33,11 +34,14 @@ android_test {
     ],
     sdk_version: "test_current",
     static_libs: [
+        "android.appwidget.flags-aconfig-java",
         "mockito-target-minus-junit4",
         "ctstestrunner-axt",
         "junit",
         "compatibility-device-util-axt",
         "cts-wm-util",
+        "androidx.test.core",
+        "Harrier",
     ],
     libs: ["android.test.base"],
     // Tag this module as a cts test artifact

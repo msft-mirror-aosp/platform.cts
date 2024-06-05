@@ -25,6 +25,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.image.DynamicSystemClient;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
@@ -37,6 +38,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @AppModeFull(reason = "Instant apps cannot access DynamicSystemClient")
+@AppModeNonSdkSandbox(reason = "SDK Sandboxes cannot access DynamicSystemClient")
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class DynamicSystemClientTest implements DynamicSystemClient.OnStatusChangedListener {

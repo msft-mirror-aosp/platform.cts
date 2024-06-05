@@ -38,25 +38,24 @@ public class BalService extends Service {
     public void onCreate() {
         Log.i("BalService", "Service started");
         mHandler = new Handler();
-        mHandler.postDelayed(this::startBackgroundActivity, 1000 * 30);
+        mHandler.postDelayed(this::startBackgroundActivity, 1000 * 11);
         super.onCreate();
     }
 
     void startBackgroundActivity() {
         try {
-            Log.e("BalService", "Start background activity called");
+            Log.i("BalService", "Start background activity called");
             Intent intent = new Intent(this, EmptyActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             this.startActivity(intent);
 
         } catch (Exception e) {
-            Log.e("BalService", "startBackgroundActivity throws exception." + e);
+            e.printStackTrace();
         }
     }
 
     @Override
     public void onDestroy() {
-        Log.i("BalService", "Service destroyed!");
         super.onDestroy();
     }
 }

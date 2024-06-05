@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_enterprise",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -25,7 +26,7 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "cts-net-utils",
-        "truth-prebuilt",
+        "truth",
         "androidx.test.ext.junit",
         "testng", // used for assertThrows
         // TODO: Remove this once we remove ui automator usage
@@ -38,8 +39,18 @@ android_test {
         "MetricsRecorder",
         "statsdprotolite",
         "Interactive",
+        "flag-junit",
+        "bedstead-flags",
+        "bedstead-root",
+        "device_policy_aconfig_flags_lib",
+        "TestApisReflection",
+        "bedstead-multiuser",
+        "bedstead-enterprise",
     ],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
     test_suites: [
         "cts",
         "vts10",
@@ -55,7 +66,7 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "cts-net-utils",
-        "truth-prebuilt",
+        "truth",
         "androidx.test.ext.junit",
         "testng", // used for assertThrows
         // TODO: Remove this once we remove ui automator usage
@@ -68,12 +79,60 @@ android_test {
         "MetricsRecorder",
         "statsdprotolite",
         "Interactive",
+        "flag-junit",
+        "bedstead-flags",
+        "bedstead-root",
+        "bedstead-multiuser",
+        "bedstead-enterprise",
     ],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
     test_suites: [
         "cts-interactive",
         "general-tests",
     ],
     platform_apis: true,
     test_config: "InteractiveAndroidTest.xml",
+}
+
+android_test {
+    name: "GtsRootDevicePolicyTestCases",
+    defaults: ["cts_defaults"],
+    min_sdk_version: "29",
+    target_sdk_version: "29",
+    static_libs: [
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "cts-net-utils",
+        "truth",
+        "androidx.test.ext.junit",
+        "testng", // used for assertThrows
+        // TODO: Remove this once we remove ui automator usage
+        "androidx.test.uiautomator_uiautomator",
+        "EventLib",
+        "ActivityContext",
+        "Harrier",
+        "DeviceAdminApp",
+        "TestApp",
+        "MetricsRecorder",
+        "statsdprotolite",
+        "Interactive",
+        "flag-junit",
+        "bedstead-flags",
+        "bedstead-root",
+        "bedstead-multiuser",
+        "bedstead-enterprise",
+    ],
+    srcs: [
+        "src/android/devicepolicy/cts/ApplicationHiddenTest.java",
+        "src/android/devicepolicy/cts/utils/PolicyEngineUtils.java",
+        "src/android/devicepolicy/cts/utils/PolicySetResultUtils.java",
+    ],
+    test_suites: [
+        "gts",
+    ],
+    platform_apis: true,
+    test_config: "GtsRootAndroidTest.xml",
 }

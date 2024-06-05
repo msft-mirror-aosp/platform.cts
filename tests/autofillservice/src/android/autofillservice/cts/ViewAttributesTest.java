@@ -243,7 +243,7 @@ public class ViewAttributesTest
                             2              // outerView.top
                                     + 11); // nestedView.top
 
-                    // The location of the tripleNestedView should be relative to it's parent
+                    // The location of the tripleNestedView should be relative to its parent
                     assertThat(doubleNestedView.getChildCount()).isEqualTo(1);
                     AssistStructure.ViewNode tripleNestedView = doubleNestedView.getChildAt(0);
                     assertThat(doubleNestedView.getIdEntry()).isEqualTo("doubleNestedView");

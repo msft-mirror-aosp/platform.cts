@@ -16,12 +16,11 @@
 
 package android.server.wm.jetpack.utils;
 
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
-import static android.server.wm.jetpack.utils.ExtensionUtil.EXTENSION_VERSION_2;
-import static android.server.wm.jetpack.utils.ExtensionUtil.assumeExtensionSupportedDevice;
-import static android.server.wm.jetpack.utils.ExtensionUtil.getExtensionWindowLayoutInfo;
-import static android.server.wm.jetpack.utils.ExtensionUtil.getWindowExtensions;
-import static android.server.wm.jetpack.utils.ExtensionUtil.isExtensionVersionAtLeast;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getExtensionWindowLayoutInfo;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getActivityBounds;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getResumedActivityById;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.isActivityResumed;
@@ -32,7 +31,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeNotNull;
+
+import static java.util.Objects.requireNonNull;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -41,6 +42,7 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.server.wm.WindowManagerStateHelper;
+import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.util.Log;
 import android.util.Pair;
 import android.view.WindowMetrics;
@@ -59,11 +61,11 @@ import androidx.window.extensions.layout.FoldingFeature;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.window.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Utility class for activity embedding tests.
@@ -71,7 +73,7 @@ import java.util.Objects;
 public class ActivityEmbeddingUtil {
 
     public static final String TAG = "ActivityEmbeddingTests";
-    public static final long WAIT_FOR_LIFECYCLE_TIMEOUT_MS = 3000;
+    public static final long WAIT_FOR_LIFECYCLE_TIMEOUT_MS = 3000L * HW_TIMEOUT_MULTIPLIER;
     public static final SplitAttributes DEFAULT_SPLIT_ATTRS = new SplitAttributes.Builder().build();
 
     public static final SplitAttributes EXPAND_SPLIT_ATTRS = new SplitAttributes.Builder()
@@ -130,16 +132,12 @@ public class ActivityEmbeddingUtil {
     /**
      * A wrapper to create {@link SplitPairRule} builder with extensions core functional interface
      * to prevent ambiguous issue when using lambda expressions.
-     * <p>
-     * It requires the vendor API version at least {@link ExtensionUtil#EXTENSION_VERSION_2}.
      */
     @NonNull
     public static SplitPairRule.Builder createSplitPairRuleBuilder(
             @NonNull Predicate<Pair<Activity, Activity>> activitiesPairPredicate,
             @NonNull Predicate<Pair<Activity, Intent>> activityIntentPairPredicate,
             @NonNull Predicate<WindowMetrics> windowMetricsPredicate) {
-        assertTrue("This method requires vendor API version at least 2",
-                isExtensionVersionAtLeast(EXTENSION_VERSION_2));
         return new SplitPairRule.Builder(activitiesPairPredicate, activityIntentPairPredicate,
                 windowMetricsPredicate);
     }
@@ -350,24 +348,24 @@ public class ActivityEmbeddingUtil {
         }
         waitAndAssertResumed(resumedActivities);
 
-        final Pair<Rect, Rect> expectedBoundsPair = getExpectedBoundsPair(primaryActivity,
+        final Pair<Rect, Rect> expectedBoundsPair = getExpectedBoundsPair(
+                shouldExpandContainers ? requireNonNull(secondaryActivity) : primaryActivity,
                 splitAttributes);
 
         final ActivityEmbeddingComponent activityEmbeddingComponent = getWindowExtensions()
                 .getActivityEmbeddingComponent();
 
         // Verify that both activities are embedded and that the bounds are correct
-        assertEquals(!shouldExpandContainers,
-                activityEmbeddingComponent.isActivityEmbedded(primaryActivity));
-        // If the split pair is stacked, ignore to check the bounds because the primary activity
-        // may have been occluded and the latest configuration may not be received.
         if (!shouldExpandContainers) {
+            // If the split pair is stacked, ignore to check the bounds because the primary activity
+            // may have been occluded and the latest configuration may not be received.
             waitForActivityBoundsEquals(primaryActivity, expectedBoundsPair.first);
+            assertTrue(activityEmbeddingComponent.isActivityEmbedded(primaryActivity));
         }
         if (secondaryActivity != null) {
+            waitForActivityBoundsEquals(secondaryActivity, expectedBoundsPair.second);
             assertEquals(!shouldExpandContainers,
                     activityEmbeddingComponent.isActivityEmbedded(secondaryActivity));
-            waitForActivityBoundsEquals(secondaryActivity, expectedBoundsPair.second);
         }
     }
 
@@ -378,7 +376,7 @@ public class ActivityEmbeddingUtil {
     public static void waitAndAssertResumedAndFillsTask(@NonNull String activityId) {
         waitAndAssertResumed(activityId);
         final Activity activity = getResumedActivityById(activityId);
-        final Rect taskBounds = getTaskBounds(activity, false /* shouldWaitForResume */);
+        final Rect taskBounds = waitAndGetTaskBounds(activity, false /* shouldWaitForResume */);
         PollingCheck.waitFor(WAIT_FOR_LIFECYCLE_TIMEOUT_MS, () ->
                 getActivityBounds(activity).equals(taskBounds));
         assertEquals(taskBounds, getActivityBounds(activity));
@@ -386,14 +384,15 @@ public class ActivityEmbeddingUtil {
 
     /** Waits for the {@code activity} to be in resumed state and verifies if it fills the task. */
     public static void waitAndAssertResumedAndFillsTask(@NonNull Activity activity) {
-        final Rect taskBounds = getTaskBounds(activity, true /* shouldWaitForResume */);
+        final Rect taskBounds = waitAndGetTaskBounds(activity, true /* shouldWaitForResume */);
         PollingCheck.waitFor(WAIT_FOR_LIFECYCLE_TIMEOUT_MS, () ->
                 getActivityBounds(activity).equals(taskBounds));
         assertEquals(taskBounds, getActivityBounds(activity));
     }
 
     @NonNull
-    public static Rect getTaskBounds(@NonNull Activity activity, boolean shouldWaitForResume) {
+    public static Rect waitAndGetTaskBounds(@NonNull Activity activity,
+                                            boolean shouldWaitForResume) {
         final WindowManagerStateHelper wmState = new WindowManagerStateHelper();
         final ComponentName activityName = activity.getComponentName();
         if (shouldWaitForResume) {
@@ -404,10 +403,12 @@ public class ActivityEmbeddingUtil {
         return wmState.getTaskByActivity(activityName).getBounds();
     }
 
-    private static void waitForActivityBoundsEquals(@NonNull Activity activity,
+    /** Waits until the bounds of the activity matches the given bounds. */
+    public static void waitForActivityBoundsEquals(@NonNull Activity activity,
             @NonNull Rect bounds) {
         PollingCheck.waitFor(WAIT_FOR_LIFECYCLE_TIMEOUT_MS,
-                () -> getActivityBounds(activity).equals(bounds));
+                () -> getActivityBounds(activity).equals(bounds),
+                "Expected bounds: " + bounds + ", actual bounds:" + getActivityBounds(activity));
     }
 
     private static boolean waitForResumed(
@@ -525,24 +526,24 @@ public class ActivityEmbeddingUtil {
 
     /** Returns the expected bounds of the primary and secondary containers */
     @NonNull
-    private static Pair<Rect, Rect> getExpectedBoundsPair(@NonNull Activity primaryActivity,
+    private static Pair<Rect, Rect> getExpectedBoundsPair(@NonNull Activity activity,
             @NonNull SplitAttributes splitAttributes) {
         SplitType splitType = splitAttributes.getSplitType();
 
-        final Rect parentTaskBounds = getTaskBounds(primaryActivity,
+        final Rect parentTaskBounds = waitAndGetTaskBounds(activity,
                 false /* shouldWaitForResume */);
         if (splitType instanceof SplitType.ExpandContainersSplitType) {
             return new Pair<>(new Rect(parentTaskBounds), new Rect(parentTaskBounds));
         }
 
         int layoutDir = (splitAttributes.getLayoutDirection() == LayoutDirection.LOCALE)
-                ? primaryActivity.getResources().getConfiguration().getLayoutDirection()
+                ? activity.getResources().getConfiguration().getLayoutDirection()
                 : splitAttributes.getLayoutDirection();
         final boolean isPrimaryRightOrBottomContainer = isPrimaryRightOrBottomContainer(layoutDir);
 
         FoldingFeature foldingFeature;
         try {
-            foldingFeature = getFoldingFeature(getExtensionWindowLayoutInfo(primaryActivity));
+            foldingFeature = getFoldingFeature(getExtensionWindowLayoutInfo(activity));
         } catch (InterruptedException e) {
             foldingFeature = null;
         }
@@ -685,11 +686,21 @@ public class ActivityEmbeddingUtil {
         return (hingeArea.width() > hingeArea.height())
                 == ActivityEmbeddingUtil.isHorizontal(splitAttributes.getLayoutDirection());
     }
+
+    /**
+     * Assumes that WM Extensions - Activity Embedding feature is enabled on the device.
+     */
     public static void assumeActivityEmbeddingSupportedDevice() {
         assumeExtensionSupportedDevice();
-        assumeTrue("Device does not support ActivityEmbedding",
-                Objects.requireNonNull(getWindowExtensions())
-                        .getActivityEmbeddingComponent() != null);
+        if (!Flags.enableWmExtensionsForAllFlag()) {
+            assumeNotNull("Device does not support ActivityEmbedding",
+                    getWindowExtensions().getActivityEmbeddingComponent());
+        } else {
+            // Devices are required to enable Activity Embedding with WM Extensions, unless the
+            // app's targetSDK is smaller than Android 15.
+            assertNotNull("Device with WM Extensions must support ActivityEmbedding",
+                    getWindowExtensions().getActivityEmbeddingComponent());
+        }
     }
 
     private static void assertSplitInfoTopSplitIsCorrect(@NonNull List<SplitInfo> splitInfoList,

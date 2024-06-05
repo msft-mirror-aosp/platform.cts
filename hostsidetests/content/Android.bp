@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsSyncContentHostTestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     srcs: [
         "src/**/*.java",
@@ -27,8 +28,10 @@ java_test_host {
         "cts-tradefed",
         "tradefed",
         "compatibility-host-util",
-        "device-policy-log-verifier-util",
         "CtsDevicePolicyManagerTestCases",
+    ],
+    static_libs: [
+        "device-policy-log-verifier-util",
     ],
     test_suites: [
         "cts",

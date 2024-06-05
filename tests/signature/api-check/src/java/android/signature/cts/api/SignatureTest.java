@@ -91,7 +91,6 @@ public class SignatureTest extends AbstractSignatureTest {
      * <p>Will check the entire API, and then report the complete list of failures</p>
      */
     @Test(timeout = 600000)
-    @Ignore("b/301075649")
     public void testRuntimeCompatibilityWithCurrentApi() {
         runWithTestResultObserver(mResultObserver -> {
             ApiComplianceChecker complianceChecker =

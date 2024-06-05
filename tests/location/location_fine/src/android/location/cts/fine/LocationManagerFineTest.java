@@ -18,11 +18,11 @@ package android.location.cts.fine;
 
 import static android.Manifest.permission.LOCATION_BYPASS;
 import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
+import static android.app.AppOpsManager.OPSTR_FINE_LOCATION;
+import static android.app.AppOpsManager.OPSTR_FINE_LOCATION_SOURCE;
 import static android.app.AppOpsManager.OPSTR_MONITOR_HIGH_POWER_LOCATION;
 import static android.app.AppOpsManager.OPSTR_MONITOR_LOCATION;
 import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
-import static android.content.pm.PackageManager.FEATURE_TELEVISION;
-import static android.content.pm.PackageManager.FEATURE_WATCH;
 import static android.location.LocationManager.EXTRA_PROVIDER_ENABLED;
 import static android.location.LocationManager.EXTRA_PROVIDER_NAME;
 import static android.location.LocationManager.FUSED_PROVIDER;
@@ -32,9 +32,8 @@ import static android.location.LocationManager.PASSIVE_PROVIDER;
 import static android.location.LocationManager.PROVIDERS_CHANGED_ACTION;
 import static android.location.LocationRequest.PASSIVE_INTERVAL;
 import static android.location.LocationRequest.QUALITY_HIGH_ACCURACY;
-import static android.os.PowerManager.LOCATION_MODE_ALL_DISABLED_WHEN_SCREEN_OFF;
-import static android.os.PowerManager.LOCATION_MODE_GPS_DISABLED_WHEN_SCREEN_OFF;
-import static android.os.PowerManager.LOCATION_MODE_THROTTLE_REQUESTS_WHEN_SCREEN_OFF;
+import static android.location.provider.ProviderProperties.ACCURACY_FINE;
+import static android.location.provider.ProviderProperties.POWER_USAGE_HIGH;
 
 import static androidx.test.ext.truth.content.IntentSubject.assertThat;
 import static androidx.test.ext.truth.location.LocationSubject.assertThat;
@@ -44,14 +43,11 @@ import static com.android.compatibility.common.util.LocationUtils.createLocation
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
-import android.annotation.NonNull;
+import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.app.PendingIntent;
 import android.app.UiAutomation;
@@ -81,33 +77,27 @@ import android.location.provider.ProviderProperties;
 import android.os.Build;
 import android.os.HandlerThread;
 import android.os.Looper;
-import android.os.PowerManager;
+import android.os.Process;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.DeviceConfig;
-import android.util.ArraySet;
 import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.LocationUtils;
-import com.android.compatibility.common.util.ScreenUtils;
-import com.android.compatibility.common.util.ScreenUtils.ScreenResetter;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -127,8 +117,6 @@ public class LocationManagerFineTest {
     private static final String VALID_LOCATION_ATTRIBUTION_TAG = "valid_location_attribution_tag";
     private static final String ANOTHER_VALID_LOCATION_ATTRIBUTION_TAG =
             "another_valid_location_attribution_tag";
-    private static final String INVALID_LOCATION_ATTRIBUTION_TAG =
-            "invalid_location_attribution_tag";
 
     private static final String IGNORE_SETTINGS_ALLOWLIST = "ignore_settings_allowlist";
     private static final String ADAS_SETTINGS_ALLOWLIST = "adas_settings_allowlist";
@@ -158,8 +146,8 @@ public class LocationManagerFineTest {
                 new ProviderProperties.Builder()
                         .setHasNetworkRequirement(true)
                         .setHasCellRequirement(true)
-                        .setPowerUsage(ProviderProperties.POWER_USAGE_HIGH)
-                        .setAccuracy(ProviderProperties.ACCURACY_FINE).build());
+                        .setPowerUsage(POWER_USAGE_HIGH)
+                        .setAccuracy(ACCURACY_FINE).build());
         mManager.setTestProviderEnabled(TEST_PROVIDER, true);
     }
 
@@ -204,6 +192,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetLastKnownLocation() {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -226,31 +215,15 @@ public class LocationManagerFineTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.Location.LocationManager#getLastKnownLocation"})
-    public void testGetLastKnownLocation_AdasLocationSettings_ReturnsLocation() throws Exception {
+    public void testGetLastKnownLocation_AdasLocationSettingsOn() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        // ADAS is not supported on passenger users
-        assumeFalse("not supported when running on visible background user",
-                mUserHelper.isVisibleBackgroundUser());
 
-        try (LocationListenerCapture capture = new LocationListenerCapture(mContext);
-             DeviceConfigStateHelper locationDeviceConfigStateHelper =
+        try (DeviceConfigStateHelper locationDeviceConfigStateHelper =
                      new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_LOCATION)) {
 
-            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST,
-                    mContext.getPackageName());
+            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST, mContext.getPackageName());
 
-            mManager.addTestProvider(
-                    GPS_PROVIDER,
-                    false,
-                    true,
-                    false,
-                    false,
-                    true,
-                    true,
-                    true,
-                    Criteria.POWER_HIGH,
-                    Criteria.ACCURACY_FINE);
+            mManager.addTestProvider(GPS_PROVIDER, new ProviderProperties.Builder().build());
 
             Location loc = createLocation(GPS_PROVIDER, mRandom);
             mManager.setTestProviderLocation(GPS_PROVIDER, loc);
@@ -262,50 +235,43 @@ public class LocationManagerFineTest {
                     .adoptShellPermissionIdentity(LOCATION_BYPASS, WRITE_SECURE_SETTINGS);
 
             try {
-                // Returns loc when ADAS toggle is on.
                 mManager.setLocationEnabledForUser(false, mContext.getUser());
                 mManager.setAdasGnssLocationEnabled(true);
-                assertThat(
-                        mManager.getLastKnownLocation(
-                                GPS_PROVIDER,
-                                new LastLocationRequest.Builder()
-                                        .setAdasGnssBypass(true)
-                                        .build()))
-                        .isEqualTo(loc);
 
+                if (ActivityManager.getCurrentUser() == Process.myUserHandle().myUserId()) {
+                    assertThat(
+                            mManager.getLastKnownLocation(
+                                    GPS_PROVIDER,
+                                    new LastLocationRequest.Builder()
+                                            .setAdasGnssBypass(true)
+                                            .build()))
+                            .isEqualTo(loc);
+                } else if (mUserHelper.isVisibleBackgroundUser()) {
+                    assertThat(
+                            mManager.getLastKnownLocation(
+                                    GPS_PROVIDER,
+                                    new LastLocationRequest.Builder()
+                                            .setAdasGnssBypass(true)
+                                            .build()))
+                            .isNull();
+                }
             } finally {
-                mManager.setLocationEnabledForUser(true, android.os.Process.myUserHandle());
+                mManager.setLocationEnabledForUser(true, Process.myUserHandle());
                 getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
             }
         }
     }
 
     @Test
-    @ApiTest(apis = {"android.Location.LocationManager#getLastKnownLocation"})
-    public void testGetLastKnownLocation_AdasLocationSettings_ReturnsNull() throws Exception {
+    public void testGetLastKnownLocation_AdasLocationSettingsOff() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        // ADAS is not supported on passenger users
-        assumeFalse("not supported when running on visible background user",
-                mUserHelper.isVisibleBackgroundUser());
 
-        try (LocationListenerCapture capture = new LocationListenerCapture(mContext);
-             DeviceConfigStateHelper locationDeviceConfigStateHelper =
+        try (DeviceConfigStateHelper locationDeviceConfigStateHelper =
                      new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_LOCATION)) {
 
-            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST,
-                    mContext.getPackageName());
+            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST, mContext.getPackageName());
 
-            mManager.addTestProvider(
-                    GPS_PROVIDER,
-                    false,
-                    true,
-                    false,
-                    false,
-                    true,
-                    true,
-                    true,
-                    Criteria.POWER_HIGH,
-                    Criteria.ACCURACY_FINE);
+            mManager.addTestProvider(GPS_PROVIDER, new ProviderProperties.Builder().build());
 
             Location loc = createLocation(GPS_PROVIDER, mRandom);
             mManager.setTestProviderLocation(GPS_PROVIDER, loc);
@@ -328,9 +294,8 @@ public class LocationManagerFineTest {
                                         .setAdasGnssBypass(true)
                                         .build()))
                         .isNull();
-
             } finally {
-                mManager.setLocationEnabledForUser(true, android.os.Process.myUserHandle());
+                mManager.setLocationEnabledForUser(true, Process.myUserHandle());
                 mManager.setAdasGnssLocationEnabled(true);
                 getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
             }
@@ -338,6 +303,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetLastKnownLocation_RemoveProvider() {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
 
@@ -347,6 +313,27 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
+    public void testGetLastKnownLocation_NoteOp() {
+        // Ensure no note ops for null location
+        long timeBeforeLocationAccess = System.currentTimeMillis();
+        mManager.getLastKnownLocation(TEST_PROVIDER);
+        assertFineOpNotNoted(timeBeforeLocationAccess, null);
+
+        mManager.setTestProviderLocation(TEST_PROVIDER, createLocation(TEST_PROVIDER, mRandom));
+        timeBeforeLocationAccess = System.currentTimeMillis();
+        mManager.getLastKnownLocation(TEST_PROVIDER);
+        assertFineOpNoted(timeBeforeLocationAccess, null);
+
+        // Ensure no note ops when provider disabled
+        mManager.setTestProviderEnabled(TEST_PROVIDER, false);
+        timeBeforeLocationAccess = System.currentTimeMillis();
+        mManager.getLastKnownLocation(TEST_PROVIDER);
+        assertFineOpNotNoted(timeBeforeLocationAccess, null);
+    }
+
+    @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
@@ -367,6 +354,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation_Timeout() throws Exception {
         try (GetCurrentLocationCapture capture = new GetCurrentLocationCapture()) {
             mManager.getCurrentLocation(
@@ -388,6 +376,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation_FreshOldLocation() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
@@ -400,6 +389,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation_DirectExecutor() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
@@ -412,6 +402,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation_Cancellation() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
@@ -425,6 +416,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation_ProviderDisabled() throws Exception {
         try (GetCurrentLocationCapture capture = new GetCurrentLocationCapture()) {
             mManager.setTestProviderEnabled(TEST_PROVIDER, false);
@@ -442,6 +434,32 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
+    public void testGetCurrentLocation_NoteOps() throws Exception {
+        long timeBeforeLocationAccess = System.currentTimeMillis();
+        Location loc = createLocation(TEST_PROVIDER, mRandom);
+
+        try (GetCurrentLocationCapture capture = new GetCurrentLocationCapture()) {
+            mManager.getCurrentLocation(TEST_PROVIDER, capture.getCancellationSignal(),
+                    Executors.newSingleThreadExecutor(), capture);
+            mManager.setTestProviderLocation(TEST_PROVIDER, loc);
+            assertThat(capture.getLocation(TIMEOUT_MS)).isEqualTo(loc);
+            assertFineOpNoted(timeBeforeLocationAccess, null);
+        }
+
+        // Ensure no note ops when provider disabled
+        mManager.setTestProviderEnabled(TEST_PROVIDER, false);
+        timeBeforeLocationAccess = System.currentTimeMillis();
+        try (GetCurrentLocationCapture capture2 = new GetCurrentLocationCapture()) {
+            mManager.getCurrentLocation(TEST_PROVIDER, capture2.getCancellationSignal(),
+                    Executors.newSingleThreadExecutor(), capture2);
+            mManager.setTestProviderLocation(TEST_PROVIDER, loc);
+            assertFineOpNotNoted(timeBeforeLocationAccess, null);
+        }
+    }
+
+    @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -499,6 +517,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_Passive() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
@@ -516,6 +535,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_PendingIntent() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -579,6 +599,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_DirectExecutor() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -598,6 +619,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_Looper() throws Exception {
         HandlerThread thread = new HandlerThread("locationTestThread");
         thread.start();
@@ -625,7 +647,9 @@ public class LocationManagerFineTest {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_Criteria() throws Exception {
         // criteria API will always use the fused provider...
         mManager.addTestProvider(FUSED_PROVIDER,
@@ -693,6 +717,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_ReplaceRequest() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -709,6 +734,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_NumUpdates() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -728,6 +754,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_MinUpdateInterval() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -747,6 +774,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_MinUpdateDistance() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, 0, 0, 10);
         Location loc2 = createLocation(TEST_PROVIDER, 0, 1, 10);
@@ -766,160 +794,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
-    @AppModeFull(reason = "Instant apps can't access ACTION_BATTERY_CHANGED intent")
-    public void testRequestLocationUpdates_BatterySaver_GpsDisabledScreenOff() throws Exception {
-        // battery saver is unsupported on auto, tv and watch
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_TELEVISION));
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_WATCH));
-        assumeTrue(BatteryUtils.isBatterySaverSupported());
-
-        PowerManager powerManager = Objects.requireNonNull(
-                mContext.getSystemService(PowerManager.class));
-
-        mManager.addTestProvider(GPS_PROVIDER,
-                false,
-                true,
-                false,
-                false,
-                true,
-                true,
-                true,
-                Criteria.POWER_HIGH,
-                Criteria.ACCURACY_FINE);
-        mManager.setTestProviderEnabled(GPS_PROVIDER, true);
-
-        LocationRequest request = new LocationRequest.Builder(0).build();
-
-        try (LocationListenerCapture capture = new LocationListenerCapture(mContext);
-             ScreenResetter ignored = new ScreenResetter();
-             DeviceConfigStateHelper batterySaverDeviceConfigStateHelper =
-                     new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_BATTERY_SAVER)) {
-            mManager.requestLocationUpdates(GPS_PROVIDER, request,
-                    Executors.newSingleThreadExecutor(), capture);
-            mManager.requestLocationUpdates(TEST_PROVIDER, request,
-                    Executors.newSingleThreadExecutor(), capture);
-
-            batterySaverDeviceConfigStateHelper.set("location_mode", "1");
-            BatteryUtils.runDumpsysBatteryUnplug();
-            BatteryUtils.enableBatterySaver(true);
-            assertThat(powerManager.getLocationPowerSaveMode()).isEqualTo(
-                    LOCATION_MODE_GPS_DISABLED_WHEN_SCREEN_OFF);
-
-            // check screen off behavior
-            ScreenUtils.setScreenOn(false);
-            assertFalse(powerManager.isInteractive());
-            Location loc = createLocation(TEST_PROVIDER, mRandom);
-            mManager.setTestProviderLocation(GPS_PROVIDER, loc);
-            assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isNull();
-            mManager.setTestProviderLocation(TEST_PROVIDER, loc);
-            assertThat(capture.getNextLocation(TIMEOUT_MS)).isEqualTo(loc);
-
-            // check screen on behavior
-            ScreenUtils.setScreenOn(true);
-            assertTrue(powerManager.isInteractive());
-            loc = createLocation(TEST_PROVIDER, mRandom);
-            mManager.setTestProviderLocation(GPS_PROVIDER, loc);
-            assertThat(capture.getNextLocation(TIMEOUT_MS)).isEqualTo(loc);
-            mManager.setTestProviderLocation(TEST_PROVIDER, loc);
-            assertThat(capture.getNextLocation(TIMEOUT_MS)).isEqualTo(loc);
-        } finally {
-            BatteryUtils.enableBatterySaver(false);
-            BatteryUtils.runDumpsysBatteryReset();
-        }
-    }
-
-    @Test
-    @AppModeFull(reason = "Instant apps can't access ACTION_BATTERY_CHANGED intent")
-    public void testRequestLocationUpdates_BatterySaver_AllDisabledScreenOff() throws Exception {
-        // battery saver is unsupported on auto, tv and watch
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_TELEVISION));
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_WATCH));
-        assumeTrue(BatteryUtils.isBatterySaverSupported());
-
-        PowerManager powerManager = Objects.requireNonNull(
-                mContext.getSystemService(PowerManager.class));
-
-        LocationRequest request = new LocationRequest.Builder(0).build();
-
-        try (LocationListenerCapture capture = new LocationListenerCapture(mContext);
-             ScreenResetter ignored = new ScreenResetter();
-             DeviceConfigStateHelper batterySaverDeviceConfigStateHelper =
-                     new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_BATTERY_SAVER)) {
-            mManager.requestLocationUpdates(TEST_PROVIDER, request,
-                    Executors.newSingleThreadExecutor(), capture);
-
-            batterySaverDeviceConfigStateHelper.set("location_mode", "2");
-            BatteryUtils.runDumpsysBatteryUnplug();
-            BatteryUtils.enableBatterySaver(true);
-            assertThat(powerManager.getLocationPowerSaveMode()).isEqualTo(
-                    LOCATION_MODE_ALL_DISABLED_WHEN_SCREEN_OFF);
-
-            // check screen off behavior
-            ScreenUtils.setScreenOn(false);
-            assertFalse(powerManager.isInteractive());
-            mManager.setTestProviderLocation(TEST_PROVIDER, createLocation(TEST_PROVIDER, mRandom));
-            assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isNull();
-
-            // check screen on behavior
-            ScreenUtils.setScreenOn(true);
-            assertTrue(powerManager.isInteractive());
-            Location loc = createLocation(TEST_PROVIDER, mRandom);
-            mManager.setTestProviderLocation(TEST_PROVIDER, loc);
-            assertThat(capture.getNextLocation(TIMEOUT_MS)).isEqualTo(loc);
-        } finally {
-            BatteryUtils.enableBatterySaver(false);
-            BatteryUtils.runDumpsysBatteryReset();
-        }
-    }
-
-    @Test
-    @AppModeFull(reason = "Instant apps can't access ACTION_BATTERY_CHANGED intent")
-    public void testRequestLocationUpdates_BatterySaver_ThrottleScreenOff() throws Exception {
-        // battery saver is unsupported on auto, tv and watch
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_TELEVISION));
-        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_WATCH));
-        assumeTrue(BatteryUtils.isBatterySaverSupported());
-
-        PowerManager powerManager = Objects.requireNonNull(
-                mContext.getSystemService(PowerManager.class));
-
-        LocationRequest request = new LocationRequest.Builder(0).build();
-
-        try (LocationListenerCapture capture = new LocationListenerCapture(mContext);
-             ScreenResetter ignored = new ScreenResetter();
-             DeviceConfigStateHelper batterySaverDeviceConfigStateHelper =
-                     new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_BATTERY_SAVER)) {
-            mManager.requestLocationUpdates(TEST_PROVIDER, request,
-                    Executors.newSingleThreadExecutor(), capture);
-
-            batterySaverDeviceConfigStateHelper.set("location_mode", "4");
-            BatteryUtils.runDumpsysBatteryUnplug();
-            BatteryUtils.enableBatterySaver(true);
-            assertThat(powerManager.getLocationPowerSaveMode()).isEqualTo(
-                    LOCATION_MODE_THROTTLE_REQUESTS_WHEN_SCREEN_OFF);
-
-            // check screen off behavior
-            ScreenUtils.setScreenOn(false);
-            assertFalse(powerManager.isInteractive());
-            mManager.setTestProviderLocation(TEST_PROVIDER, createLocation(TEST_PROVIDER, mRandom));
-            assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isNull();
-
-            // check screen on behavior
-            ScreenUtils.setScreenOn(true);
-            assertTrue(powerManager.isInteractive());
-            Location loc = createLocation(TEST_PROVIDER, mRandom);
-            mManager.setTestProviderLocation(TEST_PROVIDER, loc);
-            assertThat(capture.getNextLocation(TIMEOUT_MS)).isEqualTo(loc);
-        } finally {
-            BatteryUtils.enableBatterySaver(false);
-            BatteryUtils.runDumpsysBatteryReset();
-        }
-    }
-
-    @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_LocationSettingsIgnored() throws Exception {
         try (LocationListenerCapture capture = new LocationListenerCapture(mContext);
              DeviceConfigStateHelper locationDeviceConfigStateHelper =
@@ -956,40 +831,22 @@ public class LocationManagerFineTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.Location.LocationManager#requestLocationUpdates"})
     public void testRequestLocationUpdates_AdasGnssBypass() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        // ADAS is not supported on passenger users
-        assumeFalse("not supported when running on visible background user",
-                mUserHelper.isVisibleBackgroundUser());
 
         try (LocationListenerCapture capture = new LocationListenerCapture(mContext);
              DeviceConfigStateHelper locationDeviceConfigStateHelper =
                      new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_LOCATION)) {
 
-            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST,
-                    mContext.getPackageName());
+            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST, mContext.getPackageName());
 
-            mManager.addTestProvider(
-                    GPS_PROVIDER,
-                    false,
-                    true,
-                    false,
-                    false,
-                    true,
-                    true,
-                    true,
-                    Criteria.POWER_HIGH,
-                    Criteria.ACCURACY_FINE);
+            mManager.addTestProvider(GPS_PROVIDER, new ProviderProperties.Builder().build());
 
-            getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(LOCATION_BYPASS);
+            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(LOCATION_BYPASS);
             try {
                 mManager.requestLocationUpdates(
                         GPS_PROVIDER,
-                        new LocationRequest.Builder(0)
-                                .setAdasGnssBypass(true)
-                                .build(),
+                        new LocationRequest.Builder(0).setAdasGnssBypass(true).build(),
                         Executors.newSingleThreadExecutor(),
                         capture);
             } finally {
@@ -999,17 +856,103 @@ public class LocationManagerFineTest {
             // turn off provider
             mManager.setTestProviderEnabled(GPS_PROVIDER, false);
 
-            // test that all restrictions are bypassed
-            Location loc = createLocation(GPS_PROVIDER, mRandom);
-            mManager.setTestProviderLocation(GPS_PROVIDER, loc);
-            assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
-            loc = createLocation(GPS_PROVIDER, mRandom);
-            mManager.setTestProviderLocation(GPS_PROVIDER, loc);
-            assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
+            if (ActivityManager.getCurrentUser() == Process.myUserHandle().myUserId()) {
+                // test that all restrictions are bypassed
+                Location loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
+                loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
+            } else if (mUserHelper.isVisibleBackgroundUser()) {
+                // test restrictions aren't bypassed.
+                Location loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isNull();
+                loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isNull();
+            }
         }
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
+    public void testRequestLocationUpdates_NoteOps() throws Exception {
+        long timeBeforeLocationAccess = System.currentTimeMillis();
+        Location loc1 = createLocation(TEST_PROVIDER, mRandom);
+
+        try (LocationListenerCapture capture = new LocationListenerCapture(mContext)) {
+            mManager.requestLocationUpdates(TEST_PROVIDER, 0, 0,
+                    Executors.newSingleThreadExecutor(), capture);
+
+            mManager.setTestProviderLocation(TEST_PROVIDER, loc1);
+            assertThat(capture.getNextLocation(TIMEOUT_MS)).isEqualTo(loc1);
+            assertFineOpNoted(timeBeforeLocationAccess,
+                    null);
+        }
+
+        // Ensure no note ops when provider disabled
+        mManager.setTestProviderEnabled(TEST_PROVIDER, false);
+        timeBeforeLocationAccess = System.currentTimeMillis();
+        try (LocationListenerCapture capture2 = new LocationListenerCapture(mContext)) {
+            mManager.requestLocationUpdates(TEST_PROVIDER, 0, 0,
+                    Executors.newSingleThreadExecutor(), capture2);
+            mManager.setTestProviderLocation(TEST_PROVIDER, loc1);
+            assertFineOpNotNoted(timeBeforeLocationAccess, null);
+        }
+    }
+
+    @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
+    public void testRequestLocationUpdates_NoteOps_simultaneousRequests() {
+        Context attributionContextFast =
+                mContext.createAttributionContext(VALID_LOCATION_ATTRIBUTION_TAG);
+        Context attributionContextSlow =
+                mContext.createAttributionContext(ANOTHER_VALID_LOCATION_ATTRIBUTION_TAG);
+        Location loc1 = createLocation(TEST_PROVIDER, mRandom);
+        loc1.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos() - 100000000L);
+        Location loc2 = createLocation(TEST_PROVIDER, mRandom);
+        loc2.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos() - 100000000L);
+
+        try (LocationListenerCapture fastCapture =
+                     new LocationListenerCapture(attributionContextFast);
+                LocationListenerCapture slowCapture =
+                     new LocationListenerCapture(attributionContextSlow)) {
+            Objects.requireNonNull(attributionContextFast.getSystemService(LocationManager.class))
+                    .requestLocationUpdates(
+                            TEST_PROVIDER,
+                            new LocationRequest.Builder(0).build(),
+                            Runnable::run,
+                            fastCapture);
+            Objects.requireNonNull(attributionContextSlow.getSystemService(LocationManager.class))
+                    .requestLocationUpdates(
+                            TEST_PROVIDER,
+                            new LocationRequest.Builder(100).build(),
+                            Runnable::run,
+                            slowCapture);
+
+            // Set initial location.
+            long timeBeforeLocationAccess = System.currentTimeMillis();
+            mManager.setTestProviderLocation(TEST_PROVIDER, loc1);
+            assertFineOpNoted(timeBeforeLocationAccess, VALID_LOCATION_ATTRIBUTION_TAG);
+
+            // Verify noteOp for the fast request.
+            timeBeforeLocationAccess = System.currentTimeMillis();
+            mManager.setTestProviderLocation(TEST_PROVIDER, loc2);
+            assertFineOpNoted(timeBeforeLocationAccess, VALID_LOCATION_ATTRIBUTION_TAG);
+            assertFineOpNotNoted(timeBeforeLocationAccess, ANOTHER_VALID_LOCATION_ATTRIBUTION_TAG);
+
+            // Verify noteOp for the slow request.
+            timeBeforeLocationAccess = System.currentTimeMillis();
+            Location loc3 = createLocation(TEST_PROVIDER, mRandom);
+            mManager.setTestProviderLocation(TEST_PROVIDER, loc3);
+            assertFineOpNoted(timeBeforeLocationAccess, ANOTHER_VALID_LOCATION_ATTRIBUTION_TAG);
+        }
+    }
+
+    @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testMonitoring() throws Exception {
         AppOpsManager appOps = Objects.requireNonNull(
                 mContext.getSystemService(AppOpsManager.class));
@@ -1092,16 +1035,8 @@ public class LocationManagerFineTest {
 
         Location networkLocation = createLocation(NETWORK_PROVIDER, mRandom);
 
-        mManager.addTestProvider(NETWORK_PROVIDER,
-                false,
-                false,
-                false,
-                false,
-                true,
-                true,
-                true,
-                Criteria.POWER_LOW,
-                Criteria.ACCURACY_COARSE);
+        mManager.addTestProvider(NETWORK_PROVIDER, new ProviderProperties.Builder().build());
+
         mManager.setTestProviderEnabled(NETWORK_PROVIDER, true);
         mManager.setTestProviderLocation(NETWORK_PROVIDER, networkLocation);
 
@@ -1123,6 +1058,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestFlush() throws Exception {
         try (LocationListenerCapture capture1 = new LocationListenerCapture(mContext);
              LocationListenerCapture capture2 = new LocationListenerCapture(mContext)) {
@@ -1211,6 +1147,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestFlush_Ordering() throws Exception {
         try (LocationListenerCapture capture = new LocationListenerCapture(mContext)) {
             mManager.requestLocationUpdates(TEST_PROVIDER, 0, 0,
@@ -1226,6 +1163,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestFlush_Gnss() throws Exception {
         assumeTrue(SystemProperties.getInt("ro.product.first_api_level", 0)
                 >= Build.VERSION_CODES.S);
@@ -1241,6 +1179,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testListenProviderEnable_Listener() throws Exception {
         try (LocationListenerCapture capture = new LocationListenerCapture(mContext)) {
             mManager.requestLocationUpdates(TEST_PROVIDER, 0, 0,
@@ -1313,6 +1252,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetProviders() {
         List<String> providers = mManager.getProviders(false);
         assertThat(providers.contains(TEST_PROVIDER)).isTrue();
@@ -1329,7 +1269,9 @@ public class LocationManagerFineTest {
         assertThat(providers.contains(TEST_PROVIDER)).isFalse();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetProviders_Criteria() {
         Criteria criteria = new Criteria();
 
@@ -1348,7 +1290,9 @@ public class LocationManagerFineTest {
         assertThat(providers.contains(TEST_PROVIDER)).isFalse();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetBestProvider() {
         List<String> allProviders = mManager.getAllProviders();
         Criteria criteria = new Criteria();
@@ -1395,6 +1339,7 @@ public class LocationManagerFineTest {
         assertThat(mManager.getBestProvider(criteria, true)).isNotEqualTo(TEST_PROVIDER);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testGetProvider() {
         LocationProvider provider = mManager.getProvider(TEST_PROVIDER);
@@ -1473,45 +1418,19 @@ public class LocationManagerFineTest {
                 continue;
             }
 
-            mManager.addTestProvider(provider, true,
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                    Criteria.POWER_MEDIUM,
-                    Criteria.ACCURACY_FINE);
+            mManager.addTestProvider(provider, new ProviderProperties.Builder().build());
             mManager.setTestProviderLocation(provider, createLocation(provider, mRandom));
         }
 
         try {
-            mManager.addTestProvider("passive",
-                    true,
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                    Criteria.POWER_MEDIUM,
-                    Criteria.ACCURACY_FINE);
+            mManager.addTestProvider("passive", new ProviderProperties.Builder().build());
             fail("Should throw IllegalArgumentException if provider is passive!");
         } catch (IllegalArgumentException e) {
             // expected
         }
 
         try {
-            mManager.addTestProvider(null,
-                    true,
-                    false,
-                    true,
-                    false,
-                    false,
-                    false,
-                    false,
-                    Criteria.POWER_MEDIUM,
-                    Criteria.ACCURACY_FINE);
+            mManager.addTestProvider(null, new ProviderProperties.Builder().build());
             fail("Should throw IllegalArgumentException if provider is null!");
         } catch (IllegalArgumentException e) {
             // expected
@@ -1555,6 +1474,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testSetTestProviderLocation() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -1568,7 +1488,7 @@ public class LocationManagerFineTest {
 
                     Location received = capture.getNextLocation(TIMEOUT_MS);
                     assertThat(received).isEqualTo(loc1);
-                    assertThat(received.isFromMockProvider()).isTrue();
+                    assertThat(received.isMock()).isTrue();
                     assertThat(mManager.getLastKnownLocation(provider)).isEqualTo(loc1);
 
                     mManager.setTestProviderEnabled(provider, false);
@@ -1612,6 +1532,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     @SuppressWarnings("TryFailThrowable")
     public void testSetTestProviderLocation_B33091107() throws Exception {
         // test for b/33091107, where a malicious app could fool a real provider into providing a
@@ -1639,7 +1560,7 @@ public class LocationManagerFineTest {
 
             Location received = capture.getLocation(TIMEOUT_MS);
             assertThat(received).isEqualTo(loc);
-            assertThat(received.isFromMockProvider()).isTrue();
+            assertThat(received.isMock()).isTrue();
 
             Location realProvideLocation = mManager.getLastKnownLocation(realProvider);
             if (realProvideLocation != null) {
@@ -1702,6 +1623,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRegisterGnssStatusCallback() {
         GnssStatus.Callback callback = new GnssStatus.Callback() {
         };
@@ -1711,6 +1633,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testAddNmeaListener() {
         OnNmeaMessageListener listener = (message, timestamp) -> {
         };
@@ -1720,6 +1643,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRegisterGnssMeasurementsCallback() throws Exception {
         try (GnssMeasurementsCapture capture = new GnssMeasurementsCapture(mContext)) {
             mManager.registerGnssMeasurementsCallback(Runnable::run, capture);
@@ -1741,6 +1665,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRegisterGnssNavigationMessageCallback() throws Exception {
         try (GnssNavigationMessageCapture capture = new GnssNavigationMessageCapture(mContext)) {
             mManager.registerGnssNavigationMessageCallback(Runnable::run, capture);
@@ -1754,225 +1679,26 @@ public class LocationManagerFineTest {
         }
     }
 
-    private void addTestProviderForAttributionTag(String... attributionTags) {
-        mManager.removeTestProvider(TEST_PROVIDER);
-        mManager.addTestProvider(TEST_PROVIDER,
-                new ProviderProperties.Builder().build(), (attributionTags != null)
-                        ? new ArraySet<>(attributionTags)
-                        : Collections.emptySet());
-        mManager.setTestProviderEnabled(TEST_PROVIDER, true);
-    }
-
-    @Ignore("b/181693958")
-    @Test
-    public void testLocationAttributionTagBlaming() {
-        // No tag set
-        addTestProviderForAttributionTag();
-        long timeBeforeLocationAccess = System.currentTimeMillis();
-        accessLocation(VALID_LOCATION_ATTRIBUTION_TAG);
-        assertNotedOpsSinceLastLocationAccess(timeBeforeLocationAccess,
-                /*expectedOp*/ AppOpsManager.OPSTR_FINE_LOCATION,
-                /*unexpectedOp*/ AppOpsManager.OPSTR_FINE_LOCATION_SOURCE,
-                VALID_LOCATION_ATTRIBUTION_TAG);
-
-        // Tag set and using that correct tag
-        addTestProviderForAttributionTag(VALID_LOCATION_ATTRIBUTION_TAG);
-        timeBeforeLocationAccess = System.currentTimeMillis();
-        accessLocation(VALID_LOCATION_ATTRIBUTION_TAG);
-        assertNotedOpsSinceLastLocationAccess(timeBeforeLocationAccess,
-                /*expectedOp*/ AppOpsManager.OPSTR_FINE_LOCATION_SOURCE,
-                /*unexpectedOp*/ AppOpsManager.OPSTR_FINE_LOCATION,
-                VALID_LOCATION_ATTRIBUTION_TAG);
-
-        // Tag set and using a wrong tag
-        timeBeforeLocationAccess = System.currentTimeMillis();
-        accessLocation(INVALID_LOCATION_ATTRIBUTION_TAG);
-        assertNotedOpsSinceLastLocationAccess(timeBeforeLocationAccess,
-                /*expectedOp*/ AppOpsManager.OPSTR_FINE_LOCATION,
-                /*unexpectedOp*/ AppOpsManager.OPSTR_FINE_LOCATION_SOURCE,
-                INVALID_LOCATION_ATTRIBUTION_TAG);
-
-        // Tag set and using that correct tag
-        timeBeforeLocationAccess = System.currentTimeMillis();
-        accessLocation(VALID_LOCATION_ATTRIBUTION_TAG);
-        assertNotedOpsSinceLastLocationAccess(timeBeforeLocationAccess,
-                /*expectedOp*/ AppOpsManager.OPSTR_FINE_LOCATION_SOURCE,
-                /*unexpectedOp*/ AppOpsManager.OPSTR_FINE_LOCATION,
-                VALID_LOCATION_ATTRIBUTION_TAG);
-
-        // No tag set
-        addTestProviderForAttributionTag();
-        timeBeforeLocationAccess = System.currentTimeMillis();
-        accessLocation(VALID_LOCATION_ATTRIBUTION_TAG);
-        assertNotedOpsSinceLastLocationAccess(timeBeforeLocationAccess,
-                /*expectedOp*/ AppOpsManager.OPSTR_FINE_LOCATION,
-                /*unexpectedOp*/ AppOpsManager.OPSTR_FINE_LOCATION_SOURCE,
-                VALID_LOCATION_ATTRIBUTION_TAG);
-    }
-
-    @Test
-    public void testGetLastKnownLocationNoteOps() {
-        long timeBeforeLocationAccess = System.currentTimeMillis();
-        mManager.getLastKnownLocation(TEST_PROVIDER);
-        assertNotedOpsSinceLastLocationAccess(timeBeforeLocationAccess,
-                /* expectedOp */ AppOpsManager.OPSTR_FINE_LOCATION,
-                /* unexpectedOp */ AppOpsManager.OPSTR_FINE_LOCATION_SOURCE,
-                null);
-
-        // Ensure no note ops when provider disabled
-        mManager.setTestProviderEnabled(TEST_PROVIDER, false);
-        timeBeforeLocationAccess = System.currentTimeMillis();
-        mManager.getLastKnownLocation(TEST_PROVIDER);
-        assertNoOpsNotedSinceLastLocationAccess(timeBeforeLocationAccess,
-                AppOpsManager.OPSTR_FINE_LOCATION, null);
-    }
-
-    @Test
-    public void testGetCurrentLocationNoteOps() throws Exception {
-        long timeBeforeLocationAccess = System.currentTimeMillis();
-        Location loc = createLocation(TEST_PROVIDER, mRandom);
-
-        try (GetCurrentLocationCapture capture = new GetCurrentLocationCapture()) {
-            mManager.getCurrentLocation(TEST_PROVIDER, capture.getCancellationSignal(),
-                    Executors.newSingleThreadExecutor(), capture);
-            mManager.setTestProviderLocation(TEST_PROVIDER, loc);
-            assertThat(capture.getLocation(TIMEOUT_MS)).isEqualTo(loc);
-            assertNotedOpsSinceLastLocationAccess(timeBeforeLocationAccess,
-                    /* expectedOp */ AppOpsManager.OPSTR_FINE_LOCATION,
-                    /* unexpectedOp */ AppOpsManager.OPSTR_FINE_LOCATION_SOURCE,
-                    null);
-        }
-
-        // Ensure no note ops when provider disabled
-        mManager.setTestProviderEnabled(TEST_PROVIDER, false);
-        timeBeforeLocationAccess = System.currentTimeMillis();
-        try (GetCurrentLocationCapture capture2 = new GetCurrentLocationCapture()) {
-            mManager.getCurrentLocation(TEST_PROVIDER, capture2.getCancellationSignal(),
-                    Executors.newSingleThreadExecutor(), capture2);
-            mManager.setTestProviderLocation(TEST_PROVIDER, loc);
-            assertNoOpsNotedSinceLastLocationAccess(timeBeforeLocationAccess,
-                    AppOpsManager.OPSTR_FINE_LOCATION, null);
-        }
-    }
-
-    @Test
-    public void testRequestLocationUpdatesNoteOps() throws Exception {
-        long timeBeforeLocationAccess = System.currentTimeMillis();
-        Location loc1 = createLocation(TEST_PROVIDER, mRandom);
-
-        try (LocationListenerCapture capture = new LocationListenerCapture(mContext)) {
-            mManager.requestLocationUpdates(TEST_PROVIDER, 0, 0,
-                    Executors.newSingleThreadExecutor(), capture);
-
-            mManager.setTestProviderLocation(TEST_PROVIDER, loc1);
-            assertThat(capture.getNextLocation(TIMEOUT_MS)).isEqualTo(loc1);
-            assertNotedOpsSinceLastLocationAccess(timeBeforeLocationAccess,
-                    /* expectedOp */ AppOpsManager.OPSTR_FINE_LOCATION,
-                    /* unexpectedOp */ AppOpsManager.OPSTR_FINE_LOCATION_SOURCE,
-                    null);
-        }
-
-        // Ensure no note ops when provider disabled
-        mManager.setTestProviderEnabled(TEST_PROVIDER, false);
-        timeBeforeLocationAccess = System.currentTimeMillis();
-        try (LocationListenerCapture capture2 = new LocationListenerCapture(mContext)) {
-            mManager.requestLocationUpdates(TEST_PROVIDER, 0, 0,
-                    Executors.newSingleThreadExecutor(), capture2);
-            mManager.setTestProviderLocation(TEST_PROVIDER, loc1);
-            assertNoOpsNotedSinceLastLocationAccess(timeBeforeLocationAccess,
-                    AppOpsManager.OPSTR_FINE_LOCATION, null);
-        }
-    }
-
-    @Test
-    public void testRequestLocationUpdatesNoteOps_simultaneousRequests() {
-        Context attributionContextFast =
-                mContext.createAttributionContext(VALID_LOCATION_ATTRIBUTION_TAG);
-        Context attributionContextSlow =
-                mContext.createAttributionContext(ANOTHER_VALID_LOCATION_ATTRIBUTION_TAG);
-        Location loc1 = createLocation(TEST_PROVIDER, mRandom);
-        Location loc2 = createLocation(TEST_PROVIDER, mRandom);
-
-        try (LocationListenerCapture fastCapture =
-                     new LocationListenerCapture(attributionContextFast);
-             LocationListenerCapture slowCapture =
-                     new LocationListenerCapture(attributionContextSlow)) {
-            attributionContextFast
-                    .getSystemService(LocationManager.class)
-                    .requestLocationUpdates(
-                            TEST_PROVIDER,
-                            new LocationRequest.Builder(0).build(),
-                            Runnable::run,
-                            fastCapture);
-            attributionContextSlow
-                    .getSystemService(LocationManager.class)
-                    .requestLocationUpdates(
-                            TEST_PROVIDER,
-                            new LocationRequest.Builder(100).build(),
-                            Runnable::run,
-                            slowCapture);
-
-            // Set initial location.
-            long timeBeforeLocationAccess = System.currentTimeMillis();
-            mManager.setTestProviderLocation(TEST_PROVIDER, loc1);
-            assertNotedOpsSinceLastLocationAccess(
-                    timeBeforeLocationAccess,
-                    /* expectedOp */ AppOpsManager.OPSTR_FINE_LOCATION,
-                    /* unexpectedOp */ AppOpsManager.OPSTR_FINE_LOCATION_SOURCE,
-                   VALID_LOCATION_ATTRIBUTION_TAG);
-
-            // Verify noteOp for the fast request.
-            timeBeforeLocationAccess = System.currentTimeMillis();
-            mManager.setTestProviderLocation(TEST_PROVIDER, loc2);
-            assertNotedOpsSinceLastLocationAccess(
-                    timeBeforeLocationAccess,
-                    /* expectedOp */ AppOpsManager.OPSTR_FINE_LOCATION,
-                    /* unexpectedOp */ AppOpsManager.OPSTR_FINE_LOCATION_SOURCE,
-                    VALID_LOCATION_ATTRIBUTION_TAG);
-            assertNoOpsNotedSinceLastLocationAccess(
-                    timeBeforeLocationAccess,
-                    AppOpsManager.OPSTR_FINE_LOCATION,
-                    ANOTHER_VALID_LOCATION_ATTRIBUTION_TAG);
-
-            // Verify noteOp for the slow request.
-            timeBeforeLocationAccess = System.currentTimeMillis();
-            Location loc3 = createLocation(TEST_PROVIDER, 0, 1, 10,
-                    SystemClock.elapsedRealtimeNanos() + 100000000L);
-            mManager.setTestProviderLocation(TEST_PROVIDER, loc3);
-            assertNotedOpsSinceLastLocationAccess(
-                    timeBeforeLocationAccess,
-                    /* expectedOp */ AppOpsManager.OPSTR_FINE_LOCATION,
-                    /* unexpectedOp */ AppOpsManager.OPSTR_FINE_LOCATION_SOURCE,
-                    ANOTHER_VALID_LOCATION_ATTRIBUTION_TAG);
-        }
-    }
-
-    private void accessLocation(String attributionTag) {
-        Context attributionContext = mContext.createAttributionContext(attributionTag);
-        attributionContext.getSystemService(LocationManager.class).getLastKnownLocation(
-                TEST_PROVIDER);
-    }
-
-    private void assertNotedOpsSinceLastLocationAccess(
+    private void assertFineOpNoted(
             long timeBeforeLocationAccess,
-            @NonNull String expectedOp,
-            @NonNull String unexpectedOp,
             String attributionTag) {
         final UiAutomation automation =
                 InstrumentationRegistry.getInstrumentation().getUiAutomation();
         automation.adoptShellPermissionIdentity(android.Manifest.permission.GET_APP_OPS_STATS);
 
         try {
-            final AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
+            final AppOpsManager appOpsManager = Objects.requireNonNull(
+                    mContext.getSystemService(AppOpsManager.class));
             final List<AppOpsManager.PackageOps> affectedPackageOps =
-                    appOpsManager.getPackagesForOps(new String[]{expectedOp, unexpectedOp});
+                    appOpsManager.getPackagesForOps(new String[]{OPSTR_FINE_LOCATION,
+                            OPSTR_FINE_LOCATION_SOURCE});
             for (AppOpsManager.PackageOps packageOps : affectedPackageOps) {
                 if (mContext.getPackageName().equals(packageOps.getPackageName())) {
                     // We are pulling stats only for one app op.
                     for (AppOpsManager.OpEntry opEntry : packageOps.getOps()) {
-                        if (unexpectedOp.equals(opEntry.getOpStr())) {
-                            fail("Unexpected access to " + unexpectedOp);
-                        } else if (expectedOp.equals(opEntry.getOpStr())
+                        if (OPSTR_FINE_LOCATION_SOURCE.equals(opEntry.getOpStr())) {
+                            fail("Unexpected access to " + OPSTR_FINE_LOCATION_SOURCE);
+                        } else if (OPSTR_FINE_LOCATION.equals(opEntry.getOpStr())
                                 && opEntry.getAttributedOpEntries().containsKey(attributionTag)
                                 && opEntry
                                 .getAttributedOpEntries()
@@ -1984,33 +1710,34 @@ public class LocationManagerFineTest {
                     }
                 }
             }
-            fail("No expected access to " + expectedOp);
+            fail("No expected access to " + OPSTR_FINE_LOCATION);
         } finally {
             automation.dropShellPermissionIdentity();
         }
     }
 
-    private void assertNoOpsNotedSinceLastLocationAccess(
-            long timeBeforeLocationAccess, @NonNull String unexpectedOp, String attributionTag) {
+    private void assertFineOpNotNoted(
+            long timeBeforeLocationAccess, String attributionTag) {
         final UiAutomation automation =
                 InstrumentationRegistry.getInstrumentation().getUiAutomation();
         automation.adoptShellPermissionIdentity(android.Manifest.permission.GET_APP_OPS_STATS);
         try {
-            final AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
+            final AppOpsManager appOpsManager = Objects.requireNonNull(
+                    mContext.getSystemService(AppOpsManager.class));
             final List<AppOpsManager.PackageOps> affectedPackageOps =
-                    appOpsManager.getPackagesForOps(new String[]{unexpectedOp});
+                    appOpsManager.getPackagesForOps(new String[]{OPSTR_FINE_LOCATION});
             for (AppOpsManager.PackageOps packageOps : affectedPackageOps) {
                 if (mContext.getPackageName().equals(packageOps.getPackageName())) {
                     // We are pulling stats only for one app op.
                     for (AppOpsManager.OpEntry opEntry : packageOps.getOps()) {
-                        if (unexpectedOp.equals(opEntry.getOpStr())
+                        if (OPSTR_FINE_LOCATION.equals(opEntry.getOpStr())
                                 && opEntry.getAttributedOpEntries().containsKey(attributionTag)
                                 && opEntry
                                 .getAttributedOpEntries()
                                 .get(attributionTag)
                                 .getLastAccessTime(AppOpsManager.OP_FLAGS_ALL_TRUSTED)
                                 >= timeBeforeLocationAccess) {
-                            fail("Unexpected access to " + unexpectedOp);
+                            fail("Unexpected access to " + OPSTR_FINE_LOCATION);
                         }
                     }
                 }

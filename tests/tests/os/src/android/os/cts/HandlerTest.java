@@ -16,19 +16,39 @@
 
 package android.os.cts;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.os.Handler;
+import android.os.Handler.Callback;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
-import android.os.Handler.Callback;
-import android.test.UiThreadTest;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Printer;
+
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.TestThread;
 
-public class HandlerTest extends TestCase {
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+@RunWith(AndroidJUnit4.class)
+public class HandlerTest {
+    @Rule
+    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
+            .setProvideMainThread(true).build();
 
     public static final int MESSAGE_WHAT = 3;
 
@@ -39,16 +59,22 @@ public class HandlerTest extends TestCase {
     static final long DELAYED = RUNTIME + 50;
 
     // Handler
-    private final Handler mHandler = new Handler(Looper.getMainLooper());
-    private final MockHandler mHandler1 = new MockHandler(Looper.getMainLooper());
+    private Handler mHandler;
+    private MockHandler mHandler1;
     private final Object mLock = new Object();
 
-    @Override
-    protected void tearDown() throws Exception {
-        mHandler1.reset();
-        super.tearDown();
+    @Before
+    public void setUp() throws Exception {
+        mHandler = new Handler(Looper.getMainLooper());
+        mHandler1 = new MockHandler(Looper.getMainLooper());
     }
 
+    @After
+    public void tearDown() throws Exception {
+        mHandler1.reset();
+    }
+
+    @Test
     public void testConstructor() throws Throwable {
         final Callback cb = new Callback() {
             public boolean handleMessage(Message msg) {
@@ -69,6 +95,7 @@ public class HandlerTest extends TestCase {
         new Handler(Looper.getMainLooper(), cb);
     }
 
+    @Test
     public void testPostAtTime1() {
         MockRunnable r = new MockRunnable();
         assertTrue(mHandler.postAtTime(r, SystemClock.uptimeMillis() + RUNTIME));
@@ -78,6 +105,7 @@ public class HandlerTest extends TestCase {
         mHandler.removeCallbacks(r);
     }
 
+    @Test
     public void testPostAtTime2() {
         MockRunnable r = new MockRunnable();
         Object token = new Object();
@@ -88,6 +116,7 @@ public class HandlerTest extends TestCase {
         mHandler.removeCallbacks(r);
     }
 
+    @Test
     public void testSendMessageAtTime() {
         Message msg = mHandler1.obtainMessage();
         assertTrue(mHandler1.sendMessageAtTime(msg, SystemClock.uptimeMillis() + RUNTIME));
@@ -97,12 +126,14 @@ public class HandlerTest extends TestCase {
         mHandler1.removeMessages(msg.what);
     }
 
+    @Test
     public void testDump() {
         final String prefix = "AndroidTest";
         MockPrinter pw = new MockPrinter();
         mHandler.dump(pw, prefix);
     }
 
+    @Test
     public void testHasMessagesWithInt() {
         Message msg = mHandler.obtainMessage();
         assertFalse(mHandler.hasMessages(msg.what));
@@ -112,6 +143,7 @@ public class HandlerTest extends TestCase {
         assertFalse(mHandler.hasMessages(msg.what));
     }
 
+    @Test
     public void testHasMessagesWithObject() {
         Message msg = mHandler.obtainMessage();
         msg.obj = new Object();
@@ -122,6 +154,7 @@ public class HandlerTest extends TestCase {
         assertFalse(mHandler.hasMessages(msg.what, msg.obj));
     }
 
+    @Test
     public void testRemoveCallbacksAndMessages() {
         Message msg = mHandler1.obtainMessage();
         mHandler1.sendMessageAtTime(msg, SystemClock.uptimeMillis() + RUNTIME);
@@ -162,6 +195,7 @@ public class HandlerTest extends TestCase {
         assertTrue(mr1.isRun());
     }
 
+    @Test
     public void testSendEmptyMessageAtTime() {
         long uptime = SystemClock.uptimeMillis() + RUNTIME;
         assertTrue(mHandler1.sendEmptyMessageAtTime(MESSAGE_WHAT, uptime));
@@ -171,6 +205,7 @@ public class HandlerTest extends TestCase {
         mHandler1.removeMessages(MESSAGE_WHAT);
     }
 
+    @Test
     public void testGetLooper() {
         // new the Handler instance
         Looper looper = Looper.getMainLooper();
@@ -178,6 +213,7 @@ public class HandlerTest extends TestCase {
         assertSame(looper, handler.getLooper());
     }
 
+    @Test
     public void testRemoveCallbacks() {
         // test remove right object.
         MockRunnable r = new MockRunnable();
@@ -197,6 +233,7 @@ public class HandlerTest extends TestCase {
         assertTrue(r.isRun());
     }
 
+    @Test
     public void testRemoveCallbacksWithObject() {
         // test remove right object.
         MockRunnable r1 = new MockRunnable();
@@ -226,6 +263,7 @@ public class HandlerTest extends TestCase {
         assertTrue(r1.isRun());
     }
 
+    @Test
     public void testRemoveMessages() {
         // test remove right message
         Message msg = mHandler1.obtainMessage();
@@ -248,6 +286,7 @@ public class HandlerTest extends TestCase {
         assertEquals(100, mHandler1.what);
     }
 
+    @Test
     public void testRemoveMessagesWithObject() {
         // test remove right message
         Message msg = mHandler1.obtainMessage();
@@ -275,6 +314,7 @@ public class HandlerTest extends TestCase {
         assertEquals(100, mHandler1.what);
     }
 
+    @Test
     public void testSendMessage() {
         Message msg = mHandler1.obtainMessage();
         assertTrue(mHandler1.sendMessage(msg));
@@ -283,12 +323,14 @@ public class HandlerTest extends TestCase {
         mHandler1.removeMessages(msg.what);
     }
 
+    @Test
     public void testObtainMessage() {
          Message msg = mHandler.obtainMessage();
          assertNotNull(msg);
          assertEquals(mHandler, msg.getTarget());
     }
 
+    @Test
     public void testObtainMessageWithInt() {
          // new the Handler instance
          Handler handler = new Handler(Looper.getMainLooper());
@@ -300,6 +342,7 @@ public class HandlerTest extends TestCase {
          assertEquals(msg.what, msg1.what);
     }
 
+    @Test
     public void testObtainMessageWithIntObject() {
         // new the Handler instance
         Handler handler = new Handler(Looper.getMainLooper());
@@ -313,6 +356,7 @@ public class HandlerTest extends TestCase {
         assertSame(msg.obj, msg1.obj);
     }
 
+    @Test
     public void testObtainMessageWithMutiInt() {
         // new the Handler instance
         Handler handler = new Handler(Looper.getMainLooper());
@@ -328,6 +372,7 @@ public class HandlerTest extends TestCase {
         assertEquals(msg.arg2, msg1.arg2);
     }
 
+    @Test
     public void testObtainMessageWithMutiIntObject() {
         // new the Handler instance
         Handler handler = new Handler(Looper.getMainLooper());
@@ -344,6 +389,7 @@ public class HandlerTest extends TestCase {
         assertSame(msg.obj, msg1.obj);
     }
 
+    @Test
     public void testSendMessageAtFrontOfQueue() {
         Message lateMsg = mHandler1.obtainMessage();
         mHandler1.sendEmptyMessageAtTime(lateMsg.what, SystemClock.uptimeMillis() + RUNTIME * 5);
@@ -355,6 +401,7 @@ public class HandlerTest extends TestCase {
         mHandler1.removeMessages(msg.what);
     }
 
+    @Test
     public void testPostDelayed() {
         MockRunnable r = new MockRunnable();
         assertTrue(mHandler.postDelayed(r, DELAYED));
@@ -364,6 +411,7 @@ public class HandlerTest extends TestCase {
         mHandler.removeCallbacks(r);
     }
 
+    @Test
     public void testPostAtFrontOfQueue() {
         MockRunnable r = new MockRunnable();
         MockRunnable mr = new MockRunnable();
@@ -375,6 +423,7 @@ public class HandlerTest extends TestCase {
         mHandler.removeCallbacks(r);
     }
 
+    @Test
     public void testSendMessageDelayed() {
         Message msg = mHandler1.obtainMessage();
         assertTrue(mHandler1.sendMessageDelayed(msg, DELAYED));
@@ -384,6 +433,7 @@ public class HandlerTest extends TestCase {
         mHandler1.removeMessages(msg.what);
     }
 
+    @Test
     public void testPost() {
         MockRunnable r = new MockRunnable();
         assertFalse(r.isRun());
@@ -393,6 +443,7 @@ public class HandlerTest extends TestCase {
         mHandler.removeCallbacks(r);
     }
 
+    @Test
     public void testSendEmptyMessageDelayed() {
         Message msg = mHandler1.obtainMessage();
         msg.what = 100;
@@ -402,6 +453,7 @@ public class HandlerTest extends TestCase {
         mHandler1.removeMessages(msg.what);
     }
 
+    @Test
     public void testDispatchMessage1() {
         // new the Handler instance
         MockHandler handler = new MockHandler();
@@ -414,6 +466,7 @@ public class HandlerTest extends TestCase {
         assertTrue(callback.isRun());
     }
 
+    @Test
     public void testDispatchMessage2() {
         // new the Handler instance
         MockHandler handler = new MockHandler();
@@ -424,6 +477,7 @@ public class HandlerTest extends TestCase {
         assertSame(msg, handler.message);
     }
 
+    @Test
     public void testSendEmptyMessage() {
         Message msg = mHandler1.obtainMessage();
         msg.what = 100;
@@ -433,6 +487,7 @@ public class HandlerTest extends TestCase {
         mHandler1.removeMessages(msg.what);
     }
 
+    @Test
     public void testToString() {
         assertNotNull(mHandler1.toString());
     }

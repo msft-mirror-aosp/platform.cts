@@ -142,7 +142,6 @@ public class ExactAlarmsTest {
                 .with("allow_while_idle_compat_quota", ALLOW_WHILE_IDLE_COMPAT_QUOTA)
                 .with("allow_while_idle_window", ALLOW_WHILE_IDLE_WINDOW)
                 .with("allow_while_idle_compat_window", ALLOW_WHILE_IDLE_COMPAT_WINDOW)
-                .with("kill_on_schedule_exact_alarm_revoked", false)
                 .commitAndAwaitPropagation();
     }
 
@@ -545,9 +544,6 @@ public class ExactAlarmsTest {
 
     @Test
     public void activityToRequestPermissionExists() {
-        // TODO(b/188070398) Remove this when auto supports the ACTION_REQUEST_SCHEDULE_EXACT_ALARM
-        assumeFalse(FeatureUtil.isAutomotive());
-
         final Intent request = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
         final PackageManager pm = sContext.getPackageManager();
 

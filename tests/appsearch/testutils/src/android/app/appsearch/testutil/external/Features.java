@@ -17,6 +17,8 @@ package android.app.appsearch;
 
 import android.annotation.NonNull;
 
+import java.util.Set;
+
 /**
  * A class that encapsulates all features that are only supported in certain cases (e.g. only on
  * certain implementations or only at a certain Android API Level).
@@ -26,6 +28,9 @@ import android.annotation.NonNull;
  * feature will be available forever on that AppSearch storage implementation, at that Android API
  * level, on that device.
  */
+
+// Note: When adding new fields, The @RequiresFeature is needed in setters but could be skipped in
+// getters if call the getter won't send unsupported requests to the AppSearch-framework-impl.
 public interface Features {
 
     /**
@@ -56,8 +61,8 @@ public interface Features {
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
-     * SetSchemaRequest.Builder#addAllowedRoleForSchemaTypeVisibility}, {@link
-     * SetSchemaRequest.Builder#clearAllowedRolesForSchemaTypeVisibility}, {@link
+     * SetSchemaRequest.Builder#addRequiredPermissionsForSchemaTypeVisibility(String, Set)}, {@link
+     * SetSchemaRequest.Builder#clearRequiredPermissionsForSchemaTypeVisibility(String)}, {@link
      * GetSchemaResponse#getSchemaTypesNotDisplayedBySystem()}, {@link
      * GetSchemaResponse#getSchemaTypesVisibleToPackages()}, {@link
      * GetSchemaResponse#getRequiredPermissionsForSchemaTypeVisibility()}, {@link
@@ -80,6 +85,7 @@ public interface Features {
      * <p>For details on the numeric search expressions in the query language, see {@link
      * AppSearchSession#search}.
      */
+    // Note: The preferred name of this feature should have been LIST_FILTER_NUMERIC_SEARCH.
     String NUMERIC_SEARCH = FeatureConstants.NUMERIC_SEARCH;
 
     /**
@@ -90,6 +96,7 @@ public interface Features {
      *
      * <p>For details on the verbatim string operator, see {@link AppSearchSession#search}.
      */
+    // Note: The preferred name of this feature should have been LIST_FILTER_VERBATIM_SEARCH.
     String VERBATIM_SEARCH = FeatureConstants.VERBATIM_SEARCH;
 
     /**
@@ -100,6 +107,41 @@ public interface Features {
      * <p>For more details, see {@link AppSearchSession#search}.
      */
     String LIST_FILTER_QUERY_LANGUAGE = FeatureConstants.LIST_FILTER_QUERY_LANGUAGE;
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers the use of the
+     * "hasProperty" function in query expressions.
+     *
+     * <p>For details on the "hasProperty" function in the query language, see {@link
+     * AppSearchSession#search}.
+     */
+    String LIST_FILTER_HAS_PROPERTY_FUNCTION = FeatureConstants.LIST_FILTER_HAS_PROPERTY_FUNCTION;
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers the use of the
+     * "tokenize" function in query expressions.
+     *
+     * <p>For details on the "tokenize" function in the query language, see {@link
+     * AppSearchSession#search}.
+     */
+    String LIST_FILTER_TOKENIZE_FUNCTION = "LIST_FILTER_TOKENIZE_FUNCTION";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers whether or not the
+     * AppSearch backend can store the descriptions returned by {@link
+     * AppSearchSchema#getDescription} and {@link AppSearchSchema.PropertyConfig#getDescription}.
+     */
+    String SCHEMA_SET_DESCRIPTION = "SCHEMA_SET_DESCRIPTION";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * AppSearchSchema.EmbeddingPropertyConfig}.
+     *
+     * <p>For details on the embedding search expressions, see {@link AppSearchSession#search} for
+     * the query language and {@link SearchSpec.Builder#setRankingStrategy(String)} for the ranking
+     * language.
+     */
+    String SCHEMA_EMBEDDING_PROPERTY_CONFIG = "SCHEMA_EMBEDDING_PROPERTY_CONFIG";
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
@@ -115,9 +157,8 @@ public interface Features {
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
-     * SearchSpec.Builder#addFilterProperties}.
-     *
-     * @hide
+     * SearchSpec.Builder#addFilterProperties} and {@link
+     * SearchSuggestionSpec.Builder#addFilterProperties}.
      */
     String SEARCH_SPEC_ADD_FILTER_PROPERTIES = "SEARCH_SPEC_ADD_FILTER_PROPERTIES";
 
@@ -141,12 +182,6 @@ public interface Features {
     String SEARCH_SUGGESTION = "SEARCH_SUGGESTION";
 
     /**
-     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
-     * AppSearchSchema.StringPropertyConfig.Builder#setDeletionPropagation}.
-     */
-    String SCHEMA_SET_DELETION_PROPAGATION = "SCHEMA_SET_DELETION_PROPAGATION";
-
-    /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers setting schemas with
      * circular references for {@link AppSearchSession#setSchema}.
      */
@@ -163,6 +198,38 @@ public interface Features {
      * AppSearchSchema.DocumentPropertyConfig.Builder#addIndexableNestedProperties(String...)}
      */
     String SCHEMA_ADD_INDEXABLE_NESTED_PROPERTIES = "SCHEMA_ADD_INDEXABLE_NESTED_PROPERTIES";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * SearchSpec.Builder#setSearchSourceLogTag(String)}.
+     */
+    String SEARCH_SPEC_SET_SEARCH_SOURCE_LOG_TAG = "SEARCH_SPEC_SET_SEARCH_SOURCE_LOG_TAG";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * SetSchemaRequest.Builder#setPubliclyVisibleSchema(String, PackageIdentifier)}.
+     */
+    String SET_SCHEMA_REQUEST_SET_PUBLICLY_VISIBLE = "SET_SCHEMA_REQUEST_SET_PUBLICLY_VISIBLE";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * SetSchemaRequest.Builder#addSchemaTypeVisibleToConfig}.
+     */
+    String SET_SCHEMA_REQUEST_ADD_SCHEMA_TYPE_VISIBLE_TO_CONFIG =
+            "SET_SCHEMA_REQUEST_ADD_SCHEMA_TYPE_VISIBLE_TO_CONFIG";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * EnterpriseGlobalSearchSession}
+     */
+    String ENTERPRISE_GLOBAL_SEARCH_SESSION = "ENTERPRISE_GLOBAL_SEARCH_SESSION";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * SearchSpec.Builder#addInformationalRankingExpressions}.
+     */
+    String SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS =
+            "SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS";
 
     /**
      * Returns whether a feature is supported at run-time. Feature support depends on the feature in

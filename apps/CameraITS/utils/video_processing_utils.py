@@ -16,14 +16,19 @@
 # Each item in this list corresponds to quality levels defined per
 # CamcorderProfile. For Video ITS, we will currently test below qualities
 # only if supported by the camera device.
+
+
 import logging
 import os.path
 import re
 import subprocess
 import error_util
+import image_processing_utils
 
 
+COLORSPACE_HDR = 'bt2020'
 HR_TO_SEC = 3600
+INDEX_FIRST_SUBGROUP = 1
 MIN_TO_SEC = 60
 
 ITS_SUPPORTED_QUALITIES = (
@@ -49,9 +54,8 @@ LOW_RESOLUTION_SIZES = (
 
 LOWEST_RES_TESTED_AREA = 640*360
 
-
 VIDEO_QUALITY_SIZE = {
-    # '480P', '1080P', HIGH' and 'LOW' are not included as they are DUT-dependent
+    # '480P', '1080P', HIGH' & 'LOW' are not included as they are DUT-dependent
     '2160P': '3840x2160',
     '720P': '1280x720',
     'VGA': '640x480',
@@ -61,7 +65,7 @@ VIDEO_QUALITY_SIZE = {
 }
 
 
-def get_lowest_preview_video_size(
+def get_lowest_common_preview_video_size(
     supported_preview_sizes, supported_video_qualities, min_area):
   """Returns the common, smallest size above minimum in preview and video.
 
@@ -124,9 +128,9 @@ def extract_key_frames_from_video(log_path, video_file_name):
   Ffmpeg tool is used to extract key frames from the video at path
   os.path.join(log_path, video_file_name).
   The extracted key frames will have the name video_file_name with "_key_frame"
-  suffix to identify the frames for video of each quality.Since there can be
+  suffix to identify the frames for video of each quality. Since there can be
   multiple key frames, each key frame image will be differentiated with it's
-  frame index.All the extracted key frames will be available in  jpeg format
+  frame index. All the extracted key frames will be available in jpeg format
   at the same path as the video file.
 
   The run time flag '-loglevel quiet' hides the information from terminal.
@@ -134,15 +138,15 @@ def extract_key_frames_from_video(log_path, video_file_name):
   option to 'info'.
 
   Args:
-    log_path: path for video file directory
+    log_path: path for video file directory.
     video_file_name: name of the video file.
   Returns:
-    key_frame_files: A list of paths for each key frame extracted from the
-    video. Ex: VID_20220325_050918_0_CIF_352x288.mp4
+    key_frame_files: a sorted list of files which contains a name per key
+      frame. Ex: VID_20220325_050918_0_preview_1920x1440_key_frame_0001.png
   """
-  ffmpeg_image_name = f"{video_file_name.split('.')[0]}_key_frame"
+  ffmpeg_image_name = f'{os.path.splitext(video_file_name)[0]}_key_frame'
   ffmpeg_image_file_path = os.path.join(
-      log_path, ffmpeg_image_name + '_%02d.png')
+      log_path, ffmpeg_image_name + '_%04d.png')
   cmd = ['ffmpeg',
          '-skip_frame',
          'nokey',
@@ -166,7 +170,7 @@ def extract_key_frames_from_video(log_path, video_file_name):
   for file in arr:
     if '.png' in file and not os.path.isdir(file) and ffmpeg_image_name in file:
       key_frame_files.append(file)
-
+  key_frame_files.sort()
   logging.debug('Extracted key frames: %s', key_frame_files)
   logging.debug('Length of key_frame_files: %d', len(key_frame_files))
   if not key_frame_files:
@@ -218,10 +222,10 @@ def extract_all_frames_from_video(log_path, video_file_name, img_format):
   ffmpeg_image_name = f"{video_file_name.split('.')[0]}_frame"
   logging.debug('ffmpeg_image_name: %s', ffmpeg_image_name)
   ffmpeg_image_file_names = (
-      f'{os.path.join(log_path, ffmpeg_image_name)}_%03d.{img_format}')
+      f'{os.path.join(log_path, ffmpeg_image_name)}_%04d.{img_format}')
   cmd = [
       'ffmpeg', '-i', os.path.join(log_path, video_file_name),
-      '-vsync', 'vfr', # force ffmpeg to use video fps instead of inferred fps
+      '-vsync', 'passthrough',  # prevents frame drops during decoding
       ffmpeg_image_file_names, '-loglevel', 'quiet'
   ]
   _ = subprocess.call(cmd,
@@ -236,6 +240,31 @@ def extract_all_frames_from_video(log_path, video_file_name, img_format):
     raise AssertionError('No frames extracted. Check source video.')
 
   return file_list
+
+
+def extract_last_key_frame_from_recording(log_path, file_name):
+  """Extract last key frame from recordings.
+
+  Args:
+    log_path: str; file location
+    file_name: str file name for saved video
+
+  Returns:
+    numpy image of last key frame
+  """
+  key_frame_files = extract_key_frames_from_video(log_path, file_name)
+  logging.debug('key_frame_files: %s', key_frame_files)
+
+  # Get the last_key_frame file to process.
+  last_key_frame_file = get_key_frame_to_process(key_frame_files)
+  logging.debug('last_key_frame: %s', last_key_frame_file)
+
+  # Convert last_key_frame to numpy array
+  np_image = image_processing_utils.convert_image_to_numpy_array(
+      os.path.join(log_path, last_key_frame_file))
+  logging.debug('last key frame image shape: %s', np_image.shape)
+
+  return np_image
 
 
 def get_average_frame_rate(video_file_name_with_path):
@@ -267,7 +296,8 @@ def get_average_frame_rate(video_file_name_with_path):
     output = str(raw_output.decode('utf-8')).strip()
     logging.debug('ffprobe command %s output: %s', ' '.join(cmd), output)
     average_frame_rate_data = (
-        re.search(r'avg_frame_rate=*([0-9]+/[0-9]+)', output).group(1)
+        re.search(r'avg_frame_rate=*([0-9]+/[0-9]+)', output)
+        .group(INDEX_FIRST_SUBGROUP)
     )
     average_frame_rate = (int(average_frame_rate_data.split('/')[0]) /
                           int(average_frame_rate_data.split('/')[1]))
@@ -309,7 +339,8 @@ def get_frame_deltas(video_file_name_with_path, timestamp_type='pts'):
     for line in output:
       if timestamp_type not in line:
         continue
-      curr_time = float(re.search(r'time= *([0-9][0-9\.]*)', line).group(1))
+      curr_time = float(re.search(r'time= *([0-9][0-9\.]*)', line)
+                        .group(INDEX_FIRST_SUBGROUP))
       if prev_time is not None:
         deltas.append(curr_time - prev_time)
       prev_time = curr_time
@@ -317,3 +348,47 @@ def get_frame_deltas(video_file_name_with_path, timestamp_type='pts'):
     return deltas
   else:
     raise AssertionError('ffprobe failed to provide frame delta data')
+
+
+def get_video_colorspace(log_path, video_file_name):
+  """Get the video colorspace.
+
+  Args:
+    log_path: path for video file directory
+    video_file_name: name of the video file
+  Returns:
+    video colorspace, e.g. BT.2020 or BT.709
+  """
+
+  cmd = ['ffprobe',
+         '-show_streams',
+         '-select_streams',
+         'v:0',
+         '-of',
+         'json',
+         '-i',
+         os.path.join(log_path, video_file_name)
+         ]
+  logging.debug('Get the video colorspace')
+  raw_output = ''
+  try:
+    raw_output = subprocess.check_output(cmd,
+                                         stdin=subprocess.DEVNULL,
+                                         stderr=subprocess.STDOUT)
+  except subprocess.CalledProcessError as e:
+    raise AssertionError(str(e.output)) from e
+
+  logging.debug('raw_output: %s', raw_output)
+  if raw_output:
+    colorspace = ''
+    output = str(raw_output.decode('utf-8')).strip().split('\n')
+    logging.debug('output: %s', output)
+    for line in output:
+      logging.debug('line: %s', line)
+      metadata = re.search(r'"color_space": ("[a-z0-9]*")', line)
+      if metadata:
+        colorspace = metadata.group(INDEX_FIRST_SUBGROUP)
+    logging.debug('Colorspace: %s', colorspace)
+    return colorspace
+  else:
+    raise AssertionError('ffprobe failed to provide color space')

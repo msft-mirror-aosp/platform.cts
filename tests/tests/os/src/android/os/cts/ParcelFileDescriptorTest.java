@@ -16,34 +16,37 @@
 
 package android.os.cts;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.MessageQueue;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.ParcelFileDescriptor.AutoCloseInputStream;
 import android.os.Parcelable;
-import android.os.cts.ParcelFileDescriptorPeer.FutureCloseListener;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
-import android.test.MoreAsserts;
 
-import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.google.common.util.concurrent.AbstractFuture;
 
 import junit.framework.ComparisonFailure;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -57,19 +60,23 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ParcelFileDescriptorTest {
-    private static final long DURATION = 100l;
+    @Rule
+    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
+            .setProvideMainThread(true).build();
 
-    private Context getContext() {
-        return InstrumentationRegistry.getContext();
-    }
+    private static final long DURATION = 100l;
 
     @Test
     public void testConstructorAndOpen() throws Exception {
-        ParcelFileDescriptor tempFile = makeParcelFileDescriptor(getContext());
+        ParcelFileDescriptor tempFile = makeParcelFileDescriptor();
 
         ParcelFileDescriptor pfd = new ParcelFileDescriptor(tempFile);
         AutoCloseInputStream in = new AutoCloseInputStream(pfd);
@@ -81,6 +88,81 @@ public class ParcelFileDescriptorTest {
             assertEquals(3, in.read());
         } finally {
             in.close();
+        }
+    }
+
+    @Test
+    public void testDetachAdopt() throws Exception {
+        ParcelFileDescriptor tempFile = makeParcelFileDescriptor();
+
+        ParcelFileDescriptor before = new ParcelFileDescriptor(tempFile);
+        ParcelFileDescriptor after = ParcelFileDescriptor.adoptFd(before.detachFd());
+
+        // Verify reading from post-adopted FD works
+        try (AutoCloseInputStream in = new AutoCloseInputStream(after)) {
+            assertEquals(0, in.read());
+            assertEquals(1, in.read());
+            assertEquals(2, in.read());
+            assertEquals(3, in.read());
+        }
+
+        // Verify trying to detach a second time fails
+        assertThrows(IllegalStateException.class, () -> {
+            before.detachFd();
+        });
+    }
+
+    @Test
+    public void testReadOnly() throws Exception {
+        final File file = File.createTempFile("testReadOnly", "bin");
+        file.createNewFile();
+        try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(file,
+                ParcelFileDescriptor.MODE_READ_ONLY);
+             ParcelFileDescriptor.AutoCloseOutputStream out =
+                     new ParcelFileDescriptor.AutoCloseOutputStream(pfd)) {
+            assertThrows(IOException.class, () -> {
+                out.write(42);
+            });
+        }
+    }
+
+    @Test
+    public void testNormal() throws Exception {
+        final File file = File.createTempFile("testNormal", "bin");
+        doMultiWrite(file, ParcelFileDescriptor.MODE_READ_WRITE
+                | ParcelFileDescriptor.MODE_CREATE);
+        assertArrayEquals(new byte[]{21, 42}, Files.readAllBytes(file.toPath()));
+    }
+
+    @Test
+    public void testAppend() throws Exception {
+        final File file = File.createTempFile("testAppend", "bin");
+        doMultiWrite(file, ParcelFileDescriptor.MODE_READ_WRITE
+                | ParcelFileDescriptor.MODE_CREATE
+                | ParcelFileDescriptor.MODE_APPEND);
+        assertArrayEquals(new byte[]{42, 42, 21}, Files.readAllBytes(file.toPath()));
+    }
+
+    @Test
+    public void testTruncate() throws Exception {
+        final File file = File.createTempFile("testTruncate", "bin");
+        doMultiWrite(file, ParcelFileDescriptor.MODE_READ_WRITE
+                | ParcelFileDescriptor.MODE_CREATE
+                | ParcelFileDescriptor.MODE_TRUNCATE);
+        assertArrayEquals(new byte[]{21}, Files.readAllBytes(file.toPath()));
+    }
+
+    private void doMultiWrite(File file, int flags) throws Exception {
+        try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(file, flags);
+             ParcelFileDescriptor.AutoCloseOutputStream out =
+                     new ParcelFileDescriptor.AutoCloseOutputStream(pfd)) {
+            out.write(42);
+            out.write(42);
+        }
+        try (ParcelFileDescriptor pfd = ParcelFileDescriptor.open(file, flags);
+             ParcelFileDescriptor.AutoCloseOutputStream out =
+                     new ParcelFileDescriptor.AutoCloseOutputStream(pfd)) {
+            out.write(21);
         }
     }
 
@@ -97,6 +179,7 @@ public class ParcelFileDescriptorTest {
 
     @Test
     @AppModeFull // opening a listening socket not permitted for instant apps
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testFromSocket() throws Throwable {
         final int PORT = 12222;
         final int DATA = 1;
@@ -147,7 +230,7 @@ public class ParcelFileDescriptorTest {
             int count = is.read(observed);
             assertEquals(expected.length, count);
             assertEquals(-1, is.read());
-            MoreAsserts.assertEquals(expected, observed);
+            assertArrayEquals(expected, observed);
         } finally {
             is.close();
         }
@@ -155,13 +238,14 @@ public class ParcelFileDescriptorTest {
 
     @Test
     public void testToString() throws Exception {
-        ParcelFileDescriptor pfd = makeParcelFileDescriptor(getContext());
+        ParcelFileDescriptor pfd = makeParcelFileDescriptor();
         assertNotNull(pfd.toString());
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = Parcel.class)
     public void testWriteToParcel() throws Exception {
-        ParcelFileDescriptor pf = makeParcelFileDescriptor(getContext());
+        ParcelFileDescriptor pf = makeParcelFileDescriptor();
 
         Parcel pl = Parcel.obtain();
         pf.writeToParcel(pl, ParcelFileDescriptor.PARCELABLE_WRITE_RETURN_VALUE);
@@ -181,7 +265,7 @@ public class ParcelFileDescriptorTest {
 
     @Test
     public void testClose() throws Exception {
-        ParcelFileDescriptor pf = makeParcelFileDescriptor(getContext());
+        ParcelFileDescriptor pf = makeParcelFileDescriptor();
         AutoCloseInputStream in1 = new AutoCloseInputStream(pf);
         try {
             assertEquals(0, in1.read());
@@ -203,14 +287,15 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testGetStatSize() throws Exception {
-        ParcelFileDescriptor pf = makeParcelFileDescriptor(getContext());
+        ParcelFileDescriptor pf = makeParcelFileDescriptor();
         assertTrue(pf.getStatSize() >= 0);
     }
 
     @Test
     public void testGetFileDescriptor() throws Exception {
-        ParcelFileDescriptor pfd = makeParcelFileDescriptor(getContext());
+        ParcelFileDescriptor pfd = makeParcelFileDescriptor();
         assertNotNull(pfd.getFileDescriptor());
 
         ParcelFileDescriptor p = new ParcelFileDescriptor(pfd);
@@ -219,7 +304,7 @@ public class ParcelFileDescriptorTest {
 
     @Test
     public void testDescribeContents() throws Exception{
-        ParcelFileDescriptor pfd = makeParcelFileDescriptor(getContext());
+        ParcelFileDescriptor pfd = makeParcelFileDescriptor();
         assertTrue((Parcelable.CONTENTS_FILE_DESCRIPTOR & pfd.describeContents()) != 0);
     }
 
@@ -243,6 +328,21 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
+    public void testBasicPipeNormal() throws Exception {
+        final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
+        final ParcelFileDescriptor red = pipe[0];
+        final ParcelFileDescriptor blue = pipe[1];
+
+        write(blue, 1);
+        assertEquals(1, read(red));
+
+        blue.close();
+        assertEquals(-1, read(red));
+        red.checkError();
+    }
+
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testPipeNormal() throws Exception {
         final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createReliablePipe();
         final ParcelFileDescriptor red = pipe[0];
@@ -259,6 +359,7 @@ public class ParcelFileDescriptorTest {
     // Reading should be done via AutoCloseInputStream if possible, rather than
     // recreating a FileInputStream from a raw FD, what's done in read(PFD).
     @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testPipeError_Discouraged() throws Exception {
         final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createReliablePipe();
         final ParcelFileDescriptor red = pipe[0];
@@ -279,6 +380,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testPipeError() throws Exception {
         final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createReliablePipe();
         final ParcelFileDescriptor red = pipe[0];
@@ -297,6 +399,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = MessageQueue.class)
     public void testFileNormal() throws Exception {
         final Handler handler = new Handler(Looper.getMainLooper());
         final FutureCloseListener listener = new FutureCloseListener();
@@ -312,6 +415,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = MessageQueue.class)
     public void testFileError() throws Exception {
         final Handler handler = new Handler(Looper.getMainLooper());
         final FutureCloseListener listener = new FutureCloseListener();
@@ -327,6 +431,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = MessageQueue.class)
     public void testFileDetach() throws Exception {
         final Handler handler = new Handler(Looper.getMainLooper());
         final FutureCloseListener listener = new FutureCloseListener();
@@ -341,6 +446,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = MessageQueue.class)
     public void testFileWrapped() throws Exception {
         final Handler handler1 = new Handler(Looper.getMainLooper());
         final Handler handler2 = new Handler(Looper.getMainLooper());
@@ -359,6 +465,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testSocketErrorAfterClose() throws Exception {
         final ParcelFileDescriptor[] pair = ParcelFileDescriptor.createReliableSocketPair();
         final ParcelFileDescriptor red = pair[0];
@@ -382,6 +489,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testSocketMultipleCheck() throws Exception {
         final ParcelFileDescriptor[] pair = ParcelFileDescriptor.createReliableSocketPair();
         final ParcelFileDescriptor red = pair[0];
@@ -413,9 +521,10 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = Os.class)
     public void testCheckFinalizerBehavior() throws Exception {
         final Runtime runtime = Runtime.getRuntime();
-        ParcelFileDescriptor pfd = makeParcelFileDescriptor(getContext());
+        ParcelFileDescriptor pfd = makeParcelFileDescriptor();
         assertTrue(checkIsValid(pfd.getFileDescriptor()));
 
         ParcelFileDescriptor wrappedPfd = new ParcelFileDescriptor(pfd);
@@ -448,6 +557,57 @@ public class ParcelFileDescriptorTest {
         }
     }
 
+    @Test
+    public void testFromFd() throws Exception {
+        try (var pfd1 = makeParcelFileDescriptor()) {
+            try (var pfd2 = ParcelFileDescriptor.fromFd(pfd1.getFd())) {
+                checkSameFd(pfd1, pfd2);
+            }
+        }
+    }
+
+    @Test
+    public void testDup() throws Exception {
+        try (var pfd1 = makeParcelFileDescriptor()) {
+            try (var pfd2 = pfd1.dup()) {
+                checkSameFd(pfd1, pfd2);
+            }
+        }
+    }
+
+    @Test
+    public void testDupStatic() throws Exception {
+        try (var pfd1 = makeParcelFileDescriptor()) {
+            try (var pfd2 = ParcelFileDescriptor.dup(pfd1.getFileDescriptor())) {
+                checkSameFd(pfd1, pfd2);
+            }
+        }
+    }
+
+    void checkSameFd(ParcelFileDescriptor pfd1, ParcelFileDescriptor pfd2) throws Exception {
+        // Make sure dup'ed FDs share the same position.
+        seekTo(pfd1, 0);
+        seekTo(pfd2, 0);
+
+        assertEquals(0, tell(pfd1));
+        assertEquals(0, tell(pfd2));
+
+        seekTo(pfd1, 2);
+
+        assertEquals(2, tell(pfd1));
+        assertEquals(2, tell(pfd2));
+    }
+
+    /** Change PFD's current position. */
+    long seekTo(ParcelFileDescriptor pfd, int pos) throws Exception {
+        return Os.lseek(pfd.getFileDescriptor(), pos, OsConstants.SEEK_SET);
+    }
+
+    /** Returns the PFD's current position */
+    long tell(ParcelFileDescriptor pfd) throws Exception {
+        return Os.lseek(pfd.getFileDescriptor(), 0, OsConstants.SEEK_CUR);
+    }
+
     boolean checkIsValid(FileDescriptor fd) {
         try {
             Os.fstat(fd);
@@ -463,25 +623,35 @@ public class ParcelFileDescriptorTest {
         }
     }
 
-    static ParcelFileDescriptor makeParcelFileDescriptor(Context con) throws Exception {
-        final String fileName = "testParcelFileDescriptor";
-
-        FileOutputStream fout = null;
-
-        fout = con.openFileOutput(fileName, Context.MODE_PRIVATE);
-
-        try {
+    static ParcelFileDescriptor makeParcelFileDescriptor() throws Exception {
+        File file = File.createTempFile("testParcelFileDescriptor", "bin");
+        try (FileOutputStream fout = new FileOutputStream(file)) {
             fout.write(new byte[] { 0x0, 0x1, 0x2, 0x3 });
-        } finally {
-            fout.close();
         }
 
-        File dir = con.getFilesDir();
-        File file = new File(dir, fileName);
         ParcelFileDescriptor pf = null;
-
         pf = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_WRITE);
-
         return pf;
+    }
+
+    public static class FutureCloseListener extends AbstractFuture<IOException>
+            implements ParcelFileDescriptor.OnCloseListener {
+        @Override
+        public void onClose(IOException e) {
+            if (e instanceof ParcelFileDescriptor.FileDescriptorDetachedException) {
+                set(new IOException("DETACHED"));
+            } else {
+                set(e);
+            }
+        }
+
+        @Override
+        public IOException get() throws InterruptedException, ExecutionException {
+            try {
+                return get(5, TimeUnit.SECONDS);
+            } catch (TimeoutException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

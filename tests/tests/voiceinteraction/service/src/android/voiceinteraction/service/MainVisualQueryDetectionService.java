@@ -34,6 +34,8 @@ import android.os.Looper;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.SharedMemory;
+import android.service.voice.VisualQueryAttentionResult;
+import android.service.voice.VisualQueryDetectedResult;
 import android.service.voice.VisualQueryDetectionService;
 import android.system.ErrnoException;
 import android.util.Log;
@@ -43,7 +45,15 @@ import android.voiceinteraction.common.Utils;
 
 import androidx.annotation.Nullable;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.NonWritableChannelException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntConsumer;
 
@@ -52,19 +62,36 @@ import javax.annotation.concurrent.GuardedBy;
 public class MainVisualQueryDetectionService extends VisualQueryDetectionService {
     static final String TAG = "MainVisualQueryDetectionService";
 
+    public static final byte[] TEST_BYTES = new byte[] {0, 1, 2, 3};
     public static final String PERCEPTION_MODULE_SUCCESS = "Perception module working";
     public static final String FAKE_QUERY_FIRST = "What is ";
     public static final String FAKE_QUERY_SECOND = "the weather today?";
+    public static final String MSG_FILE_NOT_WRITABLE = "files does not have writable channel";
+    public static final String MSG_FILE_NOT_FOUND = "files does not exist in the test directory";
 
-    public static String KEY_VQDS_TEST_SCENARIO = "test scenario";
+    public static final String KEY_VQDS_TEST_SCENARIO = "test scenario";
 
-    public static int SCENARIO_TEST_PERCEPTION_MODULES = 0;
-    public static int SCENARIO_ATTENTION_LEAVE = 1;
-    public static int SCENARIO_ATTENTION_QUERY_REJECTED_LEAVE = 2;
-    public static int SCENARIO_ATTENTION_QUERY_FINISHED_LEAVE = 3;
-    public static int SCENARIO_ATTENTION_DOUBLE_QUERY_FINISHED_LEAVE = 4;
-    public static int SCENARIO_QUERY_NO_ATTENTION = 5;
-    public static int SCENARIO_QUERY_NO_QUERY_FINISH = 6;
+    public static final int SCENARIO_TEST_PERCEPTION_MODULES = 0;
+    public static final int SCENARIO_ATTENTION_LEAVE = 1;
+    public static final int SCENARIO_ATTENTION_QUERY_REJECTED_LEAVE = 2;
+    public static final int SCENARIO_ATTENTION_QUERY_FINISHED_LEAVE = 3;
+    public static final int SCENARIO_ATTENTION_DOUBLE_QUERY_FINISHED_LEAVE = 4;
+    public static final int SCENARIO_QUERY_NO_ATTENTION = 5;
+    public static final int SCENARIO_QUERY_NO_QUERY_FINISH = 6;
+    public static final int SCENARIO_MULTIPLE_QUERIES_FINISHED = 7;
+    public static final int SCENARIO_COMPLEX_RESULT_STREAM_QUERY_ONLY = 8;
+    public static final int SCENARIO_AUDIO_VISUAL_ATTENTION_STREAM = 9;
+    public static final int SCENARIO_ACCESSIBILITY_ATTENTION_STREAM = 10;
+    public static final int SCENARIO_STREAM_WITH_ACCESSIBILITY_DATA = 11;
+    public static final int SCENARIO_READ_FILE_MMAP_READ_ONLY = 100;
+    public static final int SCENARIO_READ_FILE_MMAP_WRITE = 101;
+    public static final int SCENARIO_READ_FILE_MMAP_MULTIPLE = 102;
+    public static final int SCENARIO_READ_FILE_FILE_NOT_EXIST = 103;
+
+    private static final int TEST_ENGAGEMENT_LEVEL = 100;
+
+    // stores the content of a file for isolated process to perform disk read
+    private ArrayList<String> mResourceContents = new ArrayList<>();
 
     private int mScenario = -1;
 
@@ -130,6 +157,7 @@ public class MainVisualQueryDetectionService extends VisualQueryDetectionService
             mHandler.removeCallbacks(mDetectionJob);
             mDetectionJob = null;
             mStopDetectionCalled = true;
+            mResourceContents = null;
         }
     }
 
@@ -165,6 +193,7 @@ public class MainVisualQueryDetectionService extends VisualQueryDetectionService
                 Process.killProcess(Process.myPid());
                 return;
             }
+            maybeReadTargetFiles(options);
             mScenario = options.getInt(KEY_VQDS_TEST_SCENARIO);
         }
 
@@ -196,6 +225,25 @@ public class MainVisualQueryDetectionService extends VisualQueryDetectionService
             detectionJob = () -> {
                 gainedAttention();
                 lostAttention();
+            };
+        } else if (scenario == SCENARIO_AUDIO_VISUAL_ATTENTION_STREAM) {
+            detectionJob = () -> {
+                gainedAttention(buildNewVisualQueryAttentionResult(
+                        VisualQueryAttentionResult.INTERACTION_INTENTION_AUDIO_VISUAL,
+                        TEST_ENGAGEMENT_LEVEL));
+                streamQuery(FAKE_QUERY_FIRST);
+                finishQuery();
+                lostAttention(VisualQueryAttentionResult.INTERACTION_INTENTION_AUDIO_VISUAL);
+            };
+        } else if (scenario == SCENARIO_ACCESSIBILITY_ATTENTION_STREAM) {
+            detectionJob = () -> {
+                gainedAttention(buildNewVisualQueryAttentionResult(
+                        VisualQueryAttentionResult.INTERACTION_INTENTION_VISUAL_ACCESSIBILITY,
+                        TEST_ENGAGEMENT_LEVEL));
+                streamQuery(FAKE_QUERY_FIRST);
+                finishQuery();
+                lostAttention(
+                        VisualQueryAttentionResult.INTERACTION_INTENTION_VISUAL_ACCESSIBILITY);
             };
         } else if (scenario == SCENARIO_ATTENTION_QUERY_FINISHED_LEAVE) {
             detectionJob = () -> {
@@ -233,11 +281,73 @@ public class MainVisualQueryDetectionService extends VisualQueryDetectionService
                 finishQuery();
                 lostAttention();
             };
+        } else if (scenario == SCENARIO_MULTIPLE_QUERIES_FINISHED) {
+            detectionJob = () -> {
+                gainedAttention();
+                for (int i = 0; i < Utils.NUM_TEST_QUERY_SESSION_MULTIPLE; i++) {
+                    if ((i & 1) == 0) {
+                        streamQuery(FAKE_QUERY_FIRST);
+                    } else {
+                        streamQuery(FAKE_QUERY_SECOND);
+                    }
+                    finishQuery();
+                }
+                lostAttention();
+            };
+        } else if (scenario == SCENARIO_COMPLEX_RESULT_STREAM_QUERY_ONLY) {
+            detectionJob = () -> {
+                gainedAttention();
+                streamQuery(
+                        new VisualQueryDetectedResult.Builder().setPartialQuery(FAKE_QUERY_FIRST)
+                                .build());
+                streamQuery(
+                        new VisualQueryDetectedResult.Builder().setPartialQuery(FAKE_QUERY_SECOND)
+                                .build());
+                finishQuery();
+                lostAttention();
+            };
+        } else if (scenario == SCENARIO_STREAM_WITH_ACCESSIBILITY_DATA) {
+            detectionJob = () -> {
+                gainedAttention();
+                streamQuery(
+                        new VisualQueryDetectedResult.Builder()
+                                .setAccessibilityDetectionData(TEST_BYTES)
+                                .build());
+                finishQuery();
+                lostAttention();
+            };
+        } else if (scenario == SCENARIO_READ_FILE_MMAP_READ_ONLY
+                || scenario == SCENARIO_READ_FILE_MMAP_WRITE
+                || scenario == SCENARIO_READ_FILE_FILE_NOT_EXIST) {
+            // leverages the detection API to verify if the content read from the file is correct
+            detectionJob = () -> {
+                gainedAttention();
+                streamQuery(mResourceContents.get(0));
+                finishQuery();
+                lostAttention();
+            };
+        } else if (scenario == SCENARIO_READ_FILE_MMAP_MULTIPLE) {
+            // leverages the detection API to verify if the content read from the file is correct
+            detectionJob = () -> {
+                gainedAttention();
+                for (String content : mResourceContents) {
+                    streamQuery(content);
+                    finishQuery();
+                }
+                lostAttention();
+            };
         } else {
             Log.i(TAG, "Do nothing...");
             return null;
         }
         return detectionJob;
+    }
+
+    private VisualQueryAttentionResult buildNewVisualQueryAttentionResult(
+            int interactionIntention, int engagementLevel) {
+        return new VisualQueryAttentionResult.Builder()
+                .setInteractionIntention(interactionIntention)
+                .setEngagementLevel(engagementLevel).build();
     }
 
     private void sendCameraOpenSuccessSignals() {
@@ -354,6 +464,44 @@ public class MainVisualQueryDetectionService extends VisualQueryDetectionService
                     mCameraBackgroundHandler);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void maybeReadTargetFiles(PersistableBundle options) {
+        switch (options.getInt(KEY_VQDS_TEST_SCENARIO)) {
+            case SCENARIO_READ_FILE_MMAP_READ_ONLY:
+            case SCENARIO_READ_FILE_FILE_NOT_EXIST:
+                readFileWithMMap(Utils.TEST_RESOURCE_FILE_NAME, FileChannel.MapMode.READ_ONLY);
+                break;
+            case SCENARIO_READ_FILE_MMAP_WRITE:
+                readFileWithMMap(Utils.TEST_RESOURCE_FILE_NAME, FileChannel.MapMode.READ_WRITE);
+                break;
+            case SCENARIO_READ_FILE_MMAP_MULTIPLE:
+                for (int i = 0; i < Utils.NUM_TEST_RESOURCE_FILE_MULTIPLE; i++) {
+                    readFileWithMMap(Utils.TEST_RESOURCE_FILE_NAME + i,
+                            FileChannel.MapMode.READ_ONLY);
+                }
+                break;
+        } // end switch
+    }
+
+    private void readFileWithMMap(String filename, FileChannel.MapMode mode) {
+        try (FileInputStream fis = openFileInput(filename)) {
+            Log.d(TAG, "Reading test file in mode: " + mode);
+            FileChannel fc = fis.getChannel();
+            MappedByteBuffer buffer = fc.map(mode, 0, fc.size());
+            byte[] data = new byte[(int) fc.size()];
+            buffer.get(data);
+            mResourceContents.add(new String(data, StandardCharsets.UTF_8));
+        } catch (FileNotFoundException e) {
+            Log.d(TAG, "Target file to read does not exist. Filename: " + filename);
+            mResourceContents.add(MSG_FILE_NOT_FOUND);
+        } catch (NonWritableChannelException e) {
+            Log.d(TAG, "Only read-only mode is permitted.");
+            mResourceContents.add(MSG_FILE_NOT_WRITABLE);
+        } catch (IOException e) {
+            Log.e(TAG, "Unexpected IO error: Cannot mmap read from opened file: "
+                    + e.getMessage());
         }
     }
 }

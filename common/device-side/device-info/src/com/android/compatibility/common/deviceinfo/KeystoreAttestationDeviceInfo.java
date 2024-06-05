@@ -49,7 +49,9 @@ import java.security.NoSuchProviderException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -133,11 +135,19 @@ public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
         Certificate[] certificates = keystore.getCertificateChain(testAlias);
         assertTrue(certificates.length >= 1);
 
-        final X509Certificate attestationCert = (X509Certificate) certificates[0];
         final AuthorizationList keyDetailsList;
 
+        /* convert Certificate to List of X509Certificate */
+        List<X509Certificate> x509Certificates = new ArrayList<>();
+        for (Certificate certificate : certificates) {
+            if (certificate instanceof X509Certificate) {
+                x509Certificates.add((X509Certificate) certificate);
+            }
+        }
+        assertTrue(x509Certificates.size() >= 1);
+
         ParsedAttestationRecord parsedAttestationRecord =
-                createParsedAttestationRecord(attestationCert);
+                createParsedAttestationRecord(x509Certificates);
 
         keyDetailsList = parsedAttestationRecord.teeEnforced;
 
@@ -158,24 +168,28 @@ public final class KeystoreAttestationDeviceInfo extends DeviceInfo {
         }
         if (keyDetailsList.attestationIdBrand.isPresent()) {
             localStore.addResult(
-                    "id_brand", new String(keyDetailsList.attestationIdBrand.get(), UTF_8));
+                    "attestation_id_brand",
+                    new String(keyDetailsList.attestationIdBrand.get(), UTF_8));
         }
         if (keyDetailsList.attestationIdDevice.isPresent()) {
             localStore.addResult(
-                    "id_device", new String(keyDetailsList.attestationIdDevice.get(), UTF_8));
+                    "attestation_id_device",
+                    new String(keyDetailsList.attestationIdDevice.get(), UTF_8));
         }
         if (keyDetailsList.attestationIdProduct.isPresent()) {
             localStore.addResult(
-                    "id_product", new String(keyDetailsList.attestationIdProduct.get(), UTF_8));
+                    "attestation_id_product",
+                    new String(keyDetailsList.attestationIdProduct.get(), UTF_8));
         }
         if (keyDetailsList.attestationIdManufacturer.isPresent()) {
             localStore.addResult(
-                    "build_manufacturer",
+                    "attestation_id_manufacturer",
                     new String(keyDetailsList.attestationIdManufacturer.get(), UTF_8));
         }
         if (keyDetailsList.attestationIdModel.isPresent()) {
             localStore.addResult(
-                    "build_model", new String(keyDetailsList.attestationIdModel.get(), UTF_8));
+                    "attestation_id_model",
+                    new String(keyDetailsList.attestationIdModel.get(), UTF_8));
         }
         if (keyDetailsList.vendorPatchLevel.isPresent()) {
             localStore.addResult("vendor_patch_level", keyDetailsList.vendorPatchLevel.get());

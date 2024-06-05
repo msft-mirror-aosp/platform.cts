@@ -13,6 +13,7 @@
 // limitations under the License
 
 package {
+    default_team: "trendy_team_pixel_global",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -31,9 +32,12 @@ android_test {
     ],
 
     static_libs: [
+        "android.content.res.flags-aconfig-java",
+        "androidx.test.rules",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "cts-wm-util",
+        "flag-junit",
         "junit",
     ],
 

@@ -28,10 +28,10 @@ android_test_helper_app {
     static_libs: [
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "androidx.test.rules",
         "guava",
-        "truth-prebuilt",
+        "truth",
         "testng",
         "androidx.legacy_legacy-support-v4",
         "devicepolicy-deviceside-common",

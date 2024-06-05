@@ -28,7 +28,7 @@ android_test_helper_app {
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "cts-security-test-support-library",
         "androidx.legacy_legacy-support-v4",
         "cts-devicepolicy-suspensionchecker",
@@ -64,7 +64,7 @@ android_test_helper_app {
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "cts-security-test-support-library",
         "androidx.legacy_legacy-support-v4",
         "cts-devicepolicy-suspensionchecker",
@@ -99,7 +99,7 @@ android_test_helper_app {
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "cts-security-test-support-library",
         "androidx.legacy_legacy-support-v4",
         "cts-devicepolicy-suspensionchecker",
@@ -138,7 +138,7 @@ android_test_helper_app {
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "cts-security-test-support-library",
         "androidx.legacy_legacy-support-v4",
         "cts-devicepolicy-suspensionchecker",

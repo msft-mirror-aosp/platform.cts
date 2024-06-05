@@ -32,8 +32,8 @@
         <activity android:name="android.text.cts.EmojiCtsActivity"
              android:label="AvailableIntentsActivity"
              android:screenOrientation="nosensor"
-             android:windowSoftInputMode="stateAlwaysHidden"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -43,13 +43,13 @@
         <activity android:name="android.text.method.cts.KeyListenerCtsActivity"
              android:label="KeyListenerCtsActivity"
              android:screenOrientation="nosensor"
-             android:windowSoftInputMode="stateAlwaysHidden"/>
-
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
+             android:exported="true"/>
         <activity android:name="android.text.method.cts.CtsActivity"
              android:label="CtsActivity"
              android:screenOrientation="nosensor"
-             android:windowSoftInputMode="stateAlwaysHidden"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -59,7 +59,8 @@
         <activity android:name="android.text.style.cts.URLSpanCtsActivity"
              android:label="URLSpanCtsActivity"
              android:screenOrientation="nosensor"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
@@ -72,7 +73,8 @@
              android:alwaysRetainTaskState="true"
              android:configChanges="orientation|keyboardHidden"
              android:screenOrientation="nosensor"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -82,15 +84,22 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="android.text.cts.MockActivity"/>
+        <activity android:name="android.text.cts.MockActivity"
+                android:screenOrientation="nosensor"
+                android:exported="true"
+                android:theme="@style/OptOutEdgeToEdgeEnforcement">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
+            </intent-filter>
+        </activity>
+
 
     </application>
 
-    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
+    <instrumentation android:name="android.text.cts.runner.CtsTextRunner"
          android:targetPackage="android.text.cts"
          android:label="CTS tests of android.text">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 
 </manifest>

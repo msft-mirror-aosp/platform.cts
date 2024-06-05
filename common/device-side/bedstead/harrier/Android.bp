@@ -13,24 +13,26 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_enterprise",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-
-// TODO(276742331): Restore host/device separation
 java_library_host {
-    name: "HarrierCommon",
+    name: "bedstead-core-annotations",
     srcs: [
-        "common/src/main/java/**/*.java",
+        "common/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.java",
+        "common/src/main/java/com/android/bedstead/harrier/DeviceStateComponent.java",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/enterprise/DevicePolicyRelevant.java",
+    ],
+
+    libs: [
+        "androidx.annotation_annotation",
     ],
 
     static_libs: [
-        "junit",
-        "auto_value_annotations",
-        "guava",
         "NeneCommon",
-        "QueryableCommon",
-        "truth-prebuilt",
     ],
 
     plugins: ["auto_annotation_plugin"],
@@ -38,17 +40,32 @@ java_library_host {
 
 android_library {
     name: "HarrierCommonAndroid",
+    sdk_version: "current",
     srcs: [
         "common/src/main/java/**/*.java",
+        "common/src/main/java/**/*.kt",
+
+        // TODO(329826539): Move this into a separate target
+        ":bedstead-permissions-common-srcs",
+
+        ":bedstead-enterprise-common-srcs",
+    ],
+
+    libs: [
+        "androidx.annotation_annotation",
     ],
 
     static_libs: [
         "junit",
         "auto_value_annotations",
+        "Nene",
         "guava",
         "NeneCommonAndroid",
         "QueryableCommonAndroid",
-        "truth-prebuilt",
+        "truth",
+        "flag-junit",
+        "device_policy_aconfig_flags_lib",
+        "TestApisReflection",
     ],
 
     manifest: "src/main/AndroidManifest.xml",
@@ -58,10 +75,16 @@ android_library {
 
 android_library {
     name: "Harrier",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 
     srcs: [
         "src/main/java/**/*.java",
+        "src/main/java/**/*.kt",
+        // TODO(329826539): Move this into a separate target
+        ":bedstead-permissions-harrier-srcs",
+
+        //TODO(b/336991736) below lines are temporary for compatibility with other repositories
+        ":bedstead-enterprise-harrier-temporary-srcs",
     ],
 
     static_libs: [
@@ -72,6 +95,7 @@ android_library {
         "compatibility-device-util-axt",
         "androidx.test.ext.junit",
         "auto_value_annotations",
+        "bedstead-root-annotations",
     ],
 
     manifest: "src/main/AndroidManifest.xml",
@@ -83,6 +107,9 @@ android_test {
     name: "HarrierTest",
     srcs: [
         "src/test/java/**/*.java",
+        "src/test/java/**/*.kt",
+        "src/test/res/**/*.java",
+        "src/test/res/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -94,10 +121,10 @@ android_test {
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "platform-test-annotations",
-        "truth-prebuilt",
+        "truth",
         "testng", // for assertThrows
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }

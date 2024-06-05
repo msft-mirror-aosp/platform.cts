@@ -26,6 +26,8 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.provider.DeviceConfig;
 
+import androidx.test.filters.FlakyTest;
+
 import com.android.app.cts.broadcasts.ICommandReceiver;
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
@@ -36,6 +38,7 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 
+@FlakyTest(bugId = 288323707)
 @RunWith(BroadcastsTestRunner.class)
 public class BroadcastDeferralTest extends BaseBroadcastTest {
 
@@ -48,7 +51,6 @@ public class BroadcastDeferralTest extends BaseBroadcastTest {
 
     @Test
     public void testFgBroadcastDeliveryToFrozenApp_withDeferUntilActive() throws Exception {
-        assumeTrue(isModernBroadcastQueueEnabled());
         assumeTrue(isAppFreezerEnabled());
 
         final TestServiceConnection connection1 = bindToHelperService(HELPER_PKG1);
@@ -116,7 +118,6 @@ public class BroadcastDeferralTest extends BaseBroadcastTest {
 
     @Test
     public void testFgBroadcastDeliveryToFrozenApp() throws Exception {
-        assumeTrue(isModernBroadcastQueueEnabled());
         assumeTrue(isAppFreezerEnabled());
 
         final TestServiceConnection connection1 = bindToHelperService(HELPER_PKG1);
@@ -148,6 +149,11 @@ public class BroadcastDeferralTest extends BaseBroadcastTest {
             // before we bind to it.
             AmUtils.waitForBroadcastBarrier();
 
+            // Adding a small delay before binding to the service to give opportunity for the
+            // broadcast to be received. We can't use a finish callback or flush the application
+            // threads to ensure broadcast delivery is completed as that would interfere with
+            // what we are trying to verify.
+            SystemClock.sleep(100);
             final long timestampMs = SystemClock.elapsedRealtime();
             connection2 = bindToHelperService(HELPER_PKG2);
             try {

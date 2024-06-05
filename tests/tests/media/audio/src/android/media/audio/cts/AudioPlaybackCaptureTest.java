@@ -35,6 +35,7 @@ import static java.util.stream.Collectors.toSet;
 import android.media.AudioAttributes;
 import android.media.AudioAttributes.AttributeUsage;
 import android.media.AudioAttributes.CapturePolicy;
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioPlaybackCaptureConfiguration;
@@ -44,6 +45,7 @@ import android.media.cts.MediaProjectionActivity;
 import android.media.projection.MediaProjection;
 import android.os.Handler;
 import android.os.Looper;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 
 import androidx.test.rule.ActivityTestRule;
@@ -75,6 +77,7 @@ import java.util.concurrent.TimeUnit;
  * A better check needs to be used, eg: compare the power spectrum.
  */
 @NonMainlineTest
+@AppModeNonSdkSandbox(reason = "The sandbox cannot retrieve MediaProjection.")
 public class AudioPlaybackCaptureTest {
     private static final String TAG = "AudioPlaybackCaptureTest";
     private static final int SAMPLE_RATE = 44100;
@@ -496,13 +499,33 @@ public class AudioPlaybackCaptureTest {
             // Check that all record can all be started
             for (AudioRecord audioRecord : audioRecords) {
                 audioRecord.startRecording();
+                assertEquals(AudioRecord.RECORDSTATE_RECORDING, audioRecord.getRecordingState());
             }
 
-            // Check that they all record audio
+            // Check that they all record audio. Since for a system under load it could
+            // take some time to establish the capture pipeline, allow for retries.
+            final int kDataAcquisitionAttempts = 3;
+            Stack<String> failedRecords = new Stack<>();
             for (AudioRecord audioRecord : audioRecords) {
-                ByteBuffer rawBuffer = readToBuffer(audioRecord, BUFFER_SIZE);
-                assertFalse("Expected data, but only silence was recorded",
-                            onlySilence(rawBuffer.asShortBuffer()));
+                boolean noData = true;
+                for (int attempt = 0; attempt < kDataAcquisitionAttempts; attempt++) {
+                    ByteBuffer rawBuffer = readToBuffer(audioRecord, BUFFER_SIZE);
+                    if (!onlySilence(rawBuffer.asShortBuffer())) {
+                        noData = false;
+                        break;
+                    }
+                }
+                if (noData) {
+                    AudioDeviceInfo device = audioRecord.getRoutedDevice();
+                    if (device != null) {
+                        failedRecords.push(device.getAddress());
+                    } else {
+                        failedRecords.push("null device");
+                    }
+                }
+            }
+            if (!failedRecords.empty()) {
+                fail("Expected data, but only silence was recorded for " + failedRecords);
             }
 
             // Stopping one AR must allow creating a new one

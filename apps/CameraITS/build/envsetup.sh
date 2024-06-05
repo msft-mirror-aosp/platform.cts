@@ -56,12 +56,21 @@ except:
 echo "$CV2_VER" | grep -q -e "^3.*" -e "^4.*" || \
     echo ">> Require python opencv version greater than 3 or 4. Got $CV2_VER" >&2
 
+COLOUR_VER=$(python -c "
+try:
+    import colour
+    print(colour.__version__)
+except:
+    print(\"N/A\")
+")
+
+echo "$COLOUR_VER" | grep -q -e "^0.4.*$" || \
+    echo ">> Require python colour-science version 0.4.*, Got $COLOUR_VER" >&2
+
 export PYTHONPATH="$PWD/utils:$PYTHONPATH"
 export PYTHONPATH="$PWD/tests:$PYTHONPATH"
 
-
-
-for M in sensor_fusion_utils capture_request_utils opencv_processing_utils image_processing_utils its_session_utils image_fov_utils
+for M in sensor_fusion_utils capture_request_utils opencv_processing_utils image_processing_utils its_session_utils image_fov_utils zoom_capture_utils imu_processing_utils
 do
     python "utils/${M}_tests.py" 2>&1 | grep -q "OK" || \
         echo ">> Unit test for $M failed" >&2
@@ -75,3 +84,16 @@ done
 
 echo -e "\n*****Please execute below adb command on your dut before running the tests*****\n"
 echo -e "adb -s <device_id> shell am compat enable ALLOW_TEST_API_ACCESS com.android.cts.verifier\n\n"
+
+# Rename libtinfo.so.6
+python_paths=$(which python)
+for path in $python_paths
+do
+  env_dir=${path%/python*}"/../../"
+  files_to_rename=$(find $env_dir -name 'libtinfo.so.6')
+  for f in $files_to_rename
+  do
+    echo "Renaming potentially problematic file $f"
+    mv "$f" "$f.bak"
+  done
+done

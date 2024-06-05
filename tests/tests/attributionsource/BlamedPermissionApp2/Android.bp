@@ -15,14 +15,17 @@
 //
 
 package {
+    default_team: "trendy_team_android_permissions",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test_helper_app {
     name: "CtsBlamedPermissionApp2",
-    sdk_version: "test_current",
+    defaults: [
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
     srcs: [
         "src/**/*.kt",
     ],
 }
-

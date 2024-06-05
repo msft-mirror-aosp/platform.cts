@@ -19,6 +19,8 @@
      package="android.voiceinteraction.cts">
 
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+
     <queries>
         <package android:name="android.voiceinteraction.service" />
     </queries>
@@ -238,6 +240,11 @@
             <meta-data android:name="android.speech"
                      android:resource="@xml/recognition_service" />
         </service>
+        <service android:name="android.voiceinteraction.service.MainWearableSensingService"
+                 android:label="CTS Wearable Sensing Service"
+                 android:permission="android.permission.BIND_WEARABLE_SENSING_SERVICE"
+                 android:isolatedProcess="true">
+        </service>
       <receiver android:name="VoiceInteractionTestReceiver"
            android:exported="true"/>
     </application>
@@ -245,7 +252,5 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.voiceinteraction.cts"
          android:label="CTS tests of android.voiceinteraction">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 </manifest>

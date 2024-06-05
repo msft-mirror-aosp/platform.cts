@@ -3,10 +3,11 @@ Current folder comprises of files necessary for testing media extractor, media m
 
 The aim of these tests is not solely to verify the CDD requirements but also to test components, their plugins and their interactions with media framework.
 
-The test vectors used by the test suite is available at [link](https://dl.google.com/android/xts/cts/tests/media/CtsMediaV2TestCases-3.6.zip) and is downloaded automatically while running tests. Manual installation of these can be done using copy_media.sh script in this directory.
+The test vectors used by the test suite is available at [link](https://dl.google.com/android/xts/cts/tests/media/CtsMediaV2TestCases-4.1.zip) and is downloaded automatically while running tests. Manual installation of these can be done using copy_media.sh script in this directory.
 
 All Big Buck Bunny(bbb) test vectors are of 8-bit format. They are downloaded from [link](https://peach.blender.org/download/) and resampled according to the test requirements.
 All Cosmos Laundromat(cosmat) test vectors are of 10-bit format. They are downloaded from [link](https://media.xiph.org/) and resampled according to the test requirements.
+VideoEncoderParamTest uses stefan_sif_yuv420p_30fps.yuv. This is downloaded from [link](https://media.xiph.org/).
 
 The test suite looks to cover sdk/ndk api in normal and error scenarios. Error scenarios are separated from regular usage and are placed under class *UnitTest (MuxerUnitTest, ExtractorUnitTest, ...).
 
@@ -34,6 +35,15 @@ Example: To limit the tests to run for c2.android.hevc.decoder
 
 ```sh
 atest CtsMediaV2TestCases -- --module-arg CtsMediaV2TestCases:instrumentation-arg:codec-prefix:=c2.android.hevc.decoder
+```
+
+#### Select codecs using regular expressions
+To select codecs by applying regular expressions, *codec-filter* can be passed to media codec tests to select one or more codecs that match with a specified regular expression pattern.
+
+Example: To limit the tests to run for c2.android.avc.encoder and c2.exynos.hevc.encoder
+
+```sh
+atest CtsMediaV2TestCases -- --module-arg CtsMediaV2TestCases:instrumentation-arg:codec-filter:="c2\.android\.avc\.encoder\|c2\.exynos\.hevc\.encoder"
 ```
 
 #### Select codecs by type

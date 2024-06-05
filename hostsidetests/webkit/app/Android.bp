@@ -15,6 +15,7 @@
 //
 
 package {
+    default_team: "trendy_team_chromium_webview",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -40,4 +41,10 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
+}
+
+java_library {
+    name: "webview-startup-cts-activity",
+    srcs: ["src/com/android/cts/webkit/WebViewStartupCtsActivity.java"],
+    sdk_version: "test_current",
 }

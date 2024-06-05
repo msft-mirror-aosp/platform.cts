@@ -1,5 +1,6 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
@@ -10,6 +11,7 @@
         android:scrollbars="vertical"
         android:gravity="bottom"
         android:id="@+id/audio_wired_port_exists"
+        android:textSize="20dp"
         android:text="@string/audio_wired_exists" />
 
     <LinearLayout

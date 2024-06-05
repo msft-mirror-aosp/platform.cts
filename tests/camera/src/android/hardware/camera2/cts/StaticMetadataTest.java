@@ -18,6 +18,8 @@ package android.hardware.camera2.cts;
 
 import static android.hardware.camera2.CameraCharacteristics.*;
 
+import static junit.framework.Assert.assertTrue;
+
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraCharacteristics;
@@ -29,12 +31,17 @@ import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.helpers.StaticMetadata.CheckLevel;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
 
-import static org.junit.Assert.assertTrue;
+import com.android.internal.camera.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -62,6 +69,10 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
     private static final String TAG = "StaticMetadataTest";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
     private static final float MIN_FPS_FOR_FULL_DEVICE = 20.0f;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private String mCameraId;
 
     /**
@@ -72,7 +83,7 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
         Key<StreamConfigurationMap> key =
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP;
         final float SIZE_ERROR_MARGIN = 0.03f;
-        for (String id : mAllCameraIds) {
+        for (String id : getAllCameraIds()) {
             initStaticMetadata(id);
             StreamConfigurationMap configs = mStaticInfo.getValueFromKeyNonNull(key);
             Rect activeRect = mStaticInfo.getActiveArraySizeChecked();
@@ -146,7 +157,7 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testMaxNumOutputStreams() throws Exception {
-        for (String id : mAllCameraIds) {
+        for (String id : getAllCameraIds()) {
             initStaticMetadata(id);
             int maxNumStreamsRaw = mStaticInfo.getMaxNumOutputStreamsRawChecked();
             int maxNumStreamsProc = mStaticInfo.getMaxNumOutputStreamsProcessedChecked();
@@ -175,7 +186,7 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testCapabilities() throws Exception {
-        for (String id : mAllCameraIds) {
+        for (String id : getAllCameraIds()) {
             initStaticMetadata(id);
             List<Integer> availableCaps = mStaticInfo.getAvailableCapabilitiesChecked();
 
@@ -574,9 +585,57 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
      */
     @Test
     public void testLensFacing() throws Exception {
-        for (String id : mAllCameraIds) {
+        for (String id : getAllCameraIds()) {
             initStaticMetadata(id);
             mStaticInfo.getLensFacingChecked();
+        }
+    }
+
+    /**
+     * Verifies that valid session characteristic keys can be fetched for a particular camera.
+     */
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    public void testSessionCharacteristicsKeys() throws Exception {
+        String[] cameraIds = getCameraIdsUnderTest();
+        for (String cameraId : cameraIds) {
+            initStaticMetadata(cameraId);
+            Integer queryVersion = mStaticInfo.getValueFromKeyNonNull(
+                    INFO_SESSION_CONFIGURATION_QUERY_VERSION);
+
+            if (queryVersion == null || queryVersion <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                Log.i(TAG, "Camera " + cameraId + " doesn't support session characteristics query");
+                continue;
+            }
+
+            List<CameraCharacteristics.Key<?>> sessionCharacteristicKeys =
+                    mStaticInfo.getCharacteristics().getAvailableSessionCharacteristicsKeys();
+
+            mCollector.expectNotNull("getAvailableSessionCharacteristicsKeys must not be null",
+                    sessionCharacteristicKeys);
+            mCollector.expectEquals(
+                    "getAvailableSessionCharacteristicsKeys has too many keys", /*expected=*/ 2,
+                    sessionCharacteristicKeys.size());
+            mCollector.expectContains(sessionCharacteristicKeys, SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+            mCollector.expectContains(sessionCharacteristicKeys, CONTROL_ZOOM_RATIO_RANGE);
+        }
+    }
+
+    /**
+     * Verifies that the output of {@link CameraCharacteristics#getKeys()} does not contain
+     * duplicates.
+     */
+    @Test
+    public void testCameraCharacteristicKeysAreUnique() throws Exception {
+        String[] cameraIds = getCameraIdsUnderTest();
+        for (String cameraId : cameraIds) {
+            StaticMetadata metadata = mAllStaticInfo.get(cameraId);
+            List<Key<?>> keys = metadata.getCharacteristics().getKeys();
+            Set<Key<?>> uniqueKeys = new HashSet<>(keys);
+            mCollector.expectEquals(
+                    "The list returned by CameraCharacteristics#getKeys() must only have unique "
+                            + "keys.",
+                    keys.size(), uniqueKeys.size());
         }
     }
 

@@ -16,6 +16,7 @@
 
 package android.hibernation.cts
 
+import android.Manifest
 import android.app.ActivityManager
 import android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE
 import android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING
@@ -24,6 +25,7 @@ import android.apphibernation.AppHibernationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.Flags
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -54,6 +56,7 @@ import com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.UiAutomatorUtils2
 import com.android.compatibility.common.util.UiDumpUtils
+import com.android.modules.utils.build.SdkLevel
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.hamcrest.CoreMatchers
@@ -133,7 +136,8 @@ class AppHibernationIntegrationTest {
         runShellCommandOrThrow("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS")
 
         resetJob(context)
-        bypassBatterySavingRestrictions(context)
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.READ_DEVICE_CONFIG)
     }
 
     @After
@@ -143,7 +147,8 @@ class AppHibernationIntegrationTest {
             DeviceConfig.setProperty(NAMESPACE_APP_HIBERNATION, HIBERNATION_ENABLED_KEY,
                 oldHibernationValue, false /* makeDefault */)
         }
-        resetBatterySavingRestrictions(context)
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity()
     }
 
     @Test
@@ -335,6 +340,7 @@ class AppHibernationIntegrationTest {
             val uri = Uri.fromParts("package", APK_PACKAGE_NAME_S_APP, null /* fragment */)
             intent.data = uri
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
             context.startActivity(intent)
 
             waitForIdle()
@@ -342,8 +348,11 @@ class AppHibernationIntegrationTest {
             val packageManager = context.packageManager
             val settingsPackage = intent.resolveActivity(packageManager).packageName
             val res = packageManager.getResourcesForApplication(settingsPackage)
-            val title = res.getString(
-                res.getIdentifier("unused_apps_switch", "string", settingsPackage))
+            val title = if (isArchivingEnabled()) {
+                res.getString(res.getIdentifier("unused_apps_switch_v2", "string", settingsPackage))
+            } else {
+                res.getString(res.getIdentifier("unused_apps_switch", "string", settingsPackage))
+            }
 
             // Attempt standard search first (only uses first scrollable instance)
             var toggleFound = UiAutomatorUtils2.waitFindObjectOrNull(By.text(title)) != null
@@ -370,6 +379,11 @@ class AppHibernationIntegrationTest {
                 assertTrue("Remove permissions and free up space toggle not found", toggleFound)
             }
         }
+    }
+
+    private fun isArchivingEnabled(): Boolean {
+        if (!SdkLevel.isAtLeastV()) return false
+        return Flags.archiving() && !hasFeatureAutomotive()
     }
 
     private fun leaveApp(packageName: String) {

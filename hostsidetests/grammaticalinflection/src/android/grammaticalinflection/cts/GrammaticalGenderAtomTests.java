@@ -16,16 +16,21 @@
 
 package android.grammaticalinflection.cts;
 
+import static com.android.os.grammaticalinflection.GrammaticalInflectionExtensionAtoms.APPLICATION_GRAMMATICAL_INFLECTION_CHANGED_FIELD_NUMBER;
+
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 
 import com.android.os.AtomsProto;
 import com.android.os.grammaticalinflection.ApplicationGrammaticalInflectionChanged;
+import com.android.os.grammaticalinflection.GrammaticalInflectionExtensionAtoms;
 import com.android.os.StatsLog;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
+
+import com.google.protobuf.ExtensionRegistry;
 
 import java.util.List;
 
@@ -40,8 +45,6 @@ public class GrammaticalGenderAtomTests extends DeviceTestCase implements IBuild
     private static final String INSTALLED_PACKAGE_NAME_APP =
             "android.grammaticalinflection.atom.app";
     private final static String GENDER_KEY = "gender";
-    private static final int INVALID_UID = -1;
-    private int mShellUid;
 
     @Override
     protected void setUp() throws Exception {
@@ -49,11 +52,9 @@ public class GrammaticalGenderAtomTests extends DeviceTestCase implements IBuild
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                AtomsProto.Atom.GRAMMATICAL_INFLECTION_CHANGED_FIELD_NUMBER);
-
-        // This will be ROOT_UID if adb is running as root, SHELL_UID otherwise.
-        mShellUid = DeviceUtils.getHostUid(getDevice());
+                APPLICATION_GRAMMATICAL_INFLECTION_CHANGED_FIELD_NUMBER);
     }
+
     @Override
     protected void tearDown() throws Exception {
         resetAppGender();
@@ -72,10 +73,13 @@ public class GrammaticalGenderAtomTests extends DeviceTestCase implements IBuild
         executeSetApplicationGrammaticalGenderCommand(GRAMMATICAL_GENDER_MASCULINE);
 
         // Retrieving logged metric entries and asserting if they are as expected.
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        GrammaticalInflectionExtensionAtoms.registerAllExtensions(registry);
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
+                registry);
         assertEquals(1, data.size());
-        ApplicationGrammaticalInflectionChanged result = data.get(0)
-                .getAtom().getGrammaticalInflectionChanged();
+        ApplicationGrammaticalInflectionChanged result = data.get(0).getAtom().getExtension(
+                GrammaticalInflectionExtensionAtoms.applicationGrammaticalInflectionChanged);
         verifyAtomDetails(result,
                 ApplicationGrammaticalInflectionChanged.SourceId.OTHERS,
                 true);
@@ -87,10 +91,13 @@ public class GrammaticalGenderAtomTests extends DeviceTestCase implements IBuild
         executeSetApplicationGrammaticalGenderCommand(GRAMMATICAL_GENDER_NOT_SPECIFIED);
 
         // Retrieving logged metric entries and asserting if they are as expected.
-        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        GrammaticalInflectionExtensionAtoms.registerAllExtensions(registry);
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
+                registry);
         assertEquals(1, data.size());
-        ApplicationGrammaticalInflectionChanged result = data.get(0)
-                .getAtom().getGrammaticalInflectionChanged();
+        ApplicationGrammaticalInflectionChanged result = data.get(0).getAtom().getExtension(
+                GrammaticalInflectionExtensionAtoms.applicationGrammaticalInflectionChanged);
         verifyAtomDetails(result,
                 ApplicationGrammaticalInflectionChanged.SourceId.OTHERS,
                 false);

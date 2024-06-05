@@ -1,9 +1,11 @@
 package {
+    default_team: "trendy_team_enterprise",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 java_library_static {
     name: "TestApp_JavaProtos",
+    sdk_version: "core_current",
     host_supported: true,
     proto: {
         type: "lite",
@@ -13,9 +15,10 @@ java_library_static {
 
 android_library {
     name: "TestApp_TestApps",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
     srcs: [
         "src/testapps/main/java/**/*.java",
+        "src/testapps/main/java/**/*.kt",
     ],
     static_libs: [
         "EventLib",
@@ -24,6 +27,7 @@ android_library {
         "ConnectedAppsSDK_Annotations",
         "androidx.annotation_annotation",
         "RemoteFrameworkClasses",
+        "TestApisReflection",
     ],
     manifest: "src/testapps/main/AndroidManifest.xml",
     min_sdk_version: "29",
@@ -31,13 +35,17 @@ android_library {
         "ConnectedAppsSDK_Processor",
         "TestApp_Processor",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 android_library {
     name: "TestApp",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
     srcs: [
         "src/library/main/java/**/*.java",
+        "src/library/main/java/**/*.kt",
     ],
     static_libs: [
         "Nene",
@@ -66,6 +74,7 @@ android_test {
     name: "TestAppTest",
     srcs: [
         "src/test/java/**/*.java",
+        "src/test/java/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -77,7 +86,7 @@ android_test {
         "Harrier",
         "EventLib",
         "androidx.test.ext.junit",
-        "truth-prebuilt",
+        "truth",
         "testng", // for assertThrows
     ],
     manifest: "src/test/AndroidManifest.xml",
@@ -124,6 +133,7 @@ java_genrule {
         ":RemoteAccountAuthenticatorApp",
         ":MLCTestApp",
         ":MultipleActivitiesTestApp",
+        ":HeadlessDOSingleUserTestApp",
     ],
     out: ["TestApp_Apps.res.zip"],
     tools: [
@@ -151,6 +161,7 @@ java_genrule {
         " && cp $(location :RemoteAccountAuthenticatorApp) $(genDir)/res/raw" +
         " && cp $(location :MLCTestApp) $(genDir)/res/raw" +
         " && cp $(location :MultipleActivitiesTestApp) $(genDir)/res/raw" +
+        " && cp $(location :HeadlessDOSingleUserTestApp) $(genDir)/res/raw" +
         " && $(location index_testapps) --directory $(genDir)/res/raw --aapt2 $(location aapt2)" +
         " && $(location soong_zip) -o $(out) -C $(genDir)/res -D $(genDir)/res/raw",
 }
@@ -163,7 +174,7 @@ android_test_helper_app {
     defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/EmptyTestAppManifest.xml",
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -175,7 +186,7 @@ android_test_helper_app {
     manifest: "manifests/NotEmptyTestAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -186,6 +197,19 @@ android_test_helper_app {
     defaults: ["mts-target-sdk-version-current"],
     resource_dirs: ["src/testapps/main/res/device_admin"],
     manifest: "manifests/DeviceAdminManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+    sdk_version: "system_current",
+}
+
+android_test_helper_app {
+    name: "HeadlessDOSingleUserTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    defaults: ["mts-target-sdk-version-current"],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/HeadlessDOSingleUserManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
     sdk_version: "test_current",
@@ -201,7 +225,7 @@ android_test_helper_app {
     manifest: "manifests/TestOnlyDeviceAdminManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -213,7 +237,7 @@ android_test_helper_app {
     manifest: "manifests/LockTaskAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -225,7 +249,7 @@ android_test_helper_app {
     manifest: "manifests/DelegateManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -237,7 +261,7 @@ android_test_helper_app {
     manifest: "manifests/ContentAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -250,7 +274,7 @@ android_test_helper_app {
     additional_manifests: ["CommonManifest.xml"],
     resource_dirs: ["src/testapps/main/res/device_admin"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -263,7 +287,8 @@ android_test_helper_app {
     manifest: "manifests/RemoteDPCManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
+    target_sdk_version: "35",
 }
 
 android_test_helper_app {
@@ -331,7 +356,7 @@ android_test_helper_app {
     manifest: "manifests/DialerAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -343,7 +368,7 @@ android_test_helper_app {
     manifest: "manifests/SmsAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -356,7 +381,7 @@ android_test_helper_app {
     manifest: "manifests/AccountManagementManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -369,7 +394,7 @@ android_test_helper_app {
     resource_dirs: ["src/testapps/main/res/mlctestapp"],
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -382,7 +407,7 @@ android_test_helper_app {
     manifest: "manifests/RemoteAccountAuthenticatorManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }
 
 android_test_helper_app {
@@ -398,8 +423,10 @@ android_test_helper_app {
 
 java_library {
     name: "TestApp_Annotations",
+    sdk_version: "core_current",
     srcs: [
         "src/processor/main/java/com/android/bedstead/testapp/processor/annotations/*.java",
+        "src/processor/main/java/com/android/bedstead/testapp/processor/annotations/*.kt",
     ],
     host_supported: true,
 }
@@ -412,6 +439,7 @@ java_plugin {
         "auto_service_annotations",
         "TestApp_Annotations",
         "ConnectedAppsSDK_Annotations",
+        "RemoteFrameworkClasses_Processor_Src",
     ],
     srcs: [
         "src/processor/main/java/com/android/bedstead/testapp/processor/Processor.java",

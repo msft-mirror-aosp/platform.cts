@@ -21,12 +21,15 @@ import unittest
 
 import cv2
 import numpy
+from PIL import Image
 
 import image_processing_utils
 
 
 class ImageProcessingUtilsTest(unittest.TestCase):
   """Unit tests for this module."""
+  _BLUR_LEVEL = 10  # level to see the visible blur in img
+  _CH_FULL_SCALE = 255
   _SQRT_2 = numpy.sqrt(2)
   _YUV_FULL_SCALE = 1023
 
@@ -106,6 +109,52 @@ class ImageProcessingUtilsTest(unittest.TestCase):
     y = image_processing_utils.apply_lut_to_image(x, lut).reshape(3).tolist()
     y_ref = [i*2 for i in ref_image]
     self.assertTrue(numpy.allclose(y, y_ref, atol=1/lut_max))
+
+  def test_p3_img_has_wide_gamut(self):
+    # (255, 0, 0) and (0, 255, 0) in sRGB converted to Display P3
+    srgb_red = numpy.array([[[234, 51, 35]]], dtype='uint8')
+    srgb_green = numpy.array([[[117, 252, 76]]], dtype='uint8')
+
+    # Maximum blue is the same in both sRGB and Display P3
+    blue = numpy.array([[[0, 0, 255]]], dtype='uint8')
+
+    # Max red and green in Display P3
+    p3_red = numpy.array([[[255, 0, 0]]], dtype='uint8')
+    p3_green = numpy.array([[[0, 255, 0]]], dtype='uint8')
+
+    self.assertFalse(image_processing_utils.p3_img_has_wide_gamut(
+        Image.fromarray(srgb_red)))
+
+    self.assertFalse(image_processing_utils.p3_img_has_wide_gamut(
+        Image.fromarray(srgb_green)))
+
+    self.assertFalse(image_processing_utils.p3_img_has_wide_gamut(
+        Image.fromarray(blue)))
+
+    self.assertTrue(image_processing_utils.p3_img_has_wide_gamut(
+        Image.fromarray(p3_red)))
+
+    self.assertTrue(image_processing_utils.p3_img_has_wide_gamut(
+        Image.fromarray(p3_green)))
+
+  def test_compute_slanted_edge_image_sharpness(self):
+    """Unit test for computing slanted edge img sharpness.
+
+    Tests by using PNG of slanted edge and blurring intentionally.
+    'sharpness' should drop off for the blurred image.
+    """
+    chart_file = os.path.join(
+        image_processing_utils.TEST_IMG_DIR, 'slanted_edge.png')
+    chart = cv2.imread(chart_file, cv2.IMREAD_ANYDEPTH)
+    chart_3d = chart[:, :, numpy.newaxis]
+    sharpness = image_processing_utils.compute_image_sharpness(
+        chart_3d) * self._CH_FULL_SCALE
+    # blurring the chart
+    chart_blurred = cv2.blur(chart, (self._BLUR_LEVEL, self._BLUR_LEVEL))
+    chart_blurred_3d = chart_blurred[:, :, numpy.newaxis]
+    sharpness_blurred = image_processing_utils.compute_image_sharpness(
+        chart_blurred_3d) * self._CH_FULL_SCALE
+    self.assertGreater(sharpness, sharpness_blurred)
 
 
 if __name__ == '__main__':

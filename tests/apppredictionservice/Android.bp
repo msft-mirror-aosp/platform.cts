@@ -20,10 +20,14 @@ android_test {
     name: "CtsAppPredictionServiceTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
+        "android.service.appprediction.flags-aconfig-java",
         "androidx.annotation_annotation",
+        "androidx.test.rules",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "truth-prebuilt",
+        "flag-junit",
+        "platform-test-annotations",
+        "truth",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact

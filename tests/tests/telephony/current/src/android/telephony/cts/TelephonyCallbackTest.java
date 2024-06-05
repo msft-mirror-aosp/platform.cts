@@ -33,6 +33,9 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.os.Looper;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.Annotation.RadioPowerState;
 import android.telephony.Annotation.SimActivationState;
 import android.telephony.BarringInfo;
@@ -64,8 +67,10 @@ import android.util.Pair;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -73,6 +78,9 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 public class TelephonyCallbackTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     public static final long WAIT_TIME = 1000;
 
@@ -106,6 +114,7 @@ public class TelephonyCallbackTest {
     private boolean mOnDataEnabledChangedCalled;
     private boolean mOnLinkCapacityEstimateChangedCalled;
     private boolean mOnEmergencyCallbackModeChangedCalled;
+    private boolean mOnCarrierRoamingNtnModeChangedCalled;
     @RadioPowerState
     private int mRadioPowerState;
     @SimActivationState
@@ -237,6 +246,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnServiceStateChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
 
         assertFalse(mOnServiceStateChangedCalled);
 
@@ -259,6 +272,11 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithLocationRenounce()
             throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
+
         if (mCm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null) {
             Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
             return;
@@ -285,6 +303,11 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithCoarseRenounce()
             throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
+
         if (mCm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null) {
             Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
             return;
@@ -310,6 +333,11 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnServiceStateChangedByRegisterTelephonyCallbackWithFineOnlyRenounce()
             throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
+
         if (mCm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null) {
             Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
             return;
@@ -353,6 +381,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnUnRegisterFollowedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
 
         assertFalse(mOnServiceStateChangedCalled);
 
@@ -367,12 +399,13 @@ public class TelephonyCallbackTest {
 
         assertTrue(mOnServiceStateChangedCalled);
 
-        // reset and un-register
-        mOnServiceStateChangedCalled = false;
+        // un-register
         if (mServiceStateCallback != null) {
             // un-register the listener
             mTelephonyManager.unregisterTelephonyCallback(mServiceStateCallback);
         }
+        // reset after un-register
+        mOnServiceStateChangedCalled = false;
         synchronized (mLock) {
             if (!mOnServiceStateChangedCalled) {
                 mLock.wait(WAIT_TIME);
@@ -421,6 +454,11 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnSignalStrengthsChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
+
         assertTrue(mSignalStrength == null);
 
         mSignalStrengthsCallback = new SignalStrengthsListener();
@@ -456,6 +494,11 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnMessageWaitingIndicatorChangedByRegisterTelephonyCallback()
             throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        }
+
         assertFalse(mOnMessageWaitingIndicatorChangedCalled);
 
         mMessageWaitingIndicatorCallback = new MessageWaitingIndicatorListener();
@@ -490,6 +533,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnPreciseCallStateChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        }
+
         assertThat(mOnPreciseCallStateChangedCalled).isFalse();
 
         mPreciseCallStateCallback = new PreciseCallStateListener();
@@ -529,10 +576,15 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnCallStatesChangedByRegisterTelephonyCallback() throws Throwable {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        } else {
+            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+                Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
+                return;
+            }
         }
+
         assertThat(mOnCallStatesChangedCalled).isFalse();
 
         mCallAttributesListener = new CallAttributesListener();
@@ -574,6 +626,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnCallDisconnectCauseChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        }
+
         assertThat(mOnCallDisconnectCauseChangedCalled).isFalse();
 
         mCallDisconnectCauseCallback = new CallDisconnectCauseListener();
@@ -608,6 +664,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnImsCallDisconnectCauseChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        }
+
         assertThat(mOnImsCallDisconnectCauseChangedCalled).isFalse();
 
         mImsCallDisconnectCauseCallback = new ImsCallDisconnectCauseListener();
@@ -642,6 +702,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnSrvccStateChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
+        }
+
         assertThat(mSrvccStateChangedCalled).isFalse();
 
         mSrvccStateCallback = new SrvccStateListener();
@@ -676,6 +740,11 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnRadioPowerStateChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
+
         assertThat(mOnRadioPowerStateChangedCalled).isFalse();
 
         mRadioPowerStateCallback = new RadioPowerStateListener();
@@ -712,6 +781,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnVoiceActivationStateChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        }
+
         assertThat(mVoiceActivationStateChangedCalled).isFalse();
 
         mVoiceActivationStateCallback = new VoiceActivationStateListener();
@@ -773,6 +846,10 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnPreciseDataConnectionStateChangedByRegisterTelephonyCallback()
             throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        }
+
         assertThat(mOnCallDisconnectCauseChangedCalled).isFalse();
 
         mPreciseDataConnectionStateCallback =
@@ -842,6 +919,10 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnCallForwardingIndicatorChangedByRegisterTelephonyCallback()
             throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        }
+
         assertFalse(mOnCallForwardingIndicatorChangedCalled);
 
         mCallForwardingIndicatorCallback = new CallForwardingIndicatorListener();
@@ -875,6 +956,11 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnCellLocationChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
+
         assertFalse(mOnCellLocationChangedCalled);
 
         TelephonyManagerTest.grantLocationPermissions();
@@ -909,6 +995,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnCallStateChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        }
+
         assertFalse(mOnCallStateChangedCalled);
 
         mCallStateCallback = new CallStateListener();
@@ -945,6 +1035,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnDataConnectionStateChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        }
+
         assertFalse(mOnDataConnectionStateChangedCalled);
         assertFalse(mOnDataConnectionStateChangedWithNetworkTypeCalled);
 
@@ -981,6 +1075,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnDataActivityByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        }
+
         assertFalse(mOnDataActivityCalled);
 
         mDataActivityCallback = new DataActivityListener();
@@ -1013,6 +1111,11 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnCellInfoChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
+
         assertFalse(mOnDataActivityCalled);
 
         TelephonyManagerTest.grantLocationPermissions();
@@ -1047,6 +1150,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnUserMobileDataStateChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        }
+
         assertFalse(mOnUserMobileDataStateChanged);
 
         mUserMobileDataStateCallback = new UserMobileDataStateListener();
@@ -1081,7 +1188,10 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnOutgoingSmsEmergencyNumberChangedByRegisterTelephonyCallback()
             throws Throwable {
-
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_MESSAGING));
+        }
 
         TelephonyUtils.addTestEmergencyNumber(
                 InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
@@ -1135,6 +1245,11 @@ public class TelephonyCallbackTest {
     @Test
     public void testOnActiveDataSubscriptionIdChangedByRegisterTelephonyCallback()
             throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
+        }
+
         assertFalse(mOnActiveDataSubscriptionIdChanged);
 
         mActiveDataSubscriptionIdCallback =
@@ -1170,7 +1285,6 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnBarringInfoChangedByRegisterTelephonyCallback() throws Throwable {
-
         assertFalse(mOnBarringInfoChangedCalled);
 
         mBarringInfoCallback = new BarringInfoListener();
@@ -1314,6 +1428,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnPhysicalChannelConfigChanged() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
 
         Pair<Integer, Integer> networkHalVersion =
                 mTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK);
@@ -1364,6 +1482,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnDataEnabledChangedByRegisterTelephonyCallback() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
+        }
+
         assertFalse(mOnDataEnabledChangedCalled);
 
         mDataEnabledCallback = new DataEnabledListener();
@@ -1399,6 +1521,11 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnAllowedNetworkTypesChangedByRegisterPhoneStateListener() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(
+                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        }
+
         long originalAllowedNetworkTypeUser = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> {
                     return tm.getAllowedNetworkTypesForReason(
@@ -1510,6 +1637,10 @@ public class TelephonyCallbackTest {
 
     @Test
     public void testOnEmergencyCallbackModeListener() throws Throwable {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+        }
+
         if (mCm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null) {
             Log.d(TAG, "Skipping test that requires ConnectivityManager.TYPE_MOBILE");
             return;
@@ -1529,5 +1660,37 @@ public class TelephonyCallbackTest {
         // Test unregister
         unRegisterTelephonyCallback(mOnEmergencyCallbackModeChangedCalled,
                 mEmergencyCallbackModeListener);
+    }
+
+    private CarrierRoamingNtnModeListener mCarrierRoamingNtnModeListener;
+
+    private class CarrierRoamingNtnModeListener extends TelephonyCallback
+            implements TelephonyCallback.CarrierRoamingNtnModeListener {
+
+        @Override
+        public void onCarrierRoamingNtnModeChanged(boolean active) {
+            synchronized (mLock) {
+                mOnCarrierRoamingNtnModeChangedCalled = true;
+                mLock.notify();
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
+    public void testOnCarrierRoamingNtnModeListener() throws Throwable {
+        assertFalse(mOnCarrierRoamingNtnModeChangedCalled);
+        mCarrierRoamingNtnModeListener = new CarrierRoamingNtnModeListener();
+        registerTelephonyCallback(mCarrierRoamingNtnModeListener);
+
+        synchronized (mLock) {
+            while (!mOnCarrierRoamingNtnModeChangedCalled) {
+                mLock.wait(WAIT_TIME);
+            }
+        }
+        assertTrue(mOnCarrierRoamingNtnModeChangedCalled);
+
+        unRegisterTelephonyCallback(mOnCarrierRoamingNtnModeChangedCalled,
+                mCarrierRoamingNtnModeListener);
     }
 }

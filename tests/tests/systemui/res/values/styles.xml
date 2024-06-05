@@ -16,7 +16,9 @@
   ~ limitations under the License
   -->
 <resources>
-    <style name="LightBarTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+    <style name="LightBarThemeBase" parent="@android:style/Theme.Material.Light.NoActionBar">
+    </style>
+    <style name="LightBarTheme" parent="@style/LightBarThemeBase">
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
         <item name="android:navigationBarColor">@color/navigationBarColor</item>

@@ -18,6 +18,8 @@ package android.net.vcn.cts;
 
 import static android.net.cts.util.CtsNetUtils.TestNetworkCallback;
 
+import static org.junit.Assert.fail;
+
 import android.annotation.NonNull;
 import android.content.Context;
 import android.ipsec.ike.cts.IkeTunUtils;
@@ -381,6 +383,27 @@ public class TestNetworkWrapper implements AutoCloseable {
             return mLostHistory.poll(NETWORK_CB_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         }
 
+        /**
+         * Continue polling from the mLostHistory until the expected network is found
+         *
+         * <p>Callers should prefer this method over #waitForLost if they care about a specific
+         * network. #waitForLost only returns the head of the mLostHistory. Since there might be
+         * more than one networks that have been reported by #onLost and also #onLost for the same
+         * network might called multiple times, the target network might not always be in the head
+         * of the queue
+         */
+        public void waitForLostNetwork(Network network) throws InterruptedException {
+            final long endTime = System.currentTimeMillis() + NETWORK_CB_TIMEOUT_MS;
+
+            while (System.currentTimeMillis() < endTime) {
+                if (Objects.equals(network, waitForLost())) {
+                    return;
+                }
+            }
+
+            fail("Timeout on waitForLostNetwork " + network);
+        }
+
         public CapabilitiesChangedEvent waitForOnCapabilitiesChanged() throws Exception {
             return waitForOnCapabilitiesChanged(NETWORK_CB_TIMEOUT_MS);
         }
@@ -388,6 +411,10 @@ public class TestNetworkWrapper implements AutoCloseable {
         public CapabilitiesChangedEvent waitForOnCapabilitiesChanged(long timeoutMillis)
                 throws Exception {
             return mCapabilitiesChangedHistory.poll(timeoutMillis, TimeUnit.MILLISECONDS);
+        }
+
+        public void clearLostHistory() {
+            mLostHistory.clear();
         }
 
         @Override

@@ -16,6 +16,7 @@
 
 package android.car.cts;
 
+import static android.car.feature.Flags.carDumpToProto;
 import static android.view.Display.DEFAULT_DISPLAY;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -32,19 +33,24 @@ import android.car.CarOccupantZoneManager;
 import android.car.CarOccupantZoneManager.OccupantZoneConfigChangeListener;
 import android.car.CarOccupantZoneManager.OccupantZoneInfo;
 import android.car.PlatformVersion;
+import android.car.cts.utils.ProtoDumpUtils;
 import android.car.input.CarInputManager;
-import android.car.test.ApiCheckerRule.Builder;
 import android.hardware.display.DisplayManager;
 import android.os.Process;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
-import android.test.suitebuilder.annotation.SmallTest;
+import android.util.ArraySet;
 import android.util.Log;
 import android.view.Display;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.car.occupantzone.CarOccupantZoneDumpProto;
+import com.android.car.occupantzone.CarOccupantZoneDumpProto.DisplayConfigProto;
+import com.android.car.occupantzone.CarOccupantZoneDumpProto.DisplayPortConfigsProto;
+import com.android.car.occupantzone.CarOccupantZoneDumpProto.DisplayUniqueIdConfigsProto;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellUtils;
 
@@ -69,6 +75,21 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
 
     private static String TAG = CarOccupantZoneManagerTest.class.getSimpleName();
 
+    private static final String SERVICE_NAME = "CarOccupantZoneService";
+
+    /**
+     * Set of public display types. Hidden display types are not included since testing with the
+     * non-hidden display types is sufficient.
+     */
+    private static final ArraySet<Integer> DISPLAY_TYPES_FOR_TESTING = new ArraySet<>(new Integer[]{
+            CarOccupantZoneManager.DISPLAY_TYPE_UNKNOWN,
+            CarOccupantZoneManager.DISPLAY_TYPE_MAIN,
+            CarOccupantZoneManager.DISPLAY_TYPE_INSTRUMENT_CLUSTER,
+            CarOccupantZoneManager.DISPLAY_TYPE_HUD,
+            CarOccupantZoneManager.DISPLAY_TYPE_INPUT,
+            CarOccupantZoneManager.DISPLAY_TYPE_AUXILIARY
+    });
+
     private OccupantZoneInfo mDriverZoneInfo;
 
     private CarOccupantZoneManager mCarOccupantZoneManager;
@@ -76,13 +97,6 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
     private List<OccupantZoneInfo> mAllZones;
 
     private UiAutomation mUiAutomation;
-
-    // TODO(b/242350638): add missing annotations, remove (on child bug of 242350638)
-    @Override
-    protected void configApiCheckerRule(Builder builder) {
-        Log.w(TAG, "Disabling API requirements check");
-        builder.disableAnnotationsCheck();
-    }
 
     @Before
     public void setUp() throws Exception {
@@ -235,7 +249,7 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
 
     @Test
     @ApiTest(apis = {
-            "android.car.CarOccupantZoneManager#getDisplayForOccupant(OccupantZoneInfo, int)"
+            "android.car.CarOccupantZoneManager#getDisplayForOccupant"
     })
     public void testDriverDisplayIdIsDefaultDisplay() {
         assumeDriverZone();
@@ -244,8 +258,9 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {"android.car.CarOccupantZoneManager"
-            + "#registerOccupantZoneConfigChangeListener(OccupantZoneConfigChangeListener)"})
+    @ApiTest(apis = {
+            "android.car.CarOccupantZoneManager#registerOccupantZoneConfigChangeListener"
+    })
     public void testCanRegisterOccupantZoneConfigChangeListener() {
         OccupantZoneConfigChangeListener occupantZoneConfigChangeListener
                 = createOccupantZoneConfigChangeListener();
@@ -257,8 +272,9 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {"android.car.CarOccupantZoneManager"
-            + "#assignVisibleUserToOccupantZone(OccupantZoneInfo, UserHandle)"})
+    @ApiTest(apis = {
+            "android.car.CarOccupantZoneManager#assignVisibleUserToOccupantZone"
+    })
     public void testReassigningAlreadyAssignedZone() {
         mUiAutomation.adoptShellPermissionIdentity(Car.PERMISSION_MANAGE_OCCUPANT_ZONE);
 
@@ -299,8 +315,9 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
     // public void testAssignAndSwitch()
 
     @Test
-    @ApiTest(apis = {"android.car.CarOccupantZoneManager"
-            + "#assignVisibleUserToOccupantZone(OccupantZoneInfo, UserHandle)"})
+    @ApiTest(apis = {
+            "android.car.CarOccupantZoneManager#assignVisibleUserToOccupantZone"
+    })
     public void testZoneAssignmentWithoutPermission() {
         assertThrows(SecurityException.class, () ->
                 mCarOccupantZoneManager.assignVisibleUserToOccupantZone(mAllZones.get(0),
@@ -308,8 +325,9 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {"android.car.CarOccupantZoneManager"
-            + "#assignVisibleUserToOccupantZone(OccupantZoneInfo, UserHandle)"})
+    @ApiTest(apis = {
+            "android.car.CarOccupantZoneManager#assignVisibleUserToOccupantZone"
+    })
     public void testAssignInvalidUser() {
         mUiAutomation.adoptShellPermissionIdentity(Car.PERMISSION_MANAGE_OCCUPANT_ZONE);
 
@@ -324,7 +342,9 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {"android.car.CarOccupantZoneManager#unassignOccupantZone(OccupantZoneInfo)"})
+    @ApiTest(apis = {
+            "android.car.CarOccupantZoneManager#unassignOccupantZone"
+    })
     public void testUnassignDriverZone() {
         assumeDriverZone();
 
@@ -339,7 +359,9 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @ApiTest(apis = {"android.car.CarOccupantZoneManager#unassignOccupantZone(OccupantZoneInfo)"})
+    @ApiTest(apis = {
+            "android.car.CarOccupantZoneManager#unassignOccupantZone"
+    })
     public void testUnassignPassengerZones() {
         assumeTrue("No passenger zone", mCarOccupantZoneManager.hasPassengerZones());
 
@@ -443,16 +465,25 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
 
     @Test
     @ApiTest(apis = {"android.car.CarOccupantZoneManager#getSupportedInputTypes"})
-    public void testGetSupportedInputTypes_validatedInputTypes() {
+    public void testGetSupportedInputTypes_validatedInputTypes() throws Exception {
         assumeTrue((Car.getPlatformVersion().isAtLeast(
                 PlatformVersion.VERSION_CODES.UPSIDE_DOWN_CAKE_0)));
-        String dump = ShellUtils.runShellCommand(
-                "dumpsys car_service --services CarOccupantZoneService");
-        List<DisplayConfig> configs = parseDisplayConfigsFromDump(dump);
+        List<DisplayConfig> configs;
+        if (carDumpToProto()) {
+            configs = parseDisplayConfigsFromDumpProto();
+        } else {
+            String dump = ShellUtils.runShellCommand(
+                    "dumpsys car_service --services CarOccupantZoneService");
+            configs = parseDisplayConfigsFromDump(dump);
+        }
         assumeTrue("No display config found for device", configs.size() > 0);
 
         // Ensure that input types match the ones from dumpsys
         for (DisplayConfig c : configs) {
+            if (!DISPLAY_TYPES_FOR_TESTING.contains(c.displayType)) {
+                Log.i(TAG, "Display type " + c.displayType + " not relevant for testing.");
+                continue;
+            }
             Optional<OccupantZoneInfo> occupantZoneInfo = mAllZones.stream().filter(
                     z -> z.zoneId == c.occupantZoneId).findFirst();
             if (occupantZoneInfo.isEmpty()) {
@@ -468,12 +499,17 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
 
     @Test
     @ApiTest(apis = {"android.car.CarOccupantZoneManager#getSupportedInputTypes"})
-    public void testGetSupportedInputTypes_validatedInputTypesForAndroidU() {
+    public void testGetSupportedInputTypes_validatedInputTypesForAndroidU() throws Exception {
         assumeTrue((Car.getPlatformVersion().isAtLeast(
                 PlatformVersion.VERSION_CODES.TIRAMISU_0)));
-        String dump = ShellUtils.runShellCommand(
-                "dumpsys car_service --services CarOccupantZoneService");
-        List<DisplayConfig> configs = parseDisplayConfigsFromDump(dump);
+        List<DisplayConfig> configs;
+        if (carDumpToProto()) {
+            configs = parseDisplayConfigsFromDumpProto();
+        } else {
+            String dump = ShellUtils.runShellCommand(
+                    "dumpsys car_service --services CarOccupantZoneService");
+            configs = parseDisplayConfigsFromDump(dump);
+        }
         assertWithMessage("Device's display config cannot be empty").that(configs).isNotEmpty();
 
         for (DisplayConfig c : configs) {
@@ -520,7 +556,7 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
                 Pattern.DOTALL);
         Matcher dumpMatcher = dumpPattern.matcher(dump);
         if (!dumpMatcher.find()) {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
         String displayConfigsString = dumpMatcher.group(1);
         Pattern displayConfigPattern = Pattern.compile(
@@ -540,6 +576,57 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
             configs.add(new DisplayConfig(displayId, occupantZoneId, inputTypes));
         }
         return configs;
+    }
+
+    private List<DisplayConfig> parseDisplayConfigsFromDumpProto() throws Exception {
+        List<DisplayConfig> configs = new ArrayList<>();
+        CarOccupantZoneDumpProto carOccupantZoneDumpProto = CarOccupantZoneDumpProto.parseFrom(
+                ProtoDumpUtils.executeProtoDumpShellCommand(SERVICE_NAME));
+        if (carOccupantZoneDumpProto.getDisplayPortConfigsCount() > 0) {
+            List<DisplayPortConfigsProto> displayPortConfigsList =
+                    carOccupantZoneDumpProto.getDisplayPortConfigsList();
+            for (int i = 0; i < displayPortConfigsList.size(); i++) {
+                DisplayPortConfigsProto displayPortConfigsProto = displayPortConfigsList.get(i);
+                DisplayConfigProto displayConfigProto =
+                        displayPortConfigsProto.getDisplayConfigPort().getDisplayConfig();
+                int displayType = displayConfigProto.getDisplayType();
+                int occupantZoneId = displayConfigProto.getOccupantZoneId();
+                List<Integer> inputTypes = new ArrayList<>();
+                if (displayConfigProto.getInputTypesCount() > 0) {
+                    inputTypes = displayConfigProto.getInputTypesList();
+                } else {
+                    throwExceptionFromProto(carOccupantZoneDumpProto);
+                }
+                configs.add(new DisplayConfig(displayType, occupantZoneId, inputTypes));
+            }
+        }
+
+        if (carOccupantZoneDumpProto.getDisplayUniqueIdConfigsCount() > 0) {
+            List<DisplayUniqueIdConfigsProto> displayUniqueIdConfigsList =
+                    carOccupantZoneDumpProto.getDisplayUniqueIdConfigsList();
+            for (int i = 0; i < displayUniqueIdConfigsList.size(); i++) {
+                DisplayUniqueIdConfigsProto displayUniqueIdConfigsProto =
+                        displayUniqueIdConfigsList.get(i);
+                DisplayConfigProto displayConfigProto =
+                        displayUniqueIdConfigsProto.getDisplayConfigUniqueId().getDisplayConfig();
+                int displayType = displayConfigProto.getDisplayType();
+                int occupantZoneId = displayConfigProto.getOccupantZoneId();
+                List<Integer> inputTypes = new ArrayList<>();
+                if (displayConfigProto.getInputTypesCount() > 0) {
+                    inputTypes = displayConfigProto.getInputTypesList();
+                } else {
+                    throwExceptionFromProto(carOccupantZoneDumpProto);
+                }
+                configs.add(new DisplayConfig(displayType, occupantZoneId, inputTypes));
+            }
+        }
+        return configs;
+    }
+
+    @SuppressWarnings("LiteProtoToString")
+    private void throwExceptionFromProto(CarOccupantZoneDumpProto carOccupantZoneDumpProto) {
+        throw new IllegalStateException("Proto doesn't have all fields\n proto:"
+                + carOccupantZoneDumpProto.toString());
     }
 
     void assumeDriverZone() {

@@ -201,6 +201,11 @@ public class Utils {
     public static int[] getAllUsers(ITestDevice device)
             throws DeviceNotAvailableException {
         Integer primary = device.getPrimaryUserId();
+        if (device.isHeadlessSystemUserMode()
+                && primary == USER_SYSTEM
+                && !device.canSwitchToHeadlessSystemUser()) {
+            primary = device.getMainUserId();
+        }
         if (primary == null) {
             primary = USER_SYSTEM;
         }
@@ -224,7 +229,8 @@ public class Utils {
                 return;
             }
             Log.d(LOG_TAG, "Waiting for system ready...");
-            RunUtil.getDefault().sleep(1000);
+            // For low performance devices
+            RunUtil.getDefault().sleep(10*1000);
         }
         throw new AssertionError("System failed to become ready!");
     }

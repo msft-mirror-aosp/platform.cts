@@ -21,9 +21,9 @@ import static org.junit.Assert.fail;
 
 import android.bluetooth.le.AdvertiseCallback;
 import android.bluetooth.le.AdvertiseSettings;
-import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
@@ -57,7 +57,7 @@ public class AdvertiseCallbackTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testAdvertiseSuccess() {
+    public void advertiseSuccess() {
         mAdvertiseCallback.mAdvertiseType = ADVERTISE_TYPE_SUCCESS;
         mMockAdvertiser.startAdvertise(mAdvertiseCallback);
     }
@@ -65,7 +65,7 @@ public class AdvertiseCallbackTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testAdvertiseFailure() {
+    public void advertiseFailure() {
         mAdvertiseCallback.mAdvertiseType = ADVERTISE_TYPE_SUCCESS;
         mMockAdvertiser.startAdvertise(mAdvertiseCallback);
 

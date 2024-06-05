@@ -29,7 +29,6 @@
 
     <application android:requestLegacyExternalStorage="true"
          android:largeHeap="true">
-        <uses-library android:name="android.test.runner"/>
 
     </application>
 
@@ -37,8 +36,6 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.media.recorder.cts"
          android:label="CTS tests of android MediaRecorder">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 
 </manifest>

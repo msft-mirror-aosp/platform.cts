@@ -18,6 +18,7 @@
      package="com.android.cts.deviceandprofileowner">
 
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <!-- Add a network security config that trusts user added CAs for tests -->
     <application android:testOnly="true">
@@ -39,7 +40,5 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:label="Profile and Device Owner CTS Tests"
          android:targetPackage="com.android.cts.deviceandprofileowner">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 </manifest>

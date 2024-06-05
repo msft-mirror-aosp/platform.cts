@@ -17,19 +17,25 @@
 package android.view.inputmethod.cts;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.Manifest;
 import android.app.Instrumentation;
-import android.os.SystemClock;
+import android.content.Context;
+import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.TextUtils;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
+import android.view.inputmethod.cts.util.SecureSettingsUtils;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -39,21 +45,28 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
+import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+
+    private static final String TEST_IME_ID = "com.android.cts.testime/.TestIme";
 
     private static final InputMethodSubtype IMPLICITLY_ENABLED_TEST_SUBTYPE =
             new InputMethodSubtype.InputMethodSubtypeBuilder()
@@ -81,13 +94,6 @@ public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
             new InputMethodSubtype.InputMethodSubtypeBuilder()
                     .setSubtypeId(0x456789ab)
                     .build();
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.InputMethodSubtypeTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     private void launchTestActivity(@NonNull String marker) {
         TestActivity.startSync(activity -> {
@@ -154,14 +160,15 @@ public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
             final String marker = getTestMarker();
             launchTestActivity(marker);
 
-            expectEvent(stream, event -> "onCreate".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
             final ImeEventStream eventsAfterOnCreate = stream.copy();
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
             // It's OK to pass 0 to timeout as we've already made sure that "onStartInput" happened.
-            notExpectEvent(eventsAfterOnCreate, event ->
-                    "onCurrentInputMethodSubtypeChanged".equals(event.getEventName()), 0);
+            notExpectEvent(eventsAfterOnCreate, withDescription(
+                    "onCurrentInputMethodSubtypeChanged(newSubtype=any)",
+                    event -> "onCurrentInputMethodSubtypeChanged".equals(event.getEventName())), 0);
         }
     }
 
@@ -187,8 +194,7 @@ public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
 
             expectCommand(stream, imeSession.callSwitchInputMethod(
                     imeSession.getImeId(), IMPLICITLY_ENABLED_TEST_SUBTYPE2), TIMEOUT);
-            final ImeEvent result = expectEvent(stream, event ->
-                    "onCurrentInputMethodSubtypeChanged".equals(event.getEventName()), TIMEOUT);
+            final ImeEvent result = expectEvent(stream, eventMatcher("onCurrentInputMethodSubtypeChanged"), TIMEOUT);
             final InputMethodSubtype actualNewSubtype =
                     result.getArguments().getParcelable("newSubtype", InputMethodSubtype.class);
             assertThat(actualNewSubtype).isEqualTo(IMPLICITLY_ENABLED_TEST_SUBTYPE2);
@@ -215,7 +221,7 @@ public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
             final String marker = getTestMarker();
             launchTestActivity(marker);
 
-            expectEvent(stream, event -> "onCreate".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
 
             final InputMethodInfo mockImeInfo = mImm.getEnabledInputMethodList().stream()
                     .filter(imi -> TextUtils.equals(imi.getId(), imeSession.getImeId()))
@@ -261,5 +267,103 @@ public class InputMethodSubtypeEndToEndTest extends EndToEndImeTestBase {
             assertThat(mImm.getEnabledInputMethodSubtypeList(mockImeInfo, true))
                     .containsExactly(TEST_SUBTYPE2);
         }
+    }
+
+    /**
+     * This is a regression test against Bug 291762796.
+     *
+     * <p>Suppose the scenario when the system is switching to an IME whose subtypes are already
+     * enabled in {@link android.provider.Settings.Secure#ENABLED_INPUT_METHODS} but such subtypes
+     * are not included in {@link InputMethodInfo#getSubtypeAt(int)}. This is rather common when
+     * such subtypes are dynamically registered by
+     * {@link InputMethodManager#setAdditionalInputMethodSubtypes(String, InputMethodSubtype[])},
+     * because the system automatically removes additional subtypes in some cases such as updating
+     * the IME APK. Then the IME calls
+     * {@link InputMethodManager#setAdditionalInputMethodSubtypes(String, InputMethodSubtype[])} to
+     * add enabled {@link InputMethodSubtype}s again.
+     *
+     * <p>There had been a bug that subsequent call of
+     * {@link android.inputmethodservice.InputMethodService#switchInputMethod(String,
+     * InputMethodSubtype)} fails if {@code imeId} is the caller's IME ID and {@code subtype} is one
+     * of dynamically added {@link InputMethodSubtype} that was already enabled. This test makes
+     * sure that the issue is not regressed again.</p>
+     */
+    @Test
+    public void testSetAdditionalInputMethodSubtypesForAlreadyEnabledSubtype() throws Exception {
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        try (MockImeSession imeSession = MockImeSession.create(instrumentation.getContext(),
+                instrumentation.getUiAutomation(),
+                new ImeSettings.Builder())) {
+            // Emulate the scenario when additional subtypes are already enabled.
+            SecureSettingsUtils.updateEnabledInputMethods(instrumentation.getContext(),
+                    imeSession.getImeId(), new InputMethodSubtype[]{
+                            TEST_SUBTYPE1, TEST_SUBTYPE2,
+                    });
+
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker();
+            launchTestActivity(marker);
+
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetAdditionalInputMethodSubtypes(
+                    imeSession.getImeId(), new InputMethodSubtype[]{TEST_SUBTYPE2}), TIMEOUT);
+            expectCommand(stream, imeSession.callSwitchInputMethod(
+                    imeSession.getImeId(), TEST_SUBTYPE2), TIMEOUT);
+            expectEvent(stream, onCurrentIMSubtypeChangedMatcher(TEST_SUBTYPE2), TIMEOUT);
+        }
+    }
+
+    @NonNull
+    private static List<InputMethodInfo> getInputMethodListWithQueryAllPackage(
+            @NonNull Context context) {
+        final InputMethodManager imm =
+                Objects.requireNonNull(context.getSystemService(InputMethodManager.class));
+        return SystemUtil.runWithShellPermissionIdentity(imm::getInputMethodList,
+                Manifest.permission.QUERY_ALL_PACKAGES);
+    }
+
+    /**
+     * Regression test for Bug 342105635.
+     */
+    @Test
+    @AppModeFull(reason = "Instant app mode is irrelevant in this scenario.")
+    public void testSetAdditionalInputMethodSubtypeDoesNotRemoveImesInvisibleFromCaller()
+            throws Exception  {
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        final var context = instrumentation.getTargetContext();
+        assertThat(getInputMethodListWithQueryAllPackage(context).stream()
+                .map(InputMethodInfo::getId).toList()).contains(TEST_IME_ID);
+
+        try (MockImeSession imeSession = MockImeSession.create(context,
+                instrumentation.getUiAutomation(), new ImeSettings.Builder())) {
+
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker();
+            launchTestActivity(marker);
+
+            expectEvent(stream, eventMatcher("onCreate"), TIMEOUT);
+
+            expectCommand(stream, imeSession.callSetAdditionalInputMethodSubtypes(
+                    imeSession.getImeId(), new InputMethodSubtype[]{TEST_SUBTYPE2}), TIMEOUT);
+
+            assertThat(getInputMethodListWithQueryAllPackage(context).stream()
+                    .map(InputMethodInfo::getId).toList()).contains(TEST_IME_ID);
+        }
+    }
+
+    @NotNull
+    private static DescribedPredicate<ImeEvent> onCurrentIMSubtypeChangedMatcher(
+            InputMethodSubtype subtype) {
+        return withDescription(
+                "onCurrentInputMethodSubtypeChanged(newSubtype=" + subtype + ")", event -> {
+                    if (!"onCurrentInputMethodSubtypeChanged".equals(event.getEventName())) {
+                        return false;
+                    }
+                    var actual = event.getArguments().getParcelable("newSubtype",
+                            InputMethodSubtype.class);
+                    return Objects.equals(actual, subtype);
+                });
     }
 }

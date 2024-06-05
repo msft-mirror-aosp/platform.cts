@@ -34,7 +34,7 @@ _COLOR_BAR_ORDER = ['WHITE', 'YELLOW', 'CYAN', 'GREEN', 'MAGENTA', 'RED',
 _COLOR_CHECKER = {'BLACK': [0, 0, 0], 'RED': [1, 0, 0], 'GREEN': [0, 1, 0],
                   'BLUE': [0, 0, 1], 'MAGENTA': [1, 0, 1], 'CYAN': [0, 1, 1],
                   'YELLOW': [1, 1, 0], 'WHITE': [1, 1, 1]}
-_CH_TOL = 2E-3  # 1/2 DN in [0:1]
+_CH_ATOL = 2E-3  # 1/2 DN in [0:1]
 
 
 def check_solid_color(cap, props):
@@ -60,7 +60,7 @@ def check_solid_color(cap, props):
   white_level = int(props['android.sensor.info.whiteLevel'])
   logging.debug('pixel min: %.f, pixel max: %.f', white_level * var_min,
                 white_level * var_max)
-  return math.isclose(var_max, var_min, abs_tol=_CH_TOL)
+  return math.isclose(var_max, var_min, abs_tol=_CH_ATOL)
 
 
 def check_color_bars(cap, props, mirror=False):
@@ -94,7 +94,7 @@ def check_color_bars(cap, props, mirror=False):
         np.allclose(
             image_processing_utils.compute_image_means(tile),
             _COLOR_CHECKER[color],
-            atol=_CH_TOL))
+            atol=_CH_ATOL))
   logging.debug(_COLOR_BAR_ORDER)
   logging.debug(color_match)
   return all(color_match)

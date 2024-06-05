@@ -35,6 +35,11 @@ android_test_helper_app {
         "androidx.test.core",
         "testng",
         "CtsAppTestStubsShared",
+        "androidx.test.rules",
+        "flag-junit",
+        "platform-test-annotations",
+        "platform-compat-test-rules",
+        "am_flags_lib",
     ],
     aidl: {
         local_include_dirs: [
@@ -211,5 +216,148 @@ android_test_helper_app {
     aaptflags: [
         "--rename-manifest-package com.android.app4",
         "--debug-mode",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsAppTestWedgedStart",
+    defaults: ["cts_support_defaults"],
+    manifest: "WedgedAndroidManifest.xml",
+    libs: [
+        "android.test.runner",
+        "android.test.base",
+    ],
+    srcs: [
+        "src/android/app/stubs/WedgedApplication.java",
+        "src/android/app/stubs/MockApplicationActivity.java",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
+        "sts",
+    ],
+    platform_apis: true,
+    aaptflags: [
+        "--rename-manifest-package com.android.wedged_start",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsAppTestDelayedStart",
+    defaults: ["cts_support_defaults"],
+    manifest: "DelayedAndroidManifest.xml",
+    libs: [
+        "android.test.runner",
+        "telephony-common",
+        "voip-common",
+        "org.apache.http.legacy",
+        "android.test.base",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "ctstestserver",
+        "mockito-target-minus-junit4",
+        "androidx.legacy_legacy-support-v4",
+        "androidx.test.core",
+        "CtsAppTestStubsShared",
+    ],
+    aidl: {
+        local_include_dirs: [
+            "src",
+        ],
+    },
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.aidl",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
+        "sts",
+    ],
+    platform_apis: true,
+    aaptflags: [
+        "--rename-manifest-package com.android.delayed_start",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsAppTestProviderApp",
+    defaults: ["cts_support_defaults"],
+    libs: [
+        "android.test.runner",
+        "telephony-common",
+        "voip-common",
+        "org.apache.http.legacy",
+        "android.test.base",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "ctstestserver",
+        "mockito-target-minus-junit4",
+        "androidx.legacy_legacy-support-v4",
+        "androidx.test.core",
+        "CtsAppTestStubsShared",
+    ],
+    aidl: {
+        local_include_dirs: [
+            "src",
+        ],
+    },
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.aidl",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
+        "sts",
+    ],
+    platform_apis: true,
+    additional_manifests: ["TestProviderAndroidManifest.xml"],
+    aaptflags: [
+        "--rename-manifest-package com.android.app.cts.provider",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsAppTestStubsApi34",
+    defaults: ["cts_support_defaults"],
+    libs: [
+        "android.test.runner",
+        "telephony-common",
+        "voip-common",
+        "org.apache.http.legacy",
+        "android.test.base",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "ctstestserver",
+        "mockito-target-minus-junit4",
+        "androidx.legacy_legacy-support-v4",
+        "androidx.test.core",
+        "CtsAppTestStubsShared",
+    ],
+    aidl: {
+        local_include_dirs: [
+            "src",
+        ],
+    },
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.aidl",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
+        "sts",
+    ],
+    platform_apis: true,
+    target_sdk_version: "34",
+    aaptflags: [
+        "--rename-manifest-package com.android.app.api34",
     ],
 }

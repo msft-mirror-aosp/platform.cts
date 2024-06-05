@@ -18,12 +18,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.android.cts.verifier"
           android:versionCode="5"
-          android:versionName="14_r4">
+          android:versionName="15_r1">
 
-    <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="34"/>
+    <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="35"/>
 
     <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
     <uses-permission android:name="android.car.permission.READ_CAR_POWER_POLICY" />
+    <uses-permission android:name="android.car.permission.CAR_DRIVING_STATE" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS"/>
@@ -50,6 +51,9 @@
     <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.NFC_TRANSACTION_EVENT" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
@@ -121,6 +125,9 @@
 
     <!-- Needed for Notification Full Screen Intent tests -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+
+    <!-- Needed for Notification Hiding tests -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
 
     <application android:networkSecurityConfig="@xml/network_security_config"
                  android:label="@string/app_name"
@@ -1569,6 +1576,7 @@
                 android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
         </activity>
 
         <activity
@@ -1590,6 +1598,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricManager#canAuthenticate|android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators|android.hardware.biometrics.BiometricPrompt.AuthenticationResult#getAuthenticationType|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationValidityDurationSeconds" />
         </activity>
 
         <activity
@@ -1611,6 +1621,10 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="CddTest"
+                       android:value="7.3.10/C-4-3,C-6-1,C-6-2,C-3-2,C-3-5,C-3-6" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricManager#canAuthenticate|android.hardware.biometrics.BiometricPrompt#authenticate|android.hardware.biometrics.BiometricPrompt.AuthenticationResult#getAuthenticationType|android.security.keystore.KeyGenParameterSpec.Builder#setInvalidatedByBiometricEnrollment|android.provider.Settings#ACTION_BIOMETRIC_ENROLL" />
         </activity>
 
         <activity
@@ -1632,6 +1646,10 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="CddTest"
+                       android:value="7.3.10/C-4-3,C-2-9" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricManager#canAuthenticate|android.provider.Settings#ACTION_BIOMETRIC_ENROLL" />
         </activity>
 
         <activity
@@ -1653,6 +1671,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1674,6 +1694,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1695,6 +1717,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1716,7 +1740,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
-            <meta-data android:name="ApiTest" android:value="javax.crypto.Cipher#updateAAD"/>
+            <meta-data android:name="ApiTest"
+                       android:value="javax.crypto.Cipher#updateAAD|android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1738,7 +1763,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
-            <meta-data android:name="ApiTest" android:value="javax.crypto.Cipher#updateAAD"/>
+            <meta-data android:name="ApiTest"
+                       android:value="javax.crypto.Cipher#updateAAD|android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1760,7 +1786,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
-            <meta-data android:name="ApiTest" android:value="javax.crypto.Cipher#updateAAD"/>
+            <meta-data android:name="ApiTest"
+                       android:value="javax.crypto.Cipher#updateAAD|android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1782,6 +1809,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1803,6 +1832,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1824,6 +1855,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1845,6 +1878,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1866,6 +1901,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1887,6 +1924,77 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
+        </activity>
+
+        <activity
+            android:name=".biometrics.UserAuthenticationCredentialKeyAgreementTest"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true"
+            android:label="@string/biometric_test_set_user_authentication_credential_key_agreement_label" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data android:name="test_category" android:value="@string/biometric_test_category_combination" />
+            <meta-data android:name="test_parent"
+                       android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
+            <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
+            <meta-data android:name="test_excluded_features"
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+            <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="javax.crypto.KeyAgreement#doPhase|javax.crypto.KeyAgreement#generateSecret|android.hardware.biometrics.BiometricPrompt#authenticate" />
+        </activity>
+
+        <activity
+            android:name=".biometrics.UserAuthenticationBiometricKeyAgreementTest"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true"
+            android:label="@string/biometric_test_set_user_authentication_biometric_key_agreement_label" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data android:name="test_category" android:value="@string/biometric_test_category_combination" />
+            <meta-data android:name="test_parent"
+                       android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
+            <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
+            <meta-data android:name="test_excluded_features"
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+            <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="javax.crypto.KeyAgreement#doPhase|javax.crypto.KeyAgreement#generateSecret|android.hardware.biometrics.BiometricPrompt#authenticate" />
+        </activity>
+
+        <activity
+            android:name=".biometrics.UserAuthenticationBiometricOrCredentialKeyAgreementTest"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true"
+            android:label="@string/biometric_test_set_user_authentication_biometric_or_credential_key_agreement_label" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data android:name="test_category" android:value="@string/biometric_test_category_combination" />
+            <meta-data android:name="test_parent"
+                       android:value="com.android.cts.verifier.biometrics.BiometricTestList" />
+            <meta-data android:name="test_required_features" android:value="android.software.secure_lock_screen" />
+            <meta-data android:name="test_excluded_features"
+                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+            <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="javax.crypto.KeyAgreement#doPhase|javax.crypto.KeyAgreement#generateSecret|android.hardware.biometrics.BiometricPrompt#authenticate" />
         </activity>
 
         <activity android:name=".security.IdentityCredentialAuthentication"
@@ -1944,6 +2052,8 @@
                        android:value="single_display_mode" />
             <meta-data android:name="CddTest"
                        android:value="9.11.1/C-4-1" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.fingerprint#authenticate|android.hardware.fingerprint#hasEnrolledFingerprints" />
         </activity>
 
         <activity android:name=".security.ProtectedConfirmationTest"
@@ -1961,8 +2071,8 @@
                        android:value="9.10/C-3-1|9.10/C-3-2|9.10/C-3-3" />
         </activity>
 
-        <activity android:name=".security.ScreenLockBoundKeysTest"
-                android:label="@string/sec_lock_bound_key_test"
+        <activity android:name=".security.LskfBoundKeysTest"
+                android:label="@string/sec_lskf_bound_key_test"
                 android:exported="true"
                 android:configChanges="keyboardHidden|orientation|screenSize" >
             <intent-filter>
@@ -1980,8 +2090,8 @@
                        android:value="9.11/C-1-3" />
         </activity>
 
-        <activity android:name=".security.UnlockedDeviceRequiredTest"
-                android:label="@string/sec_unlocked_device_required_test"
+        <activity android:name=".security.UnlockedDeviceRequiredKeysTest"
+                android:label="@string/sec_unlocked_device_required_keys_test"
                 android:exported="true"
                 android:configChanges="keyboardHidden|orientation|screenSize" >
             <intent-filter>
@@ -2189,22 +2299,6 @@
             <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
         </activity>
 
-        <activity android:name="com.android.cts.verifier.nfc.hce.HceReaderTestActivity"
-                android:label="@string/nfc_hce_reader_tests"
-                android:configChanges="keyboardHidden|orientation|screenSize">
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
-        </activity>
-
-        <activity android:name="com.android.cts.verifier.nfc.hce.HceEmulatorTestActivity"
-                android:label="@string/nfc_hce_emulator_tests"
-                android:configChanges="keyboardHidden|orientation|screenSize">
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
-        </activity>
-
         <activity android:name="com.android.cts.verifier.nfc.hcef.HceFReaderTestActivity"
                 android:label="@string/nfc_hce_f_reader_tests"
                 android:configChanges="keyboardHidden|orientation|screenSize">
@@ -2243,228 +2337,6 @@
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="CddTest" android:value="7.3.3/C-1-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.DefaultRouteEmulatorActivity"
-                android:label="@string/nfc_hce_default_route_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-
-        </activity>
-
-        <activity android:name=".nfc.hce.ProtocolParamsEmulatorActivity"
-                android:label="@string/nfc_hce_protocol_params_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.SinglePaymentEmulatorActivity"
-                android:label="@string/nfc_hce_single_payment_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.2.3.5/C-3-2|7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.SimpleReaderActivity"
-                android:label="@string/nfc_hce_single_payment_reader"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-1-2" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#enableReaderMode|
-                                      android.nfc.NfcAdapter#disableReaderMode|
-                                      android.nfc.tech.IsoDep#get|
-                                      android.nfc.tech.IsoDep#connect|
-                                      android.nfc.tech.IsoDep#setTimeout|
-                                      android.nfc.tech.IsoDep#transceive" />
-        </activity>
-
-        <activity android:name=".nfc.hce.ProtocolParamsReaderActivity"
-                android:label="@string/nfc_hce_protocol_params_reader"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-1-2" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.nfc.NfcAdapter#enableReaderMode|
-                                      android.nfc.Tag#getId|
-                                      android.nfc.tech.NfcA#close|
-                                      android.nfc.tech.NfcA#connect|
-                                      android.nfc.tech.NfcA#get|
-                                      android.nfc.tech.NfcA#getAtqa|
-                                      android.nfc.tech.NfcA#getSak|
-                                      android.nfc.tech.NfcA#transceive" />
-        </activity>
-
-        <activity android:name=".nfc.hce.DualPaymentEmulatorActivity"
-                android:label="@string/nfc_hce_dual_payment_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.2.3.5/C-3-2|7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.ChangeDefaultEmulatorActivity"
-                android:label="@string/nfc_hce_change_default_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.2.3.5/C-3-2|7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.SingleNonPaymentEmulatorActivity"
-                android:label="@string/nfc_hce_single_non_payment_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.DualNonPaymentEmulatorActivity"
-                android:label="@string/nfc_hce_dual_non_payment_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.ConflictingNonPaymentEmulatorActivity"
-                android:label="@string/nfc_hce_conflicting_non_payment_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.ForegroundNonPaymentEmulatorActivity"
-                android:label="@string/nfc_hce_foreground_non_payment_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.nfc.cardemulation.CardEmulation#setPreferredService|
-                                      android.nfc.cardemulation.CardEmulation#unsetPreferredService" />
-        </activity>
-
-        <activity android:name=".nfc.hce.ForegroundPaymentEmulatorActivity"
-                android:label="@string/nfc_hce_foreground_payment_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.2.3.5/C-3-1,C-3-2|7.4.4/C-2-1,C-2-2" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.nfc.cardemulation.CardEmulation#categoryAllowsForegroundPreference" />
-        </activity>
-
-        <activity android:name=".nfc.hce.OffHostEmulatorActivity"
-                android:label="@string/nfc_hce_offhost_service_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.OnAndOffHostEmulatorActivity"
-                android:label="@string/nfc_hce_on_and_offhost_service_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.ThroughputEmulatorActivity"
-                android:label="@string/nfc_hce_throughput_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.TapTestEmulatorActivity"
-                android:label="@string/nfc_hce_tap_test_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.DynamicAidEmulatorActivity"
-                android:label="@string/nfc_hce_payment_dynamic_aids_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.2.3.5/C-3-2|7.4.4/C-2-1,C-2-2" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.nfc.cardemulation.CardEmulation#registerAidsForService" />
-        </activity>
-
-        <activity android:name=".nfc.hce.LargeNumAidsEmulatorActivity"
-                  android:label="@string/nfc_hce_large_num_aids_emulator"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.nfc.cardemulation.CardEmulation#registerAidsForService" />
-        </activity>
-
-        <activity android:name=".nfc.hce.PrefixPaymentEmulatorActivity"
-                android:label="@string/nfc_hce_payment_prefix_aids_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.2.3.5/C-3-2|7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.PrefixPaymentEmulator2Activity"
-                android:label="@string/nfc_hce_payment_prefix_aids_emulator_2"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.2.3.5/C-3-2|7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.DualNonPaymentPrefixEmulatorActivity"
-                android:label="@string/nfc_hce_other_prefix_aids_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.nfc.cardemulation.CardEmulation#registerAidsForService" />
-        </activity>
-
-        <activity android:name=".nfc.hce.ConflictingNonPaymentPrefixEmulatorActivity"
-                android:label="@string/nfc_hce_other_conflicting_prefix_aids_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.nfc.cardemulation.CardEmulation#registerAidsForService" />
-        </activity>
-
-        <activity android:name=".nfc.hce.ScreenOnOnlyOffHostEmulatorActivity"
-                android:label="@string/nfc_screen_on_only_offhost_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.4.4/C-2-1,C-2-2" />
-        </activity>
-
-        <activity android:name=".nfc.hce.ScreenOffPaymentEmulatorActivity"
-                android:label="@string/nfc_screen_off_hce_payment_emulator"
-                android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.2.3.5/C-3-2|7.4.4/C-2-1,C-2-2" />
         </activity>
 
         <activity android:name=".nfc.hcef.HceFEmulatorActivity"
@@ -2524,153 +2396,6 @@
             <meta-data android:name="ApiTest"
                        android:value="android.nfc.NfcAdapter#ACTION_TRANSACTION_DETECTED" />
         </activity>
-
-        <!-- services used for testing NFC host-based card emulation -->
-        <service android:name=".nfc.hce.PaymentService1" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_aid_list_1"/>
-        </service>
-        <service android:name=".nfc.hce.PaymentService2" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_aid_list_2"/>
-        </service>
-        <service android:name=".nfc.hce.TransportService1" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/transport_aid_list_1"/>
-        </service>
-        <service android:name=".nfc.hce.TransportService2" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/transport_aid_list_2"/>
-        </service>
-        <service android:name=".nfc.hce.AccessService" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/access_aid_list"/>
-        </service>
-        <service android:name=".nfc.hce.ThroughputService" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/throughput_aid_list"/>
-        </service>
-
-        <service android:name=".nfc.hce.OffHostService" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.OFF_HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.off_host_apdu_service" android:resource="@xml/offhost_aid_list"/>
-        </service>
-        <service android:name=".nfc.hce.PaymentServiceDynamicAids" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_aid_list_1"/>
-        </service>
-        <service android:name=".nfc.hce.PrefixPaymentService1" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_prefix_aid_list"/>
-        </service>
-        <service android:name=".nfc.hce.PrefixPaymentService2" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_prefix_aid_list_2"/>
-        </service>
-        <service android:name=".nfc.hce.PrefixTransportService1" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/transport_prefix_aid_list_1"/>
-        </service>
-        <service android:name=".nfc.hce.PrefixTransportService2" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/transport_prefix_aid_list_2"/>
-        </service>
-        <service android:name=".nfc.hce.PrefixAccessService" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/access_prefix_aid_list"/>
-        </service>
-        <service android:name=".nfc.hce.LargeNumAidsService" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/payment_aid_list_1"/>
-        </service>
-        <service android:name=".nfc.hce.ScreenOnOnlyOffHostService" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.OFF_HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.off_host_apdu_service" android:resource="@xml/screen_on_only_offhost_aid_list"/>
-        </service>
-        <service android:name=".nfc.hce.ScreenOffPaymentService" android:exported="true"
-                 android:permission="android.permission.BIND_NFC_SERVICE"
-                 android:enabled="false">
-            <intent-filter>
-                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/screen_off_payment_aid_list"/>
-        </service>
 
         <service
             android:name=".nfc.hcef.MyHostFelicaService"
@@ -2977,6 +2702,7 @@
 
         <activity
             android:name=".camera.fov.PhotoCaptureActivity"
+            android:configChanges="orientation|screenSize"
             android:label="@string/camera_fov_calibration"
             android:exported="true"
             android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" >
@@ -3334,6 +3060,8 @@
             <meta-data android:name="display_mode"
                 android:value="multi_display_mode" />
             <meta-data android:name="CddTest" android:value="3.8.3/H-0-4" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
         </activity>
 
         <activity android:name=".notifications.NotificationFullScreenIntentVerifierActivity"
@@ -3350,6 +3078,8 @@
             <meta-data android:name="ApiTest"
                 android:value="android.app.Notification.Builder#setFullScreenIntent|
                 android.app.NotificationManager#notify" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
         </activity>
 
         <activity android:name=".notifications.NotificationListenerVerifierActivity"
@@ -3370,6 +3100,24 @@
                 android.provider.Service#EXTRA_CHANNEL_FILTER_LIST" />
         </activity>
 
+        <activity android:name=".notifications.NotificationHidingVerifierActivity"
+            android:exported="true"
+            android:label="@string/notif_hiding_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_notifications" />
+            <meta-data android:name="test_excluded_features"
+                       android:value="android.hardware.type.watch:android.software.leanback:android.hardware.type.automotive" />
+            <meta-data android:name="display_mode"
+                android:value="multi_display_mode" />
+            <meta-data android:name="CddTest" android:value="9.8.2/C-0-6,C-3-1,C-3-2,C-3-3" />
+        </activity>
+        <service android:name=".notifications.NotificationHidingVerifierActivity$MediaProjectionService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
         <activity android:name=".notifications.NotificationPrivacyVerifierActivity"
             android:exported="true"
             android:label="@string/notif_privacy_test">
@@ -3385,6 +3133,20 @@
             <meta-data android:name="CddTest" android:value="3.8.3.1/C-1-4|2.2.3/3.8.10/H-1-1" />
         </activity>
 
+        <activity android:name=".notifications.NotificationStyleVerifierActivity"
+            android:exported="true"
+            android:label="@string/notification_style_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_notifications" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.automotive:android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="CddTest" android:value="3.8.3.1/C-2-1" />
+        </activity>
+
         <activity android:name=".notifications.ShowWhenLockedActivity"
             android:exported="true"
             android:showWhenLocked="true">
@@ -3392,6 +3154,12 @@
             <meta-data android:name="NonApiTest"
                 android:value="Helper class. Test activities: NotificationPrivacyVerifierActivity, NotificationFullScreenIntentVerifierActivity" />
         </activity>
+
+        <provider
+            android:name=".notifications.AssetsProvider"
+            android:authorities="com.android.cts.verifier.notifications.assets"
+            android:exported="false"
+            android:grantUriPermissions="true" />
 
         <receiver android:name=".notifications.BlockChangeReceiver"
             android:exported="true">
@@ -3451,6 +3219,8 @@
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                        android:value="android.widget.Toast#makeText" />
+            <meta-data android:name="test_excluded_features"
+                       android:value="android.hardware.type.watch" />
         </activity>
 
         <activity android:name=".notifications.BubblesVerifierActivity"
@@ -4514,6 +4284,9 @@
                 android:name="test_parent"
                 android:value="com.android.cts.verifier.presence.PresenceTestActivity" />
             <meta-data
+                android:name="test_required_features"
+                android:value="android.hardware.wifi.aware:android.hardware.wifi.rtt" />
+            <meta-data
                 android:name="display_mode"
                 android:value="single_display_mode" />
             <meta-data
@@ -4591,6 +4364,18 @@
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                        android:value="android.provider.AlarmClock#ACTION_SHOW_ALARMS|android.provider.AlarmClock#ACTION_SET_ALARM|android.provider.AlarmClock#ACTION_SET_TIMER" />
+        </activity>
+
+        <activity android:name=".multidevice.MultiDeviceTestsActivity"
+                android:exported="true"
+                android:label="@string/nfc_tests_title">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_multidevice" />
+            <meta-data android:name="display_mode"
+                       android:value="single_display_mode" />
         </activity>
 
 <!-- TODO: enable when not requiring to tap the screen and timeouts are tuned -->
@@ -5293,12 +5078,6 @@
                        android:value="multi_display_mode" />
         </activity>
 
-        <activity android:name=".managedprovisioning.NfcTestActivity">
-            <meta-data android:name="test_required_features" android:value="android.hardware.nfc" />
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-        </activity>
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.android.cts.verifier.managedprovisioning.fileprovider"
@@ -5815,6 +5594,57 @@
                 android.media.AudioRecord.OnRoutingChangedListener#onRoutingChanged" />
         </activity>
 
+        <activity android:name=".audio.AudioDataPathsSpeakerMicActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_speakermic_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+        </activity>
+
+        <activity android:name=".audio.AudioDataPathsAnalogActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_analog_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+        </activity>
+
+        <activity android:name=".audio.AudioDataPathsUSBActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_USB_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+        </activity>
+
         <activity android:name=".audio.AudioLoopbackLatencyActivity"
             android:exported="true"
             android:label="@string/audio_loopback_latency_test">
@@ -5828,6 +5658,23 @@
                 android:value="android.hardware.type.watch:android.hardware.type.television:android.hardware.type.automotive" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="CddTest" android:value="5.10/C-1-2,C-1-5|5.6/H-1-3" />
+        </activity>
+
+        <activity android:name=".audio.AudioMultichannelMixdownActivity"
+            android:exported="true"
+            android:label="@string/audio_multichannel_mixdown_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch:android.hardware.type.television:android.hardware.type.automotive" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioFormat.Builder#setChannelMask" />
+            <meta-data android:name="CddTest" android:value="5.6/H-1-9" />
         </activity>
 
         <activity android:name=".audio.AudioOutColdStartLatencyActivity"
@@ -6059,38 +5906,6 @@
                     android.content.BroadcastReceiver#onReceive"/>
         </activity>
 
-        <activity android:name=".audio.USBAudioPeripheralPlayActivity"
-                android:exported="true"
-                  android:label="@string/audio_uap_play_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
-            <meta-data android:name="test_required_features" android:value="android.hardware.usb.host" />
-            <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
-            <meta-data android:name="display_mode" android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.8.2/C-1-1,C-1-2" />
-        </activity>
-
-        <activity android:name=".audio.USBAudioPeripheralRecordActivity"
-                android:exported="true"
-                  android:label="@string/audio_uap_record_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
-            <meta-data android:name="test_required_features" android:value="android.hardware.usb.host" />
-            <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
-            <meta-data android:name="display_mode" android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.8.2.2/H-1-1|7.7.2/C-2-1,C-2-2" />
-            <meta-data android:name="ApiTest"
-                android:value="android.app.Activity#onKeyDown"/>
-        </activity>
-
         <activity android:name=".audio.UsbMidiAudioActivity"
                 android:exported="true"
                   android:label="@string/usb_midi_audio_test">
@@ -6135,6 +5950,19 @@
             <meta-data android:name="test_required_configs" android:value="config_has_mic_toggle"/>
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="CddTest" android:value="9.8.13/C-1-3" />
+        </activity>
+
+        <activity android:name=".audio.ImmersiveAudioActivity"
+            android:exported="true"
+            android:label="@string/immersive_audio_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+                <category android:name="com.android.cts.verifier.audio.IMMERSIVE_AUDIO_RESULTS" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="CddTest" android:value="5.6/C-4-1" />
         </activity>
 
         <service android:name=".tv.MockTvInputService"
@@ -6847,6 +6675,34 @@
         </activity>
 
         <activity
+            android:name=".controls.ControlsPanelVerifierSettingTest$DreamTestFalse"
+            android:label="@string/controls_panel_dream_test_false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_parent" android:value="com.android.cts.verifier.controls.ControlsPanelVerifierTestList"/>
+            <meta-data android:name="test_required_features" android:value="android.software.controls"/>
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest" android:value="android.services.controls.ControlsProviderService#META_DATA_PANEL_ACTIVITY" />
+        </activity>
+
+        <activity
+            android:name=".controls.ControlsPanelVerifierSettingTest$DreamTestTrue"
+            android:label="@string/controls_panel_dream_test_true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_parent" android:value="com.android.cts.verifier.controls.ControlsPanelVerifierTestList"/>
+            <meta-data android:name="test_required_features" android:value="android.software.controls"/>
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest" android:value="android.services.controls.ControlsProviderService#META_DATA_PANEL_ACTIVITY" />
+        </activity>
+
+        <activity
             android:name=".input.UsiVersionActivity"
             android:label="@string/usi_version_test"
             android:exported="true">
@@ -6858,6 +6714,156 @@
             <meta-data android:name="ApiTest" android:value="android.view.InputDevice#getUsiVersion" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
+
+        <!-- Components for Sharesheet tests -->
+       <activity
+            android:name=".sharesheet.SharesheetChooserResultEditActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_result_test_edit"
+            android:launchMode="singleTask">
+           <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
+                    |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetChooserResultCopyActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_result_test_copy"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
+                    |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetChooserResultComponentActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_result_test_component"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
+                    |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+
+        <activity
+            android:name=".sharesheet.SharesheetPayloadToggleActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:label="@string/sharesheet_payload_toggle_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST.SharesheetPayloadToggleActivity" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
+                    |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetPayloadToggleActionActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:label="@string/sharesheet_payload_toggle_action_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST.SharesheetPayloadToggleActionActivity" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
+                    |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetAlbumActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_album_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_CONTENT_TYPE_HINT
+                    |android.content.Intent#CHOOSER_CONTENT_TYPE_ALBUM" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <provider
+            android:authorities="com.android.cts.verifier.sharesheet.images"
+            android:name=".sharesheet.SharesheetTestImageProvider"
+            android:exported="false"
+            android:enabled="true"
+            android:grantUriPermissions="true" />
+
+        <provider
+            android:authorities="com.android.cts.verifier.sharesheet.extracontent"
+            android:name=".sharesheet.SharesheetAdditionalContentProvider"
+            android:exported="false"
+            android:enabled="true"
+            android:grantUriPermissions="true" />
+
 
         <!-- Components used for CTS Verifying Capture Content For Notes APIs. -->
         <activity
@@ -6905,6 +6911,31 @@
             <meta-data android:name="NonApiTest"
                        android:value="Helper class. Used to perform admin policy setup." />
         </activity>
+        <activity android:name=".widget.GeneratedPreviewsTestActivity"
+            android:exported="true"
+            android:label="@string/widget_generated_previews_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_other" />
+            <meta-data android:name="test_required_features"
+                android:value="android.software.app_widgets" />
+            <meta-data android:name="display_mode"
+                android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.appwidget.AppWidgetManager#setWidgetPreview|android.appwidget.AppWidgetManager#getWidgetPreview" />
+        </activity>
+        <receiver android:name=".widget.GeneratedPreviewWidgetProvider"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/widget_generated_previews_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/generated_previews_widget_info" />
+        </receiver>
     </application>
 
     <queries>

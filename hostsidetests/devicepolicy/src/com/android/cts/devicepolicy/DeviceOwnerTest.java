@@ -16,7 +16,6 @@
 
 package com.android.cts.devicepolicy;
 
-import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATURE_MANAGED_USERS;
 import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
 
 import static org.junit.Assert.assertEquals;
@@ -31,7 +30,7 @@ import android.platform.test.annotations.LargeTest;
 import android.stats.devicepolicy.EventId;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
+import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.IgnoreOnHeadlessSystemUserMode;
 import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.log.LogUtil.CLog;
 
@@ -100,18 +99,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     }
 
     @Test
-    public void testRemoteBugreportWithTwoUsers() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
-        final int userId = createUser();
-        try {
-            executeDeviceTestMethod(".RemoteBugreportTest",
-                    "testRequestBugreportThrowsSecurityException");
-        } finally {
-            removeUser(userId);
-        }
-    }
-
-    @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_MaxUsers() throws Exception {
         assumeCanCreateOneManagedUser();
 
@@ -140,6 +129,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      * {@link android.app.admin.DevicePolicyManager#getSecondaryUsers} is tested.
      */
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_GetSecondaryUsers() throws Exception {
         assumeCanCreateOneManagedUser();
 
@@ -153,6 +144,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      */
     @FlakyTest(bugId = 131743223)
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_SwitchUser() throws Exception {
         assumeCanStartNewUser();
 
@@ -165,6 +158,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      * {@link android.app.admin.DevicePolicyManager#stopUser} is tested.
      */
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_CannotStopCurrentUser() throws Exception {
         assumeCanStartNewUser();
 
@@ -177,6 +172,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      * {@link android.app.admin.DevicePolicyManager#startUserInBackground} is tested.
      */
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_StartInBackground() throws Exception {
         assumeCanStartNewUser();
 
@@ -189,6 +186,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      * {@link android.app.admin.DevicePolicyManager#startUserInBackground} is tested.
      */
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_StartInBackground_MaxRunningUsers() throws Exception {
         assumeCanStartNewUser();
 
@@ -226,6 +225,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      * {@link android.app.admin.DevicePolicyManager#stopUser} is tested.
      */
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_StopUser() throws Exception {
         assumeCanStartNewUser();
 
@@ -239,6 +240,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      * automatically even when DISALLOW_REMOVE_USER is set.
      */
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_StopEphemeralUser_DisallowRemoveUser() throws Exception {
         assumeCanStartNewUser();
 
@@ -253,6 +256,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      * {@link android.app.admin.DevicePolicyManager#logoutUser} is tested.
      */
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_LogoutUser() throws Exception {
         assumeCanStartNewUser();
 
@@ -267,6 +272,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      * <p>{@link android.app.admin.DevicePolicyManager#logoutUser} (system API version) is tested.
      */
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_LogoutUser_systemApi() throws Exception {
         assumeCanStartNewUser();
 
@@ -280,6 +287,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      * {@link android.app.admin.DevicePolicyManager#isAffiliatedUser} is tested.
      */
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_Affiliated() throws Exception {
         assumeCanStartNewUser();
 
@@ -292,6 +301,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      * {@link android.app.admin.DevicePolicyManager#isEphemeralUser} is tested.
      */
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_Ephemeral() throws Exception {
         assumeCanStartNewUser();
 
@@ -312,13 +323,17 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
      * {@link android.app.admin.DevicePolicyManager#LEAVE_ALL_SYSTEM_APPS_ENABLED} is tested.
      */
     @Test
-   public void testCreateAndManageUser_LeaveAllSystemApps() throws Exception {
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
+    public void testCreateAndManageUser_LeaveAllSystemApps() throws Exception {
         assumeCanStartNewUser();
 
         executeCreateAndManageUserTest("testCreateAndManageUser_LeaveAllSystemApps");
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_SkipSetupWizard() throws Exception {
         assumeCanCreateOneManagedUser();
 
@@ -326,6 +341,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_AddRestrictionSet() throws Exception {
         assumeCanCreateOneManagedUser();
 
@@ -333,6 +350,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testCreateAndManageUser_RemoveRestrictionSet() throws Exception {
         assumeCanCreateOneManagedUser();
 
@@ -341,6 +360,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
     @FlakyTest(bugId = 126955083)
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testUserAddedOrRemovedBroadcasts() throws Exception {
         assumeCanCreateOneManagedUser();
 
@@ -353,6 +374,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testNetworkLoggingWithTwoUsers() throws Exception {
         assumeCanCreateAdditionalUsers(1);
 
@@ -398,6 +421,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testSetAffiliationId_IllegalArgumentException() throws Exception {
         executeDeviceTestMethod(".AffiliationTest", "testSetAffiliationId_null");
         executeDeviceTestMethod(".AffiliationTest", "testSetAffiliationId_containsEmptyString");
@@ -499,16 +524,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         executeDeviceTestMethod(".PreDeviceOwnerTest", "testIsProvisioningAllowedFalse");
     }
 
-    /**
-     * Can provision Managed Profile when DO is set by default if they are the same admin.
-     */
-    @Test
-    @RequiresAdditionalFeatures({FEATURE_MANAGED_USERS})
-    public void testIsManagedProfileProvisioningAllowed_deviceOwnerIsSet() throws Exception {
-        executeDeviceTestMethod(".PreDeviceOwnerTest",
-                "testIsProvisioningNotAllowedForManagedProfileAction");
-    }
-
     @FlakyTest(bugId = 137096267)
     @Test
     public void testAdminActionBookkeeping() throws Exception {
@@ -524,15 +539,11 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
             // This test will be skipped for headless system user mode since headless system user
             // does not have IME.
             executeDeviceTestMethod(".AdminActionBookkeepingTest",
-                    "testIsDefaultInputMethodSet");
-            executeDeviceTestMethod(".AdminActionBookkeepingTest",
                     "testGetPolicyInstalledCaCerts");
         }
 
         executeDeviceTestMethod(".AdminActionBookkeepingTest",
                 "testRetrieveSecurityLogs");
-        executeDeviceTestMethod(".AdminActionBookkeepingTest",
-                "testRequestBugreport");
         executeDeviceTestMethod(".AdminActionBookkeepingTest",
                 "testGetLastNetworkLogRetrievalTime");
         executeDeviceTestMethod(".AdminActionBookkeepingTest",
@@ -546,11 +557,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                 .setAdminPackageName(DEVICE_OWNER_PKG)
                 .build(),
         new DevicePolicyEventWrapper.Builder(EventId.RETRIEVE_PRE_REBOOT_SECURITY_LOGS_VALUE)
-                .setAdminPackageName(DEVICE_OWNER_PKG)
-                .build());
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".AdminActionBookkeepingTest", "testRequestBugreport");
-        }, new DevicePolicyEventWrapper.Builder(EventId.REQUEST_BUGREPORT_VALUE)
                 .setAdminPackageName(DEVICE_OWNER_PKG)
                 .build());
     }
@@ -589,7 +595,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         // but the admin must be installed on USER_SYSTEM, otherwise wipeData() on headless system
         // user mode would wipe the current user (instead of factory resetting the device)
         changeUserRestrictionOrFail("no_factory_reset", true, mPrimaryUserId, DEVICE_OWNER_PKG);
-        int adminUserId = USER_SYSTEM;
+        int adminUserId = mPrimaryUserId;
 
         String deviceAdminPkg = DeviceAdminHelper.getDeviceAdminApkPackage(adminVersion);
         String deviceAdminReceiver = DeviceAdminHelper.getAdminReceiverComponent(adminVersion);
@@ -658,6 +664,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
 
     @LargeTest
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testPackageInstallCache_multiUser() throws Exception {
         assumeCanCreateAdditionalUsers(1);
 
@@ -996,11 +1004,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     }
 
     @Test
-    public void testDevicePolicySafetyCheckerIntegration_isSafeOperation() throws Exception {
-        executeDeviceTestMethod(".DevicePolicySafetyCheckerIntegrationTest", "testIsSafeOperation");
-    }
-
-    @Test
     public void testDevicePolicySafetyCheckerIntegration_unsafeStateException() throws Exception {
         executeDeviceTestMethod(".DevicePolicySafetyCheckerIntegrationTest",
                 "testUnsafeStateException");
@@ -1014,6 +1017,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testListForegroundAffiliatedUsers_notDeviceOwner() throws Exception {
         if (!removeAdmin(DEVICE_OWNER_COMPONENT, mDeviceOwnerUserId)) {
             fail("Failed to remove device owner for user " + mDeviceOwnerUserId);
@@ -1024,12 +1029,16 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testListForegroundAffiliatedUsers_onlyForegroundUser() throws Exception {
         executeDeviceTestMethod(".ListForegroundAffiliatedUsersTest",
                 "testListForegroundAffiliatedUsers_onlyForegroundUser");
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testListForegroundAffiliatedUsers_onlyForegroundUserCalledByDeviceOwner()
             throws Exception {
         assumeHeadlessSystemUserMode("redundant, same as "
@@ -1049,6 +1058,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testListForegroundAffiliatedUsers_extraUser() throws Exception {
         assumeCanCreateAdditionalUsers(1);
         createAffiliatedSecondaryUser();
@@ -1058,6 +1069,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testListForegroundAffiliatedUsers_notAffiliated() throws Exception {
         assumeCanCreateAdditionalUsers(1);
         int userId = createUser();
@@ -1067,6 +1080,8 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testListForegroundAffiliatedUsers_affiliated() throws Exception {
         assumeCanCreateAdditionalUsers(1);
         int userId = createAffiliatedSecondaryUser();

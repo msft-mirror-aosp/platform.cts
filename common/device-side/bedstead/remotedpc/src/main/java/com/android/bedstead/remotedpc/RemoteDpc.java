@@ -18,7 +18,7 @@ package com.android.bedstead.remotedpc;
 
 import static android.os.UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 
 import android.app.admin.DevicePolicyManager;
@@ -37,7 +37,7 @@ import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.bedstead.testapp.TestApp;
@@ -192,9 +192,16 @@ public class RemoteDpc extends RemotePolicyManager {
     }
 
     /**
-     * Sets RemoteDPC as the Device Owner based on TestAppQuery
+     * Sets RemoteDPC as the Device Owner on the system user based on TestAppQuery
      */
     public static RemoteDpc setAsDeviceOwner(TestAppQueryBuilder dpcQuery) {
+        return setAsDeviceOwner(dpcQuery, TestApis.users().system());
+    }
+
+    /**
+     * Sets RemoteDPC as the Device Owner on the given user based on TestAppQuery
+     */
+    public static RemoteDpc setAsDeviceOwner(TestAppQueryBuilder dpcQuery, UserReference user) {
         // We make sure that the query has RemoteDpc filter specified,
         // this is useful for the case where the user calls the method directly
         // and does not specify the RemoteDpc filter.
@@ -210,11 +217,11 @@ public class RemoteDpc extends RemotePolicyManager {
         }
 
         TestApp testApp = dpcQuery.get();
-        testApp.install(TestApis.users().system());
+        testApp.install(user);
         Log.i(LOG_TAG, "Installing RemoteDPC app: " + testApp.packageName());
         ComponentName componentName =
                 new ComponentName(testApp.packageName(), TEST_APP_CLASS_NAME);
-        DeviceOwner deviceOwner = TestApis.devicePolicy().setDeviceOwner(componentName);
+        DeviceOwner deviceOwner = TestApis.devicePolicy().setDeviceOwner(componentName, user);
         return new RemoteDpc(testApp, deviceOwner);
     }
 

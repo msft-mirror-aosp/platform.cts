@@ -19,7 +19,6 @@ package android.appsecurity.cts;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.RestrictedBuildTest;
@@ -128,7 +127,7 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
         for (Map.Entry<String, File> entry : mExtractedTestDirMap.entrySet()) {
             final File pubKeyFile = FileUtil.findFile(entry.getValue(), APEX_PUB_KEY_NAME);
 
-            assertWithMessage("apex:" + entry.getKey() + " do not contain pubkey").that(
+            assertWithMessage("apex:" + entry.getKey() + " does not contain pubkey").that(
                     pubKeyFile.exists()).isTrue();
         }
     }
@@ -144,8 +143,7 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
     @SuppressWarnings("productionOnly")
     @RestrictedBuildTest
     @Test
-    public void testApexPubKeyIsNotWellKnownKey() throws Exception {
-        assumeFalse("Skipping test on AOSP builds", isAosp());
+    public void testApexPubKeyIsNotWellKnownKey() {
         for (Map.Entry<String, File> entry : mExtractedTestDirMap.entrySet()) {
             final File pubKeyFile = FileUtil.findFile(entry.getValue(), APEX_PUB_KEY_NAME);
             final Iterator it = mWellKnownKeyFileList.iterator();
@@ -154,7 +152,9 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
 
             while (it.hasNext()) {
                 final File wellKnownKey = (File) it.next();
-                mExpect.withMessage(entry.getKey() + " must not use well known pubkey")
+                mExpect.withMessage(
+                        entry.getKey() + " must not use well known pubkey "
+                                + wellKnownKey.getName())
                         .that(areKeysMatching(pubKeyFile, wellKnownKey)).isFalse();
             }
         }
@@ -315,12 +315,5 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
         }
 
         protected abstract void onTestFailure(Statement base, Description description, Throwable t);
-    }
-
-    private boolean isAosp() throws Exception {
-        String product = mDevice.getProperty("ro.product.system_ext.name");
-        String model = mDevice.getProperty("ro.product.system_ext.model");
-        return (product != null && product.startsWith("aosp_"))
-                || (model != null && model.startsWith("AOSP on "));
     }
 }

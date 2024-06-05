@@ -15,14 +15,19 @@
  */
 package com.android.bedstead.dpmwrapper;
 
+import static android.app.admin.DeviceAdminInfo.HEADLESS_DEVICE_OWNER_MODE_SINGLE_USER;
+
 import static com.android.bedstead.dpmwrapper.Utils.isCurrentUserOnHeadlessSystemUser;
 
+import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.util.Log;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 /**
  * Helper class used by the test apps.
@@ -46,7 +51,10 @@ public final class TestAppHelper {
      */
     public static void registerTestCaseReceiver(Context context, BroadcastReceiver receiver,
             IntentFilter filter, boolean forDeviceOwner) {
-        if (forDeviceOwner && isCurrentUserOnHeadlessSystemUser(context)) {
+        if (forDeviceOwner && isCurrentUserOnHeadlessSystemUser(context)
+                && SystemUtil.runWithShellPermissionIdentity(
+                () -> context.getSystemService(DevicePolicyManager.class)
+                        .getHeadlessDeviceOwnerMode() != HEADLESS_DEVICE_OWNER_MODE_SINGLE_USER)) {
             TestAppCallbacksReceiver.registerReceiver(context, receiver, filter);
             return;
         }

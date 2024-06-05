@@ -18,36 +18,64 @@ package android.content.cts;
 
 import static android.content.IntentFilter.MATCH_ADJUSTMENT_NORMAL;
 import static android.content.IntentFilter.MATCH_CATEGORY_HOST;
+import static android.content.IntentFilter.MATCH_CATEGORY_PATH;
 import static android.content.IntentFilter.MATCH_CATEGORY_SCHEME_SPECIFIC_PART;
 import static android.content.IntentFilter.MATCH_CATEGORY_TYPE;
 import static android.content.IntentFilter.NO_MATCH_DATA;
+import static android.content.UriRelativeFilter.PATH;
+import static android.content.UriRelativeFilter.QUERY;
+import static android.content.UriRelativeFilter.FRAGMENT;
+import static android.content.UriRelativeFilterGroup.ACTION_ALLOW;
+import static android.content.UriRelativeFilterGroup.ACTION_BLOCK;
 import static android.os.PatternMatcher.PATTERN_ADVANCED_GLOB;
 import static android.os.PatternMatcher.PATTERN_LITERAL;
 import static android.os.PatternMatcher.PATTERN_PREFIX;
 import static android.os.PatternMatcher.PATTERN_SIMPLE_GLOB;
 import static android.os.PatternMatcher.PATTERN_SUFFIX;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.content.ComponentName;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentFilter.AuthorityEntry;
 import android.content.IntentFilter.MalformedMimeTypeException;
+import android.content.UriRelativeFilter;
+import android.content.UriRelativeFilterGroup;
 import android.content.pm.ActivityInfo;
+import android.content.pm.Flags;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.PatternMatcher;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.annotations.PlatinumTest;
-import android.provider.Contacts.People;
-import android.test.AndroidTestCase;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
+import android.platform.test.ravenwood.RavenwoodRule;
+import android.test.mock.MockContext;
 import android.util.Printer;
 import android.util.StringBuilderPrinter;
 import android.util.Xml;
 
-import com.android.internal.util.FastXmlSerializer;
+import androidx.test.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlSerializer;
@@ -63,10 +91,19 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-
+@RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @PlatinumTest(focusArea = "pm")
-public class IntentFilterTest extends AndroidTestCase {
+public class IntentFilterTest {
+    @Rule
+    public final RavenwoodRule mRavenwood = new RavenwoodRule();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
+            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
+            : DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    private Context mContext;
     private IntentFilter mIntentFilter;
     private static final String ACTION = "testAction";
     private static final String CATEGORY = "testCategory";
@@ -78,14 +115,26 @@ public class IntentFilterTest extends AndroidTestCase {
     private static final String HOST = "testHost";
     private static final int PORT = 80;
     private static final String DATA_PATH = "testDataPath";
-    private static final Uri URI = People.CONTENT_URI;
+    private static final Uri URI = Uri.parse("content://com.example/people");
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
+        if (mRavenwood.isUnderRavenwood()) {
+            // TODO: replace with mockito when better supported
+            mContext = new MockContext() {
+                @Override
+                public String getPackageName() {
+                    return "android.content.cts";
+                }
+            };
+        } else {
+            mContext = InstrumentationRegistry.getTargetContext();
+        }
+
         mIntentFilter = new IntentFilter();
     }
 
+    @Test
     public void testConstructor() throws MalformedMimeTypeException {
 
         IntentFilter filter = new IntentFilter();
@@ -131,6 +180,7 @@ public class IntentFilterTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testCategories() {
         for (int i = 0; i < 10; i++) {
             mIntentFilter.addCategory(CATEGORY + i);
@@ -172,6 +222,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         "category1", "category2", "category3"}, null, null));
     }
 
+    @Test
     public void testMimeTypes() throws Exception {
         IntentFilter filter = new Match(null, null, new String[]{"which1/what1"}, null, null,
                 null);
@@ -228,6 +279,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         null));
     }
 
+    @Test
     public void testDynamicMimeTypes() {
         IntentFilter filter = new Match()
                 .addDynamicMimeTypes(new String[] { "which1/what1" });
@@ -286,6 +338,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         null));
     }
 
+    @Test
     public void testClearDynamicMimeTypesWithStaticType() {
         IntentFilter filter = new Match()
                 .addMimeTypes(new String[] {"which1/what1"})
@@ -315,6 +368,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 new MatchCondition(IntentFilter.NO_MATCH_TYPE, null, null, "which1/what2", null));
     }
 
+    @Test
     public void testClearDynamicMimeTypesWithAction() {
         IntentFilter filter = new Match()
                 .addActions(new String[] {"action1"})
@@ -339,12 +393,14 @@ public class IntentFilterTest extends AndroidTestCase {
                         null));
     }
 
+    @Test
     public void testAccessPriority() {
         final int expected = 1;
         mIntentFilter.setPriority(expected);
         assertEquals(expected, mIntentFilter.getPriority());
     }
 
+    @Test
     public void testDataSchemes() {
         for (int i = 0; i < 10; i++) {
             mIntentFilter.addDataScheme(DATA_SCHEME + i);
@@ -375,13 +431,14 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme3:foo"));
     }
 
+    @Test
     public void testCreate() {
         IntentFilter filter = IntentFilter.create(ACTION, DATA_STATIC_TYPE);
         assertNotNull(filter);
         verifyContent(filter, ACTION, DATA_STATIC_TYPE);
     }
 
-
+    @Test
     public void testSchemeSpecificParts() throws Exception {
         IntentFilter filter = new Match(null, null, null, new String[]{"scheme"},
                 null, null, null, null, new String[]{"ssp1", "2ssp"},
@@ -519,6 +576,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 new int[]{matchType});
     }
 
+    @Test
     public void testSchemeSpecificPartsWithWildCards() throws Exception {
         IntentFilter filter = new Match(null, null, null, new String[]{"scheme"},
                 null, null, null, null, new String[]{"ssp1"},
@@ -537,6 +595,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "*:*", false));
     }
 
+    @Test
     public void testAuthorities() {
         for (int i = 0; i < 10; i++) {
             mIntentFilter.addDataAuthority(HOST + i, String.valueOf(PORT + i));
@@ -589,6 +648,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme1://authority1:200/"));
     }
 
+    @Test
     public void testAuthoritiesWithWildcards() throws Exception {
         IntentFilter filter = new Match(null, null, null, new String[]{"scheme1"},
                 new String[]{"authority1"}, new String[]{null});
@@ -632,6 +692,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(IntentFilter.MATCH_CATEGORY_HOST, "scheme1://*", true));
     }
 
+    @Test
     public void testDataTypes() throws MalformedMimeTypeException {
         for (int i = 0; i < 10; i++) {
             mIntentFilter.addDataType(DATA_STATIC_TYPE + i);
@@ -651,6 +712,7 @@ public class IntentFilterTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testDynamicDataTypes() throws MalformedMimeTypeException {
         for (int i = 0; i < 10; i++) {
             mIntentFilter.addDynamicDataType(DATA_DYNAMIC_TYPE + i);
@@ -671,6 +733,7 @@ public class IntentFilterTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testClearDynamicDataTypes() throws MalformedMimeTypeException {
         for (int i = 0; i < 10; i++) {
             mIntentFilter.addDataType(DATA_STATIC_TYPE + i);
@@ -697,6 +760,7 @@ public class IntentFilterTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testMimeGroups() {
         for (int i = 0; i < 10; i++) {
             mIntentFilter.addMimeGroup(MIME_GROUP + i);
@@ -715,6 +779,7 @@ public class IntentFilterTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testAppEnumerationMatchesMimeGroups() {
         IntentFilter filter = new Match(new String[]{ACTION}, null, null, new String[]{"scheme1"},
                 new String[]{"authority1"}, null).addMimeGroups(new String[]{"test"});
@@ -729,6 +794,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         ACTION, null, "*/*", "scheme1://authority1", true));
     }
 
+    @Test
     public void testMatchData() throws MalformedMimeTypeException {
         int expected = IntentFilter.MATCH_CATEGORY_EMPTY + IntentFilter.MATCH_ADJUSTMENT_NORMAL;
         assertEquals(expected, mIntentFilter.matchData(null, null, null));
@@ -761,6 +827,101 @@ public class IntentFilterTest extends AndroidTestCase {
         assertEquals(IntentFilter.NO_MATCH_DATA, mIntentFilter.matchData(null, DATA_SCHEME, uri));
     }
 
+    @Test
+    @IgnoreUnderRavenwood
+    @RequiresFlagsEnabled(Flags.FLAG_RELATIVE_REFERENCE_INTENT_FILTERS)
+    public void testMatchDataWithRelRefGroups() {
+        Uri uri = Uri.parse("https://" + HOST + "/path?query=string&cat=gizmo#fragment");
+        Uri uri2 = Uri.parse("https://" + HOST + "/path?query=string;cat=gizmo#fragment");
+        mIntentFilter.addDataScheme(DATA_SCHEME);
+        mIntentFilter.addDataAuthority(HOST, null);
+        assertEquals(MATCH_CATEGORY_HOST + MATCH_ADJUSTMENT_NORMAL,
+                mIntentFilter.matchData(null, DATA_SCHEME, uri));
+
+        // PATH matches so group match
+        UriRelativeFilterGroup matchGroup = new UriRelativeFilterGroup(ACTION_ALLOW);
+        matchGroup.addUriRelativeFilter(new UriRelativeFilter(PATH, PATTERN_LITERAL, "/path"));
+        mIntentFilter.addUriRelativeFilterGroup(matchGroup);
+        assertEquals(MATCH_CATEGORY_PATH + MATCH_ADJUSTMENT_NORMAL,
+                mIntentFilter.matchData(null, DATA_SCHEME, uri));
+        mIntentFilter.clearUriRelativeFilterGroups();
+
+        // PATH does not match so group does not match
+        UriRelativeFilterGroup noMatchGroup = new UriRelativeFilterGroup(ACTION_ALLOW);
+        noMatchGroup.addUriRelativeFilter(new UriRelativeFilter(PATH, PATTERN_LITERAL, "/trail"));
+        mIntentFilter.addUriRelativeFilterGroup(noMatchGroup);
+        assertEquals(NO_MATCH_DATA, mIntentFilter.matchData(null, DATA_SCHEME, uri));
+        mIntentFilter.clearUriRelativeFilterGroups();
+
+        // PATH and QUERY match so group match
+        UriRelativeFilterGroup matchGroup1 = new UriRelativeFilterGroup(ACTION_ALLOW);
+        matchGroup1.addUriRelativeFilter(new UriRelativeFilter(PATH, PATTERN_LITERAL, "/path"));
+        matchGroup1.addUriRelativeFilter(new UriRelativeFilter(QUERY, PATTERN_SIMPLE_GLOB, ".*"));
+        mIntentFilter.addUriRelativeFilterGroup(matchGroup1);
+        assertEquals(MATCH_CATEGORY_PATH + MATCH_ADJUSTMENT_NORMAL,
+                mIntentFilter.matchData(null, DATA_SCHEME, uri));
+        assertEquals(MATCH_CATEGORY_PATH + MATCH_ADJUSTMENT_NORMAL,
+                mIntentFilter.matchData(null, DATA_SCHEME, uri2));
+        mIntentFilter.clearUriRelativeFilterGroups();
+
+        // PATH match but QUERY does not match so group does not match
+        UriRelativeFilterGroup noMatchGroup1 = new UriRelativeFilterGroup(ACTION_ALLOW);
+        noMatchGroup1.addUriRelativeFilter(new UriRelativeFilter(PATH, PATTERN_LITERAL, "/path"));
+        noMatchGroup1.addUriRelativeFilter(new UriRelativeFilter(QUERY, PATTERN_PREFIX, "query"));
+        noMatchGroup1.addUriRelativeFilter(new UriRelativeFilter(QUERY, PATTERN_SUFFIX, "widget"));
+        mIntentFilter.addUriRelativeFilterGroup(noMatchGroup1);
+        assertEquals(NO_MATCH_DATA, mIntentFilter.matchData(null, DATA_SCHEME, uri));
+        assertEquals(NO_MATCH_DATA, mIntentFilter.matchData(null, DATA_SCHEME, uri2));
+        mIntentFilter.clearUriRelativeFilterGroups();
+
+        // PATH, QUERY, and FRAGMENT all match so group matches
+        UriRelativeFilterGroup matchGroup2 = new UriRelativeFilterGroup(ACTION_ALLOW);
+        matchGroup2.addUriRelativeFilter(new UriRelativeFilter(PATH, PATTERN_LITERAL, "/path"));
+        matchGroup2.addUriRelativeFilter(new UriRelativeFilter(QUERY, PATTERN_PREFIX, "query"));
+        matchGroup2.addUriRelativeFilter(new UriRelativeFilter(FRAGMENT, PATTERN_SIMPLE_GLOB,
+                "fr.*"));
+        mIntentFilter.addUriRelativeFilterGroup(matchGroup2);
+        assertEquals(MATCH_CATEGORY_PATH + MATCH_ADJUSTMENT_NORMAL,
+                mIntentFilter.matchData(null, DATA_SCHEME, uri));
+        assertEquals(MATCH_CATEGORY_PATH + MATCH_ADJUSTMENT_NORMAL,
+                mIntentFilter.matchData(null, DATA_SCHEME, uri2));
+        mIntentFilter.clearUriRelativeFilterGroups();
+
+        // PATH, QUERY, and FRAGMENT all match but group is disallow
+        // and intent filter will not match
+        UriRelativeFilterGroup disallowGroup = new UriRelativeFilterGroup(ACTION_BLOCK);
+        disallowGroup.addUriRelativeFilter(new UriRelativeFilter(PATH, PATTERN_LITERAL, "/path"));
+        disallowGroup.addUriRelativeFilter(new UriRelativeFilter(QUERY, PATTERN_PREFIX, "query"));
+        disallowGroup.addUriRelativeFilter(new UriRelativeFilter(QUERY, PATTERN_SUFFIX, "gizmo"));
+        disallowGroup.addUriRelativeFilter(new UriRelativeFilter(FRAGMENT, PATTERN_SIMPLE_GLOB,
+                "fr.*"));
+        mIntentFilter.addUriRelativeFilterGroup(disallowGroup);
+        assertEquals(NO_MATCH_DATA, mIntentFilter.matchData(null, DATA_SCHEME, uri));
+        assertEquals(NO_MATCH_DATA, mIntentFilter.matchData(null, DATA_SCHEME, uri2));
+        mIntentFilter.clearUriRelativeFilterGroups();
+
+        // Since disallow group is defined first it will match but prevent the
+        // intent filter from matching even though though a matching group is
+        // defined after the disallow group.
+        mIntentFilter.addUriRelativeFilterGroup(disallowGroup);
+        mIntentFilter.addUriRelativeFilterGroup(matchGroup);
+        assertEquals(NO_MATCH_DATA, mIntentFilter.matchData(null, DATA_SCHEME, uri));
+        assertEquals(NO_MATCH_DATA, mIntentFilter.matchData(null, DATA_SCHEME, uri2));
+        mIntentFilter.clearUriRelativeFilterGroups();
+
+        // First group will not match so check the next group. The second group will
+        // match so the disallowed group will not be checked and the intent filter
+        // will match.
+        mIntentFilter.addUriRelativeFilterGroup(noMatchGroup);
+        mIntentFilter.addUriRelativeFilterGroup(matchGroup);
+        mIntentFilter.addUriRelativeFilterGroup(disallowGroup);
+        assertEquals(MATCH_CATEGORY_PATH + MATCH_ADJUSTMENT_NORMAL,
+                mIntentFilter.matchData(null, DATA_SCHEME, uri));
+        assertEquals(MATCH_CATEGORY_PATH + MATCH_ADJUSTMENT_NORMAL,
+                mIntentFilter.matchData(null, DATA_SCHEME, uri2));
+    }
+
+    @Test
     public void testActions() {
         for (int i = 0; i < 10; i++) {
             mIntentFilter.addAction(ACTION + i);
@@ -799,6 +960,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         false, Arrays.asList("action2")));
     }
 
+    @Test
     public void testActionWildCards() throws Exception {
         IntentFilter filter =
                 new Match(new String[]{"action1", "action2"}, null, null, null, null, null);
@@ -817,6 +979,7 @@ public class IntentFilterTest extends AndroidTestCase {
 
     }
 
+    @Test
     public void testAppEnumerationContactProviders() throws Exception {
         // sample contact source
         IntentFilter filter = new Match(new String[]{Intent.ACTION_VIEW},
@@ -836,6 +999,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         true));
     }
 
+    @Test
     public void testAppEnumerationDocumentEditor() throws Exception {
         // sample document editor
         IntentFilter filter = new Match(
@@ -869,6 +1033,7 @@ public class IntentFilterTest extends AndroidTestCase {
 
     }
 
+    @Test
     public void testAppEnumerationDeepLinks() throws Exception {
         // Sample app that supports deep-links
         IntentFilter filter = new Match(
@@ -898,6 +1063,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         true));
     }
 
+    @Test
     public void testAppEnumerationCustomShareSheet() throws Exception {
         // Sample share target
         IntentFilter filter = new Match(
@@ -927,6 +1093,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         true));
     }
 
+    @Test
     public void testAppEnumerationNoHostMatchesWildcardHost() throws Exception {
         IntentFilter filter = new Match(
                 new String[]{Intent.ACTION_VIEW},
@@ -952,6 +1119,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         true));
     }
 
+    @Test
     public void testAppEnumerationNoPortMatchesPortFilter() throws Exception {
         IntentFilter filter = new Match(
                 new String[]{Intent.ACTION_VIEW},
@@ -969,6 +1137,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         true));
     }
 
+    @Test
     public void testAppEnumerationBrowser() throws Exception {
         IntentFilter appWithWebLink = new Match(
                 new String[]{Intent.ACTION_VIEW},
@@ -1032,12 +1201,13 @@ public class IntentFilterTest extends AndroidTestCase {
                 true));
     }
 
+    @Test
     public void testWriteToXml() throws IllegalArgumentException, IllegalStateException,
             IOException, MalformedMimeTypeException, XmlPullParserException {
         XmlSerializer xml;
         ByteArrayOutputStream out;
 
-        xml = new FastXmlSerializer();
+        xml = Xml.newSerializer();
         out = new ByteArrayOutputStream();
         xml.setOutput(out, "utf-8");
         mIntentFilter.addAction(ACTION);
@@ -1067,6 +1237,58 @@ public class IntentFilterTest extends AndroidTestCase {
         out.close();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
+    @RequiresFlagsEnabled(Flags.FLAG_RELATIVE_REFERENCE_INTENT_FILTERS)
+    public void testWriteToXmlWithRelRefGroup() throws IllegalArgumentException,
+            IllegalStateException, IOException, MalformedMimeTypeException, XmlPullParserException {
+        XmlSerializer xml;
+        ByteArrayOutputStream out;
+        UriRelativeFilterGroup relRefGroup = new UriRelativeFilterGroup(ACTION_ALLOW);
+        relRefGroup.addUriRelativeFilter(new UriRelativeFilter(PATH, PATTERN_LITERAL, "/path"));
+        relRefGroup.addUriRelativeFilter(new UriRelativeFilter(QUERY, PATTERN_SIMPLE_GLOB, "q*"));
+
+        xml = Xml.newSerializer();
+        out = new ByteArrayOutputStream();
+        xml.setOutput(out, "utf-8");
+        mIntentFilter.addAction(ACTION);
+        mIntentFilter.addCategory(CATEGORY);
+        mIntentFilter.addDataAuthority(HOST, String.valueOf(PORT));
+        mIntentFilter.addDataPath(DATA_PATH, 1);
+        mIntentFilter.addDataScheme(DATA_SCHEME);
+        mIntentFilter.addDataType(DATA_STATIC_TYPE);
+        mIntentFilter.addDynamicDataType(DATA_DYNAMIC_TYPE);
+        mIntentFilter.addMimeGroup(MIME_GROUP);
+        mIntentFilter.addUriRelativeFilterGroup(relRefGroup);
+        mIntentFilter.writeToXml(xml);
+        xml.flush();
+        final XmlPullParser parser = Xml.newPullParser();
+        final InputStream in = new ByteArrayInputStream(out.toByteArray());
+        parser.setInput(in, "utf-8");
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.readFromXml(parser);
+        assertEquals(ACTION, intentFilter.getAction(0));
+        assertEquals(CATEGORY, intentFilter.getCategory(0));
+        assertTrue(intentFilter.hasExactStaticDataType(DATA_STATIC_TYPE));
+        assertTrue(intentFilter.hasExactDynamicDataType(DATA_DYNAMIC_TYPE));
+        assertEquals(MIME_GROUP, intentFilter.getMimeGroup(0));
+        assertEquals(DATA_SCHEME, intentFilter.getDataScheme(0));
+        assertEquals(DATA_PATH, intentFilter.getDataPath(0).getPath());
+        assertEquals(HOST, intentFilter.getDataAuthority(0).getHost());
+        assertEquals(PORT, intentFilter.getDataAuthority(0).getPort());
+        assertEquals(mIntentFilter.countUriRelativeFilterGroups(),
+                intentFilter.countUriRelativeFilterGroups());
+        assertEquals(mIntentFilter.getUriRelativeFilterGroup(0).getUriRelativeFilters().size(),
+                intentFilter.getUriRelativeFilterGroup(0).getUriRelativeFilters().size());
+        Iterator<UriRelativeFilter> it =
+                intentFilter.getUriRelativeFilterGroup(0).getUriRelativeFilters().iterator();
+        assertTrue(relRefGroup.getUriRelativeFilters().contains(it.next()));
+        assertTrue(relRefGroup.getUriRelativeFilters().contains(it.next()));
+        assertFalse(it.hasNext());
+        out.close();
+    }
+
+    @Test
     public void testMatchCategories() {
         assertNull(mIntentFilter.matchCategories(null));
         Set<String> cat = new HashSet<String>();
@@ -1084,6 +1306,7 @@ public class IntentFilterTest extends AndroidTestCase {
         assertEquals(expected, mIntentFilter.matchCategories(cat));
     }
 
+    @Test
     public void testMatchDataAuthority() {
         assertEquals(IntentFilter.NO_MATCH_DATA, mIntentFilter.matchDataAuthority(null));
         mIntentFilter.addDataAuthority(HOST, String.valueOf(PORT));
@@ -1091,16 +1314,20 @@ public class IntentFilterTest extends AndroidTestCase {
         assertEquals(IntentFilter.MATCH_CATEGORY_PORT, mIntentFilter.matchDataAuthority(uri));
     }
 
+    @Test
     public void testDescribeContents() {
         assertEquals(0, mIntentFilter.describeContents());
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
     public void testReadFromXml()
             throws NameNotFoundException, XmlPullParserException, IOException {
         XmlPullParser parser = null;
         ActivityInfo ai = null;
 
-        final ComponentName mComponentName = new ComponentName(mContext, MockActivity.class);
+        final ComponentName mComponentName = new ComponentName(
+                "android.content.cts", "android.content.cts.MockActivity");
         final PackageManager pm = mContext.getPackageManager();
         ai = pm.getActivityInfo(mComponentName, PackageManager.GET_META_DATA);
 
@@ -1135,6 +1362,7 @@ public class IntentFilterTest extends AndroidTestCase {
         assertEquals("test", mIntentFilter.getDataPath(2).getPath());
     }
 
+    @Test
     public void testDataPaths() {
         for (int i = 0; i < 10; i++) {
             mIntentFilter.addDataPath(DATA_PATH + i, PatternMatcher.PATTERN_PREFIX);
@@ -1264,6 +1492,8 @@ public class IntentFilterTest extends AndroidTestCase {
                 MatchCondition.data(IntentFilter.NO_MATCH_DATA, "scheme1://authority1:200/"));
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
     public void testMatchWithIntent() throws MalformedMimeTypeException {
         final ContentResolver resolver = mContext.getContentResolver();
 
@@ -1300,6 +1530,7 @@ public class IntentFilterTest extends AndroidTestCase {
 
     }
 
+    @Test
     public void testMatchWithIntentData() throws MalformedMimeTypeException {
         Set<String> cat = new HashSet<String>();
         assertEquals(IntentFilter.NO_MATCH_ACTION, mIntentFilter.match(ACTION, null, null, null,
@@ -1359,6 +1590,7 @@ public class IntentFilterTest extends AndroidTestCase {
                 DATA_SCHEME, URI, cat, null));
     }
 
+    @Test
     public void testWriteToParcel() throws MalformedMimeTypeException {
         mIntentFilter.addAction(ACTION);
         mIntentFilter.addCategory(CATEGORY);
@@ -1387,6 +1619,52 @@ public class IntentFilterTest extends AndroidTestCase {
         assertEquals(mIntentFilter.getMimeGroup(0), target.getMimeGroup(0));
     }
 
+    @Test
+    @IgnoreUnderRavenwood
+    @RequiresFlagsEnabled(Flags.FLAG_RELATIVE_REFERENCE_INTENT_FILTERS)
+    public void testWriteToParcelWithRelRefGroup() throws MalformedMimeTypeException {
+        UriRelativeFilterGroup relRefGroup = new UriRelativeFilterGroup(ACTION_ALLOW);
+        relRefGroup.addUriRelativeFilter(new UriRelativeFilter(PATH, PATTERN_LITERAL, "/path"));
+        relRefGroup.addUriRelativeFilter(new UriRelativeFilter(QUERY, PATTERN_SIMPLE_GLOB, "q*"));
+
+        mIntentFilter.addAction(ACTION);
+        mIntentFilter.addCategory(CATEGORY);
+        mIntentFilter.addDataAuthority(HOST, String.valueOf(PORT));
+        mIntentFilter.addDataPath(DATA_PATH, 1);
+        mIntentFilter.addDataScheme(DATA_SCHEME);
+        mIntentFilter.addDataType(DATA_STATIC_TYPE);
+        mIntentFilter.addDynamicDataType(DATA_DYNAMIC_TYPE);
+        mIntentFilter.addMimeGroup(MIME_GROUP);
+        mIntentFilter.addUriRelativeFilterGroup(relRefGroup);
+        Parcel parcel = Parcel.obtain();
+        mIntentFilter.writeToParcel(parcel, 1);
+        parcel.setDataPosition(0);
+        IntentFilter target = IntentFilter.CREATOR.createFromParcel(parcel);
+        assertEquals(mIntentFilter.getAction(0), target.getAction(0));
+        assertEquals(mIntentFilter.getCategory(0), target.getCategory(0));
+        assertEquals(mIntentFilter.getDataAuthority(0).getHost(),
+                target.getDataAuthority(0).getHost());
+        assertEquals(mIntentFilter.getDataAuthority(0).getPort(),
+                target.getDataAuthority(0).getPort());
+        assertEquals(mIntentFilter.getDataPath(0).getPath(), target.getDataPath(0).getPath());
+        assertEquals(mIntentFilter.getDataScheme(0), target.getDataScheme(0));
+        assertEquals(mIntentFilter.getDataType(0), target.getDataType(0));
+        assertEquals(mIntentFilter.getDataType(1), target.getDataType(1));
+        assertEquals(mIntentFilter.countStaticDataTypes(), target.countStaticDataTypes());
+        assertEquals(mIntentFilter.countDataTypes(), target.countDataTypes());
+        assertEquals(mIntentFilter.getMimeGroup(0), target.getMimeGroup(0));
+        assertEquals(mIntentFilter.countUriRelativeFilterGroups(),
+                target.countUriRelativeFilterGroups());
+        assertEquals(mIntentFilter.getUriRelativeFilterGroup(0).getUriRelativeFilters().size(),
+                target.getUriRelativeFilterGroup(0).getUriRelativeFilters().size());
+        Iterator<UriRelativeFilter> it =
+                target.getUriRelativeFilterGroup(0).getUriRelativeFilters().iterator();
+        assertTrue(relRefGroup.getUriRelativeFilters().contains(it.next()));
+        assertTrue(relRefGroup.getUriRelativeFilters().contains(it.next()));
+        assertFalse(it.hasNext());
+    }
+
+    @Test
     public void testAddDataType() throws MalformedMimeTypeException {
         try {
             mIntentFilter.addDataType("test");
@@ -1581,6 +1859,7 @@ public class IntentFilterTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testPaths() throws Exception {
         IntentFilter filter = new Match(null, null, null,
                 new String[]{"scheme"}, new String[]{"authority"}, null,
@@ -1777,6 +2056,7 @@ public class IntentFilterTest extends AndroidTestCase {
                         IntentFilter.NO_MATCH_DATA, "scheme://authority/a1b"));
     }
 
+    @Test
     public void testDump() throws MalformedMimeTypeException {
         TestPrinter printer = new TestPrinter();
         String prefix = "TestIntentFilter";
@@ -1793,6 +2073,7 @@ public class IntentFilterTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testAsPredicate() throws Exception {
         final Predicate<Intent> pred = new IntentFilter(ACTION).asPredicate();
 
@@ -1800,6 +2081,8 @@ public class IntentFilterTest extends AndroidTestCase {
         assertFalse(pred.test(new Intent(CATEGORY)));
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
     public void testAsPredicateWithTypeResolution() throws Exception {
         final ContentResolver resolver = mContext.getContentResolver();
         final Predicate<Intent> pred = new IntentFilter(ACTION, DATA_STATIC_TYPE)

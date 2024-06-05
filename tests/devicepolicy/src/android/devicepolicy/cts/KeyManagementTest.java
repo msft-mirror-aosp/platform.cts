@@ -35,16 +35,17 @@ import com.android.activitycontext.ActivityContext;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.policies.KeyManagement;
 import com.android.bedstead.harrier.policies.KeyManagementWithAdminReceiver;
 import com.android.bedstead.harrier.policies.KeySelection;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.certificates.Certificates;
 import com.android.bedstead.nene.packages.ProcessReference;
 import com.android.bedstead.nene.utils.Poll;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.compatibility.common.util.BlockingCallback;
 import com.android.compatibility.common.util.FakeKeys;
 
@@ -54,19 +55,12 @@ import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.testng.Assert;
 
-import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -85,9 +79,9 @@ public final class KeyManagementTest {
     private static final String RSA = "RSA";
     private static final String RSA_ALIAS = "com.android.test.valid-rsa-key-1";
     private static final PrivateKey PRIVATE_KEY =
-            generatePrivateKey(FakeKeys.FAKE_RSA_1.privateKey, RSA);
+            TestApis.certificates().generateRSAPrivateKey(FakeKeys.FAKE_RSA_1.privateKey);
     private static final Certificate CERTIFICATE =
-            generateCertificate(FakeKeys.FAKE_RSA_1.caCertificate);
+            TestApis.certificates().generateCertificate(FakeKeys.FAKE_RSA_1.caCertificate);
     private static final Certificate[] CERTIFICATES = new Certificate[]{CERTIFICATE};
     private static final String NON_EXISTENT_ALIAS = "KeyManagementTest-nonexistent";
     private static final Context sContext = TestApis.context().instrumentedContext();
@@ -124,24 +118,6 @@ public final class KeyManagementTest {
             return KeyChain.getPrivateKey(context, alias);
         } catch (KeyChainException | InterruptedException e) {
             throw new AssertionError("Failed to get private key." + e);
-        }
-    }
-
-    private static PrivateKey generatePrivateKey(final byte[] key, String type) {
-        try {
-            return KeyFactory.getInstance(type).generatePrivate(
-                    new PKCS8EncodedKeySpec(key));
-        } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
-            throw new AssertionError("Unable to get private key." + e);
-        }
-    }
-
-    private static Certificate generateCertificate(byte[] cert) {
-        try {
-            return CertificateFactory.getInstance("X.509").generateCertificate(
-                    new ByteArrayInputStream(cert));
-        } catch (CertificateException e) {
-            throw new AssertionError("Unable to get certificate." + e);
         }
     }
 
@@ -398,7 +374,8 @@ public final class KeyManagementTest {
                     getPrivateKey(TestApis.context().instrumentedContext(), RSA_ALIAS);
 
             assertThat(privateKey).isNotNull();
-            assertThat(privateKey.getAlgorithm()).isEqualTo(RSA);
+            assertThat(privateKey.getAlgorithm()).isEqualTo(
+                    Certificates.KeyAlgorithmType.RSA.getValue());
 
         } finally {
             // Remove keypair
@@ -637,6 +614,27 @@ public final class KeyManagementTest {
             PrivateKey key = KeyChain.getPrivateKey(sContext, RSA_ALIAS);
 
             signDataWithKey("SHA256withRSA", key); // Doesn't throw exception
+        } finally {
+            // Remove keypair
+            sDeviceState.dpcOnly().devicePolicyManager()
+                    .removeKeyPair(sDeviceState.dpcOnly().componentName(), RSA_ALIAS);
+        }
+    }
+
+    @Postsubmit(reason = "new test")
+    @PolicyAppliesTest(policy = KeySelection.class)
+    public void grantKeyPair_validCertificate() throws Exception {
+        try {
+            sDeviceState.dpcOnly().devicePolicyManager().installKeyPair(
+                    sDeviceState.dpcOnly().componentName(), PRIVATE_KEY, CERTIFICATES,
+                    RSA_ALIAS, /* requestAccess= */ false);
+            sDeviceState.dpc().devicePolicyManager().grantKeyPairToApp(
+                    sDeviceState.dpc().componentName(), RSA_ALIAS, sContext.getPackageName()
+            );
+
+            Certificate[] certificates = KeyChain.getCertificateChain(sContext, RSA_ALIAS);
+
+            assertThat(certificates).asList().containsExactly(CERTIFICATE);
         } finally {
             // Remove keypair
             sDeviceState.dpcOnly().devicePolicyManager()

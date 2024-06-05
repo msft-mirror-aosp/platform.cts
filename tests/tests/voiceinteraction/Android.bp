@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_machine_learning",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -28,6 +29,13 @@ android_test {
         "androidx.test.ext.junit",
         "testng",
         "platform-compat-test-rules",
+        "android.app.wearable.flags-aconfig-java",
+        "android.permission.flags-aconfig-java",
+        "Harrier",
+        "Nene",
+        "ActivityContext",
+        "TestApp",
+        "android.multiuser.flags-aconfig-java",
     ],
     aidl: {
         local_include_dirs: [
@@ -42,6 +50,7 @@ android_test {
         "service/src/android/voiceinteraction/service/MainInteractionSession.java",
         "service/src/android/voiceinteraction/service/MainInteractionSessionService.java",
         "service/src/android/voiceinteraction/service/MainRecognitionService.java",
+        "service/src/android/voiceinteraction/service/MainWearableSensingService.java",
         "service/src/android/voiceinteraction/service/EventPayloadParcelable.java",
         "service/src/android/voiceinteraction/service/EventPayloadParcelable.aidl",
         "service/src/android/voiceinteraction/service/MainVisualQueryDetectionService.java",
@@ -51,7 +60,6 @@ android_test {
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
-        "gts",
         "general-tests",
     ],
     sdk_version: "test_current",

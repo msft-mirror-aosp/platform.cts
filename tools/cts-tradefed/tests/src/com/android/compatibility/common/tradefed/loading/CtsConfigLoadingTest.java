@@ -86,6 +86,7 @@ public class CtsConfigLoadingTest {
                             "mocking",
                             "networking",
                             "neuralnetworks",
+                            "nfc",
                             "packagemanager",
                             "permissions",
                             "print",
@@ -95,6 +96,7 @@ public class CtsConfigLoadingTest {
                             "systems",
                             "sysui",
                             "telecom",
+                            "threadnetwork",
                             "tv",
                             "uitoolkit",
                             "uwb",
@@ -153,7 +155,10 @@ public class CtsConfigLoadingTest {
         if (Strings.isNullOrEmpty(suiteRoot)) {
             fail(String.format("Should run within a suite context: %s doesn't exist", rootVar));
         }
-        File testcases = new File(suiteRoot, String.format("/android-%s/testcases/", getSuiteName().toLowerCase()));
+        File testcases =
+                new File(
+                        suiteRoot,
+                        String.format("/android-%s/testcases/", getSuiteName().toLowerCase()));
         if (!testcases.exists()) {
             fail(String.format("%s does not exists", testcases));
             return;
@@ -212,9 +217,11 @@ public class CtsConfigLoadingTest {
 
             String suiteName = getSuiteName().toLowerCase();
             // Ensure each CTS module is tagged with <option name="test-suite-tag" value="cts" />
-            Assert.assertTrue(String.format(
-                    "Module config %s does not contains "
-                    + "'<option name=\"test-suite-tag\" value=\"%s\" />'", config.getName(), suiteName),
+            Assert.assertTrue(
+                    String.format(
+                            "Module config %s does not contains "
+                                    + "'<option name=\"test-suite-tag\" value=\"%s\" />'",
+                            config.getName(), suiteName),
                     cd.getSuiteTags().contains(suiteName));
 
             // Ensure options have been set

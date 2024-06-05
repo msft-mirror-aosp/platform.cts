@@ -17,8 +17,11 @@
 package android.mediav2.common.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import android.graphics.Rect;
 import android.util.Log;
+import android.util.Pair;
 
 import com.android.compatibility.common.util.Preconditions;
 
@@ -84,27 +87,82 @@ public class VideoErrorManager {
         mFramesPSNR = new ArrayList<>();
     }
 
-    static double computeMSE(byte[] data0, byte[] data1, int bytesPerSample) {
+    public static <T> Pair<Double, Integer> computeFrameVariance(int width, int height, T luma) {
+        final int bSize = 16;
+        assertTrue("chosen block size is too large with respect to image dimensions",
+                width > bSize && height > bSize);
+        double varianceSum = 0;
+        int blocks = 0;
+        for (int i = 0; i < height - bSize; i += bSize) {
+            for (int j = 0; j < width - bSize; j += bSize) {
+                long sse = 0, sum = 0;
+                int offset = i * width + j;
+                for (int p = 0; p < bSize; p++) {
+                    for (int q = 0; q < bSize; q++) {
+                        int sample;
+                        if (luma instanceof byte[]) {
+                            sample = ((byte[]) luma)[offset + p * width + q];
+                        } else if (luma instanceof short[]) {
+                            sample = ((short[]) luma)[offset + p * width + q];
+                        } else {
+                            throw new IllegalArgumentException("Unsupported data type");
+                        }
+                        sum += sample;
+                        sse += sample * sample;
+                    }
+                }
+                double meanOfSquares = ((double) sse) / (bSize * bSize);
+                double mean = ((double) sum) / (bSize * bSize);
+                double squareOfMean = mean * mean;
+                double blockVariance = (meanOfSquares - squareOfMean);
+                assertTrue("variance can't be negative", blockVariance >= 0.0f);
+                varianceSum += blockVariance;
+                assertTrue("caution overflow", varianceSum >= 0.0);
+                blocks++;
+            }
+        }
+        return Pair.create(varianceSum, blocks);
+    }
+
+    static double computeMSE(byte[] data0, byte[] data1, int bytesPerSample, int imgWidth,
+            int imgHeight, Rect cropRect) {
         assertEquals(data0.length, data1.length);
         int length = data0.length / bytesPerSample;
         long squareError = 0;
+        int cropLeft = 0;
+        int cropTop = 0;
+        int cropWidth = imgWidth;
+        int cropHeight = imgHeight;
+        if (cropRect != null) {
+            cropLeft = cropRect.left;
+            cropTop = cropRect.top;
+            cropWidth = cropRect.width();
+            cropHeight = cropRect.height();
+        }
 
         if (bytesPerSample == 2) {
             short[] dataA = new short[length];
             ByteBuffer.wrap(data0).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(dataA);
             short[] dataB = new short[length];
             ByteBuffer.wrap(data1).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(dataB);
-            for (int i = 0; i < length; i++) {
-                long diff = ((int) dataA[i] & 0xffff) - ((int) dataB[i] & 0xffff);
-                squareError += diff * diff;
+            for (int h = 0; h < cropHeight; h++) {
+                int offset = (cropTop + h) * imgWidth + cropLeft;
+                for (int w = 0; w < cropWidth; w++) {
+                    long diff = (long) ((int) dataA[offset + w] & 0xffff) - ((int) dataB[offset + w]
+                            & 0xffff);
+                    squareError += diff * diff;
+                }
             }
         } else {
-            for (int i = 0; i < length; i++) {
-                int diff = ((int) data0[i] & 0xff) - ((int) data1[i] & 0xff);
-                squareError += diff * diff;
+            for (int h = 0; h < cropHeight; h++) {
+                int offset = (cropTop + h) * imgWidth + cropLeft;
+                for (int w = 0; w < cropWidth; w++) {
+                    int diff = ((int) data0[offset + w] & 0xff) - ((int) data1[offset + w] & 0xff);
+                    squareError += diff * ((long) diff);
+                }
             }
         }
-        return (double) squareError / length;
+        return (double) squareError / (cropWidth * cropHeight);
     }
 
     static double computePSNR(double mse, int bytesPerSample) {
@@ -135,7 +193,8 @@ public class VideoErrorManager {
                     refStream.seek(0);
                     refStream.read(yRef);
                 }
-                double curYMSE = computeMSE(yRef, yTest, mRefYuv.mBytesPerSample);
+                double curYMSE = computeMSE(yRef, yTest, mRefYuv.mBytesPerSample, mRefYuv.mWidth,
+                        mRefYuv.mHeight, null);
                 mGlobalMSE[0] += curYMSE;
                 mMinimumMSE[0] = Math.min(mMinimumMSE[0], curYMSE);
 
@@ -145,7 +204,8 @@ public class VideoErrorManager {
                 assertEquals("failed to read U Plane " + mTestYuv.mFileName
                                 + " contains insufficient bytes", uvSize,
                         testStream.read(uvTest));
-                double curUMSE = computeMSE(uvRef, uvTest, mRefYuv.mBytesPerSample);
+                double curUMSE = computeMSE(uvRef, uvTest, mRefYuv.mBytesPerSample,
+                        mRefYuv.mWidth / 2, mRefYuv.mHeight / 2, null);
                 mGlobalMSE[1] += curUMSE;
                 mMinimumMSE[1] = Math.min(mMinimumMSE[1], curUMSE);
 
@@ -155,7 +215,8 @@ public class VideoErrorManager {
                 assertEquals("failed to read V Plane " + mTestYuv.mFileName
                                 + " contains insufficient bytes", uvSize,
                         testStream.read(uvTest));
-                double curVMSE = computeMSE(uvRef, uvTest, mRefYuv.mBytesPerSample);
+                double curVMSE = computeMSE(uvRef, uvTest, mRefYuv.mBytesPerSample,
+                        mRefYuv.mWidth / 2, mRefYuv.mHeight / 2, null);
                 mGlobalMSE[2] += curVMSE;
                 mMinimumMSE[2] = Math.min(mMinimumMSE[2], curVMSE);
 

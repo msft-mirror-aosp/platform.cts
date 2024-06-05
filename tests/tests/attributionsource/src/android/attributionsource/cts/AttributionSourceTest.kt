@@ -18,17 +18,33 @@ package android.attributionsource.cts
 
 import android.app.Activity
 import android.app.Instrumentation.ActivityResult
+import android.content.AttributionSource
 import android.content.Context
+import android.content.ContextParams
 import android.content.Intent
+import android.os.Process
+import android.permission.PermissionManager
+import android.permission.flags.Flags
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.ApiTest
+import kotlin.test.assertFailsWith
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 
 class AttributionSourceTest {
+    @get:Rule
+    public val mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     @Test
     @Throws(Exception::class)
-    public fun testRemoteProcessActivityPidCheck() {
+    fun testRemoteProcessActivityPidCheck() {
         val context: Context = ApplicationProvider.getApplicationContext()
 
         val activityIntent = Intent(context, AttributionSourceActivity::class.java)
@@ -40,27 +56,91 @@ class AttributionSourceTest {
         thread.start()
         thread.join()
 
-        assertEquals("Test activity did not return RESULT_SECURITY_EXCEPTION",
-                AttributionSourceActivity.RESULT_SECURITY_EXCEPTION, thread.getResultCode())
+        assertEquals(
+            "Test activity did not return RESULT_SECURITY_EXCEPTION",
+                AttributionSourceActivity.RESULT_SECURITY_EXCEPTION,
+            thread.getResultCode()
+        )
+    }
+
+    @Test
+    @ApiTest(apis = ["android.content.AttributionSource.Builder#setNextAttributionSource"])
+    @Throws(Exception::class)
+    @RequiresFlagsEnabled(Flags.FLAG_SET_NEXT_ATTRIBUTION_SOURCE)
+    fun testSetNextAttributionSourceNonNull() {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        val thisAttributionSource = context.getAttributionSource()
+        val builder = AttributionSource.Builder(Process.myUid())
+        builder.setNextAttributionSource(thisAttributionSource)
+        builder.build()
+    }
+
+    @Test
+    @ApiTest(apis = ["android.content.AttributionSource.Builder#setNextAttributionSource"])
+    @Throws(Exception::class)
+    @RequiresFlagsEnabled(Flags.FLAG_SET_NEXT_ATTRIBUTION_SOURCE)
+    fun testSetNextAttributionSourceWithNull() {
+        assertFailsWith(Exception::class, "setNextAttributionSource should throw on null") {
+            val nullBuilder = AttributionSource.Builder(Process.myUid())
+            AttributionSourceJavaWrapper.setNullNextAttributionSource(nullBuilder)
+        }
+    }
+
+    @Test
+    @ApiTest(apis = ["android.content.AttributionSource#getDeviceId"])
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED)
+    fun testDefaultDeviceId() {
+        val attributionSource = AttributionSource.Builder(Process.myUid()).build()
+        assertEquals(Context.DEVICE_ID_DEFAULT, attributionSource.deviceId)
+    }
+
+    @Test
+    @ApiTest(apis = ["android.content.AttributionSource#getDeviceId"])
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED)
+    fun testVirtualDeviceId() {
+        // random integer
+        val deviceId = 100
+        val attributionSource = AttributionSource.Builder(Process.myUid())
+            .setDeviceId(deviceId)
+            .build()
+        assertEquals(deviceId, attributionSource.deviceId)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SHOULD_REGISTER_ATTRIBUTION_SOURCE)
+    fun attributionSourceRegisteredWhenContextFlagSet() {
+        val baseContext = InstrumentationRegistry.getInstrumentation().context
+        val permManager = baseContext.getSystemService(PermissionManager::class.java)!!
+        val registerContext = baseContext.createContext(
+            ContextParams.Builder().setShouldRegisterAttributionSource(true).build()
+        )
+        assertTrue(permManager.isRegisteredAttributionSource(registerContext.attributionSource))
+        var noRegisterContext = baseContext.createContext(
+            ContextParams.Builder().build()
+        )
+        assertFalse(permManager.isRegisteredAttributionSource(noRegisterContext.attributionSource))
+
+        noRegisterContext = baseContext.createContext(
+                    ContextParams.Builder().setShouldRegisterAttributionSource(false).build()
+        )
+        assertFalse(permManager.isRegisteredAttributionSource(noRegisterContext.attributionSource))
     }
 
     companion object {
-        private final val TAG: String = "AttributionSourceTest"
-
-        public final val ATTRIBUTION_SOURCE_KEY: String = "attributionSource"
+        const val ATTRIBUTION_SOURCE_KEY = "attributionSource"
 
         private class LaunchActivityThread(activityIntent: Intent) : Thread() {
             private val mActivityIntent = activityIntent
             private var mResultCode: Int = Activity.RESULT_OK
 
-            public override fun run() {
+            override fun run() {
                 val scenario: ActivityScenario<AttributionSourceActivity> =
                         ActivityScenario.launchActivityForResult(mActivityIntent)
                 val result: ActivityResult = scenario.getResult()
                 mResultCode = result.getResultCode()
             }
 
-            public fun getResultCode(): Int {
+            fun getResultCode(): Int {
                 return mResultCode
             }
         }

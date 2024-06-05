@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.Activity;
+import android.autofillservice.cts.R;
 import android.autofillservice.cts.testcore.AutofillTestWatcher;
 import android.autofillservice.cts.testcore.MyAutofillCallback;
 import android.autofillservice.cts.testcore.Timeouts;
@@ -124,7 +125,7 @@ public abstract class AbstractAutoFillActivity extends Activity {
     /**
      * Unregister the callback from the {@link AutofillManager}.
      *
-     * <p>This method just neeed to be called when a test case wants to explicitly test the behavior
+     * <p>This method just need to be called when a test case wants to explicitly test the behavior
      * of the activity when the callback is unregistered.
      */
     public void unregisterCallback() {
@@ -149,6 +150,8 @@ public abstract class AbstractAutoFillActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // TODO(b/309578419): Make activities handle insets properly and then remove this.
+        getTheme().applyStyle(R.style.OptOutEdgeToEdge, /* force */ false);
         AutofillTestWatcher.registerActivity("onCreate()", this);
     }
 

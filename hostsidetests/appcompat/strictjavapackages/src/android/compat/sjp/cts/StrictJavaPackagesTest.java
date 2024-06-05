@@ -29,6 +29,7 @@ import android.compat.testing.SharedLibraryInfo;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.modules.utils.build.testing.DeviceSdkLevel;
+import com.android.tools.smali.dexlib2.iface.ClassDef;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.INativeDevice;
 import com.android.tradefed.device.ITestDevice;
@@ -49,7 +50,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
-import org.jf.dexlib2.iface.ClassDef;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -356,213 +356,6 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     "Lorg/chromium/net/UrlRequest;",
                     "Lorg/chromium/net/UrlResponseInfo;"
             );
-    // TODO: b/223837004
-    private static final ImmutableSet<String> BLUETOOTH_APK_IN_APEX_BURNDOWN_LIST =
-        ImmutableSet.of(
-                // /apex/com.android.btservices/javalib/framework-bluetooth.jar
-                "Lcom/android/bluetooth/x/com/android/modules/utils/ISynchronousResultReceiver;",
-                "Lcom/android/bluetooth/x/com/android/modules/utils/SynchronousResultReceiver-IA;",
-                "Lcom/android/bluetooth/x/com/android/modules/utils/SynchronousResultReceiver;",
-                // /system/framework/framework.jar
-                "Landroid/bluetooth/BluetoothProtoEnums;",
-                "Landroid/bluetooth/a2dp/BluetoothA2dpProtoEnums;",
-                "Landroid/bluetooth/hci/BluetoothHciProtoEnums;",
-                "Landroid/bluetooth/hfp/BluetoothHfpProtoEnums;",
-                "Landroid/bluetooth/smp/BluetoothSmpProtoEnums;",
-                "Landroid/hardware/radio/V1_0/ActivityStatsInfo;",
-                "Landroid/hardware/radio/V1_0/ApnAuthType;",
-                "Landroid/hardware/radio/V1_0/ApnTypes;",
-                "Landroid/hardware/radio/V1_0/AppState;",
-                "Landroid/hardware/radio/V1_0/AppStatus;",
-                "Landroid/hardware/radio/V1_0/AppType;",
-                "Landroid/hardware/radio/V1_0/Call;",
-                "Landroid/hardware/radio/V1_0/CallForwardInfo;",
-                "Landroid/hardware/radio/V1_0/CallForwardInfoStatus;",
-                "Landroid/hardware/radio/V1_0/CallPresentation;",
-                "Landroid/hardware/radio/V1_0/CallState;",
-                "Landroid/hardware/radio/V1_0/CardState;",
-                "Landroid/hardware/radio/V1_0/CardStatus;",
-                "Landroid/hardware/radio/V1_0/Carrier;",
-                "Landroid/hardware/radio/V1_0/CarrierMatchType;",
-                "Landroid/hardware/radio/V1_0/CarrierRestrictions;",
-                "Landroid/hardware/radio/V1_0/CdmaBroadcastSmsConfigInfo;",
-                "Landroid/hardware/radio/V1_0/CdmaCallWaiting;",
-                "Landroid/hardware/radio/V1_0/CdmaCallWaitingNumberPlan;",
-                "Landroid/hardware/radio/V1_0/CdmaCallWaitingNumberPresentation;",
-                "Landroid/hardware/radio/V1_0/CdmaCallWaitingNumberType;",
-                "Landroid/hardware/radio/V1_0/CdmaDisplayInfoRecord;",
-                "Landroid/hardware/radio/V1_0/CdmaInfoRecName;",
-                "Landroid/hardware/radio/V1_0/CdmaInformationRecord;",
-                "Landroid/hardware/radio/V1_0/CdmaInformationRecords;",
-                "Landroid/hardware/radio/V1_0/CdmaLineControlInfoRecord;",
-                "Landroid/hardware/radio/V1_0/CdmaNumberInfoRecord;",
-                "Landroid/hardware/radio/V1_0/CdmaOtaProvisionStatus;",
-                "Landroid/hardware/radio/V1_0/CdmaRedirectingNumberInfoRecord;",
-                "Landroid/hardware/radio/V1_0/CdmaRedirectingReason;",
-                "Landroid/hardware/radio/V1_0/CdmaRoamingType;",
-                "Landroid/hardware/radio/V1_0/CdmaSignalInfoRecord;",
-                "Landroid/hardware/radio/V1_0/CdmaSignalStrength;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsAck;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsAddress;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsDigitMode;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsErrorClass;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsMessage;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsNumberMode;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsNumberPlan;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsNumberType;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsSubaddress;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsSubaddressType;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsWriteArgs;",
-                "Landroid/hardware/radio/V1_0/CdmaSmsWriteArgsStatus;",
-                "Landroid/hardware/radio/V1_0/CdmaSubscriptionSource;",
-                "Landroid/hardware/radio/V1_0/CdmaT53AudioControlInfoRecord;",
-                "Landroid/hardware/radio/V1_0/CdmaT53ClirInfoRecord;",
-                "Landroid/hardware/radio/V1_0/CellIdentity;",
-                "Landroid/hardware/radio/V1_0/CellIdentityCdma;",
-                "Landroid/hardware/radio/V1_0/CellIdentityGsm;",
-                "Landroid/hardware/radio/V1_0/CellIdentityLte;",
-                "Landroid/hardware/radio/V1_0/CellIdentityTdscdma;",
-                "Landroid/hardware/radio/V1_0/CellIdentityWcdma;",
-                "Landroid/hardware/radio/V1_0/CellInfo;",
-                "Landroid/hardware/radio/V1_0/CellInfoCdma;",
-                "Landroid/hardware/radio/V1_0/CellInfoGsm;",
-                "Landroid/hardware/radio/V1_0/CellInfoLte;",
-                "Landroid/hardware/radio/V1_0/CellInfoTdscdma;",
-                "Landroid/hardware/radio/V1_0/CellInfoType;",
-                "Landroid/hardware/radio/V1_0/CellInfoWcdma;",
-                "Landroid/hardware/radio/V1_0/CfData;",
-                "Landroid/hardware/radio/V1_0/ClipStatus;",
-                "Landroid/hardware/radio/V1_0/Clir;",
-                "Landroid/hardware/radio/V1_0/DataCallFailCause;",
-                "Landroid/hardware/radio/V1_0/DataProfileId;",
-                "Landroid/hardware/radio/V1_0/DataProfileInfo;",
-                "Landroid/hardware/radio/V1_0/DataProfileInfoType;",
-                "Landroid/hardware/radio/V1_0/DataRegStateResult;",
-                "Landroid/hardware/radio/V1_0/DeviceStateType;",
-                "Landroid/hardware/radio/V1_0/Dial;",
-                "Landroid/hardware/radio/V1_0/EvdoSignalStrength;",
-                "Landroid/hardware/radio/V1_0/GsmBroadcastSmsConfigInfo;",
-                "Landroid/hardware/radio/V1_0/GsmSignalStrength;",
-                "Landroid/hardware/radio/V1_0/GsmSmsMessage;",
-                "Landroid/hardware/radio/V1_0/HardwareConfig;",
-                "Landroid/hardware/radio/V1_0/HardwareConfigModem;",
-                "Landroid/hardware/radio/V1_0/HardwareConfigSim;",
-                "Landroid/hardware/radio/V1_0/HardwareConfigState;",
-                "Landroid/hardware/radio/V1_0/HardwareConfigType;",
-                "Landroid/hardware/radio/V1_0/IccIo;",
-                "Landroid/hardware/radio/V1_0/IccIoResult;",
-                "Landroid/hardware/radio/V1_0/ImsSmsMessage;",
-                "Landroid/hardware/radio/V1_0/IndicationFilter;",
-                "Landroid/hardware/radio/V1_0/LastCallFailCause;",
-                "Landroid/hardware/radio/V1_0/LastCallFailCauseInfo;",
-                "Landroid/hardware/radio/V1_0/LceDataInfo;",
-                "Landroid/hardware/radio/V1_0/LceStatus;",
-                "Landroid/hardware/radio/V1_0/LceStatusInfo;",
-                "Landroid/hardware/radio/V1_0/LteSignalStrength;",
-                "Landroid/hardware/radio/V1_0/MvnoType;",
-                "Landroid/hardware/radio/V1_0/NeighboringCell;",
-                "Landroid/hardware/radio/V1_0/NvItem;",
-                "Landroid/hardware/radio/V1_0/NvWriteItem;",
-                "Landroid/hardware/radio/V1_0/OperatorInfo;",
-                "Landroid/hardware/radio/V1_0/OperatorStatus;",
-                "Landroid/hardware/radio/V1_0/P2Constant;",
-                "Landroid/hardware/radio/V1_0/PcoDataInfo;",
-                "Landroid/hardware/radio/V1_0/PersoSubstate;",
-                "Landroid/hardware/radio/V1_0/PhoneRestrictedState;",
-                "Landroid/hardware/radio/V1_0/PinState;",
-                "Landroid/hardware/radio/V1_0/PreferredNetworkType;",
-                "Landroid/hardware/radio/V1_0/RadioAccessFamily;",
-                "Landroid/hardware/radio/V1_0/RadioBandMode;",
-                "Landroid/hardware/radio/V1_0/RadioCapability;",
-                "Landroid/hardware/radio/V1_0/RadioCapabilityPhase;",
-                "Landroid/hardware/radio/V1_0/RadioCapabilityStatus;",
-                "Landroid/hardware/radio/V1_0/RadioCdmaSmsConst;",
-                "Landroid/hardware/radio/V1_0/RadioConst;",
-                "Landroid/hardware/radio/V1_0/RadioError;",
-                "Landroid/hardware/radio/V1_0/RadioIndicationType;",
-                "Landroid/hardware/radio/V1_0/RadioResponseInfo;",
-                "Landroid/hardware/radio/V1_0/RadioResponseType;",
-                "Landroid/hardware/radio/V1_0/RadioState;",
-                "Landroid/hardware/radio/V1_0/RadioTechnology;",
-                "Landroid/hardware/radio/V1_0/RadioTechnologyFamily;",
-                "Landroid/hardware/radio/V1_0/RegState;",
-                "Landroid/hardware/radio/V1_0/ResetNvType;",
-                "Landroid/hardware/radio/V1_0/RestrictedState;",
-                "Landroid/hardware/radio/V1_0/SapApduType;",
-                "Landroid/hardware/radio/V1_0/SapConnectRsp;",
-                "Landroid/hardware/radio/V1_0/SapDisconnectType;",
-                "Landroid/hardware/radio/V1_0/SapResultCode;",
-                "Landroid/hardware/radio/V1_0/SapStatus;",
-                "Landroid/hardware/radio/V1_0/SapTransferProtocol;",
-                "Landroid/hardware/radio/V1_0/SelectUiccSub;",
-                "Landroid/hardware/radio/V1_0/SendSmsResult;",
-                "Landroid/hardware/radio/V1_0/SetupDataCallResult;",
-                "Landroid/hardware/radio/V1_0/SignalStrength;",
-                "Landroid/hardware/radio/V1_0/SimApdu;",
-                "Landroid/hardware/radio/V1_0/SimRefreshResult;",
-                "Landroid/hardware/radio/V1_0/SimRefreshType;",
-                "Landroid/hardware/radio/V1_0/SmsAcknowledgeFailCause;",
-                "Landroid/hardware/radio/V1_0/SmsWriteArgs;",
-                "Landroid/hardware/radio/V1_0/SmsWriteArgsStatus;",
-                "Landroid/hardware/radio/V1_0/SrvccState;",
-                "Landroid/hardware/radio/V1_0/SsInfoData;",
-                "Landroid/hardware/radio/V1_0/SsRequestType;",
-                "Landroid/hardware/radio/V1_0/SsServiceType;",
-                "Landroid/hardware/radio/V1_0/SsTeleserviceType;",
-                "Landroid/hardware/radio/V1_0/StkCcUnsolSsResult;",
-                "Landroid/hardware/radio/V1_0/SubscriptionType;",
-                "Landroid/hardware/radio/V1_0/SuppServiceClass;",
-                "Landroid/hardware/radio/V1_0/SuppSvcNotification;",
-                "Landroid/hardware/radio/V1_0/TdScdmaSignalStrength;",
-                "Landroid/hardware/radio/V1_0/TimeStampType;",
-                "Landroid/hardware/radio/V1_0/TtyMode;",
-                "Landroid/hardware/radio/V1_0/UiccSubActStatus;",
-                "Landroid/hardware/radio/V1_0/UssdModeType;",
-                "Landroid/hardware/radio/V1_0/UusDcs;",
-                "Landroid/hardware/radio/V1_0/UusInfo;",
-                "Landroid/hardware/radio/V1_0/UusType;",
-                "Landroid/hardware/radio/V1_0/VoiceRegStateResult;",
-                "Landroid/hardware/radio/V1_0/WcdmaSignalStrength;",
-                "Landroid/hardware/radio/V1_0/IRadio;",
-                "Landroid/hardware/radio/V1_0/IRadioIndication;",
-                "Landroid/hardware/radio/V1_0/IRadioResponse;",
-                "Landroid/hardware/radio/V1_0/ISap;",
-                "Landroid/hardware/radio/V1_0/ISapCallback;",
-                "Lcom/android/internal/util/IState;",
-                "Lcom/android/internal/util/StateMachine;",
-                "Lcom/google/android/mms/ContentType;",
-                "Lcom/google/android/mms/MmsException;",
-                "Lcom/google/android/mms/pdu/Base64;",
-                "Lcom/google/android/mms/pdu/CharacterSets;",
-                "Lcom/google/android/mms/pdu/EncodedStringValue;",
-                "Lcom/google/android/mms/pdu/GenericPdu;",
-                "Lcom/google/android/mms/pdu/PduBody;",
-                "Lcom/google/android/mms/pdu/PduComposer;",
-                "Lcom/google/android/mms/pdu/PduContentTypes;",
-                "Lcom/google/android/mms/pdu/PduHeaders;",
-                "Lcom/google/android/mms/pdu/PduParser;",
-                "Lcom/google/android/mms/pdu/PduPart;",
-                "Lcom/google/android/mms/pdu/PduPersister;",
-                "Lcom/google/android/mms/pdu/QuotedPrintable;",
-                "Lcom/google/android/mms/util/AbstractCache;",
-                "Lcom/google/android/mms/util/DownloadDrmHelper;",
-                "Lcom/google/android/mms/util/DrmConvertSession;",
-                "Lcom/google/android/mms/util/PduCacheEntry;",
-                "Lcom/google/android/mms/util/SqliteWrapper;",
-                "Lcom/android/internal/util/State;",
-                "Lcom/google/android/mms/InvalidHeaderValueException;",
-                "Lcom/google/android/mms/pdu/AcknowledgeInd;",
-                "Lcom/google/android/mms/pdu/DeliveryInd;",
-                "Lcom/google/android/mms/pdu/MultimediaMessagePdu;",
-                "Lcom/google/android/mms/pdu/NotificationInd;",
-                "Lcom/google/android/mms/pdu/NotifyRespInd;",
-                "Lcom/google/android/mms/pdu/ReadOrigInd;",
-                "Lcom/google/android/mms/pdu/ReadRecInd;",
-                "Lcom/google/android/mms/pdu/SendConf;",
-                "Lcom/google/android/mms/util/PduCache;",
-                "Lcom/google/android/mms/pdu/RetrieveConf;",
-                "Lcom/google/android/mms/pdu/SendReq;"
-        );
     private static final ImmutableSet<String> PERMISSION_CONTROLLER_APK_IN_APEX_BURNDOWN_LIST =
             ImmutableSet.of(
                 "Lcom/android/modules/utils/build/SdkLevel;",
@@ -664,14 +457,6 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
 
     private static final ImmutableMap<String, ImmutableSet<String>> FULL_APK_IN_APEX_BURNDOWN =
         new ImmutableMap.Builder<String, ImmutableSet<String>>()
-            .put("/apex/com.android.btservices/app/Bluetooth/Bluetooth.apk",
-                BLUETOOTH_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.btservices/app/BluetoothArc/BluetoothArc.apk",
-                BLUETOOTH_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.btservices/app/BluetoothGoogle/BluetoothGoogle.apk",
-                BLUETOOTH_APK_IN_APEX_BURNDOWN_LIST)
-            .put("/apex/com.android.bluetooth/app/BluetoothGoogle/BluetoothGoogle.apk",
-                BLUETOOTH_APK_IN_APEX_BURNDOWN_LIST)
             .put("/apex/com.android.permission/priv-app/PermissionController/PermissionController.apk",
                 PERMISSION_CONTROLLER_APK_IN_APEX_BURNDOWN_LIST)
             .put("/apex/com.android.permission/priv-app/GooglePermissionController/GooglePermissionController.apk",
@@ -841,6 +626,69 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     }
 
     /**
+     * Pretty prints a multimap to make it easier for a person to read it.
+     *
+     * It makes assumptions about the inputs: it assumes the keys are classes and the values are jar
+     * files where they exist. It also assumes that for any given class there will be 2 or more jar
+     * files where they are found.
+     *
+     * @return  the string pretty formatted
+     */
+    private String prettyPrint(Multimap<String, String> classesToJars) {
+        if (classesToJars.isEmpty()) {
+            return "No findings";
+        }
+
+        final HashMultimap<Collection<String>, String> jarsToClasses = HashMultimap.create();
+        classesToJars.asMap().forEach((className, jarFiles) ->
+                jarsToClasses.put(jarFiles, className)
+        );
+
+        StringBuilder sb = new StringBuilder();
+        jarsToClasses.asMap().forEach((jars, classes) -> {
+                    sb.append("The following jar files:\n");
+                    jars.forEach((jar) -> sb.append("    ").append(jar).append('\n'));
+                    sb.append("Contain the following duplicate classes:\n");
+                    classes.forEach((klass) -> sb.append("    ").append(klass).append('\n'));
+                    sb.append("End of duplications.\n\n");
+                }
+        );
+        sb.append("This can result in runtime breakages (now or in a future release)."
+                + " Read more at http://go/fixing-strict-java-packages\n");
+        return sb.toString();
+    }
+
+    /**
+     * Pretty prints a nested multimap to make it easier for a person to read it.
+     *
+     * It makes assumptions about the inputs: it assumes the outer keys are apk files (coming from
+     * APK in apexes) and the outer values are a Multimap with keys being a jar file and values
+     * classes that are defined in that jar and that also exist in the apk file.
+     *
+     * @return  the string pretty formatted
+     */
+    private String prettyPrint(
+            HashMultimap<String, Multimap<String, String>> apkToJarToClasses) {
+        if (apkToJarToClasses.isEmpty()) {
+            return "No findings";
+        }
+        StringBuilder sb = new StringBuilder();
+        apkToJarToClasses.forEach((apk, jarToClasses) -> {
+            jarToClasses.asMap().forEach((jar, classes) -> {
+                sb.append("The apk in apex and jar file:\n");
+                sb.append("    ").append(apk).append('\n');
+                sb.append("    ").append(jar).append('\n');
+                sb.append("contain the following duplicate class definitions:\n");
+                classes.forEach(klass -> sb.append("     ").append(klass).append('\n'));
+                sb.append("End of duplications.\n\n");
+            });
+        });
+        sb.append("This can result in runtime breakages (now or in a future release)."
+                + " Read more at http://go/fixing-strict-java-packages\n");
+        return sb.toString();
+    }
+
+    /**
      * Ensure that there are no duplicate classes among jars listed in BOOTCLASSPATH.
      */
     @Test
@@ -867,7 +715,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         Multimap<String, String> filtered = Multimaps.filterKeys(duplicates,
                 duplicate -> !overlapBurndownList.contains(duplicate));
 
-        assertThat(filtered).isEmpty();
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -897,7 +747,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 duplicate -> !overlapBurndownList.contains(duplicate)
                         && !jarsInSameApex(duplicates.get(duplicate)));
 
-        assertThat(filtered).isEmpty();
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -908,7 +760,10 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         Multimap<String, String> duplicates = getDuplicateClasses(sBootclasspathJars);
         Multimap<String, String> filtered =
                 Multimaps.filterValues(duplicates, jar -> jar.startsWith("/apex/"));
-        assertThat(filtered).isEmpty();
+
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -920,7 +775,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         Multimap<String, String> filtered =
                 Multimaps.filterValues(duplicates, jar -> jar.startsWith("/apex/"));
 
-        assertThat(filtered).isEmpty();
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -939,7 +796,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 duplicate -> !BCP_AND_SSCP_OVERLAP_BURNDOWN_LIST.contains(duplicate));
         filtered = Multimaps.filterValues(filtered, jar -> jar.startsWith("/apex/"));
 
-        assertThat(filtered).isEmpty();
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -982,7 +841,9 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     }
                     return true;
                 });
-        assertThat(filtered).isEmpty();
+        assertWithMessage(prettyPrint(filtered))
+                .that(filtered)
+                .isEmpty();
     }
 
     /**
@@ -1046,7 +907,10 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                         FileUtil.deleteFile(apkFile);
                     }
                 });
-        assertThat(perApkClasspathDuplicates).isEmpty();
+
+        assertWithMessage(prettyPrint(perApkClasspathDuplicates))
+                .that(perApkClasspathDuplicates)
+                .isEmpty();
     }
 
     /**

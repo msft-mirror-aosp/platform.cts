@@ -16,8 +16,6 @@
 
 package android.webkit.cts;
 
-import android.view.MotionEvent;
-
 import android.webkit.cts.IWebServer;
 
 /**
@@ -29,7 +27,7 @@ interface IHostAppInvoker {
 
     void sendKeyDownUpSync(int keyCode);
 
-    void sendPointerSync(in MotionEvent event);
+    void sendTapSync(int x, int y);
 
     byte[] getEncodingBytes(String data, String charset);
 

@@ -33,8 +33,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import android.Manifest;
 import android.app.Instrumentation;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -45,9 +47,11 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsMouseUtil.ActionMatcher;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.cts.input.DebugInputRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -60,6 +64,7 @@ import org.mockito.InOrder;
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class PointerCaptureTest {
     private static final long TIMEOUT_DELTA = 10000;
 
@@ -73,10 +78,19 @@ public class PointerCaptureTest {
     private PointerCaptureGroup mTarget2;
 
     @Rule
+    public DebugInputRule mDebugInputRule = new DebugInputRule();
+
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<PointerCaptureCtsActivity> mActivityRule =
             new ActivityTestRule<>(PointerCaptureCtsActivity.class);
 
-    @Rule
+    @Rule(order = 1)
     public ActivityTestRule<CtsActivity> mCtsActivityRule =
             new ActivityTestRule<>(CtsActivity.class, false, false);
 
@@ -235,16 +249,17 @@ public class PointerCaptureTest {
     }
 
     @Test
+    @DebugInputRule.DebugInput(bug = 336890318)
     public void testWindowFocusChangeEndsCapture() throws Throwable {
         requestCaptureSync();
         assertPointerCapture(true);
 
         // Show a context menu on a widget.
-        mActivity.registerForContextMenu(mTarget);
-        // TODO(kaznacheev) replace the below line with a call to showContextMenu once b/65487689
-        // is fixed. Meanwhile, emulate a long press which takes long enough time to avoid the race
-        // condition.
-        mCtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, mTarget, 0);
+        mActivityRule.runOnUiThread(() -> {
+            mActivity.registerForContextMenu(mTarget);
+            mActivity.openContextMenu(mTarget);
+        });
+
         PollingCheck.waitFor(TIMEOUT_DELTA, () -> !mOuter.hasWindowFocus());
         PollingCheck.waitFor(TIMEOUT_DELTA,
                 () -> !mTarget.hasPointerCapture() && !mActivity.hasPointerCapture());

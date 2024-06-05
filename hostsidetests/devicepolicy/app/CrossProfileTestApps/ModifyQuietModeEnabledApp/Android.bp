@@ -26,8 +26,8 @@ android_test_helper_app {
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
         "androidx.test.rules",
-        "truth-prebuilt",
-        "ub-uiautomator",
+        "truth",
+        "androidx.test.uiautomator_uiautomator",
     ],
     min_sdk_version: "29",
     // tag this module as a cts test artifact

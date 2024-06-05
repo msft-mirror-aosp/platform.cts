@@ -22,6 +22,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
     <!--
         TODO(yukawa): come up with a proper way to take care of devices that do not support
@@ -36,7 +37,24 @@
             for instant apps.
         -->
         <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsMockInputMethod.apk" />
+    </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <!--
+            MockIME always needs to be installed as a full package, even when CTS is running
+            for instant apps.
+        -->
+        <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
+        <option name="test-file-name" value="CtsMockInputMethod2.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
@@ -45,6 +63,10 @@
             running for instant apps.
         -->
         <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsMockSpellChecker.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -63,6 +85,10 @@
             running for instant apps.
         -->
         <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsHiddenFromPickerIme.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -72,6 +98,10 @@
             running for instant apps.
         -->
         <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsMockA11yInputMethod.apk" />
     </target_preparer>
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
@@ -89,7 +119,24 @@
             CTS is running for instant apps.
         -->
         <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsMockInputMethodWithSubtypes.apk" />
+    </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <!--
+            TestIme always needs to be installed as a full package, even when CTS is running for
+            instant apps.
+        -->
+        <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
+        <option name="test-file-name" value="TestIme.apk" />
     </target_preparer>
 
     <!--
@@ -124,6 +171,11 @@
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
+        <option name="test-file-name" value="CtsInputMethodTestLauncher.apk" />
+    </target_preparer>
+
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
         <option name="install-arg" value="-t" />
         <option name="test-file-name" value="CtsInputMethodTestCases.apk" />
     </target_preparer>
@@ -131,6 +183,8 @@
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS com.android.cts.mockime"  />
         <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS com.android.cts.mockime" />
+        <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS com.android.cts.mockime2"  />
+        <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS com.android.cts.mockime2" />
         <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS com.android.cts.mocka11yime"  />
         <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS com.android.cts.mocka11yime" />
         <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS android.view.inputmethod.ctstestapp"  />

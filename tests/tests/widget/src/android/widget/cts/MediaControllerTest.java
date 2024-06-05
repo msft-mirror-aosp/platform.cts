@@ -16,13 +16,12 @@
 
 package android.widget.cts;
 
-import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
@@ -40,6 +39,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
@@ -52,6 +52,9 @@ import org.xmlpull.v1.XmlPullParser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Test {@link MediaController}.
@@ -63,7 +66,15 @@ public class MediaControllerTest {
     private Activity mActivity;
     private MediaController mMediaController;
 
-    @Rule
+    static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<MediaControllerCtsActivity> mActivityRule =
             new ActivityTestRule<>(MediaControllerCtsActivity.class);
 
@@ -155,30 +166,39 @@ public class MediaControllerTest {
     }
 
     @Test
-    public void testOnBackInvokedCallback() throws Throwable {
-        // Enable the new back dispatch
-        mActivity.getApplicationInfo().privateFlagsExt |=
-                PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
-        WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mActivity.getWindow().getDecorView(),
-                () -> mMediaController = new MediaController(mActivity, true));
+    public void testOnBackInvokedCallback() {
+        final AtomicReference<MediaController> mediaControllerRef = new AtomicReference<>();
+        mInstrumentation.runOnMainSync(() -> {
+            final MediaController mediaController =
+                    new MediaController(mActivity, true);
+            mediaControllerRef.set(mediaController);
 
-        final MockMediaPlayerControl mediaPlayerControl = new MockMediaPlayerControl();
-        mMediaController.setMediaPlayer(mediaPlayerControl);
+            final MockMediaPlayerControl mediaPlayerControl = new MockMediaPlayerControl();
+            mediaController.setMediaPlayer(mediaPlayerControl);
 
-        final VideoView videoView =
-                (VideoView) mActivity.findViewById(R.id.mediacontroller_videoview);
-        mMediaController.setAnchorView(videoView);
+            final VideoView videoView = mActivity.findViewById(R.id.mediacontroller_videoview);
+            mediaController.setAnchorView(videoView);
 
-        WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mActivity.getWindow().getDecorView(),
-                mMediaController::show);
-        assertTrue(mMediaController.isShowing());
+            // Setting 0 to "timeout" means that MediaController won't be automatically closed.
+            mediaController.show(0 /* timeout */);
+        });
 
-        PollingCheck.waitFor(500, mMediaController::hasFocus);
+        // Wait until MediaController becomes visible and has focus.
+        PollingCheck.waitFor(TIMEOUT, () -> {
+            final AtomicBoolean isShowingRef = new AtomicBoolean();
+            mInstrumentation.runOnMainSync(() ->
+                    isShowingRef.set(mediaControllerRef.get().isShowing()));
+            return isShowingRef.get() && !mActivity.hasWindowFocus();
+        });
+
+        // Make sure that KEYCODE_BACK can still dismiss the MediaController.
         mInstrumentation.sendCharacterSync(KeyEvent.KEYCODE_BACK);
-        mInstrumentation.waitForIdleSync();
-        WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mActivity.getWindow().getDecorView(),
-                mMediaController::hide);
-        assertFalse(mMediaController.isShowing());
+        PollingCheck.waitFor(TIMEOUT, () -> {
+            final AtomicBoolean isShowingRef = new AtomicBoolean();
+            mInstrumentation.runOnMainSync(() ->
+                    isShowingRef.set(mediaControllerRef.get().isShowing()));
+            return !isShowingRef.get();
+        });
     }
 
     private String prepareSampleVideo() {

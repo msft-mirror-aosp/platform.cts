@@ -23,10 +23,9 @@ import android.annotation.TargetApi;
 import android.app.admin.DevicePolicyDrawableResource;
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.DevicePolicyResourcesManager;
-import android.os.Build;
 
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 
 import java.util.Arrays;
 import java.util.HashSet;

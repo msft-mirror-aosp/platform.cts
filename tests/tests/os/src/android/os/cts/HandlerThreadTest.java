@@ -16,15 +16,33 @@
 
 package android.os.cts;
 
-import junit.framework.TestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Process;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.ravenwood.RavenwoodRule;
 
-public class HandlerThreadTest extends TestCase {
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+@RunWith(AndroidJUnit4.class)
+public class HandlerThreadTest {
+    @Rule
+    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
+            .setProvideMainThread(true).build();
 
     private static final int SLEEPTIME = 100;
 
+    @Test
     public void testConstructor() {
         // new the HandlerThread instance
         new HandlerThread("test");
@@ -32,6 +50,7 @@ public class HandlerThreadTest extends TestCase {
         new HandlerThread("test", Thread.MAX_PRIORITY);
     }
 
+    @Test
     public void testGetThreadId() {
         MockHandlerThread ht = new MockHandlerThread("test");
         assertEquals(-1, ht.getThreadId());

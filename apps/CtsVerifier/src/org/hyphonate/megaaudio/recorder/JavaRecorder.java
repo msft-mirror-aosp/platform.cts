@@ -71,6 +71,22 @@ public class JavaRecorder extends Recorder {
     //
     // Attributes
     //
+    @Override
+    public int getSharingMode() {
+        // JAVA Audio API does not support a sharing mode
+        return BuilderBase.SHARING_MODE_NOTSUPPORTED;
+    }
+
+    @Override
+    public int getChannelCount() {
+        return mAudioRecord != null ?  mAudioRecord.getChannelCount() : -1;
+    }
+
+    @Override
+    public boolean isMMap() {
+        // Java Streams are never MMAP
+        return false;
+    }
 
     /**
      * The buff to receive the recorder samples

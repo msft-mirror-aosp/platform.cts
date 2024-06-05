@@ -38,11 +38,12 @@ import android.content.pm.PackageInstaller;
 import android.content.pm.PackageInstaller.SessionParams;
 import android.content.pm.PackageManager;
 import android.os.SystemClock;
+import android.util.ArraySet;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppProvider;
 
@@ -69,8 +70,8 @@ import java.util.function.Supplier;
 @RunWith(JUnit4.class)
 public class SilentUpdateTests {
     private static final String CURRENT_APK = "SilentInstallCurrent.apk";
-    private static final String R_APK = "SilentInstallR.apk";
     private static final String S_APK = "SilentInstallS.apk";
+    private static final String T_APK = "SilentInstallT.apk";
     private static final String INSTALLER_PACKAGE_NAME = "com.android.tests.silentupdate";
     static final long SILENT_UPDATE_THROTTLE_TIME_SECOND = 10;
 
@@ -80,12 +81,21 @@ public class SilentUpdateTests {
                     .whereTestOnly().isFalse()
                     .get();
 
+    private final ArraySet<Integer> mPendingAbandonSessionIds = new ArraySet<>();
+
     private static Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getContext();
     }
 
     @After
     public void tearDown() {
+        if (mPendingAbandonSessionIds.size() > 0) {
+            for (int i = 0; i < mPendingAbandonSessionIds.size(); i++) {
+                int sessionId = mPendingAbandonSessionIds.valueAt(i);
+                getContext().getPackageManager().getPackageInstaller().abandonSession(sessionId);
+            }
+            mPendingAbandonSessionIds.clear();
+        }
         sDpcApp.uninstall();
         resetSilentUpdatesPolicy();
     }
@@ -133,17 +143,17 @@ public class SilentUpdateTests {
     }
 
     @Test
-    public void updatePreSApp_RequiresUserAction() throws Exception {
-        Assert.assertEquals("Updating to a pre-S app should require user action",
+    public void updatePreTApp_RequiresUserAction() throws Exception {
+        Assert.assertEquals("Updating to a pre-T app should require user action",
                 PackageInstaller.STATUS_PENDING_USER_ACTION,
-                silentInstallResource(R_APK));
+                silentInstallResource(S_APK));
     }
 
     @Test
-    public void updateSApp_RequiresNoUserAction() throws Exception {
-        Assert.assertEquals("Updating to an S app should not require user action",
+    public void updateTApp_RequiresNoUserAction() throws Exception {
+        Assert.assertEquals("Updating to a T app should not require user action",
                 PackageInstaller.STATUS_SUCCESS,
-                silentInstallResource(S_APK));
+                silentInstallResource(T_APK));
     }
 
     @Test
@@ -277,7 +287,7 @@ public class SilentUpdateTests {
         if (result != PackageInstaller.STATUS_SUCCESS) {
             final int sessionId =
                     statusUpdate.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, Integer.MIN_VALUE);
-            getContext().getPackageManager().getPackageInstaller().abandonSession(sessionId);
+            mPendingAbandonSessionIds.add(sessionId);
         }
         return result;
     }

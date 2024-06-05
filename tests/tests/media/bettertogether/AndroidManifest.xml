@@ -47,9 +47,6 @@
     <application
          android:requestLegacyExternalStorage="true"
          android:largeHeap="true">
-        <uses-library android:name="android.test.runner"/>
-        <uses-library android:name="org.apache.http.legacy"
-             android:required="false"/>
 
         <activity android:name="android.media.bettertogether.cts.MediaSessionTestActivity"
              android:label="MediaSessionTestActivity"
@@ -64,6 +61,12 @@
         <activity android:name="android.media.bettertogether.cts.MediaRouter2TestActivity"/>
         <service android:name="android.media.bettertogether.cts.StubMediaBrowserService"
              android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService"/>
+            </intent-filter>
+        </service>
+        <service android:name="android.media.bettertogether.cts.SimpleMediaBrowserService"
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService"/>
             </intent-filter>
@@ -88,21 +91,11 @@
         <service android:name=".MediaSessionTestService"
              android:process=":mediaSessionTestService"/>
         <receiver android:name="android.media.bettertogether.cts.MediaButtonBroadcastReceiver"/>
-        <service android:name="android.media.bettertogether.cts.PlaceholderService"
-                 android:exported="false">
-            <intent-filter>
-                <action android:name="android.media.MediaRoute2ProviderService" />
-                <action android:name="android.media.action.TRANSFER_MEDIA"/>
-                <category android:name="android.media.MediaRoute2ProviderService.SELF_SCAN_ONLY" />
-            </intent-filter>
-        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.media.bettertogether.cts"
          android:label="CTS tests of android.media">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 
 </manifest>

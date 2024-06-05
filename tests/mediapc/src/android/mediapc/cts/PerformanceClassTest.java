@@ -28,6 +28,10 @@ import android.media.MediaDrm;
 import android.media.MediaFormat;
 import android.media.UnsupportedSchemeException;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.Android11MemoryRequirement;
+import android.mediapc.cts.common.Requirements.HDRDisplayRequirement;
+import android.mediapc.cts.common.Requirements.MemoryRequirement;
 import android.mediapc.cts.common.Utils;
 import android.util.Log;
 
@@ -54,7 +58,7 @@ public class PerformanceClassTest {
     public static final String[] VIDEO_CONTAINER_MEDIA_TYPES =
         {"video/mp4", "video/webm", "video/3gpp", "video/3gpp2", "video/avi", "video/x-ms-wmv",
             "video/x-ms-asf"};
-    static ArrayList<String> mMimeSecureSupport = new ArrayList<>();
+    static ArrayList<String> mMediaTypeSecureSupport = new ArrayList<>();
 
     @Rule
     public final TestName mTestName = new TestName();
@@ -65,10 +69,10 @@ public class PerformanceClassTest {
     }
 
     static {
-        mMimeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AVC);
-        mMimeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
-        mMimeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_VP9);
-        mMimeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AV1);
+        mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AVC);
+        mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
+        mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_VP9);
+        mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AV1);
     }
 
 
@@ -87,29 +91,29 @@ public class PerformanceClassTest {
     @Test
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-11"})
     public void testSecureHwDecodeSupport() {
-        ArrayList<String> noSecureHwDecoderForMimes = new ArrayList<>();
-        for (String mime : mMimeSecureSupport) {
-            boolean isSecureHwDecoderFoundForMime = false;
-            boolean isHwDecoderFoundForMime = false;
+        ArrayList<String> noSecureHwDecoderForMediaTypes = new ArrayList<>();
+        for (String mediaType : mMediaTypeSecureSupport) {
+            boolean isSecureHwDecoderFoundForMediaType = false;
+            boolean isHwDecoderFoundForMediaType = false;
             MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
             MediaCodecInfo[] codecInfos = codecList.getCodecInfos();
             for (MediaCodecInfo info : codecInfos) {
                 if (info.isEncoder() || !info.isHardwareAccelerated() || info.isAlias()) continue;
                 try {
-                    MediaCodecInfo.CodecCapabilities caps = info.getCapabilitiesForType(mime);
+                    MediaCodecInfo.CodecCapabilities caps = info.getCapabilitiesForType(mediaType);
                     if (caps != null) {
-                        isHwDecoderFoundForMime = true;
+                        isHwDecoderFoundForMediaType = true;
                         if (caps.isFeatureSupported(FEATURE_SecurePlayback))
-                            isSecureHwDecoderFoundForMime = true;
+                            isSecureHwDecoderFoundForMediaType = true;
                     }
                 } catch (Exception ignored) {
                 }
             }
-            if (isHwDecoderFoundForMime && !isSecureHwDecoderFoundForMime)
-                noSecureHwDecoderForMimes.add(mime);
+            if (isHwDecoderFoundForMediaType && !isSecureHwDecoderFoundForMediaType)
+                noSecureHwDecoderForMediaTypes.add(mediaType);
         }
 
-        boolean secureDecodeSupportIfHwDecoderPresent = noSecureHwDecoderForMimes.isEmpty();
+        boolean secureDecodeSupportIfHwDecoderPresent = noSecureHwDecoderForMediaTypes.isEmpty();
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.SecureCodecRequirement r5_1__H_1_11 = pce.addR5_1__H_1_11();
@@ -197,11 +201,23 @@ public class PerformanceClassTest {
         Log.i(TAG, String.format("Total device memory = %,d MB", totalMemoryMb));
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.MemoryRequirement r7_6_1_h_1_1 = pce.addR7_6_1__H_1_1();
-        PerformanceClassEvaluator.MemoryRequirement r7_6_1_h_2_1 = pce.addR7_6_1__H_2_1();
+        Android11MemoryRequirement r7_6_1_h_1_1 = Requirements.addR7_6_1__H_1_1(pce);
+        MemoryRequirement r7_6_1_h_2_1 = Requirements.addR7_6_1__H_2_1(pce);
 
-        r7_6_1_h_1_1.setPhysicalMemory(totalMemoryMb);
-        r7_6_1_h_2_1.setPhysicalMemory(totalMemoryMb);
+        r7_6_1_h_1_1.setPhysicalMemoryMb(totalMemoryMb);
+        r7_6_1_h_2_1.setPhysicalMemoryMb(totalMemoryMb);
+
+        pce.submitAndCheck();
+    }
+
+    @Test
+    @CddTest(requirements = {"2.2.7.3/7.1.1.3/H-3-1"})
+    public void testDisplayHdr() {
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1(pce);
+
+        req.setIsHdr(Utils.IS_HDR);
+        req.setDisplayLuminanceNits(Utils.HDR_DISPLAY_AVERAGE_LUMINANCE);
 
         pce.submitAndCheck();
     }

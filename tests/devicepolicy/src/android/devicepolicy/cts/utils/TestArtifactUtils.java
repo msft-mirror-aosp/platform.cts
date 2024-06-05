@@ -16,15 +16,15 @@
 
 package android.devicepolicy.cts.utils;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_EXTERNAL_STORAGE;
-import static com.android.bedstead.nene.permissions.CommonPermissions.WRITE_EXTERNAL_STORAGE;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_EXTERNAL_STORAGE;
+import static com.android.bedstead.permissions.CommonPermissions.WRITE_EXTERNAL_STORAGE;
 
 import android.annotation.NonNull;
 import android.os.Environment;
 import android.util.Log;
 
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 
 import java.io.File;
 import java.io.IOException;

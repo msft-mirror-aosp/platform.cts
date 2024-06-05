@@ -21,9 +21,9 @@ import static org.junit.Assert.assertEquals;
 import android.bluetooth.le.TransportBlock;
 import android.bluetooth.le.TransportDiscoveryData;
 import android.os.Parcel;
-import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
@@ -35,7 +35,6 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
-
 
 /**
  * Unit test cases for {@link TransportDiscoveryData}.
@@ -55,7 +54,7 @@ public class TransportDiscoveryDataTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testInitList() {
+    public void initList() {
         Parcel parcel = Parcel.obtain();
         List<TransportBlock> transportBlocks = new ArrayList();
         transportBlocks.add(new TransportBlock(1, 0, 4, new byte[] {
@@ -71,7 +70,7 @@ public class TransportDiscoveryDataTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testInitByteArray() {
+    public void initByteArray() {
         Parcel parcel = Parcel.obtain();
         TransportDiscoveryData data = new TransportDiscoveryData(new byte[] {
                 0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15 });
@@ -85,7 +84,7 @@ public class TransportDiscoveryDataTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testGetValues() {
+    public void getValues() {
         Parcel parcel = Parcel.obtain();
         TransportDiscoveryData data = new TransportDiscoveryData(new byte[] {
                 0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15 });
@@ -104,7 +103,7 @@ public class TransportDiscoveryDataTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testTotalBytes() {
+    public void totalBytes() {
         Parcel parcel = Parcel.obtain();
         TransportDiscoveryData data = new TransportDiscoveryData(new byte[] {
                 0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15 });
@@ -120,7 +119,7 @@ public class TransportDiscoveryDataTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testToByteArray() {
+    public void toByteArray() {
         Parcel parcel = Parcel.obtain();
         TransportDiscoveryData data = new TransportDiscoveryData(new byte[] {
                 0x01, 0x01, 0x00, 0x04, (byte) 0xF0, 0x00, 0x02, 0x15 });

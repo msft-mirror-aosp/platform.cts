@@ -21,11 +21,14 @@ import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.ex
 import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.EventFilterMode.CHECK_EXIT_EVENT_ONLY;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
 import android.os.Process;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.InputType;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,10 +47,13 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
+import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,6 +64,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class SearchViewTest extends EndToEndImeTestBase {
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
@@ -136,16 +143,14 @@ public class SearchViewTest extends EndToEndImeTestBase {
             expectBindInput(stream, Process.myPid(), TIMEOUT);
 
             // Wait until "showSoftInput" gets called with a real InputConnection
-            expectEvent(stream, event ->
-                    "showSoftInput".equals(event.getEventName())
-                            && !event.getExitState().hasFallbackInputConnection(),
+            expectEvent(stream, showSoftInputWithRealInputConnectionMatcher(),
                     CHECK_EXIT_EVENT_ONLY, TIMEOUT);
 
             expectImeVisible(TIMEOUT);
 
             // Make sure that "setQuery" triggers "hideSoftInput" in the IME side.
             runOnMainSync(() -> searchView.setQuery("test", true /* submit */));
-            expectEvent(stream, event -> "hideSoftInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("hideSoftInput"), TIMEOUT);
 
             expectImeInvisible(TIMEOUT);
         }
@@ -169,13 +174,19 @@ public class SearchViewTest extends EndToEndImeTestBase {
 
             // Wait until "showSoftInput" gets called on searchView's inner editor
             // (SearchAutoComplete) with real InputConnection.
-            expectEvent(stream, event ->
-                    "showSoftInput".equals(event.getEventName())
-                            && !event.getExitState().hasFallbackInputConnection(),
+            expectEvent(stream,
+                    showSoftInputWithRealInputConnectionMatcher(),
                     CHECK_EXIT_EVENT_ONLY, TIMEOUT);
 
             expectImeVisible(TIMEOUT);
         }
+    }
+
+    @NotNull
+    private static DescribedPredicate<ImeEvent> showSoftInputWithRealInputConnectionMatcher() {
+        return withDescription("showSoftInput() hasFallbackInputConnection=false", event ->
+                "showSoftInput".equals(event.getEventName())
+                        && !event.getExitState().hasFallbackInputConnection());
     }
 
     @Test
@@ -197,14 +208,12 @@ public class SearchViewTest extends EndToEndImeTestBase {
             expectBindInput(stream, Process.myPid(), TIMEOUT);
 
             // Wait until "showSoftInput" gets called with a real InputConnection
-            expectEvent(stream, event ->
-                            "showSoftInput".equals(event.getEventName())
-                                    && !event.getExitState().hasFallbackInputConnection(),
+            expectEvent(stream, showSoftInputWithRealInputConnectionMatcher(),
                     CHECK_EXIT_EVENT_ONLY, TIMEOUT);
 
             expectImeVisible(TIMEOUT);
 
-            notExpectEvent(stream, event -> "hideSoftInput".equals(event.getEventName()),
+            notExpectEvent(stream, eventMatcher("hideSoftInput"),
                     NOT_EXPECT_TIMEOUT);
         }
     }

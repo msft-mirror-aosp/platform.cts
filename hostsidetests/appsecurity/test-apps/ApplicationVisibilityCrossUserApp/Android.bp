@@ -13,13 +13,17 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test_helper_app {
     name: "CtsApplicationVisibilityCrossUserApp",
     defaults: ["cts_defaults"],
-    static_libs: ["androidx.test.rules"],
+    static_libs: [
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+    ],
     srcs: ["src/**/*.java"],
     // tag this module as a cts test artifact
     test_suites: [

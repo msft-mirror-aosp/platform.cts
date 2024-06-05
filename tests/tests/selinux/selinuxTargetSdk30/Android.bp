@@ -19,6 +19,7 @@ package {
 
 android_test {
     name: "CtsSelinuxTargetSdk30TestCases",
+    team: "trendy_team_android_rust",
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     static_libs: [

@@ -16,7 +16,7 @@
 
 package com.android.bedstead.testapp;
 
-import static com.android.compatibility.common.util.FileUtils.readInputStreamFully;
+import static com.android.bedstead.nene.utils.FileUtils.readInputStreamFully;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -31,6 +31,8 @@ import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.Users;
 import com.android.bedstead.testapp.processor.annotations.TestAppSender;
 import com.android.queryable.collections.QueryableActivityInfoHashSet;
+
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -75,6 +77,7 @@ public final class TestApp {
     /**
      * Install the {@link TestApp} on the device for the given {@link UserReference}.
      */
+    @CanIgnoreReturnValue
     public TestAppInstance install(UserReference user) {
         try {
             pkg().installBytes(user, this::apkBytes);
@@ -223,6 +226,11 @@ public final class TestApp {
     /** The activities which exist in the test app. */
     public QueryableActivityInfoHashSet activities() {
         return new QueryableActivityInfoHashSet(mDetails.mActivities);
+    }
+
+    /** The activity aliases which exist in the test app. */
+    public QueryableActivityInfoHashSet activityAliases() {
+        return new QueryableActivityInfoHashSet(mDetails.mActivityAliases);
     }
 
     /**

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -51,6 +52,38 @@ android_test_helper_app {
     name: "CtsEmptyTestApp_FullScreenIntent",
     defaults: ["cts_defaults"],
     manifest: "AndroidManifest_FullScreenIntent.xml",
+    sdk_version: "current",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsEmptyTestApp_AppMetadataInApk",
+    resource_dirs: [
+        "res",
+        "app_metadata_res",
+    ],
+    defaults: ["cts_defaults"],
+    manifest: "AndroidManifest_AslInApk.xml",
+    sdk_version: "current",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit",
+    resource_dirs: [
+        "res",
+        "bad_app_metadata_res",
+    ],
+    defaults: ["cts_defaults"],
+    manifest: "AndroidManifest_AslInApk_ExceedSizeLimit.xml",
     sdk_version: "current",
     // tag this module as a cts test artifact
     test_suites: [

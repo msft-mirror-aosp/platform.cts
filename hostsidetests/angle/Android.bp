@@ -35,6 +35,7 @@ java_test_host {
         ":CtsAngleDriverTestCases",
         ":CtsAngleDriverTestCasesSecondary",
         ":CtsAngleDumpsysGpuTestApp",
+        ":CtsAngleNativeDriverCheck",
     ],
     per_testcase_directory: true,
 }

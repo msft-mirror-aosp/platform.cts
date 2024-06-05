@@ -18,13 +18,15 @@ package {
 
 android_test {
     name: "CtsBroadcastTestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "guava",
-        "truth-prebuilt",
+        "platformprotosnano",
+        "truth",
         "testng",
     ],
     srcs: [
@@ -48,7 +50,7 @@ android_test_helper_app {
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.junit",
-        "truth-prebuilt",
+        "truth",
     ],
     srcs: [
         "helper-app/src/**/*.java",
@@ -66,7 +68,7 @@ android_test_helper_app {
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.junit",
-        "truth-prebuilt",
+        "truth",
     ],
     srcs: [
         "helper-app/src/**/*.java",

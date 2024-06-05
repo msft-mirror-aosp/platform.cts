@@ -18,6 +18,13 @@ package android.widget.cts;
 
 import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
 
+import static com.android.text.flags.Flags.FLAG_DEPRECATE_UI_FONTS;
+import static com.android.text.flags.Flags.FLAG_LETTER_SPACING_JUSTIFICATION;
+import static com.android.text.flags.Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE;
+import static com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH;
+
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -43,6 +50,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.Instrumentation.ActivityMonitor;
@@ -76,6 +86,10 @@ import android.os.Bundle;
 import android.os.LocaleList;
 import android.os.Parcelable;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -137,6 +151,7 @@ import android.view.inputmethod.CorrectionInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.ExtractedText;
 import android.view.inputmethod.ExtractedTextRequest;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputConnection;
 import android.view.textclassifier.TextClassifier;
 import android.view.textclassifier.TextSelection;
@@ -157,6 +172,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CtsKeyEventUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
@@ -169,8 +185,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.invocation.InvocationOnMock;
 import org.xmlpull.v1.XmlPullParserException;
-
-import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 import java.io.IOException;
 import java.lang.annotation.Retention;
@@ -211,9 +225,19 @@ public class TextViewTest {
 
     private CharSequence mTransformedText;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<TextViewCtsActivity> mActivityRule =
             new ActivityTestRule<>(TextViewCtsActivity.class);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setup() {
@@ -1308,6 +1332,7 @@ public class TextViewTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(FLAG_DEPRECATE_UI_FONTS)
     public void testSetElegantLineHeight() throws Throwable {
         mTextView = findTextView(R.id.textview_text);
         assertFalse(mTextView.getPaint().isElegantTextHeight());
@@ -5705,6 +5730,43 @@ public class TextViewTest {
         assertFalse(mTextView.isAutoHandwritingEnabled());
     }
 
+    /**
+     * Verify that TextView returns default {@code true} for
+     * {@link EditorInfo#isStylusHandwritingEnabled}.
+     */
+    @ApiTest(apis = {"android.view.inputmethod.EditorInfo#isStylusHandwritingEnabled"})
+    @UiThreadTest
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EDITORINFO_HANDWRITING_ENABLED)
+    public void isStylusHandwritingEnabled_default_returnsTrue() {
+        mTextView = new TextView(mActivity);
+        mTextView.setText(null, BufferType.EDITABLE);
+        mTextView.setInputType(InputType.TYPE_CLASS_TEXT);
+        mTextView.requestFocus();
+        EditorInfo editorInfo = new EditorInfo();
+        mTextView.onCreateInputConnection(editorInfo);
+        assertTrue(editorInfo.isStylusHandwritingEnabled());
+    }
+
+    /**
+     * Verify that TextView returns {@code false} for {@link EditorInfo#isStylusHandwritingEnabled}
+     * when {@link TextView#isAutoHandwritingEnabled()} is {@code false}.
+     */
+    @ApiTest(apis = {"android.view.inputmethod.EditorInfo#isStylusHandwritingEnabled"})
+    @UiThreadTest
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_EDITORINFO_HANDWRITING_ENABLED)
+    public void isStylusHandwritingEnabled_autoHandwritingDisabled_returnsFalse() {
+        mTextView = new TextView(mActivity);
+        mTextView.setText(null, BufferType.EDITABLE);
+        mTextView.setInputType(InputType.TYPE_CLASS_TEXT);
+        mTextView.setAutoHandwritingEnabled(false);
+        mTextView.requestFocus();
+        EditorInfo editorInfo = new EditorInfo();
+        mTextView.onCreateInputConnection(editorInfo);
+        assertFalse(editorInfo.isStylusHandwritingEnabled());
+    }
+
     @UiThreadTest
     @Test
     public void testVerifyDrawable() {
@@ -6931,6 +6993,89 @@ public class TextViewTest {
         assertEquals(Layout.JUSTIFICATION_MODE_INTER_WORD, interWordTv.getJustificationMode());
     }
 
+    @RequiresFlagsEnabled(FLAG_LETTER_SPACING_JUSTIFICATION)
+    @Test
+    public void testJustificationByStyle_InterCharacter() {
+        TextView textView = findTextView(R.id.textview_justification_inter_character);
+        assertEquals(Layout.JUSTIFICATION_MODE_INTER_CHARACTER, textView.getJustificationMode());
+    }
+
+    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
+    @Test
+    public void testUseBoundsForWidth_ByXml_false() {
+        TextView textView = findTextView(R.id.use_bounds_for_width_false);
+        assertFalse(textView.getUseBoundsForWidth());
+    }
+
+    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
+    @Test
+    public void testUseBoundsForWidth_ByXml_true() {
+        TextView textView = findTextView(R.id.use_bounds_for_width_true);
+        assertTrue(textView.getUseBoundsForWidth());
+    }
+
+    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
+    @Test
+    public void testShiftDrawingOffsetForStartOverhang_ByXml_false() {
+        TextView textView = findTextView(R.id.shift_draw_offset_false);
+        assertFalse(textView.getShiftDrawingOffsetForStartOverhang());
+    }
+
+    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
+    @Test
+    public void testShiftDrawingOffsetForStartOverhang_ByXml_true() {
+        TextView textView = findTextView(R.id.shift_draw_offset_true);
+        assertTrue(textView.getShiftDrawingOffsetForStartOverhang());
+    }
+
+    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
+    @Test
+    public void testUseLocalePreferredLineHeightForMinimumDefaultTextView() {
+        TextView textView = findTextView(
+                R.id.useLocalePreferredLineHeightForMinimumDefaultTextView);
+        assertFalse(textView.isLocalePreferredLineHeightForMinimumUsed());
+    }
+
+    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
+    @Test
+    public void testUseLocalePreferredLineHeightForMinimumTrueTextView() {
+        TextView textView = findTextView(
+                R.id.useLocalePreferredLineHeightForMinimumTrueTextView);
+        assertTrue(textView.isLocalePreferredLineHeightForMinimumUsed());
+    }
+
+    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
+    @Test
+    public void testUseLocalePreferredLineHeightForMinimumFalseTextView() {
+        TextView textView = findTextView(
+                R.id.useLocalePreferredLineHeightForMinimumFalseTextView);
+        assertFalse(textView.isLocalePreferredLineHeightForMinimumUsed());
+    }
+
+    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
+    @Test
+    public void testUseLocalePreferredLineHeightForMinimumDefaultEditText() {
+        TextView textView = findTextView(
+                R.id.useLocalePreferredLineHeightForMinimumDefaultEditText);
+        assertTrue(textView.isLocalePreferredLineHeightForMinimumUsed());
+    }
+
+    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
+    @Test
+    public void testUseLocalePreferredLineHeightForMinimumTrueEditText() {
+        TextView textView = findTextView(
+                R.id.useLocalePreferredLineHeightForMinimumTrueEditText);
+        assertTrue(textView.isLocalePreferredLineHeightForMinimumUsed());
+    }
+
+    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
+    @Test
+    public void testUseLocalePreferredLineHeightForMinimumFalseEditText() {
+        TextView textView = findTextView(
+                R.id.useLocalePreferredLineHeightForMinimumFalseEditText);
+        assertFalse(textView.isLocalePreferredLineHeightForMinimumUsed());
+    }
+
     @Test
     public void testSetAndGetCustomSelectionActionModeCallback() throws Throwable {
         final String text = "abcde";
@@ -7054,6 +7199,126 @@ public class TextViewTest {
         mTextView.setCustomInsertionActionModeCallback(mockActionModeCallback);
         assertEquals(mockActionModeCallback, mTextView.getCustomInsertionActionModeCallback());
         // TODO(Bug: 22033189): Tests the set callback is actually used.
+    }
+
+    @Test
+    public void testBackStopsActionMode() throws Throwable {
+        String text = "abcde";
+        mActivityRule.runOnUiThread(() -> {
+            FrameLayout layout = new FrameLayout(mActivity);
+            layout.setFocusable(true);
+            mActivity.setContentView(layout);
+            mTextView = new EditText(mActivity);
+            mTextView.setText(text, BufferType.SPANNABLE);
+            mTextView.setTextIsSelectable(true);
+            mTextView.requestFocus();
+            mTextView.setSelected(true);
+            mTextView.setTextClassifier(TextClassifier.NO_OP);
+            layout.addView(mTextView);
+        });
+        mInstrumentation.waitForIdleSync();
+
+        ActionMode.Callback mockActionModeCallback = mock(ActionMode.Callback.class);
+        when(mockActionModeCallback.onCreateActionMode(any(ActionMode.class), any(Menu.class)))
+                .thenReturn(Boolean.TRUE);
+        mTextView.setCustomSelectionActionModeCallback(mockActionModeCallback);
+
+        mActivityRule.runOnUiThread(() -> {
+            // Set selection and start action mode.
+            final Bundle args = new Bundle();
+            args.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0);
+            args.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, text.length());
+            mTextView.performAccessibilityAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, args);
+        });
+        mInstrumentation.waitForIdleSync();
+
+        mInstrumentation.sendCharacterSync(KeyEvent.KEYCODE_BACK);
+
+        verify(mockActionModeCallback).onDestroyActionMode(any(ActionMode.class));
+        assertTrue(mTextView.hasFocus());
+    }
+
+    @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_ESCAPE_CLEARS_FOCUS)
+    @Test
+    public void testEscapeStopsActionModeThenClearsFocus() throws Throwable {
+        String text = "abcde";
+        mActivityRule.runOnUiThread(() -> {
+            FrameLayout layout = new FrameLayout(mActivity);
+            layout.setFocusable(true);
+            mActivity.setContentView(layout);
+            mTextView = new EditText(mActivity);
+            mTextView.setText(text, BufferType.SPANNABLE);
+            mTextView.setTextIsSelectable(true);
+            mTextView.requestFocus();
+            mTextView.setSelected(true);
+            mTextView.setTextClassifier(TextClassifier.NO_OP);
+            layout.addView(mTextView);
+        });
+        mInstrumentation.waitForIdleSync();
+
+        ActionMode.Callback mockActionModeCallback = mock(ActionMode.Callback.class);
+        when(mockActionModeCallback.onCreateActionMode(any(ActionMode.class), any(Menu.class)))
+                .thenReturn(Boolean.TRUE);
+        mTextView.setCustomSelectionActionModeCallback(mockActionModeCallback);
+
+        mActivityRule.runOnUiThread(() -> {
+            // Set selection and start action mode.
+            final Bundle args = new Bundle();
+            args.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0);
+            args.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, text.length());
+            mTextView.performAccessibilityAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, args);
+        });
+        mInstrumentation.waitForIdleSync();
+
+        // First escape key press stops the action mode
+        mInstrumentation.sendCharacterSync(KeyEvent.KEYCODE_ESCAPE);
+
+        verify(mockActionModeCallback).onDestroyActionMode(any(ActionMode.class));
+        assertTrue(mTextView.hasFocus());
+
+        // Second escape key press clears focus
+        mInstrumentation.sendCharacterSync(KeyEvent.KEYCODE_ESCAPE);
+
+        assertFalse(mTextView.hasFocus());
+    }
+
+    @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_ESCAPE_CLEARS_FOCUS)
+    @Test
+    public void testEscapeWithModifierDoesNotStopActionModeOrClearFocus() throws Throwable {
+        String text = "abcde";
+        mActivityRule.runOnUiThread(() -> {
+            FrameLayout layout = new FrameLayout(mActivity);
+            layout.setFocusable(true);
+            mActivity.setContentView(layout);
+            mTextView = new EditText(mActivity);
+            mTextView.setText(text, BufferType.SPANNABLE);
+            mTextView.setTextIsSelectable(true);
+            mTextView.requestFocus();
+            mTextView.setSelected(true);
+            mTextView.setTextClassifier(TextClassifier.NO_OP);
+            layout.addView(mTextView);
+        });
+        mInstrumentation.waitForIdleSync();
+
+        ActionMode.Callback mockActionModeCallback = mock(ActionMode.Callback.class);
+        when(mockActionModeCallback.onCreateActionMode(any(ActionMode.class), any(Menu.class)))
+                .thenReturn(Boolean.TRUE);
+        mTextView.setCustomSelectionActionModeCallback(mockActionModeCallback);
+
+        mActivityRule.runOnUiThread(() -> {
+            // Set selection and start action mode.
+            final Bundle args = new Bundle();
+            args.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0);
+            args.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, text.length());
+            mTextView.performAccessibilityAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, args);
+        });
+        mInstrumentation.waitForIdleSync();
+
+        mCtsKeyEventUtil.sendKeyWhileHoldingModifier(mInstrumentation,
+                KeyEvent.KEYCODE_ESCAPE, KeyEvent.KEYCODE_CTRL_LEFT);
+
+        verify(mockActionModeCallback, never()).onDestroyActionMode(any(ActionMode.class));
+        assertTrue(mTextView.hasFocus());
     }
 
     @UiThreadTest
@@ -7434,6 +7699,50 @@ public class TextViewTest {
                         AccessibilityEvent.CONTENT_CHANGE_TYPE_ERROR
                                 | AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_INVALID),
                 TIMEOUT);
+    }
+
+    @Test
+    public void testAccessibilityActionNextGranularityLineOverText() throws Exception {
+        UiAutomation uiAutomation = mInstrumentation.getUiAutomation();
+        TextView textView = findTextView(R.id.textview_text);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT,
+                LayoutParams.WRAP_CONTENT);
+        mInstrumentation.runOnMainSync(() -> {
+            // Ensure we fall into case where the layout will be nulled in
+            // TextView#checkForRelayout when making sure the text is iterable for accessibility in
+            // TextView#ensureIterableTextForAccessibilitySelectable.
+            textView.setLayoutParams(params);
+            textView.setMinWidth(0);
+            textView.setMinWidth(Integer.MAX_VALUE);
+            textView.setText(mActivity.getResources().getString(R.id.textview_text_two_lines));
+        });
+
+        assertThat(textView.getText() instanceof Spannable).isFalse();
+
+        final AccessibilityNodeInfo text = uiAutomation
+                .getRootInActiveWindow().findAccessibilityNodeInfosByText(
+                        mActivity.getResources().getString(R.id.textview_text_two_lines)).get(0);
+
+        final int granularities = text.getMovementGranularities();
+        assertThat(
+                (granularities & AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE) != 0).isTrue();
+
+        final Bundle arguments = new Bundle();
+        arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT,
+                AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE);
+        // Move to the next line and wait for an event.
+        AccessibilityEvent firstExpected = uiAutomation
+                .executeAndWaitForEvent(() -> text.performAction(
+                        AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY,
+                        arguments), event -> (event.getEventType()
+                        == AccessibilityEvent.TYPE_VIEW_TEXT_TRAVERSED_AT_MOVEMENT_GRANULARITY
+                        && event.getAction()
+                        == AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY
+                        && event.getMovementGranularity()
+                        == AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE), TIMEOUT);
+
+        // Make sure we got the expected event.
+        assertNotNull(firstExpected);
     }
 
     @Test
@@ -9177,6 +9486,21 @@ public class TextViewTest {
 
         textView.measure(wMeasureSpec, hMeasureSpec);
         assertEquals(measuredWidth, textView.getMeasuredWidth());
+    }
+
+    @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH)
+    @Test
+    public void setGetShiftDrawingOffsetForStartOverhang() {
+        TextView textView = new TextView(mActivity);
+
+        // false by default
+        assertFalse(textView.getShiftDrawingOffsetForStartOverhang());
+
+        textView.setShiftDrawingOffsetForStartOverhang(true);
+        assertTrue(textView.getShiftDrawingOffsetForStartOverhang());
+
+        textView.setShiftDrawingOffsetForStartOverhang(false);
+        assertFalse(textView.getShiftDrawingOffsetForStartOverhang());
     }
 
     private static boolean isExpectedChangeType(AccessibilityEvent event, int changeType) {

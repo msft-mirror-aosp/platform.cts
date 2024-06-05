@@ -20,6 +20,13 @@ import static android.app.Notification.FLAG_BUBBLE;
 import static android.graphics.drawable.Icon.TYPE_ADAPTIVE_BITMAP;
 import static android.graphics.drawable.Icon.TYPE_RESOURCE;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.app.Notification;
 import android.app.Notification.Action.Builder;
 import android.app.Notification.CallStyle;
@@ -47,16 +54,19 @@ import android.util.Pair;
 import android.widget.RemoteViews;
 
 import androidx.annotation.Nullable;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.ApiTest;
-
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class NotificationTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class NotificationTest {
     private static final String TEXT_RESULT_KEY = "text";
     private static final String DATA_RESULT_KEY = "data";
     private static final String DATA_AND_TEXT_RESULT_KEY = "data and text";
@@ -81,13 +91,13 @@ public class NotificationTest extends AndroidTestCase {
     private static final String SETTING_TEXT = "work chats";
     private static final boolean ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS = false;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mContext = getContext();
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mNotification = new Notification();
     }
 
+    @Test
     public void testConstructor() {
         mNotification = null;
         mNotification = new Notification();
@@ -103,6 +113,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(0, mNotification.number);
     }
 
+    @Test
     public void testBuilderConstructor() {
         mNotification = new Notification.Builder(mContext, CHANNEL.getId()).build();
         assertEquals(CHANNEL.getId(), mNotification.getChannelId());
@@ -112,12 +123,14 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals((long) 0, mNotification.getTimeoutAfter());
     }
 
+    @Test
     public void testDescribeContents() {
         final int expected = 0;
         mNotification = new Notification();
         assertEquals(expected, mNotification.describeContents());
     }
 
+    @Test
     public void testCategories() {
         assertNotNull(Notification.CATEGORY_ALARM);
         assertNotNull(Notification.CATEGORY_CALL);
@@ -141,6 +154,7 @@ public class NotificationTest extends AndroidTestCase {
         assertNotNull(Notification.CATEGORY_MISSED_CALL);
     }
 
+    @Test
     public void testWriteToParcel() {
         Notification.BubbleMetadata bubble = makeBubbleMetadata();
         mNotification = new Notification.Builder(mContext, CHANNEL.getId())
@@ -248,6 +262,7 @@ public class NotificationTest extends AndroidTestCase {
         assertNull(result.sound);
     }
 
+    @Test
     public void testColorizeNotification() {
         mNotification = new Notification.Builder(mContext, "channel_id")
                 .setSmallIcon(1)
@@ -258,6 +273,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(mNotification.extras.getBoolean(Notification.EXTRA_COLORIZED));
     }
 
+    @Test
     public void testBuilder() {
         final Intent intent = new Intent();
         final PendingIntent contentIntent =
@@ -301,6 +317,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(ACTION_TITLE, mNotification.getContextualActions().get(0).title);
     }
 
+    @Test
     public void testBuilder_getStyle() {
         MessagingStyle ms = new MessagingStyle(new Person.Builder().setName("Test name").build());
         Notification.Builder builder = new Notification.Builder(mContext, CHANNEL.getId());
@@ -310,6 +327,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(ms, builder.getStyle());
     }
 
+    @Test
     public void testActionBuilder() {
         final Intent intent = new Intent().setPackage(mContext.getPackageName());
         final PendingIntent actionIntent = PendingIntent.getBroadcast(mContext, 0, intent,
@@ -324,6 +342,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(mAction.isAuthenticationRequired());
     }
 
+    @Test
     public void testNotification_addPerson() {
         String name = "name";
         String key = "key";
@@ -351,6 +370,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(uri, restoredPerson.getUri());
     }
 
+    @Test
     public void testNotification_MessagingStyle_people() {
         String name = "name";
         String key = "key";
@@ -381,6 +401,7 @@ public class NotificationTest extends AndroidTestCase {
     }
 
 
+    @Test
     public void testMessagingStyle_historicMessages() {
         Message referenceMessage = new Message("historic text", 0, "historic sender");
         Notification.MessagingStyle messagingStyle = new Notification.MessagingStyle("self name")
@@ -405,6 +426,7 @@ public class NotificationTest extends AndroidTestCase {
                 mNotification.extras.getParcelableArray(Notification.EXTRA_HISTORIC_MESSAGES));
     }
 
+    @Test
     public void testMessagingStyle_isGroupConversation() {
         mContext.getApplicationInfo().targetSdkVersion = Build.VERSION_CODES.P;
         Notification.MessagingStyle messagingStyle = new Notification.MessagingStyle("self name")
@@ -420,6 +442,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(notification.extras.getBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION));
     }
 
+    @Test
     public void testMessagingStyle_isGroupConversation_noConversationTitle() {
         mContext.getApplicationInfo().targetSdkVersion = Build.VERSION_CODES.P;
         Notification.MessagingStyle messagingStyle = new Notification.MessagingStyle("self name")
@@ -435,6 +458,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(notification.extras.getBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION));
     }
 
+    @Test
     public void testMessagingStyle_isGroupConversation_withConversationTitle_legacy() {
         // In legacy (version < P), isGroupConversation is controlled by conversationTitle.
         mContext.getApplicationInfo().targetSdkVersion = Build.VERSION_CODES.O;
@@ -451,6 +475,7 @@ public class NotificationTest extends AndroidTestCase {
         assertFalse(notification.extras.getBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION));
     }
 
+    @Test
     public void testMessagingStyle_isGroupConversation_withoutConversationTitle_legacy() {
         // In legacy (version < P), isGroupConversation is controlled by conversationTitle.
         mContext.getApplicationInfo().targetSdkVersion = Build.VERSION_CODES.O;
@@ -467,6 +492,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(notification.extras.getBoolean(Notification.EXTRA_IS_GROUP_CONVERSATION));
     }
 
+    @Test
     public void testMessagingStyle_getUser() {
         Person user = new Person.Builder().setName("Test name").build();
 
@@ -475,6 +501,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(user, messagingStyle.getUser());
     }
 
+    @Test
     public void testMessagingStyle_getConversationTitle() {
         final String title = "test conversation title";
         Person user = new Person.Builder().setName("Test name").build();
@@ -490,6 +517,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(title, notification.extras.getString(Notification.EXTRA_CONVERSATION_TITLE));
     }
 
+    @Test
     public void testMessage() {
         String senderName = "Test name";
         Person sender = new Person.Builder().setName(senderName).build();
@@ -504,6 +532,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(senderName, message.getSender());
     }
 
+    @Test
     public void testMessageData() {
         Person sender = new Person.Builder().setName("Test name").build();
         String text = "Test message";
@@ -518,12 +547,14 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(uri, message.getDataUri());
     }
 
+    @Test
     public void testToString() {
         mNotification = new Notification();
         assertNotNull(mNotification.toString());
         mNotification = null;
     }
 
+    @Test
     public void testNotificationActionBuilder_setDataOnlyRemoteInput() throws Throwable {
         Notification.Action a = newActionBuilder()
                 .addRemoteInput(newDataOnlyRemoteInput()).build();
@@ -532,6 +563,7 @@ public class NotificationTest extends AndroidTestCase {
         verifyRemoteInputArrayHasSingleResult(a.getDataOnlyRemoteInputs(), DATA_RESULT_KEY);
     }
 
+    @Test
     public void testNotificationActionBuilder_setTextAndDataOnlyRemoteInput() throws Throwable {
         Notification.Action a = newActionBuilder()
                 .addRemoteInput(newDataOnlyRemoteInput())
@@ -542,6 +574,7 @@ public class NotificationTest extends AndroidTestCase {
         verifyRemoteInputArrayHasSingleResult(a.getDataOnlyRemoteInputs(), DATA_RESULT_KEY);
     }
 
+    @Test
     public void testNotificationActionBuilder_setTextAndDataOnlyAndBothRemoteInput()
             throws Throwable {
         Notification.Action a = newActionBuilder()
@@ -560,17 +593,20 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(a.getDataOnlyRemoteInputs()[0].isDataOnly());
     }
 
+    @Test
     public void testAction_builder_hasDefault() {
         Notification.Action action = makeNotificationAction(null);
         assertEquals(Notification.Action.SEMANTIC_ACTION_NONE, action.getSemanticAction());
     }
 
+    @Test
     public void testAction_builder_setSemanticAction() {
         Notification.Action action = makeNotificationAction(
                 builder -> builder.setSemanticAction(Notification.Action.SEMANTIC_ACTION_REPLY));
         assertEquals(Notification.Action.SEMANTIC_ACTION_REPLY, action.getSemanticAction());
     }
 
+    @Test
     public void testAction_builder_contextualAction_nullIcon() {
         PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0,
                 new Intent().setPackage(mContext.getPackageName()),
@@ -586,6 +622,7 @@ public class NotificationTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testAction_builder_contextualAction_nullIntent() {
         Notification.Action.Builder builder =
                 new Notification.Action.Builder(0 /* icon */, "title", null /* intent */)
@@ -599,6 +636,7 @@ public class NotificationTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testAction_parcel() {
         Notification.Action action = writeAndReadParcelable(
                 makeNotificationAction(builder -> {
@@ -610,6 +648,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(action.getAllowGeneratedReplies());
     }
 
+    @Test
     public void testAction_clone() {
         Notification.Action action = makeNotificationAction(
                 builder -> builder.setSemanticAction(Notification.Action.SEMANTIC_ACTION_DELETE));
@@ -618,6 +657,7 @@ public class NotificationTest extends AndroidTestCase {
                 action.clone().getSemanticAction());
     }
 
+    @Test
     public void testBuildStrictMode() {
         try {
             StrictMode.setThreadPolicy(
@@ -638,11 +678,13 @@ public class NotificationTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testGetAllowSystemGeneratedContextualActions_trueByDefault() {
         Notification notification = new Notification.Builder(mContext, CHANNEL.getId()).build();
         assertTrue(notification.getAllowSystemGeneratedContextualActions());
     }
 
+    @Test
     public void testGetAllowSystemGeneratedContextualActions() {
         Notification notification = new Notification.Builder(mContext, CHANNEL.getId())
                 .setAllowSystemGeneratedContextualActions(false)
@@ -650,6 +692,7 @@ public class NotificationTest extends AndroidTestCase {
         assertFalse(notification.getAllowSystemGeneratedContextualActions());
     }
 
+    @Test
     public void testBubbleMetadataBuilder() {
         PendingIntent bubbleIntent = PendingIntent.getActivity(mContext, 0,
                 new Intent().setPackage(mContext.getPackageName()),
@@ -673,6 +716,7 @@ public class NotificationTest extends AndroidTestCase {
         assertFalse(data.getAutoExpandBubble());
     }
 
+    @Test
     public void testBubbleMetadata_parcel() {
         PendingIntent bubbleIntent = PendingIntent.getActivity(mContext, 0,
                 new Intent().setPackage(mContext.getPackageName()),
@@ -699,6 +743,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(metadata.isBubbleSuppressable());
     }
 
+    @Test
     public void testBubbleMetadataBuilder_shortcutId() {
         PendingIntent deleteIntent = PendingIntent.getActivity(mContext, 0, new Intent(),
                 PendingIntent.FLAG_IMMUTABLE);
@@ -717,6 +762,7 @@ public class NotificationTest extends AndroidTestCase {
         assertFalse(data.getAutoExpandBubble());
     }
 
+    @Test
     public void testBubbleMetadataBuilder_parcelShortcutId() {
         PendingIntent deleteIntent = PendingIntent.getActivity(mContext, 0, new Intent(),
                 PendingIntent.FLAG_IMMUTABLE);
@@ -738,6 +784,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(metadata.isNotificationSuppressed());
     }
 
+    @Test
     public void testBubbleMetadata_parcelResId() {
         PendingIntent bubbleIntent = PendingIntent.getActivity(mContext, 0, new Intent(),
                 PendingIntent.FLAG_IMMUTABLE);
@@ -755,6 +802,7 @@ public class NotificationTest extends AndroidTestCase {
         assertFalse(metadata.isNotificationSuppressed());
     }
 
+    @Test
     public void testBubbleMetadataBuilder_throwForNoIntentNoShortcut() {
         Notification.BubbleMetadata.Builder metadataBuilder =
                 new Notification.BubbleMetadata.Builder();
@@ -766,6 +814,7 @@ public class NotificationTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testBubbleMetadataBuilder_noThrowWithShortcut() {
         Notification.BubbleMetadata.Builder metadataBuilder =
                 new Notification.BubbleMetadata.Builder(BUBBLE_SHORTCUT_ID)
@@ -776,6 +825,7 @@ public class NotificationTest extends AndroidTestCase {
         assertNull(metadata.getIntent());
     }
 
+    @Test
     public void testBubbleMetadataBuilder_shortcutBuilder_throwsForSetIntent() {
         PendingIntent bubbleIntent = PendingIntent.getActivity(mContext, 0,
                 new Intent().setPackage(mContext.getPackageName()),
@@ -791,6 +841,7 @@ public class NotificationTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testBubbleMetadataBuilder_shortcutBuilder_throwsForSetIcon() {
         try {
             Icon icon = Icon.createWithResource(mContext, 1);
@@ -804,6 +855,7 @@ public class NotificationTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testBubbleMetadataBuilder_notifBubbleShortcutIds_match_noThrow() {
         Notification.BubbleMetadata metadata =
                 new Notification.BubbleMetadata.Builder(BUBBLE_SHORTCUT_ID).build();
@@ -819,6 +871,7 @@ public class NotificationTest extends AndroidTestCase {
                 mNotification.getShortcutId());
     }
 
+    @Test
     public void testBubbleMetadataBuilder_notifBubbleShortcutIds_different_throw() {
         Notification.BubbleMetadata metadata =
                 new Notification.BubbleMetadata.Builder(BUBBLE_SHORTCUT_ID).build();
@@ -838,6 +891,7 @@ public class NotificationTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testBubbleMetadataBuilder_noThrowForAdaptiveBitmapIcon() {
         Bitmap b = Bitmap.createBitmap(50, 25, Bitmap.Config.ARGB_8888);
         new Canvas(b).drawColor(0xffff0000);
@@ -853,6 +907,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(TYPE_ADAPTIVE_BITMAP, metadata.getIcon().getType());
     }
 
+    @Test
     public void testBubbleMetadataBuilder_noThrowForNonBitmapIcon() {
         Icon icon = Icon.createWithResource(mContext, R.drawable.ic_android);
 
@@ -866,6 +921,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(TYPE_RESOURCE, metadata.getIcon().getType());
     }
 
+    @Test
     public void testBubbleMetadataBuilder_replaceHeightRes() {
         PendingIntent bubbleIntent = PendingIntent.getActivity(mContext, 0,
                 new Intent().setPackage(mContext.getPackageName()),
@@ -886,6 +942,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(BUBBLE_HEIGHT_RESID, data.getDesiredHeightResId());
     }
 
+    @Test
     public void testBubbleMetadataBuilder_replaceHeightDp() {
         PendingIntent bubbleIntent = PendingIntent.getActivity(mContext, 0,
                 new Intent().setPackage(mContext.getPackageName()),
@@ -906,6 +963,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(0, data.getDesiredHeightResId());
     }
 
+    @Test
     public void testFlagBubble() {
         Notification n = new Notification();
         assertFalse((n.flags & FLAG_BUBBLE) != 0);
@@ -913,6 +971,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue((n.flags & FLAG_BUBBLE) != 0);
     }
 
+    @Test
     public void testGetMessagesFromBundleArray() {
         Person sender = new Person.Builder().setName("Sender").build();
         Notification.MessagingStyle.Message firstExpectedMessage =
@@ -939,6 +998,7 @@ public class NotificationTest extends AndroidTestCase {
         assertMessageEquals(secondExpectedMessage, actualMessages.get(1));
     }
 
+    @Test
     public void testNotification_isBigPictureStyle_pictureContentDescriptionSet() {
         final String contentDescription = "content description";
 
@@ -955,6 +1015,7 @@ public class NotificationTest extends AndroidTestCase {
         assertEquals(contentDescription, notificationContentDescription);
     }
 
+    @Test
     public void testHasImage_messagingStyle() {
         Notification.MessagingStyle messagingStyle = new Notification.MessagingStyle("self name")
                 .addMessage(new Message("image", 0, "sender")
@@ -967,6 +1028,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(mNotification.hasImage());
     }
 
+    @Test
     public void testHasImage_largeIcon() {
         Bitmap b = Bitmap.createBitmap(50, 25, Bitmap.Config.ARGB_8888);
 
@@ -977,6 +1039,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(mNotification.hasImage());
     }
 
+    @Test
     public void testHasImage_backgroundImage() {
         final Uri backgroundImage = Uri.parse("content://com.example/background");
 
@@ -990,6 +1053,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(mNotification.hasImage());
     }
 
+    @Test
     public void testHasImage_smallIcon() {
         mNotification = new Notification.Builder(mContext, CHANNEL.getId())
                     .setSmallIcon(1)
@@ -998,6 +1062,7 @@ public class NotificationTest extends AndroidTestCase {
         assertFalse(mNotification.hasImage());
     }
 
+    @Test
     public void testCallStyle_setsChronometerExtra() {
         Person person = new Person.Builder().setName("Test name").build();
         PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0,
@@ -1012,6 +1077,7 @@ public class NotificationTest extends AndroidTestCase {
         assertTrue(extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER));
     }
 
+    @Test
     public void testCallStyle_setsCallTypeExtra() {
         Person person = new Person.Builder().setName("Test name").build();
         PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0,
@@ -1043,7 +1109,6 @@ public class NotificationTest extends AndroidTestCase {
     }
 
     @Test
-    @ApiTest(apis = {"android.app.Notification#findRemoteInputActionPair(bool)"})
     public void testFreeformRemoteInputActionPair_noRemoteInput() {
         PendingIntent intent = PendingIntent.getActivity(
                 mContext, 0, new Intent("test1"), PendingIntent.FLAG_IMMUTABLE);
@@ -1056,7 +1121,6 @@ public class NotificationTest extends AndroidTestCase {
     }
 
     @Test
-    @ApiTest(apis = {"android.app.Notification#findRemoteInputActionPair(bool)"})
     public void testFreeformRemoteInputActionPair_hasRemoteInput() {
         PendingIntent intent = PendingIntent.getActivity(
                 mContext, 0, new Intent("test1"), PendingIntent.FLAG_IMMUTABLE);
@@ -1088,7 +1152,6 @@ public class NotificationTest extends AndroidTestCase {
     }
 
     @Test
-    @ApiTest(apis = {"android.app.Notification#findRemoteInputActionPair(bool)"})
     public void testFreeformRemoteInputActionPair_requestFreeform_noFreeformRemoteInput() {
         PendingIntent intent = PendingIntent.getActivity(
                 mContext, 0, new Intent("test1"), PendingIntent.FLAG_IMMUTABLE);
@@ -1104,7 +1167,6 @@ public class NotificationTest extends AndroidTestCase {
     }
 
     @Test
-    @ApiTest(apis = {"android.app.Notification#findRemoteInputActionPair(bool)"})
     public void testFreeformRemoteInputActionPair_requestFreeform_hasFreeformRemoteInput() {
         PendingIntent intent = PendingIntent.getActivity(
                 mContext, 0, new Intent("test1"), PendingIntent.FLAG_IMMUTABLE);

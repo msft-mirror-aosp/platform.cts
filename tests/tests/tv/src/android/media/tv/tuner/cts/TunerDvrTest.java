@@ -41,6 +41,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.RequiredFeatureRule;
 
 import org.junit.After;
@@ -55,6 +56,7 @@ import java.util.concurrent.Executor;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@CddTest(requirements = {"3/T-1-1"})
 public class TunerDvrTest {
     private static final String TAG = "MediaTunerDvrTest";
     private static final long STATUS_CHECK_INTERVAL_MS = 100L;

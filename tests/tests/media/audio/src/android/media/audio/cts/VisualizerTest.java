@@ -18,6 +18,7 @@ package android.media.audio.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -114,13 +115,18 @@ public class VisualizerTest extends PostProcTestBase {
             int[] range = mVisualizer.getCaptureSizeRange();
             assertTrue("insufficient min capture size",
                     range[0] <= MAX_CAPTURE_SIZE_MIN);
-            assertTrue("insufficient min capture size",
+            assertTrue("insufficient max capture size",
                     range[1] >= MIN_CAPTURE_SIZE_MAX);
+            int size = mVisualizer.getCaptureSize();
+            assertTrue("capture size smaller than min",
+                    size >= range[0]);
+            assertTrue("capture size larger than max",
+                    size <= range[1]);
             mVisualizer.setCaptureSize(range[0]);
             assertEquals("insufficient min capture size",
                     range[0], mVisualizer.getCaptureSize());
             mVisualizer.setCaptureSize(range[1]);
-            assertEquals("insufficient min capture size",
+            assertEquals("insufficient max capture size",
                     range[1], mVisualizer.getCaptureSize());
         } catch (IllegalArgumentException e) {
             fail("Bad parameter value");
@@ -131,6 +137,22 @@ public class VisualizerTest extends PostProcTestBase {
         } finally {
             releaseVisualizer();
         }
+    }
+
+    //Test case 1.2: test setting illegal capture size and expect IllegalArgumentException
+    @Test
+    public void test1_2SetIllegalCaptureSize() throws Exception {
+        getVisualizer(0);
+        int[] range = mVisualizer.getCaptureSizeRange();
+        assertTrue("insufficient min capture size",
+                range[0] <= MAX_CAPTURE_SIZE_MIN);
+        assertTrue("insufficient max capture size",
+                range[1] >= MIN_CAPTURE_SIZE_MAX);
+
+        assertThrows(IllegalArgumentException.class,
+                     () -> mVisualizer.setCaptureSize(range[0] - 1));
+        assertThrows(IllegalArgumentException.class,
+                     () -> mVisualizer.setCaptureSize(range[1] + 1));
     }
 
     //-----------------------------------------------------------------
@@ -230,6 +252,31 @@ public class VisualizerTest extends PostProcTestBase {
         } finally {
             terminateListenerLooper();
             releaseVisualizer();
+        }
+    }
+
+    //Test case 2.2: test capture with illegal size
+    @Test
+    public void test2_2IllegalCaptureSize() throws Exception {
+        if (!hasAudioOutput()) {
+            Log.w(TAG, "AUDIO_OUTPUT feature not found. This system might not have a valid "
+                    + "audio output HAL");
+            return;
+        }
+        try {
+            getVisualizer(0);
+            mVisualizer.setEnabled(true);
+            assertTrue("visualizer not enabled", mVisualizer.getEnabled());
+            int captureSize = mVisualizer.getCaptureSize();
+            if (captureSize <= 0) {
+                Log.w(TAG, "This system visualizer doesn't support capture waveform");
+                return;
+            }
+            byte[] data = new byte[captureSize - 1];
+            mVisualizer.getWaveForm(data);
+            fail("Should have thrown IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            // success
         }
     }
 

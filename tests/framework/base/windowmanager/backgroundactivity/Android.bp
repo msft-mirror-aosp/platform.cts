@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_responsible_apis",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -38,6 +39,9 @@ android_test {
         "cts_window-sidecar",
         "cts_window-extensions",
         "cts_window_jetpack_utils",
+        "com.android.window.flags.window-aconfig-java",
+        "android.security.flags-aconfig-java",
+        "Harrier",
     ],
 
     test_suites: [
@@ -51,6 +55,7 @@ android_test {
         ":CtsBackgroundActivityAppB33",
         ":CtsBackgroundActivityAppC",
         ":CtsBackgroundActivityAppC33",
+        ":CtsBackgroundActivityAppAllowCrossUidFlagDefault",
     ],
     per_testcase_directory: true,
 }

@@ -26,6 +26,9 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.service.voice.VoiceInteractionService;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -49,9 +52,13 @@ public class CtsMainVoiceInteractionService extends BaseVoiceInteractionService 
      */
     public void createAlwaysOnHotwordDetector() {
         mDetectorInitializedLatch = new CountDownLatch(1);
+        List<String> requestedPermissions = new ArrayList<String>(
+                Arrays.asList(MANAGE_HOTWORD_DETECTION, CAPTURE_AUDIO_HOTWORD, RECORD_AUDIO));
+
         mHandler.post(() -> runWithShellPermissionIdentity(() -> {
-            callCreateAlwaysOnHotwordDetector(mNoOpHotwordDetectorCallback);
-        }, MANAGE_HOTWORD_DETECTION, CAPTURE_AUDIO_HOTWORD, RECORD_AUDIO));
+            callCreateAlwaysOnHotwordDetector(mNoOpHotwordDetectorCallback,
+                    /* useExecutor= */ false);
+        }, requestedPermissions.toArray(new String[0])));
     }
 
     /**

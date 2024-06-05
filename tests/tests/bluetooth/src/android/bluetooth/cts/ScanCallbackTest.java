@@ -21,9 +21,9 @@ import static org.junit.Assert.fail;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
-import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
@@ -60,7 +60,7 @@ public class ScanCallbackTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testScanSuccess() {
+    public void scanSuccess() {
         mMockScanCallback.mScanType = SCAN_TYPE_SUCCESS;
         mMockScanner.startScan(new ScanSettings.Builder().build(), mMockScanCallback);
     }
@@ -68,7 +68,7 @@ public class ScanCallbackTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testBatchScans() {
+    public void batchScans() {
         ScanSettings settings = new ScanSettings.Builder().setReportDelay(1000).build();
         mMockScanCallback.mScanType = SCAN_TYPE_BATCH;
         mMockScanner.startScan(settings, mMockScanCallback);
@@ -77,7 +77,7 @@ public class ScanCallbackTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testScanFail() {
+    public void scanFail() {
         ScanSettings settings = new ScanSettings.Builder().build();
         // The first scan is success.
         mMockScanCallback.mScanType = SCAN_TYPE_SUCCESS;

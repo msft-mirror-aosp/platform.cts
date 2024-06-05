@@ -16,18 +16,20 @@
 
 package com.android.cts.devicepolicy;
 
-import com.android.tradefed.util.RunUtil;
 import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.permission.flags.Flags;
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 import android.stats.devicepolicy.EventId;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.TemporarilyIgnoreOnHeadlessSystemUserMode;
@@ -35,10 +37,12 @@ import com.android.cts.devicepolicy.annotations.LockSettingsTest;
 import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
+import com.android.tradefed.util.RunUtil;
 
 import com.google.common.collect.ImmutableMap;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -67,7 +71,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     protected static final String DEVICE_ADMIN_COMPONENT_FLATTENED =
             DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS;
 
-    protected static final String STORAGE_ENCRYPTION_TEST_CLASS = ".StorageEncryptionTest";
     protected static final String IS_SYSTEM_USER_PARAM = "isSystemUser";
 
     protected static final String INTENT_RECEIVER_PKG = "com.android.cts.intent.receiver";
@@ -104,9 +107,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     private static final String VPN_APP_NOT_ALWAYS_ON_APK = "CtsVpnFirewallAppNotAlwaysOn.apk";
 
     private static final String DISALLOW_REMOVE_USER = "no_remove_user";
-
-    private static final String CUSTOMIZATION_APP_PKG = "com.android.cts.customizationapp";
-    private static final String CUSTOMIZATION_APP_APK = "CtsCustomizationApp.apk";
 
     private static final String AUTOFILL_APP_PKG = "com.android.cts.devicepolicy.autofillapp";
     private static final String AUTOFILL_APP_APK = "CtsDevicePolicyAutofillApp.apk";
@@ -167,6 +167,10 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     // profile owner it is the user id of the created profile.
     protected int mUserId;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+
     @Override
     public void tearDown() throws Exception {
         getDevice().uninstallPackage(DEVICE_ADMIN_PKG);
@@ -180,7 +184,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         getDevice().uninstallPackage(VPN_APP_NOT_ALWAYS_ON_APK);
         getDevice().uninstallPackage(INTENT_RECEIVER_PKG);
         getDevice().uninstallPackage(INTENT_SENDER_PKG);
-        getDevice().uninstallPackage(CUSTOMIZATION_APP_PKG);
         getDevice().uninstallPackage(AUTOFILL_APP_PKG);
         getDevice().uninstallPackage(CONTENT_CAPTURE_SERVICE_PKG);
         getDevice().uninstallPackage(CONTENT_CAPTURE_APP_PKG);
@@ -220,14 +223,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
                 .setAdminPackageName(CERT_INSTALLER_PKG)
                 .setBoolean(true)
                 .build());
-    }
-
-    @Test
-    @FlakyTest(bugId = 187862351)
-    public void testSensorsRelatedPermissionsNotGrantedViaPolicy() throws Exception {
-        installAppPermissionAppAsUser();
-        executeDeviceTestMethod(".PermissionsTest",
-                "testSensorsRelatedPermissionsNotGrantedViaPolicy");
     }
 
     /**
@@ -381,13 +376,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     }
 
     @Test
-    public void testAutoGrantMultiplePermissionsInGroup() throws Exception {
-        installAppPermissionAppAsUser();
-        executeDeviceTestMethod(".PermissionsTest",
-                "testPermissionPolicyAutoGrant_multiplePermissionsInGroup");
-    }
-
-    @Test
     public void testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted()
             throws Exception {
         installAppPermissionAppAsUser();
@@ -532,27 +520,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         }
     }
 
-    // Sets restrictions and launches non-admin app, that tries to set wallpaper.
-    // Non-admin apps must not violate any user restriction.
-    @Test
-    public void testSetWallpaper_disallowed() throws Exception {
-        // UserManager.DISALLOW_SET_WALLPAPER
-        final String DISALLOW_SET_WALLPAPER = "no_set_wallpaper";
-        if (!hasService("wallpaper")) {
-            CLog.d("testSetWallpaper_disallowed(): device does not support wallpapers");
-            return;
-        }
-
-        installAppAsUser(CUSTOMIZATION_APP_APK, mUserId);
-        try {
-            changeUserRestrictionOrFail(DISALLOW_SET_WALLPAPER, true, mUserId);
-            runDeviceTestsAsUser(CUSTOMIZATION_APP_PKG, ".CustomizationTest",
-                "testSetWallpaper_disallowed", mUserId);
-        } finally {
-            changeUserRestrictionOrFail(DISALLOW_SET_WALLPAPER, false, mUserId);
-        }
-    }
-
     // Runs test with admin privileges. The test methods set all the tested restrictions
     // inside. But these restrictions must have no effect on the device/profile owner behavior.
     @Test
@@ -656,6 +623,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
 
             // Clear global restriction and test if we can install the apk.
             changeUserRestrictionOrFail(DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY, false, mUserId);
+            setInstallPackageAppOps(PACKAGE_INSTALLER_PKG, true, mUserId);
             runDeviceTestsAsUser(PACKAGE_INSTALLER_PKG, ".ManualPackageInstallTest",
                     "testManualInstallSucceeded", mUserId);
         } finally {
@@ -695,6 +663,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
 
     @LargeTest
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_SERVER_ROLE_CONTROLLER_ENABLED)
     public void testLockTaskAfterReboot() throws Exception {
         try {
             // Just start kiosk mode
@@ -787,36 +756,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         // Verify that the package is not suspended from the PREVIOUS test and that the app launches
         executeSuspendPackageTestMethod("testPackageNotSuspended");
     }
-
-    @Test
-    public void testTrustAgentInfo() throws Exception {
-        assumeHasSecureLockScreenFeature();
-
-        executeDeviceTestClass(".TrustAgentInfoTest");
-    }
-    @Test
-    public void testCannotEnableOrDisableDeviceOwnerOrProfileOwner() throws Exception {
-        // Try to disable a component in device owner/ profile owner.
-        String result = disableComponentOrPackage(
-                mUserId, DEVICE_ADMIN_PKG + "/.SetPolicyActivity");
-        assertTrue("Should throw SecurityException",
-                result.contains("java.lang.SecurityException"));
-        // Try to disable the device owner/ profile owner package.
-        result = disableComponentOrPackage(mUserId, DEVICE_ADMIN_PKG);
-        assertTrue("Should throw SecurityException",
-                result.contains("java.lang.SecurityException"));
-        // Try to enable a component in device owner/ profile owner.
-        result = enableComponentOrPackage(
-                mUserId, DEVICE_ADMIN_PKG + "/.SetPolicyActivity");
-        assertTrue("Should throw SecurityException",
-                result.contains("java.lang.SecurityException"));
-        // Try to enable the device owner/ profile owner package.
-        result = enableComponentOrPackage(mUserId, DEVICE_ADMIN_PKG);
-        assertTrue("Should throw SecurityException",
-                result.contains("java.lang.SecurityException"));
-
-    }
-
     @Test
     public void testRequiredStrongAuthTimeout() throws Exception {
         assumeHasSecureLockScreenFeature();
@@ -825,70 +764,8 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     }
 
     @Test
-    public void testCreateAdminSupportIntent() throws Exception {
-        executeDeviceTestClass(".PolicyTransparencyTest");
-    }
-
-    @Test
-    public void testSetCameraDisabledLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".PolicyTransparencyTest", "testCameraDisabled");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_CAMERA_DISABLED_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setBoolean(true)
-                    .setStrings(NOT_CALLED_FROM_PARENT)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_CAMERA_DISABLED_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setBoolean(false)
-                    .setStrings(NOT_CALLED_FROM_PARENT)
-                    .build());
-    }
-
-    @Test
     public void testPasswordSufficientInitially() throws Exception {
         executeDeviceTestClass(".PasswordSufficientInitiallyTest");
-    }
-
-    @Test
-    public void testPasswordRequirementsApi() throws Exception {
-        executeDeviceTestMethod(".PasswordRequirementsTest",
-                "testSettingConstraintsWithLowQualityThrowsOnRPlus");
-        executeDeviceTestMethod(".PasswordRequirementsTest",
-                "testSettingConstraintsWithNumericQualityOnlyLengthAllowedOnRPlus");
-        executeDeviceTestMethod(".PasswordRequirementsTest",
-                "testSettingConstraintsWithComplexQualityAndResetWithLowerQuality");
-    }
-
-    @Test
-    public void testGetCurrentFailedPasswordAttempts() throws Exception {
-        assumeHasSecureLockScreenFeature();
-
-        final String wrongPassword = TEST_PASSWORD + "5";
-
-        changeUserCredential(TEST_PASSWORD, null /*oldCredential*/, mUserId);
-        try {
-            // Test that before trying an incorrect password there are 0 failed attempts.
-            executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-                    "testNoFailedPasswordAttempts");
-            // Try an incorrect password.
-            assertFalse(verifyUserCredentialIsCorrect(wrongPassword, mUserId));
-            // Test that now there is one failed attempt.
-            executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-                    "testOneFailedPasswordAttempt");
-            // Try an incorrect password.
-            assertFalse(verifyUserCredentialIsCorrect(wrongPassword, mUserId));
-            // Test that now there are two failed attempts.
-            executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-                    "testTwoFailedPasswordAttempts");
-            // TODO: re-enable the test below when b/110945754 is fixed.
-            // Try the correct password and check the failed attempts number has been reset to 0.
-            // assertTrue(verifyUserCredentialIsCorrect(testPassword, mUserId));
-            // executeDeviceTestMethod(".GetCurrentFailedPasswordAttemptsTest",
-            //         "testNoFailedPasswordAttempts");
-        } finally {
-            changeUserCredential(null /*newCredential*/, TEST_PASSWORD, mUserId);
-        }
     }
 
     @Test
@@ -929,30 +806,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         executeDeviceTestClass(".SetSystemSettingTest");
     }
 
-    @Test
-    public void testClearApplicationData_testPkg() throws Exception {
-        installAppAsUser(INTENT_RECEIVER_APK, mUserId);
-        runDeviceTestsAsUser(INTENT_RECEIVER_PKG, INTENT_RECEIVER_PKG + ".ClearApplicationDataTest",
-                "testWriteToSharedPreference", mUserId);
-        executeDeviceTestMethod(".ClearApplicationDataTest", "testClearApplicationData_testPkg");
-        runDeviceTestsAsUser(INTENT_RECEIVER_PKG, INTENT_RECEIVER_PKG + ".ClearApplicationDataTest",
-                "testSharedPreferenceCleared", mUserId);
-    }
-
-    @Test
-    public void testClearApplicationData_deviceProvisioning() throws Exception {
-        // Clearing data of device configuration app should fail
-        executeDeviceTestMethod(".ClearApplicationDataTest",
-                "testClearApplicationData_deviceProvisioning");
-    }
-
-    @Test
-    public void testClearApplicationData_activeAdmin() throws Exception {
-        // Clearing data of active admin should fail
-        executeDeviceTestMethod(".ClearApplicationDataTest",
-                "testClearApplicationData_activeAdmin");
-    }
-
     @TemporarilyIgnoreOnHeadlessSystemUserMode(bugId = "197859595",
             reason = "Will be migrated to new test infra")
     @Test
@@ -961,24 +814,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         installAppAsUser(SHARED_UID_APP2_APK, mUserId);
 
         executeDeviceTestClass(".KeyManagementTest");
-    }
-
-    @TemporarilyIgnoreOnHeadlessSystemUserMode(bugId = "218408549",
-            reason = "Will be migrated to new test infra")
-    @Test
-    public void testInstallKeyPairLogged() throws Exception {
-        assertMetricsLogged(getDevice(), () -> {
-                executeDeviceTestMethod(".KeyManagementTest", "testCanInstallCertChain");
-                }, new DevicePolicyEventWrapper.Builder(EventId.INSTALL_KEY_PAIR_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setBoolean(false)
-                .setStrings("notCredentialManagementApp")
-                .build(),
-                new DevicePolicyEventWrapper.Builder(EventId.REMOVE_KEY_PAIR_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setBoolean(false)
-                .setStrings("notCredentialManagementApp")
-                .build());
     }
 
     @TemporarilyIgnoreOnHeadlessSystemUserMode(bugId = "197859595",
@@ -1018,29 +853,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     }
 
     @Test
-    public void testPermittedAccessibilityServices() throws Exception {
-        executeDeviceTestClass(".AccessibilityServicesTest");
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".AccessibilityServicesTest",
-                    "testPermittedAccessibilityServices");
-        }, new DevicePolicyEventWrapper
-                .Builder(EventId.SET_PERMITTED_ACCESSIBILITY_SERVICES_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setStrings((String[]) null)
-                .build(),
-        new DevicePolicyEventWrapper
-                .Builder(EventId.SET_PERMITTED_ACCESSIBILITY_SERVICES_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setStrings((String[]) null)
-                .build(),
-        new DevicePolicyEventWrapper
-                .Builder(EventId.SET_PERMITTED_ACCESSIBILITY_SERVICES_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setStrings("com.google.pkg.one", "com.google.pkg.two")
-                .build());
-    }
-
-    @Test
     public void testPermittedInputMethods() throws Exception {
         executeDeviceTestMethod(".InputMethodsTest", "testPermittedInputMethodsThrowsIfWrongAdmin");
         assertMetricsLogged(getDevice(), () -> {
@@ -1057,68 +869,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
                 .setAdminPackageName(DEVICE_ADMIN_PKG)
                 .setStrings(NOT_CALLED_FROM_PARENT, "com.google.pkg.one", "com.google.pkg.two")
                 .build());
-    }
-
-    @Test
-    public void testSetStorageEncryption() throws Exception {
-        Map<String, String> params =
-                ImmutableMap.of(IS_SYSTEM_USER_PARAM, String.valueOf(mUserId == USER_SYSTEM));
-        runDeviceTestsAsUser(
-                DEVICE_ADMIN_PKG, STORAGE_ENCRYPTION_TEST_CLASS, null, mUserId, params);
-    }
-
-    @Test
-    public void testPasswordMethodsLogged() throws Exception {
-        if (isAutomotive()) {
-            assertMetricsLogged(getDevice(), () -> {
-                executeDeviceTestMethod(".DevicePolicyLoggingTest", "testPasswordMethodsLogged");
-            }, new DevicePolicyEventWrapper.Builder(EventId.SET_PASSWORD_COMPLEXITY_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setInt(0x50000)
-                    .setBoolean(false)
-                    .build());
-            return;
-        }
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".DevicePolicyLoggingTest", "testPasswordMethodsLogged");
-        }, new DevicePolicyEventWrapper.Builder(EventId.SET_PASSWORD_QUALITY_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setInt(PASSWORD_QUALITY_COMPLEX)
-                    .setStrings(NOT_CALLED_FROM_PARENT)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_PASSWORD_MINIMUM_LENGTH_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setInt(13)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_PASSWORD_MINIMUM_NUMERIC_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setInt(14)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_PASSWORD_MINIMUM_NON_LETTER_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setInt(15)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_PASSWORD_MINIMUM_LETTERS_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setInt(16)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_PASSWORD_MINIMUM_LOWER_CASE_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setInt(17)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_PASSWORD_MINIMUM_UPPER_CASE_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setInt(18)
-                    .build(),
-            new DevicePolicyEventWrapper.Builder(EventId.SET_PASSWORD_MINIMUM_SYMBOLS_VALUE)
-                    .setAdminPackageName(DEVICE_ADMIN_PKG)
-                    .setInt(19)
-                    .build(),
-                new DevicePolicyEventWrapper.Builder(EventId.SET_PASSWORD_COMPLEXITY_VALUE)
-                        .setAdminPackageName(DEVICE_ADMIN_PKG)
-                        .setInt(0x50000)
-                        .setBoolean(false)
-                        .build());
     }
 
     @Test
@@ -1158,12 +908,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
                 .setInt(KEYGUARD_DISABLE_SECURE_CAMERA)
                 .setStrings(NOT_CALLED_FROM_PARENT)
                 .build());
-    }
-
-    @Test
-    public void testSetKeyguardDisabledFeatures() throws Exception {
-        executeDeviceTestMethod(".KeyguardDisabledFeaturesTest",
-                "testSetKeyguardDisabledFeatures");
     }
 
     @Test
@@ -1271,23 +1015,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     }
 
     @Test
-    public void testEnableSystemAppLogged() throws Exception {
-        final List<String> enabledSystemPackageNames = getEnabledSystemPackageNames();
-        // We enable an enabled package to not worry about restoring the state.
-        final String systemPackageToEnable = enabledSystemPackageNames.get(0);
-        final Map<String, String> params =
-                ImmutableMap.of(PARAM_APP_TO_ENABLE, systemPackageToEnable);
-        assertMetricsLogged(getDevice(), () -> {
-            runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".DevicePolicyLoggingTest",
-                    "testEnableSystemAppLogged", mUserId, params);
-        }, new DevicePolicyEventWrapper.Builder(EventId.ENABLE_SYSTEM_APP_VALUE)
-                .setAdminPackageName(DEVICE_ADMIN_PKG)
-                .setBoolean(false)
-                .setStrings(systemPackageToEnable)
-                .build());
-    }
-
-    @Test
     public void testEnableSystemAppWithIntentLogged() throws Exception {
         final String systemPackageToEnable = getLaunchableSystemPackage();
         if (systemPackageToEnable == null) {
@@ -1344,34 +1071,6 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         // By default, admin should not be able to grant sensors-related permissions.
         executeDeviceTestMethod(".SensorPermissionGrantTest",
                 "testAdminCannotGrantSensorsPermission");
-    }
-
-    @Test
-    public void testAddNetworkWithKeychainKey_granted() throws Exception {
-        assumeHasWifiFeature();
-
-        executeDeviceTestMethod(".WifiTest", "testAddNetworkWithKeychainKey_granted");
-    }
-
-    @Test
-    public void testAddNetworkSuggestionWithKeychainKey_granted() throws Exception {
-        assumeHasWifiFeature();
-
-        executeDeviceTestMethod(".WifiTest", "testAddNetworkSuggestionWithKeychainKey_granted");
-    }
-
-    @Test
-    public void testAddNetworkSuggestionWithKeychainKey_notGranted() throws Exception {
-        assumeHasWifiFeature();
-
-        executeDeviceTestMethod(".WifiTest", "testAddNetworkSuggestionWithKeychainKey_notGranted");
-    }
-
-    @Test
-    public void testAddNetworkWithKeychainKey_notGranted() throws Exception {
-        assumeHasWifiFeature();
-
-        executeDeviceTestMethod(".WifiTest", "testAddNetworkWithKeychainKey_notGranted");
     }
 
     /**

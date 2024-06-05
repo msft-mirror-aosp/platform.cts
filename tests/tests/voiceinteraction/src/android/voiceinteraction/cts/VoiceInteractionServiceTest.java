@@ -19,12 +19,16 @@ package android.voiceinteraction.cts;
 import static android.Manifest.permission.CAPTURE_AUDIO_HOTWORD;
 import static android.Manifest.permission.MANAGE_HOTWORD_DETECTION;
 import static android.Manifest.permission.RECORD_AUDIO;
+import static android.os.UserManager.DISALLOW_ASSIST_CONTENT;
+import static android.service.voice.VoiceInteractionSession.KEY_FOREGROUND_ACTIVITIES;
 import static android.service.voice.VoiceInteractionSession.KEY_SHOW_SESSION_ID;
 import static android.voiceinteraction.cts.testcore.Helper.CTS_SERVICE_PACKAGE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.compatibility.common.util.ActivitiesWatcher.ActivityLifecycle.RESUMED;
+import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -36,6 +40,9 @@ import android.os.PersistableBundle;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.voice.AlwaysOnHotwordDetector;
 import android.service.voice.HotwordDetectionService;
 import android.service.voice.HotwordDetector;
@@ -51,15 +58,26 @@ import android.voiceinteraction.cts.testcore.Helper;
 import android.voiceinteraction.cts.testcore.VoiceInteractionServiceConnectedRule;
 
 import androidx.test.core.app.ApplicationProvider;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
+import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
+import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.testapp.TestApp;
+import com.android.bedstead.testapp.TestAppActivityReference;
+import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ActivitiesWatcher;
 import com.android.compatibility.common.util.ActivitiesWatcher.ActivityWatcher;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.SettingsStateKeeperRule;
+import com.android.compatibility.common.util.SettingsStateManager;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -72,9 +90,28 @@ import java.util.concurrent.TimeoutException;
 /**
  * Tests for {@link VoiceInteractionService} APIs.
  */
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 @AppModeFull(reason = "No real use case for instant mode")
 public class VoiceInteractionServiceTest {
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final SettingsStateKeeperRule mPublicServiceSettingsKeeper =
+            new SettingsStateKeeperRule(getInstrumentation().getTargetContext(),
+                    "assist_screenshot_enabled");
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    private static final SettingsStateManager sScreenshotEnabledManager = new SettingsStateManager(
+            getInstrumentation().getTargetContext(), "assist_screenshot_enabled");
+    private static final TestApp sTestApp = sDeviceState.testApps().query()
+            .whereActivities()
+            .contains(activity().where().exported().isTrue())
+            .get();
 
     private static final String TAG = "VoiceInteractionServiceTest";
     private static final String KEY_SHOW_SESSION_TEST = "showSessionTest";
@@ -84,11 +121,11 @@ public class VoiceInteractionServiceTest {
             "android.voiceinteraction.cts.services.CtsBasicVoiceInteractionService";
     protected final Context mContext = getInstrumentation().getTargetContext();
 
-    private CtsBasicVoiceInteractionService mService;
-
     @Rule
     public VoiceInteractionServiceConnectedRule mConnectedRule =
             new VoiceInteractionServiceConnectedRule(mContext, getTestVoiceInteractionService());
+
+    private CtsBasicVoiceInteractionService mService;
 
     public String getTestVoiceInteractionService() {
         Log.d(TAG, "getTestVoiceInteractionService()");
@@ -100,13 +137,129 @@ public class VoiceInteractionServiceTest {
         // VoiceInteractionServiceConnectedRule handles the service connected, we should be
         // able to get service
         mService = (CtsBasicVoiceInteractionService) BaseVoiceInteractionService.getService();
+
         // Check we can get the service, we need service object to call the service provided method
         Objects.requireNonNull(mService);
+
+        VoiceInteractionTestReceiver.reset();
     }
 
     @After
     public void tearDown() {
         mService = null;
+    }
+
+    @ApiTest(apis = {
+            "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
+            "android.service.voice.VoiceInteractionSession#onHandleAssist",
+            "android.service.voice.VoiceInteractionSession#onShow"
+    })
+    @Test
+    public void onHandleScreenShotAndAssist_initialUser_success() throws Exception {
+        try (TestAppInstance unused = startActivityAndShowSession(
+                sDeviceState.initialUser())) {
+            assertHasAssistDataAndScreenshot();
+        }
+    }
+
+    @ApiTest(apis = {
+            "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
+            "android.service.voice.VoiceInteractionSession#onHandleAssist",
+            "android.service.voice.VoiceInteractionSession#onShow"
+    })
+    @EnsureHasPrivateProfile
+    @Test
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
+    public void onHandleScreenShotAndAssist_privateProfile_failed() throws Exception {
+        try (TestAppInstance unused = startActivityAndShowSession(
+                sDeviceState.privateProfile())) {
+            assertHasNoAssistDataAndScreenshot();
+        }
+    }
+
+    @ApiTest(apis = {
+            "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
+            "android.service.voice.VoiceInteractionSession#onHandleAssist",
+            "android.service.voice.VoiceInteractionSession#onShow"
+    })
+    @EnsureHasWorkProfile
+    @Test
+    public void onHandleScreenShotAndAssist_workProfileWithoutDisallowPolicy_success()
+            throws Exception {
+        try (TestAppInstance unused = startActivityAndShowSession(
+                sDeviceState.workProfile())) {
+            assertHasAssistDataAndScreenshot();
+        }
+    }
+
+    @ApiTest(apis = {
+            "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
+            "android.service.voice.VoiceInteractionSession#onHandleAssist",
+            "android.service.voice.VoiceInteractionSession#onShow"
+    })
+    @EnsureHasWorkProfile
+    @RequiresFlagsEnabled({
+            android.app.admin.flags.Flags.FLAG_ASSIST_CONTENT_USER_RESTRICTION_ENABLED})
+    @EnsureHasUserRestriction(value = DISALLOW_ASSIST_CONTENT, onUser = WORK_PROFILE)
+    @Test
+    public void onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_failed()
+            throws Exception {
+        try (TestAppInstance unused = startActivityAndShowSession(
+                sDeviceState.workProfile())) {
+            assertHasNoAssistDataAndScreenshot();
+        }
+    }
+
+    @ApiTest(apis = {
+            "android.service.voice.VoiceInteractionSession#onHandleScreenshot",
+            "android.service.voice.VoiceInteractionSession#onHandleAssist",
+            "android.service.voice.VoiceInteractionSession#onShow"
+    })
+    @EnsureHasWorkProfile
+    @RequiresFlagsEnabled({
+            android.app.admin.flags.Flags.FLAG_ASSIST_CONTENT_USER_RESTRICTION_ENABLED})
+    @EnsureHasUserRestriction(value = DISALLOW_ASSIST_CONTENT, onUser = WORK_PROFILE)
+    @Test
+    public void onHandleScreenShotAndAssist_workProfileWithDisallowPolicy_successInInitialUser()
+            throws Exception {
+        try (TestAppInstance unused = startActivityAndShowSession(
+                sDeviceState.initialUser())) {
+            assertHasAssistDataAndScreenshot();
+        }
+    }
+
+    private void assertHasNoAssistDataAndScreenshot() throws InterruptedException {
+        assertAssistDataAvailability(false);
+    }
+
+    private void assertHasAssistDataAndScreenshot() throws InterruptedException {
+        assertAssistDataAvailability(true);
+    }
+
+    private void assertAssistDataAvailability(boolean isAvailable)
+            throws InterruptedException {
+        boolean obtainedScreenshot = VoiceInteractionTestReceiver.waitScreenshotReceived(5,
+                TimeUnit.SECONDS);
+        boolean obtainedAssistData = VoiceInteractionTestReceiver.waitAssistDataReceived(5,
+                TimeUnit.SECONDS);
+        Bundle onShowArgs = VoiceInteractionTestReceiver.waitOnShowReceived(5,
+                TimeUnit.SECONDS);
+        assertThat(obtainedScreenshot).isEqualTo(isAvailable);
+        assertThat(obtainedAssistData).isEqualTo(isAvailable);
+        assertThat(onShowArgs).isNotNull();
+        assertThat(onShowArgs.containsKey(KEY_FOREGROUND_ACTIVITIES)).isEqualTo(isAvailable);
+    }
+
+    private TestAppInstance startActivityAndShowSession(UserReference userToStartActivity) {
+        sScreenshotEnabledManager.set("1");
+        TestAppInstance instance = sTestApp.install(userToStartActivity);
+        TestAppActivityReference activityReference =
+                instance.activities().query().whereActivity().exported().isTrue().get();
+        activityReference.start();
+        mService.showSession(new Bundle(), VoiceInteractionSession.SHOW_WITH_SCREENSHOT
+                | VoiceInteractionSession.SHOW_WITH_ASSIST);
+        return instance;
     }
 
     @Test
@@ -143,9 +296,10 @@ public class VoiceInteractionServiceTest {
             mService.showSession(args, flags);
 
             // Wait the VoiceInteractionSessionService onNewSession called
-            if (!latch.await(Utils.OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            final long timeoutMs = Utils.getAdjustedOperationTimeoutMs();
+            if (!latch.await(timeoutMs, TimeUnit.MILLISECONDS)) {
                 throw new TimeoutException(
-                        "result not received in " + Utils.OPERATION_TIMEOUT_MS + "ms");
+                        "result not received in " + timeoutMs + "ms");
             }
 
             // Wait target Activity can be started by startAssistantActivity
@@ -154,6 +308,7 @@ public class VoiceInteractionServiceTest {
             app.unregisterActivityLifecycleCallbacks(activitiesWatcher);
         }
     }
+
     @Test
     public void testShowSession_onPrepareToShowSessionCalled() throws Exception {
         final Bundle args = new Bundle();

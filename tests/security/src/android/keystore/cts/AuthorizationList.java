@@ -55,6 +55,7 @@ public class AuthorizationList {
     public static final int KM_EC_CURVE_P256 = 1;
     public static final int KM_EC_CURVE_P384 = 2;
     public static final int KM_EC_CURVE_P521 = 3;
+    public static final int KM_EC_CURVE_25519 = 4;
 
     // Padding modes.
     public static final int KM_PAD_NONE = 1;
@@ -222,13 +223,19 @@ public class AuthorizationList {
 
         ASN1SequenceParser parser = ((ASN1Sequence) sequence).parser();
         ASN1TaggedObject entry = parseAsn1TaggedObject(parser);
+        int currentTag = 0, prevTag = 0;
         for (; entry != null; entry = parseAsn1TaggedObject(parser)) {
-            int tag = entry.getTagNo();
+            prevTag = currentTag;
+            currentTag = entry.getTagNo();
+            if (prevTag > currentTag) {
+                throw new CertificateParsingException(
+                        "Incorrect order of tags in authorization list: " + currentTag);
+            }
             ASN1Primitive value = entry.getObject();
-            Log.i("Attestation", "Parsing tag: [" + tag + "], value: [" + value + "]");
-            switch (tag) {
+            Log.i("Attestation", "Parsing tag: [" + currentTag + "], value: [" + value + "]");
+            switch (currentTag) {
                 default:
-                    throw new CertificateParsingException("Unknown tag " + tag + " found");
+                    throw new CertificateParsingException("Unknown tag " + currentTag + " found");
 
                 case KM_TAG_PURPOSE & KEYMASTER_TAG_TYPE_MASK:
                     purposes = Asn1Utils.getIntegersFromAsn1Set(value);
@@ -626,6 +633,8 @@ public class AuthorizationList {
                 return "secp384r1";
             case KM_EC_CURVE_P521:
                 return "secp521r1";
+            case KM_EC_CURVE_25519:
+                return "CURVE_25519";
             default:
                 return "unknown";
         }

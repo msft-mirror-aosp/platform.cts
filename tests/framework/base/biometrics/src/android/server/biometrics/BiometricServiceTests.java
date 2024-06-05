@@ -23,10 +23,16 @@ import static org.junit.Assume.assumeTrue;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.SensorProperties;
 import android.platform.test.annotations.Presubmit;
+import android.server.biometrics.util.BiometricServiceState;
+import android.server.biometrics.util.SensorStates;
+import android.server.biometrics.util.TestSessionList;
+import android.server.biometrics.util.Utils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.server.biometrics.nano.BiometricsProto;
 
 import org.junit.Test;
@@ -41,6 +47,7 @@ import java.util.List;
 public class BiometricServiceTests extends BiometricTestBase {
     private static final String TAG = "BiometricTests/Service";
 
+    @CddTest(requirements = {"7.3.10/C-3-5"})
     @Test
     public void testAuthenticatorIdsInvalidated() throws Exception {
         // On devices with multiple strong sensors, adding enrollments to one strong sensor
@@ -113,6 +120,10 @@ public class BiometricServiceTests extends BiometricTestBase {
         }
     }
 
+    @CddTest(requirements = {"7.3.10/C-1-3"})
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testLockoutResetRequestedAfterCredentialUnlock() throws Exception {
         // ResetLockout only really needs to be applied when enrollments exist. Furthermore, some
@@ -161,6 +172,10 @@ public class BiometricServiceTests extends BiometricTestBase {
         }
     }
 
+    @CddTest(requirements = {"7.3.10/C-1-3,C-7-2"})
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testLockoutResetRequestedAfterBiometricUnlock_whenStrong() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -203,7 +218,7 @@ public class BiometricServiceTests extends BiometricTestBase {
             throws Exception {
         Log.d(TAG, "testLockoutResetRequestedAfterBiometricUnlock_whenStrong_forSensor: "
                 + sensorId);
-        final int userId = 0;
+        final int userId = Utils.getUserId();
 
         BiometricServiceState state = getCurrentState();
         final List<Integer> eligibleSensorsToReset = new ArrayList<>();
@@ -254,6 +269,10 @@ public class BiometricServiceTests extends BiometricTestBase {
         }
     }
 
+    @CddTest(requirements = {"7.3.10/C-1-3,C-7-2"})
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testLockoutResetNotRequestedAfterBiometricUnlock_whenNotStrong() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -292,7 +311,7 @@ public class BiometricServiceTests extends BiometricTestBase {
             int sensorId, @NonNull BiometricTestSession session) throws Exception {
         Log.d(TAG, "testLockoutResetNotRequestedAfterBiometricUnlock_whenNotStrong_forSensor: "
                 + sensorId);
-        final int userId = 0;
+        final int userId = Utils.getUserId();
 
         // Explicitly clear the log so that we can check the exact number of resetLockout operations
         // below.
@@ -313,6 +332,7 @@ public class BiometricServiceTests extends BiometricTestBase {
         }
     }
 
+    @CddTest(requirements = {"7.3.10/C-1-5"})
     @Test
     public void testBiometricsRemovedWhenCredentialRemoved() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -329,6 +349,25 @@ public class BiometricServiceTests extends BiometricTestBase {
 
             // All biometrics should now be removed, since CredentialSession removes device
             // credential after losing scope.
+            waitForAllUnenrolled();
+        }
+    }
+
+    @CddTest(requirements = {"7.3.10/C-1-15"})
+    @Test
+    public void testRemoveBiometricEnrollments() throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+        try (TestSessionList biometricSessions = new TestSessionList(this)) {
+            for (SensorProperties prop : mSensorProperties) {
+                BiometricTestSession session = mBiometricManager.createTestSession(
+                        prop.getSensorId());
+                enrollForSensor(session, prop.getSensorId());
+
+                final int userId = Utils.getUserId();
+                session.cleanupInternalState(userId);
+                biometricSessions.put(prop.getSensorId(), session);
+            }
+
             waitForAllUnenrolled();
         }
     }

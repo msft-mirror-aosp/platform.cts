@@ -39,6 +39,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.ActivityTaskManager;
@@ -51,24 +52,25 @@ import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.server.wm.NestedShellPermission;
-import android.view.WindowManager;
+import android.server.wm.ActivityManagerTestBase;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.window.extensions.layout.FoldingFeature;
 import androidx.window.sidecar.SidecarDeviceState;
 
+import com.android.compatibility.common.util.SystemUtil;
+
 import org.junit.After;
 import org.junit.Before;
 
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 /** Base class for all tests in the module. */
-public class WindowManagerJetpackTestBase {
+public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
 
     public static final String EXTRA_EMBED_ACTIVITY = "EmbedActivity";
     public static final String EXTRA_SPLIT_RATIO = "SplitRatio";
@@ -81,24 +83,21 @@ public class WindowManagerJetpackTestBase {
     private static final Set<Activity> sVisibleActivities = new HashSet<>();
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         mInstrumentation = getInstrumentation();
         assertNotNull(mInstrumentation);
         mContext = getApplicationContext();
         assertNotNull(mContext);
         mApplication = (Application) mContext.getApplicationContext();
         assertNotNull(mApplication);
+        clearLaunchParams();
         // Register activity lifecycle callbacks to know which activities are resumed
         registerActivityLifecycleCallbacks();
-        // Clear the previous launch bounds / windowing mode, otherwise persisted launch bounds may
-        // prepend startFullScreenActivityNewTask from launching Activities in full-screen.
-        NestedShellPermission.run(() ->
-                mContext.getSystemService(ActivityTaskManager.class).clearLaunchParamsForPackages(
-                        Collections.singletonList("android.server.wm.jetpack")));
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Throwable {
         sResumedActivities.clear();
         sVisibleActivities.clear();
     }
@@ -249,19 +248,6 @@ public class WindowManagerJetpackTestBase {
         return activity.getWindowManager().getMaximumWindowMetrics().getBounds();
     }
 
-    /**
-     * Gets the width of a full-screen task.
-     */
-    public int getTaskWidth() {
-        return mContext.getSystemService(WindowManager.class).getMaximumWindowMetrics().getBounds()
-                .width();
-    }
-
-    public int getTaskHeight() {
-        return mContext.getSystemService(WindowManager.class).getMaximumWindowMetrics().getBounds()
-                .height();
-    }
-
     public static void setActivityOrientationActivityHandlesOrientationChanges(
             TestActivity activity, int orientation) {
         // Make sure that the provided orientation is a fixed orientation
@@ -283,28 +269,22 @@ public class WindowManagerJetpackTestBase {
         if (activity.isInPictureInPictureMode()) {
             throw new IllegalStateException("Activity must not be in PiP");
         }
-        activity.resetLayoutCounter();
+        activity.resetOnConfigurationChangeCounter();
         // Change the orientation
         PictureInPictureParams params = (new PictureInPictureParams.Builder()).build();
         activity.enterPictureInPictureMode(params);
-        // Wait for the activity to layout, which will happen after the orientation change
-        assertTrue(activity.waitForLayout());
-        // Check that orientation matches
-        assertTrue(activity.isInPictureInPictureMode());
+        activity.waitForConfigurationChange();
     }
 
     public static void exitPipActivityHandlesConfigChanges(TestActivity activity) {
         if (!activity.isInPictureInPictureMode()) {
             throw new IllegalStateException("Activity must be in PiP");
         }
-        activity.resetLayoutCounter();
+        activity.resetOnConfigurationChangeCounter();
         Intent intent = new Intent(activity, activity.getClass());
         intent.addFlags(FLAG_ACTIVITY_SINGLE_TOP);
         activity.startActivity(intent);
-        // Wait for the activity to layout, which will happen after the orientation change
-        assertTrue(activity.waitForLayout());
-        // Check that orientation matches
-        assertFalse(activity.isInPictureInPictureMode());
+        activity.waitForConfigurationChange();
     }
 
     public static void setActivityOrientationActivityDoesNotHandleOrientationChanges(
@@ -347,6 +327,13 @@ public class WindowManagerJetpackTestBase {
                 && sidecarDeviceStatePosture == SidecarDeviceState.POSTURE_OPENED)
                 || (extensionDeviceState == FoldingFeature.STATE_HALF_OPENED
                 && sidecarDeviceStatePosture == SidecarDeviceState.POSTURE_HALF_OPENED);
+    }
+
+    private void clearLaunchParams() {
+        final ActivityTaskManager atm = mContext.getSystemService(ActivityTaskManager.class);
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            atm.clearLaunchParamsForPackages(List.of(mContext.getPackageName()));
+        }, Manifest.permission.MANAGE_ACTIVITY_TASKS);
     }
 
     private void registerActivityLifecycleCallbacks() {

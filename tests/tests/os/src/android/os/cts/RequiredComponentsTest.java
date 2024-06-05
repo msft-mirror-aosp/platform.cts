@@ -31,6 +31,7 @@ import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -45,6 +46,7 @@ import java.util.List;
  * as APKs for various reasons are present.
  */
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class RequiredComponentsTest {
     private static final String PACKAGE_MIME_TYPE = "application/vnd.android.package-archive";
 

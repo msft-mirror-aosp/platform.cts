@@ -18,11 +18,13 @@
 package android.os.cts;
 
 import android.os.cts.CpuInstructions;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import com.android.compatibility.common.util.CpuFeatures;
 
 import junit.framework.TestCase;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class CpuInstructionsTest extends TestCase {
 
     public void testArmVirtualCounter() {

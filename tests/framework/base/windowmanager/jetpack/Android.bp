@@ -50,23 +50,39 @@ java_library {
 }
 
 java_library {
-    name: "cts_window_jetpack_utils",
+    name: "cts_window_extensions_jetpack_util",
     srcs: [
-        "src/android/server/wm/jetpack/utils/**/*.java",
-        ":cts-wm-nested-shell-permission",
+        "src/android/server/wm/jetpack/extensions/util/**/*.java",
     ],
     static_libs: [
         "compatibility-device-util-axt",
         "cts_window-extensions",
         "cts_window-extensions-core",
         "cts_window-sidecar",
-        "cts-wm-window-manager-helper",
+        "com.android.window.flags.window-aconfig-java",
+    ],
+    sdk_version: "test_current",
+}
+
+java_library {
+    name: "cts_window_jetpack_utils",
+    srcs: [
+        "src/android/server/wm/jetpack/utils/**/*.java",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+        "cts-wm-util",
+        "cts_window-extensions",
+        "cts_window-extensions-core",
+        "cts_window-sidecar",
+        "com.android.window.flags.window-aconfig-java",
     ],
     sdk_version: "test_current",
 }
 
 android_test {
     name: "CtsWindowManagerJetpackTestCases",
+    team: "trendy_team_windowing_sdk",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     static_libs: [
@@ -78,6 +94,8 @@ android_test {
         "cts_window-sidecar",
         "cts_window-extensions",
         "cts_window-extensions-core",
+        "com.android.window.flags.window-aconfig-java",
+        "truth",
     ],
     libs: [
         "android.test.base",

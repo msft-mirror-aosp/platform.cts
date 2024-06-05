@@ -19,10 +19,12 @@ package com.android.cts.appcloning.media;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 
 import com.android.cts.appcloning.AppCloningBaseHostTest;
@@ -93,6 +95,18 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
     public void setup() {
         sCloneUserStoragePath = String.format(EXTERNAL_STORAGE_PATH,
                 Integer.parseInt(sCloneUserId));
+    }
+
+    private String createAndStartManagedProfileUser() throws Exception {
+        String output = sDevice.executeShellCommand(
+                "pm create-user --profileOf 0 --managed managedUser");
+        String managedProfileId = output.substring(output.lastIndexOf(' ') + 1).replaceAll("[^0-9]",
+                "");
+        assertThat(managedProfileId).isNotEmpty();
+
+        startUserAndWait(managedProfileId);
+
+        return managedProfileId;
     }
 
     @Test
@@ -200,6 +214,7 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
     }
 
     @Test
+    @FlakyTest
     public void testCrossUserMediaAccess() throws Exception {
         assumeTrue(isAtLeastT());
 
@@ -241,6 +256,7 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
     }
 
     @Test
+    @FlakyTest
     public void testGetStorageVolumesIncludingSharedProfiles() throws Exception {
         assumeTrue(isAtLeastT());
         int currentUserId = getCurrentUserId();
@@ -284,28 +300,67 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
                 .contains(APP_A_PACKAGE));
     }
 
+    @Test
+    @LargeTest
+    public void testDeletionOfAppInNotParentProfile_notDeletesCloneApp()
+            throws Exception {
+        assumeTrue(isAtLeastU(sDevice));
+
+        int currentUserId = getCurrentUserId();
+        String managedProfileId = createAndStartManagedProfileUser();
+
+        try {
+            // Install the app in owner user space
+            installPackage(APP_A, "--user " + currentUserId);
+            eventually(() -> {
+                // Wait for finish.
+                assertThat(isPackageInstalled(APP_A_PACKAGE,
+                        String.valueOf(currentUserId))).isTrue();
+            }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
+
+            // Install the app in clone user profile
+            installPackage(APP_A, "--user " + sCloneUserId);
+            eventually(() -> {
+                // Wait for finish.
+                assertThat(isPackageInstalled(APP_A_PACKAGE, sCloneUserId)).isTrue();
+            }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
+
+            // Install the app in managed profile
+            installPackage(APP_A, "--user " + managedProfileId);
+            eventually(() -> {
+                // Wait for finish.
+                assertThat(isPackageInstalled(APP_A_PACKAGE, managedProfileId)).isTrue();
+            }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
+
+            eventually(() -> {
+                uninstallPackage(APP_A_PACKAGE, Integer.parseInt(managedProfileId));
+            }, CLONE_PROFILE_DIRECTORY_CREATION_TIMEOUT_MS);
+
+            assertFalse(getPackageInUser(APP_A_PACKAGE, Integer.parseInt(managedProfileId))
+                    .contains(APP_A_PACKAGE));
+            assertTrue(getPackageInUser(APP_A_PACKAGE, Integer.parseInt(sCloneUserId))
+                    .contains(APP_A_PACKAGE));
+        } finally {
+            removeUser(managedProfileId);
+        }
+    }
+
     /**
      * In this test we verify that apps can create URIs with content owner appended successfully,
      * with clonedUser present.
      * For ex: inserting a screenshot of a cloned app by sysUi process (user 0), the content is
      * specified as `content://10@media/external/images/media/`, hinting that it should go in the
      * storage of user 10. However, since clonedProfile shares Media with its parent, the media
-     * gets
-     * saved successfully in user 0.
-     * The reverse is however, not true
-     * (<a href="https://b.corp.google.com/issues/270688031#comment4">...</a>),
-     * content provider does not have a way to allow a cloned app to create content with URI
-     * as content://0@media/external/images/media/` unless, it has INTERACT_ACROSS_USERS access.
+     * gets saved successfully in user 0.
      */
-    // TODO(b/283399640): Add a fix and test for the reverse scenario.
     @Test
-    public void testMediaCreationWithContentOwnerSpecified() throws Exception {
+    public void testMediaCreationWithContentOwnerSpecifiedAsCloneUser() throws Exception {
         assumeTrue(isAtLeastU(sDevice));
 
         int currentUserId = getCurrentUserId();
 
-        // Install the app in owner user space
-        installPackage(APP_A, "--user " + currentUserId);
+        // Install the app in owner user space and cloned user space
+        installPackage(APP_A, "--user all");
 
         // Try to save image from user 0 by specifying clonedUser as content owner
         Map<String, String> ownerArgs = new HashMap<>();
@@ -323,6 +378,41 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
 
         runDeviceTestAsUserInPkgA("testMediaStoreManager_verifyClonedUserImageSavedInOwnerUserOnly",
                 currentUserId, args);
+    }
+
+    /**
+     * In this test we verify that apps can create URIs with content owner appended successfully,
+     * with clonedUser present.
+     * For ex: inserting a file with uri as `content://0@media/external/images/media/`
+     * from a cloned app process. The content will be saved in cloned user in this case.
+     */
+    @Test
+    @FlakyTest
+    public void testMediaCreationWithContentOwnerSpecifiedAsParentUser() throws Exception {
+        assumeTrue(isAtLeastV(sDevice));
+
+        int currentUserId = getCurrentUserId();
+
+        // Install the app in owner user space and cloned user space
+        installPackage(APP_A, "--user all");
+
+        // Try to save image from user 10 by specifying user 0 as content owner
+        Map<String, String> clonedArgs = new HashMap<>();
+        clonedArgs.put(IMAGE_NAME_TO_BE_DISPLAYED_KEY, "OwnerProfileImageToBeSavedInClone");
+        clonedArgs.put(IMAGE_NAME_TO_BE_CREATED_KEY, "clone_profile_image");
+        clonedArgs.put(CONTENT_OWNER_KEY, String.valueOf(currentUserId));
+
+        runDeviceTestAsUserInPkgA("testMediaStoreManager_writeImageToContentOwnerSharedStorage",
+                Integer.valueOf(sCloneUserId), clonedArgs);
+
+        // Verify that the image created by user 10 is saved in user 10's space.
+        Map<String, String> cloneArgs = new HashMap<>();
+        cloneArgs.put(IMAGE_NAME_TO_BE_VERIFIED_IN_CLONE_PROFILE_KEY,
+                "OwnerProfileImageToBeSavedInClone");
+        cloneArgs.put(CLONE_USER_ID, sCloneUserId);
+
+        runDeviceTestAsUserInPkgA("testMediaStoreManager_verifyOwnerUserImageSavedInClonedUserOnly",
+                currentUserId, cloneArgs);
     }
 
     // This test should be run with only user 0 as the currentUserId.

@@ -51,6 +51,16 @@
         <a href="https://source.android.com/compatibility/cts/verifier">https://source.android.com/compatibility/cts/verifier</a>
     </string>
 
+    <!-- Strings for non-SDK interfaces accessibility warning -->
+    <string name="nonsdk_interfaces_warning_title">CTS-Verifier non-SDK interfaces accessibility</string>
+    <string name="nonsdk_interfaces_warning_body">Can\'t access non-SDK interfaces.
+        \n\nPlease allow CTS Verifier to access non-SDK interfaces by running the following commands:
+        \n\n<code>adb shell settings put global hidden_api_policy 1</code>
+        \n\nTest instructions are found in the \"Using CTS Verifier\" document found at
+        <a href="https://source.android.com/compatibility/cts/verifier">https://source.android.com/compatibility/cts/verifier</a>
+        \n\nAfter setting up the CTS test environment, please relaunch the CTS Verifier app to rerun the test.
+    </string>
+
     <!-- Strings for TestListActivity -->
     <string name="test_category_audio">Audio</string>
     <string name="test_category_camera">Camera</string>
@@ -74,6 +84,7 @@
     <string name="test_category_display_cutout">DisplayCutout</string>
     <string name="test_category_other">Other</string>
     <string name="test_category_device_controls">Device controls</string>
+    <string name="test_category_multidevice">Multi Device</string>
     <string name="clear">Clear</string>
     <string name="test_results_clear_title">Remove all test results?</string>
     <string name="test_results_clear_yes">Yes</string>
@@ -394,6 +405,9 @@
     <string name="biometric_test_set_user_authentication_credential_aead_cipher_label">4j: Aead Cipher, Credential</string>
     <string name="biometric_test_set_user_authentication_biometric_aead_cipher_label">4k: Aead Cipher, Biometric</string>
     <string name="biometric_test_set_user_authentication_biometric_credential_aead_cipher_label">4l: Aead Cipher, Biometric or Credential</string>
+    <string name="biometric_test_set_user_authentication_credential_key_agreement_label">4m: Key Agreement, Credential</string>
+    <string name="biometric_test_set_user_authentication_biometric_key_agreement_label">4n: Key Agreement, Biometric</string>
+    <string name="biometric_test_set_user_authentication_biometric_or_credential_key_agreement_label">4o: Key Agreement, Biometric or Credential</string>
     <string name="biometric_test_set_user_authentication_credential_instructions">This test checks the correctness of the KeyGenParameterSpec.Builder#setUserAuthenticationParameters(int, int) API for AUTH_DEVICE_CREDENTIAL.
         Buttons for completed tasks will become invisible. It\'s normal for buttons to be disabled for a few seconds during this test.</string>
     <string name="biometric_test_set_user_authentication_biometric_instructions">This test checks the correctness of the KeyGenParameterSpec.Builder#setUserAuthenticationParameters(int, int) API for AUTH_BIOMETRIC_STRONG.
@@ -418,10 +432,10 @@
     <string name="read_logs_bg_text">User Consent for Device Logs in Instrumentation Test</string>
     <string name="read_logs_test_info">This test verifies that user consent for per-use prompt is working properly.\nThe test assumes READ_LOGS permission is granted to the app.\nStart this test by clicking \"User Consent for Device Logs Allow in Foreground Test\" button.\nWhen the process is running in foreground, a user will see a prompt. Once a user clicks the prompt, users have an option to choose \"Allow one-time access\" or \"Don\'t Allow\". Choose \"Allow one-time access\" for the \"ALLOW\" test case and \"Don\'t Allow\" for the \"DENY\" test case.\nThe test results can be judged by the adb logcat prints from command \"adb logcat -b all -s ReadLogsTestActivity:*\"\n\"ReadLogsTestActivity: Logcat system allow log contains e.g.: true lineCount: 11 larger than: true\" shows the success of the \"ALLOW\" test case and\n\"ReadLogsTestActivity: Logcat system deny line count:0\" shows the success of the \"DENY\" test case.</string>
 
-    <!-- Strings for lock bound keys test -->
-    <string name="sec_lock_bound_key_test">Lock Bound Keys Test</string>
-    <string name="sec_lock_bound_key_test_info">
-        This test ensures that Keystore cryptographic keys that are bound to lock screen authentication
+    <!-- Strings for lskf bound keys test -->
+    <string name="sec_lskf_bound_key_test">LSKF Bound Keys Test</string>
+    <string name="sec_lskf_bound_key_test_info">
+        This test ensures that Keystore cryptographic keys that are bound to LSKF authentication
         are unusable without a recent enough authentication. You need to set up a screen lock in order to
         complete this test. If available, this test should be run by using fingerprint authentication
         as well as PIN/pattern/password authentication.
@@ -469,8 +483,8 @@
         This test is for Identity Credential presentations with multiple documents.
     </string>
 
-    <string name="sec_unlocked_device_required_test">Unlocked Device Required</string>
-    <string name="sec_unlocked_device_required_test_info">
+    <string name="sec_unlocked_device_required_keys_test">Unlocked Device Required Keys Test</string>
+    <string name="sec_unlocked_device_required_keys_test_info">
         This test ensures that keys created with setUnlockedDeviceRequired are usable when the
         screen is unlocked but not when it is locked.
     </string>
@@ -1176,6 +1190,8 @@
     <string name="multinetwork_connectivity_turn_wifi_off">Please turn Wi-Fi off.</string>
     <string name="multinetwork_connectivity_turn_wifi_positive">OK</string>
     <string name="multinetwork_connectivity_turn_wifi_negative">Cancel</string>
+    <string name="multinetwork_connectivity_connect_to_target_ap_positive">OK</string>
+    <string name="multinetwork_connectivity_connect_to_target_ap">Connect to configured SSID: %s</string>
     <!-- Strings for NfcTestActivity -->
     <string name="nfc_test">NFC Test</string>
     <string name="nfc_test_info">The Peer-to-Peer Data Exchange tests require two devices with
@@ -1252,11 +1268,8 @@
     <string name="nfc_result_message">Written data:\n%1$s\n\nRead data:\n%2$s</string>
     <string name="nfc_ndef_content">Id: %1$s\nMime: %2$s\nPayload: %3$s</string>
 
-    <string name="nfc_hce">Host-based card emulation</string>
     <string name="nfc_hce_f">Host-based Felica card emulation</string>
-    <string name="nfc_hce_reader_tests">HCE reader tests</string>
     <string name="nfc_hce_f_reader_tests">HCE Felica reader tests</string>
-    <string name="nfc_hce_emulator_tests">HCE emulator tests</string>
     <string name="nfc_hce_f_emulator_tests">HCE Felica emulator tests</string>
     <string name="nfc_hce_f_emulator">HCE Felica emulator</string>
     <string name="nfc_hce_f_reader">HCE Felica reader</string>
@@ -1275,110 +1288,9 @@
         in the "HCE reader tests" section. The "reader test" acts as a NFC terminal/POS
         and makes sure the device-under-test implements card emulation correctly.
     </string>
-    <string name="nfc_hce_type_selection">By default HCE applications must run on type A. If your device is restricted to type B (for example, because of a type B only UICC), select "Type B" from the drop-down box above. Note that all tests must be completed in the same mode (either "Type A" or "Type B").</string>
-    <string name="nfc_hce_please_wait">Please wait</string>
-    <string name="nfc_hce_setting_up">Setting up card emulation services...</string>
 
-    <string name="nfc_hce_default_route_emulator">Default route (Emulator)</string>
-    <string name="nfc_hce_default_route_reader">Default route (Reader)</string>
-    <string name="nfc_hce_default_route_emulator_help">This test verifies that the default route for ISO-DEP (ISO14443-4) frames is the host CPU. It does this by selecting an AID that any Android HCE phone will respond to if the select command is routed to the host. Please verify that there is no rule in the routing table that points this AID to the host. This test may be passed if the "PASS" button on the reader side lights up after tapping the devices together.</string>
-
-    <string name="nfc_hce_protocol_params_emulator">Protocol parameters (Emulator)</string>
-    <string name="nfc_hce_protocol_params_reader">Protocol parameters (Reader)</string>
-    <string name="nfc_hce_protocol_params_emulator_help">This test verifies that the Nfc-A and ISO-DEP protocol parameters are being set correctly. The test may be passed when no FAIL entries show up in the results below. Note that the reader device may be different from the device under test - the DUT itself does not need to be able to act as the reader for this test. \n\n Note that for each test there are 3 possible outcomes:\n1) OK -> test has passed;\n2) FAIL -> test has failed and this must be fixed;\n3) FAIL EMVCO -> this protocol parameter is deviating from the requirements in the EMV Contactless Communication Protocol specification.\n\nWhile it is allowed to ship a HCE implementation with EMVCo failures, it may not perform optimal when EMVco based payment HCE apps are run on the device.</string>
-
-    <string name="nfc_hce_single_payment_emulator">Single payment (Emulator)</string>
-    <string name="nfc_hce_single_payment_reader">Single payment (Reader)</string>
-
-    <string name="nfc_hce_dual_payment_emulator">Two payment services (Emulator)</string>
-    <string name="nfc_hce_dual_payment_reader">Two payment services (Reader)</string>
-
-    <string name="nfc_hce_change_default_emulator">Change default payment service (Emulator)</string>
-    <string name="nfc_hce_change_default_reader">Change default payment service (Reader)</string>
-
-    <string name="nfc_hce_tap_reader_title">Tap reader</string>
-    <string name="nfc_hce_tap_reader_message">Select the corresponding reader test on the remote device, click OK on this dialog, and tap devices together. The pass button will be enabled if the test passes.</string>
-
-    <string name="nfc_hce_single_non_payment_emulator">Single non-payment (Emulator)</string>
-    <string name="nfc_hce_single_non_payment_reader">Single non-payment (Reader)</string>
-
-    <string name="nfc_hce_dual_non_payment_emulator">Two non-payment services (Emulator)</string>
-    <string name="nfc_hce_dual_non_payment_reader">Two non-payment services (Reader)</string>
-
-    <string name="nfc_hce_conflicting_non_payment_emulator">Two conflicting non-payment services (Emulator)</string>
-    <string name="nfc_hce_conflicting_non_payment_reader">Two conflicting non-payment services (Reader)</string>
-
-    <string name="nfc_hce_foreground_non_payment_emulator">Foreground override non-payment services (Emulator)</string>
-    <string name="nfc_hce_foreground_non_payment_reader">Foreground override non-payment services (Reader)</string>
-    <string name="nfc_hce_foreground_non_payment_help">This test enables two non-payment services with conflicting AIDs. It then uses Androids API to allow the foreground app to set a preference for a specific service. This should prevent a popup dialog from showing. If you see a popup dialog during this asking you to select an app, this test has failed.</string>
-
-    <string name="nfc_hce_foreground_payment_emulator">Foreground override payment services (Emulator)</string>
-    <string name="nfc_hce_foreground_payment_reader">Foreground override payment services (Reader)</string>
-    <string name="nfc_hce_foreground_payment_help">This test enables two payment services, and asks you to set one as the default service. It then uses Androids API to allow the foreground app to set a preference for the non-default service. This will cause the non-default payment service to be invoked.</string>
-    <string name="nfc_hce_change_favor_foreground">This test requires the \"Use default\" setting to be set to \"Except when another payment app is open\". Tap OK to go to Tap and Pay settings and make sure the \"Use default\" setting is set to \"Except when another payment app is open\".</string>
-    <string name="nfc_hce_offhost_service_emulator">Off-host service (Emulator)</string>
-    <string name="nfc_hce_offhost_service_reader">Off-host service (Reader)</string>
-    <string name="nfc_hce_offhost_emulator_help">This test enables a service that declares some AIDs to reside off-host. This test only needs to be passed if your device has a secure element (either embedded or UICC.). The responses from the secure element are not verified by the test - it is up to the tester to verify the responses are as expected.</string>
-
-    <string name="nfc_hce_on_and_offhost_service_emulator">On and off-host services (Emulator)</string>
-    <string name="nfc_hce_on_and_offhost_service_reader">On and off-host services (Reader)</string>
-    <string name="nfc_hce_on_and_offhost_emulator_help">This test enables a service that declares some AIDs to reside off-host, and another service that runs on host. It then first sends an APDU sequence that goes off-host, and subsequently some APDUs that should go to the on-host service. This test only needs to be passed if your device has a secure element (either embedded or UICC.). The pass button will be enabled if the on-host sequence is performed as expected. The responses from the secure element are not verified by the test - it is up to the tester to verify the responses are as expected. </string>
-
-    <string name="nfc_hce_tap_test_emulator">50 successful taps test (Emulator)</string>
-    <string name="nfc_hce_tap_test_reader">50 successful taps test (Reader)</string>
-    <string name="nfc_hce_tap_test_emulator_help">This test requires you to complete at least 50 HCE taps, to ensure stability of the HCE feature. The NFC service and controller should not crash or hang during any of the 50 taps.</string>
-    <string name="nfc_hce_throughput_emulator">HCE throughput test (Emulator)</string>
-    <string name="nfc_hce_throughput_reader">HCE throughput test (Reader)</string>
-    <string name="nfc_hce_throughput_emulator_help">This test verifies that your HCE implementation can reach a decent throughput. While Android does not have any requirements on HCE performance, many HCE applications such as transport and payment apps do. If the average APDU roundtrip time is more than 50ms, please take a look at your implementation to see where the delay is coming from.</string>
-    <string name="nfc_hce_change_preinstalled_wallet">The device has an installed payment application that is currently set as default. To complete the test, you will be asked whether you want to make another app the default app. Select yes.</string>
-    <string name="nfc_hce_change_default_help">You will now be asked whether you want to make Payment Service #1 the default app. Select yes.</string>
-    <string name="nfc_hce_conflicting_non_payment_help">When tapping the first time, you will be shown a dialog that asks you to choose between TransportService #1 and TransportService #2. Select TransportService #2. Verify a dialog is shown that asks you to tap again to complete. Now tap again, and if communication with TransportService #2 is successfull the pass button will be enabled."</string>
-
-    <string name="nfc_hce_payment_dynamic_aids_emulator">Dynamic payment AIDs (Emulator)</string>
-    <string name="nfc_hce_payment_dynamic_aids_reader">Dynamic payment AIDs (Reader)</string>
-    <string name="nfc_hce_payment_dynamic_aids_help">This test tries to register dynamic AIDs for a payment service.</string>
-
-    <string name="nfc_hce_large_num_aids_emulator">Large number of AIDs (Emulator)</string>
-    <string name="nfc_hce_large_num_aids_reader">Large number of AIDs (Reader)</string>
-    <string name="nfc_hce_large_num_aids_help">This test tries to register a large number of different AIDs, to make sure there are no limitations on the maximum amount of HCE apps on the device. Note that this test may take a few seconds to complete; please be patient.</string>
-
-    <string name="nfc_hce_payment_prefix_aids_emulator">Payment prefix AIDs (Emulator)</string>
-    <string name="nfc_hce_payment_prefix_aids_reader">Payment prefix AIDs (Reader)</string>
-    <string name="nfc_hce_payment_prefix_aids_help">This test statically registers prefix AIDs for a payment service.</string>
-
-    <string name="nfc_hce_payment_prefix_aids_emulator_2">Payment prefix AIDs 2 (Emulator)</string>
-    <string name="nfc_hce_payment_prefix_aids_reader_2">Payment prefix AIDs 2 (Reader)</string>
-
-    <string name="nfc_hce_other_prefix_aids_emulator">Other prefix AIDs (Emulator)</string>
-    <string name="nfc_hce_other_prefix_aids_reader">Other prefix AIDs (Reader)</string>
-    <string name="nfc_hce_other_prefix_aids_help">This test dynamically registers prefix AIDs for a non-payment service.</string>
-
-    <string name="nfc_hce_other_conflicting_prefix_aids_emulator">Conflicting non-payment prefix AIDs (Emulator)</string>
-    <string name="nfc_hce_other_conflicting_prefix_aids_reader">Conflicting non-payment prefix AIDs (Reader)</string>
-    <string name="nfc_hce_other_conflicting_prefix_aids_help">This test registers conflicting prefix AIDs and makes sure AID conflict detection with prefix AIDs works properly. When tapping the first time, you will be shown a dialog that asks you to choose between TransportService #1 and TransportService #2. Select TransportService #2. Verify a dialog is shown that asks you to tap again to complete. Now tap again, and if communication with TransportService #2 is successfull the pass button will be enabled."</string>
-
-    <string name="nfc_screen_on_only_offhost_emulator">Screen on only Off-host Service (Emulator)</string>
-    <string name="nfc_screen_on_only_offhost_reader">Screen on only Off-host Service (Reader)</string>
-    <string name="nfc_screen_on_only_offhost_help">This test enables a service that declares some AIDs to reside off-host. This test only needs to be passed if your device has a secure element. The responses from the secure element are not verified by the test - it is up to the tester to verify the responses are as expected. The expected behavior is the AID can be selected only when the device is in screen on state.</string>
-
-    <string name="nfc_screen_off_hce_payment_emulator">Screen off HCE Payment (Emulator)</string>
-    <string name="nfc_screen_off_hce_payment_reader">Screen off HCE Payment (Reader)</string>
-    <string name="nfc_screen_off_hce_payment_help">This test verifies emulator responds when device is in screen off state. Please put the emulator to screen off state.</string>
-
-    <string name="nfc_payment_service_desc">NFC Payment service</string>
-    <string name="ppse">PPSE</string>
-    <string name="mastercard">MasterCard</string>
-    <string name="visa">Visa</string>
-    <string name="paymentService1">Payment Service #1</string>
-    <string name="paymentService2">Payment Service #2</string>
-    <string name="transportService1">TransportService #1</string>
-    <string name="transportService2">TransportService #2</string>
-    <string name="accessService">AccessService</string>
-    <string name="offhostService">OffhostService</string>
     <string name="felicaservice">Felica Service</string>
     <string name="UiccTransactionEventService">Uicc Transaction Event Service</string>
-    <string name="screenOffPaymentService">Screen Off Payment Service</string>
-    <string name="screenOnOnlyOffHostService">Screen On Only OffHost Service</string>
 
     <string name="nfc_offhost_uicc">Offhost UICC-based card emulation</string>
     <string name="nfc_offhost_uicc_emulator_tests">Offhost card emulation emulator tests</string>
@@ -2402,6 +2314,9 @@
     <string name="test_access_ringer_mode">Test access ringer mode</string>
     <string name="test_ringer_mode_policy_access">Test ringer mode policy access</string>
     <string name="test_volume_dnd_affected_stream">Test volume change</string>
+    <string name="test_volume_stream_1">Test volume change part 1</string>
+    <string name="test_volume_stream_2">Test volume change part 2</string>
+    <string name="test_volume_stream_3">Test volume change part 3</string>
     <string name="test_mute_dnd_affected_streams">Test mute streams</string>
     <string name="test_ringer_manager">Test RingtoneManager</string>
     <string name="enable_sound_effects">Please enable Tap &amp; click sounds in Sound settings.</string>
@@ -2473,14 +2388,14 @@
         Swipe it to either side to dismiss it.\n
         Pass the test if it can be dismissed from the lock screen.</string>
     <string name="non_dismissable_notif_from_the_ls">Lock the screen and find the NotifDismissTest notification.\n
-        Try to dismiss it. Verify that it is non-dismissible.\n
+        Swipe it to either side to dismiss it. Verify that it is non-dismissible.\n
         Fail the test if it could be dismissed from the lock screen.</string>
     <string name="fsi_test">Notification Full Screen Intent Test</string>
     <string name="fsi_test_info">This test checks the behavior of Notifications
         with Full Screen Intents.</string>
     <string name="fsi_lockscreen_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, lock the screen and press the power button as quickly as possible to go to the lock screen.\n
-        Wait for a heads up notification to appear.\n
+        Wait for a heads up notification to appear first in the list with a pill button.\n
         Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
         Fail the test if the notification does not appear as described.
     </string>
@@ -2492,9 +2407,9 @@
     </string>
     <string name="fsi_screen_off_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, press the power button as quickly as possible to turn off the screen.\n
-        Wait about 5 seconds to observe the behavior, then unlock screen to return to this page.\n
-        Pass the test if a notification appears on the screen with a pill button, or if a notification icon appears.\n
-        Fail the test if a page automatically launched with the message \"This page is a full screen intent.\".\n
+        Wait for a notification to appear on the screen with a pill button.\n
+        Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
+        Fail the test if the notification does not appear as described.
     </string>
     <string name="fsi_screen_off_with_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, press the power button as quickly as possible to turn off the screen.\n
@@ -2531,6 +2446,29 @@
     <string name="fsi_sticky_hun_60s">There should be a Heads Up Notification on the screen.\n
         It would show for 60s.\n
         Fail the test if it doesn\'t show or disappears within 60s.</string>
+    <string name="notification_style_test">Notification Styles Test</string>
+    <string name="notification_style_test_info">This test checks that Notification Styles are rendered as expected.</string>
+    <string name="ns_custom_content_instructions">A notification with custom (app-provided) content was posted. Open the notification shade, collapse the notification (if it\'s expanded) and verify that:
+        \n\u2022 There is appropriate padding between the blue section and all other visual elements.
+        \n\u2022 The small icon (A) is clearly visible outside the blue region.
+        \n\u2022 If an expand/collapse affordance is present, it is clearly visible outside the blue region.
+        \nIt should look approximately like the image below (when factoring for theme, dynamic color, etc). </string>
+    <string name="ns_custom_big_content_instructions">A notification with custom (app-provided) content was posted. Open the notification shade, expand the notification (if it\'s collapsed), and verify that:
+        \n\u2022 There is appropriate padding between the blue section and all other visual elements.
+        \n\u2022 The small icon (B) is clearly visible outside the blue region.
+        \n\u2022 The App Name (\"CTS Verifier\") is clearly visible outside the blue region.
+        \n\u2022 If an expand/collapse affordance is present, it is clearly visible outside the blue region.
+        \nIt should look approximately like the image below (when factoring for theme, dynamic color, etc). </string>
+    <string name="ns_custom_heads_up_content_instructions">A notification with custom (app-provided) content was shown in heads-up. While in this state, verify that:
+        \n\u2022 There is appropriate padding between the blue section and all other visual elements.
+        \n\u2022 The small icon (C) is clearly visible outside the blue region.
+        \n\u2022 If an expand/collapse affordance is present, it is clearly visible outside the blue region.
+        \nIt should look approximately like the image below (when factoring for theme, dynamic color, etc). </string>
+    <string name="notification_custom_layout_text">Custom content here!</string>
+    <string name="ns_custom_content_alt_text">This is the expanded version of the notification.\nPlease collapse it to check the custom content view.</string>
+    <string name="ns_custom_big_content_alt_text">This is the collapsed version of the notification.\nPlease expand it to check the custom big content view.</string>
+    <string name="ns_custom_heads_up_content_alt_text">This is the expanded version of the notification.\nPlease collapse it (while it\'s showing as heads-up, not in the shade) to check the heads-up content view.</string>
+    <string name="ns_bigpicture_animated_instructions">A notification with an animated BigPicture was posted. Expand it, and verify that the image is indeed animated.</string>
     <string name="np_start_channel_settings">Launch Channel Settings</string>
     <string name="np_start_security_settings">Launch Security Settings</string>
     <string name="np_start_notif_settings">Launch Notification Settings</string>
@@ -2791,6 +2729,15 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="widget_name">Widget Framework Test</string>
     <string name="widget_pass">Pass</string>
     <string name="widget_fail">Fail</string>
+    <string name="widget_generated_previews_test">Widget Generated Previews Test</string>
+    <string name="widget_generated_previews_test_info">This test checks that the widget picker
+        displays the generated preview for a widget if it is available. In order to perform the
+        test, press the Home button and open the widget picker. Scroll to find the widget titled
+        \"Generated Previews\", and verify that the widget preview displays the text
+        \"This is a generated preview\".</string>
+    <string name="widget_generated_previews_widget_name">Generated Previews</string>
+    <string name="widget_generated_previews_default_preview_text">static previewLayout preview</string>
+    <string name="widget_generated_previews_generated_preview_text">This is a generated preview</string>
 
     <string name="provisioning_byod_non_market_apps">Non-market app installation restrictions</string>
     <string name="provisioning_byod_non_market_apps_info">
@@ -2938,7 +2885,7 @@ You should be prompted to select credentials; choose the ones you just installed
            \"adb uninstall com.android.cts.vpnfirewall\"\n
 
         2. Install the first test app, by running\n
-           \"adb install /path/to/CtsVpnFirewallAppApi23.apk\"\n
+           \"adb install --bypass-low-target-sdk-block /path/to/CtsVpnFirewallAppApi23.apk\"\n
 
         3. Tap \"Prepare VPN\" button below and consent to the VPN connection.\n
 
@@ -2978,7 +2925,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="provisioning_byod_always_on_vpn_api23_instruction">
         1. Re-install CtsVpnFirewallAppApi23.apk (skip this if you already have the correct version
            installed):\n
-           \"adb install -r /path/to/CtsVpnFirewallAppApi23.apk\"\n
+           \"adb install -r --bypass-low-target-sdk-block /path/to/CtsVpnFirewallAppApi23.apk\"\n
         2. Tap \"Go\" button below to go to the VPN settings page.\n
         3. Open configuration details page for CtsVpnFirewallApp.\n
         4. Confirm the \"Always-on VPN\" and \"Block connections without VPN\" switches are both off
@@ -3227,6 +3174,15 @@ You should be prompted to select credentials; choose the ones you just installed
         This test verifies that the user is prompted for the current keyguard password before prompting for a new password.\n
         \nClick the \"Set password\" button if you currently don\'t have a password set.\n
         \nThen click the \"Change password\" button to change it. You should be prompted for the current password first. If you are not, then mark the test as failed.
+    </string>
+
+    <!-- Strings for NFC Tests. -->
+    <string name="nfc_tests_title">NFC Tests</string>
+    <string name="nfc_tests_dialog_title">NFC Tests Dialog</string>
+    <string name="nfc_tests_dialog_content">
+        The NFC tests.\n
+        The DUT \"must\" be connected to a host to run these tests.\n
+        Please follow the detailed instruction of the tests to execute scripts and get results.
     </string>
 
     <!-- String for Projection Tests -->
@@ -3624,27 +3580,6 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
 
     <string name="provisioning_byod_cross_profile_intent_filters">Cross profile intent filters are set</string>
-
-    <string name="provisioning_byod_nfc_beam">Disable Nfc beam</string>
-    <string name="provisioning_byod_nfc_beam_allowed_instruction">
-        Please press the Go button to test if Nfc beam can be triggered in the work profile.\n
-        \n
-        For the first test, press \"Send manual beam\" to trigger a beam, then bump into another device to send the tag. Verify that the tag is successfully received.\n
-        \n
-        For the second test, press \"Send share intent\" to trigger a beam, then bump into another device to send the tag. Verify that the tag is successfully received.\n
-        \n
-        Then use the Back button to return to this test and mark accordingly.
-    </string>
-    <string name="provisioning_byod_nfc_beam_disallowed_instruction">
-        Please press the Go button to test if Nfc beam is disallowed by policy
-        \n
-        Verify that Nfc beam is not triggered when pressing the button.\n
-        \n
-        Then use the Back button to return to this test and mark accordingly.
-    </string>
-    <string name="provisioning_byod_send_manual_beam">Send manual beam</string>
-    <string name="provisioning_byod_send_share_intent">Send share intent</string>
-    <string name="provisioning_byod_cannot_resolve_beam_activity">Cannot find beam activity</string>
 
     <string name="test_failed_cannot_start_intent">Cannot start the given intent.</string>
     <string name="provisioning_byod_no_activity">Cannot communicate with activity in the work profile.</string>
@@ -5387,33 +5322,35 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nTest Setup:
         \nDisconnect any wired audio peripherals.
         \n\nTest Process:
-        \n1. Verify that the DUT supports USB or Analog audio peripherals.
-        \n2. Press the \"Record\" button.
-        \n3. Connect a wired input peripheral. A connect routing message should appear.
-        \n4. Press the \"Stop\" button.
+        \n1. Connect a wired input peripheral. A connection routing message should appear.
         \n\nTest Criteria:
         \nThe test passes if either the device DOES NOT support wired input peripherals, or
         the routing notifications are received.
     </string>
     <string name="audio_output_routingnotifications_test">Audio Output Routing Notifications Test</string>
     <string name="audio_output_routingnotification_instructions">
-        Test whether appropriate output routing notifications are sent when audio output peripherals are
+        Test whether appropriate routing notifications are sent when audio output peripherals are
         connected to the device.
         \n\nTest Setup:
         \nDisconnect any wired audio peripherals.
         \n\nTest Process:
-        \n1. Verify that the DUT supports USB or Analog audio peripherals.
-        \n2. Press the \"Play\" button.
-        \n3. Connect a wired output peripheral. A connect routing message should appear.
-        \n4. Press the \"Stop\" button.
+        \n1. Connect a wired output peripheral. A connection routing message should appear.
         \n\nTest Criteria:
         \nThe test passes if either the device DOES NOT support wired output peripherals, or
         the routing notifications are received.
     </string>
-    <string name="audio_routingnotification_playHeader">AudioTrack Routing Notifications</string>
-    <string name="audio_routingnotification_recHeader">AudioRecord Routing Notifications</string>
+    <string name="audio_routingnotification_header">Routing Notifications:</string>
     <string name="audio_routingnotification_trackRoutingMsg">AudioTrack rerouting</string>
     <string name="audio_routingnotification_recordRoutingMsg">AudioRecord rerouting</string>
+    <string name="audio_routingnotification_nosupport">No Support</string>
+    <string name="audio_routingnotification_supported">Supported</string>
+    <string name="audio_routingnotification_supportundetermined">Support Undetermined</string>
+    <string name="audio_routingnotification_devicesupportcr">Device Support\n</string>
+    <string name="audio_routingnotification_analogheadsetcolon">Analog Headset: </string>
+    <string name="audio_routingnotification_usbheadsetcolon">USB Headset: </string>
+    <string name="audio_routingnotification_usbdevicecolon">USB Device: </string>
+    <string name="audio_routingnotification_connected">Connected</string>
+    <string name="audio_routingnotification_passmessage">Test PASSES - Routing notification received</string>
 
     <!-- USB Audio Peripheral Tests -->
     <string name="profileLabel">Profile</string>
@@ -5422,8 +5359,6 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_uap_notifications_test">USB Audio Peripheral Notifications Test</string>
     <string name="uapPeripheralProfileAttributes">USB Audio Peripheral Attributes</string>
     <string name="audio_uap_play_test">USB Audio Peripheral Play Test</string>
-    <string name="uapPlayTestInstructions">Connect the USB Audio Interface Peripheral and press the
-        PLAY button below. Verify that a tone is correctly played.</string>
     <string name="uapPlayStopTestInstructions">Connect the USB Audio Interface Peripheral and press the
         PLAY button below. Verify that a tone is correctly played. Then press the STOP button.
     </string>
@@ -5431,8 +5366,6 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_uap_play_stopBtn">Stop</string>
 
     <string name="audio_uap_record_test">USB Audio Peripheral Record Test</string>
-    <string name="uapRecordTestInstructions">Connect the USB Audio Peripheral and press the RECORD or
-        RECORD LOOPBACK button below. Verify that a tone is correctly played.</string>
     <string name="audio_uap_record_recordBtn">Record</string>
     <string name="audio_uap_record_recordLoopbackBtn">Record Loopback</string>
     <string name="audio_uap_record_stopBtn">Stop</string>
@@ -5641,6 +5574,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_ok">Ok</string>
     <string name="audio_general_start">Start</string>
     <string name="audio_general_stop">Stop</string>
+    <string name="audio_general_done">Done</string>
+    <string name="audio_general_close">Close</string>
     <string name="audio_general_status">Status</string>
     <string name="audio_general_pass">PASS</string>
     <string name="audio_general_teststatus_pass">Test Status: PASS</string>
@@ -5649,11 +5584,16 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_not_tested">Not Tested</string>
     <string name="audio_general_not_required">Please Test If Supported</string>
     <string name="audio_general_required">Required</string>
+    <string name="audio_general_nohardware">No supporting hardware.</string>
+    <string name="audio_general_unknownhardware">Unknown hardware support. Please test if supported.</string>
     <string name="audio_general_run">Run</string>
     <string name="audio_general_cancel">Cancel</string>
-
+    <string name="audio_general_left">Left</string>
+    <string name="audio_general_right">Right</string>
     <string name="audio_general_Input">Input</string>
+    <string name="audio_general_inputcolon">Input:</string>
     <string name="audio_general_Output">Output</string>
+    <string name="audio_general_outputcolon">Output:</string>
 
     <string name="audio_general_record">Record</string>
     <string name="audio_general_play">Play</string>
@@ -5671,29 +5611,144 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_play_colon"> play:</string>
     <string name="audio_general_record_colon"> record:</string>
 
+    <string name="audio_general_results">Results</string>
+
+    <string name="audio_general_supporteddevices">Supported Devices</string>
+    <string name="audio_general_availabledevices">Available Devices</string>
+    <string name="audio_general_inputscolon">Inputs:</string>
+    <string name="audio_general_outputscolon">Outputs:</string>
+
     <!-- Audio Data Paths Test-->
-    <string name="audio_datapaths_test">Audio Data Paths Test</string>
-    <string name="audio_datapaths_info">This test verifies basic functionality over a set of audio routes
-        \nTest Setup:
-        \n - It may be necessary to go to the \"Sound &amp; vibration\" settings panel to set the volume level for each output device.
-        \n 1. With no audio peripherals connected, adjust the \"Media volume\" to max.
-        \n 2. (If applicable) insert the analog loopback adapter into the 3.5mm headset jack and adjust the \"Media volume\" to max.
-        \n 3. (If applicable) connect a USB audio interface and adjust the \"Media volume\" to max.
-        \n - If the device has a 3.5mm headset jack, insert a loopback adapter in the jack. (See the \"Audio Loopback Latency Test\" for a description).
-        \n - If the device supports audio over USB, connect a USB audio interface with loopback cables. (See the \"Audio Loopback Latency Test\" for a description).
-        \n   The test will display valid data paths with an asterix appended to the data path name.
-        \nTest Execution:
-        \n - Place the device on a flat surface in a quiet room.
-        \n - Select the \"Native API\" button.
-        \n - Press the \"Start\" button. The test will step through the list of valid data paths playing a tone and recording it\'s presence or absence.
-        Be aware that the test will play tones through the internal speaker even if an analog loopback plug and/or USB loopback device is connected.
-        \n - Select the \"Java API\" button.
-        \n - Press the \"Start\" button to repeat each data path test for the Java API.
-        \nTest Completion:
-        \n - Once each of the data paths and APIs have been measured, the test can be marked successful.
+    <string name="audio_datapaths_clearresults">Clear Results</string>
+    <string name="audio_datapaths_legacy">Legacy</string>
+    <string name="audio_datapaths_mmap_shared">MMAP Shared</string>
+    <string name="audio_datapaths_mmap_exclusive">MMAP Exclusive</string>
+    <string name="audio_datapaths_invalid_transfer">Invalid Transfer Type</string>
+
+    <string name="audio_datapaths_calibrate">Calibrate Audio</string>
+    <string name="audio_datapaths_devices">Audio Devices</string>
+    <string name="audio_datapaths_calibratetitle">Calibrate Loopback Audio</string>
+
+    <string name="audio_devicesupport_title">Audio Devices</string>
+    <string name="audio_devicesupport_cantdetermine">Audio device support could not be determined.</string>
+
+    <string name="audio_supported_devices_explain">This is a list of audio devices which are
+        supported by the hardware of this Android device. This includes both built-in
+        devices and audio peripherals that can be connected. A given audio device may or may
+        not be available, i.e. an audio peripheral device may or may not be actually connected
+        to the Android device.
     </string>
+
+    <string name="audio_available_devices_explain">This is a list of currently available audio devices.
+        It contains both built-in audio devices and any audio peripherals that are currently connected
+        to this Android device. The contents of this list will change as audio peripherals are connected
+        and disconnected.
+    </string>
+
+    <string name="audio_exempt_nonhandheld">This is a non-handheld device and is exempt from this test.
+        Press the \"Pass\" button (below) to continue.</string>
+
+    <string name="audio_datapaths_speakermic_test">Audio Data Paths Speaker/Mic Test</string>
+    <string name="audio_datapaths_speakermic_info">This test verifies basic functionality over a set of audio routes
+        \n\nTest Setup:
+        \n • It may be necessary to go to the \"Sound &amp; vibration\" settings panel to set the volume level for the output device.
+        \n   With no audio peripherals connected, adjust the \"Media volume\" to max.
+        \n The test will display valid data paths with an asterisk appended to the data path name.
+        \n\nTest Execution:
+        \n • Place the device on a flat surface in a quiet room.
+        \n • Select the \"Native API\" button.
+        \n • Press the \"Start\" button. The test will step through the list of valid data paths playing a tone and noting its presence or absence.
+        \n • Select the \"Java API\" button.
+        \n • Press the \"Start\" button to repeat each data path test for the Java API.
+        \n\nTest Completion:
+        \n • Once each of the data paths and APIs have been measured, the test can be marked successful.
+    </string>
+
+    <string name="audio_datapaths_mic">Mic:</string>
+    <string name="audio_datapaths_speaker">Speaker:</string>
+    <string name="audio_datapaths_MMAP">MMAP:"</string>
+    <string name="audio_datapaths_MMAP_exclusive">MMAP Exclusive:"</string>
+    <string name="audio_datapaths_analog_test">Audio Data Paths Analog Jack Test</string>
+    <string name="audio_datapaths_analog_info">This test verifies basic functionality over a set of audio routes
+        \n\nNote that if the DUT does not have an analog headset port, this test can be skipped.
+        \n\nTest Setup:
+        \n • It may be necessary to go to the \"Sound &amp; vibration\" settings panel to set the volume level for each output device.
+        \n • Insert the analog loopback adapter into the 3.5mm headset jack and adjust the \"Media volume\" to max.
+        \n • Leave the loopback adapter in the jack. (See the \"Audio Loopback Latency Test\" for a description).
+        \n The test will display valid data paths with an asterisk appended to the data path name.
+        \n\nTest Execution:
+        \n • Select the \"Native API\" button.
+        \n • Press the \"Start\" button. The test will step through the list of valid data paths playing a tone and noting its presence or absence.
+        \n • Select the \"Java API\" button.
+        \n • Press the \"Start\" button to repeat each data path test for the Java API.
+        \n\nTest Completion:
+        \n • Once each of the data paths and APIs have been measured, the test can be marked successful.
+    </string>
+
+    <string name="audio_datapaths_analog_nodevices">There are no peripherals currently available for this test.
+        Please insert an Analog Loopback Plug into the Analog Headset Jack and run the test.</string>
+
+    <string name="audio_datapaths_analog_noanalogjack">This device does not have an Analog Headset Jack. A PASS is automatically granted.</string>
+    <string name="audio_datapaths_analog_headsetundetermined">Support for an Analog Headset Jack could not be determined.
+        If an Analog Headset Jack is available, please insert an Analog Loopback Plug and run the test.</string>
+    <string name="audio_datapaths_analog_autopass">Non-Handheld device. A PASS is automatically granted.</string>
+
+    <string name="audio_datapaths_USB_test">Audio Data Paths USB Test</string>
+    <string name="audio_datapaths_USB_info">This test verifies basic functionality over a set of audio routes
+        \nTest Setup:
+        \n • It may be necessary to go to the \"Sound &amp; vibration\" settings panel to set the volume level for each output device.
+        \n • Connect a USB audio interface with loopback cabling and adjust the \"Media volume\" to max.
+        \n The test will display valid data paths with an asterisk appended to the data path name.
+        \n\nTest Execution:
+        \n • Select the \"Native API\" button.
+        \n • Press the \"Start\" button. The test will step through the list of valid data paths playing a tone and noting its presence or absence.
+        \n • Select the \"Java API\" button.
+        \n • Press the \"Start\" button to repeat each data path test for the Java API.
+        \n\nTest Completion:
+        \n • Once each of the data paths and APIs have been measured, the test can be marked successful.
+    </string>
+    <string name="audio_datapaths_usb_nodevices">There are no peripherals currently available for this test.
+        Please connect each type of USB Audio Peripheral and run the test for each type.</string>
+    <string name="audio_datapaths_usb_nextperipheral">Please connect the next USB peripheral to be tested and
+        run the test again.</string>
+
+    <string name="audio_datapaths_usb_nosupport">This device does not have a host-mode USB port. A PASS is automatically granted.</string>
+    <string name="audio_datapaths_usb_undetermined">Support for host-mode USB could not be determined.
+        If available, connect each type of USB Audio Peripheral and run the test for each type.</string>
+
     <string name="audio_datapaths_noio">"No valid datapaths. PASS."</string>
     <string name="audio_datapaths_results">%1$s\n%2$s -> %3$s</string>
+
+    <string name="audio_loopback_calibrate_default">Default</string>
+    <string name="audio_loopback_running">Running&#8230;</string>
+
+    <!-- USB Device Warning Dialog -->
+    <string name="usbwarning_message_caption">USB Headset Adapter Warning</string>
+    <string name="usbwarning_message_heading">Unvalidated USB Audio Adapter</string>
+    <string name="usbwarning_paragraph_0">The connected USB audio device has not been verified for
+        use in this test.</string>
+    <string name="usbwarning_paragraph_1_1">The test may pass using this USB peripheral.
+        However, some adapters have been seen to implement noise
+        suppression and/or echo cancellation, or introduce significant latency that
+        may cause the test to fail. If the test does not pass with this adapter,
+        you should obtain the</string>
+    <string name="usbwarning_googadapter">Google USB-C to 3.5mm Adapter</string>
+    <string name="usbwarning_paragraph_1_2">for use in this test.</string>
+
+    <!-- Immersive Audio Test -->
+    <string name="immersive_audio_test">Immersive Audio Test</string>
+    <string name="immersive_audio_test_info">This test verifies that the Immersive Audio Test has
+        been run on the associated test fixture and includes the results in the CTS Verifier report
+        sent to Google.
+        If you are not testing an Immersive audio device on the associated fixture, you are not
+        required to run this test and so can simply press the PASS button.
+    </string>
+    <string name="immersive_audio_onscreen_instructions">Invoke this test from the Immersive Audio test fixture.
+        If you are not testing an Immersive Audio device, and the DUT DOES NOT support low-latency head tracking,
+        simply press the PASS button. If you are not testing an Immersive Audio device, and the DUT DOES support
+        low-latency head tracking, you must exit by pressing the BACK button.
+    </string>
+    <string name="immersive_audio_noheadtracking">"This Android device does not support low-latency headtracking."</string>
 
     <!-- Audio Loopback Latency Test -->
     <string name="audio_loopback_latency_test">Audio Loopback Latency Test</string>
@@ -5721,10 +5776,10 @@ You should be prompted to select credentials; choose the ones you just installed
           Please connect a "Loopback Plug" and press "Loopback Plug Ready".
     </string>
     <string name="audio_loopback_plug_ready_btn">Loopback Plug Ready</string>
-    <string name="audio_loopback_instructions2">
-          Set the audio level to a suitable value, then press Test button.
-          It might require multiple tries until a sufficient confidence is achieved.
-    </string>
+
+    <string name="audio_loopback_calibrate_button">Calibrate Audio</string>
+    <string name="audio_loopback_devsupport_button">Audio Devices</string>
+
     <string name="audio_loopback_level_text">Audio Level</string>
     <string name="audio_loopback_test_btn">Test</string>
     <string name="audio_loopback_results_text">Results...</string>
@@ -5733,13 +5788,13 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_test_non_handheld">This device is not a phone. Test can pass.</string>
     <string name="audio_loopback_test_internal_devices">Speaker/Mic</string>
     <string name="audio_loopback_speakermicpath_instructions">Place the DUT flat on a table
-    in a quiet room. Press the Start button and allow the test to proceed.</string>
+        in a quiet room. Press the \"Start\" button and allow the test to proceed.</string>
 
-    <string name="audio_loopback_headsetpath_instructions">If supported, insert the loopback plug
-        into the headset jack.  Press the Start button and allow the test to proceed.</string>
+    <string name="audio_loopback_headsetpath_instructions">Insert the loopback plug
+        into the headset jack. Press the \"Start\" button and allow the test to proceed.</string>
 
-    <string name="audio_loopback_usbpath_instructions">If USB Audio supported, Connect the USB
-        port to an appropriate USB audio test peripheral with loopback set up. Press the Start
+    <string name="audio_loopback_usbpath_instructions">Connect the USB
+        port to an appropriate USB audio test peripheral with loopback set up. Press the \"Start\"
         button and allow the test to proceed.</string>
 
     <string name="audio_loopback_failure">FAILURE - Could not allocate analyzer thread.</string>
@@ -5760,16 +5815,83 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_resultcode_none">Result: None.</string>
     <string name="audio_loopback_resultcode_pass">Result: Pass.</string>
     <string name="audio_loopback_resultcode_nointernal">Result: Fail - Speaker/Mic path not tested.</string>
-    <string name="audio_loopback_resultcode_failbasic">Result: Fail - Basic latency not met.</string>
-    <string name="audio_loopback_resultcode_failmpc">Result: Fail - Media Performance Class latency not met.</string>
-    <string name="audio_loopback_resultcode_failpro">Result: Fail - Pro Audio max latency on one path not met.</string>
-    <string name="audio_loopback_resultcode_failproanalog">Result: Fail - Pro Audio analog latency not met.</string>
-    <string name="audio_loopback_resultcode_failprousb">Result: Fail - Pro Audio USB latency not met.</string>
+    <string name="audio_loopback_notmet">not met.</string>
+    <string name="audio_loopback_resultcode_failbasic">Result: Fail - Basic latency</string>
+    <string name="audio_loopback_resultcode_failmpc">Result: Fail - Media Performance Class latency</string>
+    <string name="audio_loopback_resultcode_failpro">Result: Fail - Pro Audio max latency on one path</string>
+    <string name="audio_loopback_resultcode_failproanalog">Result: Fail - Pro Audio analog latency</string>
+    <string name="audio_loopback_resultcode_failprousb">Result: Fail - Pro Audio USB latency</string>
     <string name="audio_loopback_resultcode_fail24bit">Result: Fail - 24-bit playback requirement no met.</string>
-    <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency for wired path not met.</string>
+    <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency. At least one wired path must be tested.</string>
+    <string name="audio_loopback_resultcode_warningtimestamp">Result: Warning - Timestamp latency accuracy not met.</string>
     <string name="audio_loopback_resultcode_invalid">Result: Invalid result code.</string>
 
-    <!-- Audio Cold-Start Latency Test -->
+    <!-- Status Strings -->
+    <string name="audio_loopback_noanalog">The DUT does not support an Analog Headset Jack. This Test phase is automatically PASSED.</string>
+    <string name="audio_loopback_unknownanalog">Support for an Analog Headset Jack could not be determined. If supported, insert the loopback plug
+        into the headset jack.  Press the Start button and allow the test to proceed.</string>
+    <string name="audio_loopback_nousb">The DUT does not support a USB Audio Port. This Test phase is automatically PASSED.</string>
+    <string name="audio_loopback_unknownusb">Support for USB Audio could not be determined. If USB Audio is supported, Connect the USB
+        port to an appropriate USB audio test peripheral with loopback set up. Press the Start
+        button and allow the test to proceed.</string>
+
+    <!-- Multichannel Mixdown Test -->
+    <string name="audio_multichannel_mixdown_test">Multichannel Mixdown Test</string>
+    <string name="audio_multichannel_mixdown_info">
+        This test verifies that for High Channel Count Positional Playback (QUAD, 5.1, 7.1, 7.1.4),
+        all playback channels are represented in a stereo mix. It does not verify placement
+        in the output field.
+        \n\nThis test requires a 2-channel loopback device such as a 2-channel USB audio interface
+        correctly configured for audio loopback (see the Audio Loopback Latency test for more
+        information).
+        \n\nSince this is a new test, at this time the test process need only be executed for
+        each required route and the test will be allowed to pass even if incorrect
+        multi-channel playback is noted.
+    </string>
+    <string name="audio_mixdown_clearresults">Clear Results</string>
+    <string name="audio_mixdown_calibrate">Calibrate Audio</string>
+    <string name="audio_mixdown_devices">Audio Devices</string>
+
+    <string name="audio_mixdown_stereo">Stereo</string>
+    <string name="audio_mixdown_quad">Quad</string>
+    <string name="audio_mixdown_sevendotone">7.1</string>
+    <string name="audio_mixdown_fivedotone">5.1</string>
+    <string name="audio_mixdown_sevendotonedotfour">7.1.4</string>
+
+    <!-- Mixdown Route Names -->
+    <string name="audio_mixdown_micspeaker">Mic/Speaker</string>
+    <string name="audio_mixdown_analogheadset">Analog Headset Jack + Loopback</string>
+    <string name="audio_mixdown_usbdevice">USB Interface + Loopback</string>
+    <string name="audio_mixdown_usbheadset">USB Headset Adapter + Looback</string>
+
+    <!-- Mixdown status strings -->
+    <string name="audio_mixdown_invalidinput">Invalid Input.</string>
+    <string name="audio_mixdown_invalidoutput">Invalid Output.</string>
+    <string name="audio_mixdown_testcanceled">Test Canceled.</string>
+    <string name="audio_mixdown_cantstart">Couldn\'t Start Duplex Audio.</string>
+
+    <string name="audio_mixdown_required">Required</string>
+    <string name="audio_mixdown_completed">Completed</string>
+    <string name="audio_mixdown_not_completed">Not Completed</string>
+
+    <string name="audio_mixdown_req">required</string>
+    <string name="audio_mixdown_done">done</string>
+
+    <!-- Channel Position Names -->
+    <string name="audio_channel_mask_left">Left</string>
+    <string name="audio_channel_mask_right">Right</string>
+    <string name="audio_channel_mask_center">Center</string>
+    <string name="audio_channel_mask_sideleft">Side Left</string>
+    <string name="audio_channel_mask_sideright">Side Right</string>
+    <string name="audio_channel_mask_backleft">Back Left</string>
+    <string name="audio_channel_mask_backright">Back Right</string>
+    <string name="audio_channel_mask_lowfreq">Low Freq</string>
+    <string name="audio_channel_mask_topfrontleft">Top Front Left</string>
+    <string name="audio_channel_mask_topfrontright">Top Front Right</string>
+    <string name="audio_channel_mask_topbackleft">Top Back Left</string>
+    <string name="audio_channel_mask_topbackright">Top Back Right</string>
+
+     <!-- Audio Cold-Start Latency Test -->
     <string name="audio_coldstart_out_latency_test">Audio Cold Start Output Latency Test</string>
     <string name="audio_coldstart_in_latency_test">Audio Cold Start Input Latency Test</string>
 
@@ -5847,9 +5969,10 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_frequency_mic_test">Audio Frequency Microphone Test</string>
     <string name="frequency_mic_info">
         This test requires an external USB reference microphone and external speakers.
-        The test signals can be played from the device under test (DUT) or from a secondary device (e.g. when your DUT can’t support a USB microphone and external speakers simultaneously, or DUT does not have headphone output).
-Follow the instructions on the screen to measure the frequency response for the built in microphone.
-       </string>
+        The test signals should be played from a secondary device connected to either analog speakers connected
+        to the analog headset jack, or USB speakers connected to the USB port of the secondary device.
+        Follow the instructions on the screen to measure the frequency response for the built in microphone.
+    </string>
 
     <string name="frequency_mic_play">Play</string>
     <string name="frequency_mic_stop">Stop</string>
@@ -5937,21 +6060,22 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="analog_headset_volup">VOLUME_UP</string>
     <string name="analog_headset_voldown">VOLUME_DOWN</string>
     <string name="analog_headset_test">Analog Headset Test</string>
-    <string name="analog_headset_pass_noheadset">"PASS (No headset port available)"</string>
+    <string name="analog_headset_pass_noheadset">"PASS - No headset port available"</string>
+    <string name="analog_headset_headset_unknown">FAIL - Headset State Unknown</string>
     <string name="analog_headset_pass">PASS</string>
-    <string name="analog_headset_port_detected">"Analog port detected"</string>
+    <string name="analog_headset_port_detected">"Headset port detected"</string>
     <string name="analog_headset_press_buttons">Press each button on the headset verify recognition</string>
     <string name="analog_headset_no_buttons">No buttons detected</string>
-    <string name="analog_headset_headset_connected">Headset connected</string>
-    <string name="analog_headset_no_headset">No Headset - Connect headset to 3.5mm analog jack</string>
+    <string name="analog_headset_headset_connected">Analog headset connected</string>
+    <string name="analog_headset_no_headset">No Analog Headset - Connect headset to 3.5mm jack</string>
     <string name="analog_headset_action_received">ACTION_HEADSET_PLUG received - </string>
     <string name="analog_headset_unplugged">Unplugged</string>
     <string name="analog_headset_plugged">Plugged</string>
     <string name="analog_headset_mic"> [mic]</string>
     <string name="analog_headset_reportnojack">No analog Jack. PASS</string>
     <string name="analog_headset_no_jack">No analog jack detected. Please connect a headset, or PASS</string>
-    <string name="analog_headset_connect_headset">Please connect a headset</string>
-    <string name="analog_headset_play_audio">Please test audio through the headset</string>
+    <string name="analog_headset_connect_headset">Please connect an analog headset</string>
+    <string name="analog_headset_play_audio">Please test audio through the analog headset</string>
     <string name="analog_headset_test_buttons">Please test transport buttons</string>
 
     <string name="analog_headset_test_info">This test tests the following functionality with respect to wired analog headsets.\n
@@ -5996,6 +6120,8 @@ Follow the instructions on the screen to measure the frequency response for the 
         \nThe test passes if all routes demonstrate the correct stream disconnection behavior.
     </string>
     <string name="audio_disconnect_wired_prompt">Does this device support an analog or USB audio peripheral?</string>
+    <string name="audio_disconnect_port_detected">"Wired device support detected"</string>
+
     <!--Audio Frequency Global strings -->
     <string name="af_button_play">Play</string>
     <string name="af_button_stop">Stop</string>
@@ -6280,22 +6406,6 @@ Follow the instructions on the screen to measure the frequency response for the 
         profile, the test passes. If not, the mismatches are displayed.
     </string>
 
-    <!-- USB Audio Peripheral Play Test -->
-    <string name="usbaudio_play_test"> USB Audio Peripheral Play Test</string>
-    <string name="usbaudio_play_info">
-        This test requires that you have connected a USB Audio Interface peripheral and
-        some way to monitor the output. Press the \"Play\" button and verify that a tone is produced.
-       </string>
-
-    <!-- USB Audio Peripheral Record Test -->
-    <string name="usbaudio_record_test"> USB Audio Peripheral Record Test</string>
-    <string name="usbaudio_record_info">
-        This test requires that you have connected a USB Audio Interface peripheral.
-        Connect the outputs to the inputs (with patch cables). Start playback by pressing the
-        \"Record Loopback\" button and verify that the recorded signal is displayed in the wave
-        display view. (It may be necessary to adjust the input controls on the peripheral).
-       </string>
-
     <!-- USB Audio Peripheral Buttons Test -->
     <string name="usbaudio_buttons_test"> USB Audio Peripheral Buttons Test</string>
     <string name="usbaudio_buttons_info">
@@ -6495,7 +6605,7 @@ Follow the instructions on the screen to measure the frequency response for the 
         \nAlphanumeric, length at least 4</string>
     <string name="set_complexity_low_desc">Any pattern, PIN or password</string>
     <string name="set_complexity_none_desc">No restrictions</string>
-    <!-- Strings for UnlockedDeviceRequiredTest -->
+    <!-- Strings for UnlockedDeviceRequiredKeysTest -->
     <string name="unlock_req_config_lock_screen">Secure lock screen has not been set up. Go to
         Settings -> Security to set up a lock screen.</string>
     <string name="unlock_req_config_lock_screen_and_biometrics">Secure lock screen has not been set
@@ -6635,13 +6745,16 @@ Follow the instructions on the screen to measure the frequency response for the 
     <!-- Add bubble from overflow -->
     <string name="bubbles_test_add_from_overflow_title">Add bubble from overflow</string>
     <string name="bubbles_test_add_from_overflow_verify">1. Expand the stack and open the bubble
-        overflow.\n\n 2. Tap on a bubble in the overflow, pass this test if that bubble is opened
-        and removed from the overflow.</string>
+        overflow.\n\n 2. Tap on a bubble in the overflow, pass this test if that bubble is opened.
+    </string>
     <!-- Cancel removes bubbles in overflow -->
     <string name="bubbles_test_cancel_overflow_title">Cancel removes overflowed bubbles</string>
     <string name="bubbles_test_cancel_overflow_verify">1. Press the button below, it will cancel all
         previous bubble notifications and post one more.\n\n
         2. Expand that bubble, navigate to the overflow and ensure that it is empty.</string>
+    <string name="bubbles_test_cancel_overflow_verify2">1. Press the button below, it will cancel
+        all previous bubble notifications and post one more.\n\n
+        2. Expand that bubble, observe that there is no overflow button.</string>
     <string name="bubbles_test_cancel_overflow_button">Cancel previous bubbles and post a
         single bubble</string>
     <!-- Tap on notification with bubble in the overflow -->
@@ -6855,16 +6968,19 @@ Follow the instructions on the screen to measure the frequency response for the 
         AudioDescriptor must only be used to report audio device capabilities that are not able to
         describe by Android defined enums.\n
         \nTo execute test:\n
-        1. Plug in HDMI cable if HDMI is supported on the device.\n
-        2. The test will execute automatically and verify the reported AudioDescriptor when the
-        activity is created and when audio device connection is changed.
+        1. Plug in HDMI cable if there is an HDMI port on the device.\n
+        2. The test will run when clicking TEST button.\n
     </string>
-    <string name="audio_descriptor_HDMI_support_label">HDMI support:</string>
-    <string name="audio_descriptor_has_hdmi_support">Has HDMI support</string>
-    <string name="audio_descriptor_NA">N/A</string>
+    <string name="audio_descriptor_run_test">Test</string>
+    <string name="audio_descriptor_HDMI_support_label">HDMI connection status:</string>
+    <string name="audio_descriptor_has_hdmi_support">Has HDMI Port</string>
+    <string name="audio_descriptor_hdmi_NA">N/A. HDMI support is not claimed.</string>
     <string name="audio_descriptor_hdmi_pending">No HDMI detected. Pending&#8230;</string>
+    <string name="audio_descriptor_hdmi_connected">Connected.</string>
     <string name="audio_descriptor_pass">Pass</string>
-    <string name="audio_descriptor_hdmi_not_reported">No HDMI device connected</string>
+    <string name="audio_descriptor_hdmi_claimed_but_not_connected">
+        HDMI is claimed as supported but not yet connected.
+    </string>
     <string name="audio_descriptor_standard_none">Standard is none.</string>
     <string name="audio_descriptor_is_null">Audio descriptor is null.</string>
     <string name="audio_descriptor_unrecognized_standard">Standard %1$d is unrecognized.</string>
@@ -6888,6 +7004,7 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="audio_descriptor_hdmi_message">
         Please connect an HDMI peripheral to validate AudioDescriptor.
     </string>
+
     <string name="uwb">Uwb</string>
     <string name="presence_test">Presence Test</string>
     <string name="presence_test_info">
@@ -6901,6 +7018,7 @@ Follow the instructions on the screen to measure the frequency response for the 
     </string>
     <string name="is_reference_device_checkbox_text">Is Reference Device</string>
     <string name="is_manual_pass_text">Pass test manually after test completion</string>
+    <string name="use_extended_advertisement_text">Use extended advertisement</string>
     <string name="uwb_precision">Uwb Precision Test</string>
     <string name="uwb_short_range">Uwb Short Range Test</string>
     <string name="uwb_precision_instruction">
@@ -6929,6 +7047,7 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="dut_test_result_info_presence">Tx RSSI median: %1$d. Rx RSSI median received from reference device: %2$d</string>
     <string name="ref_test_result_info_presence">Rx RSSI median computed: %1$d.</string>
     <string name="reference_device_id_input_presence">Enter the device ID displayed on the advertising device</string>
+    <string name="tx_power_input_presence">Optional. Configure advertising TX power. Default is 1(TX_POWER_HIGH)</string>
 
     <!-- Strings for BLE RSSI Precision Test -->
     <string name="ble_rssi_precision_name">BLE RSSI Precision Test</string>
@@ -7037,6 +7156,8 @@ Follow the instructions on the screen to measure the frequency response for the 
     </string>
     <string name="controls_panel_setting_test_false">2a. Controls Panel setting in extra test false value</string>
     <string name="controls_panel_setting_test_true">2b. Controls Panel setting in extra test true value</string>
+    <string name="controls_panel_dream_test_false">3a. Control Panel starting on keyguard test false value </string>
+    <string name="controls_panel_dream_test_true">3b. Control Panel starting as a dream test true value </string>
     <string name="controls_panel_setting_test_info">This test verifies that an app that shows a
     panel in the device controls space will receive the correct value of the setting for controlling
     devices on the lock screen as part of their intent extras.\n\n
@@ -7047,6 +7168,25 @@ Follow the instructions on the screen to measure the frequency response for the 
         (you might need to enable other settings for it to be available). Set that setting to %1$s.
         \n Then, open the device controls space (instructions below the button) and verify that the
         text inside the panel indicates that the setting is %1$s
+    </string>
+    <string name="controls_panel_dream_true_test_instructions">
+   1 - Find the Home Control Panel \n
+      - Open Settings, Search for "Screen Saver", find \"Home Controls\", \n\n
+   2 - For Case When Dock is Available\n
+     - Place the device on the dock and wait for the device to time out. \n\n
+   3 - For Case When Dock is Not Available \n
+    - Update \"When to start\" to \"While Charging\". \n
+    - Press the preview button or wait for the device to time out to enter dream mode. \n\n
+   4 - Verification of Hosting Status \n
+     - Verify that the hosting status is \"Hosted in Dream Service\".
+    </string>
+
+    <string name="controls_panel_dream_false_test_instructions">
+        Using the button below, open Settings.
+        Find the setting that allows you to control external devices from the lockscreen
+        (you might need to enable other settings for it to be available). Set that setting to true.
+        \n Then, open the device controls space (instructions below the button) and verify that the
+        hosting status is \"Not Hosted in Dream Service\"
     </string>
 
     <!--  Strings for Input tests  -->
@@ -7106,6 +7246,73 @@ Follow the instructions on the screen to measure the frequency response for the 
     <string name="audio_clear_preferred_mixer_attributes_failed">Clearing preferred mixer attributes failed.</string>
     <string name="audio_get_preferred_mixer_attributes_should_be_null">Preferred mixer attributes is not null after calling AudioManager#clearPreferredMixerAttributes.</string>
     <string name="audio_no_callback_for_preferred_mixer_attributes_changed">Callback is not called when preferred mixer attributes changed.</string>
+
+    <!-- Strings for Sharesheet tests -->
+    <string name="category_sharesheet">Sharesheet</string>
+
+    <string name="sharesheet_payload_toggle_test">Sharesheet Payload Toggle Test</string>
+    <string name="sharesheet_payload_toggle_test_info">
+        This test verifies that the system sharesheet properly handles the API that allows for shared items to be chosen from a larger set of optional items.
+        \n\n
+        1. Press the \"Share\" button below to launch the system sharesheet.
+        \n\n
+        2. In the system sharesheet, select all images and send them to the CTS verifier app.
+    </string>
+    <string name="sharesheet_payload_toggle_action_test">Sharesheet Payload Toggle Chooser Action Test</string>
+    <string name="sharesheet_payload_toggle_chooser_action_test_info">
+        This test verifies that the system sharesheet properly handles the API that allows for chooser actions to be updated in response to a change in the set of shared items in the system sharesheet.
+        \n\n
+        1. Press the \"Share\" button below to launch the system sharesheet.
+        \n\n
+        2. In the system sharesheet, select all images and tap on the chooser action.
+    </string>
+    <string name="sharesheet_chooser_action">Test Action</string>
+    <string name="sharesheet_wrong_intent_action">Wrong intent action; test failed.</string>
+    <string name="sharesheet_wrong_intent_mime_type">Wrong intent mime type; test failed.</string>
+    <string name="sharesheet_wrong_shared_items">Wrong set of shared items; test failed.</string>
+    <string name="sharesheet_missing_result_intent_sender_invocation">Result intent sender was not invoked.</string>
+    <string name="sharesheet_wrong_result_intent_sender_invocation">Incorrect result intent sender was invoked.</string>
+
+    <string name="sharesheet_album_test">Sharesheet Album Label Test</string>
+    <string name="sharesheet_album_test_info">This test verifies that the system sharesheet responds to the \"album\" hint if provided by the app.</string>
+    <string name="sharesheet_skipping_for_flag">Skipping the test due to disabled feature flag</string>
+    <string name="sharesheet_share_label">Share</string>
+    <string name="sharesheet_no_title_message">No title on sharesheet, test passed.</string>
+    <string name="sharesheet_album_test_step_1">Press the \"Share\" button below to show the system sharesheet.
+        When it\'s shown, look for a headline at the top saying something like \"Sharing text\".
+        \n\nThen close the sharesheet and you\'ll be asked whether you saw a headline like that.</string>
+    <string name="sharesheet_album_test_step_2">Did you see a title in the UI like \"Sharing Text\"?\n\nIf not sure, press Share again.</string>
+    <string name="sharesheet_album_test_step_3">Now press the \"Share\" button again and see if the headline says something like \"Sharing album\" instead.
+        \n\nIf the sharesheet indicates that it\'s an album being shared, pass the test, otherwise fail.</string>
+
+    <!-- Sharesheet ChooserResult test -->
+    <string name="sharesheet_result_test_edit">Chooser Result: Edit</string>
+    <string name="sharesheet_result_test_edit_info">This test verifies an app is notified taken the EDIT action is invoked within the Sharing UI.</string>
+    <string name="sharesheet_result_test_edit_instructions">Tap the \"Share\" button below.\nWhen the Share UI opens, press the EDIT button.\n\nIf an EDIT button cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_edit_instructions_short">Press Edit.</string>
+    <string name="sharesheet_result_test_edit_pressed">The EDIT button was pressed</string>
+    <string name="sharesheet_result_test_edit_not_found">The EDIT button could not be found</string>
+
+    <string name="sharesheet_result_test_copy">Chooser Result: Copy</string>
+    <string name="sharesheet_result_test_copy_info">This test verifies an app is notified taken the COPY action is invoked within the Sharing UI.</string>
+    <string name="sharesheet_result_test_copy_instructions">Tap the \"Share\" button below.\nWhen the Share UI open, press the COPY button.\n\nIf a COPY button cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_copy_instructions_short">Press Copy .</string>
+    <string name="sharesheet_result_test_copy_pressed">The COPY button was pressed</string>
+    <string name="sharesheet_result_test_copy_not_found">The COPY button could not be found</string>
+
+   <string name="sharesheet_result_test_component">Chooser Result: Component</string>
+    <string name="sharesheet_result_test_component_info">This test verifies an app is notified when a target component (APP) is selected in the Sharing UI.</string>
+    <string name="sharesheet_result_test_component_instructions">Tap the \"Share\" button below.\nWhen the Share UI opens, tap the icon labeled \""CtsVerifier\".\n\nIf the \"CtsVerifier\" icon cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_component_instructions_short">Tap the CtsVerifier Icon</string>
+    <string name="sharesheet_result_test_component_selected">The CtsVerifier icon was selected</string>
+    <string name="sharesheet_result_test_component_not_found">The CtsVerifier icon could not be found</string>
+
+    <string name="sharesheet_result_test_instructions_after_share">Choose from the options below:</string>
+
+    <string name="sharesheet_result_test_try_again">Try again</string>
+    <string name="sharesheet_result_test_no_result_message">No result received - test failed</string>
+    <string name="sharesheet_result_test_incorrect_result">Incorrect result received - test failed</string>
+    <string name="sharesheet_result_test_no_button">Action not available - test passed</string>
 
     <!-- Strings for CaptureContentForNotes test -->
     <string name="ccfn_tests">Capture Content For Notes Tests</string>
@@ -7225,4 +7432,89 @@ Follow the instructions on the screen to measure the frequency response for the 
         \n3. Verify the CtsDefaultNotesApp informs can use API returned false.
         \n4. If so, pass this test else fail.
     </string>
+
+    <string name="notif_hiding_test">Notification Hiding Test</string>
+    <string name="notif_hiding_shade_test">Notification Hiding In Notification Shade During Screen Recording Test</string>
+    <string name="notif_hiding_app_test">Notification Triggers Hiding App Content During Screen Recording Test</string>
+    <string name="notif_hiding_shade_partial_test">Notification Not Hiding In Notification Shade During Single-App Screen Recording Test</string>
+    <string name="notif_hiding_launcher_test">Notification Hiding In Launcher During Screen Recording Test</string>
+    <string name="notif_hiding_bubble_test">Notification Hiding In Bubbles During Screen Recording Test</string>
+    <string name="notif_hiding_shade_local_screen_recorder_test">Notification Hiding In Notification Shade During Screen Recording From Local Screen Recorder Test</string>
+    <string name="notif_hiding_app_local_screen_recorder_test">Notification Triggers Hiding App Content During Screen Recording From Local Screen Recorder Test</string>
+    <string name="notif_hiding_shade_disable_protections_test">Notification Hiding In Notification Shade During Screen Recording With Protections Disabled Test</string>
+    <string name="notif_hiding_app_disable_protections_test">Notification Triggers Hiding App Content During Screen Recording With Protections Disabled Test</string>
+    <string name="notif_hiding_shade_test_instructions">
+        1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
+        \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
+        \n4. Open the notification shade, and verify there is no notification that includes the text \"Sensitive Text\".
+        \n5. If there is no such notification, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_app_test_instructions">
+        1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
+        \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
+        \n4. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
+        \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_shade_partial_test_instructions">
+        1. Press \"Start screen recording\", then select \"A Single App\" in the resulting recording dialog, then select \"Start\", then pick \"Cts Verifier\" in the list of apps that shows.
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"Sensitive Text\".
+        \n4. If there is such a notification, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_launcher_test_instructions">
+        1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Press \"Send Notification\".
+        \n3. Return to the home screen, open the app drawer, and drag \"CTS Verifier\" onto the launcher home screen.
+        \n4. Long press \"CTS Verifier\" in the launcher. Verify that no message shows with the text \"Sensitive Text\".
+        \n5. Return to the verifier app. If there was no such message when long pressing, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_bubble_test_instructions">
+        1. Press \"Send Notification\", then pull down the notification shade and press the bubble button on the bottom right of the notification.
+        \n2. Exit the bubble activity by tapping on the bubble icon at the top of the screen
+        \n3. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n4. Press \"Send Notification\", and verify that no message containing the text \"Sensitive Text\" shows next to the bubble.
+        \n5. If no such message shows, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_shade_local_screen_recorder_test_instructions">
+        1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"Sensitive Text\".
+        \n4. If there is such a notification, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_app_local_screen_recorder_test_instructions">
+        1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n3. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" appears in the screenshot".
+        \n4. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
+    </string>
+    <string name="notif_hiding_shade_disable_protections_test_instructions">
+        1. Go to the "Disable screen share protections" developer setting. It is often located under \"Developer options\".
+        \nConfirm that:
+        \n   - "Disable screen share protections" is enabled.
+        \nReturn back to this page. Remember to undo this after the test.
+        \n2. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n5. Open the notification shade, and verify there is a notification that includes the text \"Sensitive Text\".
+        \n6. If there is such a notification, click \"Pass\", otherwise click \"Fail\".
+        \n7. Remember to disable the "Disable screen share protections" developer options.
+    </string>
+    <string name="notif_hiding_app_disable_protections_test_instructions">
+        1. Go to the "Disable screen share protections" developer setting. It is often located under \"Developer options\".
+        \nConfirm that:
+        \n   - "Disable screen share protections" is enabled.
+        \nReturn back to this page. Remember to undo this after the test.
+        \n2. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n5. Take a screenshot of CtsVerifier App, and verify there is content in screenshot".
+        \n6. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
+        \n7. Remember to disable the "Disable screen share protections" developer options.
+    </string>
+    <string name="notif_hiding_start_screen_recording">Start screen recording</string>
+    <string name="notif_hiding_send_notification">Send notification</string>
+    <string name="notif_hiding_success">No failures found, please press the green check mark</string>
+    <string name="notif_hiding_failure">%1$d out of %2$d tests failed, please press the red \"!\"</string>
 </resources>

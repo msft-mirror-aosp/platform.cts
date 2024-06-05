@@ -49,27 +49,34 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
         public final File localFile;
         public final File remoteFile;
         public final boolean addToInstallSession;
+        public final boolean manageRemoteFile;
 
-        private DeviceFile(File localFile, File remoteFile, boolean addToInstallSession) {
+        private DeviceFile(File localFile, File remoteFile, boolean addToInstallSession,
+                boolean manageRemoteFile) {
             this.localFile = localFile;
             this.remoteFile = remoteFile;
             this.addToInstallSession = addToInstallSession;
+            this.manageRemoteFile = manageRemoteFile;
         }
 
         static DeviceFile addToSession(File file) {
-            return new DeviceFile(file, file, true);
+            return new DeviceFile(file, file, true, true);
         }
 
         static DeviceFile renameAndAddToSession(File localFile, File remoteFile) {
-            return new DeviceFile(localFile, remoteFile, true);
+            return new DeviceFile(localFile, remoteFile, true, true);
         }
 
         static DeviceFile pushOnly(File file) {
-            return new DeviceFile(file, file, false);
+            return new DeviceFile(file, file, false, true);
         }
 
         static DeviceFile renameAndPushOnly(File localFile, File remoteFile) {
-            return new DeviceFile(localFile, remoteFile, false);
+            return new DeviceFile(localFile, remoteFile, false, true);
+        }
+
+        static DeviceFile addRemoteFileToSession(File remoteFile) {
+            return new DeviceFile(null, remoteFile, true, false);
         }
     }
 
@@ -78,6 +85,7 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
     private final List<String> mSplitsToRemove = new ArrayList<>();
     private boolean mUseNaturalAbi = false;
     private boolean mUseIncremental = false;
+    private boolean mAddFileNamePrefix = true;
 
     public BaseInstallMultiple(ITestDevice device, IBuildInfo buildInfo, IAbi abi) {
         this(device, buildInfo, abi, true);
@@ -103,6 +111,16 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
     T addFile(String file) throws FileNotFoundException {
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mBuild);
         mFilesToAdd.add(DeviceFile.addToSession(buildHelper.getTestFile(file, mAbi)));
+        return (T) this;
+    }
+
+    T disableFileNamePrefix() {
+        mAddFileNamePrefix = false;
+        return (T) this;
+    }
+
+    T addRemoteFile(String remoteFile) {
+        mFilesToAdd.add(DeviceFile.addRemoteFileToSession(new File(remoteFile)));
         return (T) this;
     }
 
@@ -182,8 +200,19 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
         return (T) this;
     }
 
+    T forceQueryable() {
+        addArg("--force-queryable");
+        return (T) this;
+    }
+
+    T bypassLowTargetSdkBlock() {
+        addArg("--bypass-low-target-sdk-block");
+        return (T) this;
+    }
+
+
     protected String deriveRemoteName(String originalName, int index) {
-        return index + "_" + originalName;
+        return (mAddFileNamePrefix ? index + "_" + originalName : originalName);
     }
 
     void run() throws DeviceNotAvailableException {
@@ -202,7 +231,7 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
         run(false, failure);
     }
 
-    private void run(boolean expectingSuccess, String failure) throws DeviceNotAvailableException {
+    void run(boolean expectingSuccess, String failure) throws DeviceNotAvailableException {
         if (mUseIncremental) {
             runIncremental(expectingSuccess, failure);
         } else {
@@ -211,8 +240,18 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
         cleanupDeviceFiles();
     }
 
-    private void runNonIncremental(boolean expectingSuccess, String failure)
-            throws DeviceNotAvailableException {
+    String runForResult() throws DeviceNotAvailableException {
+        String result;
+        if (mUseIncremental) {
+            result = runIncrementalForResult();
+        } else {
+            result = runNonIncrementalForResult();
+        }
+        cleanupDeviceFiles();
+        return result;
+    }
+
+    private String runNonIncrementalForResult() throws DeviceNotAvailableException {
         final ITestDevice device = mDevice;
 
         // Create an install session
@@ -244,11 +283,12 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
         // Push our files into session. Ideally we'd use stdin streaming,
         // but ddmlib doesn't support it yet.
         for (int i = 0; i < mFilesToAdd.size(); i++) {
+            boolean manageRemoteFile = mFilesToAdd.get(i).manageRemoteFile;
             final File localFile = mFilesToAdd.get(i).localFile;
             final File remoteFile = mFilesToAdd.get(i).remoteFile;
             final String remoteName = deriveRemoteName(remoteFile.getName(), i);
             final String remotePath = "/data/local/tmp/" + remoteName;
-            if (!device.pushFile(localFile, remotePath)) {
+            if (manageRemoteFile && !device.pushFile(localFile, remotePath)) {
                 throw new IllegalStateException("Failed to push " + localFile);
             }
 
@@ -283,7 +323,12 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
         cmd.append("pm install-commit");
         cmd.append(' ').append(sessionId);
 
-        result = device.executeShellCommand(cmd.toString()).trim();
+        return device.executeShellCommand(cmd.toString()).trim();
+    }
+
+    private void runNonIncremental(boolean expectingSuccess, String failure)
+            throws DeviceNotAvailableException {
+        String result = runNonIncrementalForResult();
         if (failure == null) {
             if (expectingSuccess) {
                 TestCase.assertTrue(result, result.startsWith("Success"));
@@ -295,7 +340,7 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
         }
     }
 
-    private void runIncremental(boolean expectingSuccess, String failure) throws DeviceNotAvailableException {
+    private String runIncrementalForResult() throws DeviceNotAvailableException {
         final ITestDevice device = mDevice;
 
         if (!mSplitsToRemove.isEmpty()) {
@@ -315,11 +360,12 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
         // Push our files into session. Ideally we'd use stdin streaming,
         // but ddmlib doesn't support it yet.
         for (int i = 0; i < mFilesToAdd.size(); i++) {
+            boolean manageRemoteFile = mFilesToAdd.get(i).manageRemoteFile;
             final File localFile = mFilesToAdd.get(i).localFile;
             final File remoteFile = mFilesToAdd.get(i).remoteFile;
             final String remoteName = deriveRemoteName(remoteFile.getName(), i);
             final String remotePath = "/data/local/tmp/" + remoteName;
-            if (!device.pushFile(localFile, remotePath)) {
+            if (manageRemoteFile && !device.pushFile(localFile, remotePath)) {
                 throw new IllegalStateException("Failed to push " + localFile);
             }
 
@@ -331,7 +377,12 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
         }
 
         // Everything staged; let's pull trigger
-        String result = device.executeShellCommand(cmd.toString()).trim();
+        return device.executeShellCommand(cmd.toString()).trim();
+    }
+
+    private void runIncremental(boolean expectingSuccess, String failure)
+            throws DeviceNotAvailableException {
+        String result = runIncrementalForResult();
         if (failure == null) {
             if (expectingSuccess) {
                 TestCase.assertTrue(result, result.startsWith("Success"));
@@ -346,6 +397,9 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
     private void cleanupDeviceFiles() throws DeviceNotAvailableException {
         final ITestDevice device = mDevice;
         for (int i = 0; i < mFilesToAdd.size(); i++) {
+            if (!mFilesToAdd.get(i).manageRemoteFile) {
+                continue;
+            }
             final File remoteFile = mFilesToAdd.get(i).remoteFile;
             final String remoteName = deriveRemoteName(remoteFile.getName(), i);
             final String remotePath = "/data/local/tmp/" + remoteName;

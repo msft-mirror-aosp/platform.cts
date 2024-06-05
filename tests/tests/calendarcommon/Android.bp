@@ -18,12 +18,16 @@ package {
 
 android_test {
     name: "CtsCalendarcommon2TestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
-    static_libs: ["ctstestrunner-axt"],
+    static_libs: [
+        "ctstestrunner-axt",
+        "androidx.test.rules",
+    ],
     libs: ["android.test.base"],
     srcs: ["src/**/*.java"],
     sdk_version: "current",
-    min_sdk_version: "15",
+    min_sdk_version: "19",
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

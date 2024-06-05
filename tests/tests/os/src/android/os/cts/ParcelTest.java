@@ -17,16 +17,15 @@
 package android.os.cts;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import android.app.Service;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.content.pm.Signature;
 import android.os.BadParcelableException;
 import android.os.Binder;
 import android.os.Bundle;
@@ -35,18 +34,20 @@ import android.os.IInterface;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.Parcelable;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
-import android.test.AndroidTestCase;
+import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 
-import com.android.compatibility.common.util.ApiTest;
-
-import com.google.common.util.concurrent.AbstractFuture;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.FileDescriptor;
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,12 +55,99 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-public class ParcelTest extends AndroidTestCase {
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+public class ParcelTest {
+    @Rule public RavenwoodRule mRavenwood = new RavenwoodRule();
 
+    private static final float DELTA_FLOAT = 0.0f;
+    private static final double DELTA_DOUBLE = 0.0d;
+
+    /**
+     * Since we're focused on testing Parcel here, give ourselves a local equivalent of {@code
+     * android.content.pm.Signature} so that we're not running an integration test.
+     */
+    public static class Signature implements Parcelable {
+        private final byte[] mSignature;
+
+        public Signature(String signature) {
+            mSignature = signature.getBytes(StandardCharsets.UTF_8);
+        }
+
+        private Signature(Parcel source) {
+            mSignature = source.createByteArray();
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (other instanceof Signature) {
+                return Arrays.equals(mSignature, ((Signature) other).mSignature);
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(mSignature);
+        }
+
+        public int describeContents() {
+            return 0;
+        }
+
+        public void writeToParcel(Parcel dest, int parcelableFlags) {
+            dest.writeByteArray(mSignature);
+        }
+
+        public static final Parcelable.Creator<Signature> CREATOR = new Parcelable.Creator<>() {
+            public Signature createFromParcel(Parcel source) {
+                return new Signature(source);
+            }
+
+            public Signature[] newArray(int size) {
+                return new Signature[size];
+            }
+        };
+    }
+
+    /**
+     * Since we're focused on testing Parcel here, give ourselves a local equivalent of {@code
+     * android.content.Intent} so that we're not running an integration test.
+     */
+    public static class Intent implements Parcelable {
+        public Intent() {
+        }
+
+        private Intent(Intent other) {
+        }
+
+        public int describeContents() {
+            return 0;
+        }
+
+        public void writeToParcel(Parcel dest, int parcelableFlags) {
+            dest.writeString(getClass().toString());
+        }
+
+        public void readFromParcel(Parcel source) {
+            assertEquals(getClass().toString(), source.readString());
+        }
+
+        public static final Parcelable.Creator<Intent> CREATOR = new Parcelable.Creator<>() {
+            public Intent createFromParcel(Parcel source) {
+                Intent intent = new Intent();
+                intent.readFromParcel(source);
+                return intent;
+            }
+
+            public Intent[] newArray(int size) {
+                return new Intent[size];
+            }
+        };
+    }
+
+    @Test
     public void testObtain() {
         Parcel p1 = Parcel.obtain();
         assertNotNull(p1);
@@ -85,6 +173,7 @@ public class ParcelTest extends AndroidTestCase {
         p7.recycle();
     }
 
+    @Test
     public void testAppendFrom() {
         Parcel p;
         Parcel p2;
@@ -105,6 +194,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testDataAvail() {
         Parcel p;
 
@@ -126,6 +216,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testDataCapacity() {
         Parcel p;
 
@@ -139,6 +230,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testSetDataCapacity() {
         Parcel p;
 
@@ -153,6 +245,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testDataPosition() {
         Parcel p;
 
@@ -166,6 +259,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testSetDataPosition() {
         Parcel p;
 
@@ -186,6 +280,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testDataSize() {
         Parcel p;
 
@@ -200,6 +295,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testSetDataSize() {
         Parcel p;
 
@@ -219,6 +315,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testObtainWithBinder() {
         Parcel p = Parcel.obtain(new Binder("anything"));
         // testing does not throw an exception, Parcel still works
@@ -231,6 +329,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testEnforceInterface() {
         Parcel p;
         String s = "IBinder interface token";
@@ -253,6 +353,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testEnforceNoDataAvail(){
         final Parcel p = Parcel.obtain();
         p.writeInt(1);
@@ -268,6 +369,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testMarshall() {
         final byte[] c = {Byte.MAX_VALUE, (byte) 111, (byte) 11, (byte) 1, (byte) 0,
                     (byte) -1, (byte) -11, (byte) -111, Byte.MIN_VALUE};
@@ -291,6 +393,7 @@ public class ParcelTest extends AndroidTestCase {
         p2.recycle();
     }
 
+    @Test
     @SuppressWarnings("unchecked")
     public void testReadValue() {
         Parcel p;
@@ -483,15 +586,17 @@ public class ParcelTest extends AndroidTestCase {
         }
         p.recycle();
 
-        // test IBinder
-        Binder binder;
-        Binder binder2 = new Binder();
-        p = Parcel.obtain();
-        p.writeValue(binder2);
-        p.setDataPosition(0);
-        binder = (Binder) p.readValue(mcl);
-        assertEquals(binder2, binder);
-        p.recycle();
+        if (!mRavenwood.isUnderRavenwood()) {
+            // test IBinder
+            Binder binder;
+            Binder binder2 = new Binder();
+            p = Parcel.obtain();
+            p.writeValue(binder2);
+            p.setDataPosition(0);
+            binder = (Binder) p.readValue(mcl);
+            assertEquals(binder2, binder);
+            p.recycle();
+        }
 
         // test Parcelable[]
         Signature[] signatures = {new Signature("1234"),
@@ -566,6 +671,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadByte() {
         Parcel p;
 
@@ -618,6 +724,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadByteArray() {
         Parcel p;
 
@@ -709,6 +816,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testWriteBlob() {
         Parcel p;
 
@@ -746,6 +854,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testWriteByteArray() {
         Parcel p;
 
@@ -845,6 +954,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testCreateByteArray() {
         Parcel p;
 
@@ -898,6 +1008,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadCharArray() {
         Parcel p;
 
@@ -966,6 +1077,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testCreateCharArray() {
         Parcel p;
 
@@ -1020,6 +1132,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadInt() {
         Parcel p;
 
@@ -1072,6 +1185,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadIntArray() {
         Parcel p;
 
@@ -1138,6 +1252,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testCreateIntArray() {
         Parcel p;
 
@@ -1190,6 +1305,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadLong() {
         Parcel p;
 
@@ -1230,6 +1346,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadLongArray() {
         Parcel p;
 
@@ -1296,6 +1413,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testCreateLongArray() {
         Parcel p;
 
@@ -1348,37 +1466,38 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadFloat() {
         Parcel p;
 
         p = Parcel.obtain();
         p.writeFloat(.0f);
         p.setDataPosition(0);
-        assertEquals(.0f, p.readFloat());
+        assertEquals(.0f, p.readFloat(), DELTA_DOUBLE);
         p.recycle();
 
         p = Parcel.obtain();
         p.writeFloat(0.1f);
         p.setDataPosition(0);
-        assertEquals(0.1f, p.readFloat());
+        assertEquals(0.1f, p.readFloat(), DELTA_DOUBLE);
         p.recycle();
 
         p = Parcel.obtain();
         p.writeFloat(-1.1f);
         p.setDataPosition(0);
-        assertEquals(-1.1f, p.readFloat());
+        assertEquals(-1.1f, p.readFloat(), DELTA_DOUBLE);
         p.recycle();
 
         p = Parcel.obtain();
         p.writeFloat(Float.MAX_VALUE);
         p.setDataPosition(0);
-        assertEquals(Float.MAX_VALUE, p.readFloat());
+        assertEquals(Float.MAX_VALUE, p.readFloat(), DELTA_DOUBLE);
         p.recycle();
 
         p = Parcel.obtain();
         p.writeFloat(Float.MIN_VALUE);
         p.setDataPosition(0);
-        assertEquals(Float.MIN_VALUE, p.readFloat());
+        assertEquals(Float.MIN_VALUE, p.readFloat(), DELTA_DOUBLE);
         p.recycle();
 
         p = Parcel.obtain();
@@ -1390,16 +1509,17 @@ public class ParcelTest extends AndroidTestCase {
         p.writeFloat(-1.1f);
         p.writeFloat(Float.MIN_VALUE);
         p.setDataPosition(0);
-        assertEquals(Float.MAX_VALUE, p.readFloat());
-        assertEquals(1.1f, p.readFloat());
-        assertEquals(0.1f, p.readFloat());
-        assertEquals(.0f, p.readFloat());
-        assertEquals(-0.1f, p.readFloat());
-        assertEquals(-1.1f, p.readFloat());
-        assertEquals(Float.MIN_VALUE, p.readFloat());
+        assertEquals(Float.MAX_VALUE, p.readFloat(), DELTA_DOUBLE);
+        assertEquals(1.1f, p.readFloat(), DELTA_DOUBLE);
+        assertEquals(0.1f, p.readFloat(), DELTA_DOUBLE);
+        assertEquals(.0f, p.readFloat(), DELTA_DOUBLE);
+        assertEquals(-0.1f, p.readFloat(), DELTA_DOUBLE);
+        assertEquals(-1.1f, p.readFloat(), DELTA_DOUBLE);
+        assertEquals(Float.MIN_VALUE, p.readFloat(), DELTA_DOUBLE);
         p.recycle();
     }
 
+    @Test
     public void testReadFloatArray() {
         Parcel p;
 
@@ -1443,7 +1563,7 @@ public class ParcelTest extends AndroidTestCase {
         p.setDataPosition(0);
         p.readFloatArray(b);
         for (int i = 0; i < a.length; i++) {
-            assertEquals(a[i], b[i]);
+            assertEquals(a[i], b[i], DELTA_DOUBLE);
         }
         p.recycle();
 
@@ -1461,11 +1581,12 @@ public class ParcelTest extends AndroidTestCase {
         p.setDataPosition(0);
         p.readFloatArray(d);
         for (int i = 0; i < c.length; i++) {
-            assertEquals(c[i], d[i]);
+            assertEquals(c[i], d[i], DELTA_DOUBLE);
         }
         p.recycle();
     }
 
+    @Test
     public void testCreateFloatArray() {
         Parcel p;
 
@@ -1502,7 +1623,7 @@ public class ParcelTest extends AndroidTestCase {
         b = p.createFloatArray();
         assertNotNull(b);
         for (int i = 0; i < a.length; i++) {
-            assertEquals(a[i], b[i]);
+            assertEquals(a[i], b[i], DELTA_FLOAT);
         }
         p.recycle();
 
@@ -1513,42 +1634,43 @@ public class ParcelTest extends AndroidTestCase {
         d = p.createFloatArray();
         assertNotNull(d);
         for (int i = 0; i < c.length; i++) {
-            assertEquals(c[i], d[i]);
+            assertEquals(c[i], d[i], DELTA_FLOAT);
         }
         p.recycle();
     }
 
+    @Test
     public void testReadDouble() {
         Parcel p;
 
         p = Parcel.obtain();
         p.writeDouble(.0d);
         p.setDataPosition(0);
-        assertEquals(.0d, p.readDouble());
+        assertEquals(.0d, p.readDouble(), DELTA_DOUBLE);
         p.recycle();
 
         p = Parcel.obtain();
         p.writeDouble(0.1d);
         p.setDataPosition(0);
-        assertEquals(0.1d, p.readDouble());
+        assertEquals(0.1d, p.readDouble(), DELTA_DOUBLE);
         p.recycle();
 
         p = Parcel.obtain();
         p.writeDouble(-1.1d);
         p.setDataPosition(0);
-        assertEquals(-1.1d, p.readDouble());
+        assertEquals(-1.1d, p.readDouble(), DELTA_DOUBLE);
         p.recycle();
 
         p = Parcel.obtain();
         p.writeDouble(Double.MAX_VALUE);
         p.setDataPosition(0);
-        assertEquals(Double.MAX_VALUE, p.readDouble());
+        assertEquals(Double.MAX_VALUE, p.readDouble(), DELTA_DOUBLE);
         p.recycle();
 
         p = Parcel.obtain();
         p.writeDouble(Double.MIN_VALUE);
         p.setDataPosition(0);
-        assertEquals(Double.MIN_VALUE, p.readDouble());
+        assertEquals(Double.MIN_VALUE, p.readDouble(), DELTA_DOUBLE);
         p.recycle();
 
         p = Parcel.obtain();
@@ -1560,16 +1682,17 @@ public class ParcelTest extends AndroidTestCase {
         p.writeDouble(-1.1d);
         p.writeDouble(Double.MIN_VALUE);
         p.setDataPosition(0);
-        assertEquals(Double.MAX_VALUE, p.readDouble());
-        assertEquals(1.1d, p.readDouble());
-        assertEquals(0.1d, p.readDouble());
-        assertEquals(.0d, p.readDouble());
-        assertEquals(-0.1d, p.readDouble());
-        assertEquals(-1.1d, p.readDouble());
-        assertEquals(Double.MIN_VALUE, p.readDouble());
+        assertEquals(Double.MAX_VALUE, p.readDouble(), DELTA_DOUBLE);
+        assertEquals(1.1d, p.readDouble(), DELTA_DOUBLE);
+        assertEquals(0.1d, p.readDouble(), DELTA_DOUBLE);
+        assertEquals(.0d, p.readDouble(), DELTA_DOUBLE);
+        assertEquals(-0.1d, p.readDouble(), DELTA_DOUBLE);
+        assertEquals(-1.1d, p.readDouble(), DELTA_DOUBLE);
+        assertEquals(Double.MIN_VALUE, p.readDouble(), DELTA_DOUBLE);
         p.recycle();
     }
 
+    @Test
     public void testReadDoubleArray() {
         Parcel p;
 
@@ -1613,7 +1736,7 @@ public class ParcelTest extends AndroidTestCase {
         p.setDataPosition(0);
         p.readDoubleArray(b);
         for (int i = 0; i < a.length; i++) {
-            assertEquals(a[i], b[i]);
+            assertEquals(a[i], b[i], DELTA_DOUBLE);
         }
         p.recycle();
 
@@ -1631,11 +1754,12 @@ public class ParcelTest extends AndroidTestCase {
         p.setDataPosition(0);
         p.readDoubleArray(d);
         for (int i = 0; i < c.length; i++) {
-            assertEquals(c[i], d[i]);
+            assertEquals(c[i], d[i], DELTA_DOUBLE);
         }
         p.recycle();
     }
 
+    @Test
     public void testCreateDoubleArray() {
         Parcel p;
 
@@ -1674,7 +1798,7 @@ public class ParcelTest extends AndroidTestCase {
         b = p.createDoubleArray();
         assertNotNull(b);
         for (int i = 0; i < a.length; i++) {
-            assertEquals(a[i], b[i]);
+            assertEquals(a[i], b[i], DELTA_DOUBLE);
         }
         p.recycle();
 
@@ -1685,11 +1809,12 @@ public class ParcelTest extends AndroidTestCase {
         d = p.createDoubleArray();
         assertNotNull(d);
         for (int i = 0; i < c.length; i++) {
-            assertEquals(c[i], d[i]);
+            assertEquals(c[i], d[i], DELTA_DOUBLE);
         }
         p.recycle();
     }
 
+    @Test
     public void testReadBooleanArray() {
         Parcel p;
 
@@ -1756,6 +1881,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testCreateBooleanArray() {
         Parcel p;
 
@@ -1809,6 +1935,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadString() {
         Parcel p;
         final String string = "Hello, Android!";
@@ -1849,6 +1976,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadStringArray() {
         Parcel p;
 
@@ -1918,6 +2046,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testCreateStringArray() {
         Parcel p;
 
@@ -1973,6 +2102,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadStringList() {
         Parcel p;
 
@@ -2040,6 +2170,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testCreateStringArrayList() {
         Parcel p;
 
@@ -2091,6 +2222,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadSerializable() {
         Parcel p;
 
@@ -2108,6 +2240,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadSerializableWithClass_whenNull(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -2120,6 +2253,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testReadSerializableWithClass_whenNullClassLoader(){
         Parcel p = Parcel.obtain();
         TestSubException testSubException = new TestSubException("test");
@@ -2131,6 +2266,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadSerializableWithClass_whenSameClass(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -2150,6 +2286,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadSerializableWithClass_whenSubClass(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -2178,6 +2315,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelable() {
         Parcel p;
         MockClassLoader mcl = new MockClassLoader();
@@ -2199,6 +2337,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableWithClass() {
         Parcel p;
         MockClassLoader mcl = new MockClassLoader();
@@ -2215,6 +2354,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableWithSubClass() {
         Parcel p;
 
@@ -2229,6 +2369,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableCreator() {
         MockClassLoader mcl = new MockClassLoader();
         final String signatureString  = "1234567890abcdef";
@@ -2242,6 +2383,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableCreatorWithClass() {
         MockClassLoader mcl = new MockClassLoader();
         final String signatureString  = "1234567890abcdef";
@@ -2255,6 +2397,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableCreatorWithSubClass() {
         final TestSubIntent testSubIntent = new TestSubIntent(new Intent(), "1234567890abcdef");
 
@@ -2267,6 +2410,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableArray() {
         Parcel p;
         MockClassLoader mcl = new MockClassLoader();
@@ -2305,6 +2449,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableArrayWithClass_whenNull() {
         Parcel p = Parcel.obtain();
         p.writeParcelableArray(null, 0);
@@ -2313,6 +2458,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableArrayWithClass_whenSameClass(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -2327,6 +2473,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableArrayWithClass_whenSubclasses() {
         Parcel p = Parcel.obtain();
         final Intent baseIntent = new Intent();
@@ -2347,6 +2494,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadTypedArray() {
         Parcel p;
         Signature[] s = {new Signature("1234"),
@@ -2416,6 +2564,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadTypedArray2() {
         Parcel p;
         Signature[] s = {
@@ -2455,6 +2604,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testCreateTypedArray() {
         Parcel p;
         Signature[] s = {new Signature("1234"),
@@ -2493,6 +2643,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadTypedList() {
         Parcel p;
         ArrayList<Signature> s = new ArrayList<Signature>();
@@ -2561,23 +2712,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
-    public void testWriteTypedList() {
-        Parcel p = Parcel.obtain();
-        ArrayList<SimpleParcelable> list = new ArrayList<>();
-        SimpleParcelable spy = spy(new SimpleParcelable(42));
-        list.add(spy);
-        int flags = Parcelable.PARCELABLE_WRITE_RETURN_VALUE;
-        p.writeTypedList(list, flags);
-
-        verify(spy).writeToParcel(p, flags);
-
-        p.setDataPosition(0);
-        ArrayList<SimpleParcelable> read = p.createTypedArrayList(SimpleParcelable.CREATOR);
-        assertEquals(list.size(), read.size());
-        assertEquals(list.get(0).getValue(), read.get(0).getValue());
-        p.recycle();
-    }
-
+    @Test
     public void testCreateTypedArrayList() {
         Parcel p;
         ArrayList<Signature> s = new ArrayList<Signature>();
@@ -2618,9 +2753,12 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadException() {
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testReadException2() {
         Parcel p = Parcel.obtain();
         String msg = "testReadException2";
@@ -2684,6 +2822,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testWriteNoException() {
         Parcel p = Parcel.obtain();
         p.writeNoException();
@@ -2692,6 +2831,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testWriteFileDescriptor() {
         Parcel p;
         FileDescriptor fIn = FileDescriptor.in;
@@ -2711,6 +2852,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptor() {
         Parcel p;
         FileDescriptor fIn = FileDescriptor.in;
@@ -2728,6 +2871,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorInRange_outsideRange() {
         Parcel p = Parcel.obtain();
         int i0 = p.dataPosition();
@@ -2743,6 +2888,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorInRange_partiallyInsideRange() {
         Parcel p = Parcel.obtain();
         int i0 = p.dataPosition();
@@ -2759,6 +2906,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorInRange_insideRange() {
         Parcel p = Parcel.obtain();
         int i0 = p.dataPosition();
@@ -2777,6 +2926,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorInRange_zeroLength() {
         Parcel p = Parcel.obtain();
         int i0 = p.dataPosition();
@@ -2796,6 +2947,8 @@ public class ParcelTest extends AndroidTestCase {
      * internal representation of FDs in {@link Parcel} may lose the sorted property, so we test
      * this case.
      */
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorInRange_withUnsortedFdObjects() {
         Parcel p = Parcel.obtain();
         int i0 = p.dataPosition();
@@ -2810,6 +2963,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorInRange_limitOutOfBounds() {
         Parcel p = Parcel.obtain();
         int i0 = p.dataPosition();
@@ -2822,6 +2977,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorInRange_offsetOutOfBounds() {
         Parcel p = Parcel.obtain();
         int i0 = p.dataPosition();
@@ -2833,6 +2990,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorInRange_offsetOutOfBoundsAndZeroLength() {
         Parcel p = Parcel.obtain();
         int i0 = p.dataPosition();
@@ -2844,6 +3003,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorInRange_zeroLengthParcel() {
         Parcel p = Parcel.obtain();
 
@@ -2851,6 +3012,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorInRange_negativeLength() {
         Parcel p = Parcel.obtain();
         int i0 = p.dataPosition();
@@ -2862,6 +3025,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorInRange_negativeOffset() {
         Parcel p = Parcel.obtain();
         p.writeFileDescriptor(FileDescriptor.in);
@@ -2870,6 +3035,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadBundle() {
         Bundle bundle = new Bundle();
         bundle.putBoolean("boolean", true);
@@ -2919,6 +3085,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadBundle2() {
         Bundle b = new Bundle();
         b.putBoolean("boolean", true);
@@ -2948,6 +3115,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testWriteArray() {
         Parcel p;
         MockClassLoader mcl = new MockClassLoader();
@@ -2977,6 +3145,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadArrayWithClass_whenNull(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -2987,6 +3156,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadArrayWithClass_whenNonParcelableClass(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -3003,6 +3173,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadArrayWithClass_whenSameClass(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -3022,6 +3193,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadArrayWithClass_whenSubclasses(){
         final Parcel p = Parcel.obtain();
         final Intent baseIntent = new Intent();
@@ -3042,6 +3214,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadArrayList() {
         Parcel p;
         MockClassLoader mcl = new MockClassLoader();
@@ -3071,6 +3244,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadArrayListWithClass_whenNull(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -3081,6 +3255,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadArrayListWithClass_whenNonParcelableClass(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -3099,6 +3274,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadArrayListWithClass_whenSameClass(){
         final Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -3118,6 +3294,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadArrayListWithClass_whenSubclasses(){
         final Parcel p = Parcel.obtain();
         final Intent baseIntent = new Intent();
@@ -3143,6 +3320,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     @SuppressWarnings("unchecked")
     public void testWriteSparseArray() {
         Parcel p;
@@ -3178,6 +3356,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadSparseArrayWithClass_whenNull(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -3188,6 +3367,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadSparseArrayWithClass_whenNonParcelableClass(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -3209,6 +3389,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadSparseArrayWithClass_whenSameClass(){
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -3230,6 +3411,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadSparseArrayWithClass_whenSubclasses(){
         final Parcel p = Parcel.obtain();
         final Intent baseIntent = new Intent();
@@ -3256,6 +3438,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testWriteSparseBooleanArray() {
         Parcel p;
 
@@ -3289,6 +3472,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testWriteStrongBinder() {
         Parcel p;
         Binder binder;
@@ -3308,6 +3493,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testWriteStrongInterface() {
         Parcel p;
         MockIInterface mockInterface = new MockIInterface();
@@ -3327,6 +3514,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testWriteBinderArray() {
         Parcel p;
         IBinder[] ibinder2 = {new Binder(), new Binder()};
@@ -3388,6 +3577,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testCreateBinderArray() {
         Parcel p;
         IBinder[] ibinder  = {};
@@ -3422,6 +3613,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testWriteBinderList() {
         Parcel p;
         ArrayList<IBinder> arrayList = new ArrayList<IBinder>();
@@ -3467,6 +3660,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testCreateBinderArrayList() {
         Parcel p;
         ArrayList<IBinder> arrayList = new ArrayList<IBinder>();
@@ -3500,6 +3695,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testInterfaceArray() {
         Parcel p;
         MockIInterface[] iface2 = {new MockIInterface(), new MockIInterface(), null};
@@ -3588,6 +3785,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testInterfaceList() {
         Parcel p;
         ArrayList<MockIInterface> arrayList = new ArrayList<>();
@@ -3675,6 +3874,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testFixedArray() {
         Parcel p = Parcel.obtain();
 
@@ -3743,6 +3944,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     @SuppressWarnings("unchecked")
     public void testWriteMap() {
         Parcel p;
@@ -3773,6 +3975,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadMapWithClass_whenNull() {
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -3786,6 +3989,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadMapWithClass_whenMismatchingClass() {
         Parcel p = Parcel.obtain();
         ClassLoader loader = getClass().getClassLoader();
@@ -3810,6 +4014,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadMapWithClass_whenSameClass() {
         Parcel p = Parcel.obtain();
         ClassLoader loader = getClass().getClassLoader();
@@ -3829,6 +4034,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadMapWithClass_whenSubClass() {
         Parcel p = Parcel.obtain();
         ClassLoader loader = getClass().getClassLoader();
@@ -3851,6 +4057,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     @SuppressWarnings("unchecked")
     public void testReadHashMap() {
         Parcel p;
@@ -3881,6 +4088,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadHashMapWithClass_whenNull() {
         Parcel p = Parcel.obtain();
         MockClassLoader mcl = new MockClassLoader();
@@ -3893,6 +4101,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadHashMapWithClass_whenMismatchingClass() {
         Parcel p = Parcel.obtain();
         ClassLoader loader = getClass().getClassLoader();
@@ -3915,6 +4124,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadHashMapWithClass_whenSameClass() {
         Parcel p = Parcel.obtain();
         ClassLoader loader = getClass().getClassLoader();
@@ -3940,6 +4150,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadHashMapWithClass_whenSubClass() {
         Parcel p = Parcel.obtain();
         ClassLoader loader = getClass().getClassLoader();
@@ -3960,6 +4171,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     @SuppressWarnings("unchecked")
     public void testReadList() {
         Parcel p;
@@ -3994,6 +4206,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     @SuppressWarnings("unchecked")
     public void testReadListWithClass() {
         Parcel p;
@@ -4033,6 +4246,7 @@ public class ParcelTest extends AndroidTestCase {
         p1.recycle();
     }
 
+    @Test
     @SuppressWarnings("unchecked")
     public void testReadListWithSubClass() {
         Parcel p;
@@ -4066,6 +4280,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testBinderDataProtection() {
         Parcel p;
         IBinder b = new Binder();
@@ -4096,6 +4312,8 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
+    @IgnoreUnderRavenwood
     public void testBinderDataProtectionIncrements() {
         Parcel p;
         IBinder b = new Binder();
@@ -4130,7 +4348,7 @@ public class ParcelTest extends AndroidTestCase {
 
     private class MockClassLoader extends ClassLoader {
         public MockClassLoader() {
-            super();
+            super(ParcelTest.class.getClassLoader());
         }
     }
 
@@ -4205,6 +4423,7 @@ public class ParcelTest extends AndroidTestCase {
     }
 
     // http://b/1171613
+    @Test
     public void testBadStream_invalidCreator() {
         Parcel parcel = Parcel.obtain();
         // Create an invalid stream by manipulating the Parcel.
@@ -4252,6 +4471,7 @@ public class ParcelTest extends AndroidTestCase {
     }
 
     // http://b/1171613
+    @Test
     public void testBadStream_objectDoesNotImplementParcelable() {
         Parcel parcel = Parcel.obtain();
         // Create an invalid stream by manipulating the Parcel.
@@ -4314,6 +4534,7 @@ public class ParcelTest extends AndroidTestCase {
         };
     }
 
+    @Test
     public void testReadWriteParcellableList() {
         Parcel parcel = Parcel.obtain();
 
@@ -4347,10 +4568,11 @@ public class ParcelTest extends AndroidTestCase {
         assertEquals(56, list.get(1).getValue());
     }
 
+    @Test
     public void testReadParcelableListWithClass_whenNull(){
         final Parcel p = Parcel.obtain();
         ArrayList<Intent> list = new ArrayList<>();
-        list.add(new Intent("test"));
+        list.add(new Intent());
 
         p.writeParcelableList(null, 0);
         p.setDataPosition(0);
@@ -4359,6 +4581,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableListWithClass_whenMismatchingClass(){
         final Parcel p = Parcel.obtain();
         ArrayList<Signature> list = new ArrayList<>();
@@ -4372,6 +4595,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableListWithClass_whenSameClass(){
         final Parcel p = Parcel.obtain();
         ArrayList<Signature> list = new ArrayList<>();
@@ -4386,6 +4610,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testReadParcelableListWithClass_whenSubClass(){
         final Parcel p = Parcel.obtain();
         final Intent baseIntent = new Intent();
@@ -4410,6 +4635,7 @@ public class ParcelTest extends AndroidTestCase {
     }
 
     // http://b/35384981
+    @Test
     public void testCreateArrayWithTruncatedParcel() {
         Parcel parcel = Parcel.obtain();
         parcel.writeByteArray(new byte[] { 'a', 'b' });
@@ -4434,6 +4660,7 @@ public class ParcelTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testMaliciousMapWrite() {
         class MaliciousMap<K, V> extends HashMap<K, V> {
             public int fakeSize = 0;
@@ -4488,58 +4715,7 @@ public class ParcelTest extends AndroidTestCase {
         }
     }
 
-    public static class ParcelExceptionConnection extends AbstractFuture<IParcelExceptionService>
-            implements ServiceConnection {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            set(IParcelExceptionService.Stub.asInterface(service));
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-        }
-
-        @Override
-        public IParcelExceptionService get() throws InterruptedException, ExecutionException {
-            try {
-                return get(5, TimeUnit.SECONDS);
-            } catch (TimeoutException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    public void testExceptionOverwritesObject() throws Exception {
-        final Intent intent = new Intent();
-        intent.setComponent(new ComponentName(
-                "android.os.cts", "android.os.cts.ParcelExceptionService"));
-
-        final ParcelExceptionConnection connection = new ParcelExceptionConnection();
-
-        mContext.startService(intent);
-        assertTrue(mContext.bindService(intent, connection,
-                Context.BIND_ABOVE_CLIENT | Context.BIND_EXTERNAL_SERVICE));
-
-
-        Parcel data = Parcel.obtain();
-        Parcel reply = Parcel.obtain();
-        data.writeInterfaceToken("android.os.cts.IParcelExceptionService");
-        IParcelExceptionService service = connection.get();
-        try {
-            assertTrue("Transaction failed", service.asBinder().transact(
-                    IParcelExceptionService.Stub.TRANSACTION_writeBinderThrowException, data, reply,
-                    0));
-        } catch (Exception e) {
-            fail("Exception caught from transaction: " + e);
-        }
-        reply.setDataPosition(0);
-        assertTrue("Exception should have occurred on service-side",
-                reply.readExceptionCode() != 0);
-        assertNull("Binder should have been overwritten by the exception",
-                reply.readStrongBinder());
-    }
-
-    private static class TestSubIntent extends Intent {
+    public static class TestSubIntent extends Intent {
         private final String mString;
 
         public TestSubIntent(Intent baseIntent, String s) {
@@ -4586,70 +4762,8 @@ public class ParcelTest extends AndroidTestCase {
         }
     }
 
-    public static class ParcelObjectFreeService extends Service {
-
-        @Override
-        public IBinder onBind(Intent intent) {
-            return new Binder();
-        }
-
-        @Override
-        public void onCreate() {
-            super.onCreate();
-
-            Parcel parcel = Parcel.obtain();
-
-            // Construct parcel with object in it.
-            parcel.writeInt(1);
-            final int pos = parcel.dataPosition();
-            parcel.writeStrongBinder(new Binder());
-
-            // wipe out the object by setting data size
-            parcel.setDataSize(pos);
-
-            // recycle the parcel. This should not cause a native segfault
-            parcel.recycle();
-        }
-
-        public static class Connection extends AbstractFuture<IBinder>
-                implements ServiceConnection {
-
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-                set(service);
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName name) {
-            }
-
-            @Override
-            public IBinder get() throws InterruptedException, ExecutionException {
-                try {
-                    return get(5, TimeUnit.SECONDS);
-                } catch (TimeoutException e) {
-                    return null;
-                }
-            }
-        }
-    }
-
-    public void testObjectDoubleFree() throws Exception {
-
-        final Intent intent = new Intent();
-        intent.setComponent(new ComponentName(
-                "android.os.cts", "android.os.cts.ParcelTest$ParcelObjectFreeService"));
-
-        final ParcelObjectFreeService.Connection connection =
-                new ParcelObjectFreeService.Connection();
-
-        mContext.startService(intent);
-        assertTrue(mContext.bindService(intent, connection,
-                Context.BIND_ABOVE_CLIENT | Context.BIND_EXTERNAL_SERVICE));
-
-        assertNotNull("Service should have started without crashing.", connection.get());
-    }
-
+    @Test
+    @IgnoreUnderRavenwood
     @AsbSecurityTest(cveBugId = 140419401)
     public void testObjectResize() throws Exception {
         Parcel p;
@@ -4681,6 +4795,7 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
+    @Test
     public void testFlags() {
         Parcel p;
 
@@ -4738,6 +4853,7 @@ public class ParcelTest extends AndroidTestCase {
     }
 
     // http://b/232589966
+    @Test
     public void testReadParcelableWithoutNestedCreator() {
         Parcel p = Parcel.obtain();
         p.writeParcelable(new SimpleParcelableWithoutNestedCreator(1), 0);
@@ -4760,8 +4876,9 @@ public class ParcelTest extends AndroidTestCase {
         p.recycle();
     }
 
-    @ApiTest(apis = {"android.os.Parcel#writeTypedSparseArray(android.utilSparseArray, int)",
-            "android.os.Parcel#createTypedSparseArray(android.os.Parcelable.Creator)"})
+    @Test
+    // @ApiTest(apis = {"android.os.Parcel#writeTypedSparseArray(android.utilSparseArray, int)",
+    //        "android.os.Parcel#createTypedSparseArray(android.os.Parcelable.Creator)"})
     public void testCreateTypedSparseArray() {
         Parcel p;
         SparseArray<Signature> s = new SparseArray<>();
@@ -4806,5 +4923,17 @@ public class ParcelTest extends AndroidTestCase {
             assertEquals(s3.valueAt(i), s2.valueAt(i));
         }
         p.recycle();
+    }
+
+    @Test
+    public void testReadEmpty() {
+        Parcel p = Parcel.obtain();
+        assertEquals(false, p.readBoolean());
+        assertEquals(0, p.readByte());
+        assertEquals(0, p.readInt());
+        assertEquals(0, p.readLong());
+        assertEquals(0f, p.readFloat(), DELTA_FLOAT);
+        assertEquals(0d, p.readDouble(), DELTA_DOUBLE);
+        assertNull(p.readString());
     }
 }

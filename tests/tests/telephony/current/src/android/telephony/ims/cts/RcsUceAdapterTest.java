@@ -53,6 +53,9 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
 import android.telecom.PhoneAccount;
 import android.telephony.CarrierConfigManager;
@@ -79,11 +82,13 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.BlockedNumberUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.os.SomeArgs;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -106,6 +111,8 @@ import java.util.function.Consumer;
 
 @RunWith(AndroidJUnit4.class)
 public class RcsUceAdapterTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String FEATURE_TAG_CHAT =
             "+g.3gpp.icsi-ref=\"urn%3Aurn-7%3A3gpp-service.ims.icsi.oma.cpm.session\"";
@@ -628,6 +635,10 @@ public class RcsUceAdapterTest {
         if (!ImsUtils.shouldTestImsService()) {
             return;
         }
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putLong(CarrierConfigManager.Ims.KEY_SUBSCRIBE_RETRY_DURATION_MILLIS_LONG, -1L);
+        overrideCarrierConfig(bundle);
+
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
         assertNotNull("UCE adapter should not be null!", uceAdapter);
@@ -704,6 +715,93 @@ public class RcsUceAdapterTest {
                 retryAfterQueue.clear();
             }
         });
+
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SIP_SUBSCRIBE_RETRY)
+    public void testCapabilitiesRequestRetry() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        // Override carrier config items related with SIP subscribe retry
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.Ims.KEY_ENABLE_PRESENCE_CAPABILITY_EXCHANGE_BOOL,
+                true);
+        bundle.putLong(
+                CarrierConfigManager.Ims.KEY_SUBSCRIBE_RETRY_DURATION_MILLIS_LONG,
+                /*millisec*/2000);
+        overrideCarrierConfig(bundle);
+
+        ImsManager imsManager = getContext().getSystemService(ImsManager.class);
+        RcsUceAdapter uceAdapter = imsManager.getImsRcsManager(sTestSub).getUceAdapter();
+        assertNotNull("UCE adapter should not be null!", uceAdapter);
+
+        // Connect to the TestImsService
+        setupTestImsService(uceAdapter, true, true, false);
+
+        Collection<Uri> contacts = Collections.singletonList(sTestNumberUri);
+
+        TestRcsCapabilityExchangeImpl capabilityExchangeImpl = sServiceConnector
+                .getCarrierService().getRcsFeature().getRcsCapabilityExchangeImpl();
+
+        // Prepare queues to receive the callback
+        BlockingQueue<Integer> errorQueue = new LinkedBlockingQueue<>();
+        RcsUceAdapter.CapabilitiesCallback callback = new RcsUceAdapter.CapabilitiesCallback() {
+            @Override
+            public void onCapabilitiesReceived(List<RcsContactUceCapability> capabilities) {
+            }
+            @Override
+            public void onComplete() {
+            }
+            @Override
+            public void onError(int errorCode, long retryAfterMilliseconds) {
+                errorQueue.offer(errorCode);
+            }
+        };
+
+        // Set up the capabilities request that will be failed with the given command error code
+        capabilityExchangeImpl.setSubscribeOperation((uris, cb) -> {
+            cb.onCommandError(COMMAND_CODE_REQUEST_TIMEOUT);
+        });
+
+        requestCapabilities(uceAdapter, contacts, callback);
+
+        // Verify that the callback "onError" is called with the expected error code.
+        try {
+            assertEquals(RcsUceAdapter.ERROR_REQUEST_TIMEOUT, waitForIntResult(errorQueue));
+        } catch (Exception e) {
+            fail("requestCapabilities with command error failed: " + e);
+        } finally {
+            errorQueue.clear();
+        }
+
+        BlockingQueue<List<Uri>> requestQueue = new LinkedBlockingQueue<>();
+
+        int networkRespCode = 200;
+        String networkRespReason = "OK";
+        HashMap<Uri, Pair<Boolean, Boolean>> contactExpectedMedia = new HashMap<>();
+        contactExpectedMedia.put(sTestNumberUri, new Pair<>(true, true));
+        capabilityExchangeImpl.setSubscribeOperation((uris, cb) -> {
+            // Check whether the subscribe request has been delivered for retry
+            List<Uri> uriList = new ArrayList(uris);
+            requestQueue.offer(uriList);
+
+            cb.onNetworkResponse(networkRespCode, networkRespReason);
+            cb.onNotifyCapabilitiesUpdate(getPidfForUris(new ArrayList(uris),
+                    contactExpectedMedia));
+            cb.onTerminated("", 0L);
+        });
+
+        List<Uri> retryUri = waitForResult(requestQueue);
+
+        // Verify the URIs in original and retry request.
+        assertEquals(contacts.size(), retryUri.size());
+        for (Uri uri : retryUri) {
+            assertTrue(contacts.contains(uri));
+        }
 
         overrideCarrierConfig(null);
     }

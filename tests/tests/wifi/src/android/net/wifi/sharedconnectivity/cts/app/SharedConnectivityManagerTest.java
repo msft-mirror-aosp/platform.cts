@@ -32,9 +32,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.res.Resources;
 import android.net.wifi.sharedconnectivity.app.HotspotNetwork;
@@ -50,15 +52,23 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.UserManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.modules.utils.build.SdkLevel;
+import com.android.wifi.flags.Flags;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -74,10 +84,6 @@ import java.util.concurrent.Executor;
 @NonMainlineTest
 public class SharedConnectivityManagerTest {
     private static final long DEVICE_ID = 11L;
-    private static final NetworkProviderInfo NETWORK_PROVIDER_INFO =
-            new NetworkProviderInfo.Builder("TEST_NAME", "TEST_MODEL")
-                    .setDeviceType(DEVICE_TYPE_TABLET).setConnectionStrength(2)
-                    .setBatteryPercentage(50).build();
     private static final int NETWORK_TYPE = NETWORK_TYPE_CELLULAR;
     private static final String NETWORK_NAME = "TEST_NETWORK";
     private static final String HOTSPOT_SSID = "TEST_SSID";
@@ -90,6 +96,11 @@ public class SharedConnectivityManagerTest {
     private static final String SERVICE_PACKAGE_NAME = "TEST_PACKAGE";
     private static final String SERVICE_INTENT_ACTION = "TEST_INTENT_ACTION";
 
+    private NetworkProviderInfo mNetworkProviderInfo;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Mock
     Context mContext;
@@ -106,6 +117,9 @@ public class SharedConnectivityManagerTest {
     @Mock
     UserManager mUserManager;
 
+    @Captor
+    private ArgumentCaptor<IntentFilter> mIntentFilterCaptor;
+
     private static final ComponentName COMPONENT_NAME =
             new ComponentName("dummypkg", "dummycls");
 
@@ -113,6 +127,19 @@ public class SharedConnectivityManagerTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         setResources(mContext);
+
+        NetworkProviderInfo.Builder builder =
+                new NetworkProviderInfo.Builder("TEST_NAME", "TEST_MODEL")
+                        .setDeviceType(DEVICE_TYPE_TABLET)
+                        .setConnectionStrength(2)
+                        .setBatteryPercentage(50);
+
+        if (Flags.networkProviderBatteryChargingStatus() && SdkLevel.isAtLeastV()) {
+            builder.setBatteryCharging(false);
+        }
+
+        mNetworkProviderInfo = builder.build();
+
         when(mContext.getSystemServiceName(UserManager.class)).thenReturn(Context.USER_SERVICE);
         when(mContext.getSystemService(UserManager.class)).thenReturn(mUserManager);
         when(mUserManager.isUserUnlocked()).thenReturn(true);
@@ -137,7 +164,44 @@ public class SharedConnectivityManagerTest {
     @Test
     public void bindingToServiceOnFirstCallbackRegistration() {
         SharedConnectivityManager manager = SharedConnectivityManager.create(mContext);
+
         manager.registerCallback(mExecutor, mClientCallback);
+
+        verify(mContext).bindService(any(Intent.class), any(ServiceConnection.class), anyInt());
+    }
+
+    @Test
+    public void bindToServiceFails_userUnlocked_callsOnRegisterCallbackFailed() {
+        when(mContext.bindService(any(Intent.class), any(ServiceConnection.class),
+                anyInt())).thenReturn(false);
+        SharedConnectivityManager manager = SharedConnectivityManager.create(mContext);
+
+        manager.registerCallback(mExecutor, mClientCallback);
+
+        verify(mClientCallback).onRegisterCallbackFailed(any(IllegalStateException.class));
+    }
+
+    @Test
+    public void bindToServiceFails_userLocked_registerReceiver() {
+        when(mUserManager.isUserUnlocked()).thenReturn(false);
+        when(mContext.bindService(any(Intent.class), any(ServiceConnection.class),
+                anyInt())).thenReturn(false);
+        SharedConnectivityManager manager = SharedConnectivityManager.create(mContext);
+
+        manager.registerCallback(mExecutor, mClientCallback);
+
+        verify(mContext).registerReceiver(any(BroadcastReceiver.class),
+                mIntentFilterCaptor.capture());
+        IntentFilter intentFilter = mIntentFilterCaptor.getValue();
+        assertThat(intentFilter.getAction(0)).isEqualTo(Intent.ACTION_USER_UNLOCKED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SHARED_CONNECTIVITY_BROADCAST_RECEIVER_TEST_API)
+    public void broadcastReceiver_onReceiveUnlock_retriesBind() {
+        SharedConnectivityManager manager = SharedConnectivityManager.create(mContext);
+
+        manager.getBroadcastReceiver().onReceive(mContext, new Intent(Intent.ACTION_USER_UNLOCKED));
 
         verify(mContext).bindService(any(Intent.class), any(ServiceConnection.class), anyInt());
     }
@@ -168,6 +232,19 @@ public class SharedConnectivityManagerTest {
         manager.unregisterCallback(mClientCallback2);
         verify(mContext, times(1)).unbindService(
                 any(ServiceConnection.class));
+    }
+
+    @Test
+    public void bindIsCalledOnRegisterAfterUnbind() {
+        SharedConnectivityManager manager = SharedConnectivityManager.create(mContext);
+        manager.registerCallback(mExecutor, mClientCallback);
+        manager.getServiceConnection().onServiceConnected(COMPONENT_NAME, mIBinder);
+        manager.unregisterCallback(mClientCallback);
+
+        manager.registerCallback(mExecutor, mClientCallback2);
+
+        verify(mContext, times(2)).bindService(any(Intent.class), any(ServiceConnection.class),
+                anyInt());
     }
 
     @Test
@@ -561,7 +638,7 @@ public class SharedConnectivityManagerTest {
     private HotspotNetwork buildHotspotNetwork() {
         HotspotNetwork.Builder builder = new HotspotNetwork.Builder()
                 .setDeviceId(DEVICE_ID)
-                .setNetworkProviderInfo(NETWORK_PROVIDER_INFO)
+                .setNetworkProviderInfo(mNetworkProviderInfo)
                 .setHostNetworkType(NETWORK_TYPE)
                 .setNetworkName(NETWORK_NAME)
                 .setHotspotSsid(HOTSPOT_SSID);
@@ -571,7 +648,7 @@ public class SharedConnectivityManagerTest {
 
     private KnownNetwork buildKnownNetwork() {
         KnownNetwork.Builder builder = new KnownNetwork.Builder().setNetworkSource(NETWORK_SOURCE)
-                .setSsid(SSID).setNetworkProviderInfo(NETWORK_PROVIDER_INFO);
+                .setSsid(SSID).setNetworkProviderInfo(mNetworkProviderInfo);
         Arrays.stream(SECURITY_TYPES).forEach(builder::addSecurityType);
         return builder.build();
     }

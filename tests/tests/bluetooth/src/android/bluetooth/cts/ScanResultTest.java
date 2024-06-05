@@ -24,9 +24,9 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanResult;
 import android.os.Parcel;
-import android.test.suitebuilder.annotation.SmallTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
@@ -35,7 +35,6 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
 
 /**
  * Unit test cases for Bluetooth LE scans.
@@ -63,7 +62,7 @@ public class ScanResultTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testScanResultParceling() {
+    public void scanResultParceling() {
         BluetoothDevice device =
                 BluetoothAdapter.getDefaultAdapter().getRemoteDevice(DEVICE_ADDRESS);
         ScanResult result = new ScanResult(device, TestUtils.parseScanRecord(SCAN_RECORD), RSSI,
@@ -83,7 +82,7 @@ public class ScanResultTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testDescribeContents() {
+    public void describeContents() {
         BluetoothDevice device =
                 BluetoothAdapter.getDefaultAdapter().getRemoteDevice(DEVICE_ADDRESS);
         ScanResult result = new ScanResult(device, TestUtils.parseScanRecord(SCAN_RECORD), RSSI,
@@ -94,7 +93,7 @@ public class ScanResultTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void testConstructor() {
+    public void constructor() {
         BluetoothDevice device =
                 BluetoothAdapter.getDefaultAdapter().getRemoteDevice(DEVICE_ADDRESS);
         int eventType = 0xAAAA;

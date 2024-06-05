@@ -66,7 +66,7 @@ public class WifiLockdownTestActivity extends PassFailButtons.TestListActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mWifiManager = TestAppSystemServiceFactory.getWifiManager(this,
-                DeviceAdminTestReceiver.class);
+                DeviceAdminTestReceiver.class, /* isSingleUser = */ false);
         mConfigCreator = new WifiConfigCreator(this, mWifiManager);
         setContentView(R.layout.wifi_lockdown);
         setInfoResources(R.string.device_owner_wifi_lockdown_test,

@@ -16,6 +16,7 @@
 
 package android.telecom.cts;
 
+import static android.telecom.cts.TestUtils.hasTelephonyFeature;
 import static android.telecom.cts.TestUtils.shouldTestTelecom;
 import static android.telecom.cts.TestUtils.waitOnAllHandlers;
 
@@ -37,7 +38,6 @@ import android.os.Process;
 import android.os.UserHandle;
 import android.provider.CallLog;
 import android.telecom.Call;
-import android.telecom.CallScreeningService;
 import android.telecom.TelecomManager;
 import android.telecom.cts.screeningtestapp.CallScreeningServiceControl;
 import android.telecom.cts.screeningtestapp.CtsCallScreeningService;
@@ -197,6 +197,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
             return;
         }
 
+        revokeReadContactPermission();
         verifyPermission(false);
         // Tell the test app to block the call.
         mCallScreeningControl.setCallResponse(true /* shouldDisallowCall */,
@@ -223,6 +224,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
             return;
         }
 
+        revokeReadContactPermission();
         verifyPermission(false);
         mCallScreeningControl.setCallResponse(true /* shouldDisallowCall */,
                 true /* shouldRejectCall */, false /* shouldSilenceCall */,
@@ -246,6 +248,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
             return;
         }
 
+        revokeReadContactPermission();
         verifyPermission(false);
         placeOutgoingCall(false /* addContact */);
         assertTrue(mCallScreeningControl.waitForBind());
@@ -267,6 +270,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
             return;
         }
 
+        revokeReadContactPermission();
         verifyPermission(false);
         placeOutgoingCall(true /* addCountact */);
         assertFalse(mCallScreeningControl.waitForBind());
@@ -332,7 +336,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testNoPostCallActivityForOutgoingEmergencyCall() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -348,7 +352,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testNoPostCallActivityForIncomingEmergencyCall() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
@@ -387,7 +391,9 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
             assertNumCalls(mInCallCallbacks.getService(), 0);
 
             // Wait for it to log.
-            callLogEntryLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+            boolean completedBeforeTimeout = callLogEntryLatch
+                    .await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+            assertTrue(completedBeforeTimeout);
         } finally {
             if (addContact) {
                 assertEquals(1, TestUtils.deleteContact(mContentResolver, contactUri));
@@ -395,7 +401,8 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         }
     }
 
-    private Uri addIncoming(boolean disconnectImmediately, boolean addContact) throws Exception {
+    private Uri addIncoming(boolean disconnectImmediately, boolean addContact,
+            boolean skipCallLogLatch) throws Exception {
         // Add call through TelecomManager; we can't use the test methods since they assume a call
         // makes it through to the InCallService; this is blocked so it shouldn't.
         Uri testNumber = createRandomTestNumber();
@@ -405,7 +412,10 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         }
 
         // Setup content observer to notify us when we call log entry is added.
-        CountDownLatch callLogEntryLatch = getCallLogEntryLatch();
+        CountDownLatch callLogEntryLatch = null;
+        if (!skipCallLogLatch) {
+            callLogEntryLatch = getCallLogEntryLatch();
+        }
 
         Bundle extras = new Bundle();
         extras.putParcelable(TelecomManager.EXTRA_INCOMING_CALL_ADDRESS, testNumber);
@@ -421,12 +431,16 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         }
 
         // Wait for the content observer to report that we have gotten a new call log entry.
-        callLogEntryLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+        if (!skipCallLogLatch) {
+            boolean completedBeforeTimeout = callLogEntryLatch
+                    .await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+            assertTrue(completedBeforeTimeout);
+        }
         return testNumber;
     }
 
     private void addIncomingAndVerifyAllowed(boolean addContact) throws Exception {
-        Uri testNumber = addIncoming(true, addContact);
+        Uri testNumber = addIncoming(true, addContact, false);
 
         // Query the latest entry into the call log.
         Cursor callsCursor = mContentResolver.query(CallLog.Calls.CONTENT_URI, null,
@@ -451,7 +465,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     private void addIncomingAndVerifyBlocked(boolean addContact) throws Exception {
-        Uri testNumber = addIncoming(false, addContact);
+        Uri testNumber = addIncoming(false, addContact, false);
 
         // Query the latest entry into the call log.
         Cursor callsCursor = mContentResolver.query(CallLog.Calls.CONTENT_URI, null,
@@ -485,7 +499,8 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
 
     private void addIncomingAndVerifyCallExtraForSilence(boolean expectedIsSilentRingingExtraSet)
             throws Exception {
-        Uri testNumber = addIncoming(false, false);
+        CountDownLatch callLogEntryLatch = getCallLogEntryLatch();
+        Uri testNumber = addIncoming(false, false, true);
 
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {
@@ -507,6 +522,12 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
                         "Call extra - verification failed, expected the extra " +
                         "EXTRA_SILENT_RINGING_REQUESTED to be set:" +
                         expectedIsSilentRingingExtraSet);
+
+        // Logging does not get registered until we do explicit disconnection
+        mInCallCallbacks.getService().disconnectAllCalls();
+        boolean completedBeforeTimeout = callLogEntryLatch
+                .await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+        assertTrue(completedBeforeTimeout);
     }
 
     /**
@@ -535,7 +556,8 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         if (!success) {
             fail("Failed to get control interface -- bind error");
         }
-        bindLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+        boolean completedBeforeTimeout = bindLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+        assertTrue(completedBeforeTimeout);
     }
 
     /**

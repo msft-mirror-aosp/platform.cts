@@ -27,7 +27,12 @@ import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
@@ -35,18 +40,38 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
+import android.bluetooth.BluetoothSocket;
+import android.bluetooth.BluetoothSocketException;
 import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.OobData;
 import android.content.AttributionSource;
+import android.content.Context;
 import android.content.pm.PackageManager;
-import android.test.AndroidTestCase;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.LargeTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bluetooth.flags.Flags;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.UUID;
 
-public class BluetoothDeviceTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+@LargeTest
+public class BluetoothDeviceTest {
 
+    private Context mContext;
     private boolean mHasBluetooth;
     private boolean mHasCompanionDevice;
     private BluetoothAdapter mAdapter;
@@ -54,18 +79,25 @@ public class BluetoothDeviceTest extends AndroidTestCase {
 
     private final String mFakeDeviceAddress = "00:11:22:AA:BB:CC";
     private BluetoothDevice mFakeDevice;
+    private int mFakePsm = 100;
+    private UUID mFakeUuid = UUID.fromString("0000111E-0000-1000-8000-00805F9B34FB");
 
-    @Override
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-        mHasBluetooth = getContext().getPackageManager().hasSystemFeature(
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
+
+        mHasBluetooth = mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_BLUETOOTH);
 
-        mHasCompanionDevice = getContext().getPackageManager().hasSystemFeature(
+        mHasCompanionDevice = mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_COMPANION_DEVICE_SETUP);
 
         if (mHasBluetooth && mHasCompanionDevice) {
-            BluetoothManager manager = getContext().getSystemService(BluetoothManager.class);
+            BluetoothManager manager = mContext.getSystemService(BluetoothManager.class);
             mAdapter = manager.getAdapter();
             mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
             mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
@@ -74,20 +106,18 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         }
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
-        super.tearDown();
         if (mHasBluetooth && mHasCompanionDevice) {
             mAdapter = null;
             mUiAutomation.dropShellPermissionIdentity();
         }
     }
 
-    public void test_setAlias_getAlias() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void setAlias_getAlias() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         int userId = mContext.getUser().getIdentifier();
         String packageName = mContext.getOpPackageName();
@@ -136,22 +166,29 @@ public class BluetoothDeviceTest extends AndroidTestCase {
                 mFakeDevice.setAlias(testDeviceAlias));
     }
 
-    public void test_getIdentityAddress() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GET_ADDRESS_TYPE_API)
+    public void getAddressType() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        assertEquals(BluetoothDevice.ADDRESS_TYPE_PUBLIC, mFakeDevice.getAddressType());
+    }
+
+    @Test
+    public void getIdentityAddress() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
         assertThrows("No BLUETOOTH_PRIVILEGED permission", SecurityException.class,
                 () -> mFakeDevice.getIdentityAddress());
     }
 
-    public void test_getConnectionHandle() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void getConnectionHandle() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
         assertThrows("No BLUETOOTH_PRIVILEGED permission", SecurityException.class,
@@ -163,20 +200,18 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertEquals(handle, BluetoothDevice.ERROR);
     }
 
-    public void test_getAnonymizedAddress() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void getAnonymizedAddress() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         assertEquals("XX:XX:XX:XX:BB:CC", mFakeDevice.getAnonymizedAddress());
     }
 
-    public void test_getBatteryLevel() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void getBatteryLevel() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         assertEquals(BluetoothDevice.BATTERY_LEVEL_UNKNOWN, mFakeDevice.getBatteryLevel());
 
@@ -188,11 +223,10 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertEquals(BluetoothDevice.BATTERY_LEVEL_BLUETOOTH_OFF, mFakeDevice.getBatteryLevel());
     }
 
-    public void test_isBondingInitiatedLocally() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void isBondingInitiatedLocally() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         assertFalse(mFakeDevice.isBondingInitiatedLocally());
 
@@ -204,20 +238,18 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertFalse(mFakeDevice.isBondingInitiatedLocally());
     }
 
-    public void test_prepareToEnterProcess() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void prepareToEnterProcess() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         mFakeDevice.prepareToEnterProcess(null);
     }
 
-    public void test_setPin() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void setPin() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         assertFalse(mFakeDevice.setPin((String) null));
         assertFalse(mFakeDevice.setPin("12345678901234567")); // check PIN too big
@@ -232,22 +264,20 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertFalse(mFakeDevice.setPin("123456"));
     }
 
-    public void test_connect_disconnect() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void connect_disconnect() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
         assertThrows(SecurityException.class, () -> mFakeDevice.connect());
         assertThrows(SecurityException.class, () -> mFakeDevice.disconnect());
     }
 
-    public void test_cancelBondProcess() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void cancelBondProcess() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         mUiAutomation.dropShellPermissionIdentity();
         assertThrows(SecurityException.class, () -> mFakeDevice.cancelBondProcess());
@@ -257,11 +287,10 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertFalse(mFakeDevice.cancelBondProcess());
     }
 
-    public void test_createBond() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void createBond() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         mUiAutomation.dropShellPermissionIdentity();
         assertThrows(SecurityException.class, () -> mFakeDevice.createBond(TRANSPORT_AUTO));
@@ -271,11 +300,10 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertFalse(mFakeDevice.createBond(TRANSPORT_AUTO));
     }
 
-    public void test_createBondOutOfBand() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void createBondOutOfBand() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         OobData data = new OobData.ClassicBuilder(
                 new byte[16], new byte[2], new byte[7]).build();
@@ -289,11 +317,10 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
     }
 
-    public void test_getUuids() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void getUuids() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         assertNull(mFakeDevice.getUuids());
         mUiAutomation.dropShellPermissionIdentity();
@@ -304,11 +331,10 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertNull(mFakeDevice.getUuids());
     }
 
-    public void test_isEncrypted() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void isEncrypted() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         //Device is not connected
         assertFalse(mFakeDevice.isEncrypted());
@@ -321,11 +347,10 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertFalse(mFakeDevice.isEncrypted());
     }
 
-    public void test_removeBond() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void removeBond() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         //Device is not bonded
         assertFalse(mFakeDevice.removeBond());
@@ -338,11 +363,10 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertFalse(mFakeDevice.removeBond());
     }
 
-    public void test_setPinByteArray() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void setPinByteArray() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         assertThrows(NullPointerException.class, () -> mFakeDevice.setPin((byte[]) null));
 
@@ -359,26 +383,24 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertFalse(mFakeDevice.setPin(convertPinToBytes("123456")));
     }
 
-    public void test_connectGatt() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void connectGatt() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         assertThrows(NullPointerException.class, () -> mFakeDevice
-                .connectGatt(getContext(), false, null,
+                .connectGatt(mContext, false, null,
                 TRANSPORT_AUTO, BluetoothDevice.PHY_LE_1M_MASK));
 
         assertThrows(NullPointerException.class, () ->
-                mFakeDevice.connectGatt(getContext(), false, null,
+                mFakeDevice.connectGatt(mContext, false, null,
                 TRANSPORT_AUTO, BluetoothDevice.PHY_LE_1M_MASK, null));
     }
 
-    public void test_fetchUuidsWithSdp() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void fetchUuidsWithSdp() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         // TRANSPORT_AUTO doesn't need BLUETOOTH_PRIVILEGED permission
         assertTrue(mFakeDevice.fetchUuidsWithSdp(TRANSPORT_AUTO));
@@ -391,13 +413,12 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertFalse(mFakeDevice.fetchUuidsWithSdp(TRANSPORT_AUTO));
     }
 
-    public void test_messageAccessPermission() {
-        if (!mHasBluetooth || !mHasCompanionDevice
-                || !TestUtils.isProfileEnabled(BluetoothProfile.MAP)) {
-            // Skip the test if bluetooth or companion device are not present,
-            // or if MAP is not enabled.
-            return;
-        }
+    @Test
+    public void messageAccessPermission() {
+        // Skip the test if bluetooth or companion device are not present
+        // or if MAP is not enabled.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice
+                   && TestUtils.isProfileEnabled(BluetoothProfile.MAP));
 
         // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
         assertThrows(SecurityException.class, () -> mFakeDevice
@@ -418,13 +439,12 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertEquals(ACCESS_REJECTED, mFakeDevice.getMessageAccessPermission());
     }
 
-    public void test_phonebookAccessPermission() {
-        if (!mHasBluetooth || !mHasCompanionDevice
-                || !TestUtils.isProfileEnabled(BluetoothProfile.PBAP)) {
-            // Skip the test if bluetooth or companion device are not present,
-            // of if PBAP is not enabled.
-            return;
-        }
+    @Test
+    public void phonebookAccessPermission() {
+        // Skip the test if bluetooth or companion device are not present
+        // or if PBAP is not enabled.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice
+                   && TestUtils.isProfileEnabled(BluetoothProfile.PBAP));
 
         // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
         assertThrows(SecurityException.class, () -> mFakeDevice
@@ -445,13 +465,12 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertEquals(ACCESS_REJECTED, mFakeDevice.getPhonebookAccessPermission());
     }
 
-    public void test_simAccessPermission() {
-        if (!mHasBluetooth || !mHasCompanionDevice
-                || !TestUtils.isProfileEnabled(BluetoothProfile.SAP)) {
-            // Skip the test if bluetooth or companion device are not present,
-            // or if SAP is not enabled.
-            return;
-        }
+    @Test
+    public void simAccessPermission() {
+        // Skip the test if bluetooth or companion device are not present
+        // or if SAP is not enabled.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice
+                   && TestUtils.isProfileEnabled(BluetoothProfile.SAP));
 
         // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
         assertThrows(SecurityException.class, () -> mFakeDevice
@@ -472,11 +491,10 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertEquals(ACCESS_REJECTED, mFakeDevice.getSimAccessPermission());
     }
 
-    public void test_isRequestAudioPolicyAsSinkSupported() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void isRequestAudioPolicyAsSinkSupported() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         assertThrows(SecurityException.class,
                 () -> mFakeDevice.isRequestAudioPolicyAsSinkSupported());
@@ -487,11 +505,10 @@ public class BluetoothDeviceTest extends AndroidTestCase {
                 mFakeDevice.isRequestAudioPolicyAsSinkSupported());
     }
 
-    public void test_setGetAudioPolicy() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void setGetAudioPolicy() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         BluetoothSinkAudioPolicy demoAudioPolicy = new BluetoothSinkAudioPolicy.Builder().build();
 
@@ -535,11 +552,10 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         return pinBytes;
     }
 
-    public void test_getPackageNameOfBondingApplication() {
-        if (!mHasBluetooth || !mHasCompanionDevice) {
-            // Skip the test if bluetooth or companion device are not present.
-            return;
-        }
+    @Test
+    public void getPackageNameOfBondingApplication() {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
         mUiAutomation.dropShellPermissionIdentity();
         assertThrows(SecurityException.class,
@@ -553,12 +569,78 @@ public class BluetoothDeviceTest extends AndroidTestCase {
         assertNull(mFakeDevice.getPackageNameOfBondingApplication());
 
         mFakeDevice.createBond();
-        assertEquals(getContext().getPackageName(),
+        assertEquals(mContext.getPackageName(),
                 mFakeDevice.getPackageNameOfBondingApplication());
 
         // Clean up create bond
         // Either cancel the bonding process or remove bond
         mFakeDevice.cancelBondProcess();
         mFakeDevice.removeBond();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_METADATA_API_INACTIVE_AUDIO_DEVICE_UPON_CONNECTION)
+    @Test
+    public void setActiveAudioDevicePolicy_getActiveAudioDevicePolicy() {
+        if (!mHasBluetooth || !mHasCompanionDevice) {
+            // Skip the test if bluetooth or companion device are not present.
+            return;
+        }
+        String deviceAddress = "00:11:22:AA:AA:AA";
+        BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
+
+        // This should throw a SecurityException because no BLUETOOTH_CONNECT permission
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_PRIVILEGED);
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        device.setActiveAudioDevicePolicy(
+                                BluetoothDevice
+                                        .ACTIVE_AUDIO_DEVICE_POLICY_ALL_PROFILES_INACTIVE_UPON_CONNECTION));
+        assertThrows(SecurityException.class, () -> device.getActiveAudioDevicePolicy());
+
+        // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        device.setActiveAudioDevicePolicy(
+                                BluetoothDevice
+                                        .ACTIVE_AUDIO_DEVICE_POLICY_ALL_PROFILES_INACTIVE_UPON_CONNECTION));
+        assertThrows(SecurityException.class, () -> device.getActiveAudioDevicePolicy());
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+
+        assertEquals(
+                BluetoothDevice.ACTIVE_AUDIO_DEVICE_POLICY_DEFAULT,
+                device.getActiveAudioDevicePolicy());
+        assertEquals(
+                BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED,
+                device.setActiveAudioDevicePolicy(
+                        BluetoothDevice
+                                .ACTIVE_AUDIO_DEVICE_POLICY_ALL_PROFILES_INACTIVE_UPON_CONNECTION));
+    }
+    @RequiresFlagsEnabled(Flags.FLAG_BT_SOCKET_API_L2CAP_CID)
+    @Test
+    public void getL2capChannel() throws IOException {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        BluetoothSocket l2capSocket = mFakeDevice.createInsecureL2capChannel(mFakePsm);
+        BluetoothSocket rfcommSocket = mFakeDevice
+                        .createInsecureRfcommSocketToServiceRecord(mFakeUuid);
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+
+        // This should throw a BluetoothSocketException because it is not L2CAP socket
+        assertThrows("Unknown L2CAP socket", BluetoothSocketException.class,
+                () -> rfcommSocket.getL2capLocalChannelId());
+        assertThrows("Unknown L2CAP socket", BluetoothSocketException.class,
+                () -> rfcommSocket.getL2capRemoteChannelId());
+
+        // This should throw a BluetoothSocketException because L2CAP socket is not connected
+        assertThrows("Socket closed", BluetoothSocketException.class,
+                () -> l2capSocket.getL2capLocalChannelId());
+        assertThrows("Socket closed", BluetoothSocketException.class,
+                () -> l2capSocket.getL2capRemoteChannelId());
     }
 }

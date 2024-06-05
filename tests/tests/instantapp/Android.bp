@@ -15,12 +15,13 @@
 //
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test {
     name: "CtsInstantAppTests",
-    srcs: [ "src/**/*.kt" ],
+    srcs: ["src/**/*.kt"],
     libs: [
         "android.test.runner",
         "android.test.base",
@@ -30,7 +31,7 @@ android_test {
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "mockito-target-minus-junit4",
-        "truth-prebuilt",
+        "truth",
     ],
     test_suites: [
         "cts",

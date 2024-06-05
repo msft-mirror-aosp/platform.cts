@@ -29,6 +29,7 @@ import android.util.Log;
 import android.view.Choreographer;
 import android.view.SurfaceHolder;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 
@@ -38,6 +39,7 @@ import com.android.compatibility.common.util.NonMainlineTest;
  * SurfaceFlinger allows a "desired presentation time" value to be passed along with buffers of
  * data.  This exercises that feature.
  */
+@FrameworkSpecificTest
 @NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 public class PresentationSyncTest extends ActivityInstrumentationTestCase2<MediaStubActivity>

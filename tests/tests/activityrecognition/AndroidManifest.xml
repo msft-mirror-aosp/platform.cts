@@ -20,6 +20,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.activityrecognition.cts">
 
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
     <attribution android:tag="valid_ar_attribution_tag" android:label="@string/foo_label" />
     <attribution android:tag="invalid_ar_attribution_tag" android:label="@string/foo_label" />
 
@@ -39,9 +41,6 @@
         android:name="androidx.test.runner.AndroidJUnitRunner"
         android:targetPackage="android.activityrecognition.cts"
         android:label="CTS activity recognition tests">
-        <meta-data
-            android:name="listener"
-            android:value="com.android.cts.runner.CtsTestRunListener" />
     </instrumentation>
 
 </manifest>

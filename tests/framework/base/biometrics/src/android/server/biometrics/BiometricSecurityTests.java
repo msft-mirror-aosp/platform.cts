@@ -31,9 +31,14 @@ import android.hardware.biometrics.BiometricManager.Authenticators;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.SensorProperties;
 import android.platform.test.annotations.Presubmit;
+import android.server.biometrics.util.BiometricCallbackHelper;
+import android.server.biometrics.util.BiometricServiceState;
+import android.server.biometrics.util.Utils;
 import android.server.wm.TestJournalProvider.TestJournal;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.util.Log;
+
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -74,6 +79,13 @@ public class BiometricSecurityTests extends BiometricTestBase {
      * Note that since BiometricPrompt does not support Convenience biometrics, currently we don't
      * have a way to test cases where the requested strength is BIOMETRIC_CONVENIENCE.
      */
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricStrength_StrongSensor() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -112,6 +124,13 @@ public class BiometricSecurityTests extends BiometricTestBase {
      * Note that since BiometricPrompt does not support Convenience biometrics, currently we don't
      * have a way to test cases where the requested strength is BIOMETRIC_CONVENIENCE.
      */
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricStrength_WeakSensor() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -144,6 +163,13 @@ public class BiometricSecurityTests extends BiometricTestBase {
      * Note that since BiometricPrompt does not support Convenience biometrics, currently we don't
      * have a way to test cases where the requested strength is BIOMETRIC_CONVENIENCE.
      */
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricManager#canAuthenticate",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricStrength_ConvenienceSensor() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -185,7 +211,7 @@ public class BiometricSecurityTests extends BiometricTestBase {
 
         try (BiometricTestSession session = mBiometricManager.createTestSession(sensorId);
              ActivitySession activitySession = new ActivitySession(this, componentName)) {
-            final int userId = 0;
+            final int userId = Utils.getUserId();
             waitForAllUnenrolled();
             enrollForSensor(session, sensorId);
             final TestJournal journal =
@@ -206,14 +232,8 @@ public class BiometricSecurityTests extends BiometricTestBase {
             assertTrue(state.toString(), state.mSensorStates.sensorStates.get(sensorId).isBusy());
 
             // Auth should work
-            successfullyAuthenticate(session, userId);
-            mInstrumentation.waitForIdleSync();
-            callbackState = getCallbackState(journal);
-            assertNotNull(callbackState);
+            successfullyAuthenticate(session, userId, journal);
             assertEquals(callbackState.toString(), 0, callbackState.mNumAuthRejected);
-            assertEquals(callbackState.toString(), 1, callbackState.mNumAuthAccepted);
-            assertEquals(callbackState.toString(), 0, callbackState.mAcquiredReceived.size());
-            assertEquals(callbackState.toString(), 0, callbackState.mErrorsReceived.size());
         }
     }
 
@@ -365,13 +385,12 @@ public class BiometricSecurityTests extends BiometricTestBase {
 
         try (BiometricTestSession session = mBiometricManager.createTestSession(sensorId);
              ActivitySession activitySession = new ActivitySession(this, componentName)) {
-            final int userId = 0;
+            final int userId = Utils.getUserId();
             waitForAllUnenrolled();
             enrollForSensor(session, sensorId);
             final TestJournal journal =
                     TestJournalContainer.get(activitySession.getComponentName());
 
-            BiometricCallbackHelper.State callbackState;
             BiometricServiceState state;
 
             // Downgrade the biometric strength to the target strength
@@ -397,14 +416,7 @@ public class BiometricSecurityTests extends BiometricTestBase {
                         state.mSensorStates.sensorStates.get(sensorId).isBusy());
 
                 // Auth should work
-                successfullyAuthenticate(session, userId);
-                mInstrumentation.waitForIdleSync();
-                callbackState = getCallbackState(journal);
-                assertNotNull(callbackState);
-                assertEquals(callbackState.toString(), 0, callbackState.mNumAuthRejected);
-                assertEquals(callbackState.toString(), 1, callbackState.mNumAuthAccepted);
-                assertEquals(callbackState.toString(), 0, callbackState.mAcquiredReceived.size());
-                assertEquals(callbackState.toString(), 0, callbackState.mErrorsReceived.size());
+                successfullyAuthenticate(session, userId, journal);
             } else {
                 Log.d(TAG, "The targetStrength is not strong enough");
                 // Error code should be returned
@@ -419,7 +431,7 @@ public class BiometricSecurityTests extends BiometricTestBase {
 
                 // Auth shouldn't work and error code should be returned
                 mInstrumentation.waitForIdleSync();
-                callbackState = getCallbackState(journal);
+                BiometricCallbackHelper.State callbackState = getCallbackState(journal);
                 assertNotNull(callbackState);
                 assertEquals(callbackState.toString(), 0, callbackState.mNumAuthRejected);
                 assertEquals(callbackState.toString(), 0, callbackState.mNumAuthAccepted);

@@ -4,6 +4,7 @@ package {
 
 java_test_host {
     name: "CtsTaggingHostTestCases",
+    team: "trendy_team_art_performance",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     libs: [
@@ -11,20 +12,24 @@ java_test_host {
         "cts-tradefed",
         "tradefed",
     ],
-    static_libs: ["CompatChangeGatingTestBase"],
+    static_libs: [
+        "CompatChangeGatingTestBase",
+        "flag-junit-host",
+        "bedstead-core-annotations",
+    ],
     // tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
     data: [
-        ":DeviceKernelHelpers",
         ":CtsHostsideTaggingManifestDisabledApp",
         ":CtsHostsideTaggingManifestEnabledSdk29App",
         ":CtsHostsideTaggingManifestEnabledSdk30App",
         ":CtsHostsideTaggingSdk29App",
         ":CtsHostsideTaggingSdk30App",
         ":CtsHostsideTaggingSdk30MemtagApp",
+        ":CtsHostsideTaggingIsMteEnabledApp",
     ],
 }
 

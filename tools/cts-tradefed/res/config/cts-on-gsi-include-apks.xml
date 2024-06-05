@@ -46,7 +46,7 @@
     <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.AutoRevokeTest" />
 
     <!-- No Gallery2, Music -->
-    <option name="compatibility:include-filter" value="CtsProviderTestCases android.provider.cts.media.MediaStoreIntentsTest" />
+    <option name="compatibility:include-filter" value="CtsMediaProviderTestCases android.provider.cts.media.MediaStoreIntentsTest" />
 
     <!-- No Music -->
     <option name="compatibility:include-filter" value="CtsContentTestCases android.content.cts.AvailableIntentsTest#testMusicPlayback" />
@@ -98,7 +98,7 @@
     <option name="compatibility:include-filter" value="CtsAppCloningHostTest android.scopedstorage.cts.host.AppCloningHostTest#testCreateCloneUserFile" />
 
     <!-- b/194146521 -->
-    <option name="compatibility:include-filter" value="CtsPermission3TestCases android.permission3.cts.PermissionTest23#testNoResidualPermissionsOnUninstall" />
+    <option name="compatibility:include-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest23#testNoResidualPermissionsOnUninstall" />
 
       <!-- b/199996926 - No UWB stack support in AOSP for Android S -->
     <option name="compatibility:include-filter" value="CtsUwbTestCases" />

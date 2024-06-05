@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_system_ui_please_use_a_more_specific_subteam_if_possible_",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -27,6 +28,10 @@ android_test {
         "permission-test-util-lib",
         "compatibility-device-util-axt",
         "CtsAppTestStubsShared",
+        "android.service.notification.flags-aconfig-java",
+        "android.app.flags-aconfig-java",
+        "flag-junit",
+        "notification_flags_lib",
     ],
     libs: [
         "android.test.runner",
@@ -40,6 +45,14 @@ android_test {
         ":NotificationTrampoline",
         ":NotificationTrampolineApi30",
         ":NotificationTrampolineApi32",
+        ":NotificationPressure00",
+        ":NotificationPressure01",
+        ":NotificationPressure02",
+        ":NotificationPressure03",
+        ":NotificationPressure04",
+        ":NotificationPressure05",
+        ":NotificationPressure06",
+        ":NotificationPressure07",
     ],
     instrumentation_for: "CtsAppTestStubs",
     srcs: [
@@ -55,5 +68,5 @@ android_test {
     ],
     sdk_version: "test_current",
     target_sdk_version: "current",
-    min_sdk_version: "29",
+    min_sdk_version: "34",
 }

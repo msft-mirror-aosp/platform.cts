@@ -29,16 +29,13 @@ import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
 
-_ALIGN_TOL_MM = 5.0  # mm
-_ALIGN_TOL = 0.01  # multiplied by sensor diagonal to convert to pixels
+_ALIGN_ATOL_MM = 5.0  # mm
+_ALIGN_RTOL = 0.01  # 1% of sensor diagonal in pixels
 _CHART_DISTANCE_RTOL = 0.1
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_MIN_AREA = 0.005  # multiplied by image size
 _CIRCLE_RTOL = 0.1  # 10%
 _CM_TO_M = 1E-2
-_FMT_CODE_RAW = 0x20
-_FMT_CODE_YUV = 0x23
-_LENS_FACING_BACK = 1  # 0: FRONT, 1: BACK, 2: EXTERNAL
 _M_TO_MM = 1E3
 _MM_TO_UM = 1E3
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -48,7 +45,7 @@ _TEST_REQUIRED_MPC = 33
 _TRANS_MATRIX_REF = np.array([0, 0, 0])  # translation matrix for ref cam is 000
 
 
-def convert_cap_and_prep_img(cap, props, fmt, img_name, debug):
+def convert_cap_and_prep_img(cap, props, fmt, img_name):
   """Convert the capture to an RGB image and prep image.
 
   Args:
@@ -56,7 +53,6 @@ def convert_cap_and_prep_img(cap, props, fmt, img_name, debug):
     props: dict of capture properties
     fmt: capture format ('raw' or 'yuv')
     img_name: name to save image as
-    debug: boolean for debug mode
 
   Returns:
     img uint8 numpy array
@@ -64,9 +60,8 @@ def convert_cap_and_prep_img(cap, props, fmt, img_name, debug):
 
   img = image_processing_utils.convert_capture_to_rgb_image(cap, props=props)
 
-  # save images if debug
-  if debug:
-    image_processing_utils.write_image(img, img_name)
+  # save image
+  image_processing_utils.write_image(img, img_name)
 
   # convert [0, 1] image to [0, 255] and cast as uint8
   img = image_processing_utils.convert_image_to_uint8(img)
@@ -112,19 +107,19 @@ def select_ids_to_test(ids, props, chart_distance):
                   chart_distance)
     # determine best combo with rig used or recommend different rig
     if (opencv_processing_utils.FOV_THRESH_TELE < fov <
-        opencv_processing_utils.FOV_THRESH_WFOV):
+        opencv_processing_utils.FOV_THRESH_UW):
       test_ids.append(i)  # RFoV camera
     elif fov < opencv_processing_utils.FOV_THRESH_TELE40:
       logging.debug('Skipping camera. Not appropriate multi-camera testing.')
       continue  # super-TELE camera
     elif (fov <= opencv_processing_utils.FOV_THRESH_TELE and
           math.isclose(chart_distance,
-                       opencv_processing_utils.CHART_DISTANCE_RFOV,
+                       opencv_processing_utils.CHART_DISTANCE_31CM,
                        rel_tol=_CHART_DISTANCE_RTOL)):
       test_ids.append(i)  # TELE camera in RFoV rig
-    elif (fov >= opencv_processing_utils.FOV_THRESH_WFOV and
+    elif (fov >= opencv_processing_utils.FOV_THRESH_UW and
           math.isclose(chart_distance,
-                       opencv_processing_utils.CHART_DISTANCE_WFOV,
+                       opencv_processing_utils.CHART_DISTANCE_22CM,
                        rel_tol=_CHART_DISTANCE_RTOL)):
       test_ids.append(i)  # WFoV camera in WFoV rig
     else:
@@ -178,9 +173,8 @@ def determine_valid_out_surfaces(cam, props, fmt, cap_camera_ids, sizes):
   return out_surfaces
 
 
-def take_images(cam, caps, props, fmt, cap_camera_ids, out_surfaces,
-                name_with_log_path, debug):
-  """Do image captures.
+def take_images(cam, caps, props, fmt, cap_camera_ids, out_surfaces):
+  """Capture images.
 
   Args:
     cam: obj; camera object
@@ -189,8 +183,6 @@ def take_images(cam, caps, props, fmt, cap_camera_ids, out_surfaces,
     fmt: str; capture format ('yuv' or 'raw')
     cap_camera_ids: list; camera capture ids
     out_surfaces: list; valid output surfaces for caps
-    name_with_log_path: str; file name with location to save files
-    debug: bool; determine if debug mode or not.
 
   Returns:
     caps: dict; capture information indexed by (fmt, cap_id)
@@ -212,14 +204,6 @@ def take_images(cam, caps, props, fmt, cap_camera_ids, out_surfaces,
       cam.do_3a(lock_ae=True, lock_awb=True)
       req = capture_request_utils.auto_capture_request(props=props, do_af=True)
       caps[(fmt, cap_camera_ids[i])] = cam.do_capture(req, out_surface)
-
-  # save images if debug
-  if debug:
-    for i in [0, 1]:
-      img = image_processing_utils.convert_capture_to_rgb_image(
-          caps[(fmt, cap_camera_ids[i])], props=props[cap_camera_ids[i]])
-      image_processing_utils.write_image(
-          img, f'{name_with_log_path}_{fmt}_{cap_camera_ids[i]}.jpg')
 
   return caps
 
@@ -389,7 +373,9 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
           not should_run and
           cam.is_primary_camera() and
           has_multiple_same_facing_cameras and
-          props['android.lens.facing'] == _LENS_FACING_BACK):
+          (props['android.lens.facing'] ==
+           camera_properties_utils.LENS_FACING['BACK'])
+          ):
         logging.error('Found multiple camera IDs %s facing in the same '
                       'direction as primary camera %s.',
                       cameras_facing_same_direction, self.camera_id)
@@ -403,11 +389,11 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance)
 
-      debug = self.debug_mode
       pose_reference = props['android.lens.poseReference']
 
       # Convert chart_distance for lens facing back
-      if props['android.lens.facing'] == _LENS_FACING_BACK:
+      if (props['android.lens.facing'] ==
+          camera_properties_utils.LENS_FACING['BACK']):
         # API spec defines +z is pointing out from screen
         logging.debug('lens facing BACK')
         chart_distance *= -1
@@ -449,10 +435,10 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       for i, fmt in enumerate(fmts):
         physical_sizes = {}
         capture_cam_ids = physical_ids
-        fmt_code = _FMT_CODE_YUV
+        fmt_code = capture_request_utils.FMT_CODE_YUV
         if fmt == 'raw':
           capture_cam_ids = physical_raw_ids
-          fmt_code = _FMT_CODE_RAW
+          fmt_code = capture_request_utils.FMT_CODE_RAW
         for physical_id in capture_cam_ids:
           configs = physical_props[physical_id][
               'android.scaler.streamConfigurationMap'][
@@ -464,8 +450,8 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
 
         out_surfaces = determine_valid_out_surfaces(
             cam, props, fmt, capture_cam_ids, physical_sizes)
-        caps = take_images(cam, caps, physical_props, fmt, capture_cam_ids,
-                           out_surfaces, name_with_log_path, debug)
+        caps = take_images(
+            cam, caps, physical_props, fmt, capture_cam_ids, out_surfaces)
 
     # process images for correctness
     for j, fmt in enumerate(fmts):
@@ -486,14 +472,14 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
         # convert cap and prep image
         img_name = f'{name_with_log_path}_{fmt}_{i}.jpg'
         img = convert_cap_and_prep_img(
-            caps[(fmt, i)], physical_props[i], fmt, img_name, debug)
+            caps[(fmt, i)], physical_props[i], fmt, img_name)
         size[i] = (caps[fmt, i]['width'], caps[fmt, i]['height'])
 
         # load parameters for each physical camera
         if j == 0:
           logging.debug('Camera %s', i)
         k[i] = camera_properties_utils.get_intrinsic_calibration(
-            physical_props[i], j == 0)
+            physical_props[i], caps[fmt, i]['metadata'], j == 0)
         r[i] = camera_properties_utils.get_rotation_matrix(
             physical_props[i], j == 0)
         t[i] = camera_properties_utils.get_translation_matrix(
@@ -508,9 +494,6 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
         # camera's coordinate, we need a translation vector of [-5, -4, -3]
         # so that: [I|[-5, -4, -3]^T] * [5, 4, 3]^T = [0,0,0]^T
         t[i] = -1.0 * np.dot(r[i], t[i])
-        if debug and j == 1:
-          logging.debug('t: %s', str(t[i]))
-          logging.debug('r: %s', str(r[i]))
 
         if (t[i] == _TRANS_MATRIX_REF).all():
           cam_reference[i] = True
@@ -519,7 +502,7 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
 
         # Correct lens distortion to image (if available) and save before/after
         if (camera_properties_utils.distortion_correction(physical_props[i]) and
-            camera_properties_utils.intrinsic_calibration(physical_props[i]) and
+            caps[fmt, i]['metadata'] and
             fmt == 'raw'):
           cv2_distort = camera_properties_utils.get_distortion_matrix(
               physical_props[i])
@@ -537,7 +520,7 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
         circle[i] = opencv_processing_utils.find_circle(
             img, f'{name_with_log_path}_{fmt}_gray_{i}.jpg',
             _CIRCLE_MIN_AREA, _CIRCLE_COLOR)
-        logging.debug('Circle radius %s:  %.2f', format(i), circle[i]['r'])
+        logging.debug('Circle radius %s: %.2f', format(i), circle[i]['r'])
 
         # Undo zoom to image (if applicable).
         if fmt == 'yuv':
@@ -581,17 +564,17 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       err_mm = np.linalg.norm(np.array([x_w[i_ref], y_w[i_ref]]) -
                               np.array([x_w[i_2nd], y_w[i_2nd]])) * _M_TO_MM
       logging.debug('Center location err (mm): %.2f', err_mm)
-      if err_mm > _ALIGN_TOL_MM:
+      if err_mm > _ALIGN_ATOL_MM:
         raise AssertionError(
             f'Centers {i_ref} <-> {i_2nd} too different! '
-            f'val={err_mm:.2f}, ATOL={_ALIGN_TOL_MM} mm')
+            f'val={err_mm:.2f}, ATOL={_ALIGN_ATOL_MM} mm')
 
       # Check projections back into pixel space
       for i in [i_ref, i_2nd]:
         err = np.linalg.norm(np.array([circle[i]['x'], circle[i]['y']]) -
                              np.array([x_p[i], y_p[i]]).reshape(1, -1))
         logging.debug('Camera %s projection error (pixels): %.1f', i, err)
-        tol = _ALIGN_TOL * sensor_diag[i]
+        tol = _ALIGN_RTOL * sensor_diag[i]
         if err >= tol:
           raise AssertionError(f'Camera {i} project location too different! '
                                f'diff={err:.2f}, ATOL={tol:.2f} pixels')

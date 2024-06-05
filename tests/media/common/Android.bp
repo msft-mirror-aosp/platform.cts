@@ -22,8 +22,12 @@ android_library {
     static_libs: [
         "androidx.test.core",
         "compatibility-device-util-axt",
+        "ctsmediaTestUtils", // split from cts-media-common to avoid circular dependency
     ],
     srcs: ["src/**/*.java"],
     platform_apis: true,
     min_sdk_version: "29",
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }

@@ -50,7 +50,6 @@ import com.android.compatibility.common.util.UiDumpUtils
 import com.android.compatibility.common.util.click
 import com.android.compatibility.common.util.depthFirstSearch
 import com.android.compatibility.common.util.textAsString
-import com.android.modules.utils.build.SdkLevel
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.hamcrest.Matcher
@@ -125,24 +124,6 @@ fun runBootCompleteReceiver(context: Context, testTag: String) {
         /* initialExtras= */ null)
     assertTrue("Timed out while waiting for boot receiver broadcast to be received",
         countdownLatch.await(BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS))
-}
-
-fun bypassBatterySavingRestrictions(context: Context) {
-    if (SdkLevel.isAtLeastU()) {
-        val userId = Process.myUserHandle().identifier
-        val permissionControllerPackageName =
-            context.packageManager.permissionControllerPackageName
-        runShellCommandOrThrow("cmd tare set-vip $userId $permissionControllerPackageName true")
-    }
-}
-
-fun resetBatterySavingRestrictions(context: Context) {
-    if (SdkLevel.isAtLeastU()) {
-        val userId = Process.myUserHandle().identifier
-        val permissionControllerPackageName =
-            context.packageManager.permissionControllerPackageName
-        runShellCommandOrThrow("cmd tare set-vip $userId $permissionControllerPackageName default")
-    }
 }
 
 fun resetJob(context: Context) {
@@ -416,7 +397,7 @@ fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 
             node.viewIdResourceName?.contains("alertTitle") == true
         }
         val okCloseButton = ui.depthFirstSearch { node ->
-            (node.textAsString?.equals("OK", ignoreCase = true) ?: false)  ||
+            (node.textAsString?.equals("OK", ignoreCase = true) ?: false) ||
                 (node.textAsString?.equals("Close app", ignoreCase = true) ?: false)
         }
         val titleString = title?.text?.toString()

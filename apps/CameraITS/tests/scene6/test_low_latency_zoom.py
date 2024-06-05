@@ -15,6 +15,7 @@
 
 
 import logging
+import math
 import os.path
 
 import camera_properties_utils
@@ -24,7 +25,6 @@ import its_base_test
 import its_session_utils
 from mobly import test_runner
 import numpy as np
-import opencv_processing_utils
 import zoom_capture_utils
 
 
@@ -36,7 +36,7 @@ _MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels
 _MIN_CIRCLE_PTS = 25
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
-_ZOOM_MIN_THRESH = 2.0
+_SMOOTH_ZOOM_STEP = 1.1  # [1.0, 1.1] as a reference smooth zoom step
 
 
 class LowLatencyZoomTest(its_base_test.ItsBaseTest):
@@ -47,6 +47,9 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
 
   Make sure that the zoomRatio in the capture result is reflected
   in the captured image.
+
+  If the device's firstApiLevel is V, make sure the zoom steps are
+  small and logarithmic to simulate a smooth zoom experience.
   """
 
   def test_low_latency_zoom(self):
@@ -68,9 +71,26 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
       z_range = props['android.control.zoomRatioRange']
       debug = self.debug_mode
       z_min, z_max = float(z_range[0]), float(z_range[1])
-      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
+      camera_properties_utils.skip_unless(
+          z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
       z_max = min(z_max, zoom_capture_utils.ZOOM_MAX_THRESH * z_min)
-      z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+      if first_api_level <= its_session_utils.ANDROID14_API_LEVEL:
+        z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
+      else:
+        # Here since we're trying to follow a log scale for moving through
+        # zoom steps from min to max we determine smooth_zoom_num_steps from
+        # the following: z_min*(SMOOTH_ZOOM_STEP^x)  = z_max. If we solve for
+        # x, we get the equation below. As an example, if z_min was 1.0
+        # and z_max was 5.0, we would go through our list of zooms tested
+        # [1.0, 1.1,  1.21,  1.331...]
+        smooth_zoom_num_steps = (
+            (math.log(z_max) - math.log(z_min)) / math.log(_SMOOTH_ZOOM_STEP))
+        z_list_logarithmic = np.arange(
+            math.log(z_min), math.log(z_max),
+            (math.log(z_max) - math.log(z_min)) / smooth_zoom_num_steps
+        )
+        z_list = [math.exp(z) for z in z_list_logarithmic]
       z_list = np.append(z_list, z_max)
       logging.debug('Testing zoom range: %s', str(z_list))
 
@@ -92,10 +112,18 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
       # do auto captures over zoom range and find circles with cv2
       img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
       logging.debug('Using auto capture request')
-      cam.do_3a(zoom_ratio=z_min)
-      test_failed = False
       fmt = 'yuv'
-      test_data = {}
+      cam.do_3a(
+          zoom_ratio=z_min,
+          out_surfaces={
+              'format': fmt,
+              'width': size[0],
+              'height': size[1]
+          },
+          repeat_request=None,
+      )
+      test_failed = False
+      test_data = []
       reqs = []
       req = capture_request_utils.auto_capture_request()
       req['android.control.settingsOverride'] = (
@@ -112,7 +140,8 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
 
       # take captures at different zoom ratios
       caps = cam.do_capture(
-          reqs, {'format': fmt, 'width': size[0], 'height': size[1]})
+          reqs, {'format': fmt, 'width': size[0], 'height': size[1]},
+          reuse_session=True)
 
       # Check low latency zoom outputs match result metadata
       for i, cap in enumerate(caps):
@@ -130,38 +159,26 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
         cap_fl = cap['metadata']['android.lens.focalLength']
         radius_tol, offset_tol = test_tols[cap_fl]
 
-        # convert [0, 1] image to [0, 255] and cast as uint8
-        img = image_processing_utils.convert_image_to_uint8(img)
+        # Find the center circle in img and check if it's cropped
+        circle = zoom_capture_utils.find_center_circle(
+            img, img_name, size, scaled_zoom, z_min, debug=debug)
 
-        # Find the center circle in img
-        try:
-          circle = opencv_processing_utils.find_center_circle(
-              img, img_name, _CIRCLE_COLOR, circle_ar_rtol=_CIRCLE_AR_RTOL,
-              circlish_rtol=_CIRCLISH_RTOL,
-              min_area=_MIN_AREA_RATIO*size[0]*size[1]*scaled_zoom*scaled_zoom,
-              min_circle_pts=_MIN_CIRCLE_PTS, debug=debug)
-          if opencv_processing_utils.is_circle_cropped(circle, size):
-            logging.debug('zoom %.2f is too large! Skip further captures',
-                          z_result)
-            break
-        except AssertionError as e:
-          if z_result/z_list[0] >= zoom_capture_utils.ZOOM_MAX_THRESH:
-            break
-          else:
-            raise AssertionError(
-                'No circle detected for zoom ratio <= '
-                f'{zoom_capture_utils.ZOOM_MAX_THRESH}. '
-                'Take pictures according to instructions carefully!') from e
-
-        test_data[i] = {'z': z_result, 'circle': circle, 'r_tol': radius_tol,
-                        'o_tol': offset_tol, 'fl': cap_fl}
+        test_data.append(
+            zoom_capture_utils.ZoomTestData(
+                result_zoom=z_result,
+                circle=circle,
+                radius_tol=radius_tol,
+                offset_tol=offset_tol,
+                focal_length=cap_fl
+            )
+        )
 
       # Since we are zooming in, settings_override may change the minimum zoom
       # value in the result metadata.
       # This is because zoom values like: [1., 2., 3., ..., 10.] may be applied
       # as: [4., 4., 4., .... 9., 10., 10.].
       # If we were zooming out, we would need to change the z_max.
-      z_min = test_data[min(test_data.keys())]['z']
+      z_min = test_data[0].result_zoom
 
       if not zoom_capture_utils.verify_zoom_results(
           test_data, size, z_max, z_min):

@@ -25,6 +25,7 @@ import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
+import android.content.ContentProvider;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -60,10 +61,12 @@ import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
+import androidx.core.content.FileProvider;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
@@ -82,6 +85,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -98,12 +103,10 @@ import java.util.stream.Stream;
 /**
  * Tests for the MediaPlayer API and local video/audio playback.
  *
- * The files in res/raw used by testLocalVideo* are (c) copyright 2008,
- * Blender Foundation / www.bigbuckbunny.org, and are licensed under the Creative Commons
- * Attribution 3.0 License at http://creativecommons.org/licenses/by/3.0/us/.
  */
 @SmallTest
 @RequiresDevice
+@FrameworkSpecificTest
 @NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
@@ -280,12 +283,48 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
     }
 
     @Test
+    public void testPlayContentUri() throws Exception {
+        String testFile = "testmp3_2.mp3";
+        File localFile;
+        try (AssetFileDescriptor mediaFd = getAssetFileDescriptorFor(testFile)) {
+            Environment.getExternalStorageDirectory();
+            File externalFilesDir = mContext.getExternalFilesDir(/* type= */ null);
+            localFile = new File(externalFilesDir, "test_files/" + testFile);
+            localFile.mkdirs();
+            Files.copy(
+                    mediaFd.createInputStream(),
+                    localFile.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        MediaPlayer mediaPlayer = new MediaPlayer();
+        try {
+            Uri contentUri = FileProvider.getUriForFile(
+                    mContext, /* authority= */ "com.android.media.player.cts.provider", localFile);
+            mediaPlayer.setDataSource(mContext, contentUri);
+            mediaPlayer.prepare();
+
+            assertFalse(mediaPlayer.isPlaying());
+            mediaPlayer.start();
+            assertTrue(mediaPlayer.isPlaying());
+
+            // waiting to complete
+            while (mediaPlayer.isPlaying()) {
+                Thread.sleep(SLEEP_TIME);
+            }
+        } finally {
+            mediaPlayer.release();
+            localFile.delete();
+        }
+    }
+
+    @Test
     public void testPlayAudioFromDataURI() throws Exception {
         final int mp3Duration = 34909;
         final int tolerance = 70;
         final int seekDuration = 100;
 
-        // This is "R.raw.testmp3_2", base64-encoded.
+        // This is "testmp3_2.raw", base64-encoded.
         final String res = "testmp3_3.raw";
 
         Preconditions.assertTestFileExists(mInpPrefix + res);
@@ -682,10 +721,17 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
     public void testPlayAudioTwice() throws Exception {
 
         final String res = "camera_click.ogg";
+        AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        int oldVolume = Integer.MIN_VALUE;
 
         Preconditions.assertTestFileExists(mInpPrefix + res);
         MediaPlayer mp = MediaPlayer.create(mContext, Uri.fromFile(new File(mInpPrefix + res)));
         try {
+            // Test requires that the device is not muted. Store the current volume before setting
+            // it to a non-zero value and restore it at the end of the test.
+            oldVolume = am.getStreamVolume(AudioManager.STREAM_MUSIC);
+            am.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0);
+
             mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
             mp.setWakeMode(mContext, PowerManager.PARTIAL_WAKE_LOCK);
 
@@ -706,6 +752,9 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
             listener.release();
         } finally {
             mp.release();
+            if (oldVolume != Integer.MIN_VALUE) {
+                am.setStreamVolume(AudioManager.STREAM_MUSIC, oldVolume, 0);
+            }
         }
     }
 
@@ -2637,6 +2686,13 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
     @Test
     public void testConstructorWithNullContextFails() {
         assertThrows(NullPointerException.class, () -> new MediaPlayer(/*context=*/null));
+    }
+
+    /** {@link ContentProvider} implementation which serves local files using content:// URIs. */
+    public static final class TestFileProvider extends FileProvider {
+        public TestFileProvider() {
+            super(R.xml.media_player_test_content_path);
+        }
     }
 
 }

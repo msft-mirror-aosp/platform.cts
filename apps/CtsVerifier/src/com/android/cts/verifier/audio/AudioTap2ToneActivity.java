@@ -19,9 +19,14 @@ package com.android.cts.verifier.audio;
 import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 
+import android.content.Context;
+import android.media.AudioDeviceCallback;
+import android.media.AudioDeviceInfo;
+import android.media.AudioManager;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -36,8 +41,10 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.analyzers.TapLatencyAnalyzer;
+import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.CircularBufferFloat;
+import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 import com.android.cts.verifier.audio.audiolib.StatUtils;
 import com.android.cts.verifier.audio.audiolib.WaveformView;
 import com.android.cts.verifier.audio.sources.BlipAudioSourceProvider;
@@ -52,6 +59,8 @@ import org.hyphonate.megaaudio.recorder.sinks.AppCallback;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallbackAudioSinkProvider;
 import org.junit.rules.TestName;
 
+import java.util.Locale;
+
 /**
  * CtsVerifier test to measure tap-to-tone latency.
  */
@@ -60,6 +69,9 @@ public class AudioTap2ToneActivity
         extends PassFailButtons.Activity
         implements View.OnClickListener, AppCallback {
     private static final String TAG = "AudioTap2ToneActivity";
+
+    Context mContext;
+    AudioManager mAudioManager;
 
     private boolean mHasMic;
     private boolean mHasSpeaker;
@@ -141,6 +153,10 @@ public class AudioTap2ToneActivity
 
         super.onCreate(savedInstanceState);
 
+        mContext = this;
+
+        mAudioManager = getSystemService(AudioManager.class);
+
         mHasMic = AudioSystemFlags.claimsInput(this);
         mHasSpeaker = AudioSystemFlags.claimsOutput(this);
 
@@ -153,6 +169,10 @@ public class AudioTap2ToneActivity
         boolean claimsProAudio = AudioSystemFlags.claimsProAudio(this);
         boolean claimsLowLatencyAudio = AudioSystemFlags.claimsLowLatencyAudio(this);
 
+        ((TextView) findViewById(R.id.audio_t2t_version))
+                .setText(String.format(Locale.getDefault(),
+                         getString(R.string.version_number_format),
+                         Common.VERSION_CODE));
         ((TextView) findViewById(R.id.audio_t2t_mic))
                 .setText(mHasMic ? yesString : noString);
         ((TextView) findViewById(R.id.audio_t2t_speaker))
@@ -208,6 +228,8 @@ public class AudioTap2ToneActivity
 
         ((Button) findViewById(R.id.tap2tone_clearResults)).setOnClickListener(this);
 
+        getPassButton().setOnClickListener(this);
+
         mSpecView = (TextView) findViewById(R.id.tap2tone_specTxt);
         mResultsView = (TextView) findViewById(R.id.tap2tone_resultTxt);
         mStatsView = (TextView) findViewById(R.id.tap2tone_statsTxt);
@@ -246,7 +268,18 @@ public class AudioTap2ToneActivity
         // MegaAudio Initialization
         StreamBase.setup(this);
 
+        stopAudio();
         calculateTestPass();
+
+        mAudioManager.registerAudioDeviceCallback(new ConnectListener(), new Handler());
+
+        DisplayUtils.setKeepScreenOn(this, true);
+    }
+
+    @Override
+    public void onStop() {
+        stopAudio();
+        super.onStop();
     }
 
     private void startAudio() {
@@ -261,7 +294,7 @@ public class AudioTap2ToneActivity
             mDuplexAudioManager.setNumRecorderChannels(NUM_RECORD_CHANNELS);
         }
 
-        if (mDuplexAudioManager.setupStreams(mApi, BuilderBase.TYPE_JAVA) == StreamBase.OK) {
+        if (mDuplexAudioManager.buildStreams(mApi, BuilderBase.TYPE_JAVA) == StreamBase.OK) {
             mBuffSizeView.setText(
                     getString(R.string.audio_general_play_colon)
                             + mDuplexAudioManager.getNumPlayerBufferFrames()
@@ -284,8 +317,8 @@ public class AudioTap2ToneActivity
             mDuplexAudioManager.stop();
             // is there a teardown method here?
             mIsRecording = false;
-            enableAudioButtons(!mIsRecording, mIsRecording);
         }
+        enableAudioButtons(!mIsRecording, mIsRecording);
     }
 
     private void resetStats() {
@@ -541,6 +574,12 @@ public class AudioTap2ToneActivity
         reportTestResultForApi(TEST_API_NATIVE);
         reportTestResultForApi(TEST_API_JAVA);
 
+        getReportLog().addValue(
+                Common.KEY_VERSION_CODE,
+                Common.VERSION_CODE,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+
         getReportLog().submit();
 
         recordPerfClassResults();
@@ -574,4 +613,22 @@ public class AudioTap2ToneActivity
             }
         }
     }
+
+    private class ConnectListener extends AudioDeviceCallback {
+        ConnectListener() {}
+
+        //
+        // AudioDevicesManager.OnDeviceConnectionListener
+        //
+        @Override
+        public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
+            AudioDeviceUtils.validateUsbDevice(mContext);
+        }
+
+        @Override
+        public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
+
+        }
+    }
+
 }

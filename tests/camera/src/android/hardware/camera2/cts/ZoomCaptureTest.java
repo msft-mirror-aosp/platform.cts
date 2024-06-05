@@ -17,11 +17,13 @@
 package android.hardware.camera2.cts;
 
 import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
 import android.hardware.camera2.params.DynamicRangeProfiles;
+import android.hardware.camera2.params.LensIntrinsicsSample;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
@@ -35,6 +37,7 @@ import android.util.Range;
 import android.util.Size;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,6 +49,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.Test;
 
+import static android.hardware.camera2.CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION;
 import static android.hardware.camera2.cts.CameraTestUtils.CAPTURE_RESULT_TIMEOUT_MS;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import static junit.framework.Assert.*;
@@ -75,7 +79,7 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
     @Test
     @AppModeFull(reason = "Instant apps can't access Test API")
     public void testJpegZoomCapture() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing jpeg zoom capture for Camera " + id);
                 openDevice(id);
@@ -89,7 +93,7 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
     @Test
     @AppModeFull(reason = "Instant apps can't access Test API")
     public void testRawZoomCapture() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing raw zoom capture for camera " + id);
                 openDevice(id);
@@ -111,7 +115,7 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
     @AppModeFull(reason = "Instant apps can't access Test API")
     public void test10bitLogicalZoomCapture() throws Exception {
         final int ZOOM_RATIO_STEPS = 100;
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.v(TAG, "Testing 10-bit logical camera zoom capture for id " + id);
                 openDevice(id);
@@ -217,6 +221,11 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
             listener.getCaptureSequenceLastFrameNumber(
                     seqId, CAPTURE_WAIT_TIMEOUT_MS * candidateZoomRatios.size());
 
+            float lastZoomRatio = Float.NaN;
+            float lastFocalLength = Float.NaN;
+            Rect lastActiveCropRegion = new Rect();
+            String lastActivePhysicalId = new String();
+            float[] lastIntrinsicCalibration = null;
             while (listener.hasMoreResults() && mStaticInfo.isActivePhysicalCameraIdSupported()) {
                 // Validate capture result.
                 TotalCaptureResult result = listener.getTotalCaptureResult(
@@ -235,7 +244,70 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
                             physicalCameraIds.toString(),
                             physicalCameraIds.contains(activePhysicalId));
 
+                    float[] lensIntrinsicCalibration = result.get(CaptureResult.LENS_INTRINSIC_CALIBRATION);
+                    if (lensIntrinsicCalibration != null) {
+                        if (!activePhysicalIdsSeen.contains(activePhysicalId) &&
+                                (lastIntrinsicCalibration != null)) {
+                            mCollector.expectTrue("The lens intrinsic calibration between " +
+                                            "two different physical devices is not expected to " +
+                                            " match",
+                                    !Arrays.equals(lensIntrinsicCalibration,
+                                            lastIntrinsicCalibration));
+                        }
+                        lastIntrinsicCalibration = lensIntrinsicCalibration;
+                    }
+
                     activePhysicalIdsSeen.add(activePhysicalId);
+
+                    // Ensure that the active physical crop region is updated correctly
+                    // when iterating over the zoom ratio within the same active physical camera
+                    Rect activeCropRegion = result.get(
+                            LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION);
+                    if (activeCropRegion != null) {
+                        Float zoomRatio = CameraTestUtils.getValueNotNull(result,
+                                CaptureResult.CONTROL_ZOOM_RATIO);
+                        float focalLength = Float.NaN;
+                        if (lensIntrinsicCalibration != null) {
+                            focalLength = lensIntrinsicCalibration[0];
+                        }
+                        if ((!Float.isNaN(lastZoomRatio)) && (zoomRatio > lastZoomRatio)) {
+                            if (lastActivePhysicalId.equals(activePhysicalId)) {
+                                assertTrue(lastActiveCropRegion.contains(activeCropRegion));
+
+                                if (!Float.isNaN(lastFocalLength)) {
+                                    float digitalZoomApplied =
+                                            ((float) lastActiveCropRegion.width()) /
+                                                    activeCropRegion.width();
+                                    float opticalZoomApplied = (focalLength / lastFocalLength);
+                                    float combinedZoomApplied =
+                                            digitalZoomApplied * opticalZoomApplied;
+                                    float zoomReported = zoomRatio / lastZoomRatio;
+                                    assertTrue("Combined zoom: " + combinedZoomApplied +
+                                                    " too far apart from reported zoom: " +
+                                            zoomReported, Math.abs(
+                                            combinedZoomApplied - zoomReported) <= 0.0001);
+                                }
+                            }
+                        }
+                        lastActivePhysicalId = activePhysicalId;
+                        lastZoomRatio = zoomRatio;
+                        lastActiveCropRegion = activeCropRegion;
+                        lastFocalLength = focalLength;
+                    }
+
+                    LensIntrinsicsSample [] samples = result.get(
+                            CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES);
+                    if (samples != null) {
+                        long previousTs = Long.MIN_VALUE;
+                        float[] previousIntrinicArray = new float[5];
+                        for (LensIntrinsicsSample sample : samples) {
+                            assertTrue(previousTs < sample.getTimestampNanos());
+                            assertTrue(Arrays.hashCode(previousIntrinicArray) !=
+                                    Arrays.hashCode(sample.getLensIntrinsics()));
+                            previousIntrinicArray = sample.getLensIntrinsics();
+                            previousTs = sample.getTimestampNanos();
+                        }
+                    }
                 }
             }
             // stop capture.

@@ -22,20 +22,37 @@ import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
 import android.net.Uri
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @AppModeFull(reason = "Instant apps cannot install packages")
+@ScreenRecord
 class InstallSourceInfoTest : PackageInstallerTestBase() {
     companion object {
         const val SHELL_PACKAGE_NAME = "com.android.shell"
     }
 
     private val ourPackageName = context.packageName
+
+    @Before
+    fun prepareDevice() {
+        // Unlock screen.
+        uiDevice.executeShellCommand("input keyevent KEYCODE_WAKEUP")
+        // Dismiss keyguard, in case it's set as "Swipe to unlock".
+        uiDevice.executeShellCommand("wm dismiss-keyguard")
+        // Collapse notifications.
+        uiDevice.executeShellCommand("cmd statusbar collapse")
+        // Dismiss all system dialogs before launch test.
+        uiDevice.executeShellCommand("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS")
+        // Disable AiAi.
+        uiDevice.executeShellCommand("settings put secure odi_captions_enabled 0")
+    }
 
     @Test
     fun installViaIntent() {
@@ -45,7 +62,7 @@ class InstallSourceInfoTest : PackageInstallerTestBase() {
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         // Install should have succeeded
-        assertThat(installation.get(TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)
+        assertThat(installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)
 
         val info = pm.getInstallSourceInfo(TEST_APK_PACKAGE_NAME)
         assertThat(info.installingPackageName).isEqualTo(packageInstallerPackageName)

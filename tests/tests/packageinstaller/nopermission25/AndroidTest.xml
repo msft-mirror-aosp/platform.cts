@@ -17,7 +17,7 @@
 
 <configuration description="Config for CTS External Sources negative test cases">
     <option name="test-suite-tag" value="cts" />
-    <option name="config-descriptor:metadata" key="component" value="framework" />
+    <option name="config-descriptor:metadata" key="component" value="permissions" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
@@ -25,6 +25,7 @@
 
     <!-- Disable package verification since we're using an older target sdk. -->
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
+        <option name="set-global-setting" key="verifier_engprod" value="1" />
         <option name="set-global-setting" key="verifier_verify_adb_installs" value="0" />
         <option name="restore-settings" value="true" />
         <!-- Avoid restarting after changing the setting. -->

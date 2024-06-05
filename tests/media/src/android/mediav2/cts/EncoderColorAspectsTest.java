@@ -43,6 +43,7 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 
@@ -216,26 +217,16 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
     }
 
-    private void tryEncoderOutput(long timeOutUs) throws InterruptedException {
+    private void tryEncoderOutput() throws InterruptedException {
         if (!mAsyncHandle.hasSeenError() && !mSawOutputEOS) {
-            int retry = 0;
             while (mReviseLatency) {
-                if (mAsyncHandle.hasOutputFormatChanged()) {
-                    mReviseLatency = false;
-                    int actualLatency = mAsyncHandle.getOutputFormat()
-                            .getInteger(MediaFormat.KEY_LATENCY, mLatency);
-                    if (mLatency < actualLatency) {
-                        mLatency = actualLatency;
-                        return;
-                    }
-                } else {
-                    if (retry > RETRY_LIMIT) {
-                        throw new InterruptedException(
-                                "did not receive output format changed for encoder after " +
-                                        Q_DEQ_TIMEOUT_US * RETRY_LIMIT + " us");
-                    }
-                    Thread.sleep(Q_DEQ_TIMEOUT_US / 1000);
-                    retry++;
+                mAsyncHandle.waitOnFormatChange();
+                mReviseLatency = false;
+                int actualLatency = mAsyncHandle.getOutputFormat()
+                        .getInteger(MediaFormat.KEY_LATENCY, mLatency);
+                if (mLatency < actualLatency) {
+                    mLatency = actualLatency;
+                    return;
                 }
             }
             Pair<Integer, MediaCodec.BufferInfo> element = mAsyncHandle.getOutput();
@@ -264,7 +255,7 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
             while (!mAsyncHandle.hasSeenError() && !mSawInputEOS &&
                     mInputCount < frameLimit) {
                 if (mInputCount - mOutputCount > mLatency) {
-                    tryEncoderOutput(CodecTestBase.Q_DEQ_TIMEOUT_US);
+                    tryEncoderOutput();
                 }
                 mEGLWindowInpSurface.makeCurrent();
                 generateSurfaceFrame();
@@ -297,6 +288,7 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
             "android.media.MediaFormat#KEY_COLOR_TRANSFER"})
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
+    @FrameworkSpecificTest
     @NonMainlineTest
     public void testColorAspectsEndToEnd() throws IOException, InterruptedException {
         doFullColorAspects(true /* includeMuxing */);

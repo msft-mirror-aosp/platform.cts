@@ -43,6 +43,7 @@ import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.provider.MediaStore;
 
 import androidx.annotation.NonNull;
@@ -51,7 +52,7 @@ import androidx.test.core.app.ApplicationProvider;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.nene.TestApis;
 
 import org.junit.After;
@@ -73,6 +74,7 @@ import java.io.InputStream;
  * Test {@link ContentProvider}.
  */
 @RunWith(BedsteadJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ContentProviderTest {
     private static final String TEST_PACKAGE_NAME = "android.content.cts";
     private static final String TEST_FILE_NAME = "testFile.tmp";
@@ -83,8 +85,6 @@ public class ContentProviderTest {
     public static final DeviceState sDeviceState = new DeviceState();
 
     private static final Context sContext = ApplicationProvider.getApplicationContext();
-    private static final TestApis sTestApis = new TestApis();
-
     @After
     public void tearDown() throws Exception {
         sContext.deleteDatabase(TEST_DB_NAME);
@@ -384,7 +384,7 @@ public class ContentProviderTest {
     @AppModeFull
     public void createContentUriForUser_returnsCorrectUri() {
         final ContentResolver profileContentResolver =
-                sTestApis.context().androidContextAsUser(sDeviceState.workProfile())
+                TestApis.context().androidContextAsUser(sDeviceState.workProfile())
                         .getContentResolver();
         final String testContentDisplayName = "testContent.mp3";
         final Uri workProfileUriWithoutUserId = createAndInsertTestAudioFile(

@@ -48,8 +48,6 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.net.Uri;
-import android.os.Build;
-import android.os.SystemProperties;
 import android.util.DisplayMetrics;
 import android.util.Size;
 import android.util.TypedValue;
@@ -59,7 +57,6 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.RequiresDevice;
 
-import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
@@ -250,13 +247,8 @@ public class ImageDecoderTest {
     @Test
     @RequiresDevice
     public void testDecode10BitHeif() {
-        assumeTrue(
-            "This test only applies to Android 13 (T) or newer. Skip the test.",
-            ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU));
-        assumeTrue(
-            "Test only applies to VNDK version 33 (T) or newer. Skip the test.",
-            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                >= Build.VERSION_CODES.TIRAMISU);
+        assumeTrue("HEIF is not supported on this device, skip this test.",
+                ImageDecoder.isMimeTypeSupported("image/heif"));
         assumeTrue("No 10-bit HEVC decoder, skip the test.", has10BitHEVCDecoder());
 
         Bitmap.Config expectedConfig = Bitmap.Config.RGBA_1010102;
@@ -293,10 +285,7 @@ public class ImageDecoderTest {
                 ImageDecoder.isMimeTypeSupported("image/avif"));
 
         try {
-            ImageDecoder.Source src = ImageDecoder
-                .createSource(getResources(), R.raw.avif_yuv_420_10bit);
-            assertNotNull(src);
-            Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, source) -> {
+            Bitmap bm = decodeUnscaledBitmap(R.raw.avif_yuv_420_10bit, (decoder, info, source) -> {
                 decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
             });
             assertNotNull(bm);
@@ -308,16 +297,28 @@ public class ImageDecoderTest {
         }
     }
 
+    private Bitmap decodeUnscaledBitmap(
+            int resId, ImageDecoder.OnHeaderDecodedListener listener) throws IOException {
+        // For tests which rely on ImageDecoder *not* scaling to account for density.
+        // Temporarily change the DisplayMetrics to prevent that scaling.
+        Resources res = getResources();
+        final int originalDensity = res.getDisplayMetrics().densityDpi;
+        res.getDisplayMetrics().densityDpi = DisplayMetrics.DENSITY_DEFAULT;
+
+        try {
+            ImageDecoder.Source src = ImageDecoder.createSource(res, resId);
+            assertNotNull(src);
+            return ImageDecoder.decodeBitmap(src, listener);
+        } finally {
+            res.getDisplayMetrics().densityDpi = originalDensity;
+        }
+    }
+
     @Test
     @RequiresDevice
     public void testDecode10BitHeifWithLowRam() {
-        assumeTrue(
-            "This test only applies to Android 13 (T) or newer. Skip the test.",
-            ApiLevelUtil.isFirstApiAtLeast(Build.VERSION_CODES.TIRAMISU));
-        assumeTrue(
-            "Test only applies to VNDK version 33 (T) or newer. Skip the test.",
-            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
-                >= Build.VERSION_CODES.TIRAMISU);
+        assumeTrue("HEIF is not supported on this device, skip this test.",
+                ImageDecoder.isMimeTypeSupported("image/heif"));
         assumeTrue("No 10-bit HEVC decoder, skip the test.", has10BitHEVCDecoder());
 
         ImageDecoder.Source src = ImageDecoder.createSource(getResources(), R.raw.heifimage_10bit);
@@ -347,7 +348,7 @@ public class ImageDecoderTest {
                 R.raw.avif_yuv_420_10bit);
         assertNotNull(src);
         try {
-            Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, source) -> {
+            Bitmap bm = decodeUnscaledBitmap(R.raw.avif_yuv_420_10bit, (decoder, info, source) -> {
                 decoder.setMemorySizePolicy(ImageDecoder.MEMORY_POLICY_LOW_RAM);
                 decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
             });
@@ -2471,6 +2472,10 @@ public class ImageDecoderTest {
                     ColorSpace.get(ColorSpace.Named.LINEAR_SRGB)),
             new AssetRecord("grayscale-16bit-linearSrgb.png", 32, 32, true, false, true,
                     ColorSpace.get(ColorSpace.Named.LINEAR_EXTENDED_SRGB)),
+            new AssetRecord("red-hlg-profile.png", 100, 100, false, false, true,
+                    ColorSpace.get(ColorSpace.Named.BT2020_HLG)),
+            new AssetRecord("red-pq-profile.png", 100, 100, false, false, true,
+                    ColorSpace.get(ColorSpace.Named.BT2020_PQ)),
         };
     }
 

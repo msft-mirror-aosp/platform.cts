@@ -25,9 +25,7 @@ import static android.inputmethodservice.cts.common.DeviceEventConstants.RECEIVE
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
-import android.inputmethodservice.cts.common.ComponentNameUtils;
 import android.inputmethodservice.cts.common.EditTextAppConstants;
 import android.inputmethodservice.cts.common.EventProviderConstants.EventTableConstants;
 import android.inputmethodservice.cts.common.Ime1Constants;
@@ -38,7 +36,6 @@ import android.inputmethodservice.cts.common.test.TestInfo;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 
-import com.android.compatibility.common.util.FeatureUtil;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -63,30 +60,12 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
     private static final long WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
     private static final long PACKAGE_OP_TIMEOUT = TimeUnit.SECONDS.toMillis(15);
     private static final long POLLING_INTERVAL = 100;
-    private static final String COMPAT_CHANGE_DO_NOT_DOWNSCALE_TO_1080P_ON_TV =
-            "DO_NOT_DOWNSCALE_TO_1080P_ON_TV";
-
-    /**
-     * {@code true} if {@link #tearDown()} needs to be fully executed.
-     *
-     * <p>When {@link #setUp()} is interrupted by {@link org.junit.AssumptionViolatedException}
-     * before the actual setup tasks are executed, all the corresponding cleanup tasks should also
-     * be skipped.</p>
-     *
-     * <p>Once JUnit 5 becomes available in Android, we can remove this by moving the assumption
-     * checks into a non-static {@link org.junit.BeforeClass} method.</p>
-     */
-    private boolean mNeedsTearDown = false;
 
     /**
      * Set up test case.
      */
     @Before
     public void setUp() throws Exception {
-        // Skip whole tests when DUT has no android.software.input_methods feature.
-        assumeTrue(hasDeviceFeature(ShellCommandUtils.FEATURE_INPUT_METHODS));
-        mNeedsTearDown = true;
-
         cleanUpTestImes();
         installPackage(DeviceTestConstants.APK, "-r");
         shell(ShellCommandUtils.deleteContent(EventTableConstants.CONTENT_URI));
@@ -97,9 +76,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
      */
     @After
     public void tearDown() throws Exception {
-        if (!mNeedsTearDown) {
-            return;
-        }
         shell(ShellCommandUtils.resetImes());
     }
 
@@ -141,10 +117,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         options.setForceQueryable(forceQueryable);
         installPackage(options);
         waitUntilImesAreAvailable(imeId);
-
-        // Compatibility scaling may affect how watermarks are rendered in such a way so that we
-        // won't be able to detect them on screenshots.
-        disableAppCompatScalingForPackageIfNeeded(ComponentNameUtils.retrievePackageName(imeId));
     }
 
     /**
@@ -152,21 +124,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
      */
     private void installImePackageSync(String apkFileName, String imeId) throws Exception {
         installImePackageSync(apkFileName, imeId, true /* forceQueryable */);
-    }
-
-    private void disableAppCompatScalingForPackageIfNeeded(String packageName) throws Exception {
-        if (FeatureUtil.isTV(getDevice())) {
-            // On 4K TV devices packages that target API levels below S run in a compat mode where
-            // they render UI to a 1080p surface which then gets scaled up x2 (to the device's
-            // "native" 4K resolution).
-            // When a test IME package runs in such compatibility mode, the watermarks it renders
-            // would be scaled up x2 as well, thus we won't be able detect them on (4K) screenshots
-            // we take during tests.
-            // Note, that this command will have no effect if the device is not a 4K TV, or if the
-            // package's "targetSdk" level is S or above.
-            shell(ShellCommandUtils.enableCompatChange(
-                    COMPAT_CHANGE_DO_NOT_DOWNSCALE_TO_1080P_ON_TV, packageName));
-        }
     }
 
     private void installPossibleInstantPackage(
@@ -178,8 +135,8 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         }
     }
 
-    private void testSwitchIme(boolean instant) throws Exception {
-        sendTestStartEvent(DeviceTestConstants.TEST_SWITCH_IME1_TO_IME2);
+    private void testSwitchToHandwritingIme(boolean instant) throws Exception {
+        sendTestStartEvent(DeviceTestConstants.TEST_SWITCH_TO_HANDWRITING_INPUT);
         installPossibleInstantPackage(
                 EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
         shell(ShellCommandUtils.waitForBroadcastBarrier());
@@ -191,127 +148,25 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
         shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
 
-        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_SWITCH_IME1_TO_IME2));
+        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_SWITCH_TO_HANDWRITING_INPUT));
     }
 
     /**
-     * Test IME switching APIs for full (non-instant) apps.
+     * Test IME switching to stylus handwriting capable IME reports so for full (non-instant) apps.
      */
     @AppModeFull
     @Test
-    public void testSwitchImeFull() throws Exception {
-        testSwitchIme(false);
+    public void testSwitchToHandwritingImeFull() throws Exception {
+        testSwitchToHandwritingIme(false);
     }
 
     /**
-     * Test IME switching APIs for instant apps.
+     * TTest IME switching to stylus handwriting capable IME reports so for instant apps.
      */
     @AppModeInstant
     @Test
-    public void testSwitchImeInstant() throws Exception {
-        testSwitchIme(true);
-    }
-
-    private void testUninstallCurrentIme(boolean instant) throws Exception {
-        sendTestStartEvent(DeviceTestConstants.TEST_CREATE_IME1);
-        installPossibleInstantPackage(
-                EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
-        installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        waitUntilImesAreEnabled(Ime1Constants.IME_ID);
-
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
-        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_CREATE_IME1));
-
-        uninstallPackageSyncIfExists(Ime1Constants.PACKAGE);
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        assertImeNotSelectedInSecureSettings(Ime1Constants.IME_ID, WAIT_TIMEOUT);
-    }
-
-    /**
-     * Test uninstalling the currently selected IME for full (non-instant) apps.
-     */
-    @AppModeFull
-    @Test
-    public void testUninstallCurrentImeFull() throws Exception {
-        testUninstallCurrentIme(false);
-    }
-
-    /**
-     * Test uninstalling the currently selected IME for instant apps.
-     */
-    @AppModeInstant
-    @Test
-    public void testUninstallCurrentImeInstant() throws Exception {
-        testUninstallCurrentIme(true);
-    }
-
-    private void testDisableCurrentIme(boolean instant) throws Exception {
-        sendTestStartEvent(DeviceTestConstants.TEST_CREATE_IME1);
-        installPossibleInstantPackage(
-                EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
-        installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        waitUntilImesAreEnabled(Ime1Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
-        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_CREATE_IME1));
-
-        shell(ShellCommandUtils.disableIme(Ime1Constants.IME_ID));
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        assertImeNotSelectedInSecureSettings(Ime1Constants.IME_ID, WAIT_TIMEOUT);
-    }
-
-    /**
-     * Test disabling the currently selected IME for full (non-instant) apps.
-     */
-    @AppModeFull
-    @Test
-    public void testDisableCurrentImeFull() throws Exception {
-        testDisableCurrentIme(false);
-    }
-
-    /**
-     * Test disabling the currently selected IME for instant apps.
-     */
-    @AppModeInstant
-    @Test
-    public void testDisableCurrentImeInstant() throws Exception {
-        testDisableCurrentIme(true);
-    }
-
-    private void testSwitchInputMethod(boolean instant) throws Exception {
-        sendTestStartEvent(DeviceTestConstants.TEST_SWITCH_INPUTMETHOD);
-        installPossibleInstantPackage(
-                EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
-        installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
-        installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID));
-        waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
-
-        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_SWITCH_INPUTMETHOD));
-    }
-
-    /**
-     * Test "InputMethodService#switchInputMethod" API for full (non-instant) apps.
-     */
-    @AppModeFull
-    @Test
-    public void testSwitchInputMethodFull() throws Exception {
-        testSwitchInputMethod(false);
-    }
-
-    /**
-     * Test "InputMethodService#switchInputMethod" API for instant apps.
-     */
-    @AppModeInstant
-    @Test
-    public void testSwitchInputMethodInstant() throws Exception {
-        testSwitchInputMethod(true);
+    public void testSwitchToHandwritingImeInstant() throws Exception {
+        testSwitchToHandwritingIme(true);
     }
 
     private void testSwitchToNextInput(boolean instant, boolean imeForceQueryable)
@@ -486,46 +341,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
     @Test
     public void testInputUnbindsOnAppStopInstant() throws Exception {
         testInputUnbindsOnAppStop(true);
-    }
-
-    private void testImeVisibilityAfterImeSwitching(boolean instant) throws Exception {
-        runWithRetries(3, () -> {
-            sendTestStartEvent(DeviceTestConstants.TEST_SWITCH_IME1_TO_IME2);
-            installPossibleInstantPackage(
-                    EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
-            installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
-            installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID);
-            shell(ShellCommandUtils.waitForBroadcastBarrier());
-            shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-            shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID));
-            waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
-            shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
-
-            assertTrue(runDeviceTestMethod(
-                    DeviceTestConstants.TEST_IME_VISIBILITY_AFTER_IME_SWITCHING));
-        });
-    }
-
-    /**
-     * Test if IMEs remain to be visible after switching to other IMEs for full (non-instant) apps.
-     *
-     * <p>Regression test for Bug 152876819.</p>
-     */
-    @AppModeFull
-    @Test
-    public void testImeVisibilityAfterImeSwitchingFull() throws Exception {
-        testImeVisibilityAfterImeSwitching(false);
-    }
-
-    /**
-     * Test if IMEs remain to be visible after switching to other IMEs for instant apps.
-     *
-     * <p>Regression test for Bug 152876819.</p>
-     */
-    @AppModeInstant
-    @Test
-    public void testImeVisibilityAfterImeSwitchingInstant() throws Exception {
-        testImeVisibilityAfterImeSwitching(true);
     }
 
     private void testImeSwitchingWithoutWindowFocusAfterDisplayOffOn(boolean instant)

@@ -16,10 +16,12 @@
 
 package android.keystore.cts;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 
+import android.hardware.biometrics.BiometricPrompt;
 import android.keystore.cts.util.ImportedKey;
 import android.keystore.cts.util.TestUtils;
 import android.security.keystore.KeyGenParameterSpec;
@@ -239,6 +241,15 @@ public class KeyAgreementTest {
                 + " throw an InvalidKeyException.", InvalidKeyException.class, () -> {
                 ka.doPhase(kp.getPublic(), true);
             });
+    }
+
+    @Test
+    @ApiTest(apis = "android.hardware.biometrics.BiometricPrompt.CryptoObject#getKeyAgreement")
+    public void testCryptoObjectReturnsCorrectKeyAgreement() throws Exception {
+        KeyAgreement keyAgreement = getKeyStoreKeyAgreement();
+        BiometricPrompt.CryptoObject cryptoObject = new BiometricPrompt.CryptoObject(keyAgreement);
+
+        assertEquals(keyAgreement, cryptoObject.getKeyAgreement());
     }
 
     private static KeyPair generateEphemeralAndroidKeyPair() throws Exception {

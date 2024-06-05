@@ -16,7 +16,6 @@
 
 package android.view.surfacecontrol.cts;
 
-import static android.server.wm.WindowManagerState.getLogicalDisplaySize;
 import static android.view.cts.util.ASurfaceControlTestUtils.TransactionCompleteListener;
 import static android.view.cts.util.ASurfaceControlTestUtils.applyAndDeleteSurfaceTransaction;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceControl_createFromWindow;
@@ -30,20 +29,19 @@ import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction
 import static android.view.cts.util.ASurfaceControlTestUtils.reparent;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.support.test.uiautomator.UiObjectNotFoundException;
-import android.test.suitebuilder.annotation.LargeTest;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.cts.surfacevalidator.CapturedActivity;
 import android.view.cts.surfacevalidator.MultiFramePixelChecker;
 import android.view.cts.surfacevalidator.SurfaceControlTestCase;
 
+import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiObjectNotFoundException;
 
 import org.junit.After;
 import org.junit.Before;
@@ -92,9 +90,6 @@ public class ASurfaceControlBackPressureTest {
     @Before
     public void setup() {
         mActivity = mActivityRule.getActivity();
-        mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
-        mActivity.setMinimumCaptureDurationMs(1000);
-        assumeFalse(mActivity.isOnWatch());
     }
 
     @After
@@ -236,18 +231,16 @@ public class ASurfaceControlBackPressureTest {
             }
         };
 
-        MultiFramePixelChecker PixelChecker = new MultiFramePixelChecker(colors) {
+        MultiFramePixelChecker pixelChecker = new MultiFramePixelChecker(colors) {
             @Override
             public boolean checkPixels(int pixelCount, int width, int height) {
                 return pixelCount > 2000 && pixelCount < 3000;
             }
         };
 
-        mActivity.verifyTest(new SurfaceControlTestCase(callback, null /* animation factory */,
-                        PixelChecker,
+        mActivity.verifyTest(new SurfaceControlTestCase(callback, pixelChecker,
                         DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
-                        DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
-                        true /* checkSurfaceViewBoundsOnly */),
+                        DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT),
                 mName);
     }
 
@@ -268,7 +261,7 @@ public class ASurfaceControlBackPressureTest {
             }
         };
 
-        MultiFramePixelChecker PixelChecker = new MultiFramePixelChecker(colors) {
+        MultiFramePixelChecker pixelChecker = new MultiFramePixelChecker(colors) {
             @Override
             public boolean checkPixels(int pixelCount, int width, int height) {
                 return pixelCount > 2000 && pixelCount < 3000;
@@ -276,11 +269,9 @@ public class ASurfaceControlBackPressureTest {
         };
 
         CapturedActivity.TestResult result = mActivity.runTest(new SurfaceControlTestCase(callback,
-                null /* animation factory */,
-                PixelChecker,
+                pixelChecker,
                 DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
-                DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
-                true /* checkSurfaceViewBoundsOnly */));
+                DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT));
 
         assertTrue(result.passFrames > 0);
 

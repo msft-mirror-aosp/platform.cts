@@ -30,19 +30,18 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.IBinder;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
 import android.util.ArraySet;
 
 import androidx.annotation.NonNull;
+import androidx.window.extensions.embedding.ActivityStack;
 import androidx.window.extensions.embedding.EmbeddingRule;
 import androidx.window.extensions.embedding.SplitInfo;
 import androidx.window.extensions.embedding.SplitPairRule;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -57,7 +56,6 @@ import java.util.stream.Collectors;
  * Build/Install/Run:
  *     atest CtsWindowManagerJetpackTestCases:ActivityStackApisTests
  */
-@Ignore("It's only available after Window Manager Extensions vendor API level 5.")
 public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
     @ApiTest(apis = {"androidx.window.extensions.embedding.ActivityEmbeddingComponent"
             + "#finishActivityStacks"})
@@ -73,8 +71,8 @@ public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
 
         final SplitInfo splitInfo = getSplitInfo(primaryActivity, secondaryActivity);
 
-        mActivityEmbeddingComponent.finishActivityStacks(Collections.singleton(
-                splitInfo.getPrimaryActivityStack().getToken()));
+        mActivityEmbeddingComponent.finishActivityStacksWithTokens(Collections.singleton(
+                splitInfo.getPrimaryActivityStack().getActivityStackToken()));
 
         waitAndAssertFinishing(primaryActivity);
         waitAndAssertResumedAndFillsTask(secondaryActivity);
@@ -97,8 +95,8 @@ public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
 
         final SplitInfo splitInfo = getSplitInfo(primaryActivity, secondaryActivity);
 
-        mActivityEmbeddingComponent.finishActivityStacks(Collections.singleton(
-                splitInfo.getSecondaryActivityStack().getToken()));
+        mActivityEmbeddingComponent.finishActivityStacksWithTokens(Collections.singleton(
+                splitInfo.getSecondaryActivityStack().getActivityStackToken()));
 
         waitAndAssertFinishing(secondaryActivity);
         waitAndAssertResumedAndFillsTask(primaryActivity);
@@ -160,15 +158,16 @@ public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
                 TestActivityWithId.class, splitPairRuleAC, "activityC",
                 mSplitInfoConsumer);
 
-        final Set<IBinder> secondaryActivityStacks = mSplitInfoConsumer.getLastReportedValue()
+        final Set<ActivityStack.Token> secondaryActivityStacks = mSplitInfoConsumer
+                .getLastReportedValue()
                 .stream()
                 .filter(splitInfo ->
                         splitInfo.getPrimaryActivityStack().getActivities().contains(activityA))
-                .map(splitInfo -> splitInfo.getSecondaryActivityStack().getToken())
+                .map(splitInfo -> splitInfo.getSecondaryActivityStack().getActivityStackToken())
                 .collect(Collectors.toSet());
         assertEquals(2, secondaryActivityStacks.size());
 
-        mActivityEmbeddingComponent.finishActivityStacks(secondaryActivityStacks);
+        mActivityEmbeddingComponent.finishActivityStacksWithTokens(secondaryActivityStacks);
 
         waitAndAssertFinishing(activityB);
         waitAndAssertFinishing(activityC);

@@ -16,7 +16,6 @@
 
 package android.view.cts;
 
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Display.INVALID_DISPLAY;
 import static android.view.InputDevice.SOURCE_JOYSTICK;
 import static android.view.KeyEvent.FLAG_CANCELED;
@@ -30,11 +29,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.Manifest;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.graphics.Point;
 import android.hardware.input.InputManager;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyCharacterMap;
@@ -50,6 +51,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.Before;
@@ -65,6 +67,7 @@ import java.util.List;
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class VerifyInputEventTest {
     private static final int NANOS_PER_MILLISECOND = 1000000;
     private static final float EPSILON = 0.001f;
@@ -74,7 +77,12 @@ public class VerifyInputEventTest {
     private UiAutomation mAutomation;
     private InputEventInterceptTestActivity mActivity;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<InputEventInterceptTestActivity> mActivityRule =
             new ActivityTestRule<>(InputEventInterceptTestActivity.class);
 
@@ -307,12 +315,17 @@ public class VerifyInputEventTest {
         return mActivity.mMotionEvents.poll();
     }
 
-    private static void compareKeys(KeyEvent keyEvent, VerifiedInputEvent verified) {
+    private void compareKeys(KeyEvent keyEvent, VerifiedInputEvent verified) {
         assertEquals(INJECTED_EVENT_DEVICE_ID, verified.getDeviceId());
         assertEquals(keyEvent.getEventTime() * NANOS_PER_MILLISECOND,
                 verified.getEventTimeNanos());
         assertEquals(keyEvent.getSource(), verified.getSource());
-        assertEquals(INVALID_DISPLAY, verified.getDisplayId());
+        // Currently, input is not always setting the target display id for focused events.
+        // However, when it does, ensure that the target display id of the event matches
+        // the display id of the activity.
+        if (keyEvent.getDisplayId() != INVALID_DISPLAY) {
+            assertEquals(mActivity.getDisplayId(), verified.getDisplayId());
+        }
 
         assertTrue(verified instanceof VerifiedKeyEvent);
         VerifiedKeyEvent verifiedKey = (VerifiedKeyEvent) verified;
@@ -327,12 +340,12 @@ public class VerifyInputEventTest {
         assertEquals(keyEvent.getRepeatCount(), verifiedKey.getRepeatCount());
     }
 
-    private static void compareMotions(MotionEvent motionEvent, VerifiedInputEvent verified) {
+    private void compareMotions(MotionEvent motionEvent, VerifiedInputEvent verified) {
         assertEquals(INJECTED_EVENT_DEVICE_ID, verified.getDeviceId());
         assertEquals(motionEvent.getEventTime() * NANOS_PER_MILLISECOND,
                 verified.getEventTimeNanos());
         assertEquals(motionEvent.getSource(), verified.getSource());
-        assertEquals(DEFAULT_DISPLAY, verified.getDisplayId());
+        assertEquals(mActivity.getDisplayId(), verified.getDisplayId());
 
         assertTrue(verified instanceof VerifiedMotionEvent);
         VerifiedMotionEvent verifiedMotion = (VerifiedMotionEvent) verified;

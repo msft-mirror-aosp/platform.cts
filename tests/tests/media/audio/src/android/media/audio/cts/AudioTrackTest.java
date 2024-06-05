@@ -41,6 +41,7 @@ import android.media.metrics.MediaMetricsManager;
 import android.media.metrics.PlaybackSession;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 import android.util.Log;
 
@@ -59,6 +60,7 @@ import java.nio.ShortBuffer;
 import java.util.concurrent.Executor;
 
 @NonMainlineTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioTrackTest {
     private String TAG = "AudioTrackTest";
@@ -2349,13 +2351,14 @@ public class AudioTrackTest {
             Thread.sleep(lastCheckMs);
             final int position2 = track.getPlaybackHeadPosition();
 
-            final int tolerance60MsInFrames = sampleRate * 60 / 1000;
+            final int toleranceMs = isLowLatencyDevice() ? 60 : 100;
+            final int toleranceInFrames = toleranceMs * sampleRate / 1000;
             final int expected = lastCheckMs * sampleRate / 1000;
             final int actual = position2 - position1;
 
             // Log.d(TAG, "Variable Playback: expected(" + expected + ")  actual(" + actual
             //        + ")  diff(" + (expected - actual) + ")");
-            assertEquals(expected, actual, tolerance60MsInFrames);
+            assertEquals(expected, actual, toleranceInFrames);
             track.stop();
         }
         track.release();
@@ -3156,6 +3159,87 @@ public class AudioTrackTest {
             audioTrack.play();
 
             validateWriteStartsStream(audioTrack, audioTrack.getStartThresholdInFrames());
+        } finally {
+            if (audioTrack != null) {
+                audioTrack.release();
+            }
+        }
+    }
+
+    // Tests that the getPlaybackHeadPosition is 0 after creating the track and before starting
+    // to play even after setStartThresholdInFrames is called
+    @Test
+    public void testZeroPositionStartThresholdInFrames() throws Exception {
+        if (!hasAudioOutput()) {
+            return;
+        }
+
+        AudioTrack audioTrack = null;
+        try {
+            final int TEST_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
+            final int TEST_RATE = 48000;
+            final int TEST_CHANNELS = AudioFormat.CHANNEL_OUT_MONO;
+
+            // 1 second buffer
+            final int buffSizeInBytes = TEST_RATE *
+                    AudioFormat.channelCountFromOutChannelMask(TEST_CHANNELS) *
+                    AudioFormat.getBytesPerSample(TEST_ENCODING);
+
+            // Build our audiotrack
+            audioTrack = new AudioTrack.Builder()
+                    .setAudioFormat(new AudioFormat.Builder()
+                            .setEncoding(TEST_ENCODING)
+                            .setChannelMask(TEST_CHANNELS)
+                            .setSampleRate(TEST_RATE)
+                            .build())
+                    .setBufferSizeInBytes(buffSizeInBytes)
+                    .build();
+
+            int bufferSize = audioTrack.getBufferSizeInFrames();
+            final short[] bufferData = new short[bufferSize];
+            // Use a small part of the buffer size for the frames data
+            int frames = bufferSize / 4;
+            int errorMargin = frames;
+            final short[] data = new short[frames];
+
+            audioTrack.write(data, 0 /* offsetInShorts */, data.length);
+            Thread.sleep(START_THRESHOLD_SLEEP_MILLIS);
+
+            assertEquals("PlaybackHeadPosition should be 0 before starting playback.",
+                    0 /* expectedFrames */, audioTrack.getPlaybackHeadPosition());
+
+            // set a start threshold smaller than the initial buffer size, but larger
+            // than the already written data
+            audioTrack.setStartThresholdInFrames(3 * frames);
+            Thread.sleep(START_THRESHOLD_SLEEP_MILLIS);
+
+            assertEquals("PlaybackHeadPosition should be 0 before starting playback and setting"
+                            + " the startThresholdInFrames.",
+                    0 /* expectedFrames */, audioTrack.getPlaybackHeadPosition());
+
+            // write some more data, but not enough to start playback
+            audioTrack.write(data, 0 /* offsetInShorts */, data.length);
+            Thread.sleep(START_THRESHOLD_SLEEP_MILLIS);
+
+            assertEquals("PlaybackHeadPosition should be 0 before starting playback and setting"
+                            + " the startThresholdInFrames and writing insufficient data.",
+                    0 /* expectedFrames */, audioTrack.getPlaybackHeadPosition());
+
+            // write some more data, a full buffer, more than the threshold
+            audioTrack.write(bufferData, 0 /* offsetInShorts */, data.length);
+            Thread.sleep(START_THRESHOLD_SLEEP_MILLIS);
+
+            assertEquals("PlaybackHeadPosition should be 0 before starting playback and setting"
+                            + " the startThresholdInFrames and writing sufficient data.",
+                    0 /* expectedFrames */, audioTrack.getPlaybackHeadPosition());
+
+            audioTrack.play();
+            int playbackHeadPosition = audioTrack.getPlaybackHeadPosition();
+
+            assertTrue("PlaybackHeadPosition should be almost 0 immediately after starting playback"
+                            + " with set startThresholdInFrames and sufficient written data,"
+                            + " but is " + playbackHeadPosition + ", with margin " + errorMargin,
+                    playbackHeadPosition < errorMargin);
         } finally {
             if (audioTrack != null) {
                 audioTrack.release();

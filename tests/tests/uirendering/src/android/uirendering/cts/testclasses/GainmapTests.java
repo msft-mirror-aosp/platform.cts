@@ -16,38 +16,59 @@
 
 package android.uirendering.cts.testclasses;
 
+import static junit.framework.Assert.assertFalse;
+
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorSpace;
 import android.graphics.Gainmap;
 import android.graphics.HardwareBufferRenderer;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.Picture;
 import android.graphics.RecordingCanvas;
 import android.graphics.RenderNode;
+import android.graphics.Shader;
 import android.hardware.HardwareBuffer;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.uirendering.cts.bitmapverifiers.ColorVerifier;
+import android.uirendering.cts.util.BitmapAsserter;
+import android.uirendering.cts.util.BitmapDumper;
 
 import androidx.annotation.ColorLong;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.graphics.hwui.flags.Flags;
+
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.testng.Assert;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class GainmapTests {
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
+
     private static final ColorSpace BT2020_HLG = ColorSpace.get(ColorSpace.Named.BT2020_HLG);
     private static final ColorSpace BT2020_PQ = ColorSpace.get(ColorSpace.Named.BT2020_PQ);
+    private static final ColorSpace SRGB = ColorSpace.get(ColorSpace.Named.SRGB);
 
     // A 10x6 base image with a 5x3 (so 1/2 res) gainmap that boosts the center 3 pixels
     // by 0x40, 0x80, and 0xff respectively
@@ -75,6 +96,13 @@ public class GainmapTests {
         sTestPicture.endRecording();
     }
 
+    private static final Gainmap sNoOpGainmap;
+    static {
+        sNoOpGainmap = new Gainmap(Bitmap.createBitmap(1, 1, Bitmap.Config.ALPHA_8));
+        sNoOpGainmap.setRatioMin(1f, 1f, 1f);
+        sNoOpGainmap.setRatioMax(1f, 1f, 1f);
+    }
+
     private static void assertChannels(Color result, @ColorLong long expected, float delta) {
         ColorSpace.Connector connector = ColorSpace.connect(Color.colorSpace(expected),
                 result.getColorSpace());
@@ -85,7 +113,8 @@ public class GainmapTests {
         Assert.assertEquals(result.blue(), mapped[2], delta, "blue channel mismatch");
     }
 
-    private static @ColorLong long mapWhiteWithGain(Gainmap gainmap, double gain) {
+    @ColorLong
+    private static long mapWhiteWithGain(Gainmap gainmap, double gain) {
         double logRatioMin = Math.log(gainmap.getRatioMin()[0]);
         double logRatioMax = Math.log(gainmap.getRatioMax()[0]);
         double epsilonSdr = gainmap.getEpsilonSdr()[0];
@@ -95,8 +124,8 @@ public class GainmapTests {
         return Color.pack(D, D, D, 1.f, ColorSpace.get(ColorSpace.Named.LINEAR_EXTENDED_SRGB));
     }
 
-    private static @ColorLong long mapWhiteWithGain(double gain) {
-        return mapWhiteWithGain(sTestImage.getGainmap(), gain);
+    private void assertTestImageResult(Bitmap result) {
+        assertTestImageResult(result, sTestImage.getGainmap());
     }
 
     private static float toleranceForResult(Bitmap result) {
@@ -111,19 +140,28 @@ public class GainmapTests {
         return 0.002f;
     }
 
-    private static void assertTestImageResult(Bitmap result) {
-        final float delta = toleranceForResult(result);
-        assertChannels(result.getColor(0, 0), Color.pack(Color.WHITE), delta);
-        assertChannels(result.getColor(2, 2), mapWhiteWithGain(0x40 / 255.f), delta);
-        assertChannels(result.getColor(4, 2), mapWhiteWithGain(0x80 / 255.f), delta);
-        assertChannels(result.getColor(6, 2), mapWhiteWithGain(0xFF / 255.f), delta);
+    private void assertTestImageResult(Bitmap result, Gainmap gainmap) {
+        try {
+            // 8888 precision ain't so great
+            final float delta = toleranceForResult(result);
+            assertChannels(result.getColor(0, 0), Color.pack(Color.WHITE), delta);
+            assertChannels(result.getColor(2, 2),
+                    mapWhiteWithGain(gainmap, 0x40 / 255.f), delta);
+            assertChannels(result.getColor(4, 2),
+                    mapWhiteWithGain(gainmap, 0x80 / 255.f), delta);
+            assertChannels(result.getColor(6, 2),
+                    mapWhiteWithGain(gainmap, 0xFF / 255.f), delta);
+        } catch (Throwable t) {
+            BitmapDumper.dumpBitmap(result);
+            throw t;
+        }
     }
 
     private static Bitmap renderTestImageWithHardware(ColorSpace dest) {
         return renderTestImageWithHardware(dest, false);
     }
 
-    private static Bitmap renderTestImageWithHardware(ColorSpace dest, boolean usePicture) {
+    private static Bitmap renderWithHardware(ColorSpace dest, Consumer<RecordingCanvas> func) {
         HardwareBuffer buffer = HardwareBuffer.create(sTestImage.getWidth(), sTestImage.getHeight(),
                 HardwareBuffer.RGBA_8888,
                 1, HardwareBuffer.USAGE_GPU_COLOR_OUTPUT | HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE);
@@ -131,11 +169,7 @@ public class GainmapTests {
         RenderNode content = new RenderNode("gainmap");
         content.setPosition(0, 0, sTestImage.getWidth(), sTestImage.getHeight());
         RecordingCanvas canvas = content.beginRecording();
-        if (usePicture) {
-            canvas.drawPicture(sTestPicture);
-        } else {
-            canvas.drawBitmap(sTestImage, 0, 0, null);
-        }
+        func.accept(canvas);
         content.endRecording();
         renderer.setContentRoot(content);
         CountDownLatch latch = new CountDownLatch(1);
@@ -149,6 +183,16 @@ public class GainmapTests {
             Assert.fail(ex.getMessage());
         }
         return Bitmap.wrapHardwareBuffer(buffer, dest).copy(Bitmap.Config.ARGB_8888, false);
+    }
+
+    private static Bitmap renderTestImageWithHardware(ColorSpace dest, boolean usePicture) {
+        return renderWithHardware(dest, canvas -> {
+            if (usePicture) {
+                canvas.drawPicture(sTestPicture);
+            } else {
+                canvas.drawBitmap(sTestImage, 0, 0, null);
+            }
+        });
     }
 
     @Test
@@ -168,6 +212,14 @@ public class GainmapTests {
     }
 
     @Test
+    public void gainmapToSrgbSoftware() {
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, SRGB);
+        Canvas canvas = new Canvas(result);
+        canvas.drawBitmap(sTestImage, 0f, 0f, null);
+        assertTestImageResult(result, sNoOpGainmap);
+    }
+
+    @Test
     public void gainmapToHlgPictureSoftware() {
         Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020_HLG);
         Canvas canvas = new Canvas(result);
@@ -184,6 +236,14 @@ public class GainmapTests {
     }
 
     @Test
+    public void gainmapToSrgbPictureSoftware() {
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, SRGB);
+        Canvas canvas = new Canvas(result);
+        canvas.drawPicture(sTestPicture);
+        assertTestImageResult(result, sNoOpGainmap);
+    }
+
+    @Test
     public void gainmapToHlgHardware() throws Exception {
         Bitmap result = renderTestImageWithHardware(BT2020_HLG);
         assertTestImageResult(result);
@@ -196,6 +256,12 @@ public class GainmapTests {
     }
 
     @Test
+    public void gainmapToSrgbHardware() {
+        Bitmap result = renderTestImageWithHardware(SRGB);
+        assertTestImageResult(result, sNoOpGainmap);
+    }
+
+    @Test
     public void gainmapToHlgPictureHardware() throws Exception {
         Bitmap result = renderTestImageWithHardware(BT2020_HLG, true);
         assertTestImageResult(result);
@@ -205,6 +271,123 @@ public class GainmapTests {
     public void gainmapToPqPictureHardware() {
         Bitmap result = renderTestImageWithHardware(BT2020_PQ, true);
         assertTestImageResult(result);
+    }
+
+    @Test
+    public void gainmapToSrgbPictureHardware() {
+        Bitmap result = renderTestImageWithHardware(SRGB, true);
+        assertTestImageResult(result, sNoOpGainmap);
+    }
+
+    @Test
+    public void bitmapShaderSupportHLG() {
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020_HLG);
+        Canvas canvas = new Canvas(result);
+        Paint paint = new Paint();
+        paint.setFlags(0);
+        BitmapShader shader = new BitmapShader(sTestImage, Shader.TileMode.CLAMP,
+                Shader.TileMode.CLAMP);
+        paint.setShader(shader);
+        canvas.drawPaint(paint);
+        assertTestImageResult(result);
+    }
+
+    @Test
+    public void bitmapShaderSupportHLGHardware() {
+        Bitmap result = renderWithHardware(BT2020_HLG, canvas -> {
+            Paint paint = new Paint();
+            paint.setFlags(0);
+            BitmapShader shader = new BitmapShader(sTestImage, Shader.TileMode.CLAMP,
+                    Shader.TileMode.CLAMP);
+            paint.setShader(shader);
+            canvas.drawPaint(paint);
+        });
+        assertTestImageResult(result);
+    }
+
+    @Test
+    public void bitmapShaderSupportSrgbHardware() {
+        Bitmap result = renderWithHardware(SRGB, canvas -> {
+            Paint paint = new Paint();
+            paint.setFlags(0);
+            BitmapShader shader = new BitmapShader(sTestImage, Shader.TileMode.CLAMP,
+                    Shader.TileMode.CLAMP);
+            paint.setShader(shader);
+            canvas.drawPaint(paint);
+        });
+        assertTestImageResult(result, sNoOpGainmap);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_GAINMAP_ANIMATIONS)
+    @Test
+    public void bitmapShaderOverrideGainmapToNoOpHLG() {
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020_HLG);
+        Canvas canvas = new Canvas(result);
+        Paint paint = new Paint();
+        paint.setFlags(0);
+        BitmapShader shader = new BitmapShader(sTestImage, Shader.TileMode.CLAMP,
+                Shader.TileMode.CLAMP);
+        shader.setOverrideGainmap(sNoOpGainmap);
+        paint.setShader(shader);
+        canvas.drawPaint(paint);
+        BitmapAsserter.assertBitmapIsVerified(result, new ColorVerifier(Color.WHITE, 3),
+                "");
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_GAINMAP_ANIMATIONS)
+    @Test
+    public void bitmapShaderOverrideGainmapTo4xHLG() {
+        Gainmap override = new Gainmap(sTestImage.getGainmap().getGainmapContents());
+        override.setRatioMax(4.0f, 4.0f, 4.0f);
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020_HLG);
+        Canvas canvas = new Canvas(result);
+        Paint paint = new Paint();
+        paint.setFlags(0);
+        BitmapShader shader = new BitmapShader(sTestImage, Shader.TileMode.CLAMP,
+                Shader.TileMode.CLAMP);
+        shader.setOverrideGainmap(override);
+        paint.setShader(shader);
+        canvas.drawPaint(paint);
+        assertTestImageResult(result, override);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_GAINMAP_ANIMATIONS)
+    @Test
+    public void bitmapShaderOverrideGainmapModifyAfterSetHLG() {
+        Gainmap override = new Gainmap(sTestImage.getGainmap().getGainmapContents());
+        override.setRatioMax(4.0f, 4.0f, 4.0f);
+        Gainmap initialOverride = new Gainmap(override, override.getGainmapContents());
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020_HLG);
+        Canvas canvas = new Canvas(result);
+        Paint paint = new Paint();
+        paint.setFlags(0);
+        BitmapShader shader = new BitmapShader(sTestImage, Shader.TileMode.CLAMP,
+                Shader.TileMode.CLAMP);
+        shader.setOverrideGainmap(override);
+        override.setRatioMax(1f, 1f, 1f);
+        paint.setShader(shader);
+        canvas.drawPaint(paint);
+        assertTestImageResult(result, initialOverride);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_GAINMAP_ANIMATIONS)
+    @Test
+    public void bitmapShaderOverrideGainmapPaintObservesUpdatesHLG() {
+        Gainmap override = new Gainmap(sTestImage.getGainmap().getGainmapContents());
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020_HLG);
+        Canvas canvas = new Canvas(result);
+        Paint paint = new Paint();
+        paint.setFlags(0);
+        BitmapShader shader = new BitmapShader(sTestImage, Shader.TileMode.CLAMP,
+                Shader.TileMode.CLAMP);
+        shader.setOverrideGainmap(override);
+        paint.setShader(shader);
+        canvas.drawPaint(paint);
+        override.setRatioMax(1, 1, 1);
+        shader.setOverrideGainmap(override);
+        canvas.drawPaint(paint);
+        BitmapAsserter.assertBitmapIsVerified(result, new ColorVerifier(Color.WHITE, 3),
+                "");
     }
 
     @Test
@@ -271,5 +454,20 @@ public class GainmapTests {
         assertChannels(gainmapContents.getColor(1, 3), Color.pack(0xFFFFFFFF), 0f);
         assertChannels(gainmapContents.getColor(1, 4), Color.pack(Color.BLACK), 0f);
         assertChannels(gainmapContents.getColor(2, 4), Color.pack(Color.BLACK), 0f);
+    }
+
+    @Test
+    public void testRenderingDropsGainmap() {
+        Bitmap dest = Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
+        Gainmap gainmap = new Gainmap(Bitmap.createBitmap(5, 5, Bitmap.Config.ALPHA_8));
+        dest.setGainmap(gainmap);
+        assertTrue(dest.hasGainmap());
+        Canvas canvas = new Canvas(dest);
+        assertFalse(dest.hasGainmap());
+        canvas.setBitmap(null);
+        dest.setGainmap(gainmap);
+        assertTrue(dest.hasGainmap());
+        canvas.setBitmap(dest);
+        assertFalse(dest.hasGainmap());
     }
 }

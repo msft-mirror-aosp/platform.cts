@@ -18,25 +18,61 @@ package android.content.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.assertEquals;
 
+import android.app.PendingIntent;
 import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.net.Uri;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Log;
 
+import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ClipDataTest {
     private static final String LOG_TAG = "ClipDataTest";
+
+    @Rule public final RavenwoodRule mRavenwood = new RavenwoodRule();
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = {PendingIntent.class})
+    public void testBuilder() {
+        final Uri uri = Uri.fromParts("scheme", "ssp", "fragment");
+        final String htmlText = "<blink>htmlText</blink>";
+        final String text = "text";
+        final Intent intent = new Intent(Intent.ACTION_MAIN);
+        final PendingIntent pi = PendingIntent.getActivity(InstrumentationRegistry.getContext(), 0,
+                intent, PendingIntent.FLAG_IMMUTABLE);
+        final IntentSender sender = pi.getIntentSender();
+        final ClipData.Item clip = new ClipData.Item.Builder()
+                .setHtmlText(htmlText)
+                .setIntentSender(sender)
+                .setText(text)
+                .setUri(uri)
+                .setIntent(intent)
+                .build();
+        assertEquals(clip.getHtmlText(), htmlText);
+        assertEquals(clip.getIntentSender(), sender);
+        assertEquals(clip.getText(), text);
+        assertEquals(clip.getUri(), uri);
+        assertEquals(clip.getIntent(), intent);
+        pi.cancel();
+    }
 
     @Test
     public void testToString_text() {
@@ -63,6 +99,7 @@ public class ClipDataTest {
     }
 
     @Test
+    @IgnoreUnderRavenwood(blockedBy = android.util.TimeUtils.class)
     public void testToString_metadata() {
         ClipDescription description = new ClipDescription("secret-label",
                 new String[]{"text/plain"});
@@ -91,7 +128,7 @@ public class ClipDataTest {
         ClipData.Item item = new ClipData.Item(
                 "secret-text",
                 "secret-html",
-                mock(Intent.class),
+                new Intent(),
                 Uri.parse("content://secret"));
         String[] mimeTypes = {
                 ClipDescription.MIMETYPE_TEXT_PLAIN,
@@ -103,5 +140,43 @@ public class ClipDataTest {
         String clipStr = clip.toString();
         Log.i(LOG_TAG, clipStr);
         assertThat(clipStr).doesNotContain("secret");
+    }
+
+    @Test
+    public void testCoerceToText_text() {
+        final ClipData.Item item = new ClipData.Item(
+                "text"
+        );
+        assertThat(item.coerceToText(InstrumentationRegistry.getTargetContext()))
+                .isEqualTo("text");
+    }
+
+    @Test
+    public void testCoerceToText_uri() {
+        final ClipData.Item item = new ClipData.Item(
+                new Intent("action")
+        );
+        assertThat(item.coerceToText(InstrumentationRegistry.getTargetContext()))
+                .isEqualTo("intent:#Intent;action=action;end");
+    }
+
+    @Test
+    public void testCoerceToText_intent() {
+        final ClipData.Item item = new ClipData.Item(
+                Uri.parse("example://authority/")
+        );
+        assertThat(item.coerceToText(InstrumentationRegistry.getTargetContext()))
+                .isEqualTo("example://authority/");
+    }
+
+    @Test
+    public void testCoerceToText_multiple() {
+        final ClipData.Item item = new ClipData.Item(
+                "text",
+                new Intent("action"),
+                Uri.parse("example://authority/")
+        );
+        assertThat(item.coerceToText(InstrumentationRegistry.getTargetContext()))
+                .isEqualTo("text");
     }
 }

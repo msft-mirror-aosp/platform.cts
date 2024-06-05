@@ -35,8 +35,11 @@ java_defaults {
         "ub-uiautomator",
         "androidx.annotation_annotation",
         "androidx.test.uiautomator_uiautomator",
-        "truth-prebuilt",
+        "error_prone_annotations",
+        "truth",
         "modules-utils-build_system",
+        "android.os.flags-aconfig-java",
+        "flag-junit",
     ],
 
     libs: [
@@ -53,6 +56,9 @@ java_library_static {
     static_libs: [
         "mockito-target-minus-junit4",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 // This target can be used with ExtendedMockito
@@ -62,6 +68,9 @@ java_library {
     static_libs: [
         "mockito",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 filegroup {

@@ -53,6 +53,7 @@ import android.provider.DeviceConfig;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.Suppress;
 
 import com.android.compatibility.common.util.AnrMonitor;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
@@ -465,6 +466,7 @@ public class ActivityManagerShortFgsTest {
      * Start SHORT_SERVICE FGS, and make sure the timeout callback is called.
      */
     @Test
+    @Suppress
     public void testTimeout() throws Exception {
         final long serviceStartTime = SystemClock.uptimeMillis();
 

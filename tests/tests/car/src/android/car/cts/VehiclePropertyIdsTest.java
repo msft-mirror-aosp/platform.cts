@@ -16,16 +16,21 @@
 
 package android.car.cts;
 
+import static android.car.feature.Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.car.VehiclePropertyIds;
 import android.car.cts.utils.VehiclePropertyUtils;
-import android.car.test.ApiCheckerRule.Builder;
 import android.platform.test.annotations.RequiresDevice;
-import android.test.suitebuilder.annotation.SmallTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -35,12 +40,8 @@ import java.util.List;
 @RequiresDevice
 @RunWith(AndroidJUnit4.class)
 public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
-
-    // TODO(b/242350638): add missing annotations, remove (on child bug of 242350638)
-    @Override
-    protected void configApiCheckerRule(Builder builder) {
-        builder.disableAnnotationsCheck();
-    }
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /**
      * Test for {@link VehiclePropertyIds#toString()}
@@ -463,6 +464,107 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("LANE_CENTERING_ASSIST_STATE");
         assertThat(VehiclePropertyIds.toString(3)).isEqualTo("0x3");
         assertThat(VehiclePropertyIds.toString(12)).isEqualTo("0xc");
+    }
+
+    /**
+     * Test for {@link VehiclePropertyIds#toString()} for properties added in Android VIC.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testToStringForAndroidVicVehicleProperties() {
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_SYSTEM_ENABLED))
+                .isEqualTo("DRIVER_DROWSINESS_ATTENTION_SYSTEM_ENABLED");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_STATE))
+                .isEqualTo("DRIVER_DROWSINESS_ATTENTION_STATE");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_WARNING_ENABLED))
+                .isEqualTo("DRIVER_DROWSINESS_ATTENTION_WARNING_ENABLED");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_WARNING))
+                .isEqualTo("DRIVER_DROWSINESS_ATTENTION_WARNING");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.DRIVER_DISTRACTION_SYSTEM_ENABLED))
+                .isEqualTo("DRIVER_DISTRACTION_SYSTEM_ENABLED");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.DRIVER_DISTRACTION_STATE))
+                .isEqualTo("DRIVER_DISTRACTION_STATE");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.DRIVER_DISTRACTION_WARNING_ENABLED))
+                .isEqualTo("DRIVER_DISTRACTION_WARNING_ENABLED");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.DRIVER_DISTRACTION_WARNING))
+                .isEqualTo("DRIVER_DISTRACTION_WARNING");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.ULTRASONICS_SENSOR_POSITION))
+                .isEqualTo("ULTRASONICS_SENSOR_POSITION");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.ULTRASONICS_SENSOR_ORIENTATION))
+                .isEqualTo("ULTRASONICS_SENSOR_ORIENTATION");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.ULTRASONICS_SENSOR_FIELD_OF_VIEW))
+                .isEqualTo("ULTRASONICS_SENSOR_FIELD_OF_VIEW");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.ULTRASONICS_SENSOR_DETECTION_RANGE))
+                .isEqualTo("ULTRASONICS_SENSOR_DETECTION_RANGE");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.ULTRASONICS_SENSOR_SUPPORTED_RANGES))
+                .isEqualTo("ULTRASONICS_SENSOR_SUPPORTED_RANGES");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.ULTRASONICS_SENSOR_MEASURED_DISTANCE))
+                .isEqualTo("ULTRASONICS_SENSOR_MEASURED_DISTANCE");
+        assertThat(
+                VehiclePropertyIds.toString(
+                        VehiclePropertyIds.VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL))
+                .isEqualTo("VEHICLE_DRIVING_AUTOMATION_CURRENT_LEVEL");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.SEAT_AIRBAGS_DEPLOYED))
+                .isEqualTo("SEAT_AIRBAGS_DEPLOYED");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.SEAT_BELT_PRETENSIONER_DEPLOYED))
+                .isEqualTo("SEAT_BELT_PRETENSIONER_DEPLOYED");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.IMPACT_DETECTED))
+                .isEqualTo("IMPACT_DETECTED");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.EV_BATTERY_AVERAGE_TEMPERATURE))
+                .isEqualTo("EV_BATTERY_AVERAGE_TEMPERATURE");
+        assertThat(
+                VehiclePropertyIds.toString(VehiclePropertyIds.LOW_SPEED_COLLISION_WARNING_ENABLED))
+                .isEqualTo("LOW_SPEED_COLLISION_WARNING_ENABLED");
+        assertThat(
+                VehiclePropertyIds.toString(VehiclePropertyIds.LOW_SPEED_COLLISION_WARNING_STATE))
+                .isEqualTo("LOW_SPEED_COLLISION_WARNING_STATE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.VALET_MODE_ENABLED))
+                .isEqualTo("VALET_MODE_ENABLED");
+        assertThat(VehiclePropertyIds.toString(
+                VehiclePropertyIds.ELECTRONIC_STABILITY_CONTROL_ENABLED))
+                .isEqualTo("ELECTRONIC_STABILITY_CONTROL_ENABLED");
+        assertThat(
+                VehiclePropertyIds.toString(VehiclePropertyIds.ELECTRONIC_STABILITY_CONTROL_STATE))
+                .isEqualTo("ELECTRONIC_STABILITY_CONTROL_STATE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.CROSS_TRAFFIC_MONITORING_ENABLED))
+                .isEqualTo("CROSS_TRAFFIC_MONITORING_ENABLED");
+        assertThat(VehiclePropertyIds.toString(
+                VehiclePropertyIds.CROSS_TRAFFIC_MONITORING_WARNING_STATE))
+                .isEqualTo("CROSS_TRAFFIC_MONITORING_WARNING_STATE");
+        assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.HEAD_UP_DISPLAY_ENABLED))
+                .isEqualTo("HEAD_UP_DISPLAY_ENABLED");
+        assertThat(VehiclePropertyIds.toString(
+                VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED))
+                .isEqualTo("LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED");
+        assertThat(VehiclePropertyIds.toString(
+                VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE))
+                .isEqualTo("LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE");
     }
 
     /**

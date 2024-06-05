@@ -17,6 +17,8 @@
 
 package android.os.cts;
 
+import android.platform.test.annotations.AppModeSdkSandbox;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -29,6 +31,7 @@ import com.android.compatibility.common.util.CpuFeatures;
 
 import junit.framework.TestCase;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class CpuFeaturesTest extends TestCase {
 
     private static void assertHwCap(String name, int hwcaps, int flag) {
@@ -46,12 +49,21 @@ public class CpuFeaturesTest extends TestCase {
         assertFalse("Machine does not support getauxval(AT_HWCAP)",
                 hwcaps == 0);
 
-        assertHwCap("VFP", hwcaps, CpuFeatures.HWCAP_VFP);
-        assertHwCap("NEON", hwcaps, CpuFeatures.HWCAP_NEON);
-        assertHwCap("VFPv3", hwcaps, CpuFeatures.HWCAP_VFPv3);
-        assertHwCap("VFPv4", hwcaps, CpuFeatures.HWCAP_VFPv4);
-        assertHwCap("IDIVA", hwcaps, CpuFeatures.HWCAP_IDIVA);
-        assertHwCap("IDIVT", hwcaps, CpuFeatures.HWCAP_IDIVT);
+        assertHwCap("VFP", hwcaps, CpuFeatures.Arm64.HWCAP_VFP);
+        assertHwCap("NEON", hwcaps, CpuFeatures.Arm64.HWCAP_NEON);
+        assertHwCap("VFPv3", hwcaps, CpuFeatures.Arm64.HWCAP_VFPv3);
+        assertHwCap("VFPv4", hwcaps, CpuFeatures.Arm64.HWCAP_VFPv4);
+        assertHwCap("IDIVA", hwcaps, CpuFeatures.Arm64.HWCAP_IDIVA);
+        assertHwCap("IDIVT", hwcaps, CpuFeatures.Arm64.HWCAP_IDIVT);
+    }
+
+    public void testRiscv64MisalignedFast() {
+        if (!CpuFeatures.isRiscv64Cpu()) {
+            return;
+        }
+
+        boolean fast = CpuFeatures.isRiscv64MisalignedFast();
+        assertTrue("Machine does not advertise RISCV_HWPROBE_MISALIGNED_FAST flag", fast);
     }
 
     private static String getFieldFromCpuinfo(String field) throws IOException {
@@ -152,6 +164,20 @@ public class CpuFeaturesTest extends TestCase {
 
         for (String feature : armv8RequiredFeatures) {
             assertNotInCpuinfo(features, feature);
+        }
+    }
+
+    public void testNoSerial() throws IOException {
+        String serial = getFieldFromCpuinfo("Serial");
+        if (CpuFeatures.isArm64Cpu() || CpuFeatures.isArm64CpuIn32BitMode()) {
+            // A 64-bit arm kernel shouldn't have a serial field at all.
+            assertTrue(serial == null);
+        } else if (CpuFeatures.isArmCpu()) {
+            // By default a 32-bit kernel will have a serial field, but it
+            // should be set to all zeros. See http://b/313425671.
+            if (serial != null) {
+                assertEquals("0000000000000000", serial);
+            }
         }
     }
 }

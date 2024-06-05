@@ -18,20 +18,48 @@ package android.net.wifi.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
+import android.app.UiAutomation;
+import android.content.Context;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiScanner;
+import android.net.wifi.WifiScanner.ScanData;
 import android.net.wifi.WifiSsid;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerExecutor;
+import android.os.HandlerThread;
 import android.os.Parcel;
+import android.platform.test.annotations.AppModeFull;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
-public class WifiScannerTest extends WifiJUnit3TestBase {
+@RunWith(AndroidJUnit4.class)
+@AppModeFull(reason = "Cannot get WifiManager in instant app mode")
+public class WifiScannerTest extends WifiJUnit4TestBase {
 
+    private static Context sContext;
+    private static WifiScanner sWifiScanner;
+    private static final long TEST_WAIT_DURATION_MS = 5000;
+    private static final int POLL_WAIT_MSEC = 60;
     private static final String TEST_SSID = "TEST_SSID";
     public static final String TEST_BSSID = "04:ac:fe:45:34:10";
     public static final String TEST_CAPS = "CCMP";
@@ -39,14 +67,23 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
     public static final int TEST_FREQUENCY = 2412;
     public static final long TEST_TIMESTAMP = 4660L;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    private final Object mLock = new Object();
+    private boolean mCachedScanDataReturned = false;
+    private final HandlerThread mHandlerThread = new HandlerThread("WifiScannerTest");
+    protected final Executor mExecutor;
+    {
+        mHandlerThread.start();
+        mExecutor = new HandlerExecutor(new Handler(mHandlerThread.getLooper()));
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @Before
+    public void setUp() throws Exception {
+        sContext = InstrumentationRegistry.getInstrumentation().getContext();
+        sWifiScanner =  sContext.getSystemService(WifiScanner.class);
+    }
+
+    @After
+    public void tearDown() throws Exception {
     }
 
     private static WifiScanner.ScanSettings createRequest(WifiScanner.ChannelSpec[] channels,
@@ -93,6 +130,7 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
      * Test ScanSettings object being serialized and deserialized while vendorIes keeping the
      * values unchanged.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testVendorIesParcelable() throws Exception {
         WifiScanner.ScanSettings requestSettings = createRequest(
@@ -116,6 +154,7 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
                 requestSettings.getVendorIes());
     }
 
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testPnoSettings() throws Exception {
         android.net.wifi.nl80211.PnoSettings pnoSettings =
@@ -126,6 +165,7 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
         assertEquals(4, pnoSettings.getScanIntervalMultiplier());
     }
 
+    @Test
     public void testParcelableScanData() {
         ScanResult scanResult = new ScanResult();
         scanResult.SSID = TEST_SSID;
@@ -151,5 +191,49 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
         assertThat(scanResult1.level).isEqualTo(TEST_LEVEL);
         assertThat(scanResult1.frequency).isEqualTo(TEST_FREQUENCY);
         assertThat(scanResult1.timestamp).isEqualTo(TEST_TIMESTAMP);
+    }
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    public void testGetCachedScanData() throws Exception {
+        assumeTrue(WifiFeature.isWifiSupported(sContext));
+        mCachedScanDataReturned = false;
+        Consumer<ScanData> listener = new Consumer<ScanData>() {
+            @Override
+            public void accept(ScanData scanData) {
+                synchronized (mLock) {
+                    mCachedScanDataReturned = true;
+                    mLock.notify();
+                }
+            }
+        };
+        assertThrows(SecurityException.class,
+                () -> sWifiScanner.getCachedScanData(mExecutor, listener));
+        // null executor
+        assertThrows("null executor should trigger exception", NullPointerException.class,
+                () -> sWifiScanner.getCachedScanData(null, listener));
+        // null listener
+        assertThrows("null listener should trigger exception", NullPointerException.class,
+                () -> sWifiScanner.getCachedScanData(mExecutor, null));
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiScanner.getCachedScanData(mExecutor, listener);
+            long timeout = System.currentTimeMillis() + TEST_WAIT_DURATION_MS;
+            synchronized (mLock) {
+                while (System.currentTimeMillis() < timeout && !mCachedScanDataReturned) {
+                    mLock.wait(POLL_WAIT_MSEC);
+                }
+            }
+            assertTrue(mCachedScanDataReturned);
+        } catch (UnsupportedOperationException ex) {
+            // Expected if the device does not support this API
+        } catch (Exception e) {
+            fail("getCachedScanData unexpected Exception " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 }

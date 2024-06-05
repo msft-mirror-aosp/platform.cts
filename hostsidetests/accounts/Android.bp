@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsAccountsHostTestCases",
+    team: "trendy_team_authentication",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     libs: [
@@ -26,7 +27,7 @@ java_test_host {
         "tradefed",
         "platform-test-annotations-host",
         "compatibility-host-util",
-        "truth-prebuilt",
+        "truth",
         "device-policy-log-verifier-util",
     ],
     // tag this module as a cts test artifact

@@ -26,6 +26,7 @@
     <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
@@ -42,6 +43,7 @@
 
         <activity android:label="@string/accessibility_query_window_test_activity"
              android:name=".activities.AccessibilityWindowQueryActivity"
+             android:theme="@style/AppTheme"
              android:supportsPictureInPicture="true"
              android:screenOrientation="locked"/>
 
@@ -57,9 +59,12 @@
              android:name=".activities.AccessibilityTextTraversalActivity"
              android:screenOrientation="locked"/>
 
+        <!-- Use windowSoftInputMode STATE_HIDDEN so that the IME does not launch
+             when opening the activity, which confuses the test window checks. -->
         <activity android:label="Activity for testing window accessibility reporting"
              android:name=".activities.AccessibilityWindowReportingActivity"
              android:supportsPictureInPicture="true"
+             android:windowSoftInputMode="stateHidden"
              android:screenOrientation="locked"/>
 
         <activity android:label="Activity for testing window accessibility reporting"
@@ -77,6 +82,7 @@
 
         <activity android:label="@string/non_proxy_activity"
                   android:name=".activities.NonProxyActivity"
+                  android:windowSoftInputMode="stateHidden"
                   android:screenOrientation="locked"/>
 
         <activity android:label="Full screen activity for gesture dispatch testing"
@@ -89,6 +95,7 @@
 
         <activity android:label="@string/accessibility_embedded_hierarchy_test_activity"
              android:name=".AccessibilityEmbeddedHierarchyTest$AccessibilityEmbeddedHierarchyActivity"
+             android:windowSoftInputMode="stateHidden"
              android:screenOrientation="locked"/>
 
         <activity android:label="@string/accessibility_drag_and_drop_test_activity"
@@ -303,13 +310,21 @@
             <meta-data android:name="android.accessibilityservice"
                  android:resource="@xml/stub_nona11ytool_service"/>
         </service>
+        <service android:name=".StubBrailleDisplayAccessibilityService"
+             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+
+            <meta-data android:name="android.accessibilityservice"
+                 android:resource="@xml/stub_nona11ytool_service"/>
+        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.accessibilityservice.cts"
          android:label="Tests for the accessibility APIs.">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
 
     </instrumentation>
 

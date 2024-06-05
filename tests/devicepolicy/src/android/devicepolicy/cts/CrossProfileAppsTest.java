@@ -16,18 +16,19 @@
 
 package android.devicepolicy.cts;
 
-import static android.content.Context.RECEIVER_EXPORTED;
+import static android.app.admin.flags.Flags.FLAG_ALLOW_QUERYING_PROFILE_TYPE;
 import static android.content.pm.CrossProfileApps.ACTION_CAN_INTERACT_ACROSS_PROFILES_CHANGED;
 import static android.provider.Settings.ACTION_MANAGE_CROSS_PROFILE_ACCESS;
 
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
+import static com.android.bedstead.harrier.UserType.CLONE_PROFILE;
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.permissions.CommonPermissions.START_CROSS_PROFILE_ACTIVITIES;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.START_CROSS_PROFILE_ACTIVITIES;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 import static com.android.queryable.queries.ActivityQuery.activity;
@@ -43,11 +44,11 @@ import android.app.admin.RemoteDevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.CrossProfileApps;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.stats.devicepolicy.EventId;
-import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -55,11 +56,10 @@ import com.android.activitycontext.ActivityContext;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureHasNoProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.PermissionTest;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
@@ -74,6 +74,7 @@ import com.android.bedstead.nene.packages.ProcessReference;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.eventlib.EventLogs;
 import com.android.eventlib.events.activities.ActivityCreatedEvent;
 import com.android.eventlib.events.activities.ActivityEvents;
@@ -83,6 +84,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import java.util.Collections;
@@ -96,8 +99,13 @@ public final class CrossProfileAppsTest {
     private static final CrossProfileApps sCrossProfileApps =
             sContext.getSystemService(CrossProfileApps.class);
 
-    @ClassRule @Rule
+    @ClassRule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final TestRule mCheckFlagsRule = RuleChain
+            .outerRule(DeviceFlagsValueProvider.createCheckFlagsRule())
+            .around(sDeviceState);
 
     private static final TestApp sCrossProfileTestApp = sDeviceState.testApps().query()
             .whereCrossProfile().isTrue()
@@ -185,6 +193,106 @@ public final class CrossProfileAppsTest {
                     .whereStrings().contains(sContext.getPackageName())
             ).wasLogged();
         }
+    }
+
+    @Test
+    @CrossUserTest({
+            @UserPair(from = INITIAL_USER, to = INITIAL_USER),
+            @UserPair(from = INITIAL_USER, to = ADDITIONAL_USER),
+            @UserPair(from = WORK_PROFILE, to = ADDITIONAL_USER),
+            @UserPair(from = ADDITIONAL_USER, to = WORK_PROFILE),
+            @UserPair(from = WORK_PROFILE, to = WORK_PROFILE),
+    })
+    @RequiresFlagsEnabled(FLAG_ALLOW_QUERYING_PROFILE_TYPE)
+    @ApiTest(apis = {"android.content.pm.CrossProfileApps#isProfile(UserHandle)"})
+    @Postsubmit(reason = "new test")
+    public void isProfile_targetIsInvalid_throwsSecurityException() {
+        TestApis.packages().instrumented().installExisting(sDeviceState.otherUser());
+
+        assertThrows(SecurityException.class, () -> {
+            sCrossProfileApps.isProfile(sDeviceState.otherUser().userHandle());
+        });
+    }
+
+    @Test
+    @CrossUserTest({
+            @UserPair(from = INITIAL_USER, to = WORK_PROFILE),
+            @UserPair(from = CLONE_PROFILE, to = WORK_PROFILE),
+            @UserPair(from = WORK_PROFILE, to = CLONE_PROFILE),
+            @UserPair(from = INITIAL_USER, to = CLONE_PROFILE),
+    })
+    @RequiresFlagsEnabled(FLAG_ALLOW_QUERYING_PROFILE_TYPE)
+    @ApiTest(apis = {"android.content.pm.CrossProfileApps#isProfile(UserHandle)"})
+    @Postsubmit(reason = "new test")
+    public void isProfile_profile_returnsTrue() {
+        TestApis.packages().instrumented().installExisting(sDeviceState.otherUser());
+
+        assertThat(sCrossProfileApps.isProfile(sDeviceState.otherUser().userHandle())).isTrue();
+    }
+
+    @Test
+    @CrossUserTest({
+            @UserPair(from = WORK_PROFILE, to = INITIAL_USER),
+            @UserPair(from = CLONE_PROFILE, to = INITIAL_USER),
+    })
+    @RequiresFlagsEnabled(FLAG_ALLOW_QUERYING_PROFILE_TYPE)
+    @ApiTest(apis = {"android.content.pm.CrossProfileApps#isProfile(UserHandle)"})
+    @Postsubmit(reason = "new test")
+    public void isProfile_notProfile_returnsFalse() {
+        TestApis.packages().instrumented().installExisting(sDeviceState.otherUser());
+
+        assertThat(sCrossProfileApps.isProfile(sDeviceState.otherUser().userHandle())).isFalse();
+    }
+
+    @Test
+    @CrossUserTest({
+            @UserPair(from = INITIAL_USER, to = INITIAL_USER),
+            @UserPair(from = INITIAL_USER, to = ADDITIONAL_USER),
+            @UserPair(from = WORK_PROFILE, to = ADDITIONAL_USER),
+            @UserPair(from = ADDITIONAL_USER, to = WORK_PROFILE),
+            @UserPair(from = WORK_PROFILE, to = WORK_PROFILE),
+    })
+    @RequiresFlagsEnabled(FLAG_ALLOW_QUERYING_PROFILE_TYPE)
+    @ApiTest(apis = {"android.content.pm.CrossProfileApps#isManagedProfile(UserHandle)"})
+    @Postsubmit(reason = "new test")
+    public void isManagedProfile_targetIsInvalid_throwsSecurityException() {
+        TestApis.packages().instrumented().installExisting(sDeviceState.otherUser());
+
+        assertThrows(SecurityException.class, () -> {
+            sCrossProfileApps.isManagedProfile(sDeviceState.otherUser().userHandle());
+        });
+    }
+
+    @Test
+    @CrossUserTest({
+            @UserPair(from = INITIAL_USER, to = WORK_PROFILE),
+            @UserPair(from = CLONE_PROFILE, to = WORK_PROFILE),
+    })
+    @RequiresFlagsEnabled(FLAG_ALLOW_QUERYING_PROFILE_TYPE)
+    @ApiTest(apis = {"android.content.pm.CrossProfileApps#isManagedProfile(UserHandle)"})
+    @Postsubmit(reason = "new test")
+    public void isManagedProfile_managedProfile_returnsTrue() {
+        TestApis.packages().instrumented().installExisting(sDeviceState.otherUser());
+
+        assertThat(sCrossProfileApps.isManagedProfile(sDeviceState.otherUser().userHandle()))
+                .isTrue();
+    }
+
+    @Test
+    @CrossUserTest({
+            @UserPair(from = WORK_PROFILE, to = INITIAL_USER),
+            @UserPair(from = WORK_PROFILE, to = CLONE_PROFILE),
+            @UserPair(from = INITIAL_USER, to = CLONE_PROFILE),
+            @UserPair(from = CLONE_PROFILE, to = INITIAL_USER),
+    })
+    @RequiresFlagsEnabled(FLAG_ALLOW_QUERYING_PROFILE_TYPE)
+    @ApiTest(apis = {"android.content.pm.CrossProfileApps#isManagedProfile(UserHandle)"})
+    @Postsubmit(reason = "new test")
+    public void isManagedProfile_notManagedProfile_returnsFalse() {
+        TestApis.packages().instrumented().installExisting(sDeviceState.otherUser());
+
+        assertThat(sCrossProfileApps.isManagedProfile(sDeviceState.otherUser().userHandle()))
+                .isFalse();
     }
 
     @CrossUserTest({
@@ -770,8 +878,8 @@ public final class CrossProfileAppsTest {
     }
 
     @Test
-    @EnsureHasWorkProfile
     @RequireRunOnInitialUser
+    @EnsureHasWorkProfile
     public void canRequestInteractAcrossProfiles_permissionNotRequested_returnsFalse()
             throws Exception {
         RemoteDevicePolicyManager profileOwner = sDeviceState.profileOwner(WORK_PROFILE)
@@ -790,8 +898,8 @@ public final class CrossProfileAppsTest {
 
     // TODO(b/199148889): add require INTERACT_ACROSS_PROFILE permission for the dpc.
     @Test
-    @EnsureHasWorkProfile
     @RequireRunOnInitialUser
+    @EnsureHasWorkProfile
     public void canRequestInteractAcrossProfiles_profileOwner_returnsFalse()
             throws Exception {
         RemoteDevicePolicyManager profileOwner = sDeviceState.profileOwner(WORK_PROFILE)

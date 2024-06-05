@@ -19,6 +19,8 @@ package android.hardware.camera2.cts.testcases;
 import static android.hardware.camera2.cts.CameraTestUtils.*;
 import static com.android.ex.camera2.blocking.BlockingStateCallback.*;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
@@ -57,6 +59,10 @@ import java.util.Set;
 public class Camera2ConcurrentAndroidTestCase extends Camera2ParameterizedTestCase {
     private static final String TAG = "Camera2ConcurrentAndroidTestCase";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
+
+    // include both standalone camera IDs and "hidden" physical camera IDs
+    private String[] mAllCameraIds;
+
     public static class CameraTestInfo {
         public String mCameraId;
         public CameraDevice mCamera;
@@ -76,8 +82,6 @@ public class Camera2ConcurrentAndroidTestCase extends Camera2ParameterizedTestCa
     };
     protected Set<Set<String>> mConcurrentCameraIdCombinations;
     protected HashMap<String, CameraTestInfo> mCameraTestInfos;
-    // include both standalone camera IDs and "hidden" physical camera IDs
-    protected String[] mAllCameraIds;
     protected HashMap<String, StaticMetadata> mAllStaticInfo;
     protected Handler mHandler;
     protected HandlerThread mHandlerThread;
@@ -93,6 +97,12 @@ public class Camera2ConcurrentAndroidTestCase extends Camera2ParameterizedTestCa
     @Override
     public void setUp() throws Exception {
         super.setUp();
+
+        assumeTrue(
+                "Camera2ConcurrentAndroidTestCase tests can't be run with cameraId "
+                        + "override set, restricting the test to single camera",
+                mOverrideCameraId == null);
+
         mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         mHandlerThread = new HandlerThread(TAG);
         mHandlerThread.start();
@@ -106,13 +116,14 @@ public class Camera2ConcurrentAndroidTestCase extends Camera2ParameterizedTestCa
         mDebugFileNameBase = filesDir.getPath();
         mAllStaticInfo = new HashMap<String, StaticMetadata>();
         List<String> hiddenPhysicalIds = new ArrayList<>();
-        for (String cameraId : mCameraIdsUnderTest) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (String cameraId : cameraIdsUnderTest) {
             CameraCharacteristics props = mCameraManager.getCameraCharacteristics(cameraId);
             StaticMetadata staticMetadata = new StaticMetadata(props,
                     CheckLevel.ASSERT, /*collector*/null);
             mAllStaticInfo.put(cameraId, staticMetadata);
             for (String physicalId : props.getPhysicalCameraIds()) {
-                if (!Arrays.asList(mCameraIdsUnderTest).contains(physicalId) &&
+                if (!Arrays.asList(cameraIdsUnderTest).contains(physicalId) &&
                         !hiddenPhysicalIds.contains(physicalId)) {
                     hiddenPhysicalIds.add(physicalId);
                     props = mCameraManager.getCameraCharacteristics(physicalId);
@@ -148,10 +159,10 @@ public class Camera2ConcurrentAndroidTestCase extends Camera2ParameterizedTestCa
             }
         }
 
-        mAllCameraIds = new String[mCameraIdsUnderTest.length + hiddenPhysicalIds.size()];
-        System.arraycopy(mCameraIdsUnderTest, 0, mAllCameraIds, 0, mCameraIdsUnderTest.length);
+        mAllCameraIds = new String[cameraIdsUnderTest.length + hiddenPhysicalIds.size()];
+        System.arraycopy(cameraIdsUnderTest, 0, mAllCameraIds, 0, cameraIdsUnderTest.length);
         for (int i = 0; i < hiddenPhysicalIds.size(); i++) {
-            mAllCameraIds[mCameraIdsUnderTest.length + i] = hiddenPhysicalIds.get(i);
+            mAllCameraIds[cameraIdsUnderTest.length + i] = hiddenPhysicalIds.get(i);
         }
     }
 

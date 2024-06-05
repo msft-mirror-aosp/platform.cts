@@ -39,7 +39,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.app.cts.broadcasts.BroadcastReceipt;
 import com.android.app.cts.broadcasts.ICommandReceiver;
 import com.android.compatibility.common.util.AmUtils;
-import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
 import com.android.compatibility.common.util.ThrowingSupplier;
@@ -125,19 +124,7 @@ abstract class BaseBroadcastTest {
                 mAm.forceDelayBroadcastDelivery(targetPackage, delayedDurationMs));
     }
 
-    protected boolean isModernBroadcastQueueEnabled() {
-        return SystemUtil.runWithShellPermissionIdentity(() ->
-                mAm.isModernBroadcastQueueEnabled());
-    }
-
     protected boolean isAppFreezerEnabled() throws Exception {
-        // TODO (269312428): Remove this check once isAppFreezerEnabled() is updated to take
-        // care of this.
-        if (!PropertyUtil.isVendorApiLevelNewerThan(30)) {
-            // Android R vendor partition contains those outdated cgroup configuration and freeze
-            // operations will fail.
-            return false;
-        }
         final ActivityManager am = mContext.getSystemService(ActivityManager.class);
         return am.getService().isAppFreezerEnabled();
     }
@@ -304,7 +291,7 @@ abstract class BaseBroadcastTest {
         return true;
     }
 
-    private void waitForBroadcastBarrier() {
+    protected void waitForBroadcastBarrier() {
         SystemUtil.runCommandAndPrintOnLogcat(TAG,
                 "cmd activity wait-for-broadcast-barrier --flush-application-threads");
     }
@@ -336,7 +323,7 @@ abstract class BaseBroadcastTest {
             Log.e(TAG, "Service got disconnected: " + componentName);
         }
 
-        private IBinder getService() throws Exception {
+        public IBinder getService() throws Exception {
             final IBinder service = mBlockingQueue.poll(TIMEOUT_BIND_SERVICE_SEC,
                     TimeUnit.SECONDS);
             return service;

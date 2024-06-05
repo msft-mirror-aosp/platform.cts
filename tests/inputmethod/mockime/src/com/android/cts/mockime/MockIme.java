@@ -16,22 +16,20 @@
 
 package com.android.cts.mockime;
 
-import static android.server.wm.jetpack.utils.ExtensionUtil.getWindowExtensions;
+import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+import static android.view.WindowInsets.Type.captionBar;
 import static android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS;
 
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
+import android.inputmethodservice.ExtractEditText;
 import android.inputmethodservice.InputMethodService;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.Handler;
@@ -42,7 +40,6 @@ import android.os.Process;
 import android.os.ResultReceiver;
 import android.os.StrictMode;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
@@ -75,6 +72,7 @@ import android.view.inputmethod.InputMethodSubtype;
 import android.view.inputmethod.PreviewableHandwritingGesture;
 import android.view.inputmethod.TextAttribute;
 import android.view.inputmethod.TextBoundsInfoResult;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
@@ -114,23 +112,15 @@ public final class MockIme extends InputMethodService {
 
     private static final String TAG = "MockIme";
 
-    private static final String PACKAGE_NAME = "com.android.cts.mockime";
     private static final long DELAY_CANCELLATION_SIGNAL_MILLIS = 500;
+
+    /** Default label for the custom extract text view. */
+    public static final String CUSTOM_EXTRACT_EDIT_TEXT_LABEL =
+            "MockIme Custom Extract Edit Text Label";
+
     private ArrayList<MotionEvent> mEvents;
 
     private View mExtractView;
-
-    static ComponentName getComponentName() {
-        return new ComponentName(PACKAGE_NAME, MockIme.class.getName());
-    }
-
-    static String getImeId() {
-        return getComponentName().flattenToShortString();
-    }
-
-    static String getCommandActionName(@NonNull String eventActionName) {
-        return eventActionName + ".command";
-    }
 
     @Nullable
     private final WindowExtensions mWindowExtensions = getWindowExtensions();
@@ -144,29 +134,17 @@ public final class MockIme extends InputMethodService {
 
     private final HandlerThread mHandlerThread = new HandlerThread("CommandReceiver");
 
+    private Handler mHandlerThreadHandler;
+
     private final Handler mMainHandler = new Handler();
 
+    private final Consumer<Bundle> mCommandHandler = (bundle) -> {
+        mHandlerThreadHandler.post(() -> {
+            onReceiveCommand(ImeCommand.fromBundle(bundle));
+        });
+    };
+
     private final Configuration mLastDispatchedConfiguration = new Configuration();
-
-    private static final class CommandReceiver extends BroadcastReceiver {
-        @NonNull
-        private final String mActionName;
-        @NonNull
-        private final Consumer<ImeCommand> mOnReceiveCommand;
-
-        CommandReceiver(@NonNull String actionName,
-                @NonNull Consumer<ImeCommand> onReceiveCommand) {
-            mActionName = actionName;
-            mOnReceiveCommand = onReceiveCommand;
-        }
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (TextUtils.equals(mActionName, intent.getAction())) {
-                mOnReceiveCommand.accept(ImeCommand.fromBundle(intent.getExtras()));
-            }
-        }
-    }
 
     @Nullable
     private InputConnection mMemorizedInputConnection = null;
@@ -378,6 +356,9 @@ public final class MockIme extends InputMethodService {
                         final boolean enabled = command.getExtras().getBoolean("enabled");
                         return getMemorizedOrCurrentInputConnection().reportFullscreenMode(enabled);
                     }
+                    case "getOnEvaluateFullscreenMode": {
+                        return onEvaluateFullscreenMode();
+                    }
                     case "performSpellCheck": {
                         return getMemorizedOrCurrentInputConnection().performSpellCheck();
                     }
@@ -484,6 +465,15 @@ public final class MockIme extends InputMethodService {
                                 .setExplicitlyEnabledInputMethodSubtypes(imeId, subtypeHashCodes);
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     }
+                    case "setAdditionalInputMethodSubtypes": {
+                        final String imeId = command.getExtras().getString("imeId");
+                        final InputMethodSubtype[] subtypes =
+                                command.getExtras().getParcelableArray("subtypes",
+                                        InputMethodSubtype.class);
+                        getSystemService(InputMethodManager.class)
+                                .setAdditionalInputMethodSubtypes(imeId, subtypes);
+                        return ImeEvent.RETURN_VALUE_UNAVAILABLE;
+                    }
                     case "switchInputMethod": {
                         final String id = command.getExtras().getString("id");
                         try {
@@ -542,8 +532,9 @@ public final class MockIme extends InputMethodService {
                         final int height = command.getExtras().getInt("height");
                         mView.setHeight(height);
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
-                    case "setInlineSuggestionsExtras":
-                        mInlineSuggestionsExtras = command.getExtras();
+                    case "setExtractView":
+                        final String label = command.getExtras().getString("label");
+                        setExtractView(createCustomExtractTextView(label));
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     case "verifyExtractViewNotNull":
                         if (mExtractView == null) {
@@ -651,9 +642,23 @@ public final class MockIme extends InputMethodService {
                         finishStylusHandwriting();
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     }
+                    case "finishConnectionlessStylusHandwriting": {
+                        finishConnectionlessStylusHandwriting(
+                                command.getExtras().getCharSequence("text"));
+                        return ImeEvent.RETURN_VALUE_UNAVAILABLE;
+                    }
                     case "getCurrentWindowMetricsBounds": {
                         return getSystemService(WindowManager.class)
                                 .getCurrentWindowMetrics().getBounds();
+                    }
+                    case "setImeCaptionBarVisible": {
+                        final boolean visible = command.getExtras().getBoolean("visible");
+                        if (visible) {
+                            mView.getRootView().getWindowInsetsController().show(captionBar());
+                        } else {
+                            mView.getRootView().getWindowInsetsController().hide(captionBar());
+                        }
+                        return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     }
                 }
             }
@@ -686,20 +691,7 @@ public final class MockIme extends InputMethodService {
     }
 
     @Nullable
-    private Bundle mInlineSuggestionsExtras;
-
-    @Nullable
-    private CommandReceiver mCommandReceiver;
-
-    @Nullable
     private ImeSettings mSettings;
-
-    private final AtomicReference<String> mImeEventActionName = new AtomicReference<>();
-
-    @Nullable
-    String getImeEventActionName() {
-        return mImeEventActionName.get();
-    }
 
     private final AtomicReference<String> mClientPackageName = new AtomicReference<>();
 
@@ -784,7 +776,6 @@ public final class MockIme extends InputMethodService {
                     + "Make sure MockImeSession.create() is used to launch Mock IME.");
         }
         mClientPackageName.set(mSettings.getClientPackageName());
-        mImeEventActionName.set(mSettings.getEventCallbackActionName());
 
         // TODO(b/159593676): consider to detect more violations
         if (mSettings.isStrictModeEnabled()) {
@@ -802,18 +793,14 @@ public final class MockIme extends InputMethodService {
         }
 
         getTracer().onCreate(() -> {
+
+            // TODO(b/309578419): Remove this when the MockIme can handle insets properly.
+            setTheme(R.style.MockImeTheme);
+
             super.onCreate();
             mHandlerThread.start();
-            final String actionName = getCommandActionName(mSettings.getEventCallbackActionName());
-            mCommandReceiver = new CommandReceiver(actionName, this::onReceiveCommand);
-            final IntentFilter filter = new IntentFilter(actionName);
-            final Handler handler = new Handler(mHandlerThread.getLooper());
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                registerReceiver(mCommandReceiver, filter, null /* broadcastPermission */, handler,
-                        Context.RECEIVER_VISIBLE_TO_INSTANT_APPS | Context.RECEIVER_EXPORTED);
-            } else {
-                registerReceiver(mCommandReceiver, filter, null /* broadcastPermission */, handler);
-            }
+            mHandlerThreadHandler = new Handler(mHandlerThread.getLooper());
+            mSettings.getChannel().registerListener(mCommandHandler);
             // If Extension components are not loaded successfully, notify Test app.
             if (mSettings.isWindowLayoutInfoCallbackEnabled()) {
                 getTracer().onVerify("windowLayoutComponentLoaded",
@@ -893,8 +880,40 @@ public final class MockIme extends InputMethodService {
 
     @Override
     public View onCreateExtractTextView() {
-        mExtractView =  super.onCreateExtractTextView();
+        if (mSettings != null && mSettings.isCustomExtractTextViewEnabled()) {
+            mExtractView = createCustomExtractTextView(CUSTOM_EXTRACT_EDIT_TEXT_LABEL);
+        } else {
+            mExtractView = super.onCreateExtractTextView();
+        }
         return mExtractView;
+    }
+
+    private View createCustomExtractTextView(String label) {
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+
+        TextView labelView = new TextView(this);
+        labelView.setText(label);
+        container.addView(labelView, new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT));
+
+        // Using a subclass of ExtractEditText should be allowed.
+        ExtractEditText extractEditText = new ExtractEditText(this) {};
+        Log.d(TAG, "Using custom ExtractEditText: " + extractEditText);
+        extractEditText.setId(android.R.id.inputExtractEditText);
+        container.addView(extractEditText, new LinearLayout.LayoutParams(
+                MATCH_PARENT, 0 /* height */, 1f /* weight */
+        ));
+
+        FrameLayout accessories = new FrameLayout(this);
+        accessories.setId(android.R.id.inputExtractAccessories);
+        container.addView(accessories, new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT));
+
+        Button actionButton = new Button(this);
+        actionButton.setId(android.R.id.inputExtractAction);
+        actionButton.setText("inputExtractAction");
+        accessories.addView(actionButton, new FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT));
+
+        return container;
     }
 
     private static final class KeyboardLayoutView extends LinearLayout {
@@ -956,7 +975,9 @@ public final class MockIme extends InputMethodService {
                 textView.setLayoutParams(new LayoutParams(MATCH_PARENT, WRAP_CONTENT));
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
                 textView.setGravity(Gravity.CENTER);
-                textView.setText(getImeId());
+                textView.setText(
+                        new ComponentName(mMockIme.getApplicationContext().getPackageName(),
+                                MockIme.class.getName()).flattenToShortString());
                 textView.setBackgroundColor(
                         mSettings.getBackgroundColor(defaultBackgroundColor));
                 secondaryLayout.addView(textView);
@@ -1113,6 +1134,17 @@ public final class MockIme extends InputMethodService {
     }
 
     @Override
+    public boolean onStartConnectionlessStylusHandwriting(
+            int inputType, @Nullable CursorAnchorInfo cursorAnchorInfo) {
+        if (mEvents != null) {
+            mEvents.clear();
+        }
+        getTracer().onStartConnectionlessStylusHandwriting(
+                () -> super.onStartConnectionlessStylusHandwriting(inputType, cursorAnchorInfo));
+        return mSettings.isConnectionlessHandwritingEnabled();
+    }
+
+    @Override
     public void onStylusHandwritingMotionEvent(@NonNull MotionEvent motionEvent) {
         if (mEvents == null) {
             mEvents = new ArrayList<>();
@@ -1210,7 +1242,7 @@ public final class MockIme extends InputMethodService {
             if (mSettings.isWindowLayoutInfoCallbackEnabled() && mWindowLayoutComponent != null) {
                 mWindowLayoutComponent.removeWindowLayoutInfoListener(mWindowLayoutInfoConsumer);
             }
-            unregisterReceiver(mCommandReceiver);
+            mSettings.getChannel().unregisterListener(mCommandHandler);
             mHandlerThread.quitSafely();
         });
     }
@@ -1265,10 +1297,11 @@ public final class MockIme extends InputMethodService {
         Bundle styles = stylesBuilder.build();
 
         final boolean supportedInlineSuggestions;
-        if (mInlineSuggestionsExtras != null) {
-            styles.putAll(mInlineSuggestionsExtras);
+        Bundle inlineSuggestionsExtras = SettingsProvider.getInlineSuggestionsExtras();
+        if (inlineSuggestionsExtras != null) {
+            styles.putAll(inlineSuggestionsExtras);
             supportedInlineSuggestions =
-                    mInlineSuggestionsExtras.getBoolean("InlineSuggestions", true);
+                    inlineSuggestionsExtras.getBoolean("InlineSuggestions", true);
         } else {
             supportedInlineSuggestions = true;
         }
@@ -1291,8 +1324,8 @@ public final class MockIme extends InputMethodService {
                     new InlineSuggestionsRequest.Builder(presentationSpecs)
                             .setInlineTooltipPresentationSpec(tooltipSpec)
                             .setMaxSuggestionCount(6);
-            if (mInlineSuggestionsExtras != null) {
-                builder.setExtras(mInlineSuggestionsExtras.deepCopy());
+            if (inlineSuggestionsExtras != null) {
+                builder.setExtras(inlineSuggestionsExtras.deepCopy());
             }
             return builder.build();
         });
@@ -1376,33 +1409,18 @@ public final class MockIme extends InputMethodService {
 
         private int mNestLevel = 0;
 
-        private String mImeEventActionName;
-
-        private String mClientPackageName;
-
         Tracer(@NonNull MockIme mockIme) {
             mIme = mockIme;
         }
 
         private void sendEventInternal(@NonNull ImeEvent event) {
-            if (mImeEventActionName == null) {
-                mImeEventActionName = mIme.getImeEventActionName();
-            }
-            if (mClientPackageName == null) {
-                mClientPackageName = mIme.getClientPackageName();
-            }
-            if (mImeEventActionName == null || mClientPackageName == null) {
+            if (mIme.mSettings == null) {
                 Log.e(TAG, "Tracer cannot be used before onCreate()");
                 return;
             }
-            final Intent intent = new Intent()
-                    .setAction(mImeEventActionName)
-                    .setPackage(mClientPackageName)
-                    .putExtras(event.toBundle())
-                    .addFlags(Intent.FLAG_RECEIVER_REGISTERED_ONLY
-                            | Intent.FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS
-                            | Intent.FLAG_RECEIVER_FOREGROUND);
-            mIme.sendBroadcast(intent);
+            if (!mIme.mSettings.getChannel().send(event.toBundle())) {
+                Log.w(TAG, "Channel already closed: " + event.getEventName(), new Throwable());
+            }
         }
 
         private void recordEventInternal(@NonNull String eventName, @NonNull Runnable runnable) {
@@ -1521,6 +1539,10 @@ public final class MockIme extends InputMethodService {
             final Bundle arguments = new Bundle();
             arguments.putParcelable("editorInfo", mIme.getCurrentInputEditorInfo());
             recordEventInternal("onStartStylusHandwriting", runnable, arguments);
+        }
+
+        void onStartConnectionlessStylusHandwriting(@NonNull Runnable runnable) {
+            recordEventInternal("onStartConnectionlessStylusHandwriting", runnable);
         }
 
         void onStylusHandwritingMotionEvent(@NonNull Runnable runnable) {

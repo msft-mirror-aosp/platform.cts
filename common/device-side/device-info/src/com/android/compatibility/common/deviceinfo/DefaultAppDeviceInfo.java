@@ -19,10 +19,7 @@ import android.content.ComponentName;
 
 import com.android.compatibility.common.util.DeviceInfoStore;
 
-/**
- * Device info collector for collecting information about default apps/packages configured on
- * the device.
- */
+/** DefaultAppDeviceInfo collector. */
 public final class DefaultAppDeviceInfo extends DeviceInfo {
 
     private static final String CONFIG_QR_CODE_COMPONENT = "config_defaultQrCodeComponent";

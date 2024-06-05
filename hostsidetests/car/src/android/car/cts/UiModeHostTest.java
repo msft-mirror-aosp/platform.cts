@@ -16,7 +16,6 @@
 
 package android.car.cts;
 
-import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.Test;
@@ -30,7 +29,6 @@ import java.util.regex.Pattern;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class UiModeHostTest extends CarHostJUnit4TestCase {
 
-    private static final int DEFAULT_TIMEOUT_SEC = 20;
     private static final Pattern NIGHT_MODE_REGEX = Pattern.compile("Night mode: (yes|no)");
 
     /**
@@ -92,12 +90,10 @@ public final class UiModeHostTest extends CarHostJUnit4TestCase {
     }
 
     private void waitUntilNightMode() throws Exception {
-        CommonTestUtils.waitUntil("timed out waiting for the night mode",
-                DEFAULT_TIMEOUT_SEC, () -> isNightMode());
+        waitUntil(() -> isNightMode(), "the night mode");
     }
 
     private void waitUntilDayMode() throws Exception {
-        CommonTestUtils.waitUntil("timed out waiting for the day mode",
-                DEFAULT_TIMEOUT_SEC, () -> !isNightMode());
+        waitUntil(() -> !isNightMode(), "the day mode");
     }
 }

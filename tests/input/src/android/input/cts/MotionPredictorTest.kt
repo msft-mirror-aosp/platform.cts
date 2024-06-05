@@ -48,9 +48,12 @@ private fun getStylusMotionEvent(
         action: Int,
         x: Float,
         y: Float,
-        ): MotionEvent{
+        tilt: Float = 0.0f,
+        orientation: Float = 0.0f,
+        ): MotionEvent {
     return getMotionEvent(
-            eventTime, action, STYLUS_DEVICE_ID, x, y, SOURCE_STYLUS, TOOL_TYPE_STYLUS)
+            eventTime, action, STYLUS_DEVICE_ID, x, y, tilt, orientation,
+            SOURCE_STYLUS, TOOL_TYPE_STYLUS)
 }
 
 private fun getTouchMotionEvent(
@@ -58,9 +61,12 @@ private fun getTouchMotionEvent(
         action: Int,
         x: Float,
         y: Float,
-        ): MotionEvent{
+        tilt: Float = 0.0f,
+        orientation: Float = 0.0f,
+        ): MotionEvent {
     return getMotionEvent(
-            eventTime, action, TOUCH_DEVICE_ID, x, y, SOURCE_TOUCHSCREEN, TOOL_TYPE_FINGER)
+            eventTime, action, TOUCH_DEVICE_ID, x, y, tilt, orientation,
+            SOURCE_TOUCHSCREEN, TOOL_TYPE_FINGER)
 }
 
 private fun getMotionEvent(
@@ -69,9 +75,11 @@ private fun getMotionEvent(
         deviceId: Int,
         x: Float,
         y: Float,
+        tilt: Float,
+        orientation: Float,
         source: Int,
         toolType: Int,
-        ): MotionEvent{
+        ): MotionEvent {
     val pointerCount = 1
     val properties = arrayOfNulls<MotionEvent.PointerProperties>(pointerCount)
     val coords = arrayOfNulls<MotionEvent.PointerCoords>(pointerCount)
@@ -83,12 +91,26 @@ private fun getMotionEvent(
         coords[i] = PointerCoords()
         coords[i]!!.x = x
         coords[i]!!.y = y
+        coords[i]!!.setAxisValue(MotionEvent.AXIS_TILT, tilt)
+        coords[i]!!.orientation = orientation
     }
 
-    return MotionEvent.obtain(/*downTime=*/0, eventTime.toMillis(), action, properties.size,
-                properties, coords, /*metaState=*/0, /*buttonState=*/0,
-                /*xPrecision=*/0f, /*yPrecision=*/0f, deviceId, /*edgeFlags=*/0,
-                source, /*flags=*/0)
+    return MotionEvent.obtain(
+            0, // downTime
+            eventTime.toMillis(),
+            action,
+            properties.size,
+            properties,
+            coords,
+            0, // metaState
+            0, // buttonState
+            0f, // xPrecision
+            0f, // yPrecision
+            deviceId,
+            0, // edgeFlags
+            source,
+            0 // flags
+    )
 }
 
 /**
@@ -106,11 +128,11 @@ class MotionPredictorTest {
         // Now that we know prediction is off, feed some events and ensure prediction doesn't work
 
         var eventTime = Duration.ofMillis(0)
-        predictor.record(getStylusMotionEvent(eventTime, ACTION_DOWN, /*x=*/10f, /*y=*/20f))
+        predictor.record(getStylusMotionEvent(eventTime, ACTION_DOWN, x = 10f, y = 20f))
 
         eventTime += Duration.ofMillis(8)
         // Send MOVE event and then call .predict
-        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, /*x=*/11f, /*y=*/24f))
+        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, x = 11f, y = 24f))
 
         // Check that predictions aren't generated
         assertNull(predictor.predict(Duration.ofMillis(10).toNanos()))
@@ -126,22 +148,24 @@ class MotionPredictorTest {
 
         // One-time: send a DOWN event
         var eventTime = Duration.ofMillis(0) // t= 0 ms
-        predictor.record(getStylusMotionEvent(eventTime, ACTION_DOWN, /*x=*/10f, /*y=*/20f))
+        predictor.record(getStylusMotionEvent(eventTime, ACTION_DOWN, x = 10f, y = 20f))
 
         // Send a few coordinates
         eventTime += Duration.ofMillis(8) // t= 8 ms
         // Send MOVE event and then call .predict
-        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, /*x=*/10f, /*y=*/20f))
+        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, x = 10f, y = 20f))
 
         eventTime += Duration.ofMillis(8) // t= 16 ms
-        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, /*x=*/10f, /*y=*/20f))
+        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, x = 10f, y = 20f))
 
         val predicted = predictor.predict(Duration.ofMillis(24).toNanos())
         // There should either be no predictions (indicating no movement), or a prediction at the
         // same location.
         if (predicted != null) {
-            assertEquals(10f, predicted.getX(), /*delta=*/1f)
-            assertEquals(20f, predicted.getY(), /*delta=*/2f)
+            val xDelta = 1f
+            val yDelta = 2f
+            assertEquals(10f, predicted.getX(), xDelta)
+            assertEquals(20f, predicted.getY(), yDelta)
             assertEquals(STYLUS_DEVICE_ID, predicted.deviceId)
         }
     }
@@ -156,15 +180,15 @@ class MotionPredictorTest {
 
         // One-time: send a DOWN event
         var eventTime = Duration.ofMillis(0) // t= 0 ms
-        predictor.record(getStylusMotionEvent(eventTime, ACTION_DOWN, /*x=*/10f, /*y=*/10f))
+        predictor.record(getStylusMotionEvent(eventTime, ACTION_DOWN, x = 10f, y = 10f))
 
         // Send a few coordinates
         eventTime += Duration.ofMillis(8) // t= 8 ms
         // Send MOVE event and then call .predict
-        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, /*x=*/10f, /*y=*/20f))
+        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, x = 10f, y = 20f))
 
         eventTime += Duration.ofMillis(8) // t= 16 ms
-        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, /*x=*/10f, /*y=*/30f))
+        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, x = 10f, y = 30f))
 
         val predicted = predictor.predict(Duration.ofMillis(24).toNanos())
         assertNotNull(predicted)
@@ -174,9 +198,48 @@ class MotionPredictorTest {
         // The last event was at t=16, y=30.
         val expectedY = 30 + ((predicted!!.getEventTime() - 16) * yMovement)
 
-        assertEquals(10f, predicted.getX(), /*delta=*/5f)
-        assertEquals(expectedY, predicted.getY(), /*delta=*/15f)
+        val xDelta = 5f
+        val yDelta = 15f
+        assertEquals(10f, predicted.getX(), xDelta)
+        assertEquals(expectedY, predicted.getY(), yDelta)
         assertEquals(STYLUS_DEVICE_ID, predicted.deviceId)
+    }
+
+    /**
+     * Tilt and orientation should be set for predictions.
+     */
+    @Test
+    fun testTiltOrientation() {
+        val predictor = MotionPredictor(context)
+        assumeTrue(predictor.isPredictionAvailable(STYLUS_DEVICE_ID, SOURCE_STYLUS))
+
+        val tilt = Math.PI.toFloat() / 4
+        val orientation = -Math.PI.toFloat() / 4
+
+        var eventTime = Duration.ofMillis(0) // t= 0 ms
+        predictor.record(
+            getStylusMotionEvent(eventTime, ACTION_DOWN, x = 10f, y = 20f, tilt, orientation)
+        )
+
+        // Send a few coordinates
+        eventTime += Duration.ofMillis(8) // t= 8 ms
+        predictor.record(
+            getStylusMotionEvent(eventTime, ACTION_MOVE, x = 10f, y = 20f, tilt, orientation)
+        )
+
+        eventTime += Duration.ofMillis(8) // t= 16 ms
+        predictor.record(
+            getStylusMotionEvent(eventTime, ACTION_MOVE, x = 10f, y = 30f, tilt, orientation)
+        )
+
+        // Ask for a prediction.
+        val predicted = predictor.predict(Duration.ofMillis(24).toNanos())
+        assertNotNull(predicted)
+
+        // The predicted tilt and orientation should closely match that of the recorded events.
+        val tolerance = Math.PI.toFloat() / 16
+        assertEquals(tilt, predicted!!.getAxisValue(MotionEvent.AXIS_TILT, 0), tolerance)
+        assertEquals(orientation, predicted.getOrientation(0), tolerance)
     }
 
     /**
@@ -190,18 +253,18 @@ class MotionPredictorTest {
 
         // Send some events from the stylus device
         var eventTime = Duration.ofMillis(0) // t= 0 ms
-        predictor.record(getStylusMotionEvent(eventTime, ACTION_DOWN, /*x=*/10f, /*y=*/20f))
+        predictor.record(getStylusMotionEvent(eventTime, ACTION_DOWN, x = 10f, y = 20f))
 
         // Send a few coordinates
         eventTime += Duration.ofMillis(8) // t= 8 ms
         // Send MOVE event and then call .predict
-        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, /*x=*/10f, /*y=*/21f))
+        predictor.record(getStylusMotionEvent(eventTime, ACTION_MOVE, x = 10f, y = 21f))
 
         // Now send an event from touch device without first ending the stylus gesture. The
         // new event should be rejected with an exception
         try {
             eventTime += Duration.ofMillis(8) // t= 16 ms
-            predictor.record(getTouchMotionEvent(eventTime, ACTION_DOWN, /*x=*/20f, /*y=*/30f))
+            predictor.record(getTouchMotionEvent(eventTime, ACTION_DOWN, x = 20f, y = 30f))
             fail("Expected an IllegalArgumentException due to an inconsistent event stream")
         } catch (e: IllegalArgumentException) {
             // This is expected!
@@ -209,11 +272,11 @@ class MotionPredictorTest {
 
         // Complete the stylus gesture
         eventTime += Duration.ofMillis(8) // t= 24 ms
-        predictor.record(getStylusMotionEvent(eventTime, ACTION_UP, /*x=*/10f, /*y=*/21f))
+        predictor.record(getStylusMotionEvent(eventTime, ACTION_UP, x = 10f, y = 21f))
 
         // Now that there's no active gesture, the subsequent events from another device
         // should not throw.
         eventTime += Duration.ofMillis(8) // t= 32 ms
-        predictor.record(getTouchMotionEvent(eventTime, ACTION_DOWN, /*x=*/20f, /*y=*/30f))
+        predictor.record(getTouchMotionEvent(eventTime, ACTION_DOWN, x = 20f, y = 30f))
     }
 }

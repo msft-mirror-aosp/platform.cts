@@ -65,6 +65,7 @@ public abstract class BuilderBase {
      * The number of channels for the created stream.
      */
     protected int mChannelCount = 2;
+    protected int mChannelMask = 0;
 
     // Performance Mode Constants
     public static final int PERFORMANCE_MODE_NONE = 10; // AAUDIO_PERFORMANCE_MODE_NONE
@@ -80,6 +81,8 @@ public abstract class BuilderBase {
     // Sharing Mode Constants
     public static final int SHARING_MODE_EXCLUSIVE = 0; // AAUDIO_SHARING_MODE_EXCLUSIVE
     public static final int SHARING_MODE_SHARED = 1;    // AAUDIO_SHARING_MODE_SHARED
+    public static final int SHARING_MODE_NOTSUPPORTED = -1;    // A return value only
+
     /**
      * The sharing mode for the created stream. It can be any one of the constants above.
      */
@@ -129,21 +132,44 @@ public abstract class BuilderBase {
     }
 
     /**
-     * Specifies a channel count for a stream
+     * Specifies the COUNT of channels for audio I/O. Note that this overrides
+     * any previously specified POSITIONAL channel mask.
+     *
      * @param channelCount The number of channels for the created stream.
      * @return this BuilderBase (for cascaded calls)
      */
     public BuilderBase setChannelCount(int channelCount) {
         mChannelCount = channelCount;
+        mChannelMask = 0;
         return this;
     }
 
     /**
      * @return the number of channels for the created stream, specified in the
-     * setChannelCount() method.
+     * setChannelCount() method. 0 if using positional channel-masks.
      */
     public int getChannelCount() {
         return mChannelCount;
+    }
+
+    /**
+     * Specifies a POSITIONAL mask defining channel placement for audio I/O. Note that this
+     * overrides any previously specified channel COUNT.
+     *
+     * @param mask The desired AudioFormat channel mask
+     * @return this BuilderBase (for cascaded calls)
+     */
+    public BuilderBase setChannelMask(int mask) {
+        mChannelMask = mask;
+        mChannelCount = 0;
+        return this;
+    }
+
+    /**
+     * @return The current positional mask for audio I/O. 0 if using a channel-index mask.
+     */
+    public int getChannelMask() {
+        return mChannelMask;
     }
 
     /**

@@ -24,6 +24,10 @@ import camera_properties_utils
 import capture_request_utils
 import its_session_utils
 
+_OPTIONAL_SENSOR_CHECK = ('rv')
+_REQUIRED_SENSOR_CHECK = ('accel', 'gyro', 'mag')
+_SENSOR_EVENTS_WAIT_TIME = 2  # seconds
+
 
 class UnifiedTimeStampTest(its_base_test.ItsBaseTest):
   """Test if image and motion sensor events are in the same time domain.
@@ -56,7 +60,7 @@ class UnifiedTimeStampTest(its_base_test.ItsBaseTest):
       logging.debug('Reading sensor measurements')
       sensors = cam.get_sensors()
       cam.start_sensor_events()
-      time.sleep(2.0)
+      time.sleep(_SENSOR_EVENTS_WAIT_TIME)  # run sensors to get events
       events = cam.get_sensor_events()
       ts_sensor_first = {}
       ts_sensor_last = {}
@@ -81,11 +85,17 @@ class UnifiedTimeStampTest(its_base_test.ItsBaseTest):
                         ts_sensor_last[sensor])
           if (not ts_image0 < ts_sensor_first[sensor] < ts_image1 or
               not ts_image0 < ts_sensor_last[sensor] < ts_image1):
-            raise AssertionError(
+            e_msg = (
                 f'{sensor} times not bounded by camera! camera: '
                 f'{ts_image0}:{ts_image1}, {sensor}: '
-                f'{ts_sensor_first[sensor]}:{ts_sensor_last[sensor]}')
-
+                f'{ts_sensor_first[sensor]}:{ts_sensor_last[sensor]}'
+            )
+            if sensor in _REQUIRED_SENSOR_CHECK:
+              raise AssertionError(e_msg)
+            elif sensor in _OPTIONAL_SENSOR_CHECK:
+              raise AssertionError(
+                  f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}'
+              )
 
 if __name__ == '__main__':
   test_runner.main()

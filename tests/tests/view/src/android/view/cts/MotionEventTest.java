@@ -19,16 +19,35 @@ package android.view.cts;
 import static android.view.cts.MotionEventUtils.withCoords;
 import static android.view.cts.MotionEventUtils.withProperties;
 
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withDeviceId;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withDownTime;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withEdgeFlags;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withEventTime;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withMetaState;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withMotionAction;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withPressure;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withRawCoords;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withSize;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withXPrecision;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withYPrecision;
+
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.graphics.Matrix;
+import android.graphics.PointF;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.TextUtils;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -37,9 +56,12 @@ import android.view.MotionEvent.PointerCoords;
 import android.view.MotionEvent.PointerProperties;
 import android.view.cts.MotionEventUtils.PointerCoordsBuilder;
 import android.view.cts.MotionEventUtils.PointerPropertiesBuilder;
+import android.view.cts.util.NativeHeapLeakDetector;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
 
 import org.junit.After;
 import org.junit.Before;
@@ -54,6 +76,7 @@ import java.util.Set;
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class MotionEventTest {
     private MotionEvent mMotionEvent1;
     private MotionEvent mMotionEvent2;
@@ -74,7 +97,16 @@ public class MotionEventTest {
     private static final float DELTA               = 0.01f;
     private static final float RAW_COORD_TOLERANCE = 0.001f;
 
+    // Underestimated from ~528 B to breach threshold when leaked
+    private static final int APPROX_MOTION_EVENT_SIZE_BYTES = 500;
+    private static final int NUM_MOTION_EVENT_ALLOCATIONS =
+            NativeHeapLeakDetector.MEMORY_LEAK_THRESHOLD_KB * 1024 / APPROX_MOTION_EVENT_SIZE_BYTES;
+
     private static native void nativeMotionEventTest(MotionEvent event);
+
+    private static native void obtainNativeMotionEventCopyFromJava(MotionEvent event);
+
+    private static native MotionEvent obtainMotionEventCopyFromNative(MotionEvent event);
 
     static {
         System.loadLibrary("ctsview_jni");
@@ -254,6 +286,14 @@ public class MotionEventTest {
     }
 
     @Test
+    public void testFlagCanceled() {
+        final long eventTime = SystemClock.uptimeMillis();
+        MotionEvent event = MotionEvent.obtain(eventTime, eventTime, MotionEvent.ACTION_CANCEL,
+                        /*x=*/ 0, /*y=*/ 0, 0);
+        assertEquals(MotionEvent.FLAG_CANCELED, event.getFlags() & MotionEvent.FLAG_CANCELED);
+    }
+
+    @Test
     public void testAccessAction() {
         assertEquals(MotionEvent.ACTION_MOVE, mMotionEvent1.getAction());
 
@@ -265,9 +305,12 @@ public class MotionEventTest {
 
         mMotionEvent1.setAction(MotionEvent.ACTION_CANCEL);
         assertEquals(MotionEvent.ACTION_CANCEL, mMotionEvent1.getAction());
+        assertEquals(MotionEvent.FLAG_CANCELED,
+                        mMotionEvent1.getFlags() & MotionEvent.FLAG_CANCELED);
 
         mMotionEvent1.setAction(MotionEvent.ACTION_DOWN);
         assertEquals(MotionEvent.ACTION_DOWN, mMotionEvent1.getAction());
+        assertEquals(0, mMotionEvent1.getFlags() & MotionEvent.FLAG_CANCELED);
     }
 
     @Test
@@ -1059,5 +1102,79 @@ public class MotionEventTest {
                 MotionEvent.ACTION_BUTTON_PRESS, X_3F, Y_4F, META_STATE);
         event.setActionButton(MotionEvent.BUTTON_PRIMARY);
         nativeMotionEventTest(event);
+    }
+
+    @Test
+    public void testNativeToJavaConverter() {
+        final MotionEvent javaMotionEvent = MotionEvent.obtain(mDownTime, mEventTime,
+                MotionEvent.ACTION_DOWN, X_3F, Y_4F, PRESSURE_1F, SIZE_1F, META_STATE,
+                X_PRECISION_3F, Y_PRECISION_4F, DEVICE_ID_1, EDGE_FLAGS);
+        final MotionEvent motionEventFromNative = obtainMotionEventCopyFromNative(javaMotionEvent);
+        assertNotSame(javaMotionEvent, motionEventFromNative);
+        assertThat(motionEventFromNative, allOf(
+                is(notNullValue()),
+                withEventTime(javaMotionEvent.getEventTime()),
+                withDownTime(javaMotionEvent.getDownTime()),
+                withMotionAction(javaMotionEvent.getAction()),
+                InputEventMatchersKt.withCoords(
+                        new PointF(javaMotionEvent.getX(), javaMotionEvent.getY())
+                ),
+                withRawCoords(new PointF(javaMotionEvent.getRawX(), javaMotionEvent.getRawY())),
+                withDeviceId(javaMotionEvent.getDeviceId()),
+                withEdgeFlags(javaMotionEvent.getEdgeFlags()),
+                withMetaState(javaMotionEvent.getMetaState()),
+                withPressure(javaMotionEvent.getPressure()),
+                withSize(javaMotionEvent.getSize()),
+                withXPrecision(javaMotionEvent.getXPrecision()),
+                withYPrecision(javaMotionEvent.getYPrecision())
+        ));
+        assertEquals(
+                javaMotionEvent.getEventTimeNanos(),
+                motionEventFromNative.getEventTimeNanos()
+        );
+    }
+
+    @Test
+    public void testNativeToJavaConverterMemoryLeak() {
+        final MotionEvent javaMotionEvent =
+                MotionEvent.obtain(
+                        mDownTime, mEventTime, MotionEvent.ACTION_DOWN, X_3F, Y_4F, META_STATE);
+
+        try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
+            for (int iteration = 0; iteration < NUM_MOTION_EVENT_ALLOCATIONS; ++iteration) {
+                obtainMotionEventCopyFromNative(javaMotionEvent);
+            }
+        }
+    }
+
+    @Test
+    public void testNativeToJavaConverterMemoryLeakRecylingObjects() {
+        final MotionEvent javaMotionEvent =
+                MotionEvent.obtain(
+                        mDownTime, mEventTime, MotionEvent.ACTION_DOWN, X_3F, Y_4F, META_STATE);
+
+        try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
+            for (int iteration = 0; iteration < NUM_MOTION_EVENT_ALLOCATIONS; ++iteration) {
+                obtainMotionEventCopyFromNative(javaMotionEvent).recycle();
+            }
+        }
+    }
+
+    @Test
+    public void testJavaToNativeConverterMemoryLeak() {
+        final MotionEvent event =
+                MotionEvent.obtain(
+                        mDownTime,
+                        mEventTime,
+                        MotionEvent.ACTION_BUTTON_PRESS,
+                        X_3F,
+                        Y_4F,
+                        META_STATE);
+
+        try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
+            for (int iteration = 0; iteration < NUM_MOTION_EVENT_ALLOCATIONS; ++iteration) {
+                obtainNativeMotionEventCopyFromJava(event);
+            }
+        }
     }
 }

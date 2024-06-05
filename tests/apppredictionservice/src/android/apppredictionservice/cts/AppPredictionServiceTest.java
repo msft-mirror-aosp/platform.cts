@@ -29,11 +29,16 @@ import android.app.prediction.AppPredictor;
 import android.app.prediction.AppTarget;
 import android.app.prediction.AppTargetEvent;
 import android.app.prediction.AppTargetId;
+import android.apppredictionservice.cts.ServiceReporter.RequestServiceFeaturesVerifier;
 import android.apppredictionservice.cts.ServiceReporter.RequestVerifier;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.service.appprediction.flags.Flags;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -60,6 +65,10 @@ import java.util.concurrent.Executors;
 public class AppPredictionServiceTest {
 
     private static final String TAG = "AppPredictionServiceTest";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String APP_PREDICTION_SERVICE = "app_prediction";
 
@@ -128,6 +137,7 @@ public class AppPredictionServiceTest {
         assertFails(() -> client.unregisterPredictionUpdates(null));
         assertFails(() -> client.requestPredictionUpdate());
         assertFails(() -> client.sortTargets(null, null, null));
+        assertFails(() -> client.requestServiceFeatures(null, null));
         assertFails(() -> client.destroy());
     }
 
@@ -224,6 +234,24 @@ public class AppPredictionServiceTest {
         assertTrue(cb.requestAndWaitForTargets(sortedTargets,
                 () -> client.sortTargets(shuffledTargets,
                         Executors.newSingleThreadExecutor(), cb)));
+
+        // Clients must be destroyed at end of test.
+        client.destroy();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SERVICE_FEATURES_API)
+    public void testRequestServiceFeatures() {
+        AppPredictionContext context = createTestPredictionContext();
+        AppPredictor client = createTestPredictor(context);
+
+        Bundle bundle = new Bundle();
+        bundle.putBoolean("TEST", true);
+        mReporter.setServiceFeaturesProvider(() -> bundle);
+        RequestServiceFeaturesVerifier cb = new RequestServiceFeaturesVerifier();
+
+        assertTrue(cb.requestAndWaitForTargets(bundle,
+                () -> client.requestServiceFeatures(Executors.newSingleThreadExecutor(), cb)));
 
         // Clients must be destroyed at end of test.
         client.destroy();

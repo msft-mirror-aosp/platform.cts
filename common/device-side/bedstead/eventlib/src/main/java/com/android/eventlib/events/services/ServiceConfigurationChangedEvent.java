@@ -28,6 +28,8 @@ import com.android.queryable.info.ServiceInfo;
 import com.android.queryable.queries.ServiceQuery;
 import com.android.queryable.queries.ServiceQueryHelper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link Service#onConfigurationChanged(Configuration)}
  */
@@ -100,6 +102,7 @@ public class ServiceConfigurationChangedEvent extends Event {
         }
 
         /** Sets the {@link Service} which received this event. */
+        @CanIgnoreReturnValue
         public ServiceConfigurationChangedEvent.ServiceConfigurationChangedEventLogger setService(
                 String serviceName) {
             mEvent.mService = ServiceInfo.builder()
@@ -109,6 +112,7 @@ public class ServiceConfigurationChangedEvent extends Event {
         }
 
         /** Sets the {@link Configuration} */
+        @CanIgnoreReturnValue
         public ServiceConfigurationChangedEvent.ServiceConfigurationChangedEventLogger
                 setConfiguration(Configuration configuration) {
             mEvent.mConfiguration = configuration;

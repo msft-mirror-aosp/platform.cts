@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- * Copyright (C) 2017 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,9 @@
     <uses-permission android:name="android.permission.MANAGE_ROLE_HOLDERS"/>
     <uses-permission android:name="android.permission.PROVIDE_OWN_AUTOFILL_SUGGESTIONS"/>
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL"/>
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
+    <uses-permission android:name="android.permission.LIST_ENABLED_CREDENTIAL_PROVIDERS"/>
+    <uses-permission android:name="android.permission.CREDENTIAL_MANAGER_SET_ALLOWED_PROVIDERS"/>
 
     <queries>
         <package android:name="com.android.cts.mockime" />
@@ -42,7 +45,8 @@
         <uses-library android:name="android.test.runner"/>
 
         <activity android:name=".activities.LoginActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdge">
             <intent-filter>
                 <!-- This intent filter is not really needed by CTS, but it makes easier to launch
                                          this app during CTS development... -->
@@ -62,6 +66,8 @@
         <activity android:name=".activities.LoginNotImportantForAutofillWrappedApplicationContextActivity"/>
         <activity android:name=".activities.LoginImportantForCredentialManagerActivity"/>
         <activity android:name=".activities.LoginMixedImportantForCredentialManagerActivity"/>
+        <activity android:name=".activities.LoginCredentialMixedActivity"
+             android:theme="@style/OptOutEdgeToEdge"/>
         <activity android:name=".activities.WelcomeActivity"
              android:taskAffinity=".WelcomeActivity"/>
         <activity android:name=".activities.ViewActionActivity"
@@ -78,7 +84,8 @@
              android:taskAffinity=".SecondActivity"/>
         <activity android:name=".activities.ViewAttributesTestActivity"/>
         <activity android:name=".activities.AuthenticationActivity"/>
-        <activity android:name=".activities.ManualAuthenticationActivity"/>
+        <activity android:name=".activities.ManualAuthenticationActivity"
+          android:theme="@style/OptOutEdgeToEdge"/>
         <activity android:name=".activities.CheckoutActivity"
              android:taskAffinity=".CheckoutActivity"/>
         <activity android:name=".activities.InitializedCheckoutActivity"/>
@@ -105,7 +112,8 @@
         <activity android:name=".activities.FragmentContainerActivity"/>
         <activity android:name=".activities.DuplicateIdActivity"
              android:theme="@android:style/Theme.NoTitleBar"/>
-        <activity android:name=".activities.SimpleSaveActivity"/>
+        <activity android:name=".activities.SimpleSaveActivity"
+             android:theme="@style/OptOutEdgeToEdge"/>
         <activity android:name=".activities.PreSimpleSaveActivity"
              android:exported="true">
             <intent-filter>
@@ -140,6 +148,7 @@
         <activity android:name=".activities.TrampolineForResultActivity"/>
         <activity android:name=".activities.OnCreateServiceStatusVerifierActivity"/>
         <activity android:name=".activities.UsernameOnlyActivity"
+             android:theme="@style/OptOutEdgeToEdge"
              android:exported="true">
             <intent-filter>
                 <!-- This intent filter is not really needed by CTS, but it makes easier to launch
@@ -173,6 +182,15 @@
         <activity android:name=".activities.SimpleAfterLoginActivity"/>
         <activity android:name=".activities.SimpleBeforeLoginActivity"/>
         <activity android:name=".activities.NonAutofillableActivity"/>
+        <activity
+            android:name=".credman.CtsGetPasswordActivity"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.autofillservice.cts.credman.GET_PASSWORD" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <receiver android:name=".testcore.SelfDestructReceiver"
              android:exported="true"
@@ -243,6 +261,18 @@
             <intent-filter>
                 <action android:name="android.service.assist.classification.FieldClassificationService"/>
             </intent-filter>
+        </service>
+        <service
+            android:exported="true"
+            android:name="android.autofillservice.cts.credman.CtsCredentialProviderService"
+            android:label="Test Provider Service"
+            android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.credentials.CredentialProviderService"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.credentials.provider"
+                android:resource="@xml/provider"/>
         </service>
 
     </application>

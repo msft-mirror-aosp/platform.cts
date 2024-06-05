@@ -18,7 +18,6 @@ package android.input.cts
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.Instrumentation
-import android.view.InputDevice
 import android.view.KeyCharacterMap.VIRTUAL_KEYBOARD
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityManager
@@ -27,7 +26,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
-import com.android.cts.input.UinputDevice
+import com.android.cts.input.UinputGamepad
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -92,8 +91,7 @@ class GamepadWithAccessibilityTest {
      */
     @Test
     fun testDeviceId() {
-        val uinputDevice = UinputDevice.create(instrumentation, R.raw.google_gamepad_register,
-                InputDevice.SOURCE_KEYBOARD)
+        val uinputDevice = UinputGamepad(instrumentation)
 
         val EV_SYN = 0
         val SYN_REPORT = 0
@@ -102,12 +100,18 @@ class GamepadWithAccessibilityTest {
         val EV_KEY_UP = 0
         val BTN_GAMEPAD = 0x130
         val evdevEventsDown = intArrayOf(EV_KEY, BTN_GAMEPAD, EV_KEY_DOWN, EV_SYN, SYN_REPORT, 0)
-        uinputDevice.injectEvents(evdevEventsDown.joinToString(prefix = "[", postfix = "]",
-                separator = ","))
+        uinputDevice.injectEvents(evdevEventsDown.joinToString(
+            prefix = "[",
+            postfix = "]",
+            separator = ","
+        ))
 
         val evdevEventsUp = intArrayOf(EV_KEY, BTN_GAMEPAD, EV_KEY_UP, EV_SYN, SYN_REPORT, 0)
-        uinputDevice.injectEvents(evdevEventsUp.joinToString(prefix = "[", postfix = "]",
-                separator = ","))
+        uinputDevice.injectEvents(evdevEventsUp.joinToString(
+            prefix = "[",
+            postfix = "]",
+            separator = ","
+        ))
 
         val lastInputEvent = activity.getInputEvent()
         assertNotNull(lastInputEvent)

@@ -19,21 +19,18 @@ package com.android.bedstead.nene.packages;
 import static android.Manifest.permission.INSTALL_PACKAGES;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
-import static android.content.Intent.ACTION_VIEW;
 import static android.content.pm.PackageInstaller.EXTRA_PACKAGE_NAME;
 import static android.content.pm.PackageInstaller.EXTRA_STATUS;
 import static android.content.pm.PackageInstaller.EXTRA_STATUS_MESSAGE;
 import static android.content.pm.PackageInstaller.STATUS_FAILURE;
 import static android.content.pm.PackageInstaller.STATUS_SUCCESS;
 import static android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL;
-import static android.content.pm.PackageManager.MATCH_ALL;
-import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.R;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.INSTALL_TEST_ONLY_PACKAGE;
-import static com.android.bedstead.nene.permissions.CommonPermissions.USE_SYSTEM_DATA_LOADERS;
-import static com.android.compatibility.common.util.FileUtils.readInputStreamFully;
+import static com.android.bedstead.permissions.CommonPermissions.INSTALL_TEST_ONLY_PACKAGE;
+import static com.android.bedstead.permissions.CommonPermissions.USE_SYSTEM_DATA_LOADERS;
+import static com.android.bedstead.nene.utils.FileUtils.readInputStreamFully;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -44,7 +41,7 @@ import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
-import android.net.Uri;
+import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 import android.util.Log;
 
@@ -57,15 +54,16 @@ import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.AdbParseException;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingIntentSender;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.nene.utils.ResolveInfoWrapper;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.UndoableContext;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -78,7 +76,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -291,7 +288,7 @@ public final class Packages {
                 Collection<Package> beforePackages = TestApis.packages().installedForUser(user);
 
                 // Expected output "Success"
-                ShellCommand.builderForUser(user, "pm install")
+                String unused = ShellCommand.builderForUser(user, "pm install")
                         .addOperand("-r") // Reinstall automatically
                         .addOperand("-t") // Allow test-only install
                         .addOperand(apkFile.getAbsolutePath())
@@ -369,7 +366,7 @@ public final class Packages {
             if (TestApis.packages().instrumented().isInstantApp()) {
                 // We should install using stdin with the byte array
                 try {
-                    ShellCommand.builderForUser(user, "pm install")
+                    String unused = ShellCommand.builderForUser(user, "pm install")
                             .addOperand("-t") // Allow installing test apks
                             .addOperand("-r") // Replace existing apps
                             .addOption("-S", apkFile.length) // Install from stdin
@@ -413,7 +410,7 @@ public final class Packages {
                     PackageInstaller.SessionParams sessionParams =
                             new PackageInstaller.SessionParams(
                                     MODE_FULL_INSTALL);
-                    sessionParams.setInstallFlagAllowTest();
+                    TestApisReflectionKt.setInstallFlagAllowTest(sessionParams);
                     sessionId = packageInstaller.createSession(sessionParams);
                 }
 
@@ -476,7 +473,7 @@ public final class Packages {
         try {
             Collection<Package> beforePackages = TestApis.packages().installedForUser(user);
 
-            ShellCommand.builderForUser(user, "pm install")
+            String unused = ShellCommand.builderForUser(user, "pm install")
                     .addOperand("-t") // Allow installing test apks
                     .addOperand("-r") // Replace existing apps
                     .addOption("-S", apkFile.length) // Install from stdin
@@ -583,11 +580,11 @@ public final class Packages {
                 mPackageAddedIntentFilter);
 
         if (user.equals(TestApis.users().instrumented())) {
-            broadcastReceiver.register();
+            BlockingBroadcastReceiver unused = broadcastReceiver.register();
         } else if (Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.Q)) {
             try (PermissionContext p =
                          TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
-                broadcastReceiver.register();
+                BlockingBroadcastReceiver unused = broadcastReceiver.register();
             }
         } else {
             return null;
@@ -718,7 +715,7 @@ public final class Packages {
         TestApis.settings().global().putInt(PACKAGE_VERIFIER_INCLUDE_ADB, verify ? 1 : 0);
 
         return new UndoableContext(() -> {
-            setVerifyAdbInstalls(originalVerifyAdbInstalls);
+            UndoableContext unused = setVerifyAdbInstalls(originalVerifyAdbInstalls);
         });
     }
 
@@ -735,53 +732,32 @@ public final class Packages {
         return find(TestApis.ui().device().getLauncherPackageName());
     }
 
-    /**
-     * Finds the browser assigned to handle browsing intents by default for selected user.
+    /** See {@link PackageManager#queryIntentActivities(Intent, int)}.
      *
-     * @return the package for the default browser if there is one, null otherwise.
-     */
-    @SuppressWarnings("NewApi")
+     * <p> Returns a list of {@link ResolveInfo} wrapped in {@link ResolveInfoWrapper}.*/
     @Experimental
-    public Package defaultBrowserForUser(UserReference user) {
-        ResolveInfo resolvedActivity;
-        List<ResolveInfo> possibleActivities;
-        Intent toResolve = new Intent(ACTION_VIEW, Uri.parse("http://"));
-
-        PackageManager pm = TestApis.context()
-                .androidContextAsUser(user)
-                .getPackageManager();
-
-        if (Versions.meetsMinimumSdkVersionRequirement(Versions.T)) {
-            possibleActivities = pm.queryIntentActivities(toResolve,
-                    PackageManager.ResolveInfoFlags.of(MATCH_ALL));
-            resolvedActivity = pm.resolveActivity(toResolve,
-                    PackageManager.ResolveInfoFlags.of(MATCH_DEFAULT_ONLY));
-        } else {
-            possibleActivities = pm.queryIntentActivities(toResolve, MATCH_ALL);
-            resolvedActivity = pm.resolveActivity(toResolve, MATCH_DEFAULT_ONLY);
-        }
-
-        Set<String> possibleBrowserPackageNames = possibleActivities.stream()
-                .map(Packages::extractPackageName)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        Log.i(LOG_TAG, "possibleBrowserPackageNames: " + possibleBrowserPackageNames);
-
-        String resolvedBrowserPackageName = extractPackageName(resolvedActivity);
-        Log.i(LOG_TAG, "defaultBrowserPackageName: " + resolvedBrowserPackageName);
-        if (resolvedBrowserPackageName == null
-                || !possibleBrowserPackageNames.contains(resolvedBrowserPackageName)) {
-            return null;
-        }
-
-        return find(resolvedBrowserPackageName);
+    public List<ResolveInfoWrapper> queryIntentActivities(Intent intent, int flags) {
+        return TestApis.context().instrumentedContext().getPackageManager()
+                .queryIntentActivities(intent, flags)
+                .stream().map(r -> new ResolveInfoWrapper(r.activityInfo, r.match))
+                .collect(Collectors.toList());
     }
 
-    private static String extractPackageName(@Nullable ResolveInfo nullableInfo) {
-        return Optional.ofNullable(nullableInfo)
-                .map(resolveInfo -> resolveInfo.activityInfo)
-                .map(activityInfo -> activityInfo.packageName)
-                .orElse(null);
+    /** See {@link PackageManager#queryIntentActivities(Intent, int)}.
+     *
+     * <p> Returns a list of {@link ResolveInfo} wrapped in {@link ResolveInfoWrapper}.*/
+    @Experimental
+    public List<ResolveInfoWrapper> queryIntentActivities(UserReference user, Intent intent, int flags) {
+        return TestApis.context().androidContextAsUser(user).getPackageManager()
+                .queryIntentActivities(intent, flags)
+                .stream().map(r -> new ResolveInfoWrapper(r.activityInfo, r.match))
+                .collect(Collectors.toList());
     }
-}
+
+    /** Dump the packages state. */
+    public String dump() {
+        return ShellCommand.builder("dumpsys packages").validate((s) -> !s.isEmpty())
+                .executeOrThrowNeneException("Error dumping packages state");
+    }
+
+ }

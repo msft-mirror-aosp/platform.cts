@@ -27,10 +27,10 @@ import android.content.Intent;
 import android.content.pm.cts.shortcutmanager.common.Constants;
 import android.content.pm.cts.shortcutmanager.common.ReplyUtil;
 import android.permission.cts.PermissionUtils;
-import android.test.suitebuilder.annotation.SmallTest;
-import android.test.suitebuilder.annotation.Suppress;
 import android.view.KeyEvent;
 
+import androidx.test.filters.SmallTest;
+import androidx.test.filters.Suppress;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
@@ -94,17 +94,23 @@ public class ShortcutManagerThrottlingTest extends ShortcutManagerCtsTestsBase {
         callTest(Constants.TEST_UPDATE_SHORTCUTS);
     }
 
+    // TODO: b/288276271
+    /**
     public void testBgServiceThrottled() throws InterruptedException {
         callTest(Constants.TEST_BG_SERVICE_THROTTLED);
     }
+     */
 
     public void testActivityUnthrottled() throws InterruptedException {
         callTest(Constants.TEST_ACTIVITY_UNTHROTTLED);
     }
 
+    // TODO: b/288276271
+    /**
     public void testFgServiceUnthrottled() throws InterruptedException {
         callTest(Constants.TEST_FG_SERVICE_UNTHROTTLED);
     }
+     */
 
     /**
      * Flakey and may not work on OEM devices, so disabled.

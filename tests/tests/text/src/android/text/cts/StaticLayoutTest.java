@@ -56,9 +56,9 @@ import android.text.style.ReplacementSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TextAppearanceSpan;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -1749,5 +1749,24 @@ public class StaticLayoutTest {
         // Make sure draw won't cause crashes.
         // draw eventualy calls TextLine.draw which was the problematic method.
         layout.draw(c);
+    }
+
+    @Test
+    public void testNotCrashByCRCharacter() {
+        String text = "aasאlk\r dc";
+        StaticLayout.Builder.obtain(text, 0, text.length(), new TextPaint(), 1000).build();
+    }
+
+    @Test
+    public void testNotCrashByCRCharacter_other_B_properties() {
+        String text = "aasאlk\u2029 dc";
+        StaticLayout.Builder.obtain(text, 0, text.length(), new TextPaint(), 1000).build();
+    }
+
+    @Test
+    public void testEmptyRTLText() {
+        StaticLayout.Builder.obtain("", 0, 0, new TextPaint(), 10000)
+                .setTextDirection(TextDirectionHeuristics.RTL)
+                .build();
     }
 }

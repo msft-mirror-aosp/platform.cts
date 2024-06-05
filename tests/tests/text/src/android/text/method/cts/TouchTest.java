@@ -19,29 +19,35 @@ package android.text.method.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.os.SystemClock;
+import android.platform.test.annotations.FlakyTest;
 import android.text.Layout;
 import android.text.SpannableString;
 import android.text.TextPaint;
 import android.text.method.Touch;
 import android.util.TypedValue;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.annotation.UiThreadTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+@FlakyTest
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public class TouchTest {
@@ -59,14 +65,19 @@ public class TouchTest {
     private boolean mReturnFromTouchEvent;
     private TextView mTextView;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<CtsActivity> mActivityRule = new ActivityTestRule<>(CtsActivity.class);
 
-    @UiThreadTest
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mActivity = mActivityRule.getActivity();
+        WindowUtil.waitForFocus(mActivity);
         mTextView = new TextViewNoIme(mActivity);
         mTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         mTextView.setEllipsize(null);
@@ -115,16 +126,19 @@ public class TouchTest {
     public void testOnTouchEvent() throws Throwable {
         // Create a string that is wider than the screen.
         int rootViewWidth = mActivity.getWindow().getDecorView().getWidth();
+        int touchSlop = ViewConfiguration.get(mActivity).getScaledTouchSlop();
         TextPaint paint = mTextView.getPaint();
         String text = LONG_TEXT;
         int textWidth = Math.round(paint.measureText(text));
-        while (textWidth < rootViewWidth) {
+        while (textWidth < rootViewWidth + touchSlop) {
             text += LONG_TEXT;
             textWidth = Math.round(paint.measureText(text));
         }
 
-        // Drag the difference between the text width and the screen width.
-        int dragAmount = Math.min(rootViewWidth, textWidth - rootViewWidth);
+        // Drag the difference between the text width and the screen width, and subtract 1
+        // in case it can't be scrolled to the rightmost.
+        int dragAmount = Math.min(rootViewWidth, textWidth - rootViewWidth) - 1;
+        assertTrue(dragAmount > touchSlop);
         final String finalText = text;
         final SpannableString spannable = new SpannableString(finalText);
         mActivityRule.runOnUiThread(() -> {

@@ -16,6 +16,7 @@
 
 package android.widget.cts;
 
+import static android.server.wm.CtsWindowInfoUtils.waitForWindowFocus;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyInt;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.database.Cursor;
@@ -48,6 +50,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsKeyEventUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
@@ -145,7 +148,13 @@ public class SearchView_CursorTest {
         }
     }
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<SearchViewCtsActivity> mActivityRule =
             new ActivityTestRule<>(SearchViewCtsActivity.class);
 
@@ -217,6 +226,12 @@ public class SearchView_CursorTest {
         assertTrue(mSearchView.hasFocus());
         assertEquals(mSuggestionsAdapter, mSearchView.getSuggestionsAdapter());
 
+        // The popup candidate window requires window focus but because of the timing issue, the
+        // window focus may not be obtained at the time of showing candidate window triggered by
+        // setQuery method call below. We should wait for window focus before calling setQuery.
+        PollingCheck.waitFor(() -> mSearchView.hasWindowFocus());
+        assertTrue(mSearchView.hasWindowFocus());
+
         mActivityRule.runOnUiThread(() -> mSearchView.setQuery("Di", false));
         PollingCheck.waitFor(() -> {
             UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
@@ -261,6 +276,12 @@ public class SearchView_CursorTest {
             mSearchView.setOnQueryTextListener(mockQueryTextListener);
             mSearchView.setOnSuggestionListener(mockSuggestionListener);
             mSearchView.requestFocus();
+        });
+
+        assertTrue("Couldn't get window focus",
+                waitForWindowFocus(mSearchView, /*hasWindowFocus*/ true));
+
+        WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mSearchView, () -> {
             mSearchView.setQuery("Di", false);
         });
 

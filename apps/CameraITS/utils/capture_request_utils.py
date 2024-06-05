@@ -17,16 +17,25 @@
 import logging
 import math
 
-_COMMON_IMG_ARS = (4/3, 16/9)
-_COMMON_IMG_ARS_ATOL = 0.01
-_MAX_YUV_SIZE = (1920, 1080)
-_MIN_YUV_SIZE = (640, 360)
-_VGA_W, _VGA_H = 640, 480
-_CAPTURE_INTENT_STILL_CAPTURE = 2
 _AE_MODE_ON_AUTO_FLASH = 2
-_CAPTURE_INTENT_PREVIEW = 1
 _AE_PRECAPTURE_TRIGGER_START = 1
 _AE_PRECAPTURE_TRIGGER_IDLE = 0
+_CAPTURE_INTENT_STILL_CAPTURE = 2
+_CAPTURE_INTENT_PREVIEW = 1
+_COMMON_IMG_ARS = (4/3, 16/9)
+_COMMON_IMG_ARS_ATOL = 0.01
+_FLASH_MODE_SINGLE = 1
+FMT_CODE_JPEG = 0x100
+FMT_CODE_JPEG_R = 0x1005
+FMT_CODE_PRIV = 0x22
+FMT_CODE_RAW = 0x20
+FMT_CODE_RAW10 = 0x25
+FMT_CODE_RAW12 = 0x26
+FMT_CODE_YUV = 0x23  # YUV_420_888
+FMT_CODE_Y8 = 0x20203859
+_MAX_YUV_SIZE = (1920, 1080)
+_MIN_YUV_SIZE = (640, 360)
+_VGA_W, _VGA_H = (640, 480)
 
 
 def is_common_aspect_ratio(size):
@@ -39,7 +48,8 @@ def is_common_aspect_ratio(size):
     Boolean
   """
   for aspect_ratio in _COMMON_IMG_ARS:
-    if math.isclose(size[0]/size[1], aspect_ratio, abs_tol=_COMMON_IMG_ARS_ATOL):
+    if math.isclose(size[0]/size[1], aspect_ratio,
+                    abs_tol=_COMMON_IMG_ARS_ATOL):
       return True
   return False
 
@@ -181,15 +191,15 @@ def get_available_output_sizes(fmt, props, max_size=None, match_ar_size=None):
   """
   ar_tolerance = 0.03
   fmt_codes = {
-      'raw': 0x20,
-      'raw10': 0x25,
-      'raw12': 0x26,
-      'yuv': 0x23,
-      'jpg': 0x100,
-      'jpeg': 0x100,
-      'jpeg_r': 0x1005,
-      'priv': 0x22,
-      'y8': 0x20203859
+      'raw': FMT_CODE_RAW,
+      'raw10': FMT_CODE_RAW10,
+      'raw12': FMT_CODE_RAW12,
+      'yuv': FMT_CODE_YUV,
+      'jpg': FMT_CODE_JPEG,
+      'jpeg': FMT_CODE_JPEG,
+      'jpeg_r': FMT_CODE_JPEG_R,
+      'priv': FMT_CODE_PRIV,
+      'y8': FMT_CODE_Y8
   }
   configs = props[
       'android.scaler.streamConfigurationMap']['availableStreamConfigurations']
@@ -197,16 +207,18 @@ def get_available_output_sizes(fmt, props, max_size=None, match_ar_size=None):
   out_configs = [cfg for cfg in fmt_configs if not cfg['input']]
   out_sizes = [(cfg['width'], cfg['height']) for cfg in out_configs]
   if max_size:
+    max_size = [int(i) for i in max_size]
     out_sizes = [
-        s for s in out_sizes if s[0] <= int(max_size[0]) and s[1] <= int(max_size[1])
+        s for s in out_sizes if s[0] <= max_size[0] and s[1] <= max_size[1]
     ]
   if match_ar_size:
-    ar = match_ar_size[0] / float(match_ar_size[1])
+    ar = match_ar_size[0] / match_ar_size[1]
     out_sizes = [
         s for s in out_sizes if abs(ar - s[0] / float(s[1])) <= ar_tolerance
     ]
   out_sizes.sort(reverse=True, key=lambda s: s[0])  # 1st pass, sort by width
   out_sizes.sort(reverse=True, key=lambda s: s[0] * s[1])  # sort by area
+  logging.debug('Available %s output sizes: %s', fmt, out_sizes)
   return out_sizes
 
 
@@ -518,3 +530,59 @@ def take_captures_with_flash(cam, out_surface):
                                   preview_req_idle,
                                   still_capture_req, out_surface)
   return cap
+
+
+def take_captures_with_flash_strength(cam, out_surface, ae_mode, strength):
+  """Takes capture with desired flash strength.
+
+  Runs precapture sequence by setting the aePrecapture trigger to
+  START and capture intent set to Preview.
+  Then, take the capture with set flash strength.
+  Args:
+    cam: ItsSession object
+    out_surface: Specifications of the output image format and
+      size to use for the capture.
+    ae_mode: AE_mode
+    strength: flash strength
+
+  Returns:
+    cap: An object which contains following fields:
+      * data: the image data as a numpy array of bytes.
+      * width: the width of the captured image.
+      * height: the height of the captured image.
+      * format: image format
+      * metadata: the capture result object
+  """
+  preview_req_start = auto_capture_request()
+  preview_req_start[
+      'android.control.aeMode'] = _AE_MODE_ON_AUTO_FLASH
+  preview_req_start[
+      'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
+  preview_req_start[
+      'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_START
+  # Repeat preview requests with aePrecapture set to IDLE
+  # until AE is converged.
+  preview_req_idle = auto_capture_request()
+  preview_req_idle[
+      'android.control.aeMode'] = _AE_MODE_ON_AUTO_FLASH
+  preview_req_idle[
+      'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
+  preview_req_idle[
+      'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_IDLE
+  # Single still capture request.
+  still_capture_req = auto_capture_request()
+  still_capture_req[
+      'android.control.aeMode'] = ae_mode
+  still_capture_req[
+      'android.flash.mode'] = _FLASH_MODE_SINGLE
+  still_capture_req[
+      'android.control.captureIntent'] = _CAPTURE_INTENT_STILL_CAPTURE
+  still_capture_req[
+      'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_IDLE
+  still_capture_req[
+      'android.flash.strengthLevel'] = strength
+  cap = cam.do_capture_with_flash(preview_req_start,
+                                  preview_req_idle,
+                                  still_capture_req, out_surface)
+  return cap
+

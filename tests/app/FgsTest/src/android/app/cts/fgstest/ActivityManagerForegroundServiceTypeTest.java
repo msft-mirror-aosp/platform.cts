@@ -23,6 +23,7 @@ import static android.app.fgstesthelper.LocalForegroundServiceBase.RESULT_SECURI
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
@@ -257,6 +258,13 @@ public final class ActivityManagerForegroundServiceTypeTest {
         testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_FILE_MANAGEMENT);
     }
 
+    @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING"})
+    @Test
+    public void testForegroundServiceTypeMediaProcessingPermission() throws Exception {
+        assumeTrue(android.content.pm.Flags.introduceMediaProcessingType());
+        testPermissionEnforcementCommon(ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
+    }
+
     @ApiTest(apis = {"android.content.pm.ServiceInfo#FOREGROUND_SERVICE_TYPE_SPECIAL_USE"})
     @Test
     public void testForegroundServiceTypeSpecialUsePermission() throws Exception {
@@ -425,6 +433,7 @@ public final class ActivityManagerForegroundServiceTypeTest {
                 // If there is a feature flag to turn the permission check off, it should succeed.
                 if (permFlag != null) {
                     helper.set(permFlag, "false");
+                    Thread.sleep(1000);
                     grantPermissions(allOfPermissions, testPackageName);
                     startAndStopFgsType(TEST_COMP_TARGET_FGS_ALL_TYPE, type, null);
                     resetPermissions(anyOfPermissions, testPackageName);

@@ -16,6 +16,8 @@
 
 package com.android.bedstead.nene;
 
+import android.service.quicksettings.TileService;
+
 import com.google.common.truth.Truth;
 
 import org.junit.Test;
@@ -206,12 +208,8 @@ public class TestApisTest {
     }
 
     @Test
-    public void flags_returnsInstance() {
-        Truth.assertThat(TestApis.flags()).isNotNull();
-    }
-
-    @Test
-    public void flags_multipleCalls_returnsSameInstance() {
-        Truth.assertThat(TestApis.flags()).isEqualTo(TestApis.flags());
+    public void quickSettings_isSupported_returns() {
+        Truth.assertThat(TestApis.quickSettings().isSupported()).isEqualTo(
+                TileService.isQuickSettingsSupported());
     }
 }

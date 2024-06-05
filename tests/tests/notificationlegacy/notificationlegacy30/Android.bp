@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_system_ui_please_use_a_more_specific_subteam_if_possible_",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -24,7 +25,7 @@ android_test {
         "ctstestrunner-axt",
         "CtsAppTestStubsShared",
         "junit",
-        "truth-prebuilt",
+        "truth",
     ],
     libs: [
         "android.test.runner",
@@ -38,7 +39,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts"
+        "mts",
     ],
     sdk_version: "test_current",
     target_sdk_version: "30",

@@ -17,6 +17,8 @@
 package android.view.inputmethod.cts.util;
 
 import static android.view.Display.DEFAULT_DISPLAY;
+import static android.view.MotionEvent.ACTION_DOWN;
+import static android.view.MotionEvent.ACTION_UP;
 import static android.view.WindowInsets.Type.displayCutout;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
@@ -24,18 +26,22 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommandOr
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 import android.app.Activity;
 import android.app.ActivityTaskManager;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.content.Context;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.server.wm.CtsWindowInfoUtils;
 import android.view.Display;
 import android.view.InputDevice;
+import android.view.InputEvent;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -48,9 +54,13 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.UinputTouchDevice;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -68,6 +78,34 @@ public final class TestUtils {
      */
     public static void runOnMainSync(@NonNull Runnable task) {
         InstrumentationRegistry.getInstrumentation().runOnMainSync(task);
+    }
+
+    /**
+     * Executes a call on the application's main thread, blocking until it is complete. When a
+     * Throwable is thrown in the runnable, the exception is propagated back to the
+     * caller's thread. If it is an unchecked throwable, it will be rethrown as is. If it is a
+     * checked exception, it will be rethrown as a {@link RuntimeException}.
+     *
+     * <p>A simple wrapper for {@link Instrumentation#runOnMainSync(Runnable)}.</p>
+     *
+     * @param task task to be called on the UI thread
+     */
+    public static void runOnMainSyncWithRethrowing(@NonNull Runnable task) {
+        FutureTask<Void> wrapped = new FutureTask<>(task, null);
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(wrapped);
+        try {
+            wrapped.get();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            } else if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            throw new RuntimeException(cause);
+        }
     }
 
     /**
@@ -201,6 +239,50 @@ public final class TestUtils {
     }
 
     /**
+     * Returns given display's rotation.
+     */
+    public static String getRotation(int displayId) {
+        return SystemUtil.runShellCommandOrThrow("wm user-rotation -d " + displayId);
+    }
+
+    /**
+     * Set a locked rotation
+     * @param displayId display to set rotation on.
+     * @param rotation the fixed rotation to apply.
+     */
+    public static void setLockedRotation(int displayId, String rotation) {
+        SystemUtil.runShellCommandOrThrow(
+                "wm user-rotation -d " + displayId + " lock " + rotation);
+    }
+
+    /**
+     * Set display rotation in degrees.
+     * @param displayId display to set rotation on.
+     * @param rotation the fixed rotation to apply.
+     */
+    public static void setRotation(int displayId, String rotation) {
+        SystemUtil.runShellCommandOrThrow("wm user-rotation -d " + displayId + " " + rotation);
+    }
+
+    /**
+     * Waits until the given activity is ready for input, this is only needed when directly
+     * injecting input on screen via
+     * {@link android.hardware.input.InputManager#injectInputEvent(InputEvent, int)}.
+     */
+    public static void waitUntilActivityReadyForInputInjection(Activity activity,
+            String tag, String windowDumpErrMsg) throws InterruptedException {
+        // If we requested an orientation change, just waiting for the window to be visible is not
+        // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
+        // to process them before making sure the window is visible.
+        CtsWindowInfoUtils.waitForStableWindowGeometry(5, TimeUnit.SECONDS);
+        if (activity.getWindow() != null
+                && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
+            CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);
+            fail("Activity window did not become visible: " + activity);
+        }
+    }
+
+    /**
      * Call a command to force stop the given application package.
      *
      * @param pkg The name of the package to be stopped.
@@ -211,6 +293,17 @@ public final class TestUtils {
         });
     }
 
+    /**
+     * Call a command to force stop the given application package.
+     *
+     * @param pkg The name of the package to be stopped.
+     * @param userId The target user ID.
+     */
+    public static void forceStopPackage(@NonNull String pkg, int userId) {
+        runWithShellPermissionIdentity(() -> {
+            runShellCommandOrThrow("am force-stop " + pkg + " --user " + userId);
+        });
+    }
 
     /**
      * Inject Stylus move on the Display inside view coordinates so that initiation can happen.
@@ -230,18 +323,39 @@ public final class TestUtils {
      * @return the injected MotionEvent.
      */
     public static MotionEvent injectStylusDownEvent(@NonNull View view, int x, int y) {
+        return injectStylusEvent(view, ACTION_DOWN, x, y);
+    }
+
+    /**
+     * Inject a stylus ACTION_DOWN event in a multi-touch environment to the screen using given
+     * view's coordinates.
+     * @param device {@link UinputTouchDevice}  stylus device.
+     * @param view  view whose coordinates are used to compute the event location.
+     * @param x the x coordinates of the stylus event in the view's location coordinates.
+     * @param y the y coordinates of the stylus event in the view's location coordinates.
+     */
+    public static void injectStylusDownEvent(
+            @NonNull UinputTouchDevice device, @NonNull View view, int x, int y) {
         int[] xy = new int[2];
         view.getLocationOnScreen(xy);
         x += xy[0];
         y += xy[1];
 
-        // Inject stylus ACTION_DOWN
-        long downTime = SystemClock.uptimeMillis();
-        final MotionEvent downEvent =
-                getMotionEvent(downTime, downTime, MotionEvent.ACTION_DOWN, x, y,
-                        MotionEvent.TOOL_TYPE_STYLUS);
-        injectMotionEvent(downEvent, true /* sync */);
-        return downEvent;
+        device.sendBtnTouch(true /* isDown */);
+        device.sendPressure(255);
+        device.sendDown(0 /* pointerId */, new Point(x, y), UinputTouchDevice.MT_TOOL_PEN);
+        device.sync();
+    }
+
+    /**
+     * Inject a stylus ACTION_UP event in a multi-touch environment to the screen.
+     * @param device {@link UinputTouchDevice}  stylus device.
+     */
+    public static void injectStylusUpEvent(@NonNull UinputTouchDevice device) {
+        device.sendBtnTouch(false /* isDown */);
+        device.sendPressure(0);
+        device.sendUp(0 /* pointerId */);
+        device.sync();
     }
 
     /**
@@ -252,17 +366,28 @@ public final class TestUtils {
      * @return the injected MotionEvent.
      */
     public static MotionEvent injectStylusUpEvent(@NonNull View view, int x, int y) {
+        return injectStylusEvent(view, ACTION_UP, x, y);
+    }
+
+    public static void injectStylusHoverEvents(@NonNull View view, int x, int y) {
+        injectStylusEvent(view, MotionEvent.ACTION_HOVER_ENTER, x, y);
+        injectStylusEvent(view, MotionEvent.ACTION_HOVER_MOVE, x, y);
+        injectStylusEvent(view, MotionEvent.ACTION_HOVER_EXIT, x, y);
+    }
+
+    private static MotionEvent injectStylusEvent(@NonNull View view, int action, int x, int y) {
         int[] xy = new int[2];
         view.getLocationOnScreen(xy);
         x += xy[0];
         y += xy[1];
 
-        // Inject stylus ACTION_DOWN
-        long downTime = SystemClock.uptimeMillis();
-        final MotionEvent upEvent = getMotionEvent(downTime, downTime, MotionEvent.ACTION_UP, x, y,
-                MotionEvent.TOOL_TYPE_STYLUS);
-        injectMotionEvent(upEvent, true /* sync */);
-        return upEvent;
+        // Inject stylus action
+        long eventTime = SystemClock.uptimeMillis();
+        final MotionEvent event =
+                getMotionEvent(eventTime, eventTime, action, x, y,
+                        MotionEvent.TOOL_TYPE_STYLUS);
+        injectMotionEvent(event, true /* sync */);
+        return event;
     }
 
     /**
@@ -284,6 +409,36 @@ public final class TestUtils {
         injectMotionEvent(event, true /* sync */);
 
         return event;
+    }
+
+    /**
+     * Inject a finger touch action event in a multi-touch environment to the screen using given
+     * view's coordinates.
+     * @param device {@link UinputTouchDevice} touch device.
+     * @param view  view whose coordinates are used to compute the event location.
+     * @param action {@link MotionEvent#getAction()} for the event.
+     */
+    public static void injectFingerEventOnViewCenter(
+            UinputTouchDevice device, @NonNull View view, int action) {
+        final int[] xy = new int[2];
+        view.getLocationOnScreen(xy);
+
+        // Inject finger touch event.
+        int x = xy[0] + view.getWidth() / 2;
+        int y = xy[1] + view.getHeight() / 2;
+        switch (action) {
+            case ACTION_DOWN:
+                device.sendBtnTouch(true /* isDown */);
+                device.sendDown(
+                        0 /* pointerId */, new Point(x, y), UinputTouchDevice.MT_TOOL_FINGER);
+                device.sync();
+                break;
+            case ACTION_UP:
+                device.sendBtnTouch(false /* isDown */);
+                device.sendUp(0 /* pointerId */);
+                device.sync();
+                break;
+        }
     }
 
     /**
@@ -318,6 +473,36 @@ public final class TestUtils {
             injectedEvents.add(moveEvent);
         }
         return injectedEvents;
+    }
+
+    /**
+     * Inject Stylus ACTION_MOVE events in a multi-device environment tp the screen using the given
+     * view's coordinates.
+     *
+     * @param stylus {@link UinputTouchDevice} stylus device.
+     * @param view  view whose coordinates are used to compute the event location.
+     * @param startX the start x coordinates of the stylus event in the view's local coordinates.
+     * @param startY the start y coordinates of the stylus event in the view's local coordinates.
+     * @param endX the end x coordinates of the stylus event in the view's local coordinates.
+     * @param endY the end y coordinates of the stylus event in the view's local coordinates.
+     * @param number the number of the motion events injected to the view.
+     */
+    public static void injectStylusMoveEvents(
+            @NonNull UinputTouchDevice stylus, @NonNull View view, int startX, int startY, int endX,
+            int endY, int number) {
+        int[] xy = new int[2];
+        view.getLocationOnScreen(xy);
+
+        final float incrementX = ((float) (endX - startX)) / (number - 1);
+        final float incrementY = ((float) (endY - startY)) / (number - 1);
+
+        // Send stylus ACTION_MOVE.
+        for (int i = 0; i < number; i++) {
+            int x = (int) (startX + incrementX * i + xy[0]);
+            int y = (int) (startY + incrementY * i + xy[1]);
+            stylus.sendMove(0 /* pointerId */, new Point(x, y));
+            stylus.sync();
+        }
     }
 
     /**
@@ -468,7 +653,7 @@ public final class TestUtils {
             if (i == 0) {
                 // ACTION_DOWN
                 injectMotionEvent(getMotionEvent(
-                        time, time, MotionEvent.ACTION_DOWN, x, y, toolType),
+                        time, time, ACTION_DOWN, x, y, toolType),
                         true /* sync */);
             }
 
@@ -480,7 +665,7 @@ public final class TestUtils {
             if (i == steps - 1) {
                 // ACTION_UP
                 injectMotionEvent(getMotionEvent(
-                        time, time, MotionEvent.ACTION_UP, x, y, toolType),
+                        time, time, ACTION_UP, x, y, toolType),
                         true /* sync */);
             }
         }

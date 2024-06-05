@@ -52,7 +52,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
-import android.os.Process;
 import android.os.storage.StorageManager;
 import android.provider.MediaStore;
 import android.system.ErrnoException;
@@ -87,6 +86,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -172,6 +174,7 @@ public class TestUtils {
 
     private static final long POLLING_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(20);
     private static final long POLLING_SLEEP_MILLIS = 100;
+    private static final long APP_INSTALL_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(8);
 
     /**
      * Creates the top level default directories.
@@ -224,47 +227,6 @@ public class TestUtils {
         } catch (Exception e) {
             fail("Exception on polling for permission revoke for " + packageName + " for "
                     + permission + ": " + e.getMessage());
-        }
-    }
-
-    public static void revokeAccessMediaLocation() {
-        revokeAppOpPermission(Manifest.permission.ACCESS_MEDIA_LOCATION,
-                "android:access_media_location");
-    }
-
-    /**
-     * Revoke the app op for the given permission. Unlike
-     * {@link TestUtils#revokePermission(String, String)}, its usage does not kill the application.
-     * It can be used to drop permissions previously granted to the test application, without
-     * crashing the test application itself.
-     */
-    private static void revokeAppOpPermission(String manifestPermission, String appOp) {
-        try {
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation()
-                    .adoptShellPermissionIdentity("android.permission.MANAGE_APP_OPS_MODES",
-                            "android.permission.REVOKE_RUNTIME_PERMISSIONS");
-            Context context =
-                    androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                            .getTargetContext();
-            // Revoking the manifest permission will kill the test app.
-            // Deny the permission App Op to revoke this permission.
-            PackageManager packageManager = context.getPackageManager();
-            String packageName = context.getPackageName();
-            if (packageManager.checkPermission(manifestPermission,
-                    packageName) == PackageManager.PERMISSION_GRANTED) {
-                context.getPackageManager().updatePermissionFlags(
-                        manifestPermission, packageName,
-                        PackageManager.FLAG_PERMISSION_REVOKED_COMPAT,
-                        PackageManager.FLAG_PERMISSION_REVOKED_COMPAT, context.getUser());
-                context.getSystemService(AppOpsManager.class).setUidMode(
-                        appOp, Process.myUid(),
-                        AppOpsManager.MODE_IGNORED);
-            }
-        } finally {
-            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation()
-                    .dropShellPermissionIdentity();
         }
     }
 
@@ -755,7 +717,7 @@ public class TestUtils {
             if (isAppInstalled(testApp)) {
                 Uninstall.packages(packageName);
             }
-            Install.single(testApp).commit();
+            Install.single(testApp).setTimeout(APP_INSTALL_TIMEOUT_MILLIS).commit();
             assertThat(InstallUtils.getInstalledVersion(packageName)).isEqualTo(1);
             if (grantStoragePermission) {
                 addressStoragePermissions(packageName, true);
@@ -1198,13 +1160,16 @@ public class TestUtils {
         return packageManager.hasSystemFeature(feature);
     }
 
-    private static void scrollIntoView(UiSelector selector) {
+    private static void scrollIntoView(UiSelector selector) throws Exception {
         UiScrollable uiScrollable = new UiScrollable(new UiSelector().scrollable(true));
+        uiScrollable.setSwipeDeadZonePercentage(0.25);
         try {
             uiScrollable.scrollIntoView(selector);
         } catch (UiObjectNotFoundException e) {
             // Scrolling can fail if the UI is not scrollable
         }
+        // Sleep for a few moments to let the scroll fully stop.
+        Thread.sleep(250);
     }
 
     /**
@@ -1393,12 +1358,79 @@ public class TestUtils {
         }
     }
 
+    private static void copyContentsAndDir(final Path source, final Path target)
+            throws IOException {
+        Files.walkFileTree(source, new java.nio.file.SimpleFileVisitor<Path>() {
+            private java.nio.file.FileVisitResult copyFileOrEmptyDir(final Path source,
+                    final Path sourceRoot, final Path targetRoot) throws IOException {
+                final Path target = targetRoot.resolve(sourceRoot.relativize(source));
+                Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.LinkOption.NOFOLLOW_LINKS);
+                return java.nio.file.FileVisitResult.CONTINUE;
+            }
+            @Override
+            public java.nio.file.FileVisitResult preVisitDirectory(Path sourceDir,
+                    java.nio.file.attribute.BasicFileAttributes attrs) throws IOException {
+                return copyFileOrEmptyDir(sourceDir, source, target);
+            }
+            @Override
+            public java.nio.file.FileVisitResult visitFile(Path sourceFile,
+                    java.nio.file.attribute.BasicFileAttributes attrs) throws IOException {
+                return copyFileOrEmptyDir(sourceFile, source, target);
+            }
+        });
+    }
+
+    private static boolean renameDirectoryWithOptionalFallbackToCopy(
+            File oldDirectory, File newDirectory, boolean allowCopyFallback) {
+        if (oldDirectory.renameTo(newDirectory)) {
+            return true;
+        }
+
+        if (!allowCopyFallback) {
+            return false;
+        }
+
+        if (!oldDirectory.isDirectory()) {
+            return false;
+        }
+        if (newDirectory.exists()
+                && (!newDirectory.isDirectory() || newDirectory.listFiles().length > 0)) {
+            return false;
+        }
+
+        final Path oldPath = oldDirectory.toPath();
+        final Path newPath = newDirectory.toPath();
+        Log.v(TAG, "Recovering failed rename from " + oldPath + " to " + newPath);
+        try {
+            copyContentsAndDir(oldPath, newPath);
+        } catch (IOException e) {
+            Log.v(TAG, "Failed to recover rename: ", e);
+            return false;
+        }
+        deleteRecursively(oldDirectory);
+        return true;
+    }
+
     /**
      * Asserts can rename directory.
      */
     public static void assertCanRenameDirectory(File oldDirectory, File newDirectory,
             @Nullable File[] oldFilesList, @Nullable File[] newFilesList) {
-        assertThat(oldDirectory.renameTo(newDirectory)).isTrue();
+        assertCanRenameDirectory(oldDirectory, newDirectory, oldFilesList, newFilesList,
+                false /* allowCopyFallback */);
+    }
+
+    /**
+     * Asserts can rename directory. When {@code allowCopyFallback} is true and the simple rename
+     * fails, falls back to recursively copying {@code oldDirectory} into {@code newDirectory}.
+     * Note that the file attributes will not be copied on the fallback.
+     */
+    public static void assertCanRenameDirectory(File oldDirectory, File newDirectory,
+            @Nullable File[] oldFilesList, @Nullable File[] newFilesList,
+            boolean allowCopyFallback) {
+        assertThat(renameDirectoryWithOptionalFallbackToCopy(
+                    oldDirectory, newDirectory, allowCopyFallback)).isTrue();
         assertThat(oldDirectory.exists()).isFalse();
         assertThat(newDirectory.exists()).isTrue();
         for (File file : oldFilesList != null ? oldFilesList : new File[0]) {
@@ -1738,15 +1770,34 @@ public class TestUtils {
 
     public static File[] getDefaultTopLevelDirs() {
         if (BuildCompat.isAtLeastS()) {
-            return new File[]{getAlarmsDir(), getAndroidDir(), getAudiobooksDir(), getDcimDir(),
-                    getDocumentsDir(), getDownloadDir(), getMusicDir(), getMoviesDir(),
-                    getNotificationsDir(), getPicturesDir(), getPodcastsDir(), getRecordingsDir(),
-                    getRingtonesDir()};
+            return new File[] {
+                getAlarmsDir(),
+                getAudiobooksDir(),
+                getDcimDir(),
+                getDocumentsDir(),
+                getDownloadDir(),
+                getMusicDir(),
+                getMoviesDir(),
+                getNotificationsDir(),
+                getPicturesDir(),
+                getPodcastsDir(),
+                getRecordingsDir(),
+                getRingtonesDir()
+            };
         }
-        return new File[]{getAlarmsDir(), getAndroidDir(), getAudiobooksDir(), getDcimDir(),
-                getDocumentsDir(), getDownloadDir(), getMusicDir(), getMoviesDir(),
-                getNotificationsDir(), getPicturesDir(), getPodcastsDir(),
-                getRingtonesDir()};
+        return new File[] {
+            getAlarmsDir(),
+            getAudiobooksDir(),
+            getDcimDir(),
+            getDocumentsDir(),
+            getDownloadDir(),
+            getMusicDir(),
+            getMoviesDir(),
+            getNotificationsDir(),
+            getPicturesDir(),
+            getPodcastsDir(),
+            getRingtonesDir()
+        };
     }
 
     private static void assertInputStreamContent(InputStream in, byte[] expectedContent)

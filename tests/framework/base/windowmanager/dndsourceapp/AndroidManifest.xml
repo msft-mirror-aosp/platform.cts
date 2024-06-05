@@ -25,7 +25,16 @@
     <application android:label="CtsDnDSource">
         <activity android:name="android.server.wm.dndsourceapp.DragSource"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
+             android:taskAffinity="dndsourceapp.source"
              android:exported="true">
+        </activity>
+
+        <!-- A drop target from the same application as the source to test
+             DRAG_FLAG_GLOBAL_SAME_APPLICATION -->
+        <activity android:name="android.server.wm.dndsourceapp.DropTarget"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
+            android:taskAffinity="dndsourceapp.target"
+            android:exported="true">
         </activity>
 
         <provider android:name="android.server.wm.dndsourceapp.DragSourceContentProvider"

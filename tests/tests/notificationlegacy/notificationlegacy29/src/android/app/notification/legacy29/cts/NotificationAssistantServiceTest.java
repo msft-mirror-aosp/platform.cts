@@ -63,6 +63,7 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -86,6 +87,7 @@ public class NotificationAssistantServiceTest {
     private Context mContext;
     private UiAutomation mUi;
     private NotificationHelper mHelper;
+    private String mPreviousAssistant;
 
     private boolean isWatch() {
       return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
@@ -103,6 +105,7 @@ public class NotificationAssistantServiceTest {
         mStatusBarManager = (StatusBarManager) mContext.getSystemService(
                 Context.STATUS_BAR_SERVICE);
         mHelper = new NotificationHelper(mContext);
+        mPreviousAssistant = mHelper.getEnabledAssistant();
     }
 
     @After
@@ -124,6 +127,7 @@ public class NotificationAssistantServiceTest {
         mUi.adoptShellPermissionIdentity("android.permission.EXPAND_STATUS_BAR");
         mStatusBarManager.collapsePanels();
         mUi.dropShellPermissionIdentity();
+        mHelper.enableOtherPkgAssistantIfNeeded(mPreviousAssistant);
     }
 
     @Test
@@ -264,6 +268,7 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
+    @Ignore("b/330193582")
     public void testAdjustNotifications_rankingScoreKey() throws Exception {
         setUpListeners();
 
@@ -467,7 +472,7 @@ public class NotificationAssistantServiceTest {
         Thread.sleep(SLEEP_TIME);
 
         assertTrue(String.format("snoozed notification <%s> was not removed", sbn.getKey()),
-                mNotificationListenerService.mRemoved.containsKey(sbn.getKey()));
+                mNotificationListenerService.mRemovedReasons.containsKey(sbn.getKey()));
 
         assertEquals(String.format("snoozed notification <%s> was not observed by NAS",
                         sbn.getKey()), sbn.getKey(), mNotificationAssistantService.mSnoozedKey);

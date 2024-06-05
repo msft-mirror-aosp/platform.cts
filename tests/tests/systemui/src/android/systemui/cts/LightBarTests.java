@@ -21,8 +21,6 @@ import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
 import static android.server.wm.BarTestUtils.assumeHasColoredNavigationBar;
 import static android.server.wm.BarTestUtils.assumeHasColoredStatusBar;
-import static android.server.wm.BarTestUtils.assumeStatusBarContainsCutout;
-import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -41,6 +39,7 @@ import android.os.SystemClock;
 import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.PlatinumTest;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.view.Gravity;
 import android.view.InputDevice;
@@ -54,10 +53,10 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
+import com.android.settingslib.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -85,6 +84,13 @@ public class LightBarTests extends LightBarTestBase {
      * that matches the default visibility flags used when color sampling is not enabled.
      */
     private static final int LIGHT_BG_COLOR = Color.rgb(255, 128, 128);
+
+    /**
+     * Flags.newStatusBarIcons() changes the default light mode tint (i.e., dark icons) to 100%
+     * black. If the flag is on we need to change the foreground color we're looking for.
+     */
+    private static final int DARK_ICON_TINT_LEGACY = 0x99000000;
+    private static final int DARK_ICON_TINT = 0xff000000;
 
     private final String NOTIFICATION_TAG = "TEST_TAG";
     private final String NOTIFICATION_CHANNEL_ID = "test_channel";
@@ -122,6 +128,7 @@ public class LightBarTests extends LightBarTestBase {
 
     @Test
     @AppModeFull // Instant apps cannot create notifications
+    @PlatinumTest(focusArea = "sysui")
     public void testLightStatusBarIcons() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
 
@@ -137,6 +144,7 @@ public class LightBarTests extends LightBarTestBase {
 
     @Test
     @AppModeFull // Instant apps cannot create notifications
+    @PlatinumTest(focusArea = "sysui")
     public void testAppearanceCanOverwriteLegacyFlags() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
 
@@ -164,6 +172,7 @@ public class LightBarTests extends LightBarTestBase {
 
     @Test
     @AppModeFull // Instant apps cannot create notifications
+    @PlatinumTest(focusArea = "sysui")
     public void testLegacyFlagsCannotOverwriteAppearance() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
 
@@ -252,32 +261,6 @@ public class LightBarTests extends LightBarTestBase {
         });
     }
 
-    @Ignore
-    @Test
-    @AppModeFull // Instant apps cannot create notifications
-    public void testLightBarIsNotAllowed_fitDisplayCutout() throws Throwable {
-        assumeHasColoredStatusBar(mActivityRule);
-        assumeStatusBarContainsCutout(mActivityRule);
-
-        runInNotificationSession(() -> {
-            final LightBarActivity activity = mActivityRule.getActivity();
-            activity.runOnUiThread(() -> {
-                final WindowManager.LayoutParams attrs = activity.getWindow().getAttributes();
-                attrs.layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
-                activity.getWindow().setAttributes(attrs);
-                activity.getWindow().setStatusBarColor(Color.BLACK);
-                activity.getWindow().setNavigationBarColor(Color.BLACK);
-                activity.setLightStatusBarAppearance(true);
-                activity.setLightNavigationBarAppearance(true);
-            });
-            Thread.sleep(WAIT_TIME);
-
-            Bitmap bitmap = takeStatusBarScreenshot(activity);
-            Stats s = evaluateDarkBarBitmap(bitmap, Color.BLACK, 0);
-            assertStats(bitmap, s, false /* light */);
-        });
-    }
-
     private void runInNotificationSession(ThrowingRunnable task) throws Exception {
         Context context = getInstrumentation().getContext();
         String packageName = getInstrumentation().getTargetContext().getPackageName();
@@ -348,9 +331,13 @@ public class LightBarTests extends LightBarTestBase {
                     (float) sameHuePixels / (float) s.foregroundPixels(),
                     "Are the bar icons " + expected + "?");
 
-            assertLessThan("Too many pixels with a changed hue", 0.05f,
-                    (float) s.unexpectedHuePixels / (float) s.foregroundPixels(),
-                    "Are the bar icons color-free?");
+            // New status bar icons introduce color into the battery icon more regularly. This
+            // value can't be asserted in this way anymore
+            if (!Flags.newStatusBarIcons()) {
+                assertLessThan("Too many pixels with a changed hue", 0.05f,
+                        (float) s.unexpectedHuePixels / (float) s.foregroundPixels(),
+                        "Are the bar icons color-free?");
+            }
 
             success = true;
         } finally {
@@ -396,7 +383,23 @@ public class LightBarTests extends LightBarTestBase {
     }
 
     private Stats evaluateLightBarBitmap(Bitmap bitmap, int background, int shiftY) {
-        return evaluateBarBitmap(bitmap, background, shiftY, 0x99000000, 0x3d000000);
+        if (Flags.newStatusBarIcons()) {
+            return evaluateBarBitmap(
+                bitmap,
+                background,
+                shiftY,
+                DARK_ICON_TINT,
+                0x3d000000
+            );
+        } else {
+            return evaluateBarBitmap(
+                bitmap,
+                background,
+                shiftY,
+                DARK_ICON_TINT_LEGACY,
+                0x3d000000
+            );
+        }
     }
 
     private Stats evaluateDarkBarBitmap(Bitmap bitmap, int background, int shiftY) {

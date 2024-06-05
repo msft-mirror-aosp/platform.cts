@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import android.app.appsearch.AppSearchSchema;
 import android.app.appsearch.GetSchemaResponse;
 import android.app.appsearch.PackageIdentifier;
+import android.app.appsearch.SchemaVisibilityConfig;
 import android.app.appsearch.SetSchemaRequest;
 
 import com.google.common.collect.ImmutableSet;
@@ -180,11 +181,64 @@ public class GetSchemaResponseCtsTest {
     }
 
     @Test
+    public void setVisibilityConfig() {
+        SchemaVisibilityConfig visibilityConfig1 =
+                new SchemaVisibilityConfig.Builder()
+                        .addAllowedPackage(new PackageIdentifier("pkg1", new byte[32]))
+                        .setPubliclyVisibleTargetPackage(
+                                new PackageIdentifier("pkg2", new byte[32]))
+                        .addRequiredPermissions(ImmutableSet.of(1, 2))
+                        .build();
+        SchemaVisibilityConfig visibilityConfig2 =
+                new SchemaVisibilityConfig.Builder()
+                        .addAllowedPackage(new PackageIdentifier("pkg3", new byte[32]))
+                        .setPubliclyVisibleTargetPackage(
+                                new PackageIdentifier("pkg4", new byte[32]))
+                        .addRequiredPermissions(ImmutableSet.of(3, 4))
+                        .build();
+
+        GetSchemaResponse getSchemaResponse =
+                new GetSchemaResponse.Builder()
+                        .setVersion(42)
+                        .setSchemaTypeVisibleToConfigs(
+                                "Email", ImmutableSet.of(visibilityConfig1, visibilityConfig2))
+                        .build();
+
+        assertThat(getSchemaResponse.getSchemaTypesVisibleToConfigs())
+                .containsExactly("Email", ImmutableSet.of(visibilityConfig1, visibilityConfig2));
+    }
+
+    @Test
     public void getEmptyVisibility() {
         GetSchemaResponse getSchemaResponse =
                 new GetSchemaResponse.Builder().setVersion(42).build();
         assertThat(getSchemaResponse.getSchemaTypesNotDisplayedBySystem()).isEmpty();
         assertThat(getSchemaResponse.getSchemaTypesVisibleToPackages()).isEmpty();
         assertThat(getSchemaResponse.getRequiredPermissionsForSchemaTypeVisibility()).isEmpty();
+    }
+
+    @Test
+    public void getEmptyVisibility_visibilityConfig() {
+        GetSchemaResponse getSchemaResponse =
+                new GetSchemaResponse.Builder().setVersion(42).build();
+        assertThat(getSchemaResponse.getSchemaTypesVisibleToConfigs()).isEmpty();
+    }
+
+    @Test
+    public void testVisibility_publicVisibility() {
+        byte[] sha256cert1 = new byte[32];
+        byte[] sha256cert2 = new byte[32];
+        Arrays.fill(sha256cert1, (byte) 1);
+        Arrays.fill(sha256cert2, (byte) 1);
+        PackageIdentifier packageIdentifier1 = new PackageIdentifier("Email", sha256cert1);
+        PackageIdentifier packageIdentifier2 = new PackageIdentifier("Email", sha256cert2);
+
+        GetSchemaResponse getSchemaResponse =
+                new GetSchemaResponse.Builder()
+                        .setPubliclyVisibleSchema("Email1", packageIdentifier2)
+                        .setPubliclyVisibleSchema("Email1", packageIdentifier1)
+                        .build();
+        assertThat(getSchemaResponse.getPubliclyVisibleSchemas().get("Email1"))
+                .isEqualTo(packageIdentifier1);
     }
 }

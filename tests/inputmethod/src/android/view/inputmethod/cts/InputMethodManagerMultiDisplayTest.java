@@ -20,7 +20,7 @@ import static android.content.pm.PackageManager.FEATURE_INPUT_METHODS;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 
-import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
+import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -69,6 +69,7 @@ public class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
         super.setUp();
 
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_INPUT_METHODS));
+        assumeFalse(isWatch());
 
         mImManager = mContext.getSystemService(InputMethodManager.class);
 
@@ -77,7 +78,7 @@ public class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
 
     @After
     public void tearDown() {
-        runShellCommand("ime reset");
+        runShellCommandOrThrow("ime reset");
         launchHomeActivity();
     }
 
@@ -137,8 +138,8 @@ public class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
     }
 
     private void enableAndSetIme() {
-        runShellCommand("ime enable " + InputMethodManagerMultiDisplayTest.MOCK_IME_ID);
-        runShellCommand("ime set " + InputMethodManagerMultiDisplayTest.MOCK_IME_ID);
+        runShellCommandOrThrow("ime enable " + InputMethodManagerMultiDisplayTest.MOCK_IME_ID);
+        runShellCommandOrThrow("ime set " + InputMethodManagerMultiDisplayTest.MOCK_IME_ID);
     }
 
 }

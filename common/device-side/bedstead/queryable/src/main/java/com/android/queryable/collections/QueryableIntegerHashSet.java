@@ -47,7 +47,7 @@ public final class QueryableIntegerHashSet extends QueryableHashSet<Integer, Int
     public static QueryableIntegerHashSet of(int... values) {
         QueryableIntegerHashSet set = new QueryableIntegerHashSet();
         for (int value : values) {
-            set.add(value);
+            boolean unused = set.add(value);
         }
         return set;
     }

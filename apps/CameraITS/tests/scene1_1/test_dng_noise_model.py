@@ -114,8 +114,8 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
           # Use a very small patch to ensure gross uniformity (i.e. so
           # non-uniform lighting or vignetting doesn't affect the variance
           # calculation)
-          black_level = image_processing_utils.get_black_level(
-              i, props, cap['metadata'])
+          black_level = image_processing_utils.get_black_levels(
+              props, cap['metadata'])[i]
           level_range = white_level - black_level
           plane = image_processing_utils.get_image_patch(
               planes[i], _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
@@ -125,6 +125,9 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
           # exit if distribution is clipped at 0, otherwise continue
           mean_img_ch = patch_norm.mean()
           var_model = s * mean_img_ch + o
+          var = image_processing_utils.compute_image_variances(patch_norm)[0]
+          var_meas[i].append(var)
+          var_exp[i].append(var_model)
           # This computation is suspicious because if the data were clipped,
           # the mean and standard deviation could be affected in a way that
           # affects this check. However, empirically, the mean and standard
@@ -138,9 +141,6 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
                   f' Linear model is not valid. mean: {mean_img_ch:.3e},'
                   f' var: {var_model:.3e}, u-3s: {mean_minus_3sigma:.3e}')
           else:
-            var = image_processing_utils.compute_image_variances(patch_norm)[0]
-            var_meas[i].append(var)
-            var_exp[i].append(var_model)
             abs_diff = abs(var - var_model)
             logging.debug('%s mean: %.3f, var: %.3e, var_model: %.3e',
                           ch, mean_img_ch, var, var_model)

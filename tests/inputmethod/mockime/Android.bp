@@ -13,7 +13,32 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_input_method_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+android_test_helper_app {
+    name: "CtsMockInputMethodRes",
+    defaults: ["cts_defaults"],
+    optimize: {
+        enabled: false,
+    },
+    sdk_version: "current",
+    min_sdk_version: "21",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+        "mts",
+        "sts",
+        "mcts",
+    ],
+    manifest: "AndroidManifest_mockime_res.xml",
+    additional_manifests: [
+        "AndroidManifest_template.xml",
+    ],
+    // Disable use_resource_processor so that an aapt.srcjar is generated for CtsMockInputMethodLib.
+    use_resource_processor: false,
 }
 
 java_test_helper_library {
@@ -24,14 +49,19 @@ java_test_helper_library {
     //       1) common, 2) common + IME-only, and 3) common + client-only.
     //       Currently, both MockIme APK and test APKs that use MockIme contain
     //       all the Java classes, which is inefficient.
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+        ":CtsMockInputMethodRes{.aapt.srcjar}",
+    ],
     libs: ["junit"],
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.autofill_autofill",
         "compatibility-device-util-axt",
-        "cts_window_jetpack_utils",
+        "cts_window_extensions_jetpack_util",
         "cts_window-extensions",
+        "cts_window-extensions-core",
     ],
 }
 
@@ -41,8 +71,7 @@ android_test_helper_app {
     optimize: {
         enabled: false,
     },
-    dxflags: ["--multi-dex"],
-    sdk_version: "test_current",
+    sdk_version: "current",
     min_sdk_version: "21",
     // tag this module as a cts test artifact
     test_suites: [
@@ -50,9 +79,38 @@ android_test_helper_app {
         "general-tests",
         "mts",
         "sts",
+        "mcts",
     ],
     static_libs: [
-        "androidx.annotation_annotation",
         "CtsMockInputMethodLib",
+    ],
+    manifest: "AndroidManifest_mockime1.xml",
+    additional_manifests: [
+        "AndroidManifest_template.xml",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsMockInputMethod2",
+    defaults: ["cts_defaults"],
+    optimize: {
+        enabled: false,
+    },
+    sdk_version: "current",
+    min_sdk_version: "21",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+        "mts",
+        "sts",
+        "mcts",
+    ],
+    static_libs: [
+        "CtsMockInputMethodLib",
+    ],
+    manifest: "AndroidManifest_mockime2.xml",
+    additional_manifests: [
+        "AndroidManifest_template.xml",
     ],
 }

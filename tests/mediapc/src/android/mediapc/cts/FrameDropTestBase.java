@@ -16,6 +16,9 @@
 
 package android.mediapc.cts;
 
+import static android.mediapc.cts.CodecTestBase.codecFilter;
+import static android.mediapc.cts.CodecTestBase.codecPrefix;
+import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
 import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
 
@@ -49,7 +52,7 @@ public class FrameDropTestBase {
     static final String AV1 = MediaFormat.MIMETYPE_VIDEO_AV1;
     static final String AAC = MediaFormat.MIMETYPE_AUDIO_AAC;
     static final String AAC_LOAD_FILE_NAME = "bbb_1c_128kbps_aac_audio.mp4";
-    static final String AVC_LOAD_FILE_NAME = "bbb_1280x720_3mbps_30fps_avc.mp4";
+    static final String AVC_LOAD_FILE_NAME = "bbb_1920x1080_8mbps_60fps_avc.mp4";
     static final long DECODE_31S = 31000; // In ms
     static final int MAX_FRAME_DROP_FOR_30S;
     // For perf class R, one frame drop per 10 seconds at 30 fps i.e. 3 drops per 30 seconds
@@ -59,7 +62,7 @@ public class FrameDropTestBase {
     // For perf class T, one frame drop per 10 seconds at 60 fps i.e. 3 drops per 30 seconds
     static final int MAX_FRAME_DROP_FOR_30S_60FPS_PC_T = 3;
 
-    final String mMime;
+    final String mMediaType;
     final String mDecoderName;
     final boolean mIsAsync;
     Surface mSurface;
@@ -154,27 +157,34 @@ public class FrameDropTestBase {
     public ActivityTestRule<TestActivity> mActivityRule =
             new ActivityTestRule<>(TestActivity.class);
 
-    public FrameDropTestBase(String mimeType, String decoderName, boolean isAsync) {
-        mMime = mimeType;
+    public FrameDropTestBase(String mediaType, String decoderName, boolean isAsync) {
+        mMediaType = mediaType;
         mDecoderName = decoderName;
         mIsAsync = isAsync;
     }
 
-    // Returns the list of objects with mimeTypes and their hardware decoders supporting the
+    // Returns the list of objects with mediaTypes and their hardware decoders supporting the
     // given features combining with sync and async modes.
     static List<Object[]> prepareArgumentsList(String[] features) {
         final List<Object[]> argsList = new ArrayList<>();
-        final String[] mimesList = new String[] {AVC, HEVC, VP8, VP9, AV1};
-        for (String mime : mimesList) {
-            MediaFormat format = MediaFormat.createVideoFormat(mime, 1920, 1080);
+        final String[] mediaTypesList = new String[] {AVC, HEVC, VP8, VP9, AV1};
+        for (String mediaType : mediaTypesList) {
+            if (mediaTypePrefix != null && !mediaType.startsWith(mediaTypePrefix)) {
+                continue;
+            }
+            MediaFormat format = MediaFormat.createVideoFormat(mediaType, 1920, 1080);
             format.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
             ArrayList<MediaFormat> formats = new ArrayList<>();
             formats.add(format);
             ArrayList<String> listOfDecoders =
-                    selectHardwareCodecs(mime, formats, features, false);
+                    selectHardwareCodecs(mediaType, formats, features, false);
             for (String decoder : listOfDecoders) {
+                if ((codecPrefix != null && !decoder.startsWith(codecPrefix))
+                        || (codecFilter != null && !codecFilter.matcher(decoder).matches())) {
+                    continue;
+                }
                 for (boolean isAsync : boolStates) {
-                    argsList.add(new Object[]{mime, decoder, isAsync});
+                    argsList.add(new Object[]{mediaType, decoder, isAsync});
                 }
             }
         }
@@ -237,8 +247,7 @@ public class FrameDropTestBase {
     }
 
     private void startLoad() {
-        // TODO: b/183671436
-        // Start Transcode load (Decoder(720p) + Encoder(720p))
+        // Start Transcode load (Decoder(1080p) + Encoder(720p))
         mLoadStatus = new LoadStatus();
         mTranscodeLoadThread = createTranscodeLoad();
         mTranscodeLoadThread.start();

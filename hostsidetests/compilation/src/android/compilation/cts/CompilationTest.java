@@ -18,17 +18,21 @@ package android.compilation.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
+
 import android.compilation.cts.annotation.CtsTestCase;
 
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.DeviceParameterizedRunner;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
+import com.android.tradefed.util.Pair;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.regex.Pattern;
 
 import junitparams.Parameters;
@@ -45,6 +49,17 @@ public class CompilationTest extends BaseHostJUnit4Test {
     private static final String TEST_APP_PKG = "android.compilation.cts";
     private static final String TEST_APP_APK_RES = "/CtsCompilationApp.apk";
     private static final String TEST_APP_DM_RES = "/CtsCompilationApp.dm";
+    private static final String TEST_APP_WITH_GOOD_PROFILE_RES =
+            "/CtsCompilationApp_with_good_profile.apk";
+    private static final String TEST_APP_WITH_BAD_PROFILE_RES =
+            "/CtsCompilationApp_with_bad_profile.apk";
+    private static final String TEST_APP_2_PKG = "android.compilation.cts.appusedbyotherapp";
+    private static final String TEST_APP_2_APK_RES = "/AppUsedByOtherApp.apk";
+    private static final String TEST_APP_2_DM_RES = "/AppUsedByOtherApp_1.dm";
+    private static final String TEST_APP_2_DISABLE_EMBEDDED_PROFILE_DM_RES =
+            "/AppUsedByOtherApp_1_disable_embedded_profile.dm";
+    private static final String DISABLE_EMBEDDED_PROFILE_DM_RES = "/disable_embedded_profile.dm";
+    private static final String EMPTY_CONFIG_DM_RES = "/empty_config.dm";
 
     private Utils mUtils;
 
@@ -56,6 +71,7 @@ public class CompilationTest extends BaseHostJUnit4Test {
     @After
     public void tearDown() throws Exception {
         getDevice().uninstallPackage(TEST_APP_PKG);
+        getDevice().uninstallPackage(TEST_APP_2_PKG);
     }
 
     @Test
@@ -201,6 +217,136 @@ public class CompilationTest extends BaseHostJUnit4Test {
                               .setTestMethodName("testGetDexFileOutputPaths")
                               .setDisableHiddenApiCheck(true);
         assertThat(runDeviceTests(options)).isTrue();
+    }
+
+    @Test
+    public void testExternalProfileValidationOk() throws Exception {
+        mUtils.installFromResources(getAbi(), TEST_APP_APK_RES, TEST_APP_DM_RES);
+    }
+
+    /** Verifies that adb install-multiple fails when the APK and the DM file don't match. */
+    @Test
+    public void testExternalProfileValidationFailed() throws Exception {
+        Throwable throwable = assertThrows(Throwable.class, () -> {
+            mUtils.installFromResources(getAbi(), TEST_APP_APK_RES, TEST_APP_2_DM_RES);
+        });
+        assertThat(throwable).hasMessageThat().contains(
+                "Error occurred during dexopt when processing external profiles:");
+    }
+
+    @Test
+    public void testExternalProfileValidationMultiPackageOk() throws Exception {
+        mUtils.installFromResourcesMultiPackage(getAbi(),
+                List.of(List.of(Pair.create(TEST_APP_APK_RES, TEST_APP_DM_RES)),
+                        List.of(Pair.create(TEST_APP_2_APK_RES, TEST_APP_2_DM_RES))));
+    }
+
+    /**
+     * Verifies that adb install-multi-package fails when the mismatch happens on one of the APK-DM
+     * pairs.
+     */
+    @Test
+    public void testExternalProfileValidationMultiPackageFailed() throws Exception {
+        Throwable throwable = assertThrows(Throwable.class, () -> {
+            mUtils.installFromResourcesMultiPackage(getAbi(),
+                    List.of(List.of(Pair.create(TEST_APP_APK_RES, TEST_APP_DM_RES)),
+                            List.of(Pair.create(TEST_APP_2_APK_RES, TEST_APP_DM_RES))));
+        });
+
+        assertThat(Utils.countSubstringOccurrence(throwable.getMessage(),
+                           "Error occurred during dexopt when processing external profiles:"))
+                .isEqualTo(1);
+    }
+
+    @Test
+    public void testEmbeddedProfileOk() throws Exception {
+        mUtils.installFromResources(getAbi(), TEST_APP_WITH_GOOD_PROFILE_RES);
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "speed-profile");
+    }
+
+    @Test
+    public void testEmbeddedProfileFailed() throws Exception {
+        Throwable throwable = assertThrows(Throwable.class,
+                () -> { mUtils.installFromResources(getAbi(), TEST_APP_WITH_BAD_PROFILE_RES); });
+        assertThat(throwable).hasMessageThat().contains(
+                "Error occurred during dexopt when processing external profiles:");
+    }
+
+    @Test
+    public void testEmbeddedProfileEmptyConfig() throws Exception {
+        // A DM with a config file is provided, but it's empty, so it should have no impact on the
+        // embedded profile.
+        mUtils.installFromResources(getAbi(), TEST_APP_WITH_GOOD_PROFILE_RES, EMPTY_CONFIG_DM_RES);
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "speed-profile");
+    }
+
+    @Test
+    public void testEmbeddedProfileConfigDisabledByConfig() throws Exception {
+        // A DM with a config file is provided, and it disables embedded profile.
+        mUtils.installFromResources(
+                getAbi(), TEST_APP_WITH_GOOD_PROFILE_RES, DISABLE_EMBEDDED_PROFILE_DM_RES);
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "verify");
+    }
+
+    /**
+     * Verifies that adb install-multi-package fails with multiple error messages when multiple
+     * APK-DM mismatches happen.
+     */
+    @Test
+    public void testExternalProfileValidationMultiPackageFailedMultipleErrors() throws Exception {
+        Throwable throwable = assertThrows(Throwable.class, () -> {
+            mUtils.installFromResourcesMultiPackage(getAbi(),
+                    List.of(List.of(Pair.create(TEST_APP_APK_RES, TEST_APP_2_DM_RES)),
+                            List.of(Pair.create(TEST_APP_2_APK_RES, TEST_APP_DM_RES))));
+        });
+
+        assertThat(Utils.countSubstringOccurrence(throwable.getMessage(),
+                           "Error occurred during dexopt when processing external profiles:"))
+                .isEqualTo(2);
+    }
+
+    @Test
+    public void testIgnoreDexoptProfile() throws Exception {
+        // Both the APK and the DM have a good profile, but ART Service should use none of them.
+        mUtils.installFromResourcesWithArgs(getAbi(), List.of("--ignore-dexopt-profile"),
+                List.of(Pair.create(TEST_APP_WITH_GOOD_PROFILE_RES, TEST_APP_DM_RES)));
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "verify");
+    }
+
+    @Test
+    public void testIgnoreDexoptProfileNoValidation() throws Exception {
+        // Both the APK and the DM have a bad profile, but ART Service should not complain.
+        mUtils.installFromResourcesWithArgs(getAbi(), List.of("--ignore-dexopt-profile"),
+                List.of(Pair.create(TEST_APP_WITH_BAD_PROFILE_RES, TEST_APP_2_DM_RES)));
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "verify");
+    }
+
+    @Test
+    public void testFallBackToEmbeddedProfile() throws Exception {
+        // The DM has a bad profile, so ART Service should fall back to the embedded profile.
+        assertThrows(Throwable.class, () -> {
+            mUtils.installFromResources(
+                    getAbi(), TEST_APP_WITH_GOOD_PROFILE_RES, TEST_APP_2_DM_RES);
+        });
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "speed-profile");
+    }
+
+    @Test
+    public void testNoFallBackToEmbeddedProfile() throws Exception {
+        // The DM has a bad profile, but it also has a config that disables embedded profile, so ART
+        // Service should not fall back to the embedded profile.
+        assertThrows(Throwable.class, () -> {
+            mUtils.installFromResources(getAbi(), TEST_APP_WITH_GOOD_PROFILE_RES,
+                    TEST_APP_2_DISABLE_EMBEDDED_PROFILE_DM_RES);
+        });
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "verify");
     }
 
     private void checkDexoptStatus(String dump, String dexfilePattern, String statusPattern) {

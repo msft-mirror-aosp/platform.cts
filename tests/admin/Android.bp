@@ -23,9 +23,10 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "mockito-target-minus-junit4",
-        "truth-prebuilt",
+        "truth",
         "testng",
         "Nene",
+        "androidx.test.rules",
     ],
     libs: [
         "android.test.runner",

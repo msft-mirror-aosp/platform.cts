@@ -137,22 +137,8 @@ public final class AutoFillServiceTestCase {
 
         @Override
         protected TestRule getMainTestRule() {
-            // Don't try to set orientation when device is in half-opened state
-            // The assumeFalse line in @Before would skip the half-opened tests.
-            if(!Helper.isDeviceInState(sContext, Helper.DeviceStateEnum.HALF_FOLDED)) {
-                try {
-                    // Set orientation as portrait before auto-launch an activity,
-                    // otherwise some tests might fail due to elements not fitting
-                    // in, IME orientation, etc...
-                    // Many tests will hold Activity in afterActivityLaunched() by
-                    // overriding ActivityRule. If rotating after the activity has
-                    // started, these tests will keep the old activity. All actions
-                    // on the wrong activity did not happen as expected.
-                    getDropdownUiBot().setScreenOrientation(UiBot.PORTRAIT);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
+            // Tries to set the orientation, noop if nothing happens
+            getDropdownUiBot().maybeSetScreenOrientation(UiBot.PORTRAIT);
             return getActivityRule();
         }
 
@@ -235,20 +221,24 @@ public final class AutoFillServiceTestCase {
         }
 
         protected LoginImportantForCredentialManagerActivity
-                    startLoginImportantForCredentialManagerActivity() throws Exception {
+                    startLoginImportantForCredentialManagerActivity(boolean useAutofillHint)
+                throws Exception {
             final Intent intent =
                     new Intent(mContext, LoginImportantForCredentialManagerActivity.class)
-                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .putExtra("useAutofillHint", useAutofillHint);
             mContext.startActivity(intent);
             mUiBot.assertShownByRelativeId(Helper.ID_USERNAME_LABEL);
             return LoginImportantForCredentialManagerActivity.getCurrentActivity();
         }
 
         protected LoginMixedImportantForCredentialManagerActivity
-                startLoginMixedImportantForCredentialManagerActivity() throws Exception {
+                startLoginMixedImportantForCredentialManagerActivity(boolean useAutofillHInt)
+                throws Exception {
             final Intent intent =
                     new Intent(mContext, LoginMixedImportantForCredentialManagerActivity.class)
-                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .putExtra("useAutofillHint", useAutofillHInt);
             mContext.startActivity(intent);
             mUiBot.assertShownByRelativeId(Helper.ID_USERNAME_LABEL);
             return LoginMixedImportantForCredentialManagerActivity.getCurrentActivity();
@@ -390,6 +380,23 @@ public final class AutoFillServiceTestCase {
                             "include_all_autofill_type_not_none_views_in_assist_structure",
                             Boolean.toString(false)))
 
+
+                //
+                // Max input size to provide autofill suggestion should be 3
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                            "max_input_length_for_autofill",
+                            Integer.toString(3)))
+
+                //
+                // Fill fields from current session only should be on by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "fill_fields_from_current_session_only", Boolean.toString(true)))
+
+                //
+                // Ignore view state reset to empty should be on by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "ignore_view_state_reset_to_empty", Boolean.toString(true)))
+
                 //
                 // Finally, let subclasses add their own rules (like ActivityTestRule)
                 .around(getMainTestRule());
@@ -501,9 +508,11 @@ public final class AutoFillServiceTestCase {
             assumeFalse("Device is half-folded",
                     Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.HALF_FOLDED));
 
+            assumeFalse("Device is TV", Helper.isTv(mContext));
+
             // Set orientation as portrait, otherwise some tests might fail due to elements not
             // fitting in, IME orientation, etc...
-            mUiBot.setScreenOrientation(UiBot.PORTRAIT);
+            mUiBot.maybeSetScreenOrientation(UiBot.PORTRAIT);
 
             // Clear Clipboard
             // TODO(b/117768051): remove try/catch once fixed

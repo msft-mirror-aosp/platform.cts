@@ -32,6 +32,7 @@ import android.autofillservice.cts.activities.AuthenticationActivity;
 import android.autofillservice.cts.commontests.AbstractLoginActivityTestCase;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.CannedFillResponse.CannedDataset;
+import android.autofillservice.cts.testcore.DeviceUtils;
 import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.InlineUiBot;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
@@ -39,9 +40,10 @@ import android.autofillservice.cts.testcore.InstrumentedAutoFillService.SaveRequ
 import android.autofillservice.cts.testcore.UiBot;
 import android.content.IntentSender;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.Presubmit;
 import android.view.inputmethod.InlineSuggestionsRequest;
+
+import androidx.test.filters.FlakyTest;
 
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -124,6 +126,9 @@ public class InlineAuthenticationTest extends AbstractLoginActivityTestCase {
         dropDownUiBot.assertDatasets("Dataset");
     }
 
+    @FlakyTest(
+            bugId = 291803739,
+            detail = "Autofill behavior is flaky. See bug, try to resolve asap")
     @Presubmit
     @Test
     public void testFillResponseAuth() throws Exception {
@@ -159,13 +164,14 @@ public class InlineAuthenticationTest extends AbstractLoginActivityTestCase {
         AuthenticationActivity.setResultCode(RESULT_OK);
         // Select the dataset to start authentication
         mUiBot.selectDataset("Tap to auth!");
-        mUiBot.waitForIdle();
+        mUiBot.waitForIdleSync();
         // Authentication done, show real dataset
-        mUiBot.assertDatasets("Dataset");
+        DeviceUtils.Dataset.assertShowsInline();
+        mUiBot.waitForIdleSync();
 
         // Select the dataset and check the result is autofilled.
         mUiBot.selectDataset("Dataset");
-        mUiBot.waitForIdle();
+        mUiBot.waitForIdleSync();
         mUiBot.assertNoDatasets();
         mActivity.assertAutoFilled();
     }
@@ -298,8 +304,8 @@ public class InlineAuthenticationTest extends AbstractLoginActivityTestCase {
         mUiBot.waitForIdle();
         mActivity.assertAutoFilled();
 
-        // Clear the username field
-        mActivity.onUsername((v) -> v.setText(""));
+        // Clear the username field; workaround reset bug fix by clearing progressively
+        mUiBot.clearTextByRelativeId(ID_USERNAME);
         final boolean expectOldDataset = isEphemeralDataset == null ? isPinned : isEphemeralDataset;
         if (!expectOldDataset) {
             // Expect to see the suggestion returned from auth intent.
@@ -321,9 +327,9 @@ public class InlineAuthenticationTest extends AbstractLoginActivityTestCase {
 
         // Clear the username field, put focus on password field, and then clear the password field,
         // Expect to see the old suggestion.
-        mActivity.onUsername((v) -> v.setText(""));
+        mUiBot.clearTextByRelativeId(ID_USERNAME);
         mUiBot.selectByRelativeId(ID_PASSWORD);
-        mActivity.onPassword((v) -> v.setText(""));
+        mUiBot.clearTextByRelativeId(ID_PASSWORD);
         assertSuggestionShownBySelectViewId(ID_PASSWORD, "auth-password");
 
         // Now select the dataset again and verify that the same authentication flow happens.
@@ -335,7 +341,7 @@ public class InlineAuthenticationTest extends AbstractLoginActivityTestCase {
 
         // Clear the password field, and expect to see the old suggestion again, rather than
         // the one returned from auth intent.
-        mActivity.onPassword((v) -> v.setText(""));
+        mUiBot.clearTextByRelativeId(ID_PASSWORD);
         assertSuggestionShownBySelectViewId(ID_PASSWORD, "auth-password");
 
         // Now select the dataset again and verify that the same authentication flow happens.

@@ -16,6 +16,7 @@
 
 package android.car.cts;
 
+import static android.Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_DYNAMIC_ROUTING;
 import static android.media.AudioManager.AUDIOFOCUS_GAIN;
 import static android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK;
@@ -29,9 +30,9 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.UiAutomation;
 import android.car.Car;
 import android.car.media.CarAudioManager;
-import android.car.test.ApiCheckerRule.Builder;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -40,6 +41,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
@@ -62,6 +64,9 @@ public final class CarAudioFocusTest extends AbstractCarTestCase {
     private static final int INTERACTION_REJECT = 0;  // Focus not granted
     private static final int INTERACTION_EXCLUSIVE = 1;  // Focus granted, others loose focus
     private static final int INTERACTION_CONCURRENT = 2;  // Focus granted, others keep focus
+
+    private static final UiAutomation UI_AUTOMATION =
+            InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
     // CarAudioContext.MUSIC
     private static final AudioAttributes ATTR_MEDIA = new AudioAttributes.Builder()
@@ -109,15 +114,9 @@ public final class CarAudioFocusTest extends AbstractCarTestCase {
     private AudioManager mAudioManager;
     private CarAudioManager mCarAudioManager;
 
-    // TODO(b/242350638): add missing annotations, remove (on child bug of 242350638)
-    @Override
-    protected void configApiCheckerRule(Builder builder) {
-        Log.w(TAG, "Disabling API requirements check");
-        builder.disableAnnotationsCheck();
-    }
-
     @Before
     public void setUp() throws Exception {
+        UI_AUTOMATION.adoptShellPermissionIdentity(MODIFY_AUDIO_SETTINGS_PRIVILEGED);
         mAudioManager = mContext.getSystemService(AudioManager.class);
         mCarAudioManager = (CarAudioManager) getCar().getCarManager(Car.AUDIO_SERVICE);
         assertWithMessage("CarAudioManager instance").that(mCarAudioManager).isNotNull();
@@ -134,6 +133,7 @@ public final class CarAudioFocusTest extends AbstractCarTestCase {
             Log.d(TAG, "cleanUp Removing: "
                     + usageToString(request.getAudioAttributes().getSystemUsage()));
         }
+        UI_AUTOMATION.dropShellPermissionIdentity();
     }
 
     @Test

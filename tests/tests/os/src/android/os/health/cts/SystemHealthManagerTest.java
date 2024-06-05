@@ -20,14 +20,17 @@ import android.content.Context;
 import android.os.Process;
 import android.os.health.HealthStats;
 import android.os.health.SystemHealthManager;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.InstrumentationTestCase;
-import android.test.suitebuilder.annotation.SmallTest;
+
+import androidx.test.filters.SmallTest;
 
 import junit.framework.Assert;
 
 /**
  * Provides test cases for android.os.health.TimerStat.
  */
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class SystemHealthManagerTest extends InstrumentationTestCase {
     /**
      * Tests that takeMyUidSnapshot returns a HealthStats object.
@@ -37,7 +40,20 @@ public class SystemHealthManagerTest extends InstrumentationTestCase {
         final Context context = getInstrumentation().getTargetContext();
         final SystemHealthManager healthy = context.getSystemService(SystemHealthManager.class);
 
-        Assert.assertNotNull(healthy.takeMyUidSnapshot());
+        // SystemHealthManager attempts to avoid making simultaneous calls to the backend, so the
+        // number of backend calls below is expected to be fewer than 10.
+        Thread[] threads = new Thread[10];
+        HealthStats[] results = new HealthStats[threads.length];
+        for (int i = 0; i < threads.length; i++) {
+            int index = i;
+            threads[index] = new Thread(() -> results[index] = healthy.takeMyUidSnapshot());
+            threads[index].start();
+        }
+
+        for (int i = 0; i < threads.length; i++) {
+            threads[i].join();
+            Assert.assertNotNull(results[i]);
+        }
     }
 
     /**
@@ -119,4 +135,3 @@ public class SystemHealthManagerTest extends InstrumentationTestCase {
         Assert.assertTrue(threw);
     }
 }
-

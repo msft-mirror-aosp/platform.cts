@@ -18,8 +18,7 @@
      package="android.media.projection.cts"
      android:targetSandboxVersion="2">
 
-    <uses-sdk android:minSdkVersion="33"
-         android:targetSdkVersion="33"/>
+    <!-- Do not declare SDK version here; it is set on a per-module bases in Android.bp -->
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.INSTANT_APP_FOREGROUND_SERVICE"/>
@@ -28,23 +27,37 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
+    <uses-permission android:name="android.permission.ACCESS_SURFACE_FLINGER" />
+    <uses-permission android:name="android.permission.LOG_COMPAT_CHANGE"/>
+    <uses-permission android:name="android.permission.READ_COMPAT_CHANGE_CONFIG"/>
 
     <application
-         android:requestLegacyExternalStorage="true"
-         android:largeHeap="true">
-        <uses-library android:name="android.test.runner"/>
-        <uses-library android:name="org.apache.http.legacy"
-             android:required="false"/>
+        android:debuggable="true"
+        android:requestLegacyExternalStorage="true"
+        android:largeHeap="true">
         <activity android:name="android.media.projection.cts.MediaProjectionCustomIntentActivity"
-                  android:label="MediaProjectionActivity"
+                  android:label="MediaProjectionCustomIntentActivity"
                   android:screenOrientation="locked"/>
+        <activity android:name="android.app.Activity"
+            android:label="Empty MediaProjection Mirroring Activity"
+            android:screenOrientation="locked"/>
+        <activity android:name="android.media.projection.cts.MediaProjectionMirroringTest$TestRotationActivity"
+            android:label="Rotating MediaProjection Mirroring Activity"
+            android:configChanges="orientation" />
+        <activity android:name="android.server.wm.MediaProjectionHelper$MediaProjectionActivity" />
+        <activity android:name="android.media.projection.cts.MediaProjectionPermissionDialogTestActivity"
+            android:label="MediaProjectionActivity"
+            android:screenOrientation="locked"/>
+        <service
+            android:name="android.server.wm.MediaProjectionHelper$MediaProjectionService"
+            android:enabled="true"
+            android:foregroundServiceType="mediaProjection" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.media.projection.cts"
          android:label="CTS tests of android.media.projection">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 
 </manifest>

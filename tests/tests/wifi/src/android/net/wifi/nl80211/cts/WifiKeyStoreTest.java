@@ -18,12 +18,11 @@ package android.net.wifi.nl80211.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.net.wifi.WifiKeystore;
-import android.net.wifi.cts.WifiFeature;
 import android.os.Build;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -38,7 +37,8 @@ import org.junit.runner.RunWith;
 /**
  * CTS tests for {@link WifiKeystore}.
  *
- * Note: API calls are expected to fail due to SELinux restrictions on ILegacyKeystore.
+ * Note: API calls are expected to fail due to SELinux restrictions on ILegacyKeystore
+ *       and ConnectivityBlobStore.
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
@@ -59,7 +59,7 @@ public class WifiKeyStoreTest {
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testGet() {
-        assertNull(WifiKeystore.get(TEST_ALIAS));
+        assertNotNull(WifiKeystore.get(TEST_ALIAS));
     }
 
     @Test

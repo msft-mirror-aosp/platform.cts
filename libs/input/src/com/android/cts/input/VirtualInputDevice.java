@@ -24,6 +24,7 @@ import android.hardware.input.InputManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
+import android.os.SystemProperties;
 import android.util.JsonReader;
 import android.util.JsonToken;
 import android.util.Log;
@@ -47,6 +48,8 @@ import java.util.concurrent.TimeUnit;
 public abstract class VirtualInputDevice implements
         InputManager.InputDeviceListener, AutoCloseable {
     private static final String TAG = "VirtualInputDevice";
+    private static final int HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt(
+            "ro.hw_timeout_multiplier", 1);
     private InputStream mInputStream;
     private OutputStream mOutputStream;
     private Instrumentation mInstrumentation;
@@ -77,7 +80,7 @@ public abstract class VirtualInputDevice implements
     abstract void readResults();
 
     public VirtualInputDevice(Instrumentation instrumentation, int id, int vendorId, int productId,
-            int sources, String registerCommand) {
+            int sources, RegisterCommand registerCommand) {
         mInstrumentation = instrumentation;
         mInputManager = mInstrumentation.getContext().getSystemService(InputManager.class);
         setupPipes();
@@ -107,7 +110,7 @@ public abstract class VirtualInputDevice implements
         // Register input device listener
         mInputManager.registerInputDeviceListener(VirtualInputDevice.this, mHandler);
         // Register virtual input device
-        registerInputDevice(registerCommand);
+        registerInputDevice(registerCommand.toString());
     }
 
     protected byte[] readData() throws IOException {
@@ -182,7 +185,7 @@ public abstract class VirtualInputDevice implements
         // mResultThread should exit when stream is closed.
         try {
             // Wait for input device removed callback.
-            mDeviceRemovedSignal.await(20L, TimeUnit.SECONDS);
+            mDeviceRemovedSignal.await(HW_TIMEOUT_MULTIPLIER * 20L, TimeUnit.SECONDS);
             if (mDeviceRemovedSignal.getCount() != 0) {
                 throw new RuntimeException("Did not receive device removed notification in time");
             }

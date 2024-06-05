@@ -18,8 +18,8 @@ package com.android.bedstead.nene.devicepolicy;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
-import static com.android.compatibility.common.util.enterprise.DeviceAdminReceiverUtils.ACTION_DISABLE_SELF;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.testapisreflection.TestApisConstants.ACTION_DISABLE_SELF;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -28,20 +28,21 @@ import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.Retry;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -85,7 +86,8 @@ public final class DeviceOwner extends DevicePolicyController {
 
         try (PermissionContext p =
                      TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-            devicePolicyManager.forceRemoveActiveAdmin(mComponentName, mUser.id());
+            TestApisReflectionKt.forceRemoveActiveAdmin(devicePolicyManager, mComponentName,
+                    mUser.id());
         } catch (SecurityException e) {
             if (e.getMessage().contains("Attempt to remove non-test admin")
                     && TEST_APP_APP_COMPONENT_FACTORY.equals(mPackage.appComponentFactory())) {
@@ -144,7 +146,8 @@ public final class DeviceOwner extends DevicePolicyController {
 
             DevicePolicyManager dpm = context.getSystemService(DevicePolicyManager.class);
 
-            Poll.forValue(() -> dpm.isRemovingAdmin(mComponentName, mUser.id()))
+            Poll.forValue(() -> TestApisReflectionKt.isRemovingAdmin(dpm, mComponentName,
+                            mUser.id()))
                     .toNotBeEqualTo(true)
                     .timeout(Duration.ofMinutes(5))
                     .errorOnFail()
@@ -189,7 +192,8 @@ public final class DeviceOwner extends DevicePolicyController {
 
         try (PermissionContext p =
                      TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-            devicePolicyManager.setDeviceOwnerType(mComponentName, deviceOwnerType);
+            TestApisReflectionKt.setDeviceOwnerType(devicePolicyManager, mComponentName,
+                    deviceOwnerType);
         } catch (IllegalStateException e) {
             throw new NeneException("Failed to set the device owner type", e);
         }
@@ -214,7 +218,8 @@ public final class DeviceOwner extends DevicePolicyController {
                         DevicePolicyManager.class);
 
         try {
-            deviceOwnerType = devicePolicyManager.getDeviceOwnerType(mComponentName);
+            deviceOwnerType = TestApisReflectionKt.getDeviceOwnerType(devicePolicyManager,
+                    mComponentName);
         } catch (IllegalStateException e) {
             throw new NeneException("Failed to retrieve the device owner type", e);
         }

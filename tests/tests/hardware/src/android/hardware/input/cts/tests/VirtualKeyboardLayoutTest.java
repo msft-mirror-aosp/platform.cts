@@ -16,188 +16,146 @@
 
 package android.hardware.input.cts.tests;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 
+import android.companion.virtual.VirtualDeviceManager;
+import android.content.Context;
+import android.hardware.display.DisplayManager;
+import android.hardware.display.VirtualDisplay;
 import android.hardware.input.InputManager;
 import android.hardware.input.VirtualKeyboard;
-import android.hardware.input.VirtualKeyboardConfig;
-import android.os.Handler;
-import android.os.Looper;
-import android.provider.Settings;
+import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
 import android.view.InputDevice;
 import android.view.KeyEvent;
+import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.PollingCheck;
-
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class VirtualKeyboardLayoutTest extends VirtualDeviceTestCase {
+public class VirtualKeyboardLayoutTest {
+
     private static final String DEVICE_NAME = "CtsVirtualKeyboardTestDevice";
-    private InputDevice mVirtualInputDevice;
-    private InputManager.InputDeviceListener mInputDeviceListener;
 
-    @Override
-    void onSetUp() {
-        Settings.Global.putString(
-                mInstrumentation.getTargetContext().getContentResolver(),
-                "settings_new_keyboard_ui", "true");
-        mInputManager = mInstrumentation.getTargetContext().getSystemService(InputManager.class);
-        mInputDeviceListener = createInputDeviceListener();
-        mInputManager.registerInputDeviceListener(
-                mInputDeviceListener, new Handler(Looper.getMainLooper()));
-        // Tap to gain window focus on the activity
-        tapActivityToFocus();
-    }
+    @Rule
+    public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
 
-    @Override
-    void onSetUpVirtualInputDevice() {
-        // Do nothing
-    }
+    private Context mContext;
+    private InputManager mInputManager;
+    private VirtualDeviceManager.VirtualDevice mVirtualDevice;
+    private VirtualDisplay mVirtualDisplay;
 
-    @Override
-    void onTearDownVirtualInputDevice() {
-        // Do nothing
-    }
-
-    @Override
-    void onTearDown() {
-        Settings.Global.putString(mInstrumentation.getTargetContext().getContentResolver(),
-                "settings_new_keyboard_ui",
-                "");
-        if (mInputManager != null) {
-            mInputManager.unregisterInputDeviceListener(mInputDeviceListener);
-        }
-        super.onTearDown();
-    }
-
-    VirtualKeyboard createVirtualKeyboard(String languageTag, String layoutType) {
-        final VirtualKeyboardConfig keyboardConfig =
-                new VirtualKeyboardConfig.Builder()
-                        .setVendorId(VENDOR_ID)
-                        .setProductId(PRODUCT_ID)
-                        .setInputDeviceName(DEVICE_NAME)
-                        .setAssociatedDisplayId(mVirtualDisplay.getDisplay().getDisplayId())
-                        .setLanguageTag(languageTag)
-                        .setLayoutType(layoutType)
-                        .build();
-        return mVirtualDevice.createVirtualKeyboard(keyboardConfig);
+    @Before
+    public void setUp() {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        mInputManager = mContext.getSystemService(InputManager.class);
+        mVirtualDevice = mRule.createManagedVirtualDevice();
+        mVirtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED);
     }
 
     @Test
     public void createVirtualKeyboard_layoutSelected() {
-        // Creates a virtual keyboard with french layout
-        try (VirtualKeyboard virtualKeyboard = createVirtualKeyboard("fr-Latn-FR", "azerty")) {
-            PollingCheck.waitFor(
-                    () -> isCorrectlyConfigured(KeyEvent.KEYCODE_Q, KeyEvent.KEYCODE_A),
-                    "Waiting for French keyboard to be configured correctly took too long");
-            assertKeyMappings(
-                    new int[]{
-                            KeyEvent.KEYCODE_Q,
-                            KeyEvent.KEYCODE_W,
-                            KeyEvent.KEYCODE_E,
-                            KeyEvent.KEYCODE_R,
-                            KeyEvent.KEYCODE_T,
-                            KeyEvent.KEYCODE_Y
-                    },
-                    new int[]{
-                            KeyEvent.KEYCODE_A,
-                            KeyEvent.KEYCODE_Z,
-                            KeyEvent.KEYCODE_E,
-                            KeyEvent.KEYCODE_R,
-                            KeyEvent.KEYCODE_T,
-                            KeyEvent.KEYCODE_Y
-                    },
-                    "french");
-        }
+        InputDevice frenchKeyboard =
+                createVirtualKeyboard("fr-Latn-FR", "azerty");
+        assertKeyMappings(
+                frenchKeyboard,
+                new int[]{
+                        KeyEvent.KEYCODE_Q,
+                        KeyEvent.KEYCODE_W,
+                        KeyEvent.KEYCODE_E,
+                        KeyEvent.KEYCODE_R,
+                        KeyEvent.KEYCODE_T,
+                        KeyEvent.KEYCODE_Y
+                },
+                new int[]{
+                        KeyEvent.KEYCODE_A,
+                        KeyEvent.KEYCODE_Z,
+                        KeyEvent.KEYCODE_E,
+                        KeyEvent.KEYCODE_R,
+                        KeyEvent.KEYCODE_T,
+                        KeyEvent.KEYCODE_Y
+                });
 
-        // Creates a Virtual keyboard with Swiss german layout
-        try (VirtualKeyboard virtualKeyboard = createVirtualKeyboard("de-CH", "qwertz")) {
-            PollingCheck.waitFor(
-                    () -> isCorrectlyConfigured(KeyEvent.KEYCODE_Y, KeyEvent.KEYCODE_Z),
-                    "Waiting for Swiss German keyboard to be configured correctly took too long");
-            assertKeyMappings(
-                    new int[]{
-                            KeyEvent.KEYCODE_Q,
-                            KeyEvent.KEYCODE_W,
-                            KeyEvent.KEYCODE_E,
-                            KeyEvent.KEYCODE_R,
-                            KeyEvent.KEYCODE_T,
-                            KeyEvent.KEYCODE_Y
-                    },
-                    new int[]{
-                            KeyEvent.KEYCODE_Q,
-                            KeyEvent.KEYCODE_W,
-                            KeyEvent.KEYCODE_E,
-                            KeyEvent.KEYCODE_R,
-                            KeyEvent.KEYCODE_T,
-                            KeyEvent.KEYCODE_Z
-                    },
-                    "swiss german");
-        }
+        InputDevice swissGermanKeyboard =
+                createVirtualKeyboard("de-CH", "qwertz");
+        assertKeyMappings(
+                swissGermanKeyboard,
+                new int[]{
+                        KeyEvent.KEYCODE_Q,
+                        KeyEvent.KEYCODE_W,
+                        KeyEvent.KEYCODE_E,
+                        KeyEvent.KEYCODE_R,
+                        KeyEvent.KEYCODE_T,
+                        KeyEvent.KEYCODE_Y
+                },
+                new int[]{
+                        KeyEvent.KEYCODE_Q,
+                        KeyEvent.KEYCODE_W,
+                        KeyEvent.KEYCODE_E,
+                        KeyEvent.KEYCODE_R,
+                        KeyEvent.KEYCODE_T,
+                        KeyEvent.KEYCODE_Z
+                });
     }
 
     @Test
     public void createVirtualKeyboard_layoutSelected_differentLayoutType() {
-        // Creates a virtual keyboard with English(QWERTY) layout
-        try (VirtualKeyboard virtualKeyboard = createVirtualKeyboard("en-Latn-US", "qwerty")) {
-            PollingCheck.waitFor(
-                    () -> isCorrectlyConfigured(KeyEvent.KEYCODE_Q, KeyEvent.KEYCODE_Q),
-                    "Waiting for English(QWERTY) keyboard to be configured correctly took too "
-                            + "long");
-            assertKeyMappings(
-                    new int[]{
-                            KeyEvent.KEYCODE_Q,
-                            KeyEvent.KEYCODE_W,
-                            KeyEvent.KEYCODE_E,
-                            KeyEvent.KEYCODE_R,
-                            KeyEvent.KEYCODE_T,
-                            KeyEvent.KEYCODE_Y
-                    },
-                    new int[]{
-                            KeyEvent.KEYCODE_Q,
-                            KeyEvent.KEYCODE_W,
-                            KeyEvent.KEYCODE_E,
-                            KeyEvent.KEYCODE_R,
-                            KeyEvent.KEYCODE_T,
-                            KeyEvent.KEYCODE_Y
-                    },
-                    "English(QWERTY)");
-        }
+        InputDevice qwertyKeyboard =
+                createVirtualKeyboard("en-Latn-US", "qwerty");
+        assertKeyMappings(
+                qwertyKeyboard,
+                new int[]{
+                        KeyEvent.KEYCODE_Q,
+                        KeyEvent.KEYCODE_W,
+                        KeyEvent.KEYCODE_E,
+                        KeyEvent.KEYCODE_R,
+                        KeyEvent.KEYCODE_T,
+                        KeyEvent.KEYCODE_Y
+                },
+                new int[]{
+                        KeyEvent.KEYCODE_Q,
+                        KeyEvent.KEYCODE_W,
+                        KeyEvent.KEYCODE_E,
+                        KeyEvent.KEYCODE_R,
+                        KeyEvent.KEYCODE_T,
+                        KeyEvent.KEYCODE_Y
+                });
 
-        // Creates a Virtual keyboard with English(Dvorak) layout
-        try (VirtualKeyboard virtualKeyboard = createVirtualKeyboard("en-Latn-US", "dvorak")) {
-            PollingCheck.waitFor(
-                    () -> isCorrectlyConfigured(KeyEvent.KEYCODE_Q, KeyEvent.KEYCODE_APOSTROPHE),
-                    "Waiting for English(Dvorak) keyboard to be configured correctly took too "
-                            + "long");
-            assertKeyMappings(
-                    new int[]{
-                            KeyEvent.KEYCODE_Q,
-                            KeyEvent.KEYCODE_W,
-                            KeyEvent.KEYCODE_E,
-                            KeyEvent.KEYCODE_R,
-                            KeyEvent.KEYCODE_T,
-                            KeyEvent.KEYCODE_Y
-                    },
-                    new int[]{
-                            KeyEvent.KEYCODE_APOSTROPHE,
-                            KeyEvent.KEYCODE_COMMA,
-                            KeyEvent.KEYCODE_E,
-                            KeyEvent.KEYCODE_P,
-                            KeyEvent.KEYCODE_Y,
-                            KeyEvent.KEYCODE_F
-                    },
-                    "English(Dvorak)");
-        }
+        InputDevice dvorakKeyboard =
+                createVirtualKeyboard("en-Latn-US", "dvorak");
+        assertKeyMappings(
+                dvorakKeyboard,
+                new int[]{
+                        KeyEvent.KEYCODE_Q,
+                        KeyEvent.KEYCODE_W,
+                        KeyEvent.KEYCODE_E,
+                        KeyEvent.KEYCODE_R,
+                        KeyEvent.KEYCODE_T,
+                        KeyEvent.KEYCODE_Y
+                },
+                new int[]{
+                        KeyEvent.KEYCODE_APOSTROPHE,
+                        KeyEvent.KEYCODE_COMMA,
+                        KeyEvent.KEYCODE_E,
+                        KeyEvent.KEYCODE_P,
+                        KeyEvent.KEYCODE_Y,
+                        KeyEvent.KEYCODE_F
+                });
     }
 
-    private void assertKeyMappings(int[] fromKeys, int[] toKeys, String layoutName) {
+    private static void assertKeyMappings(InputDevice device, int[] fromKeys, int[] toKeys) {
         for (int i = 0; i < fromKeys.length; i++) {
             assertEquals(
                     "Key location "
@@ -205,45 +163,21 @@ public class VirtualKeyboardLayoutTest extends VirtualDeviceTestCase {
                             + " should map to "
                             + KeyEvent.keyCodeToString(toKeys[i])
                             + " on a "
-                            + layoutName
+                            + device.getKeyboardLanguageTag()
+                            + "/"
+                            + device.getKeyboardLayoutType()
                             + " layout.",
-                    mVirtualInputDevice.getKeyCodeForKeyLocation(fromKeys[i]),
+                    device.getKeyCodeForKeyLocation(fromKeys[i]),
                     toKeys[i]);
         }
     }
 
-    private boolean isCorrectlyConfigured(int fromKeyCode, int toKeyCode) {
-        return mVirtualInputDevice != null
-                && mVirtualInputDevice.getKeyCodeForKeyLocation(fromKeyCode) == toKeyCode;
-    }
-
-    private InputManager.InputDeviceListener createInputDeviceListener() {
-        return new InputManager.InputDeviceListener() {
-            @Override
-            public void onInputDeviceAdded(int deviceId) {
-                updateVirtualInputDevice(deviceId);
-            }
-
-            @Override
-            public void onInputDeviceRemoved(int deviceId) {
-                if (mVirtualInputDevice.getId() == deviceId) {
-                    mVirtualInputDevice = null;
-                }
-            }
-
-            @Override
-            public void onInputDeviceChanged(int deviceId) {
-                updateVirtualInputDevice(deviceId);
-            }
-        };
-    }
-
-    private void updateVirtualInputDevice(int deviceId) {
-        InputDevice device = mInputManager.getInputDevice(deviceId);
-        if (device != null
-                && device.getProductId() == PRODUCT_ID
-                && device.getVendorId() == VENDOR_ID) {
-            mVirtualInputDevice = device;
-        }
+    private InputDevice createVirtualKeyboard(String languageTag, String layoutType) {
+        VirtualKeyboard virtualKeyboard =  VirtualInputDeviceCreator.createAndPrepareKeyboard(
+                mVirtualDevice, DEVICE_NAME + "/" + languageTag + "/" + layoutType,
+                mVirtualDisplay.getDisplay(), languageTag, layoutType).getDevice();
+        InputDevice inputDevice = mInputManager.getInputDevice(virtualKeyboard.getInputDeviceId());
+        assertThat(inputDevice).isNotNull();
+        return inputDevice;
     }
 }

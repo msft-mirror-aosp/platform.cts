@@ -30,9 +30,11 @@ import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.hardware.biometrics.ActionEnum;
+import android.hardware.biometrics.ClientEnum;
 import android.hardware.biometrics.ModalityEnum;
 import android.hardware.biometrics.SessionTypeEnum;
 
+import com.android.compatibility.common.util.NonApiTest;
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
 import com.android.tradefed.log.LogUtil.CLog;
@@ -68,6 +70,7 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
         ReportUtils.clearReports(getDevice());
     }
 
+    @NonApiTest(exemptionReasons = {}, justification = "METRIC")
     public void testEnrollAtom() throws Exception {
         if (!hasAidlBiometrics()) {
             CLog.w("Skipping test - no AIDL biometrics on device");
@@ -142,6 +145,7 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
         }
     }
 
+    @NonApiTest(exemptionReasons = {}, justification = "METRIC")
     public void testAuthenticateAtom() throws Exception {
         if (!hasAidlBiometrics()) {
             CLog.w("Skipping test - no AIDL biometrics on device");
@@ -186,8 +190,7 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
             if (sensorInfo.hasWeakOrGreaterFaceSensor()) {
                 assertThat(authAtoms).hasSize(2);
                 assertAuthenticateAtomData(authAtoms.get(0));
-                // TODO(b/283843162): Session info may not be available at BP dismission
-                //assertAuthenticateAtomData(authAtoms.get(1));
+                assertAuthenticateAtomData(authAtoms.get(1));
 
                 final List<AtomsProto.BiometricAcquired> acquiredAtoms =
                         filterAcquiredAtoms(data, modality);
@@ -209,6 +212,7 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
         assertThat(atom.hasAmbientLightLux()).isTrue();
         assertThat(atom.getSessionId()).isGreaterThan(0);
         assertThat(atom.getSessionType()).isEqualTo(SessionTypeEnum.SESSION_TYPE_BIOMETRIC_PROMPT);
+        assertThat(atom.getClient()).isEqualTo(ClientEnum.CLIENT_BIOMETRIC_PROMPT);
     }
 
     // check enrollment acquired messages match the fixed values in the test
@@ -226,6 +230,7 @@ public class BiometricsAtomsTests extends BiometricDeviceTestCase {
                     && atom.getSessionType() == SessionTypeEnum.SESSION_TYPE_BIOMETRIC_PROMPT)
                     .isTrue();
             assertThat(atom.getSessionId()).isEqualTo(sessionId);
+            assertThat(atom.getClient()).isEqualTo(ClientEnum.CLIENT_BIOMETRIC_PROMPT);
         }
 
         final List<Integer> expectedAcquireCodes;

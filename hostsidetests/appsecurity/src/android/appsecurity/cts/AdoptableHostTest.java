@@ -51,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 public class AdoptableHostTest extends BaseHostJUnit4Test {
 
     public static final String FEATURE_ADOPTABLE_STORAGE = "feature:android.software.adoptable_storage";
+    private static final int ANDROID_API_LEVEL_R = 30;
 
     private String mListVolumesInitialState;
 
@@ -400,7 +401,11 @@ public class AdoptableHostTest extends BaseHostJUnit4Test {
     }
 
     private boolean isSupportedDevice() throws Exception {
-        return hasFeature() || hasFstab();
+        return hasCasefoldSupport() && (hasFeature() || hasFstab());
+    }
+
+    private boolean hasCasefoldSupport() throws Exception {
+        return getDevice().getLaunchApiLevel() >= ANDROID_API_LEVEL_R;
     }
 
     private boolean hasFeature() throws Exception {

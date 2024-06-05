@@ -29,7 +29,10 @@ import static android.hardware.camera2.cts.CameraTestUtils.getSupportedVideoSize
 
 import static com.android.ex.camera2.blocking.BlockingStateCallback.STATE_CLOSED;
 
+import static junit.framework.Assert.assertTrue;
+
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.ColorSpace;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraCaptureSession;
@@ -63,12 +66,17 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 // TODO: Can we de-duplicate this with Camera2AndroidBasicTestCase keeping in mind CtsVerifier ?
 public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
     private static final String TAG = "Camera2AndroidTestCase";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
+
+    // include both standalone camera IDs and "hidden" physical camera IDs
+    private String[] mAllCameraIds;
 
     // Default capture size: VGA size is required by CDD.
     protected static final Size DEFAULT_CAPTURE_SIZE = new Size(640, 480);
@@ -78,8 +86,6 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
     protected CameraCaptureSession mCameraSession;
     protected BlockingSessionCallback mCameraSessionListener;
     protected BlockingStateCallback mCameraListener;
-    // include both standalone camera IDs and "hidden" physical camera IDs
-    protected String[] mAllCameraIds;
     protected HashMap<String, StaticMetadata> mAllStaticInfo;
     protected ImageReader mReader;
     protected Surface mReaderSurface;
@@ -93,6 +99,15 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
     protected String mDebugFileNameBase;
 
     protected WindowManager mWindowManager;
+
+    // Request templates that are unsupported by LEGACY mode.
+    protected static Set<Integer> sLegacySkipTemplates = new HashSet<>();
+    static {
+        sLegacySkipTemplates.add(CameraDevice.TEMPLATE_VIDEO_SNAPSHOT);
+        sLegacySkipTemplates.add(CameraDevice.TEMPLATE_ZERO_SHUTTER_LAG);
+        sLegacySkipTemplates.add(CameraDevice.TEMPLATE_MANUAL);
+    }
+
 
     /**
      * Set up the camera2 test case required environments, including CameraManager,
@@ -127,14 +142,15 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
 
         mAllStaticInfo = new HashMap<String, StaticMetadata>();
         List<String> hiddenPhysicalIds = new ArrayList<>();
-        for (String cameraId : mCameraIdsUnderTest) {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (String cameraId : cameraIdsUnderTest) {
             CameraCharacteristics props = mCameraManager.getCameraCharacteristics(cameraId);
             StaticMetadata staticMetadata = new StaticMetadata(props,
                     CheckLevel.ASSERT, /*collector*/null);
             mAllStaticInfo.put(cameraId, staticMetadata);
 
             for (String physicalId : props.getPhysicalCameraIds()) {
-                if (!Arrays.asList(mCameraIdsUnderTest).contains(physicalId) &&
+                if (!Arrays.asList(cameraIdsUnderTest).contains(physicalId) &&
                         !hiddenPhysicalIds.contains(physicalId)) {
                     hiddenPhysicalIds.add(physicalId);
                     props = mCameraManager.getCameraCharacteristics(physicalId);
@@ -145,10 +161,10 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
                 }
             }
         }
-        mAllCameraIds = new String[mCameraIdsUnderTest.length + hiddenPhysicalIds.size()];
-        System.arraycopy(mCameraIdsUnderTest, 0, mAllCameraIds, 0, mCameraIdsUnderTest.length);
+        mAllCameraIds = new String[cameraIdsUnderTest.length + hiddenPhysicalIds.size()];
+        System.arraycopy(cameraIdsUnderTest, 0, mAllCameraIds, 0, cameraIdsUnderTest.length);
         for (int i = 0; i < hiddenPhysicalIds.size(); i++) {
-            mAllCameraIds[mCameraIdsUnderTest.length + i] = hiddenPhysicalIds.get(i);
+            mAllCameraIds[cameraIdsUnderTest.length + i] = hiddenPhysicalIds.get(i);
         }
     }
 
@@ -170,6 +186,16 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
         } finally {
             super.tearDown();
         }
+    }
+
+    public String[] getAllCameraIds() throws Exception {
+        // If external camera is supported, verify that it is connected as part of the camera Ids
+        // under test. If the external camera is not connected, an exception will be thrown to
+        // prevent bypassing CTS testing for external camera
+        CameraTestUtils.verifyExternalCameraConnected(mCameraManager.getCameraIdListNoLazy(),
+                mContext.getPackageManager(), mCameraManager);
+
+        return mAllCameraIds;
     }
 
     /**
@@ -478,16 +504,7 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
      */
     protected void closeImageReader(ImageReader reader) {
         if (reader != null) {
-            try {
-                // Close all possible pending images first.
-                Image image = reader.acquireLatestImage();
-                if (image != null) {
-                    image.close();
-                }
-            } finally {
-                reader.close();
-                reader = null;
-            }
+            reader.close();
         }
     }
 
@@ -504,7 +521,7 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
         }
         outputConfigs.add(config);
         checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs, /*inputConfig*/ null,
-                SessionConfiguration.SESSION_REGULAR, /*expectedResult*/ true, msg);
+                SessionConfiguration.SESSION_REGULAR, mCameraManager, /*expectedResult*/ true, msg);
     }
 
     protected CaptureRequest prepareCaptureRequest() throws Exception {

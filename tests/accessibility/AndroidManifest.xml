@@ -103,13 +103,15 @@
                  android:resource="@xml/shortcut_target_activity"/>
         </activity>
 
+        <activity android:name=".AccessibilityEventAndCacheTest$TestActivity"
+                  android:screenOrientation="locked"
+                  android:exported="true" />
+
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.view.accessibility.cts"
          android:label="Tests for the accessibility APIs.">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 
 </manifest>

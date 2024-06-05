@@ -290,6 +290,7 @@ public class ConnectionServiceTest extends BaseTelecomTestWithMockServices {
             final MockConnection connection = new MockConnection();
             connection.setActive();
             connection.setCallDirection(Call.Details.DIRECTION_INCOMING);
+            assertEquals(connection.getCallDirection(), Call.Details.DIRECTION_INCOMING);
             CtsConnectionService.addExistingConnectionToTelecom(TEST_PHONE_ACCOUNT_HANDLE,
                     connection);
             assertNumCalls(mInCallCallbacks.getService(), 2);
@@ -433,7 +434,8 @@ public class ConnectionServiceTest extends BaseTelecomTestWithMockServices {
      */
     @CddTest(requirement = "7.4.1.1/C-1-4")
     public void testCallLogForBlockedNumberIncomingCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        // Only devices with a dialer app support the blocked numbers provider.
+        if (!mShouldTestTelecom || !hasDialerRole(mContext)) {
             return;
         }
 
@@ -514,6 +516,7 @@ public class ConnectionServiceTest extends BaseTelecomTestWithMockServices {
             final MockConnection connection = new MockConnection();
             connection.setActive();
             connection.setCallDirection(Call.Details.DIRECTION_OUTGOING);
+            assertEquals(connection.getCallDirection(), Call.Details.DIRECTION_OUTGOING);
             connection.setConnectTimeMillis(1000L);
             assertEquals(1000L, connection.getConnectTimeMillis());
             connection.setConnectionStartElapsedRealtimeMillis(100L);

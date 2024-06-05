@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_display_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -24,6 +25,7 @@ android_test {
         "ctstestrunner-axt",
         "cts-wm-util",
         "junit",
+        "CtsTestDreamControlLib",
     ],
     libs: [
         "android.test.runner",
@@ -40,5 +42,6 @@ android_test {
     ],
     data: [
         ":CtsDreamOverlayTestApp",
+        ":CtsDeviceServicesTestApp",
     ],
 }

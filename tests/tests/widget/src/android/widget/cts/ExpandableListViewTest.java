@@ -31,6 +31,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
+import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.database.DataSetObserver;
@@ -43,6 +44,7 @@ import android.util.Xml;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.AbsListView;
 import android.widget.ExpandableListAdapter;
@@ -57,6 +59,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.WidgetTestUtils;
 import com.android.compatibility.common.util.WindowUtil;
@@ -74,7 +77,13 @@ public class ExpandableListViewTest {
     private ExpandableListScenario mActivity;
     private ExpandableListView mExpandableListView;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<ExpandableList> mActivityRule =
             new ActivityTestRule<>(ExpandableList.class);
 
@@ -201,12 +210,27 @@ public class ExpandableListViewTest {
         mExpandableListView.onInitializeAccessibilityNodeInfoForItem(group, 0, expandedGroupInfo);
         assertTrue(expandedGroupInfo.getActionList().contains(
                 AccessibilityNodeInfo.AccessibilityAction.ACTION_COLLAPSE));
+        assertTrue(expandedGroupInfo.getActionList().contains(
+                AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK));
+        assertTrue(expandedGroupInfo.isClickable());
 
         assertTrue(mExpandableListView.collapseGroup(0));
         AccessibilityNodeInfo collapseGroupInfo = new AccessibilityNodeInfo();
         mExpandableListView.onInitializeAccessibilityNodeInfoForItem(group, 0, collapseGroupInfo);
         assertTrue(collapseGroupInfo.getActionList().contains(
                 AccessibilityNodeInfo.AccessibilityAction.ACTION_EXPAND));
+        assertTrue(collapseGroupInfo.getActionList().contains(
+                AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK));
+        assertTrue(collapseGroupInfo.isClickable());
+    }
+
+    @UiThreadTest
+    @ApiTest(apis = {"android.widget.ExpandableListView#performItemClick"})
+    @Test
+    public void testSendClickAccessibilityEvent() {
+        View mockView = mock(View.class);
+        mExpandableListView.performItemClick(mockView, 100, 99);
+        verify(mockView).sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
     }
 
     @UiThreadTest

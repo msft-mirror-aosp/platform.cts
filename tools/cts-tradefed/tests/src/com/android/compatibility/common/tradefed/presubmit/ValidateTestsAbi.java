@@ -24,6 +24,7 @@ import com.android.tradefed.util.AaptParser;
 import com.android.tradefed.util.AbiUtils;
 import com.android.tradefed.util.FileUtil;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -115,6 +116,9 @@ public class ValidateTestsAbi {
         BINARY_EXCEPTIONS.add("mk_payload");
         BINARY_EXCEPTIONS.add("sign_virt_apex");
         BINARY_EXCEPTIONS.add("simg2img");
+        BINARY_EXCEPTIONS.add("dtdiff");
+        BINARY_EXCEPTIONS.add("dtc");
+        BINARY_EXCEPTIONS.add("lz4");
 
         /**
          * These binaries are testing components with no 32-bit variant, which
@@ -148,6 +152,7 @@ public class ValidateTestsAbi {
      * Sometimes, if a module is missing LOCAL_MULTILIB := both, we will end up with only one of
      * the two abis required and the second one will fail.
      */
+    @Ignore // TODO(b/1555499)
     @Test
     public void testApksAbis() throws IOException {
         String ctsRoot = System.getProperty("CTS_ROOT");

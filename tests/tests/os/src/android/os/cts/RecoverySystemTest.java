@@ -16,20 +16,20 @@
 
 package android.os.cts;
 
+import android.content.res.AssetManager;
+import android.os.RecoverySystem;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.test.AndroidTestCase;
+import android.util.Log;
+
+import androidx.test.filters.MediumTest;
+
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 
-import android.content.Context;
-import android.content.res.AssetManager;
-import android.os.RecoverySystem;
-import android.test.AndroidTestCase;
-import android.test.suitebuilder.annotation.MediumTest;
-
-import android.util.Log;
-
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class RecoverySystemTest extends AndroidTestCase {
     private static final String TAG = "RecoverySystemTest";
 

@@ -16,21 +16,30 @@
 
 package com.android.cts.verifier.camera.its;
 
+import static android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10;
+
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.CamcorderProfile;
+import android.media.EncoderProfiles;
 import android.media.Image;
 import android.media.Image.Plane;
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
+import android.media.MediaFormat;
+import android.media.MediaMuxer;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
+import android.util.Pair;
 import android.util.Size;
 
 import com.android.ex.camera2.blocking.BlockingCameraManager;
@@ -43,10 +52,10 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.Semaphore;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
-
+import java.util.concurrent.Semaphore;
 
 public class ItsUtils {
     public static final String TAG = ItsUtils.class.getSimpleName();
@@ -104,47 +113,72 @@ public class ItsUtils {
 
     public static Size[] getRaw16OutputSizes(CameraCharacteristics ccs)
             throws ItsException {
-        return getOutputSizes(ccs, ImageFormat.RAW_SENSOR);
+        return getOutputSizes(ccs, ImageFormat.RAW_SENSOR, false);
+    }
+
+    public static Size[] getRaw16MaxResulolutionOutputSizes(CameraCharacteristics ccs)
+        throws ItsException {
+        return getOutputSizes(ccs, ImageFormat.RAW_SENSOR, true);
     }
 
     public static Size[] getRaw10OutputSizes(CameraCharacteristics ccs)
-            throws ItsException {
-        return getOutputSizes(ccs, ImageFormat.RAW10);
+        throws ItsException {
+        return getOutputSizes(ccs, ImageFormat.RAW10, false);
+    }
+
+    public static Size[] getRaw10MaxResulolutionOutputSizes(CameraCharacteristics ccs)
+        throws ItsException {
+        return getOutputSizes(ccs, ImageFormat.RAW10, true);
     }
 
     public static Size[] getRaw12OutputSizes(CameraCharacteristics ccs)
             throws ItsException {
-        return getOutputSizes(ccs, ImageFormat.RAW12);
+        return getOutputSizes(ccs, ImageFormat.RAW12, false);
     }
 
     public static Size[] getJpegOutputSizes(CameraCharacteristics ccs)
             throws ItsException {
-        return getOutputSizes(ccs, ImageFormat.JPEG);
+        return getOutputSizes(ccs, ImageFormat.JPEG, false);
     }
 
     public static Size[] getYuvOutputSizes(CameraCharacteristics ccs)
             throws ItsException {
-        return getOutputSizes(ccs, ImageFormat.YUV_420_888);
+        return getOutputSizes(ccs, ImageFormat.YUV_420_888, false);
     }
 
     public static Size[] getY8OutputSizes(CameraCharacteristics ccs)
             throws ItsException {
-        return getOutputSizes(ccs, ImageFormat.Y8);
+        return getOutputSizes(ccs, ImageFormat.Y8, false);
     }
 
     public static Size getMaxOutputSize(CameraCharacteristics ccs, int format)
             throws ItsException {
-        return getMaxSize(getOutputSizes(ccs, format));
+        return getMaxSize(getOutputSizes(ccs, format, false));
     }
 
-    public static Rect getActiveArrayCropRegion(CameraCharacteristics ccs) {
-        return ccs.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+    public static Rect getActiveArrayCropRegion(CameraCharacteristics ccs,
+        boolean isMaximumResolution) {
+        Rect cropRegion = null;
+        if (isMaximumResolution) {
+            cropRegion = ccs.get(
+                CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE_MAXIMUM_RESOLUTION);
+        } else {
+            cropRegion = ccs.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+        }
+        return cropRegion;
     }
 
-    private static Size[] getOutputSizes(CameraCharacteristics ccs, int format)
-            throws ItsException {
-        StreamConfigurationMap configMap = ccs.get(
+    private static Size[] getOutputSizes(CameraCharacteristics ccs, int format,
+        boolean isMaximumResolution) throws ItsException {
+        StreamConfigurationMap configMap = null;
+        if (isMaximumResolution) {
+            configMap = ccs.get(
+                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP_MAXIMUM_RESOLUTION);
+        } else {
+            configMap = ccs.get(
                 CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        }
+
         if (configMap == null) {
             throw new ItsException("Failed to get stream config");
         }
@@ -153,10 +187,8 @@ public class ItsUtils {
         Size[] allSizes = null;
         if (normalSizes != null && slowSizes != null) {
             allSizes = new Size[normalSizes.length + slowSizes.length];
-            System.arraycopy(normalSizes, 0, allSizes, 0,
-                    normalSizes.length);
-            System.arraycopy(slowSizes, 0, allSizes, normalSizes.length,
-                    slowSizes.length);
+            System.arraycopy(normalSizes, 0, allSizes, 0, normalSizes.length);
+            System.arraycopy(slowSizes, 0, allSizes, normalSizes.length, slowSizes.length);
         } else if (normalSizes != null) {
             allSizes = normalSizes;
         } else if (slowSizes != null) {
@@ -456,5 +488,164 @@ public class ItsUtils {
             }
         }
         return defaultFocalLength;
+    }
+
+    public static class MediaCodecListener extends MediaCodec.Callback {
+        private final MediaMuxer mMediaMuxer;
+        private final Object mCondition;
+        private int mTrackId = -1;
+        private boolean mEndOfStream = false;
+
+        public MediaCodecListener(MediaMuxer mediaMuxer, Object condition) {
+            mMediaMuxer = mediaMuxer;
+            mCondition = condition;
+        }
+
+        @Override
+        public void onInputBufferAvailable(MediaCodec codec, int index) {
+            Log.e(TAG, "Unexpected input buffer available callback!");
+        }
+
+        @Override
+        public void onOutputBufferAvailable(MediaCodec codec, int index,
+                MediaCodec.BufferInfo info) {
+            synchronized (mCondition) {
+                if (mTrackId < 0) {
+                    return;
+                }
+
+                if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                    mEndOfStream = true;
+                    mCondition.notifyAll();
+                }
+
+                if (!mEndOfStream) {
+                    mMediaMuxer.writeSampleData(mTrackId, codec.getOutputBuffer(index), info);
+                    codec.releaseOutputBuffer(index, false);
+                }
+            }
+        }
+
+        @Override
+        public void onError(MediaCodec codec, MediaCodec.CodecException e) {
+            Log.e(TAG, "Codec error: " + e.getDiagnosticInfo());
+        }
+
+        @Override
+        public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
+            synchronized (mCondition) {
+                mTrackId = mMediaMuxer.addTrack(format);
+                mMediaMuxer.start();
+            }
+        }
+    }
+
+    public static final long SESSION_CLOSE_TIMEOUT_MS  = 3000;
+
+    // used to find a good-enough recording bitrate for a given resolution. "Good enough" for the
+    // ITS test to run its calculations and still be supported by the HAL.
+    // NOTE: Keep sorted for convenience
+    public static final List<Pair<Integer, Integer>> RESOLUTION_TO_CAMCORDER_PROFILE = List.of(
+            Pair.create(176  * 144,  CamcorderProfile.QUALITY_QCIF),
+            Pair.create(320  * 240,  CamcorderProfile.QUALITY_QVGA),
+            Pair.create(352  * 288,  CamcorderProfile.QUALITY_CIF),
+            Pair.create(640  * 480,  CamcorderProfile.QUALITY_VGA),
+            Pair.create(720  * 480,  CamcorderProfile.QUALITY_480P),
+            Pair.create(1280 * 720,  CamcorderProfile.QUALITY_720P),
+            Pair.create(1920 * 1080, CamcorderProfile.QUALITY_1080P),
+            Pair.create(2048 * 1080, CamcorderProfile.QUALITY_2K),
+            Pair.create(2560 * 1440, CamcorderProfile.QUALITY_QHD),
+            Pair.create(3840 * 2160, CamcorderProfile.QUALITY_2160P),
+            Pair.create(4096 * 2160, CamcorderProfile.QUALITY_4KDCI)
+            // should be safe to assume that we don't have previews over 4k
+    );
+
+    /**
+     * Initialize a HLG10 MediaFormat instance with size, bitrate, and videoFrameRate.
+     */
+    public static MediaFormat initializeHLG10Format(Size videoSize, int videoBitRate,
+            int videoFrameRate) {
+        MediaFormat format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_HEVC,
+                videoSize.getWidth(), videoSize.getHeight());
+        format.setInteger(MediaFormat.KEY_PROFILE, HEVCProfileMain10);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, videoBitRate);
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, videoFrameRate);
+        format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
+                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
+        format.setInteger(MediaFormat.KEY_COLOR_STANDARD, MediaFormat.COLOR_STANDARD_BT2020);
+        format.setInteger(MediaFormat.KEY_COLOR_RANGE, MediaFormat.COLOR_RANGE_FULL);
+        format.setInteger(MediaFormat.KEY_COLOR_TRANSFER, MediaFormat.COLOR_TRANSFER_HLG);
+        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
+        return format;
+    }
+
+    // Default bitrate to use for recordings when querying CamcorderProfile fails.
+    private static final int DEFAULT_RECORDING_BITRATE = 25_000_000; // 25 Mbps
+
+    /**
+     * Looks up a reasonable recording bitrate from {@link CamcorderProfile} for the given
+     * {@code previewSize} and {@code maxFps}. This is not the most optimal bitrate, but should be
+     * good enough for ITS tests to run their analyses.
+     */
+    public static int calculateBitrate(int cameraId, Size previewSize, int maxFps)
+            throws ItsException {
+        int previewResolution = previewSize.getHeight() * previewSize.getWidth();
+
+        List<Pair<Integer, Integer>> resToProfile =
+                new ArrayList<>(RESOLUTION_TO_CAMCORDER_PROFILE);
+        // ensure that the list is sorted in ascending order of resolution
+        resToProfile.sort(Comparator.comparingInt(a -> a.first));
+
+        // Choose the first available resolution that is >= the requested preview size.
+        for (Pair<Integer, Integer> entry : resToProfile) {
+            if (previewResolution > entry.first) continue;
+            if (!CamcorderProfile.hasProfile(cameraId, entry.second)) continue;
+
+            EncoderProfiles profiles = CamcorderProfile.getAll(
+                    String.valueOf(cameraId), entry.second);
+            if (profiles == null) continue;
+
+            List<EncoderProfiles.VideoProfile> videoProfiles = profiles.getVideoProfiles();
+            for (EncoderProfiles.VideoProfile profile : videoProfiles) {
+                if (profile == null) continue;
+            }
+
+            // Find a profile which can achieve the requested max frame rate
+            for (EncoderProfiles.VideoProfile profile : videoProfiles) {
+                if (profile == null) continue;
+                if (profile.getFrameRate() >= maxFps) {
+                    Logt.i(TAG, "Recording bitrate: " + profile.getBitrate()
+                            + ", fps " + profile.getFrameRate());
+                    return  profile.getBitrate();
+                }
+            }
+        }
+
+        // TODO(b/223439995): There is a bug where some devices might populate result of
+        //                    CamcorderProfile.getAll with nulls even when a given quality is
+        //                    supported. Until this bug is fixed, fall back to the "deprecated"
+        //                    CamcorderProfile.get call to get the video bitrate. This logic can be
+        //                    removed once the bug is fixed.
+        Logt.i(TAG, "No matching EncoderProfile found. Falling back to CamcorderProfiles");
+        // Mimic logic from above, but use CamcorderProfiles instead
+        for (Pair<Integer, Integer> entry : resToProfile) {
+            if (previewResolution > entry.first) continue;
+            if (!CamcorderProfile.hasProfile(cameraId, entry.second)) continue;
+
+            CamcorderProfile profile = CamcorderProfile.get(cameraId, entry.second);
+            if (profile == null) continue;
+
+            int profileFrameRate = profile.videoFrameRate;
+            float bitRateScale = (profileFrameRate < maxFps)
+                    ? 1.0f * maxFps / profileFrameRate : 1.0f;
+            Logt.i(TAG, "Recording bitrate: " + profile.videoBitRate + " * " + bitRateScale);
+            return (int) (profile.videoBitRate * bitRateScale);
+        }
+
+        // Ideally, we should always find a Camcorder/Encoder Profile corresponding
+        // to the preview size.
+        Logt.w(TAG, "Could not find bitrate for any resolution >= " + previewSize
+                + " for cameraId " + cameraId + ". Using default bitrate");
+        return DEFAULT_RECORDING_BITRATE;
     }
 }

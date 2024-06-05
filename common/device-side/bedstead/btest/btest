@@ -263,12 +263,68 @@ class CloneProfileState:
     def all_supported_annotations(self, args):
         return self.include_annotations(args)
 
+
+class PrivateProfileState:
+    def __init__(self, args):
+        self.args = args
+
+    def name(self):
+        return "RUN_ON_PRIVATE_PROFILE"
+
+    def is_active(self, device_state):
+        if not is_private_profile(device_state, device_state["users"][device_state["current_user"]]):
+            return False
+        if self.args.headless:
+            return False
+        return self._has_private_profile(device_state["users"][device_state["current_user"]])
+
+    def include_annotations(self, args):
+        return ["com.android.bedstead.harrier.annotations.RequireRunOnPrivateProfile"]
+
+    def initialise(self, device_state):
+        self.user_id = device_state["users"][device_state["current_user"]]["private_profile_id"]
+
+    def enter(self, device_state):
+        debug(self.args, "[Test] Entering state " + self.name())
+        user = self._get_or_create_private_profile(device_state)
+        debug(self.args, "[Test] private profile is " + str(user))
+        self.user_id = user["id"]
+        execute_shell_command("Test", self.args, ["adb", "shell", "am", "switch-user", str(user["parent"])])
+        execute_shell_command("Test", self.args, ["adb", "shell", "am", "start-user ", str(self.user_id)])
+        for module in self.args.modules:
+            execute_shell_command("Test", self.args, ["adb", "shell", "pm", "install-existing", "--user", str(self.user_id), supported_modules[module][PACKAGE_NAME]])
+
+            for additional_app in supported_modules[module].get(ADDITIONAL_APPS, []):
+                command = ["adb", "install-existing", "--user", str(self.user_id), additional_app[PACKAGE_NAME]]
+                execute_shell_command("Test", self.args, command, shell=True, executable="/bin/bash")
+
+    def _get_or_create_private_profile(self, device_state):
+        users = get_users(self.args)
+        for user in users.values():
+            if is_private_profile(device_state, user):
+                return user
+
+        parent_id = 0 # Private profiles are only supported on system user only as of now.
+
+        private_profile_id = create_private_profile(device_state, self.args, parent_id)
+        return {"id": private_profile_id, "type": "profile.PRIVATE", "flags": None, "parent": str(parent_id)}
+
+    def get_user(self):
+        return self.user_id
+
+    def _has_private_profile(self, user):
+        return "private_profile_id" in user
+
+    def all_supported_annotations(self, args):
+        return self.include_annotations(args)
+
 RUN_ON_CURRENT_USER = CurrentUserState
 RUN_ON_SYSTEM_USER = SystemUserState
 RUN_ON_SECONDARY_USER = SecondaryUserState
 RUN_ON_WORK_PROFILE = WorkProfileState
 RUN_ON_ADDITIONAL_USER = AdditionalUserState
 RUN_ON_CLONE_PROFILE = CloneProfileState
+RUN_ON_PRIVATE_PROFILE = PrivateProfileState
 
 STATE_CODES = {
     "c": RUN_ON_CURRENT_USER,
@@ -277,17 +333,18 @@ STATE_CODES = {
     "w": RUN_ON_WORK_PROFILE,
     "a": RUN_ON_ADDITIONAL_USER,
     "l": RUN_ON_CLONE_PROFILE,
+    "p": RUN_ON_PRIVATE_PROFILE,
     "i": "i" # SPECIAL CASE DEALT WITH AT THE START OF PARSING
 }
 
-DEFAULT_STATES = "csywal"
+DEFAULT_STATES = "csywalp"
 
 SHORT_PACKAGE_PREFIXES = {
+    "a.d.i": "android.devicepolicy.internal",
     "a.d.c.t": "android.devicepolicy.cts.telephony",
     "a.d.c": "android.devicepolicy.cts",
     "a.d.g": "android.devicepolicy.gts",
     "a.m.c": "android.multiuser.cts",
-
     "nene": "com.android.bedstead.nene"
 }
 
@@ -298,27 +355,27 @@ supported_modules = {
     "CtsDevicePolicyTestCases": {
         "package": "android.devicepolicy.cts",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
     },
     "CtsDevicePolicySimTestCases": {
         "package": "android.devicepolicy.cts.telephony",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
     },
     "GtsDevicePolicyTestCases": {
         "package": "android.devicepolicy.gts",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
     },
     "GtsInteractiveAudioTestCases": {
         "package": "com.google.android.audio.gts",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
     },
     "CtsMultiUserTestCases": {
         "package": "android.multiuser.cts",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
     },
     "CtsAccountManagerMultiuserTestCases": {
         "package": "android.accounts.cts.multiuser",
@@ -326,36 +383,43 @@ supported_modules = {
         "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER]
     },
 
+    # Internal
+    "InternalDevicePolicyTestCases": {
+        "package": "android.devicepolicy.internal",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
+    },
+
     # Bedstead
     "ActivityContextTest": {
         "package": "com.android.activitycontext.test",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
     },
 
     "DeviceAdminAppTest": {
         "package": "com.android.bedstead.deviceadminapp.test",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
     },
     "EventLibTest": {
         "package": "com.android.eventlib.test",
         "path": "com.android.eventlib",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE],
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
         "additional_apps": [{"target": "EventLibTestApp", "package": "com.android.eventlib.tests.testapp"}]
     },
     "HarrierTest": {
         "package": "com.android.bedstead.harrier.test",
         "path": "com.android.bedstead.harrier",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
     },
     "NeneTest": {
         "package": "com.android.bedstead.nene.test",
         "path": "com.android.bedstead.nene",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE],
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
         "additional_targets": ["NeneTestApp1"],
         "files": [{"from": "NeneTestApp1.apk", "to": "/data/local/tmp/NeneTestApp1.apk"}]
     },
@@ -363,13 +427,13 @@ supported_modules = {
         "package": "com.android.queryable.test",
         "path": "com.android.queryable",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
     },
     "RemoteDPCTest": {
         "package": "com.android.bedstead.remotedpc.test",
         "path": "com.android.bedstead.remotedpc",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
     },
     "RemoteAccountAuthenticatorTest": {
         "package": "com.android.bedstead.remoteaccountauthenticator.test",
@@ -381,12 +445,56 @@ supported_modules = {
         "package": "com.android.bedstead.testapp.test",
         "path": "com.android.bedstead.testapp",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
     },
     "CtsDevicePolicySimTestCases": {
         "package": "android.devicepolicy.cts.telephony",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
         "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_ADDITIONAL_USER]
+    },
+
+    # Modules
+    "bedstead-usb-test": {
+        "package": "com.android.bedstead.usb.test",
+        "path": "com.android.bedstead.usb",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
+    "bedstead-adb-test": {
+        "package": "com.android.bedstead.adb.test",
+        "path": "com.android.bedstead.adb",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
+    "bedstead-root-test": {
+        "package": "com.android.xts.root.test",
+        "path": "com.android.xts.root",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
+    "bedstead-permissions-test": {
+        "package": "com.android.bedstead.permissions.test",
+        "path": "com.android.bedstead.permissions",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
+    "bedstead-flags-test": {
+        "package": "com.android.bedstead.flags.test",
+        "path": "com.android.bedstead.flags",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
+    "bedstead-multiuser-test": {
+        "package": "com.android.bedstead.multiuser.test",
+        "path": "com.android.bedstead.multiuser",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+    },
+    "bedstead-enterprise-test": {
+        "package": "com.android.bedstead.enterprise.test",
+        "path": "com.android.bedstead.enterprise",
+        "runner": "androidx.test.runner.AndroidJUnitRunner",
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
     },
 }
 
@@ -446,10 +554,11 @@ def get_args():
     parser.add_argument("-t", "--test", action='store_true', help="Builds test targets. (default)")
     parser.add_argument("-d", "--debug", action="store_true", help="Include debug output.")
     parser.add_argument("-c", "--coexistence", action="store", default="?", help="Force device policy coexistence on or off (ignoring bedstead test preferences)")
-    parser.add_argument("-s", "--states", help="Specify states which should be included. Options are (c)urrent (s)ystem secondar(y), (w)ork profile, c(l)one (i)nitial, (a)dditional. Defaults to all states.")
+    parser.add_argument("-s", "--states", help="Specify states which should be included. Options are (c)urrent (s)ystem secondar(y), (w)ork profile, c(l)one (i)nitial, (a)dditional, (p)rivate profile. Defaults to all states.")
     parser.add_argument("-n", "--interactive", action='store', nargs='?', default="disabled", help="Run interactive tests. This will exclude non-interactive tests and will enable manual testing. Pass 'bi' to build and install automations, 't' to use automations (default) and m to enable manual interaction (default)")
     parser.add_argument("--stop-after-first-failure", action="store_true", help="If true, will stop execution after encountering a single failure")
     parser.add_argument("--rerun-after-all-pass", action="store_true", help="If true, will re-start the run if all pass")
+    parser.add_argument("-r", "--root", action="store_true", help="Run rooted tests. This will ensure that adb is running as root and will include tests annotated as @RequireAdbRoot - which are otherwise excluded.")
     # parser.add_argument("--capture-bugreport-after-crash", action="store_true", help="If true, will capture a bug report on failure due to a process or system server crash")
     parser.add_argument("--timer", action="store", choices=['junit', 'btest'], default='junit', help="Either 'junit' (default) which is the internal junit timer and reflects the numbers shown on dashboards, etc. or 'btest' which tracks the actual time from the start of the test to the result being posted (including bedstead setup and teardown)")
     args = parser.parse_args()
@@ -461,7 +570,7 @@ def get_args():
     if not args.states:
         args.states = DEFAULT_STATES
     args.states = set(args.states)
-    valid_states = ["c", "s", "y", "w", "l", "a", "i"]
+    valid_states = ["c", "s", "y", "w", "l", "a", "i", "p"]
     for state in args.states:
         if not state in valid_states:
             print("State " + state + " is invalid, must be one of " + str(valid_states))
@@ -630,9 +739,20 @@ class Test:
         else:
             self.exclude_annotations.append("com.android.interactive.annotations.Interactive")
 
+        if self.args.root:
+            self.include_annotations.append("com.android.xts.root.annotations.RequireAdbRoot")
+        else:
+            self.exclude_annotations.append("com.android.xts.root.annotations.RequireAdbRoot")
+
     def run(self):
         execute_shell_command("Test", self.args, ["adb", "shell", "am", "start-user ", str(self.state.get_user())])
-        command = "adb shell am instrument --user " + str(self.state.get_user())
+
+        # This prepares the devices to begin running a test without a persistent adb connection.
+        # it will write the ongoing result log to /sdcard/ex.log and then we will repeatedly
+        # check that - allowing for usb disconnection without losing the results
+        execute_shell_command("Test", self.args, ["adb", "shell", "rm -f /sdcard/ex.log && rm -f /sdcard/ex_now.log && rm -f /sdcard/ex_read.log && rm -f /sdcard/test_pid.txt && touch /sdcard/ex_now.log"])
+
+        command = "adb shell nohup am instrument --user " + str(self.state.get_user())
 
         # Use the formatted output
         command += " -e listener com.android.bedstead.harrier.BedsteadRunListener"
@@ -642,6 +762,9 @@ class Test:
 
         if self.exclude_annotations:
             command += " -e notAnnotation " + ",".join(self.exclude_annotations)
+
+        # btest supports untethering during the run
+        command += " -e CAN_UNTETHER true"
 
         if self.args.interactive:
             if self.args.manual_interactive:
@@ -673,34 +796,29 @@ class Test:
 
         command += " -w " + self.module_package + "/" + self.runner
 
+        # This means we will have /sdcard/ex.log with the test results and /sdcard/test_pid.txt
+        # with the pid of the process. We can check the pid to see if the tests are still running
+        command += " > /sdcard/ex.log 2>&1 & echo $! > /sdcard/test_pid.txt"
+
         if self.args.debug:
             print("[Test] Executing '" + command + "'")
 
-        def enqueue_output(out, queue):
-            for line in iter(out.readline, b''):
-                line = line.decode('utf-8')
+        def enqueue_output(queue):
+            output, stderr = execute_shell_command("Test", self.args, ["adb", "shell", "cp /sdcard/ex_now.log /sdcard/ex_read.log && cp /sdcard/ex.log /sdcard/ex_now.log && comm -23 /sdcard/ex_now.log /sdcard/ex_read.log"])
+            for line in output.split("\n"):
                 debug(self.args, "[DEBUG] " + line)
 
                 if "Time: " in line:
                     debug(self.args, "[DEBUG] Output finished")
                     self.tests_finished = True
                 queue.put(line)
-            out.close()
 
+        execute_shell_command("Test", self.args, command.split(" "))
         self.tests_finished = False
-        self.test_process = subprocess.Popen([command], shell=True, executable="/bin/bash", stdout=subprocess.PIPE, close_fds=True)
         self.test_process_queue = queue.Queue()
-        self.test_process_thread = Thread(target=enqueue_output, args=(self.test_process.stdout, self.test_process_queue))
+        self.test_process_thread = Thread(target=enqueue_output, args=(self.test_process_queue,))
         self.test_process_thread.daemon = True
         self.test_process_thread.start()
-
-        if self.args.debug:
-            print("[Test] About to sleep")
-        import time
-        # TODO: For some reason we need a sleep otherwise the test_process doesn't launch... look into this
-        time.sleep(2)
-        if self.args.debug:
-            print("[Test] Slept")
 
         start_timer = time.monotonic_ns()
 
@@ -746,7 +864,7 @@ class Test:
 
                     if self.args.stop_after_first_failure and str(result["result"]) == "1":
                         # Failure
-                        self.test_process.kill()
+                        self.kill()
                         raise KeyboardInterrupt
                         return
 
@@ -755,7 +873,7 @@ class Test:
             while self.tests_are_running():
                 if time.monotonic_ns() - wait_to_end_timer > 10000000000:
                     print("(Waited 10 seconds for test process to end. Killing)")
-                    self.test_process.kill()
+                    self.kill()
                     break
             debug(self.args, "Done")
 
@@ -778,7 +896,11 @@ class Test:
             print(output)
 
     def tests_are_running(self):
-        return self.test_process.poll() is None and not self.tests_finished
+        output, err = execute_shell_command("Test", self.args, ["adb", "shell", "ps | grep $(cat /sdcard/test_pid.txt)"])
+        return output.strip()
+
+    def kill(self):
+        execute_shell_command("Test", self.args, ["adb", "shell", "kill $(cat /sdcard/test_pid.txt)"])
 
     def get_num_tests(self):
         numTests = -1
@@ -844,6 +966,10 @@ class Test:
                 print(" " + IGNORED_CODE + "// ASSUMPTION FAILED (" + test_result["message"] + ")" + RESET_CODE + " (" + time_str + ")", flush=True)
             return
         except Exception as e:
+            if not is_connected():
+                print("\nDevice not connected to ADB. Waiting for reconnection...")
+                wait_for_adb_reconnection()
+                return
             print("Exception ", e)
         print("ERROR PARSING TEST RESULT " + str(test_result), flush=True)
         self.dump_output()
@@ -878,11 +1004,25 @@ def execute_shell_command(stage, args, command, **extra_args):
     debug(args, "[" + stage + "] Output: '" + output + "' Err: '" + r.stderr + "'")
 
     if r.stderr:
-        if "no devices/emulators found" in r.stderr:
-            print("Error: No devices/emulators found")
-            sys.exit(1)
+        if "no devices/emulators found" in r.stderr or "device offline" in r.stderr:
+            print("\nDevice not connected to ADB. Waiting for reconnection...")
+            wait_for_adb_reconnection()
+            return execute_shell_command(stage, args, command, **extra_args)
 
     return output, r.stderr
+
+def wait_for_adb_reconnection():
+    while True:
+        if is_connected():
+            print("\nFound connection")
+            return
+        time.sleep(0.5)
+
+def is_connected():
+    r = subprocess.run(["adb", "shell", "echo", "hello"], capture_output=True, text=True)
+    output = r.stdout
+
+    return not r.stderr or (not "no devices/emulators found" in r.stderr and not "device offline" in r.stderr)
 
 def get_or_create_additional_user(device_state, args):
     users = get_users(args)
@@ -921,6 +1061,9 @@ def is_secondary_user(device_state, user):
 
 def is_clone_profile(device_state, user):
     return is_for_testing(device_state, user) and user["type"] == "profile.CLONE"
+
+def is_private_profile(device_state, user):
+    return is_for_testing(device_state, user) and user["type"] == "profile.PRIVATE"
 
 def remove_user(args, id):
     execute_shell_command("Test", args, ["adb", "shell", "pm", "remove-user", str(id)])
@@ -964,6 +1107,22 @@ def create_work_profile(device_state, args, parent_id):
 def create_clone_profile(device_state, args, parent_id):
     ensure_no_dpcs(device_state, args) # avoid no_add_clone_profile TODO: Be more specific
     commands = ["adb", "shell", "pm", "create-user", "--profileOf", str(parent_id), "--user-type android.os.usertype.profile.CLONE"]
+    if device_state["sdk_version"] >= 34:
+        commands.append("--for-testing")
+    commands.append("user")
+
+    output, err = execute_shell_command("Test", args, commands)
+
+    try:
+        id = int(output.rsplit(" ", 1)[1].strip())
+    except IndexError:
+        print("Error parsing profile id. Output: " + output + ", err: " + err)
+        sys.exit(1)
+    return id
+
+def create_private_profile(device_state, args, parent_id):
+    ensure_no_dpcs(device_state, args) # avoid no_add_private_profile TODO: Be more specific
+    commands = ["adb", "shell", "pm", "create-user", "--profileOf", str(parent_id), "--user-type android.os.usertype.profile.PRIVATE"]
     if device_state["sdk_version"] >= 34:
         commands.append("--for-testing")
     commands.append("user")
@@ -1028,6 +1187,13 @@ def ensure_no_dpcs(device_state, args):
             admin_name = device_admin_line.strip().split(":", 1)[0]
             print(execute_shell_command("", args, ["adb", "shell", "dpm", "remove-active-admin", "--user", user, admin_name]))
 
+def increase_maximum_user_limit(args):
+    default_maximum_users = 4
+    if len(args.states) > default_maximum_users:
+        execute_shell_command("Test", args, ["adb", "root"])
+        execute_shell_command("Test", args, ["adb", "wait-for-device"])
+        execute_shell_command("Test", args, ["adb", "shell", "setprop", "fw.max_users", str(len(args.states))])
+
 
 def run_tests(args):
     test = None
@@ -1045,6 +1211,13 @@ def run_tests(args):
         if RUN_ON_CLONE_PROFILE in args.states:
             print("Not running on clone profile on headless")
             args.states.remove(RUN_ON_CLONE_PROFILE)
+        if RUN_ON_PRIVATE_PROFILE in args.states:
+            print("Not running on private profile on headless")
+            args.states.remove(RUN_ON_PRIVATE_PROFILE)
+
+    # TODO(b/298356062): Increase this only when there is a maximum user limit exception and
+    # set the max-user limit to the default after the tests.
+    increase_maximum_user_limit(args)
 
     # Construct modules with args
 
@@ -1109,6 +1282,11 @@ def run_tests(args):
     for module in args.modules:
         instrumented_runs[module] = [target[1] for target in args.targets if target[0] == module and target[1] is not None]
 
+    if (args.root):
+        execute_shell_command("Test", args, ["adb", "root"])
+    else:
+        execute_shell_command("Test", args, ["adb", "unroot"])
+
     try:
         for i, state in enumerate(states):
             print(state.name())
@@ -1127,11 +1305,11 @@ def run_tests(args):
     except KeyboardInterrupt:
         # Kill the test process then move on to print the results
         if test is not None:
-            test.test_process.kill()
+            test.kill()
         has_quit = True
     except Exception as e:
         if test is not None:
-            test.test_process.kill()
+            test.kill()
         raise e
 
     return btest_run, has_quit
