@@ -348,10 +348,11 @@ def add_update_to_filename(file_name, update_str='_update'):
   return new_file_name
 
 
-def get_distortion_errors(img_name):
+def get_distortion_errors(props, img_name):
   """Calculates the distortion error using checkerboard and ArUco markers.
 
   Args:
+    props: camera properties object.
     img_name: image name including complete file path
 
   Returns:
@@ -364,6 +365,10 @@ def get_distortion_errors(img_name):
 
   """
   image = cv2.imread(img_name)
+  if (props['android.lens.facing'] ==
+      camera_properties_utils.LENS_FACING['FRONT']):
+    image = preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+        props['android.sensor.orientation'], image)
 
   pattern_size = (_CHESSBOARD_CORNERS, _CHESSBOARD_CORNERS)
 
@@ -490,7 +495,7 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
       for frame in preview_frames:
         img_full_name = f'{os.path.join(log_path, frame.img_name)}'
         (chkr_distortion_error, chkr_chart_coverage, arc_distortion_error,
-         arc_chart_coverage) = get_distortion_errors(img_full_name)
+         arc_chart_coverage) = get_distortion_errors(props, img_full_name)
 
         zoom = float(frame.capture_result['android.control.zoomRatio'])
         if camera_properties_utils.logical_multi_camera(props):
