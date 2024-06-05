@@ -280,6 +280,23 @@ public class ImageDecoderTest {
         }
     }
 
+    private Bitmap decodeUnscaledBitmap(
+            int resId, ImageDecoder.OnHeaderDecodedListener listener) throws IOException {
+        // For tests which rely on ImageDecoder *not* scaling to account for density.
+        // Temporarily change the DisplayMetrics to prevent that scaling.
+        Resources res = getResources();
+        final int originalDensity = res.getDisplayMetrics().densityDpi;
+        res.getDisplayMetrics().densityDpi = DisplayMetrics.DENSITY_DEFAULT;
+
+        try {
+            ImageDecoder.Source src = ImageDecoder.createSource(res, resId);
+            assertNotNull(src);
+            return ImageDecoder.decodeBitmap(src, listener);
+        } finally {
+            res.getDisplayMetrics().densityDpi = originalDensity;
+        }
+    }
+
     @Test
     @RequiresDevice
     public void testDecode10BitHeifWithLowRam() {
