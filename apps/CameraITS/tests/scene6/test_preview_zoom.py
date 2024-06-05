@@ -16,11 +16,11 @@
 import logging
 import os.path
 
+import cv2
 from mobly import test_runner
 
 import its_base_test
 import camera_properties_utils
-import image_processing_utils
 import its_session_utils
 import preview_processing_utils
 import video_processing_utils
@@ -28,6 +28,7 @@ import zoom_capture_utils
 
 
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 100  # TODO: b/332322632 - improve test runtime
 
@@ -98,9 +99,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         z = float(capture_result['android.control.zoomRatio'])
 
         # read image
-        img = image_processing_utils.convert_image_to_numpy_array(
-            os.path.join(log_path, img_name)
-            )
+        img_bgr = cv2.imread(os.path.join(log_path, img_name))
 
         # add path to image name
         img_name = f'{os.path.join(self.log_path, img_name)}'
@@ -120,8 +119,9 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
         # Find the center circle in img and check if it's cropped
         circle = zoom_capture_utils.find_center_circle(
-            img, img_name, size, z, z_min, circlish_rtol=circlish_rtol,
-            debug=debug)
+            img_bgr, img_name, size, z, z_min, circlish_rtol=circlish_rtol,
+            debug=debug, draw_color=_CV2_RED, write_img=False)
+        cv2.imwrite(img_name, img_bgr)
 
         # Zoom is too large to find center circle
         if circle is None:
