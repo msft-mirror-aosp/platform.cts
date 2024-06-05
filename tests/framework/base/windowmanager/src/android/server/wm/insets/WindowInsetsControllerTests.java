@@ -842,6 +842,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
                 dialogWindow[0].getDecorView().getWindowInsetsController().hide(ime());
             });
 
+            instrumentation.waitForIdleSync();
             PollingCheck.waitFor(TIMEOUT, () -> !rootView.getRootWindowInsets().isVisible(ime()));
 
             assertNotNull(firstWindowInsetsDuringAnimation[0]);

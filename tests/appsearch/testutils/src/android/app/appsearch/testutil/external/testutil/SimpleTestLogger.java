@@ -26,6 +26,7 @@ import com.android.server.appsearch.external.localstorage.stats.InitializeStats;
 import com.android.server.appsearch.external.localstorage.stats.OptimizeStats;
 import com.android.server.appsearch.external.localstorage.stats.PutDocumentStats;
 import com.android.server.appsearch.external.localstorage.stats.RemoveStats;
+import com.android.server.appsearch.external.localstorage.stats.SearchIntentStats;
 import com.android.server.appsearch.external.localstorage.stats.SearchStats;
 import com.android.server.appsearch.external.localstorage.stats.SetSchemaStats;
 
@@ -61,6 +62,9 @@ public final class SimpleTestLogger implements AppSearchLogger {
 
     /** Holds {@link android.app.appsearch.stats.SchemaMigrationStats} after logging. */
     @Nullable public SchemaMigrationStats mSchemaMigrationStats;
+
+    /** Holds {@link SearchIntentStats} after logging. */
+    @NonNull public List<SearchIntentStats> mSearchIntentsStats = new ArrayList<>();
 
     @Override
     public void logStats(@NonNull CallStats stats) {
@@ -100,5 +104,10 @@ public final class SimpleTestLogger implements AppSearchLogger {
     @Override
     public void logStats(@NonNull SchemaMigrationStats stats) {
         mSchemaMigrationStats = stats;
+    }
+
+    @Override
+    public void logStats(@NonNull List<SearchIntentStats> searchIntentsStats) {
+        mSearchIntentsStats.addAll(searchIntentsStats);
     }
 }

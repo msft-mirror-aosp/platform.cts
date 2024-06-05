@@ -162,7 +162,7 @@ public class PackageInstallerCujTestBase {
 
     @Before
     public void setup() throws Exception {
-        assumeFalse(isNotSupportedDevice());
+        assumeFalse("The device is not supported", isNotSupportedDevice());
 
         uninstallTestPackage();
         assertTestPackageNotInstalled();
@@ -193,7 +193,7 @@ public class PackageInstallerCujTestBase {
     }
 
     @AfterClass
-    public static void teadDownClass() throws Exception {
+    public static void tearDownClass() throws Exception {
         sInstallerResponseReceiver.unregisterReceiver(sContext);
         sInstallerResponseReceiver = null;
         sPackageManager = null;
@@ -396,7 +396,7 @@ public class PackageInstallerCujTestBase {
      * Assert the test package has the V2 label is installed.
      */
     public static void assertTestPackageLabelV2Installed() {
-        assertThat(isInstalledAndVerifyAppName(TEST_APK_PACKAGE_NAME, TEST_APK_V2_LABEL)).isTrue();
+        assertThat(isTestPackageLabelV2Installed()).isTrue();
     }
 
     /**
@@ -453,22 +453,44 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Click the Install button and allow install if the GPP dialog exists.
+     * Click the Install button and wait for the dialog disappears. Also allow install if the
+     * GPP dialog exists.
      */
     public static void clickInstallButton() {
         findObject(BUTTON_INSTALL_LABEL).click();
         waitForUiIdle();
-        allowInstallIfGPPDialogExists();
+
+        // wait for the dialog disappear
+        waitUntilObjectGone(BUTTON_INSTALL_LABEL);
+
+        if (!isTestPackageInstalled()) {
+            allowInstallIfGPPDialogExists();
+        }
     }
 
     /**
-     * Click the Update button and wait for the dialog disappears.
+     * Click the Update button and wait for the dialog disappears. Also allow install if the
+     * GPP dialog exists.
      */
     public static void clickUpdateButton() {
+        clickUpdateButton(/* checkGPPDialog= */ true);
+    }
+
+    /**
+     * Click the Update button and wait for the dialog disappears. If {@code checkGPPDialog} is
+     * true, check the GPP dialog. Otherwise, don't check the GPP dialog. The installation via
+     * intent with package uri doesn't trigger the GPP dialog.
+     */
+    public static void clickUpdateButton(boolean checkGPPDialog) {
         findObject(BUTTON_UPDATE_LABEL).click();
         waitForUiIdle();
+
         // wait for the dialog disappear
         waitUntilObjectGone(BUTTON_UPDATE_LABEL);
+
+        if (checkGPPDialog && !isTestPackageLabelV2Installed()) {
+            allowInstallIfGPPDialogExists();
+        }
     }
 
     /**
@@ -615,6 +637,10 @@ public class PackageInstallerCujTestBase {
         }
     }
 
+    private static boolean isTestPackageLabelV2Installed() {
+        return isInstalledAndVerifyAppName(TEST_APK_PACKAGE_NAME, TEST_APK_V2_LABEL);
+    }
+
     private static boolean isInstalledAndVerifyAppName(@NonNull String packageName,
             @NonNull String expectedAppLabel) {
         Log.d(TAG, "Testing if package " + packageName + " is installed for user "
@@ -654,6 +680,10 @@ public class PackageInstallerCujTestBase {
     }
 
     private static boolean isNotSupportedDevice() {
-        return FeatureUtil.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        return FeatureUtil.isArc()
+                || FeatureUtil.isAutomotive()
+                || FeatureUtil.isTV()
+                || FeatureUtil.isWatch()
+                || FeatureUtil.isVrHeadset();
     }
 }

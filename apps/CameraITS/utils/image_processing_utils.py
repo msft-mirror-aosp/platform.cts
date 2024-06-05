@@ -15,6 +15,7 @@
 
 
 import copy
+import cv2
 import io
 import logging
 import math
@@ -377,7 +378,7 @@ def convert_image_to_numpy_array(image_path):
   """
   if not os.path.exists(image_path):
     raise AssertionError(f'{image_path} does not exist.')
-  image = Image.open(image_path)
+  image = cv2.imread(image_path)[:, :, ::-1]
   return numpy.array(image)
 
 

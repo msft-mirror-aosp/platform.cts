@@ -504,16 +504,7 @@ public class Camera2AndroidTestCase extends Camera2ParameterizedTestCase {
      */
     protected void closeImageReader(ImageReader reader) {
         if (reader != null) {
-            try {
-                // Close all possible pending images first.
-                Image image = reader.acquireLatestImage();
-                if (image != null) {
-                    image.close();
-                }
-            } finally {
-                reader.close();
-                reader = null;
-            }
+            reader.close();
         }
     }
 

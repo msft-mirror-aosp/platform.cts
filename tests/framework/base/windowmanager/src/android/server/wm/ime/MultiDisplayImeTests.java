@@ -53,6 +53,9 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.DisplayContent;
@@ -75,6 +78,7 @@ import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -87,6 +91,10 @@ import java.util.concurrent.TimeUnit;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class MultiDisplayImeTests extends MultiDisplayTestBase {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
     static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
@@ -148,6 +156,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
      * will not drop the statsToken tracking the show request.
      */
     @Test
+    @RequiresFlagsDisabled(android.view.inputmethod.Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testFallbackImmMaintainsParameters() throws Exception {
         try (var mockImeSession = createManagedMockImeSession(this);
                 TestActivitySession<ImeTestActivity> imeTestActivitySession =
@@ -540,11 +549,15 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                     TIMEOUT).getReturnIntegerValue();
             assertThat(imeDisplayId).isEqualTo(secondDisplay.mId);
 
-            // Show soft input again to trigger IME movement.
-            imeTestActivitySession.runOnMainSyncAndWait(
-                    imeTestActivitySession.getActivity()::showSoftInput);
-            waitOrderedImeEventsThenAssertImeShown(stream, secondDisplay.mId,
-                    event -> "showSoftInput".equals(event.getEventName()));
+            // With the refactor, the additional show is not needed, as we already verified that
+            // the IME is showing
+            if (!android.view.inputmethod.Flags.refactorInsetsController()) {
+                // Show soft input again to trigger IME movement.
+                imeTestActivitySession.runOnMainSyncAndWait(
+                        imeTestActivitySession.getActivity()::showSoftInput);
+                waitOrderedImeEventsThenAssertImeShown(stream, secondDisplay.mId,
+                        event -> "showSoftInput".equals(event.getEventName()));
+            }
 
             // Moving IME to the display with the same display metrics must not lead to
             // screen size changes.

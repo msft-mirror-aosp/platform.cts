@@ -1430,6 +1430,14 @@ public class IntentTest {
                         .setData(Uri.parse("z39.50r://example.org/db?123")));
     }
 
+    @Test
+    public void testMalformedUris() {
+        assertThrows(URISyntaxException.class, () -> Intent.parseUri(
+                "intent:#Intent;scheme=mailto;package=com.myapp;d.double=10.4", 0));
+        assertThrows(URISyntaxException.class, () -> Intent.parseUri(
+                "android-app://com.myapp/mailto#Intent;d.double=10.4", 0));
+    }
+
     private boolean compareIntents(Intent expected, Intent actual) {
         if (!Objects.equals(expected.getAction(), actual.getAction())) {
             return false;
