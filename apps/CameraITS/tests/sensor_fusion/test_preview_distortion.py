@@ -512,13 +512,13 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
 
         # Don't change print to logging. Used for KPI.
         print(f'{_NAME}_{z_str}_zoom: ', zoom)
-        print(f'{_NAME}_{z_str}_camera_id: ', cam_id)
+        print(f'{_NAME}_{z_str}_physical_id: ', cam_id)
         print(f'{_NAME}_{z_str}_chkr_distortion_error: ', chkr_distortion_err)
         print(f'{_NAME}_{z_str}_chkr_chart_coverage: ', chkr_chart_coverage)
         print(f'{_NAME}_{z_str}_aruco_distortion_error: ', arc_distortion_err)
         print(f'{_NAME}_{z_str}_aruco_chart_coverage: ', arc_chart_coverage)
         logging.debug('%s_%s_zoom: %s', _NAME, z_str, zoom)
-        logging.debug('%s_%s_camera_id: %s', _NAME, z_str, cam_id)
+        logging.debug('%s_%s_physical_id: %s', _NAME, z_str, cam_id)
         logging.debug('%s_%s_chkr_distortion_error: %s', _NAME, z_str,
                       chkr_distortion_err)
         logging.debug('%s_%s_chkr_chart_coverage: %s', _NAME, z_str,
