@@ -226,7 +226,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private static class InstallResultReceiver extends BroadcastReceiver {
+    public static class InstallResultReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
