@@ -541,27 +541,18 @@ public class ImageDecoderTest {
                 }
             }
         };
-        Listener l = new Listener();
 
-        // This test relies on ImageDecoder *not* scaling to account for density.
-        // Temporarily change the DisplayMetrics to prevent that scaling.
-        Resources res = getResources();
-        final int originalDensity = res.getDisplayMetrics().densityDpi;
-        res.getDisplayMetrics().densityDpi = DisplayMetrics.DENSITY_DEFAULT;
-        ImageDecoder.Source src = ImageDecoder.createSource(res, record.resId);
-        assertNotNull(src);
+        Listener l = new Listener();
         l.doCrop = doCrop;
         l.doScale = doScale;
         l.allocator = allocator;
 
         Bitmap bm = null;
         try {
-            bm = ImageDecoder.decodeBitmap(src, l);
+            bm = decodeUnscaledBitmap(record.resId, l);
         } catch (IOException e) {
             fail("Failed " + Utils.getAsResourceUri(record.resId)
                     + " with exception " + e);
-        } finally {
-            res.getDisplayMetrics().densityDpi = originalDensity;
         }
         assertNotNull(bm);
 
@@ -576,6 +567,7 @@ public class ImageDecoderTest {
                 assertNotEquals(Bitmap.Config.HARDWARE, bm.getConfig());
 
                 if (!doScale && !doCrop) {
+                    Resources res = getResources();
                     BitmapFactory.Options options = new BitmapFactory.Options();
                     options.inScaled = false;
                     Bitmap reference = BitmapFactory.decodeResource(res,
