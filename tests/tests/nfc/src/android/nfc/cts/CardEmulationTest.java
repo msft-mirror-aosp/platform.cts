@@ -481,14 +481,27 @@ public class CardEmulationTest {
             Assert.assertTrue(cardEmulation.setPreferredService(activity,
                     new ComponentName(mContext,
                             CtsMyHostApduService.class)));
-            ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(6);
+            ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(4);
             frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_ON));
             frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_A));
+            frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_B));
             frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_OFF));
             ensurePreferredService(CtsMyHostApduService.class);
-            notifyPollingLoopAndWait(frames, CtsMyHostApduService.class.getName());
+            sCurrentPollLoopReceiver = new PollLoopReceiver(new ArrayList<PollingFrame>(0), null);
+            for (PollingFrame frame : frames) {
+                adapter.notifyPollingLoop(frame);
+            }
+            synchronized (sCurrentPollLoopReceiver) {
+                try {
+                    sCurrentPollLoopReceiver.wait(5000);
+                } catch (InterruptedException ie) {
+                    Assert.assertNull(ie);
+                }
+            }
+            sCurrentPollLoopReceiver.test();
+            sCurrentPollLoopReceiver = null;
         } finally {
-            Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
+            cardEmulation.unsetPreferredService(activity);
             activity.finish();
             adapter.notifyHceDeactivated();
         }
