@@ -128,7 +128,7 @@ public class TestActivity extends Activity {
      * receiving callbacks in time on some common low-end platforms and
      * do not affect the situation that callback can be received in advance.
      */
-    private final static long EXTENDED_TIMEOUT_MS = 5000;
+    private final static long EXTENDED_TIMEOUT_MS = 7000;
 
     SparseArray<RemoteCallback> callbacks = new SparseArray<>();
 

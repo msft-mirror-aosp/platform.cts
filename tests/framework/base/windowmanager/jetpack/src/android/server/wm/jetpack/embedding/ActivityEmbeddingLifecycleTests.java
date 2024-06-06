@@ -508,7 +508,7 @@ public class ActivityEmbeddingLifecycleTests extends ActivityEmbeddingLifecycleT
             final ActivityStack primaryStack = splitInfo.getPrimaryActivityStack();
             final List<Activity> activities = primaryStack.getActivities();
             if (activities.contains(primaryActivity)) {
-                primaryStackToken = primaryStack.getToken();
+                primaryStackToken = primaryStack.getActivityStackToken();
                 break;
             }
         }
