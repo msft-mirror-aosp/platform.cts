@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_framework_backstage_power",
 }
 
 android_test {
@@ -43,6 +44,7 @@ android_test {
         "com.android.media.flags.bettertogether-aconfig-java",
         "android.app.flags-aconfig-java",
         "ravenwood-junit",
+        "Harrier",
     ],
     srcs: [
         "src/**/*.java",
@@ -56,8 +58,8 @@ android_test {
     ],
     instrumentation_for: "CtsAppTestStubs",
     sdk_version: "test_current",
-    // 21 required for multi-dex.
-    min_sdk_version: "21",
+    // 29 required for Harrier.
+    min_sdk_version: "29",
     // Disable coverage since it pushes us over the dex limit and we don't
     // actually need to measure the tests themselves.
     jacoco: {

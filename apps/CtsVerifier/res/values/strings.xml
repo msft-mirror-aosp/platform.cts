@@ -1268,11 +1268,8 @@
     <string name="nfc_result_message">Written data:\n%1$s\n\nRead data:\n%2$s</string>
     <string name="nfc_ndef_content">Id: %1$s\nMime: %2$s\nPayload: %3$s</string>
 
-    <string name="nfc_hce">Host-based card emulation</string>
     <string name="nfc_hce_f">Host-based Felica card emulation</string>
-    <string name="nfc_hce_reader_tests">HCE reader tests</string>
     <string name="nfc_hce_f_reader_tests">HCE Felica reader tests</string>
-    <string name="nfc_hce_emulator_tests">HCE emulator tests</string>
     <string name="nfc_hce_f_emulator_tests">HCE Felica emulator tests</string>
     <string name="nfc_hce_f_emulator">HCE Felica emulator</string>
     <string name="nfc_hce_f_reader">HCE Felica reader</string>
@@ -1291,131 +1288,9 @@
         in the "HCE reader tests" section. The "reader test" acts as a NFC terminal/POS
         and makes sure the device-under-test implements card emulation correctly.
     </string>
-    <string name="nfc_hce_type_selection">By default HCE applications must run on type A. If your device is restricted to type B (for example, because of a type B only UICC), select "Type B" from the drop-down box above. Note that all tests must be completed in the same mode (either "Type A" or "Type B").</string>
-    <string name="nfc_hce_please_wait">Please wait</string>
-    <string name="nfc_hce_setting_up">Setting up card emulation services...</string>
 
-    <string name="nfc_hce_default_route_emulator">Default route (Emulator)</string>
-    <string name="nfc_hce_default_route_reader">Default route (Reader)</string>
-    <string name="nfc_hce_default_route_emulator_help">This test verifies that the default route for ISO-DEP (ISO14443-4) frames is the host CPU. It does this by selecting an AID that any Android HCE phone will respond to if the select command is routed to the host. Please verify that there is no rule in the routing table that points this AID to the host. This test may be passed if the "PASS" button on the reader side lights up after tapping the devices together.</string>
-
-    <string name="nfc_hce_protocol_params_emulator">Protocol parameters (Emulator)</string>
-    <string name="nfc_hce_protocol_params_reader">Protocol parameters (Reader)</string>
-    <string name="nfc_hce_protocol_params_emulator_help">This test verifies that the Nfc-A and ISO-DEP protocol parameters are being set correctly. The test may be passed when no FAIL entries show up in the results below. Note that the reader device may be different from the device under test - the DUT itself does not need to be able to act as the reader for this test. \n\n Note that for each test there are 3 possible outcomes:\n1) OK -> test has passed;\n2) FAIL -> test has failed and this must be fixed;\n3) FAIL EMVCO -> this protocol parameter is deviating from the requirements in the EMV Contactless Communication Protocol specification.\n\nWhile it is allowed to ship a HCE implementation with EMVCo failures, it may not perform optimal when EMVco based payment HCE apps are run on the device.</string>
-
-    <string name="nfc_hce_single_payment_emulator">Single payment (Emulator)</string>
-    <string name="nfc_hce_single_payment_reader">Single payment (Reader)</string>
-
-    <string name="nfc_hce_dual_payment_emulator">Two payment services (Emulator)</string>
-    <string name="nfc_hce_dual_payment_reader">Two payment services (Reader)</string>
-
-    <string name="nfc_hce_change_default_emulator">Change default payment service (Emulator)</string>
-    <string name="nfc_hce_change_default_reader">Change default payment service (Reader)</string>
-
-    <string name="nfc_hce_tap_reader_title">Tap reader</string>
-    <string name="nfc_hce_tap_reader_message">Select the corresponding reader test on the remote device, click OK on this dialog, and tap devices together. The pass button will be enabled if the test passes.</string>
-
-    <string name="nfc_hce_single_non_payment_emulator">Single non-payment (Emulator)</string>
-    <string name="nfc_hce_single_non_payment_reader">Single non-payment (Reader)</string>
-
-    <string name="nfc_hce_dual_non_payment_emulator">Two non-payment services (Emulator)</string>
-    <string name="nfc_hce_dual_non_payment_reader">Two non-payment services (Reader)</string>
-
-    <string name="nfc_hce_conflicting_non_payment_emulator">Two conflicting non-payment services (Emulator)</string>
-    <string name="nfc_hce_conflicting_non_payment_reader">Two conflicting non-payment services (Reader)</string>
-
-    <string name="nfc_hce_foreground_non_payment_emulator">Foreground override non-payment services (Emulator)</string>
-    <string name="nfc_hce_foreground_non_payment_reader">Foreground override non-payment services (Reader)</string>
-    <string name="nfc_hce_foreground_non_payment_help">This test enables two non-payment services with conflicting AIDs. It then uses Androids API to allow the foreground app to set a preference for a specific service. This should prevent a popup dialog from showing. If you see a popup dialog during this asking you to select an app, this test has failed.</string>
-
-    <string name="nfc_hce_foreground_payment_emulator">Foreground override payment services (Emulator)</string>
-    <string name="nfc_hce_foreground_payment_reader">Foreground override payment services (Reader)</string>
-    <string name="nfc_hce_foreground_payment_help">This test enables two payment services, and asks you to set one as the default service. It then uses Androids API to allow the foreground app to set a preference for the non-default service. This will cause the non-default payment service to be invoked.</string>
-    <string name="nfc_hce_change_favor_foreground">This test requires the \"Use default\" setting to be set to \"Except when another payment app is open\". Tap OK to go to Tap and Pay settings and make sure the \"Use default\" setting is set to \"Except when another payment app is open\".</string>
-    <string name="nfc_hce_offhost_service_emulator">Off-host service (Emulator)</string>
-    <string name="nfc_hce_offhost_service_reader">Off-host service (Reader)</string>
-    <string name="nfc_hce_offhost_emulator_help">This test enables a service that declares some AIDs to reside off-host. This test only needs to be passed if your device has a secure element (either embedded or UICC.). The responses from the secure element are not verified by the test - it is up to the tester to verify the responses are as expected.</string>
-
-    <string name="nfc_hce_on_and_offhost_service_emulator">On and off-host services (Emulator)</string>
-    <string name="nfc_hce_on_and_offhost_service_reader">On and off-host services (Reader)</string>
-    <string name="nfc_hce_on_and_offhost_emulator_help">This test enables a service that declares some AIDs to reside off-host, and another service that runs on host. It then first sends an APDU sequence that goes off-host, and subsequently some APDUs that should go to the on-host service. This test only needs to be passed if your device has a secure element (either embedded or UICC.). The pass button will be enabled if the on-host sequence is performed as expected. The responses from the secure element are not verified by the test - it is up to the tester to verify the responses are as expected. </string>
-
-    <string name="nfc_hce_tap_test_emulator">50 successful taps test (Emulator)</string>
-    <string name="nfc_hce_tap_test_reader">50 successful taps test (Reader)</string>
-    <string name="nfc_hce_tap_test_emulator_help">This test requires you to complete at least 50 HCE taps, to ensure stability of the HCE feature. The NFC service and controller should not crash or hang during any of the 50 taps.</string>
-    <string name="nfc_hce_throughput_emulator">HCE throughput test (Emulator)</string>
-    <string name="nfc_hce_throughput_reader">HCE throughput test (Reader)</string>
-    <string name="nfc_hce_throughput_emulator_help">This test verifies that your HCE implementation can reach a decent throughput. While Android does not have any requirements on HCE performance, many HCE applications such as transport and payment apps do. If the average APDU roundtrip time is more than 50ms, please take a look at your implementation to see where the delay is coming from.</string>
-    <string name="nfc_hce_change_preinstalled_wallet">The device has an installed payment application that is currently set as default. To complete the test, you will be asked whether you want to make another app the default app. Select yes.</string>
-    <string name="nfc_hce_change_default_wallet">The device has an installed Wallet application that is currently set as default. To complete the test, you will be asked whether you want to make another app the default Wallet app. Select yes. Then make sure to select CTSVerifier app. Then hit OK. </string>
-    <string name="nfc_hce_change_default_help">You will now be asked whether you want to make Payment Service #1 the default app. Select yes.</string>
-    <string name="nfc_hce_conflicting_non_payment_help">When tapping the first time, you will be shown a dialog that asks you to choose between TransportService #1 and TransportService #2. Select TransportService #2. Verify a dialog is shown that asks you to tap again to complete. Now tap again, and if communication with TransportService #2 is successfull the pass button will be enabled."</string>
-
-    <string name="nfc_hce_payment_dynamic_aids_emulator">Dynamic payment AIDs (Emulator)</string>
-    <string name="nfc_hce_payment_dynamic_aids_reader">Dynamic payment AIDs (Reader)</string>
-    <string name="nfc_hce_payment_dynamic_aids_help">This test tries to register dynamic AIDs for a payment service.</string>
-
-    <string name="nfc_hce_large_num_aids_emulator">Large number of AIDs (Emulator)</string>
-    <string name="nfc_hce_large_num_aids_reader">Large number of AIDs (Reader)</string>
-    <string name="nfc_hce_large_num_aids_help">This test tries to register a large number of different AIDs, to make sure there are no limitations on the maximum amount of HCE apps on the device. Note that this test may take a few seconds to complete; please be patient.</string>
-
-    <string name="nfc_hce_payment_prefix_aids_emulator">Payment prefix AIDs (Emulator)</string>
-    <string name="nfc_hce_payment_prefix_aids_reader">Payment prefix AIDs (Reader)</string>
-    <string name="nfc_hce_payment_prefix_aids_help">This test statically registers prefix AIDs for a payment service.</string>
-
-    <string name="nfc_hce_payment_prefix_aids_emulator_2">Payment prefix AIDs 2 (Emulator)</string>
-    <string name="nfc_hce_payment_prefix_aids_reader_2">Payment prefix AIDs 2 (Reader)</string>
-
-    <string name="nfc_observe_mode_emulator">Observe Mode (Emulator)</string>
-    <string name="nfc_observe_mode_reader">Observe Mode (Reader)</string>
-    <string name="nfc_observe_mode_emulator_help">In observe mode there should not be any response from the emulator to the reader. If the emulator detects the reader and does not receive a command, it will enable the pass button and that represents a pass or the test.</string>
-    <string name="nfc_observe_mode_reader_help">In observe mode there should not be any response from the emulator to the reader. If the reader detects a response it will disable the pass button and this is a failure.</string>
-
-    <string name="nfc_polling_loop_a_emulator">Polling Loop A (Emulator)</string>
-    <string name="nfc_polling_loop_a_reader">Polling Loop A (Reader)</string>
-    <string name="nfc_polling_loop_b_emulator">Polling Loop B (Emulator)</string>
-    <string name="nfc_polling_loop_b_reader">Polling Loop B (Reader)</string>
-    <string name="nfc_polling_loop_ab_emulator">Polling Loop A and B (Emulator)</string>
-    <string name="nfc_polling_loop_custom_emulator">Polling Loop Custom (Emulator)</string>
-    <string name="nfc_polling_loop_ab_reader">Polling Loop A and B (Reader)</string>
-    <string name="nfc_polling_loop_a_emulator_help">The emulator will wait until it sees 3 NFC-A polling frames before responding. If it sees another type of frame, it will fail.</string>
-    <string name="nfc_polling_loop_a_reader_help">The reader will poll for NFC-A.</string>
-    <string name="nfc_polling_loop_b_emulator_help">The emulator will wait until it sees 3 NFC-B polling frames before responding. If it sees another type of frame, it will fail.</string>
-    <string name="nfc_polling_loop_b_reader_help">The reader will poll for NFC-B.</string>
-    <string name="nfc_polling_loop_ab_emulator_help">The emulator will wait until it sees 3 NFC-A polling frames and 3 NFC-B polling frames before responding. If it sees another type of frame, it will fail.</string>
-    <string name="nfc_polling_loop_ab_reader_help">The reader will poll for NFC-A and NFC-B.</string>
-    <string name="nfc_polling_loop_custom_emulator_help">Please connect the PN532 to your linux machine and follow the instructions. The emulator will wait until it sees the specified custom polling frame.</string>
-
-    <string name="nfc_hce_other_prefix_aids_emulator">Other prefix AIDs (Emulator)</string>
-    <string name="nfc_hce_other_prefix_aids_reader">Other prefix AIDs (Reader)</string>
-    <string name="nfc_hce_other_prefix_aids_help">This test dynamically registers prefix AIDs for a non-payment service.</string>
-
-    <string name="nfc_hce_other_conflicting_prefix_aids_emulator">Conflicting non-payment prefix AIDs (Emulator)</string>
-    <string name="nfc_hce_other_conflicting_prefix_aids_reader">Conflicting non-payment prefix AIDs (Reader)</string>
-    <string name="nfc_hce_other_conflicting_prefix_aids_help">This test registers conflicting prefix AIDs and makes sure AID conflict detection with prefix AIDs works properly. When tapping the first time, you will be shown a dialog that asks you to choose between TransportService #1 and TransportService #2. Select TransportService #2. Verify a dialog is shown that asks you to tap again to complete. Now tap again, and if communication with TransportService #2 is successfull the pass button will be enabled."</string>
-
-    <string name="nfc_screen_on_only_offhost_emulator">Screen on only Off-host Service (Emulator)</string>
-    <string name="nfc_screen_on_only_offhost_reader">Screen on only Off-host Service (Reader)</string>
-    <string name="nfc_screen_on_only_offhost_help">This test enables a service that declares some AIDs to reside off-host. This test only needs to be passed if your device has a secure element. The responses from the secure element are not verified by the test - it is up to the tester to verify the responses are as expected. The expected behavior is the AID can be selected only when the device is in screen on state.</string>
-
-    <string name="nfc_screen_off_hce_payment_emulator">Screen off HCE Payment (Emulator)</string>
-    <string name="nfc_screen_off_hce_payment_reader">Screen off HCE Payment (Reader)</string>
-    <string name="nfc_screen_off_hce_payment_help">This test verifies emulator responds when device is in screen off state. Please put the emulator to screen off state.</string>
-
-    <string name="nfc_payment_service_desc">NFC Payment service</string>
-    <string name="ppse">PPSE</string>
-    <string name="mastercard">MasterCard</string>
-    <string name="visa">Visa</string>
-    <string name="paymentService1">Payment Service #1</string>
-    <string name="paymentService2">Payment Service #2</string>
-    <string name="transportService1">TransportService #1</string>
-    <string name="transportService2">TransportService #2</string>
-    <string name="accessService">AccessService</string>
-    <string name="offhostService">OffhostService</string>
     <string name="felicaservice">Felica Service</string>
     <string name="UiccTransactionEventService">Uicc Transaction Event Service</string>
-    <string name="screenOffPaymentService">Screen Off Payment Service</string>
-    <string name="screenOnOnlyOffHostService">Screen On Only OffHost Service</string>
 
     <string name="nfc_offhost_uicc">Offhost UICC-based card emulation</string>
     <string name="nfc_offhost_uicc_emulator_tests">Offhost card emulation emulator tests</string>
@@ -3301,11 +3176,11 @@ You should be prompted to select credentials; choose the ones you just installed
         \nThen click the \"Change password\" button to change it. You should be prompted for the current password first. If you are not, then mark the test as failed.
     </string>
 
-    <!-- Strings for MultiDeviceTests. -->
-    <string name="multi_device_tests_title">Multi-device Tests</string>
-    <string name="multi_device_tests_dialog_title">Multi-device Tests Dialog</string>
-    <string name="multi_device_tests_dialog_content">
-        All multi-device host-side tests.\n
+    <!-- Strings for NFC Tests. -->
+    <string name="nfc_tests_title">NFC Tests</string>
+    <string name="nfc_tests_dialog_title">NFC Tests Dialog</string>
+    <string name="nfc_tests_dialog_content">
+        The NFC tests.\n
         The DUT \"must\" be connected to a host to run these tests.\n
         Please follow the detailed instruction of the tests to execute scripts and get results.
     </string>
@@ -5751,6 +5626,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_invalid_transfer">Invalid Transfer Type</string>
 
     <string name="audio_datapaths_calibrate">Calibrate Audio</string>
+    <string name="audio_datapaths_devices">Audio Devices</string>
     <string name="audio_datapaths_calibratetitle">Calibrate Loopback Audio</string>
 
     <string name="audio_devicesupport_title">Audio Devices</string>
@@ -6869,13 +6745,16 @@ You should be prompted to select credentials; choose the ones you just installed
     <!-- Add bubble from overflow -->
     <string name="bubbles_test_add_from_overflow_title">Add bubble from overflow</string>
     <string name="bubbles_test_add_from_overflow_verify">1. Expand the stack and open the bubble
-        overflow.\n\n 2. Tap on a bubble in the overflow, pass this test if that bubble is opened
-        and removed from the overflow.</string>
+        overflow.\n\n 2. Tap on a bubble in the overflow, pass this test if that bubble is opened.
+    </string>
     <!-- Cancel removes bubbles in overflow -->
     <string name="bubbles_test_cancel_overflow_title">Cancel removes overflowed bubbles</string>
     <string name="bubbles_test_cancel_overflow_verify">1. Press the button below, it will cancel all
         previous bubble notifications and post one more.\n\n
         2. Expand that bubble, navigate to the overflow and ensure that it is empty.</string>
+    <string name="bubbles_test_cancel_overflow_verify2">1. Press the button below, it will cancel
+        all previous bubble notifications and post one more.\n\n
+        2. Expand that bubble, observe that there is no overflow button.</string>
     <string name="bubbles_test_cancel_overflow_button">Cancel previous bubbles and post a
         single bubble</string>
     <!-- Tap on notification with bubble in the overflow -->
@@ -7407,22 +7286,33 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nIf the sharesheet indicates that it\'s an album being shared, pass the test, otherwise fail.</string>
 
     <!-- Sharesheet ChooserResult test -->
-    <string name="sharesheet_result_test">Sharesheet Chooser Result Test</string>
-    <string name="sharesheet_result_test_info">This test verifies an app is notified of actions taken when sharing content.</string>
-    <string name="sharesheet_result_test_instructions">For each step, tap the \"Share\" button below and then take the requested action within the Sharing UI.</string>
-    <string name="sharesheet_result_test_app_instructions">Tap the icon for \'CtsVerifier\'.
-        \n\nIf it does not appear, dismiss the Share UI. </string>
-    <string name="sharesheet_result_test_copy_instructions">Press the \"Copy\" button.
-        \n\nIf there is no \'Copy\' button, dismiss the Share UI. </string>
-    <string name="sharesheet_result_test_edit_instructions">Press the \"Edit\" button.
-        \n\nIf there is no \'Edit\' button, dismiss the Share UI. </string>
+    <string name="sharesheet_result_test_edit">Chooser Result: Edit</string>
+    <string name="sharesheet_result_test_edit_info">This test verifies an app is notified taken the EDIT action is invoked within the Sharing UI.</string>
+    <string name="sharesheet_result_test_edit_instructions">Tap the \"Share\" button below.\nWhen the Share UI opens, press the EDIT button.\n\nIf an EDIT button cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_edit_instructions_short">Press Edit.</string>
+    <string name="sharesheet_result_test_edit_pressed">The EDIT button was pressed</string>
+    <string name="sharesheet_result_test_edit_not_found">The EDIT button could not be found</string>
+
+    <string name="sharesheet_result_test_copy">Chooser Result: Copy</string>
+    <string name="sharesheet_result_test_copy_info">This test verifies an app is notified taken the COPY action is invoked within the Sharing UI.</string>
+    <string name="sharesheet_result_test_copy_instructions">Tap the \"Share\" button below.\nWhen the Share UI open, press the COPY button.\n\nIf a COPY button cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_copy_instructions_short">Press Copy .</string>
+    <string name="sharesheet_result_test_copy_pressed">The COPY button was pressed</string>
+    <string name="sharesheet_result_test_copy_not_found">The COPY button could not be found</string>
+
+   <string name="sharesheet_result_test_component">Chooser Result: Component</string>
+    <string name="sharesheet_result_test_component_info">This test verifies an app is notified when a target component (APP) is selected in the Sharing UI.</string>
+    <string name="sharesheet_result_test_component_instructions">Tap the \"Share\" button below.\nWhen the Share UI opens, tap the icon labeled \""CtsVerifier\".\n\nIf the \"CtsVerifier\" icon cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_component_instructions_short">Tap the CtsVerifier Icon</string>
+    <string name="sharesheet_result_test_component_selected">The CtsVerifier icon was selected</string>
+    <string name="sharesheet_result_test_component_not_found">The CtsVerifier icon could not be found</string>
+
     <string name="sharesheet_result_test_instructions_after_share">Choose from the options below:</string>
-    <string name="sharesheet_result_test_pressed">I pressed the button</string>
-    <string name="sharesheet_result_test_not_found">I couldn\'t locate the button</string>
+
     <string name="sharesheet_result_test_try_again">Try again</string>
     <string name="sharesheet_result_test_no_result_message">No result received - test failed</string>
-    <string name="sharesheet_result_test_no_button">Some actions not available - test passed</string>
-    <string name="sharesheet_result_test_passed">Test passed.</string>
+    <string name="sharesheet_result_test_incorrect_result">Incorrect result received - test failed</string>
+    <string name="sharesheet_result_test_no_button">Action not available - test passed</string>
 
     <!-- Strings for CaptureContentForNotes test -->
     <string name="ccfn_tests">Capture Content For Notes Tests</string>
@@ -7564,7 +7454,7 @@ You should be prompted to select credentials; choose the ones you just installed
         1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
         \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
-        \n4. Take a screenshot of CtsVerifier App, and verify there is no content in screenshot".
+        \n4. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
         \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
     </string>
     <string name="notif_hiding_shade_partial_test_instructions">
@@ -7596,7 +7486,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="notif_hiding_app_local_screen_recorder_test_instructions">
         1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
-        \n3. Take a screenshot of CtsVerifier App, and verify there is content in screenshot".
+        \n3. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" appears in the screenshot".
         \n4. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
     </string>
     <string name="notif_hiding_shade_disable_protections_test_instructions">

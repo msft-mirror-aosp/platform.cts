@@ -416,7 +416,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         private const val REQUEST_PROJECTION_CODE = 1
         private const val PERSON = "Person"
         private const val FGS = "Media Projection FGS"
-        private const val SENSITIVE_TEXT = "Sensitive Text code 123 123"
+        private const val SENSITIVE_TEXT = "Sensitive Text login code is 397964"
         private const val FGS_MESSAGE = "FGS Running"
     }
 

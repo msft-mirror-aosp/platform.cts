@@ -173,7 +173,7 @@ public class MediaStore_FilesTest {
 
     @Test
     public void testCaseSensitivity() throws IOException {
-        assumeTrue(Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.R);
+        assumeTrue(MediaProviderTestUtils.isDeviceInitialSdkIntR());
         final String name = "Test-" + System.nanoTime() + ".Mp3";
         final File dir = MediaProviderTestUtils.stageDir(mVolumeName);
         final File file = new File(dir, name);

@@ -54,7 +54,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-@CddTest(requirements = {"3/T-1-1"})
+@CddTest(requirements = {"2.3.3/3/T-1-1"})
 public class TunerFilterTest {
     private static final String TAG = "MediaTunerFilterTest";
 

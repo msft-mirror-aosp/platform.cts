@@ -18,6 +18,8 @@ package android.server.wm.activity;
 
 import static android.view.Display.DEFAULT_DISPLAY;
 
+import static junit.framework.Assert.assertFalse;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -175,7 +177,13 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
 
         initTrackers();
         mReportedDisplayMetrics.setSize(new Size(newWidth, newHeight));
-        waitAndAssertDimensionsOffsetInCallbacks(offset);
+        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+            // On Automotive SplitScreen Multitasking devices, the bounds of TDAs (& thus
+            // activities) may not grow linearly with the change in display bounds.
+            waitAndAssertBoundsChangeInCallbacks();
+        } else {
+            waitAndAssertDimensionsOffsetInCallbacks(offset);
+        }
     }
 
     /**
@@ -200,7 +208,14 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
 
         initTrackers();
         mReportedDisplayMetrics.setSize(new Size(newWidth, newHeight));
-        waitAndAssertDisplayOffsetInCallbacks(offset);
+
+        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+            // On Automotive SplitScreen Multitasking devices, the bounds of TDAs (& thus
+            // activities) may not grow linearly with the change in display bounds.
+            waitAndAssertDisplayBoundsChangeInCallbacks();
+        } else {
+            waitAndAssertDisplayOffsetInCallbacks(offset);
+        }
     }
 
     /**
@@ -225,6 +240,17 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
     }
 
     /**
+     * Waits and asserts that the last system callbacks must come with display dimensions which are
+     * different from the initial dimensions.
+     */
+    private void waitAndAssertBoundsChangeInCallbacks() {
+        final long curTime = SystemClock.elapsedRealtime();
+        mDisplayListenerTracker.waitAndAssertBoundsChange(curTime);
+        mActivityOnConfigurationChangedTracker.waitAndAssertBoundsChange(curTime);
+        mApplicationOnConfigurationChangedTracker.waitAndAssertBoundsChange(curTime);
+    }
+
+    /**
      * Waits and asserts that the last system callbacks must come with display dimensions with the
      * given offset from the current dimensions.
      *
@@ -238,6 +264,16 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
                 curTime);
         mApplicationOnConfigurationChangedTracker.waitAndAssertDimensionsOffset(expectedOffset,
                 curTime);
+    }
+
+    /**
+     * Similar to {@link #waitAndAssertBoundsChangeInCallbacks()}, but only verify display bounds.
+     */
+    private void waitAndAssertDisplayBoundsChangeInCallbacks() {
+        final long curTime = SystemClock.elapsedRealtime();
+        mDisplayListenerTracker.waitAndAssertDisplayBoundsChange(curTime);
+        mActivityOnConfigurationChangedTracker.waitAndAssertDisplayBoundsChange(curTime);
+        mApplicationOnConfigurationChangedTracker.waitAndAssertDisplayBoundsChange(curTime);
     }
 
     /**
@@ -365,6 +401,28 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
 
         /**
          * Waits and asserts that the last system callback must come with
+         * display/application/activity dimensions which is different from the initial dimensions.
+         */
+        void waitAndAssertBoundsChange(long startTime) {
+            waitForLastCallbackTimeout(startTime);
+            assertCallbackTriggered();
+
+            final String errorMessage = mCallbackName
+                    + ": expect the bounds to change, but have:"
+                    + "\ninitDisplayBounds=" + mInitWindowMetricsBounds
+                    + "\ninitActivityBounds=" + mInitActivityBounds
+                    + "\ninitApplicationBounds=" + mInitApplicationBounds
+                    + "\nlastDisplayBounds=" + mLastWindowMetricsBounds
+                    + "\nlastActivityBounds=" + mLastActivityBounds
+                    + "\nlastApplicationBounds=" + mLastApplicationBounds
+                    + "\nThe callback has been triggered for " + mCallbackCount + " times.";
+            assertFalse(errorMessage, mInitWindowMetricsBounds.equals(mLastWindowMetricsBounds)
+                    || (!mExcludeActivity && mInitActivityBounds.equals(mLastActivityBounds))
+                    || mInitApplicationBounds.equals(mLastApplicationBounds));
+        }
+
+        /**
+         * Waits and asserts that the last system callback must come with
          * display/application/activity dimensions with the given offset from the initial
          * dimensions.
          *
@@ -395,6 +453,24 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
                     && (mExcludeActivity || mInitActivityBounds.equals(mLastActivityBounds))
                     && mInitApplicationBounds.equals(mLastApplicationBounds));
         }
+
+        /**
+         * Similar to {@link #waitAndAssertBoundsChange(long)}, but only verify display
+         * bounds.
+         */
+        void waitAndAssertDisplayBoundsChange(long startTime) {
+            waitForLastCallbackTimeout(startTime);
+            assertCallbackTriggered();
+
+            final String errorMessage = mCallbackName
+                    + ": expect the last display bounds to be different from initial bounds, "
+                    + "but have:"
+                    + "\ninitDisplayBounds=" + mInitWindowMetricsBounds
+                    + "\nlastDisplayBounds=" + mLastWindowMetricsBounds
+                    + "\nThe callback has been triggered for " + mCallbackCount + " times.";
+            assertNotEquals(errorMessage, mInitWindowMetricsBounds, mLastWindowMetricsBounds);
+        }
+
 
         /**
          * Similar to {@link #waitAndAssertDimensionsOffset}, but only verify display bounds.
