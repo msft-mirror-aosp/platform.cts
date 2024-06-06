@@ -500,6 +500,7 @@ public class MockWifiTest {
             WifiNL80211ManagerImp mockedWifiNL80211Manager =
                     sMockModemManager.getWifiNL80211ManagerImp();
             assertNotNull(mockedWifiNL80211Manager);
+            sWifiManager.startScan();
             mockedWifiNL80211Manager.mockScanResultReadyEvent(currentStaIfaceName);
             PollingCheck.check(
                     "getscanResults fail", 4_000,
