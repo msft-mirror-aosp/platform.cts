@@ -42,6 +42,8 @@ public class ComponentStateChangedReportedStatsTestsHelper {
             TEST_COMPONENT_STATE_APP_PACKAGE_NAME + ".FakeLauncherActivity";
     private static final String FAKE_NO_LAUNCHER_ACTIVITY_NAME =
             TEST_COMPONENT_STATE_APP_PACKAGE_NAME + ".FakeNoLauncherActivity";
+    private static final String FAKE_DEFAULT_ENABLED_LAUNCHER_ACTIVITY_NAME =
+            TEST_COMPONENT_STATE_APP_PACKAGE_NAME + ".FakeDefaultEnabledLauncherActivity";
     private PackageManager mPackageManager;
 
     @Before
@@ -97,5 +99,26 @@ public class ComponentStateChangedReportedStatsTestsHelper {
                         COMPONENT_ENABLED_STATE_DISABLED, DONT_KILL_APP));
         assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
                 mPackageManager.getComponentEnabledSetting(componentName));
+    }
+
+    @Test
+    public void testComponentStateChangedReportedForTwoDifferentStateLauncherActivities() {
+        ComponentName firstComponentName = new ComponentName(TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
+                FAKE_DEFAULT_ENABLED_LAUNCHER_ACTIVITY_NAME);
+
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                mPackageManager.setComponentEnabledSetting(firstComponentName,
+                        COMPONENT_ENABLED_STATE_DISABLED, DONT_KILL_APP));
+        assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
+                mPackageManager.getComponentEnabledSetting(firstComponentName));
+
+        ComponentName secondComponentName = new ComponentName(TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
+                FAKE_LAUNCHER_ACTIVITY_NAME);
+
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                mPackageManager.setComponentEnabledSetting(secondComponentName,
+                        COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP));
+        assertEquals(COMPONENT_ENABLED_STATE_ENABLED,
+                mPackageManager.getComponentEnabledSetting(secondComponentName));
     }
 }
