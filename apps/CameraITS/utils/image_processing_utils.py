@@ -704,6 +704,21 @@ def convert_y8_to_rgb_image(y_plane, w, h):
   return rgb.astype(numpy.float32) / 255.0
 
 
+def write_rgb_uint8_image(img, file_name):
+  """Save a uint8 numpy array image to a file.
+
+  Supported formats: PNG, JPEG, and others; see PIL docs for more.
+
+  Args:
+   img: numpy image array data.
+   file_name: path of file to save to; the extension specifies the format.
+  """
+  if img.dtype != 'uint8':
+    raise AssertionError(f'Incorrect input type: {img.dtype}! Expected: uint8')
+  else:
+    Image.fromarray(img, 'RGB').save(file_name)
+
+
 def write_image(img, fname, apply_gamma=False, is_yuv=False):
   """Save a float-3 numpy array image to a file.
 
