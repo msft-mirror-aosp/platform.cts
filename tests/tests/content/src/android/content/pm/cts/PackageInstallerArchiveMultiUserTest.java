@@ -53,8 +53,8 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
@@ -73,7 +73,7 @@ import java.util.concurrent.TimeUnit;
 
 @AppModeFull
 @AppModeNonSdkSandbox
-@EnsureHasSecondaryUser
+@EnsureHasWorkProfile
 @RunWith(AndroidJUnit4.class)
 public class PackageInstallerArchiveMultiUserTest {
     private static final String PACKAGE_NAME = "android.content.cts.mocklauncherapp";
@@ -102,7 +102,7 @@ public class PackageInstallerArchiveMultiUserTest {
     public void setup() throws Exception {
         assumeTrue("Form factor is not supported", isFormFactorSupported());
         mPrimaryUser = sDeviceState.initialUser();
-        mSecondaryUser = sDeviceState.secondaryUser();
+        mSecondaryUser = sDeviceState.workProfile();
         assumeTrue(UserManager.supportsMultipleUsers());
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mArchiveIntentSender = new ArchiveIntentSender();

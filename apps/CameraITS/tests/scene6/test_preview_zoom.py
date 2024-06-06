@@ -14,13 +14,14 @@
 """Verify preview zoom ratio scales circle sizes correctly."""
 
 import logging
+import math
 import os.path
 
+import cv2
 from mobly import test_runner
 
 import its_base_test
 import camera_properties_utils
-import image_processing_utils
 import its_session_utils
 import preview_processing_utils
 import video_processing_utils
@@ -28,8 +29,31 @@ import zoom_capture_utils
 
 
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
+_FLOAT_TOL = 0.01
+_JPEG = '.jpg'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 100  # TODO: b/332322632 - improve test runtime
+
+
+def save_image_as_jpg(img_name, img_bgr, quality=85):
+  """Saves an image as a JPEG with specified quality.
+
+  Args:
+      img_name: string; filename (with or without extension).
+      img_bgr: numpy.ndarray; image data in BGR format.
+      quality: int; JPEG quality (0-100, higher is better).
+  """
+
+  base_name, _ = os.path.splitext(img_name)  # Remove existing extension
+  new_img_name = base_name + _JPEG
+
+  _, encoded_img = cv2.imencode(_JPEG, img_bgr,
+                                [cv2.IMWRITE_JPEG_QUALITY, quality])
+  logging.debug('save image: %s', new_img_name)
+
+  with open(new_img_name, 'wb') as f:
+    f.write(encoded_img)
 
 
 class PreviewZoomTest(its_base_test.ItsBaseTest):
@@ -93,17 +117,19 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       test_data = []
       test_data_index = 0
-
+      last_circle_radius = 0
       for capture_result, img_name in zip(capture_results, file_list):
         z = float(capture_result['android.control.zoomRatio'])
+        if camera_properties_utils.logical_multi_camera(props):
+          phy_id = capture_result['android.logicalMultiCamera.activePhysicalId']
+        else:
+          phy_id = None
 
         # read image
-        img = image_processing_utils.convert_image_to_numpy_array(
-            os.path.join(log_path, img_name)
-            )
+        img_bgr = cv2.imread(os.path.join(log_path, img_name))
 
         # add path to image name
-        img_name = f'{os.path.join(self.log_path, img_name)}'
+        img_path = f'{os.path.join(self.log_path, img_name)}'
 
         # determine radius tolerance of capture
         cap_fl = capture_result['android.lens.focalLength']
@@ -120,12 +146,18 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
         # Find the center circle in img and check if it's cropped
         circle = zoom_capture_utils.find_center_circle(
-            img, img_name, size, z, z_min, circlish_rtol=circlish_rtol,
-            debug=debug)
+            img_bgr, img_path, size, z, z_min, circlish_rtol=circlish_rtol,
+            debug=debug, draw_color=_CV2_RED, write_img=False)
+
+        if not math.isclose(last_circle_radius, circle[2], rel_tol=_FLOAT_TOL):
+          save_image_as_jpg(img_path, img_bgr)
+          last_circle_radius = circle[2]
+
+        its_session_utils.remove_file(img_path)
 
         # Zoom is too large to find center circle
         if circle is None:
-          logging.error('Unable to detect circle in %s', img_name)
+          logging.error('Unable to detect circle in %s', img_path)
           break
 
         test_data.append(
@@ -134,15 +166,14 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                 circle=circle,
                 radius_tol=radius_tol,
                 offset_tol=offset_tol,
-                focal_length=cap_fl
+                focal_length=cap_fl,
+                physical_id=phy_id
             )
         )
 
         logging.debug('test_data[%d] = %s', test_data_index,
                       test_data[test_data_index])
         test_data_index = test_data_index + 1
-
-      its_session_utils.remove_frame_files(log_path)
 
       if not zoom_capture_utils.verify_preview_zoom_results(
           test_data, size, z_max, z_min, z_step_size):

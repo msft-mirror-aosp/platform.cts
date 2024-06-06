@@ -338,7 +338,11 @@ public class InputMethodManagerTest {
                 return condition.canProceed();
             });
         } catch (AssertionError e) {
-            File heap = new File("/sdcard/DumpOnFailure", "inputmethod-dump.hprof");
+            var dir = new File("/sdcard/DumpOnFailure");
+            if (!dir.exists()) {
+                assertTrue("Unable to create " + dir, dir.mkdir());
+            }
+            File heap = new File(dir, "inputmethod-dump.hprof");
             Debug.dumpHprofData(heap.getAbsolutePath());
             throw new AssertionError("Dumped heap in device at " + heap.getAbsolutePath(), e);
         }

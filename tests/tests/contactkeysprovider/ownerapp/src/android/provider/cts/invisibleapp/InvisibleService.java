@@ -16,6 +16,9 @@
 
 package android.provider.cts.invisibleapp;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -39,6 +42,28 @@ public class InvisibleService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        String channelId = "myChannelIS";
+        NotificationChannel channel = new NotificationChannel(channelId,
+                "Channel title",
+                NotificationManager.IMPORTANCE_DEFAULT);
+
+        getSystemService(NotificationManager.class).createNotificationChannel(channel);
+
+        Notification notification = new Notification.Builder(this.getApplicationContext(),
+                channelId)
+                .setContentTitle("This is a test notification")
+                .setContentText("This is a test notification")
+                .setShortcutId("shareShortcut")
+                .setSmallIcon(17301651)
+                .build();
+
+        startForeground(100, notification);
     }
 
     @Override

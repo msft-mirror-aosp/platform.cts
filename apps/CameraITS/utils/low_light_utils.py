@@ -14,6 +14,7 @@
 """Utility functions for low light camera tests."""
 
 import logging
+import os.path
 
 import cv2
 import matplotlib.pyplot as plt
@@ -448,6 +449,15 @@ def analyze_low_light_scene_capture(
   _plot_successive_difference(hilbert_ordered, file_stem)
   avg = _compute_avg(hilbert_ordered)
   delta_avg = _compute_avg_delta_of_successive_boxes(hilbert_ordered)
+  test_name = os.path.basename(file_stem)
+
+  # the following print statements are necessary for telemetry
+  # do not convert to logging.debug
+  print(f'{test_name}_avg_luma: {avg:.2f}')
+  print(f'{test_name}_delta_avg_luma: {delta_avg:.2f}')
+  chart_luma_values = [v[1] for v in hilbert_ordered]
+  print(f'{test_name}_chart_luma: {chart_luma_values}')
+
   logging.debug('average luminance of the 6 boxes: %.2f', avg)
   logging.debug('average difference in luminance of 5 successive boxes: %.2f',
                 delta_avg)

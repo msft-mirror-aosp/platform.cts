@@ -892,8 +892,21 @@ public class MidiEchoTest {
         @Override
         public synchronized void onDeviceStatusChanged(MidiDeviceStatus status) {
             super.onDeviceStatusChanged(status);
+            if (status == null) {
+                return;
+            }
             // Filter out status reports from unrelated devices.
-            if (mInfo.equals(status.getDeviceInfo())) {
+            Bundle properties1 = mInfo.getProperties();
+            String manufacturer1 = properties1.getString(
+                    MidiDeviceInfo.PROPERTY_MANUFACTURER);
+            String product1 = properties1.getString(
+                    MidiDeviceInfo.PROPERTY_PRODUCT);
+            Bundle properties2 = status.getDeviceInfo().getProperties();
+            String manufacturer2 = properties2.getString(
+                    MidiDeviceInfo.PROPERTY_MANUFACTURER);
+            String product2 = properties2.getString(
+                    MidiDeviceInfo.PROPERTY_PRODUCT);
+            if (manufacturer1.equals(manufacturer2) && product1.equals(product2)) {
                 mStatus = status;
                 notifyAll();
             }

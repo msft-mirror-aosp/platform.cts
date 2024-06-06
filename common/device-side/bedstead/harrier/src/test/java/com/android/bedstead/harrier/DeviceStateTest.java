@@ -17,18 +17,14 @@
 package com.android.bedstead.harrier;
 
 import static android.app.AppOpsManager.OPSTR_START_FOREGROUND;
-import static android.app.admin.DevicePolicyManager.DELEGATION_APP_RESTRICTIONS;
-import static android.app.admin.DevicePolicyManager.DELEGATION_CERT_INSTALL;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
-import static com.android.bedstead.harrier.DeviceStateUsersKt.user;
+import static com.android.bedstead.harrier.UsersComponentKt.user;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.harrier.UserType.SECONDARY_USER;
 import static com.android.bedstead.harrier.annotations.RequireAospBuild.GMS_CORE_PACKAGE;
 import static com.android.bedstead.harrier.annotations.RequireCnGmsBuild.CHINA_GOOGLE_SERVICES_FEATURE;
-import static com.android.bedstead.enterprise.annotations.EnsureHasDelegate.AdminType.DEVICE_OWNER;
-import static com.android.bedstead.enterprise.annotations.EnsureHasDelegate.AdminType.PRIMARY;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
@@ -44,15 +40,15 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.testng.Assert.assertThrows;
 
 import android.app.ActivityManager;
-import android.app.admin.DevicePolicyManager;
 import android.app.contentsuggestions.ContentSuggestionsManager;
 import android.app.role.RoleManager;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.view.contentcapture.ContentCaptureManager;
 
+import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
+import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled;
@@ -71,13 +67,10 @@ import com.android.bedstead.harrier.annotations.EnsureHasNoCloneProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasNoPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoTvProfile;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTvProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfileKt;
 import com.android.bedstead.harrier.annotations.EnsureNotDemoMode;
 import com.android.bedstead.harrier.annotations.EnsurePackageNotInstalled;
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
@@ -131,39 +124,12 @@ import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
 import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
-import com.android.bedstead.enterprise.annotations.EnsureHasDelegate;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwnerKt;
-import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
-import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeDarkMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLandscapeOrientation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUser;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnOrganizationOwnedProfileOwner;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwner;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfProfileOwnerUsingParentInstance;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSingleDeviceOwnerUser;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
-import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser;
 import com.android.bedstead.harrier.policies.DisallowBluetooth;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.devicepolicy.DeviceOwner;
-import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.display.Display;
 import com.android.bedstead.nene.display.DisplayProperties;
@@ -172,12 +138,9 @@ import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Tags;
-import com.android.bedstead.remotedpc.RemoteDelegate;
-import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.testapp.NotFoundException;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
-import com.android.queryable.annotations.BooleanQuery;
 import com.android.queryable.annotations.IntegerQuery;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.annotations.StringQuery;
@@ -188,8 +151,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Set;
-
 @RunWith(BedsteadJUnit4.class)
 public class DeviceStateTest {
 
@@ -197,10 +158,6 @@ public class DeviceStateTest {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
     private static final String TV_PROFILE_TYPE_NAME = "com.android.tv.profile";
-
-
-    private static final DevicePolicyManager sLocalDevicePolicyManager =
-            TestApis.context().instrumentedContext().getSystemService(DevicePolicyManager.class);
 
     // Expects that this package name matches an actual test app
     private static final String TEST_APP_PACKAGE_NAME = "com.android.bedstead.testapp.LockTaskApp";
@@ -213,7 +170,6 @@ public class DeviceStateTest {
     private static final TestApp sTestApp = sDeviceState.testApps().query()
             .wherePackageName().isEqualTo(TEST_APP_USED_IN_FIELD_NAME).get();
 
-    private static final long TIMEOUT = 4000000;
     private static final String CLONE_PROFILE_TYPE_NAME = "android.os.usertype.profile.CLONE";
     private static final String PRIVATE_PROFILE_TYPE_NAME = "android.os.usertype.profile.PRIVATE";
 
@@ -221,60 +177,9 @@ public class DeviceStateTest {
     private static final String SECOND_USER_RESTRICTION = UserManager.DISALLOW_AIRPLANE_MODE;
 
     @Test
-    @EnsureHasWorkProfile
-    public void workProfile_workProfileProvided_returnsWorkProfile() {
-        assertThat(sDeviceState.workProfile()).isNotNull();
-    }
-
-    @Test
-    @EnsureHasWorkProfile
-    public void profile_profileIsProvided_returnsProfile() {
-        assertThat(sDeviceState.profile(MANAGED_PROFILE_TYPE_NAME)).isNotNull();
-    }
-
-    @Test
     @RequireRunOnWorkProfile
     public void workProfile_runningOnWorkProfile_returnsCurrentProfile() {
         assertThat(sDeviceState.workProfile()).isEqualTo(TestApis.users().instrumented());
-    }
-
-    @Test
-    @EnsureHasNoWorkProfile
-    public void workProfile_noWorkProfile_throwsException() {
-        assertThrows(IllegalStateException.class, sDeviceState::workProfile);
-    }
-
-    @Test
-    @EnsureHasNoWorkProfile
-    @EnsureHasNoDeviceOwner
-    public void workProfile_createdWorkProfile_throwsException() {
-        try (UserReference workProfile = TestApis.users().createUser()
-                .parent(TestApis.users().instrumented())
-                .type(TestApis.users().supportedType(MANAGED_PROFILE_TYPE_NAME))
-                .create()) {
-            assertThrows(IllegalStateException.class, sDeviceState::workProfile);
-        }
-    }
-
-    @Test
-    @EnsureHasWorkProfile
-    public void ensureHasWorkProfileAnnotation_workProfileExists() {
-        assertThat(TestApis.users().findProfileOfType(
-                TestApis.users().supportedType(MANAGED_PROFILE_TYPE_NAME),
-                TestApis.users().instrumented())
-        ).isNotNull();
-    }
-
-    // TODO(scottjonathan): test the installTestApp argument
-    // TODO(scottjonathan): When supported, test the forUser argument
-
-    @Test
-    @EnsureHasNoWorkProfile
-    public void ensureHasNoWorkProfileAnnotation_workProfileDoesNotExist() {
-        assertThat(TestApis.users().findProfileOfType(
-                TestApis.users().supportedType(MANAGED_PROFILE_TYPE_NAME),
-                TestApis.users().instrumented())
-        ).isNull();
     }
 
     @Test
@@ -367,31 +272,6 @@ public class DeviceStateTest {
     }
 
     @Test
-    @IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance
-    public void includeRunOnCloneProfileAlongsideProfileOwnerUsingParentInstance_runsOnCloneProfile() {
-        assertThat(TestApis.users().instrumented().type().name())
-                .isEqualTo(CLONE_PROFILE_TYPE_NAME);
-
-        UserReference dpcUser = sDeviceState.dpc().user();
-        assertThat(dpcUser.type().name()).isEqualTo(MANAGED_PROFILE_TYPE_NAME);
-        assertThat(TestApis.devicePolicy().getProfileOwner(dpcUser).isOrganizationOwned())
-                .isFalse();
-        assertThat(sDeviceState.dpc().isParentInstance()).isTrue();
-    }
-
-    @Test
-    @IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance
-    public void includeRunOnCloneProfileAlongsideOrgOwnedProfileOwnerUsingParentInstance_runsOnCloneProfile() {
-        assertThat(TestApis.users().instrumented().type().name())
-                .isEqualTo(CLONE_PROFILE_TYPE_NAME);
-
-        UserReference dpcUser = sDeviceState.dpc().user();
-        assertThat(dpcUser.type().name()).isEqualTo(MANAGED_PROFILE_TYPE_NAME);
-        assertThat(TestApis.devicePolicy().getProfileOwner(dpcUser).isOrganizationOwned()).isTrue();
-        assertThat(sDeviceState.dpc().isParentInstance()).isTrue();
-    }
-
-    @Test
     @EnsureHasPrivateProfile
     public void privateProfile_privateProfileProvided_returnsPrivateProfile() {
         assertThat(sDeviceState.privateProfile()).isNotNull();
@@ -426,31 +306,6 @@ public class DeviceStateTest {
     public void requireRunOnPrivateProfileAnnotation_isRunningOnPrivateProfile() {
         assertThat(TestApis.users().instrumented().type().name())
                 .isEqualTo(PRIVATE_PROFILE_TYPE_NAME);
-    }
-
-    @Test
-    @IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance
-    public void includeRunOnPrivateProfileAlongsideProfileOwnerUsingParentInstance_runsOnPrivateProfile() {
-        assertThat(TestApis.users().instrumented().type().name())
-                .isEqualTo(PRIVATE_PROFILE_TYPE_NAME);
-
-        UserReference dpcUser = sDeviceState.dpc().user();
-        assertThat(dpcUser.type().name()).isEqualTo(MANAGED_PROFILE_TYPE_NAME);
-        assertThat(TestApis.devicePolicy().getProfileOwner(dpcUser).isOrganizationOwned())
-                .isFalse();
-        assertThat(sDeviceState.dpc().isParentInstance()).isTrue();
-    }
-
-    @Test
-    @IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance
-    public void includeRunOnPrivateProfileAlongsideOrgOwnedProfileOwnerUsingParentInstance_runsOnPrivateProfile() {
-        assertThat(TestApis.users().instrumented().type().name())
-                .isEqualTo(PRIVATE_PROFILE_TYPE_NAME);
-
-        UserReference dpcUser = sDeviceState.dpc().user();
-        assertThat(dpcUser.type().name()).isEqualTo(MANAGED_PROFILE_TYPE_NAME);
-        assertThat(TestApis.devicePolicy().getProfileOwner(dpcUser).isOrganizationOwned()).isTrue();
-        assertThat(sDeviceState.dpc().isParentInstance()).isTrue();
     }
 
     @Test
@@ -511,148 +366,6 @@ public class DeviceStateTest {
         ).isNull();
     }
 
-    @EnsureHasDeviceOwner
-    public void ensureHasDeviceOwnerAnnotation_deviceOwnerIsSet() {
-        assertThat(TestApis.devicePolicy().getDeviceOwner()).isNotNull();
-    }
-
-    @Test
-    @EnsureHasDeviceOwner
-    public void ensureHasDeviceOwnerAnnotation_noQuerySpecified_setsDefaultRemoteDpc() {
-        DeviceOwner deviceOwner = TestApis.devicePolicy().getDeviceOwner();
-        assertThat(deviceOwner.pkg().packageName())
-                .isEqualTo(RemoteDpc.REMOTE_DPC_APP_PACKAGE_NAME_OR_PREFIX);
-        assertThat(deviceOwner.pkg().targetSdkVersion()).isIn(
-                Set.of(Build.VERSION.SDK_INT, Build.VERSION_CODES.CUR_DEVELOPMENT));
-    }
-
-    @Test
-    @EnsureHasNoDeviceOwner
-    public void ensureHasNoDeviceOwnerAnnotation_deviceOwnerIsNotSet() {
-        assertThat(TestApis.devicePolicy().getDeviceOwner()).isNull();
-    }
-
-    @Test
-    @EnsureHasDeviceOwner
-    public void deviceOwner_deviceOwnerIsSet_returnsDeviceOwner() {
-        assertThat(sDeviceState.deviceOwner()).isNotNull();
-    }
-
-    @Test
-    @EnsureHasDeviceOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28)))
-    public void ensureHasDeviceOwnerAnnotation_targetingV28_remoteDpcTargetsV28() {
-        RemoteDpc remoteDpc =
-                RemoteDpc.forDevicePolicyController(TestApis.devicePolicy().getDeviceOwner());
-        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(28);
-    }
-
-    @Test
-    @EnsureHasDeviceOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isGreaterThanOrEqualTo =
-            30)))
-    public void ensureHasDeviceOwnerAnnoion_targetingGreaterThanOrEqualToV30_remoteDpcTargetsV30() {
-        RemoteDpc remoteDpc =
-                RemoteDpc.forDevicePolicyController(TestApis.devicePolicy().getDeviceOwner());
-        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isAtLeast(30);
-    }
-
-    @Test
-    @EnsureHasProfileOwner
-    public void ensureHasProfileOwnerAnnotation_noQuerySpecified_setsDefaultRemoteDpc() {
-        ProfileOwner profileOwner = TestApis.devicePolicy().getProfileOwner();
-        assertThat(profileOwner.pkg().packageName())
-                .isEqualTo(RemoteDpc.REMOTE_DPC_APP_PACKAGE_NAME_OR_PREFIX);
-        assertThat(profileOwner.pkg().targetSdkVersion()).isIn(
-                Set.of(Build.VERSION.SDK_INT, Build.VERSION_CODES.CUR_DEVELOPMENT));
-    }
-
-    @Test
-    @EnsureHasProfileOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28)))
-    public void ensureHasProfileOwnerAnnotation_targetingV28_remoteDpcTargetsV28() {
-        RemoteDpc remoteDpc =
-                RemoteDpc.forDevicePolicyController(TestApis.devicePolicy().getProfileOwner());
-        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(28);
-    }
-
-    @Test
-    @EnsureHasProfileOwner(dpc = @Query(targetSdkVersion = @IntegerQuery(isGreaterThanOrEqualTo =
-            30)))
-    public void ensureHasProfileOwnerAnnotation_targetingGreaterThanOrEqualToV30_remoteDpcTargetsV30() {
-        RemoteDpc remoteDpc =
-                RemoteDpc.forDevicePolicyController(TestApis.devicePolicy().getProfileOwner());
-        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isAtLeast(30);
-    }
-
-    @Test
-    @EnsureHasNoDeviceOwner
-    public void deviceOwner_deviceOwnerIsNotSet_throwsException() {
-        assertThrows(IllegalStateException.class, sDeviceState::deviceOwner);
-    }
-
-    @Test
-    @EnsureHasProfileOwner
-    public void ensureHasProfileOwnerAnnotation_defaultUser_profileOwnerIsSet() {
-        assertThat(TestApis.devicePolicy().getProfileOwner(TestApis.users().instrumented()))
-                .isNotNull();
-    }
-
-    @Test
-    @EnsureHasNoProfileOwner
-    public void ensureHasNoProfileOwnerAnnotation_defaultUser_profileOwnerIsNotSet() {
-        assertThat(TestApis.devicePolicy().getProfileOwner(TestApis.users().instrumented()))
-                .isNull();
-    }
-
-    @EnsureHasSecondaryUser
-    @EnsureHasProfileOwner(onUser = UserType.SECONDARY_USER)
-    public void ensureHasProfileOwnerAnnotation_otherUser_setsProfileOwner() {
-        assertThat(TestApis.devicePolicy().getProfileOwner(sDeviceState.secondaryUser()))
-                .isNotNull();
-    }
-
-    @EnsureHasSecondaryUser
-    @EnsureHasNoProfileOwner(onUser = UserType.SECONDARY_USER)
-    public void ensureHasNoProfileOwnerAnnotation_otherUser_profileOwnerIsNotSet() {
-        assertThat(TestApis.devicePolicy().getProfileOwner(sDeviceState.secondaryUser())).isNull();
-    }
-
-    @Test
-    @EnsureHasNoProfileOwner
-    public void profileOwner_defaultUser_profileOwnerIsNotSet_throwsException() {
-        assertThrows(IllegalStateException.class, sDeviceState::profileOwner);
-    }
-
-    @Test
-    @EnsureHasProfileOwner
-    public void profileOwner_defaultUser_profileOwnerIsSet_returnsProfileOwner() {
-        assertThat(TestApis.devicePolicy().getProfileOwner(TestApis.users().instrumented()))
-                .isNotNull();
-    }
-
-    @EnsureHasSecondaryUser
-    @EnsureHasProfileOwner(onUser = UserType.SECONDARY_USER)
-    public void profileOwner_otherUser_profileOwnerIsSet_returnsProfileOwner() {
-        assertThat(sDeviceState.profileOwner(sDeviceState.secondaryUser())).isNotNull();
-    }
-
-    @Test
-    @EnsureHasSecondaryUser
-    @EnsureHasNoProfileOwner(onUser = UserType.SECONDARY_USER)
-    public void profileOwner_otherUser_profileOwnerIsNotSet_throwsException() {
-        assertThrows(IllegalStateException.class, sDeviceState::profileOwner);
-    }
-
-    @Test
-    public void profileOwner_userType_onUserIsNull_throwsException() {
-        assertThrows(NullPointerException.class,
-                () -> sDeviceState.profileOwner((UserType) null));
-    }
-
-    @Test
-    public void profileOwner_userReference_onUserIsNull_throwsException() {
-        assertThrows(NullPointerException.class,
-                () -> sDeviceState.profileOwner((UserReference) null));
-    }
-
     @RequireRunOnWorkProfile
     public void requireRunOnWorkProfileAnnotation_isRunningOnWorkProfile() {
         assertThat(
@@ -704,80 +417,6 @@ public class DeviceStateTest {
 
         assertWithMessage("%s is visible bg user", user)
                 .that(user.isVisibleBagroundNonProfileUser()).isFalse();
-    }
-
-    @Test
-    @IncludeRunOnOrganizationOwnedProfileOwner
-    public void includeRunOnOrganizationOwnedProfileOwnerAnnotation_isRunningOnOrganizationOwnedManagedProfile() {
-        assertThat(TestApis.users().instrumented().type().name())
-                .isEqualTo(MANAGED_PROFILE_TYPE_NAME);
-        assertThat(TestApis.devicePolicy().getProfileOwner().isOrganizationOwned()).isTrue();
-    }
-
-    @Test
-    @IncludeRunOnParentOfOrganizationOwnedProfileOwner
-    public void includeRunOnParentOfOrganizationOwnedProfileOwner_isRunningOnParentOfOrganizationOwnedProfileOwner() {
-        UserReference dpcUser = sDeviceState.dpc().user();
-
-        assertThat(dpcUser.type().name()).isEqualTo(MANAGED_PROFILE_TYPE_NAME);
-        assertThat(TestApis.devicePolicy().getProfileOwner(dpcUser).isOrganizationOwned()).isTrue();
-        assertThat(sDeviceState.dpc().isParentInstance()).isFalse();
-    }
-
-    @Test
-    @IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance
-    public void includeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance_isRunningOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance() {
-        UserReference dpcUser = sDeviceState.dpc().user();
-
-        assertThat(dpcUser.type().name()).isEqualTo(MANAGED_PROFILE_TYPE_NAME);
-        assertThat(TestApis.devicePolicy().getProfileOwner(dpcUser).isOrganizationOwned()).isTrue();
-        assertThat(sDeviceState.dpc().isParentInstance()).isTrue();
-    }
-
-    @Test
-    @IncludeRunOnSystemDeviceOwnerUser
-    public void includeRunOnSystemDeviceOwnerUserAnnotation_isRunningOnSystemDeviceOwnerUser() {
-        assertThat(TestApis.devicePolicy().getDeviceOwner().user())
-                .isEqualTo(TestApis.users().instrumented());
-        assertThat(TestApis.devicePolicy().getDeviceOwner().user())
-                .isEqualTo(TestApis.users().system());
-    }
-
-    @Test
-    @IncludeRunOnSingleDeviceOwnerUser
-    public void includeRunOnSingleDeviceOwnerUserAnnotation_isRunningOnSingleDeviceOwnerUser() {
-        assertThat(TestApis.devicePolicy().getDeviceOwner().user())
-                .isEqualTo(TestApis.users().instrumented());
-        assertThat(TestApis.devicePolicy().getDeviceOwner().user())
-                .isEqualTo(TestApis.users().main());
-    }
-
-    @Test
-    @IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser
-    public void includeRunOnNonAffiliatedDeviceOwnerSecondaryUserAnnotation_isRunningOnNonAffiliatedDeviceOwnerSecondaryUser() {
-        assertThat(TestApis.devicePolicy().getDeviceOwner().user())
-                .isNotEqualTo(TestApis.users().instrumented());
-        assertThat(TestApis.users().instrumented().type().name())
-                .isEqualTo(SECONDARY_USER_TYPE_NAME);
-    }
-
-    @Test
-    @IncludeRunOnProfileOwnerProfileWithNoDeviceOwner
-    public void includeRunOnProfileOwnerAnnotation_hasProfileOwner() {
-        assertThat(
-                TestApis.devicePolicy().getProfileOwner(TestApis.users().instrumented())
-        ).isNotNull();
-    }
-
-    @Test
-    @IncludeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile
-    public void includeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerAnnotation_isRunningOnSecondaryUserInDifferentProfileGroupToProfileOwner() {
-        assertThat(TestApis.users().instrumented().type().name())
-                .isEqualTo(SECONDARY_USER_TYPE_NAME);
-        assertThat(sDeviceState.workProfile()).isNotEqualTo(TestApis.users().instrumented());
-        assertThat(TestApis.devicePolicy().getProfileOwner(sDeviceState.workProfile())).isNotNull();
-
-        // TODO(scottjonathan): Assert profile groups are different
     }
 
     @RequirePackageInstalled(value = GMS_CORE_PACKAGE, onUser = ANY)
@@ -893,12 +532,6 @@ public class DeviceStateTest {
     }
 
     @Test
-    @IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner
-    public void includeRunOnParentOfProfileOwnerAnnotation_isRunningOnParentOfProfileOwner() {
-        assertThat(sDeviceState.workProfile()).isNotNull();
-    }
-
-    @Test
     @RequireRunOnInitialUser
     public void requireRunOnUser_isCurrentUser() {
         assertThat(TestApis.users().current()).isEqualTo(sDeviceState.initialUser());
@@ -960,76 +593,6 @@ public class DeviceStateTest {
     }
 
     @Test
-    @EnsureHasWorkProfile(switchedToParentUser = FALSE) // We don't test the default as it's ANY
-    public void ensureHasWorkProfile_specifyNotSwitchedToParentUser_parentIsNotCurrentUser() {
-        assertThat(TestApis.users().current()).isNotEqualTo(sDeviceState.workProfile().parent());
-    }
-
-    @Test
-    @EnsureHasWorkProfile(switchedToParentUser = TRUE)
-    public void ensureHasWorkProfile_specifySwitchedToParentUser_parentIsCurrentUser() {
-        assertThat(TestApis.users().current()).isEqualTo(sDeviceState.workProfile().parent());
-    }
-
-    @Test
-    @IncludeRunOnBackgroundDeviceOwnerUser
-    public void includeRunOnBackgroundDeviceOwnerUserAnnotation_isRunningOnDeviceOwnerUser() {
-        assertThat(TestApis.users().instrumented())
-                .isEqualTo(sDeviceState.dpc().user());
-    }
-
-    @Test
-    @IncludeRunOnBackgroundDeviceOwnerUser
-    public void includeRunOnBackgroundDeviceOwnerUserAnnotation_isNotCurrentUser() {
-        assertThat(TestApis.users().current())
-                .isNotEqualTo(TestApis.users().instrumented());
-    }
-
-    @Test
-    @EnsureHasNoProfileOwner
-    public void ensureHasNoProfileOwnerAnnotation_currentUserHasNoProfileOwner() {
-        assertThat(TestApis.devicePolicy()
-                .getProfileOwner(TestApis.users().instrumented()))
-                .isNull();
-    }
-
-    @Test
-    @EnsureHasNoDeviceOwner
-    public void ensureHasNoDeviceOwnerAnnotation_noDeviceOwner() {
-        assertThat(TestApis.devicePolicy().getDeviceOwner()).isNull();
-    }
-
-    @Test
-    @EnsureHasNoDpc
-    public void ensureHasNoDpcAnnotation_currentUserHasNoProfileOwner() {
-        assertThat(TestApis.devicePolicy()
-                .getProfileOwner(TestApis.users().instrumented()))
-                .isNull();
-    }
-
-    @Test
-    @EnsureHasNoDpc
-    public void ensureHasNoDpcAnnotation_noDeviceOwner() {
-        assertThat(TestApis.devicePolicy().getDeviceOwner()).isNull();
-    }
-
-    @Test
-    @EnsureHasNoDpc
-    public void ensureHasNoDpcAnnotation_workProfileDoesNotExist() {
-        assertThat(TestApis.users().findProfileOfType(
-                TestApis.users().supportedType(MANAGED_PROFILE_TYPE_NAME),
-                TestApis.users().instrumented())
-        ).isNull();
-    }
-
-    @Test
-    @RequireHeadlessSystemUserMode(reason = "Test")
-    @IncludeRunOnSingleDeviceOwnerUser
-    public void ensureOnSingleUser_headlessDeviceTypeModeIsSingleUser() {
-        assertThat(sDeviceState.dpc().user().isMain()).isTrue();
-    }
-
-    @Test
     @RequireNotHeadlessSystemUserMode(reason = "Test")
     public void requireNotHeadlessSystemUserModeAnnotation_notHeadlessSystemUserMode() {
         assertThat(TestApis.users().isHeadlessSystemUserMode()).isFalse();
@@ -1085,52 +648,6 @@ public class DeviceStateTest {
         assertThat(Tags.hasTag("TestTag")).isTrue();
     }
 
-    @Test
-    @EnsureHasDeviceOwner
-    @EnsureHasDelegate(admin = DEVICE_OWNER, scopes = DELEGATION_CERT_INSTALL, isPrimary = true)
-    public void ensureHasPrimaryDelegateAnnotation_dpcReturnsDelegate() {
-        assertThat(sDeviceState.dpc()).isInstanceOf(RemoteDelegate.class);
-    }
-
-    @Test
-    @EnsureHasDeviceOwner
-    @EnsureHasDelegate(admin = DEVICE_OWNER, scopes = DELEGATION_CERT_INSTALL, isPrimary = false)
-    public void ensureHasNonPrimaryDelegateAnnotation_dpcReturnsDpc() {
-        assertThat(sDeviceState.dpc()).isInstanceOf(RemoteDpc.class);
-    }
-
-    @Test
-    @EnsureHasDeviceOwner
-    @EnsureHasDelegate(admin = DEVICE_OWNER, scopes = DELEGATION_CERT_INSTALL, isPrimary = true)
-    public void ensureHasDelegateAnnotation_dpcCanUseDelegatedFunctionality() {
-        assertThat(sDeviceState.dpc().devicePolicyManager().getEnrollmentSpecificId()).isNotNull();
-    }
-
-    @Test
-    @EnsureHasDeviceOwner
-    @EnsureHasDelegate(admin = DEVICE_OWNER,
-            scopes = {DELEGATION_CERT_INSTALL, DELEGATION_APP_RESTRICTIONS}, isPrimary = true)
-    public void ensureHasDelegateAnnotation_multipleScopes_dpcCanUseAllDelegatedFunctionality() {
-        assertThat(sDeviceState.dpc().devicePolicyManager().getEnrollmentSpecificId()).isNotNull();
-        sDeviceState.dpc().devicePolicyManager()
-                .setApplicationRestrictions(
-                        sDeviceState.dpc().componentName(),
-                        sDeviceState.dpc().packageName(), new Bundle());
-    }
-
-    @Test
-    @EnsureHasDeviceOwner(isPrimary = true)
-    @EnsureHasDelegate(admin = PRIMARY, scopes = {})
-    public void ensureHasDelegateAnnotation_primaryAdminWithoutReplace_dpcReturnsDpc() {
-        assertThat(sDeviceState.dpc()).isInstanceOf(RemoteDpc.class);
-    }
-
-    @Test
-    @EnsureHasDeviceOwner(isPrimary = true)
-    @EnsureHasDelegate(admin = PRIMARY, scopes = {}, isPrimary = true)
-    public void ensureHasDelegateAnnotation_primaryAdminAndReplace_dpcReturnsDelegate() {
-        assertThat(sDeviceState.dpc()).isInstanceOf(RemoteDelegate.class);
-    }
 
     @Test
     @EnsureScreenIsOn
@@ -1145,36 +662,6 @@ public class DeviceStateTest {
     }
 
     @Test
-    @IncludeRunOnParentOfProfileOwnerUsingParentInstance
-    public void includeRunOnParentOfProfileOwnerUsingProfileInstanceAnnotation_runningOnParentOfProfile() {
-        assertThat(sDeviceState.workProfile().parent()).isEqualTo(TestApis.users().instrumented());
-    }
-
-    @Test
-    @IncludeRunOnParentOfProfileOwnerUsingParentInstance
-    public void includeRunOnParentOfProfileOwnerUsingProfileInstanceAnnotation_dpcIsOnProfile() {
-        assertThat(sDeviceState.dpc().user()).isEqualTo(sDeviceState.workProfile());
-    }
-
-    @Test
-    @IncludeRunOnParentOfProfileOwnerUsingParentInstance
-    public void includeRunOnParentOfProfileOwnerUsingProfileInstanceAnnotation_devicePolicyManagerAffectsParent() {
-        long previousRequiredStrongAuthTimeout =
-                sLocalDevicePolicyManager.getRequiredStrongAuthTimeout(/* admin= */ null);
-        try {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setRequiredStrongAuthTimeout(sDeviceState.dpc().componentName(), TIMEOUT);
-
-            assertThat(sLocalDevicePolicyManager
-                    .getRequiredStrongAuthTimeout(/* admin= */ null)).isEqualTo(TIMEOUT);
-        } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setRequiredStrongAuthTimeout(
-                            sDeviceState.dpc().componentName(), previousRequiredStrongAuthTimeout);
-        }
-    }
-
-    @Test
     @EnsureHasSecondaryUser
     @OtherUser(SECONDARY_USER)
     public void otherUserAnnotation_otherUserReturnsCorrectType() {
@@ -1184,15 +671,6 @@ public class DeviceStateTest {
     @Test
     public void otherUser_noOtherUserSpecified_throwsException() {
         assertThrows(IllegalStateException.class, () -> sDeviceState.otherUser());
-    }
-
-    @Test
-    @IncludeRunOnFinancedDeviceOwnerUser
-    public void includeRunOnFinancedDeviceOwnerUserAnnotation_financedDeviceOwnerTypeSet() {
-        assertThat(TestApis.devicePolicy().getDeviceOwner().user())
-                .isEqualTo(TestApis.users().instrumented());
-        assertThat(TestApis.devicePolicy().getDeviceOwner().getType())
-                .isEqualTo(DeviceOwnerType.FINANCED);
     }
 
     @Test
@@ -1323,30 +801,6 @@ public class DeviceStateTest {
         assertThat(((ProfileOwner) sDeviceState.profileOwner(
                 sDeviceState.workProfile()).devicePolicyController()).isOrganizationOwned())
                 .isFalse();
-    }
-
-    @Test
-    @EnsureHasWorkProfile(isOrganizationOwned = true)
-    public void ensureHasWorkProfile_isOrganizationOwned_organizationOwnedIsTrue() {
-        assertThat(((ProfileOwner) sDeviceState.profileOwner(
-                sDeviceState.workProfile()).devicePolicyController()).isOrganizationOwned())
-                .isTrue();
-    }
-
-    @Test
-    @EnsureHasWorkProfile(isOrganizationOwned = false)
-    public void ensureHasWorkProfile_isNotOrganizationOwned_organizationOwnedIsFalse() {
-        assertThat(((ProfileOwner) sDeviceState.profileOwner(
-                sDeviceState.workProfile()).devicePolicyController()).isOrganizationOwned())
-                .isFalse();
-    }
-
-    @Test
-    @IncludeRunOnOrganizationOwnedProfileOwner
-    public void includeRunOnOrganizationOwnedProfileOwner_isOrganizationOwned() {
-        assertThat(((ProfileOwner) sDeviceState.profileOwner(
-                sDeviceState.workProfile()).devicePolicyController()).isOrganizationOwned())
-                .isTrue();
     }
 
     //TODO(b/300218365): Test that settings are returned to their original values in teardown.
@@ -1513,52 +967,6 @@ public class DeviceStateTest {
     public void requireSystemServiceAvailable_systemServiceIsAvailable() {
         assertThat(TestApis.context().instrumentedContext()
                 .getSystemService(ContentCaptureManager.class)).isNotNull();
-    }
-
-    @EnsureHasDeviceOwner(key = EnsureHasDeviceOwner.DEFAULT_KEY, isPrimary = true)
-    @AdditionalQueryParameters(
-            forTestApp = EnsureHasDeviceOwner.DEFAULT_KEY,
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
-    )
-    @Test
-    public void additionalQueryParameters_ensureHasDeviceOwner_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
-    }
-
-    @EnsureHasDeviceOwner(isPrimary = true, key = "dpc", dpc = @Query(isHeadlessDOSingleUser =
-    @BooleanQuery(isEqualTo = TRUE)))
-    @Test
-    public void additionalQueryParameters_isHeadlessDOSingleUser_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().metadata().getString(
-                "headless_do_single_user")).isEqualTo("true");
-    }
-
-    @EnsureHasDeviceOwner(isPrimary = true, key = "dpc", dpc = @Query(isHeadlessDOSingleUser =
-    @BooleanQuery(isEqualTo = FALSE)))
-    @Test
-    public void additionalQueryParameters_isNotHeadlessDOSingleUser_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().metadata().getString(
-                "headless_do_single_user")).isNull();
-    }
-
-    @EnsureHasProfileOwner(key = EnsureHasProfileOwnerKt.DEFAULT_KEY, isPrimary = true)
-    @AdditionalQueryParameters(
-            forTestApp = EnsureHasProfileOwnerKt.DEFAULT_KEY,
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
-    )
-    @Test
-    public void additionalQueryParameters_ensureHasProfileOwner_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
-    }
-
-    @EnsureHasWorkProfile(dpcKey = EnsureHasWorkProfileKt.DEFAULT_DPC_KEY, dpcIsPrimary = true)
-    @AdditionalQueryParameters(
-            forTestApp = EnsureHasWorkProfileKt.DEFAULT_DPC_KEY,
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
-    )
-    @Test
-    public void additionalQueryParameters_ensureHasWorkProfile_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
     }
 
     @RequireRunOnWorkProfile(dpcKey = RequireRunOnWorkProfile.DEFAULT_KEY, dpcIsPrimary = true)

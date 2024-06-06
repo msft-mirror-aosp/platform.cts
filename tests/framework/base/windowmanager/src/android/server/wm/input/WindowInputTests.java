@@ -18,6 +18,7 @@ package android.server.wm.input;
 
 import static android.server.wm.ActivityManagerTestBase.launchHomeActivityNoWait;
 import static android.server.wm.BarTestUtils.assumeHasStatusBar;
+import static android.server.wm.CtsWindowInfoUtils.getWindowBoundsInDisplaySpace;
 import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfo;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
@@ -73,6 +74,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -222,6 +224,9 @@ public class WindowInputTests {
                     insets.top + insets.bottom + lp.height);
         });
 
+        final Rect previousWindowBoundsInDisplay = Objects.requireNonNull(
+                getWindowBoundsInDisplaySpace(mView::getWindowToken));
+
         // Move the window to a random location in the window and attempt to tap on view multiple
         // times.
         final Point locationInWindow = new Point();
@@ -236,11 +241,17 @@ public class WindowInputTests {
             });
             mInstrumentation.waitForIdleSync();
 
-            // Wait for window bounds to update.
-            final var expectedBounds = new Rect(locationInWindow.x, locationInWindow.y,
-                    locationInWindow.x + windowSize, locationInWindow.y + windowSize);
+            // Wait for window bounds to update. Since we are trying to avoid insets, it is
+            // difficult to calculate the exact expected bounds from the client. Instead, we just
+            // wait until the window is moved to a new position, assuming there is no animation.
             Predicate<WindowInfo> hasUpdatedBounds =
-                    windowInfo -> !windowInfo.bounds.equals(expectedBounds);
+                    windowInfo -> {
+                        if (previousWindowBoundsInDisplay.equals(windowInfo.bounds)) {
+                            return false;
+                        }
+                        previousWindowBoundsInDisplay.set(windowInfo.bounds);
+                        return true;
+                    };
             assertTrue(waitForWindowInfo(hasUpdatedBounds, WINDOW_WAIT_TIMEOUT_SECONDS,
                     TimeUnit.SECONDS, mView::getWindowToken, mView.getDisplay().getDisplayId()));
 

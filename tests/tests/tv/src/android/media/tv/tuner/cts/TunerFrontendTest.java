@@ -77,7 +77,7 @@ import java.util.Map;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-@CddTest(requirements = {"3/T-1-1"})
+@CddTest(requirements = {"2.3.3/3/T-1-1"})
 public class TunerFrontendTest {
     private static final String TAG = "MediaTunerFrontendTest";
 

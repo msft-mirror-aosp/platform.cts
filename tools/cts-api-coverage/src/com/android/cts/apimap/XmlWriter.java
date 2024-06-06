@@ -59,24 +59,26 @@ public class XmlWriter {
 
     private final Element mXTSApiMapElement;
 
+    private final Element mRootElement;
+
     public XmlWriter() throws ParserConfigurationException {
         DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder documentBuilder = docFactory.newDocumentBuilder();
         mDoc = documentBuilder.newDocument();
         ProcessingInstruction pi = mDoc.createProcessingInstruction(
-                "xml-stylesheet", "type=\"text/xsl\"  href=\"api-map.xsl\"?>");
+                "xml-stylesheet", "type=\"text/xsl\" href=\"api-coverage.xsl\"");
         SimpleDateFormat format = new SimpleDateFormat(
-                "EEE, MMM d, yyyy h:mm a z", Locale.CHINA);
+                "EEE, MMM d, yyyy h:mm a z", Locale.US);
         String date = format.format(new Date(System.currentTimeMillis()));
-        Element rootElement = mDoc.createElement("api-coverage");
-        rootElement.setAttribute("generatedTime", date);
-        rootElement.setAttribute("title", "cts-m-automation");
-        mDoc.appendChild(rootElement);
-        mDoc.insertBefore(pi, rootElement);
+        mRootElement = mDoc.createElement("api-coverage");
+        mRootElement.setAttribute("generatedTime", date);
+        mRootElement.setAttribute("title", "cts-m-automation");
+        mDoc.appendChild(mRootElement);
+        mDoc.insertBefore(pi, mRootElement);
         mXTSAnnotationMapElement = mDoc.createElement("xts-annotation");
-        rootElement.appendChild(mXTSAnnotationMapElement);
+        mRootElement.appendChild(mXTSAnnotationMapElement);
         mXTSApiMapElement = mDoc.createElement("api");
-        rootElement.appendChild(mXTSApiMapElement);
+        mRootElement.appendChild(mXTSApiMapElement);
     }
 
     /** Dumps the document to an xml file. */
@@ -101,7 +103,7 @@ public class XmlWriter {
                 mXTSApiMapElement.appendChild(createApiPackageElement(pkg, statistics));
             }
         }
-        mXTSApiMapElement.appendChild(createApiTotalElement(
+        mRootElement.appendChild(createApiTotalElement(
                 statistics.mTotalMethods, statistics.mTotalCoveredMethods));
     }
 

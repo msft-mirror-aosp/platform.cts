@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsUiRenderingTestCases27",
+    team: "trendy_team_android_core_graphics_stack",
     sdk_version: "test_current",
     target_sdk_version: "27",
 
