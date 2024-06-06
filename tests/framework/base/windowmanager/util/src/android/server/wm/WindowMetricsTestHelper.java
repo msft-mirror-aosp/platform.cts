@@ -26,7 +26,6 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Insets;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -37,9 +36,6 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.WindowMetrics;
 
-import androidx.test.core.app.ApplicationProvider;
-
-import com.android.modules.utils.build.SdkLevel;
 import com.android.window.flags.Flags;
 
 import java.util.concurrent.CountDownLatch;
@@ -199,24 +195,7 @@ public class WindowMetricsTestHelper {
         if (Flags.insetsDecoupledConfiguration()) {
             return 0;
         }
-        // The device owners can choose to decouple the display cutout from the configuration app
-        // bounds to ensure a better experience. Return the legacy value if the decouple config is
-        // not set to true.
-        final int legacyNonDecorTypes = navigationBars() | displayCutout();
-        if (!SdkLevel.isAtLeastU()) {
-            return legacyNonDecorTypes;
-        }
-        try {
-            final boolean isScreenSizeDecoupledFromStatusBarAndCutout =
-                    ApplicationProvider.getApplicationContext().getResources().getBoolean(
-                            Resources.getSystem().getIdentifier(
-                            "config_decoupleStatusBarAndDisplayCutoutFromScreenSize",
-                            "bool", "android"));
-            return isScreenSizeDecoupledFromStatusBarAndCutout
-                    ? navigationBars() : legacyNonDecorTypes;
-        } catch (Resources.NotFoundException e) {
-            return legacyNonDecorTypes;
-        }
+        return navigationBars() | displayCutout();
     }
 
     public static class OnLayoutChangeListener implements View.OnLayoutChangeListener {
