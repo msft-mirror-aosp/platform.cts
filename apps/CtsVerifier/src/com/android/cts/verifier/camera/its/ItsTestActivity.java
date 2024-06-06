@@ -62,6 +62,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -126,6 +127,16 @@ public class ItsTestActivity extends DialogTestListActivity {
             Pattern.compile("test_imu_drift_.*");
     private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
             Pattern.compile("test_burst_capture_.*");
+    private static final Pattern PERF_METRICS_LOW_LIGHT_BOOST_PATTERN =
+            Pattern.compile("test_low_light_boost_.*");
+    private static final Pattern PERF_METRICS_EXTENSION_NIGHT_MODE_PATTERN =
+            Pattern.compile("test_night_extension_.*");
+
+    private static final String PERF_METRICS_KEY_CHART_LUMA = "chart_luma";
+    private static final String PERF_METRICS_KEY_AVG_LUMA = "avg_luma";
+    private static final String PERF_METRICS_KEY_DELTA_AVG_LUMA = "delta_avg_luma";
+    private static final String PERF_METRICS_KEY_PREFIX_NIGHT = "night_extension";
+    private static final String PERF_METRICS_KEY_PREFIX_LOW_LIGHT = "low_light_boost";
 
     private static final Pattern PERF_METRICS_DISTORTION_PATTERN =
             Pattern.compile("test_preview_distortion_.*");
@@ -610,9 +621,18 @@ public class ItsTestActivity extends DialogTestListActivity {
                     perfMetricsResult);
             boolean intrinsicMetricsMatches = intrinsicMetricsMatcher.matches();
 
+            Matcher lowLightBoostMetricsMatcher =
+                    PERF_METRICS_LOW_LIGHT_BOOST_PATTERN.matcher(perfMetricsResult);
+            boolean lowLightBoostMetricsMatches = lowLightBoostMetricsMatcher.matches();
+
+            Matcher nightModeExtensionMetricsMatcher =
+                    PERF_METRICS_EXTENSION_NIGHT_MODE_PATTERN.matcher(perfMetricsResult);
+            boolean nightModeExtensionMetricsMatches = nightModeExtensionMetricsMatcher.matches();
+
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
                         && !imuDriftMetricsMatches && !distortionMetricsMatches
-                        && !intrinsicMetricsMatches) {
+                        && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
+                        && !nightModeExtensionMetricsMatches) {
                 return false;
             }
 
@@ -665,6 +685,16 @@ public class ItsTestActivity extends DialogTestListActivity {
                     parsePerfMetrics(perfMetricsResult, obj, floatKeys, booleanKeys,
                             Collections.emptyList());
                 }
+
+                if (lowLightBoostMetricsMatches) {
+                    Log.i(TAG, "low light boost matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_LOW_LIGHT, perfMetricsResult, obj);
+                }
+
+                if (nightModeExtensionMetricsMatches) {
+                    Log.i(TAG, "night mode extension matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_NIGHT, perfMetricsResult, obj);
+                }
             } catch (org.json.JSONException e) {
                 Log.e(TAG, "Error when serializing the metrics into a JSONObject" , e);
             }
@@ -673,6 +703,31 @@ public class ItsTestActivity extends DialogTestListActivity {
         }
     }
 
+    private void addPerfMetricsResult(String keyPrefix, String perfMetricsResult,
+            JSONObject obj) throws org.json.JSONException {
+        // remove "test_" from the result
+        String result = perfMetricsResult.replaceFirst("^test_", "");
+        String resultKey = result.split(":")[0].strip();
+        String value = result.split(":")[1].strip();
+        if (resultKey.contains(PERF_METRICS_KEY_CHART_LUMA)) {
+            int[] chartLumaValues = Arrays.stream(value.substring(1, value.length() - 1)
+                    .split(","))
+                    .map(String::trim)
+                    .mapToInt(Integer::parseInt)
+                    .toArray();
+            JSONArray chartLumaValuesJson = new JSONArray();
+            for (int luma : chartLumaValues) {
+                chartLumaValuesJson.put(luma);
+            }
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_CHART_LUMA, chartLumaValuesJson);
+        } else if (resultKey.contains(PERF_METRICS_KEY_DELTA_AVG_LUMA)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_DELTA_AVG_LUMA, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_AVG_LUMA)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_AVG_LUMA, floatValue);
+        }
+    }
 
     private class FoldStateListener implements
             DeviceStateManager.DeviceStateCallback {
