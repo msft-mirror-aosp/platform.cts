@@ -879,9 +879,26 @@ public abstract class TestListAdapter extends BaseAdapter {
      */
     public static String setTestNameSuffix(String mode, String name) {
         if (name != null
-                && mode.equals(DisplayMode.FOLDED.toString())
+                && mode.equalsIgnoreCase(DisplayMode.FOLDED.toString())
                 && !name.endsWith(DisplayMode.FOLDED.asSuffix())) {
             return name + DisplayMode.FOLDED.asSuffix();
+        }
+        return name;
+    }
+
+    /**
+     * Removes test name suffix. In the unfolded mode, remove the suffix [folded].
+     *
+     * @param mode A string of current display mode.
+     * @param name A string of test name.
+     * @return A string of test name without suffix, [folded], in the unfolded mode. A string of
+     *     input test name in the folded mode.
+     */
+    public static String removeTestNameSuffix(String mode, String name) {
+        if (name != null
+                && mode.equalsIgnoreCase(DisplayMode.UNFOLDED.toString())
+                && name.endsWith(DisplayMode.FOLDED.asSuffix())) {
+            return name.substring(0, name.length() - DisplayMode.FOLDED.asSuffix().length());
         }
         return name;
     }

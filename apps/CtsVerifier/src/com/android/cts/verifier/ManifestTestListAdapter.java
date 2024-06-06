@@ -636,6 +636,8 @@ public class ManifestTestListAdapter extends TestListAdapter {
                 if (test.applicableFeatures == null || hasAnyFeature(test.applicableFeatures)) {
                     // Add suffix in test name if the test is in the folded mode.
                     test.testName = setTestNameSuffix(mode, test.testName);
+                    // Remove suffix in test name if the test is in the unfolded mode.
+                    test.testName = removeTestNameSuffix(mode, test.testName);
                     filteredTests.add(test);
                 } else {
                     Log.d(LOG_TAG, "Skipping " + test.testName + " due to metadata filtering");
