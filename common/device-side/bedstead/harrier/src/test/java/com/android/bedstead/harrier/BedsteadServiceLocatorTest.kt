@@ -27,8 +27,9 @@ import org.junit.runners.JUnit4
 class BedsteadServiceLocatorTest {
 
     @Test
-    fun emptyDI_getDependencyThrowsException() {
+    fun emptyLocator_getDependencyThrowsException() {
         class ClassNotSupportedByBedsteadServiceLocatorReflection(parameter: String)
+
         val locator = BedsteadServiceLocator()
 
         assertThrows(IllegalStateException::class.java) {
@@ -86,5 +87,24 @@ class BedsteadServiceLocatorTest {
         assertThat(exampleClass.classWithoutParameters).isNotNull()
         assertThat(exampleClass.classWithLocatorParameter).isNotNull()
         assertThat(locator.getAllDependencies().size).isEqualTo(3)
+    }
+
+    private class FirstClass(locator: BedsteadServiceLocator) {
+        val secondClass: SecondClass by locator
+    }
+
+    private class SecondClass(locator: BedsteadServiceLocator) {
+        val firstClass: FirstClass by locator
+    }
+
+    @Test
+    fun circularDependencies_dependencyIsCreatedByDelegate() {
+        val locator = BedsteadServiceLocator()
+
+        val firstClass: FirstClass = locator.get()
+        val secondClass: SecondClass = locator.get()
+
+        assertThat(firstClass.secondClass).isNotNull()
+        assertThat(secondClass.firstClass).isNotNull()
     }
 }

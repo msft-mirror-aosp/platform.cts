@@ -16,11 +16,11 @@
 
 package com.android.tests.hostside.silentupdate;
 
-import com.android.tradefed.util.RunUtil;
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -36,8 +36,8 @@ public class SilentUpdateHostsideTests extends BaseHostJUnit4Test {
     private static final String TEST_PKG = "com.android.tests.silentupdate";
     private static final String TEST_CLS = "com.android.tests.silentupdate.SilentUpdateTests";
     private static final String CURRENT_APK = "SilentInstallCurrent.apk";
-    private static final String R_APK = "SilentInstallR.apk";
     private static final String S_APK = "SilentInstallS.apk";
+    private static final String T_APK = "SilentInstallT.apk";
 
     @Before
     public void installAppOpAllowed() throws Exception {
@@ -90,15 +90,15 @@ public class SilentUpdateHostsideTests extends BaseHostJUnit4Test {
     }
 
     @Test
-    public void updatePreSApp_RequiresUserAction() throws Exception {
-        install(R_APK, TEST_PKG);
-        runDeviceTests(TEST_PKG, TEST_CLS, "updatePreSApp_RequiresUserAction");
+    public void updatePreTApp_RequiresUserAction() throws Exception {
+        install(S_APK, TEST_PKG);
+        runDeviceTests(TEST_PKG, TEST_CLS, "updatePreTApp_RequiresUserAction");
     }
 
     @Test
-    public void updateSApp_RequiresNoUserAction() throws Exception {
-        install(S_APK, TEST_PKG);
-        runDeviceTests(TEST_PKG, TEST_CLS, "updateSApp_RequiresNoUserAction");
+    public void updateTApp_RequiresNoUserAction() throws Exception {
+        install(T_APK, TEST_PKG);
+        runDeviceTests(TEST_PKG, TEST_CLS, "updateTApp_RequiresNoUserAction");
     }
 
     @Test
@@ -112,7 +112,7 @@ public class SilentUpdateHostsideTests extends BaseHostJUnit4Test {
 
     @Test
     public void setRequireUserAction_throwsOnIllegalArgument() throws Exception {
-        install(S_APK, TEST_PKG);
+        install(T_APK, TEST_PKG);
         runDeviceTests(TEST_PKG, TEST_CLS, "setRequireUserAction_throwsOnIllegalArgument");
     }
 
