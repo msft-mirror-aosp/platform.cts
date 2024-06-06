@@ -144,6 +144,8 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final Pattern PERF_METRICS_INTRINSIC_PATTERN =
             Pattern.compile("test_lens_intrinsic_calibration_.*");
 
+    private static final Pattern PERF_METRICS_AEAWB_PATTERN =
+            Pattern.compile("test_ae_awb_regions_.*");
     private static final String REPORT_LOG_NAME = "CtsCameraItsTestCases";
 
     private static final String ZOOM = "zoom";
@@ -629,10 +631,14 @@ public class ItsTestActivity extends DialogTestListActivity {
                     PERF_METRICS_EXTENSION_NIGHT_MODE_PATTERN.matcher(perfMetricsResult);
             boolean nightModeExtensionMetricsMatches = nightModeExtensionMetricsMatcher.matches();
 
+            Matcher aeAwbMetricsMatcher = PERF_METRICS_AEAWB_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean aeAwbMetricsMatches = aeAwbMetricsMatcher.matches();
+
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
                         && !imuDriftMetricsMatches && !distortionMetricsMatches
                         && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
-                        && !nightModeExtensionMetricsMatches) {
+                        && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches) {
                 return false;
             }
 
@@ -683,6 +689,11 @@ public class ItsTestActivity extends DialogTestListActivity {
                     List<String> booleanKeys = Arrays.asList(
                             "samples_principal_points_diff_detected");
                     parsePerfMetrics(perfMetricsResult, obj, floatKeys, booleanKeys,
+                            Collections.emptyList());
+                }
+                if (aeAwbMetricsMatches) {
+                    List<String> floatKeys = Arrays.asList("_change");
+                    parsePerfMetrics(perfMetricsResult, obj, floatKeys, Collections.emptyList(),
                             Collections.emptyList());
                 }
 
