@@ -56,7 +56,7 @@ import java.util.concurrent.Executor;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-@CddTest(requirements = {"3/T-1-1"})
+@CddTest(requirements = {"2.3.3/3/T-1-1"})
 public class TunerDvrTest {
     private static final String TAG = "MediaTunerDvrTest";
     private static final long STATUS_CHECK_INTERVAL_MS = 100L;
