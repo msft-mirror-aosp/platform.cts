@@ -46,6 +46,7 @@ _GREEN_DARK = (0, 190, 0)
 _MAX_ITER = 30
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _RED = (255, 0, 0)
+_VALID_CONTROLLERS = ('arduino', 'external')
 _WIDE_ZOOM = 1
 _ZOOM_STEP = 0.5
 _ZOOM_STEP_REDUCTION = 0.1
@@ -458,9 +459,9 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
       # Initialize rotation rig
       rot_rig['cntl'] = self.rotator_cntl
       rot_rig['ch'] = self.rotator_ch
-      if rot_rig['cntl'].lower() != 'arduino':
+      if rot_rig['cntl'].lower() not in _VALID_CONTROLLERS:
         raise AssertionError(
-            f'You must use the arduino controller for {_NAME}.')
+            f'You must use the {_VALID_CONTROLLERS} controller for {_NAME}.')
 
       # Determine preview size
       preview_size = preview_processing_utils.get_max_preview_test_size(
