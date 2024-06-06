@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.multidisplay;
+package android.server.wm.input;
 
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_FOCUS;
@@ -60,6 +60,7 @@ import android.media.ImageReader;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.BuildUtils;
+import android.server.wm.StateLogger;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
 import android.view.Display;
@@ -71,7 +72,9 @@ import android.view.WindowManager.LayoutParams;
 import androidx.annotation.NonNull;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.DebugInputRule;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -83,10 +86,12 @@ import javax.annotation.concurrent.GuardedBy;
  * Ensure window focus assignment is executed as expected.
  *
  * Build/Install/Run:
- *     atest CtsWindowManagerDeviceMultiDisplay:WindowFocusTests
+ *     atest CtsWindowManagerDeviceInput:WindowFocusTests
  */
 @Presubmit
 public class WindowFocusTests extends WindowManagerTestBase {
+
+    @Rule public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     private static void sendKey(int action, int keyCode, int displayId) {
         final KeyEvent keyEvent = new KeyEvent(action, keyCode);
@@ -390,6 +395,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
     /**
      * Pointer capture could be requested after activity regains focus.
      */
+    @DebugInputRule.DebugInput(bug = 342229227)
     @Test
     public void testPointerCaptureWhenFocus() throws Throwable {
         final AutoEngagePointerCaptureActivity primaryActivity =
@@ -535,10 +541,12 @@ public class WindowFocusTests extends WindowManagerTestBase {
 
         @Override
         public void onPointerCaptureChanged(boolean hasCapture) {
+            StateLogger.logAlways(getLogTag() + " onPointerCaptureChanged: " + hasCapture);
             synchronized (mLockPointerCapture) {
                 mHasPointerCapture = hasCapture;
                 mLockPointerCapture.notify();
             }
+            super.onPointerCaptureChanged(hasCapture);
         }
 
         void waitAndAssertPointerCaptureState(boolean hasCapture) {
@@ -556,6 +564,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
 
         // Should be only called from the main thread.
         void requestPointerCapture() {
+            StateLogger.logAlways(getLogTag() + " requesting pointer capture");
             getWindow().getDecorView().requestPointerCapture();
         }
 

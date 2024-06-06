@@ -28,6 +28,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -57,6 +58,7 @@ import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.DisableAnimationRule;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -101,6 +103,7 @@ public class PackageInstallerCujTestBase {
     private static final String BUTTON_SETTINGS_LABEL = "Settings";
     private static final String BUTTON_UPDATE_LABEL = "Update";
     private static final String TOGGLE_ALLOW_FROM_LABEL = "Allow from";
+    private static final String INSTALLING_LABEL = "Installing";
 
     private static final String ACTION_LAUNCH_INSTALLER =
             "android.packageinstaller.cts.cujinstaller.action.LAUNCH_INSTALLER";
@@ -160,6 +163,8 @@ public class PackageInstallerCujTestBase {
 
     @Before
     public void setup() throws Exception {
+        assumeFalse("The device is not supported", isNotSupportedDevice());
+
         uninstallTestPackage();
         assertTestPackageNotInstalled();
 
@@ -189,7 +194,7 @@ public class PackageInstallerCujTestBase {
     }
 
     @AfterClass
-    public static void teadDownClass() throws Exception {
+    public static void tearDownClass() throws Exception {
         sInstallerResponseReceiver.unregisterReceiver(sContext);
         sInstallerResponseReceiver = null;
         sPackageManager = null;
@@ -382,7 +387,7 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Assert the test packag is installed.
+     * Assert the test package is installed.
      */
     public static void assertTestPackageInstalled() {
         assertThat(isInstalledAndVerifyAppName(TEST_APK_PACKAGE_NAME, TEST_APK_LABEL)).isTrue();
@@ -392,7 +397,7 @@ public class PackageInstallerCujTestBase {
      * Assert the test package has the V2 label is installed.
      */
     public static void assertTestPackageLabelV2Installed() {
-        assertThat(isInstalledAndVerifyAppName(TEST_APK_PACKAGE_NAME, TEST_APK_V2_LABEL)).isTrue();
+        assertThat(isTestPackageLabelV2Installed()).isTrue();
     }
 
     /**
@@ -422,7 +427,10 @@ public class PackageInstallerCujTestBase {
     }
 
     private static void allowInstallIfGPPDialogExists() {
-        UiObject2 more = findObject(BUTTON_GPP_MORE_DETAILS_LABEL, /* checkNull= */ false);
+        final Pattern morePattern = Pattern.compile(BUTTON_GPP_MORE_DETAILS_LABEL,
+                Pattern.CASE_INSENSITIVE);
+        UiObject2 more = findObject(By.text(morePattern), /* checkNull= */ false,
+                /* timeoutMs= */ 10 * 1000);
         if (more != null) {
             more.click();
             waitForUiIdle();
@@ -449,26 +457,78 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Click the Install button and allow install if the GPP dialog exists.
+     * Click the Install button and wait for the dialog to disappear. Also allow install if the
+     * GPP dialog exists.
      */
     public static void clickInstallButton() {
+        clickInstallButton(/* checkInstallingDialog= */ false);
+    }
+
+    /**
+     * Click the Install button and wait for the dialog to disappear. Also allow install if the
+     * GPP dialog exists. If {@code checkInstallingDialog} is true, check the Installing dialog.
+     * Otherwise, don't check the Installing dialog. E.g. The installation via intent triggers
+     * the Installing dialog.
+     */
+    public static void clickInstallButton(boolean checkInstallingDialog) {
         findObject(BUTTON_INSTALL_LABEL).click();
         waitForUiIdle();
-        allowInstallIfGPPDialogExists();
+
+        // wait for the dialog disappear
+        waitUntilObjectGone(BUTTON_INSTALL_LABEL);
+
+        if (checkInstallingDialog) {
+            waitUntilObjectGone(By.textContains(INSTALLING_LABEL));
+        }
+
+        if (!isTestPackageInstalled()) {
+            allowInstallIfGPPDialogExists();
+        }
     }
 
     /**
-     * Click the Update button and wait for the dialog disappears.
+     * Click the Update button and wait for the dialog to disappear. Also allow install if the
+     * GPP dialog exists.
      */
     public static void clickUpdateButton() {
-        findObject(BUTTON_UPDATE_LABEL).click();
-        waitForUiIdle();
-        // wait for the dialog disappear
-        waitUntilObjectGone(BUTTON_UPDATE_LABEL);
+        clickUpdateButton(/* checkInstallingDialog= */ false);
     }
 
     /**
-     * Click the Cancel button and wait for the dialog disappears.
+     * Click the Update button and wait for the dialog to disappear. Also allow install if the
+     * GPP dialog exists. If {@code checkInstallingDialog} is true, check the Installing dialog.
+     * Otherwise, don't check the Installing dialog. E.g. The installation via intent triggers
+     * the Installing dialog.
+     */
+    public static void clickUpdateButton(boolean checkInstallingDialog) {
+        clickUpdateButton(checkInstallingDialog, /* checkGPPDialog= */ true);
+    }
+
+    /**
+     * Click the Update button and wait for the dialog to disappear. If
+     * {@code checkInstallingDialog} is true, check the Installing dialog. Otherwise, don't
+     * check the Installing dialog. E.g. The installation via intent triggers Installing dialog.
+     * If {@code checkGPPDialog} is true, check the GPP dialog. Otherwise, don't check the GPP
+     * dialog. E.g. The installation via intent with package uri doesn't trigger the GPP dialog.
+     */
+    public static void clickUpdateButton(boolean checkInstallingDialog, boolean checkGPPDialog) {
+        findObject(BUTTON_UPDATE_LABEL).click();
+        waitForUiIdle();
+
+        // wait for the dialog disappear
+        waitUntilObjectGone(BUTTON_UPDATE_LABEL);
+
+        if (checkInstallingDialog) {
+            waitUntilObjectGone(By.textContains(INSTALLING_LABEL));
+        }
+
+        if (checkGPPDialog && !isTestPackageLabelV2Installed()) {
+            allowInstallIfGPPDialogExists();
+        }
+    }
+
+    /**
+     * Click the Cancel button and wait for the dialog to disappear.
      */
     public static void clickCancelButton() {
         findObject(BUTTON_CANCEL_LABEL).click();
@@ -478,7 +538,7 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Click the Settings button and wait for the dialog disappears.
+     * Click the Settings button and wait for the dialog to disappear.
      */
     public static void clickSettingsButton() {
         findObject(BUTTON_SETTINGS_LABEL).click();
@@ -496,7 +556,7 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Exit the Allow From Source settings and wait for it disappears.
+     * Exit the Allow From Source settings and wait for it to disappear.
      */
     public static void exitAllowFromSettings() {
         pressBack();
@@ -526,11 +586,16 @@ public class PackageInstallerCujTestBase {
 
     @Nullable
     private static UiObject2 findObject(BySelector bySelector, boolean checkNull) {
+        return findObject(bySelector, checkNull, FIND_OBJECT_TIMEOUT_MS);
+    }
+
+    @Nullable
+    private static UiObject2 findObject(BySelector bySelector, boolean checkNull, long timeoutMs) {
         waitForUiIdle();
 
         UiObject2 object = null;
         long startTime = System.currentTimeMillis();
-        while (startTime + FIND_OBJECT_TIMEOUT_MS > System.currentTimeMillis()) {
+        while (startTime + timeoutMs > System.currentTimeMillis()) {
             try {
                 object = sUiDevice.wait(Until.findObject(bySelector), /* timeout= */ 10 * 1000);
                 if (object != null) {
@@ -611,6 +676,10 @@ public class PackageInstallerCujTestBase {
         }
     }
 
+    private static boolean isTestPackageLabelV2Installed() {
+        return isInstalledAndVerifyAppName(TEST_APK_PACKAGE_NAME, TEST_APK_V2_LABEL);
+    }
+
     private static boolean isInstalledAndVerifyAppName(@NonNull String packageName,
             @NonNull String expectedAppLabel) {
         Log.d(TAG, "Testing if package " + packageName + " is installed for user "
@@ -647,5 +716,13 @@ public class PackageInstallerCujTestBase {
         public void resetResult() {
             mInstallerResponseResult = new CompletableFuture();
         }
+    }
+
+    private static boolean isNotSupportedDevice() {
+        return FeatureUtil.isArc()
+                || FeatureUtil.isAutomotive()
+                || FeatureUtil.isTV()
+                || FeatureUtil.isWatch()
+                || FeatureUtil.isVrHeadset();
     }
 }

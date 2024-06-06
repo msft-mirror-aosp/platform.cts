@@ -151,7 +151,7 @@ public class SurfaceControlInputReceiverTests {
                     waitForWindowOnTop(WAIT_TIME_S, TimeUnit.SECONDS, () -> clientToken));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
-                    () -> clientToken, false /* useGlobalInject */, tappedCoords);
+                    () -> clientToken, tappedCoords);
 
             Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken);
             Point centerCoordRelativeToWindow = new Point(bounds.width() / 2,
@@ -225,9 +225,7 @@ public class SurfaceControlInputReceiverTests {
 
             final Point tapCoord = new Point(bounds.left + bounds.width() / 2,
                     bounds.top + bounds.height() / 2);
-            sendTap(InstrumentationRegistry.getInstrumentation(), tapCoord,
-                    false /* useGlobalInjection */);
-
+            sendTap(InstrumentationRegistry.getInstrumentation(), tapCoord);
 
             final Point centerCoordRelativeToWindow = new Point(bounds.width() / 2,
                     bounds.height() / 2);
@@ -283,7 +281,7 @@ public class SurfaceControlInputReceiverTests {
                             () -> clientToken));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
-                    () -> clientToken, false /* useGlobalInject */, tappedCoords);
+                    () -> clientToken, tappedCoords);
 
             Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken);
             Point centerCoordRelativeToWindow = new Point(bounds.width() / 2,
@@ -322,7 +320,7 @@ public class SurfaceControlInputReceiverTests {
             Point tappedCoords = new Point();
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(helper.mEmbeddedSc);
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
-                    () -> clientToken, false /* useGlobalInject */, tappedCoords);
+                    () -> clientToken, tappedCoords);
             assertTrue("Failed to receive touch event on host",
                     hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
 
@@ -390,8 +388,7 @@ public class SurfaceControlInputReceiverTests {
                             }, WAIT_TIME_S, TimeUnit.SECONDS));
             final Point coord = new Point(bounds.left + bounds.width() / 2,
                     bounds.top + bounds.height() / 2);
-            sendTap(InstrumentationRegistry.getInstrumentation(), coord,
-                    false /* useGlobalInjection */);
+            sendTap(InstrumentationRegistry.getInstrumentation(), coord);
 
             assertTrue("Failed to receive touch event on host",
                     hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
@@ -429,7 +426,7 @@ public class SurfaceControlInputReceiverTests {
             Point tappedCoords = new Point();
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(helper.mEmbeddedSc);
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
-                    () -> clientToken, false /* useGlobalInject */, tappedCoords);
+                    () -> clientToken, tappedCoords);
             assertTrue("Failed to receive touch event on embedded",
                     embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
             Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken);
@@ -481,8 +478,7 @@ public class SurfaceControlInputReceiverTests {
                             }, WAIT_TIME_S, TimeUnit.SECONDS));
             final Point coord = new Point(bounds.left + bounds.width() / 2,
                     bounds.top + bounds.height() / 2);
-            sendTap(InstrumentationRegistry.getInstrumentation(), coord,
-                    false /* useGlobalInjection */);
+            sendTap(InstrumentationRegistry.getInstrumentation(), coord);
 
             assertTrue("Failed to receive touch event on embedded",
                     embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));

@@ -40,7 +40,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleAllowFromSource();
 
-        clickInstallButton();
+        clickInstallButton(/* checkInstallingDialog= */ true);
 
 //        assertInstallerResponseActivityResultOK();
         assertTestPackageInstalled();
@@ -116,7 +116,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         waitForUiIdle();
 
-        clickInstallButton();
+        clickInstallButton(/* checkInstallingDialog= */ true);
 
         assertInstallerResponseActivityResultOK();
         assertTestPackageInstalled();
@@ -176,7 +176,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleAllowFromSource();
 
-        clickUpdateButton();
+        clickUpdateButton(/* checkInstallingDialog= */ true);
 
 //        assertInstallerResponseActivityResultOK();
         assertTestPackageLabelV2Installed();
@@ -262,7 +262,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         waitForUiIdle();
 
-        clickUpdateButton();
+        clickUpdateButton(/* checkInstallingDialog= */ true);
 
         assertInstallerResponseActivityResultOK();
         assertTestPackageLabelV2Installed();
@@ -328,7 +328,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleAllowFromSource();
 
-        clickUpdateButton();
+        clickUpdateButton(/* checkInstallingDialog= */ false, /* checkGPPDialog= */ false);
 
 //        assertInstallerResponseActivityResultOK();
         assertTestPackageInstalled();
@@ -415,7 +415,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         waitForUiIdle();
 
-        clickUpdateButton();
+        clickUpdateButton(/* checkInstallingDialog= */ false, /* checkGPPDialog= */ false);
 
         assertInstallerResponseActivityResultOK();
         assertTestPackageInstalled();
