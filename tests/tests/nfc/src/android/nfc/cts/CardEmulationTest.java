@@ -438,10 +438,11 @@ public class CardEmulationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OBSERVE_MODE)
     public void testSetShouldDefaultToObserveModeShouldDefaultToObserveMode()
             throws InterruptedException {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
         Activity activity = createAndResumeActivity();
         final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
@@ -458,7 +459,7 @@ public class CardEmulationTest {
                     true));
             // Observe mode is set asynchronously, so just wait a bit to let it happen.
             try {
-                CommonTestUtils.waitUntil("Observe mode hasnn't been set", 1,
+                CommonTestUtils.waitUntil("Observe mode hasn't been set", 1,
                         () -> adapter.isObserveModeEnabled());
             } catch (InterruptedException ie) { }
             Assert.assertTrue(adapter.isObserveModeEnabled());
