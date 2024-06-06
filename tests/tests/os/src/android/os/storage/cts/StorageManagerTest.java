@@ -426,7 +426,10 @@ public class StorageManagerTest {
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .executeShellCommand("sm unmount emulated;" + UserHandle.myUserId());
         if (isAutomotive(mContext)) {
-            assertTrue(unmounted.await(45, TimeUnit.SECONDS));
+            // TODO(b/343167829): Remove this conditional casing once the delayed unmount
+            // operation is addressed for Auto. The 65 second duration is explained in
+            // b/331333384#comment48.
+            assertTrue(unmounted.await(65, TimeUnit.SECONDS));
         } else {
             assertTrue(unmounted.await(30, TimeUnit.SECONDS));
         }

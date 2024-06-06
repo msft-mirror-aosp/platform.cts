@@ -26,7 +26,7 @@ import static android.media.MediaFormat.MIMETYPE_VIDEO_AV1;
 import static android.mediapc.cts.CodecTestBase.SELECT_HARDWARE;
 import static android.mediapc.cts.CodecTestBase.SELECT_VIDEO;
 import static android.mediapc.cts.CodecTestBase.getCodecInfo;
-import static android.mediapc.cts.CodecTestBase.getMimesOfAvailableCodecs;
+import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
 import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
 
@@ -103,7 +103,7 @@ public class VideoCodecRequirementsTest {
 
     private Set<String> get4k60HwCodecSet(boolean isEncoder) throws IOException {
         Set<String> codecSet = new HashSet<>();
-        Set<String> codecMediaTypes = getMimesOfAvailableCodecs(SELECT_VIDEO, SELECT_HARDWARE);
+        Set<String> codecMediaTypes = getMediaTypesOfAvailableCodecs(SELECT_VIDEO, SELECT_HARDWARE);
         PerformancePoint PP4k60 = new PerformancePoint(3840, 2160, 60);
         for (String codecMediaType : codecMediaTypes) {
             ArrayList<String> hwVideoCodecs =

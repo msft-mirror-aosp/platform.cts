@@ -30,7 +30,7 @@ import static android.virtualdevice.cts.camera.VirtualCameraUtils.assertImagesSi
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.imageHasColor;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.jpegImageToBitmap;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.loadGolden;
+import static android.virtualdevice.cts.camera.VirtualCameraUtils.loadBitmapFromRaw;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.toFormat;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
@@ -106,7 +106,7 @@ public class VirtualCameraCaptureTest {
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
-            GRANT_RUNTIME_PERMISSIONS);
+            GRANT_RUNTIME_PERMISSIONS).withVirtualCameraSupportCheck();
 
     @Mock
     private VirtualCameraCallback mVirtualCameraCallback;
@@ -232,7 +232,7 @@ public class VirtualCameraCaptureTest {
                         new VirtualCameraUtils.VideoRenderer(R.raw.test_video));
 
                 Bitmap bitmap = jpegImageToBitmap(image);
-                Bitmap golden = loadGolden(R.raw.golden_test_video);
+                Bitmap golden = loadBitmapFromRaw(R.raw.golden_test_video);
                 assertImagesSimilar(bitmap, golden, "media_codec_virtual_camera");
             }
         }

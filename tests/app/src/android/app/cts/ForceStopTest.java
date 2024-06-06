@@ -332,9 +332,14 @@ public final class ForceStopTest {
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
     }
 
+    private void clearHistoricalStartInfo() throws Exception {
+        executeShellCommand("am clear-start-info --user all " + APP_PACKAGE);
+    }
+
     @Test
     @RequiresFlagsEnabled({FLAG_STAY_STOPPED, FLAG_APP_START_INFO})
     public void testApplicationStartInfoWasForceStopped_bindService() throws Exception {
+        clearHistoricalStartInfo();
         // Check bindService after a force-stop
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
@@ -342,8 +347,9 @@ public final class ForceStopTest {
         assertEquals("ForceStop reason is not SERVICE",
                 ApplicationStartInfo.START_REASON_SERVICE, startReason);
 
+        clearHistoricalStartInfo();
         // Check bindService after stop-app
-        executeShellCommand("am stop-app " + APP_PACKAGE);
+        executeShellCommand("am stop-app --user " + mTargetContext.getUserId() + " " + APP_PACKAGE);
         startReason = getStartReasonFromAppPackageService();
         assertNotEquals("ForceStop reason should not be returned, should be -ve",
                 ApplicationStartInfo.START_REASON_SERVICE, startReason);
@@ -355,6 +361,8 @@ public final class ForceStopTest {
     @Test
     @RequiresFlagsEnabled({FLAG_STAY_STOPPED, FLAG_APP_START_INFO})
     public void testApplicationStartInfoWasForceStopped_activity() throws Exception {
+        clearHistoricalStartInfo();
+
         // Check startActivity after a force-stop
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));

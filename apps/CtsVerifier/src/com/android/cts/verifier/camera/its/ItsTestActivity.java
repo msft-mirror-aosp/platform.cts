@@ -62,11 +62,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -125,8 +127,29 @@ public class ItsTestActivity extends DialogTestListActivity {
             Pattern.compile("test_imu_drift_.*");
     private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
             Pattern.compile("test_burst_capture_.*");
+    private static final Pattern PERF_METRICS_LOW_LIGHT_BOOST_PATTERN =
+            Pattern.compile("test_low_light_boost_.*");
+    private static final Pattern PERF_METRICS_EXTENSION_NIGHT_MODE_PATTERN =
+            Pattern.compile("test_night_extension_.*");
 
+    private static final String PERF_METRICS_KEY_CHART_LUMA = "chart_luma";
+    private static final String PERF_METRICS_KEY_AVG_LUMA = "avg_luma";
+    private static final String PERF_METRICS_KEY_DELTA_AVG_LUMA = "delta_avg_luma";
+    private static final String PERF_METRICS_KEY_PREFIX_NIGHT = "night_extension";
+    private static final String PERF_METRICS_KEY_PREFIX_LOW_LIGHT = "low_light_boost";
+
+    private static final Pattern PERF_METRICS_DISTORTION_PATTERN =
+            Pattern.compile("test_preview_distortion_.*");
+
+    private static final Pattern PERF_METRICS_INTRINSIC_PATTERN =
+            Pattern.compile("test_lens_intrinsic_calibration_.*");
+
+    private static final Pattern PERF_METRICS_AEAWB_PATTERN =
+            Pattern.compile("test_ae_awb_regions_.*");
     private static final String REPORT_LOG_NAME = "CtsCameraItsTestCases";
+
+    private static final String ZOOM = "zoom";
+    private static final String TEST_PATTERN = "^test_";
 
     private final ResultReceiver mResultsReceiver = new ResultReceiver();
     private final BroadcastReceiver mCommandReceiver = new BroadcastReceiver() {
@@ -552,6 +575,29 @@ public class ItsTestActivity extends DialogTestListActivity {
             return true;
         }
 
+        private void parsePerfMetrics(String perfMetricsResult, JSONObject obj,
+                List<String> floatKeys, List<String> booleanKeys, List<String> integerKeys)
+                throws org.json.JSONException {
+            String result = perfMetricsResult.replaceFirst(TEST_PATTERN, "");
+            String resultKey = result.split(":")[0].strip();
+            String strValue = result.split(":")[1].strip();
+
+            if (strValue.equalsIgnoreCase("None")) {
+                obj.put(resultKey, strValue);
+            } else if (floatKeys.stream().anyMatch(resultKey::contains)) {
+                float value = Float.parseFloat(strValue);
+                obj.put(resultKey, value);
+            } else if (booleanKeys.stream().anyMatch(resultKey::contains)) {
+                boolean value = Boolean.parseBoolean(strValue);
+                obj.put(resultKey, value);
+            } else if (integerKeys.stream().anyMatch(resultKey::contains)) {
+                int value = Integer.parseInt(strValue);
+                obj.put(resultKey, value);
+            } else {
+                obj.put(resultKey, strValue);
+            }
+        }
+
         private boolean matchPerfMetricsResult(String perfMetricsResult, JSONObject obj) {
             Matcher yuvPlusJpegMetricsMatcher = PERF_METRICS_YUV_PLUS_JPEG_PATTERN.matcher(
                         perfMetricsResult);
@@ -569,8 +615,30 @@ public class ItsTestActivity extends DialogTestListActivity {
                         perfMetricsResult);
             boolean burstCaptureMetricsMatches = burstCaptureMetricsMatcher.matches();
 
+            Matcher distortionMetricsMatcher = PERF_METRICS_DISTORTION_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean distortionMetricsMatches = distortionMetricsMatcher.matches();
+
+            Matcher intrinsicMetricsMatcher = PERF_METRICS_INTRINSIC_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean intrinsicMetricsMatches = intrinsicMetricsMatcher.matches();
+
+            Matcher lowLightBoostMetricsMatcher =
+                    PERF_METRICS_LOW_LIGHT_BOOST_PATTERN.matcher(perfMetricsResult);
+            boolean lowLightBoostMetricsMatches = lowLightBoostMetricsMatcher.matches();
+
+            Matcher nightModeExtensionMetricsMatcher =
+                    PERF_METRICS_EXTENSION_NIGHT_MODE_PATTERN.matcher(perfMetricsResult);
+            boolean nightModeExtensionMetricsMatches = nightModeExtensionMetricsMatcher.matches();
+
+            Matcher aeAwbMetricsMatcher = PERF_METRICS_AEAWB_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean aeAwbMetricsMatches = aeAwbMetricsMatcher.matches();
+
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
-                        && !imuDriftMetricsMatches) {
+                        && !imuDriftMetricsMatches && !distortionMetricsMatches
+                        && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
+                        && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches) {
                 return false;
             }
 
@@ -592,7 +660,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                 if (imuDriftMetricsMatches) {
                     Log.i(TAG, "imu drift matches");
                     // remove "test_" from the result
-                    String result = perfMetricsResult.replaceFirst("^test_","");
+                    String result = perfMetricsResult.replaceFirst(TEST_PATTERN, "");
                     String resultKey = result.split(":")[0].strip();
                     if (resultKey.contains("seconds") || resultKey.contains("hz")) {
                         float value = Float.parseFloat(result.split(":")[1].strip());
@@ -608,6 +676,36 @@ public class ItsTestActivity extends DialogTestListActivity {
                     float value = Float.parseFloat(burstCaptureMetricsMatcher.group(1));
                     obj.put("burst_capture_max_frame_time_minus_frameDuration_ns", value);
                 }
+
+                if (distortionMetricsMatches) {
+                    List<String> floatKeys = Arrays.asList(ZOOM, "distortion_error",
+                            "chart_coverage");
+                    List<String> integerKeys = Arrays.asList("physical_id");
+                    parsePerfMetrics(perfMetricsResult, obj, floatKeys, Collections.emptyList(),
+                            integerKeys);
+                }
+                if (intrinsicMetricsMatches) {
+                    List<String> floatKeys = Arrays.asList("max_principal_point_diff");
+                    List<String> booleanKeys = Arrays.asList(
+                            "samples_principal_points_diff_detected");
+                    parsePerfMetrics(perfMetricsResult, obj, floatKeys, booleanKeys,
+                            Collections.emptyList());
+                }
+                if (aeAwbMetricsMatches) {
+                    List<String> floatKeys = Arrays.asList("_change");
+                    parsePerfMetrics(perfMetricsResult, obj, floatKeys, Collections.emptyList(),
+                            Collections.emptyList());
+                }
+
+                if (lowLightBoostMetricsMatches) {
+                    Log.i(TAG, "low light boost matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_LOW_LIGHT, perfMetricsResult, obj);
+                }
+
+                if (nightModeExtensionMetricsMatches) {
+                    Log.i(TAG, "night mode extension matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_NIGHT, perfMetricsResult, obj);
+                }
             } catch (org.json.JSONException e) {
                 Log.e(TAG, "Error when serializing the metrics into a JSONObject" , e);
             }
@@ -616,6 +714,31 @@ public class ItsTestActivity extends DialogTestListActivity {
         }
     }
 
+    private void addPerfMetricsResult(String keyPrefix, String perfMetricsResult,
+            JSONObject obj) throws org.json.JSONException {
+        // remove "test_" from the result
+        String result = perfMetricsResult.replaceFirst("^test_", "");
+        String resultKey = result.split(":")[0].strip();
+        String value = result.split(":")[1].strip();
+        if (resultKey.contains(PERF_METRICS_KEY_CHART_LUMA)) {
+            int[] chartLumaValues = Arrays.stream(value.substring(1, value.length() - 1)
+                    .split(","))
+                    .map(String::trim)
+                    .mapToInt(Integer::parseInt)
+                    .toArray();
+            JSONArray chartLumaValuesJson = new JSONArray();
+            for (int luma : chartLumaValues) {
+                chartLumaValuesJson.put(luma);
+            }
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_CHART_LUMA, chartLumaValuesJson);
+        } else if (resultKey.contains(PERF_METRICS_KEY_DELTA_AVG_LUMA)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_DELTA_AVG_LUMA, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_AVG_LUMA)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_AVG_LUMA, floatValue);
+        }
+    }
 
     private class FoldStateListener implements
             DeviceStateManager.DeviceStateCallback {

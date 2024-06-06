@@ -180,9 +180,9 @@ public class PackageWatchdogTest {
 
         mPackageWatchdog.startObservingHealth(mTestObserver1, Arrays.asList(APP_A), SHORT_DURATION);
 
-        mPackageWatchdog.onPackageFailure(Arrays.asList(new VersionedPackage(APP_A, VERSION_CODE)),
+        raiseFatalFailure(Arrays.asList(new VersionedPackage(APP_A, VERSION_CODE)),
                 PackageWatchdog.FAILURE_REASON_EXPLICIT_HEALTH_CHECK);
-        mPackageWatchdog.onPackageFailure(Arrays.asList(new VersionedPackage(APP_B, VERSION_CODE)),
+        raiseFatalFailure(Arrays.asList(new VersionedPackage(APP_B, VERSION_CODE)),
                 PackageWatchdog.FAILURE_REASON_NATIVE_CRASH);
 
         assertThat(mLatch1.await(5, TimeUnit.SECONDS)).isTrue();
@@ -238,6 +238,12 @@ public class PackageWatchdogTest {
         }
         for (int i = 0; i < failureCount; i++) {
             mPackageWatchdog.onPackageFailure(failingPackages, failureReason);
+        }
+        try {
+            // Wait for DEFAULT_MITIGATION_WINDOW_MS before applying another mitigation
+            Thread.sleep(TimeUnit.SECONDS.toMillis(6));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
