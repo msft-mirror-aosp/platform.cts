@@ -150,6 +150,9 @@ public class ItsTestActivity extends DialogTestListActivity {
 
     private static final String ZOOM = "zoom";
     private static final String TEST_PATTERN = "^test_";
+    private static final Pattern PERF_METRICS_MULTICAM_PATTERN =
+            Pattern.compile("test_multi_camera_switch_.*");
+
 
     private final ResultReceiver mResultsReceiver = new ResultReceiver();
     private final BroadcastReceiver mCommandReceiver = new BroadcastReceiver() {
@@ -635,10 +638,16 @@ public class ItsTestActivity extends DialogTestListActivity {
                     perfMetricsResult);
             boolean aeAwbMetricsMatches = aeAwbMetricsMatcher.matches();
 
+            Matcher multiCamMetricsMatcher = PERF_METRICS_MULTICAM_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean multiCamMetricsMatches = multiCamMetricsMatcher.matches();
+
+
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
                         && !imuDriftMetricsMatches && !distortionMetricsMatches
                         && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
-                        && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches) {
+                        && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches
+                        && !multiCamMetricsMatches) {
                 return false;
             }
 
@@ -706,11 +715,30 @@ public class ItsTestActivity extends DialogTestListActivity {
                     Log.i(TAG, "night mode extension matches");
                     addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_NIGHT, perfMetricsResult, obj);
                 }
+
+                if (multiCamMetricsMatches) {
+                    Log.i(TAG, "multi cam metrics matches");
+                    addMultiCamPerfMetricsResult(perfMetricsResult, obj);
+                }
             } catch (org.json.JSONException e) {
                 Log.e(TAG, "Error when serializing the metrics into a JSONObject" , e);
             }
 
             return true;
+        }
+    }
+
+    private void addMultiCamPerfMetricsResult(String perfMetricsResult,
+            JSONObject obj) throws org.json.JSONException {
+        String[] parts = perfMetricsResult.split(":", 2); // Limit to 2 to avoid splitting values
+        if (parts.length == 2) {
+            String key = parts[0].trim().replaceFirst(TEST_PATTERN, "");
+            String value = parts[1].trim();
+            Log.i(TAG, "Key: " + key);
+            Log.i(TAG, "Value: " + value);
+            obj.put(key, value);
+        } else {
+            Log.i(TAG, "Invalid output string");
         }
     }
 
