@@ -43,6 +43,8 @@ import android.telecom.cts.screeningtestapp.CtsCallScreeningService;
 import android.telecom.cts.screeningtestapp.ICallScreeningControl;
 import android.text.TextUtils;
 
+import androidx.test.filters.FlakyTest;
+
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -242,6 +244,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         assertTrue(mCallScreeningControl.waitForBind());
     }
 
+    @FlakyTest
     public void testNoPermissionAndNoContactOutgoing() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
