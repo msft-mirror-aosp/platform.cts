@@ -426,6 +426,10 @@ public class PackageInstallerCujTestBase {
         waitForUiIdle();
     }
 
+    private static void clickAndWaitForNewWindow(UiObject2 uiObject2) {
+        uiObject2.clickAndWait(Until.newWindow(), WAIT_OBJECT_GONE_TIMEOUT_MS);
+    }
+
     private static void allowInstallIfGPPDialogExists() {
         final Pattern morePattern = Pattern.compile(BUTTON_GPP_MORE_DETAILS_LABEL,
                 Pattern.CASE_INSENSITIVE);
@@ -452,8 +456,7 @@ public class PackageInstallerCujTestBase {
      */
     public static void assertInstallSuccessDialogAndClickDoneButton() throws Exception {
         findObject(By.textContains(APP_INSTALLED_LABEL), /* checkNull= */ true);
-        findObject(BUTTON_DONE_LABEL).click();
-        waitForUiIdle();
+        clickAndWaitForNewWindow(findObject(BUTTON_DONE_LABEL));
     }
 
     /**
@@ -471,11 +474,7 @@ public class PackageInstallerCujTestBase {
      * the Installing dialog.
      */
     public static void clickInstallButton(boolean checkInstallingDialog) {
-        findObject(BUTTON_INSTALL_LABEL).click();
-        waitForUiIdle();
-
-        // wait for the dialog disappear
-        waitUntilObjectGone(BUTTON_INSTALL_LABEL);
+        clickAndWaitForNewWindow(findObject(BUTTON_INSTALL_LABEL));
 
         if (checkInstallingDialog) {
             waitUntilObjectGone(By.textContains(INSTALLING_LABEL));
@@ -512,11 +511,7 @@ public class PackageInstallerCujTestBase {
      * dialog. E.g. The installation via intent with package uri doesn't trigger the GPP dialog.
      */
     public static void clickUpdateButton(boolean checkInstallingDialog, boolean checkGPPDialog) {
-        findObject(BUTTON_UPDATE_LABEL).click();
-        waitForUiIdle();
-
-        // wait for the dialog disappear
-        waitUntilObjectGone(BUTTON_UPDATE_LABEL);
+        clickAndWaitForNewWindow(findObject(BUTTON_UPDATE_LABEL));
 
         if (checkInstallingDialog) {
             waitUntilObjectGone(By.textContains(INSTALLING_LABEL));
@@ -531,28 +526,22 @@ public class PackageInstallerCujTestBase {
      * Click the Cancel button and wait for the dialog to disappear.
      */
     public static void clickCancelButton() {
-        findObject(BUTTON_CANCEL_LABEL).click();
-        waitForUiIdle();
-        // wait for the dialog disappear
-        waitUntilObjectGone(BUTTON_CANCEL_LABEL);
+        clickAndWaitForNewWindow(findObject(BUTTON_CANCEL_LABEL));
     }
 
     /**
      * Click the Settings button and wait for the dialog to disappear.
      */
     public static void clickSettingsButton() {
-        findObject(BUTTON_SETTINGS_LABEL).click();
-        waitForUiIdle();
-        // wait for the dialog disappear
-        waitUntilObjectGone(BUTTON_SETTINGS_LABEL);
+        clickAndWaitForNewWindow(findObject(BUTTON_SETTINGS_LABEL));
     }
 
     /**
      * Toggle the Allow From Source to grant the permission to the CUJ Installer.
      */
     public static void toggleAllowFromSource() {
-        findObject(By.textContains(TOGGLE_ALLOW_FROM_LABEL), /* checkNull= */ true).click();
-        waitForUiIdle();
+        clickAndWaitForNewWindow(
+                findObject(By.textContains(TOGGLE_ALLOW_FROM_LABEL), /* checkNull= */ true));
     }
 
     /**
@@ -615,11 +604,6 @@ public class PackageInstallerCujTestBase {
             assertWithMessage("Can't find object " + bySelector).that(object).isNotNull();
         }
         return object;
-    }
-
-    private static void waitUntilObjectGone(String name) {
-        final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
-        waitUntilObjectGone(By.text(namePattern));
     }
 
     private static void waitUntilObjectGone(BySelector bySelector) {
