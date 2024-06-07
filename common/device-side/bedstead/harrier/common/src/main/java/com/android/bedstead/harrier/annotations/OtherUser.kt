@@ -33,6 +33,7 @@ import com.android.bedstead.harrier.UserType
 @Retention(
     AnnotationRetention.RUNTIME
 )
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 annotation class OtherUser(
     val value: UserType,
     /**
