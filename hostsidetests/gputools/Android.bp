@@ -19,6 +19,7 @@ package {
 
 java_test_host {
     name: "CtsGpuToolsHostTestCases",
+    team: "trendy_team_android_gpu",
     srcs: ["src/**/*.java"],
     // tag this module as a cts test artifact
     test_suites: [
