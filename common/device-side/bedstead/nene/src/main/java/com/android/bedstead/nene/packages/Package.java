@@ -16,6 +16,7 @@
 
 package com.android.bedstead.nene.packages;
 
+import static android.content.pm.ApplicationInfo.FLAG_STOPPED;
 import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
 import static android.content.pm.PackageManager.GET_PERMISSIONS;
 import static android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES;
@@ -24,6 +25,7 @@ import static android.content.pm.PermissionInfo.PROTECTION_DANGEROUS;
 import static android.content.pm.PermissionInfo.PROTECTION_FLAG_DEVELOPMENT;
 import static android.os.Build.VERSION_CODES.P;
 import static android.os.Build.VERSION_CODES.S;
+import static android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM;
 import static android.os.Process.myUid;
 
 import static com.android.bedstead.permissions.CommonPermissions.CHANGE_APP_IDLE_STATE;
@@ -738,8 +740,6 @@ public final class Package {
                     TestApis.context().androidContextAsUser(user)
                             .getSystemService(ActivityManager.class);
 
-            PackageManager userPackageManager =
-                    TestApis.context().androidContextAsUser(user).getPackageManager();
             boolean shouldCheckPreviousProcess = runningProcess() != null;
             // In most cases this should work first time, however if a user restriction has been
             // recently removed we may need to retry
@@ -748,7 +748,7 @@ public final class Package {
 
             Poll.forValue("Application flag", () -> {
                 userActivityManager.forceStopPackage(mPackageName);
-                return userPackageManager.isPackageStopped(mPackageName);
+                return isStopped(user);
             }).toMeet(packageStopped -> !shouldCheckPreviousProcess || packageStopped
                     || previousPid != runningProcess().pid())
             .errorOnFail("Expected application to become stopped")
@@ -775,7 +775,13 @@ public final class Package {
     public boolean isStopped(UserReference user) {
         PackageManager pm = TestApis.context().androidContextAsUser(user).getPackageManager();
         try {
-            return pm.isPackageStopped(mPackageName);
+            if (Versions.meetsMinimumSdkVersionRequirement(VANILLA_ICE_CREAM)) {
+                return pm.isPackageStopped(mPackageName);
+            } else {
+                return (pm.getPackageInfo(mPackageName,
+                        PackageManager.GET_META_DATA)
+                        .applicationInfo.flags & FLAG_STOPPED) == FLAG_STOPPED;
+            }
         } catch (PackageManager.NameNotFoundException e) {
             throw new IllegalStateException(e);
         }

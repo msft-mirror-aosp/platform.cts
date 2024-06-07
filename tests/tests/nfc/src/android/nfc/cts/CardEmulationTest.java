@@ -438,10 +438,11 @@ public class CardEmulationTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OBSERVE_MODE)
     public void testSetShouldDefaultToObserveModeShouldDefaultToObserveMode()
             throws InterruptedException {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
         Activity activity = createAndResumeActivity();
         final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
@@ -458,7 +459,7 @@ public class CardEmulationTest {
                     true));
             // Observe mode is set asynchronously, so just wait a bit to let it happen.
             try {
-                CommonTestUtils.waitUntil("Observe mode hasnn't been set", 1,
+                CommonTestUtils.waitUntil("Observe mode hasn't been set", 1,
                         () -> adapter.isObserveModeEnabled());
             } catch (InterruptedException ie) { }
             Assert.assertTrue(adapter.isObserveModeEnabled());
@@ -480,14 +481,27 @@ public class CardEmulationTest {
             Assert.assertTrue(cardEmulation.setPreferredService(activity,
                     new ComponentName(mContext,
                             CtsMyHostApduService.class)));
-            ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(6);
+            ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(4);
             frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_ON));
             frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_A));
+            frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_B));
             frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_OFF));
             ensurePreferredService(CtsMyHostApduService.class);
-            notifyPollingLoopAndWait(frames, CtsMyHostApduService.class.getName());
+            sCurrentPollLoopReceiver = new PollLoopReceiver(new ArrayList<PollingFrame>(0), null);
+            for (PollingFrame frame : frames) {
+                adapter.notifyPollingLoop(frame);
+            }
+            synchronized (sCurrentPollLoopReceiver) {
+                try {
+                    sCurrentPollLoopReceiver.wait(5000);
+                } catch (InterruptedException ie) {
+                    Assert.assertNull(ie);
+                }
+            }
+            sCurrentPollLoopReceiver.test();
+            sCurrentPollLoopReceiver = null;
         } finally {
-            Assert.assertTrue(cardEmulation.unsetPreferredService(activity));
+            cardEmulation.unsetPreferredService(activity);
             activity.finish();
             adapter.notifyHceDeactivated();
         }

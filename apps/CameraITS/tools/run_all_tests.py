@@ -156,7 +156,8 @@ _SCENE_REQ = types.MappingProxyType({
                    'See tests/scene_video/scene_video.mp4',
 })
 
-SUB_CAMERA_TESTS = types.MappingProxyType({
+# Made mutable to allow for test augmentation based on first API level
+SUB_CAMERA_TESTS = {
     'scene0': (
         'test_jitter',
         'test_metadata',
@@ -189,7 +190,7 @@ SUB_CAMERA_TESTS = types.MappingProxyType({
     'sensor_fusion': (
         'test_sensor_fusion',
     ),
-})
+}
 
 _LIGHTING_CONTROL_TESTS = (
     'test_auto_flash.py',
@@ -519,6 +520,14 @@ def is_device_folded(device_id):
     return True
   return False
 
+def augment_sub_camera_tests(first_api_level):
+  """Adds certain tests to SUB_CAMERA_TESTS depending on first_api_level.
+  Args:
+    first_api_level: First api level of the device.
+  """
+  if (first_api_level >= its_session_utils.ANDROID15_API_LEVEL):
+    logging.debug('Augmenting sub camera tests')
+    SUB_CAMERA_TESTS['scene6'] = ('test_in_sensor_zoom',)
 
 def main():
   """Run all the Camera ITS automated tests.
@@ -609,6 +618,9 @@ def main():
   device_id = get_device_serial_number('dut', config_file_contents)
   # Enable external storage on DUT to send summary report to CtsVerifier.apk
   enable_external_storage(device_id)
+
+  #Add to SUB_CAMERA_TESTS depending on first_api_level
+  augment_sub_camera_tests(its_session_utils.get_first_api_level(device_id))
 
   # Verify that CTS Verifier is installed
   its_session_utils.check_apk_installed(device_id, CTS_VERIFIER_PACKAGE_NAME)

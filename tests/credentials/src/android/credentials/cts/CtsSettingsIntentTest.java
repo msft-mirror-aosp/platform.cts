@@ -35,6 +35,7 @@ import android.credentials.cts.testcore.CtsCredentialManagerUtils;
 import android.credentials.cts.testcore.DeviceConfigStateRequiredRule;
 import android.net.Uri;
 import android.os.StrictMode;
+import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -53,14 +54,12 @@ import androidx.test.uiautomator.UiDevice;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.RequiredFeatureRule;
 
-import com.google.common.time.Sleeper;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.time.Duration;
+import java.util.function.BooleanSupplier;
 
 @Presubmit
 @AppModeFull(reason = "Service-specific test")
@@ -181,9 +180,7 @@ public class CtsSettingsIntentTest {
                     activity.startSettingsActivity(intent);
                 });
 
-        Sleeper.defaultSleeper().sleep(Duration.ofSeconds(2));
-
-        assertThat(hasViewWithText("Test Provider Service Alternate")).isTrue();
+        assertThat(hasViewWithText("Test Provider Service Alternate", true)).isTrue();
         assertThat(hasViewWithText("Additional providers")).isFalse();
     }
 
@@ -192,6 +189,25 @@ public class CtsSettingsIntentTest {
         Log.v(TAG, "hasViewWithText(): " + name);
 
         return mDevice.findObject(By.text(name)) != null;
+    }
+
+    /** Returns true if there is a view with the supplied text on the screen with timeout */
+    private boolean hasViewWithText(String name, final boolean expectResult) {
+        return waitForConditionWithTimeout(expectResult, () -> {
+            synchronized (mDevice) {
+                return mDevice.findObject(By.text(name)) != null;
+            }
+        });
+    }
+
+    private boolean waitForConditionWithTimeout(final boolean expectResult,
+            BooleanSupplier condition) {
+        // Max Wait time is 5000ms.
+        final long deadline = SystemClock.uptimeMillis() + 5000;
+        do {
+            SystemClock.sleep(100);
+        } while (condition.getAsBoolean() != expectResult && SystemClock.uptimeMillis() < deadline);
+        return condition.getAsBoolean();
     }
 
     private Intent newSettingsIntent(String action) {

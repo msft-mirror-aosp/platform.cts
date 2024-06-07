@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsHostsideTvTests",
+    team: "trendy_team_tv_os",
     defaults: ["cts_defaults"],
     // Only compile source java files in this apk.
     srcs: ["src/**/*.java"],

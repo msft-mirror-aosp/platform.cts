@@ -64,6 +64,7 @@ java_library_host {
         "src/com/android/cts/apimap/**/*.java",
         "src/com/android/cts/ctsprofiles/**/*.java",
     ],
+    java_resource_dirs: ["res"],
     static_libs: [
         "apache-commons-math3",
         "jsr305",

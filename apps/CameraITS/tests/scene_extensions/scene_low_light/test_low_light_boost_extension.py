@@ -47,6 +47,9 @@ _TABLET_BRIGHTNESS_FRONT_CAMERA = '12'  # Target brightness on a supported
                                         # tablet
 _TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 
+_AVG_DELTA_LUMINANCE_THRESH = 18
+_AVG_LUMINANCE_THRESH = 70
+
 _CAPTURE_REQUEST = {
     'android.control.mode': _CONTROL_MODE_AUTO,
     'android.control.aeMode': _AE_LOW_LIGHT_BOOST_MODE,
@@ -80,7 +83,11 @@ def _capture_and_analyze(cam, file_stem, camera_id, preview_size, extension,
   img_rgb = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
   if mirror_output:
     img_rgb = cv2.flip(img_rgb, 1)
-  low_light_utils.analyze_low_light_scene_capture(file_stem, img_rgb)
+  low_light_utils.analyze_low_light_scene_capture(
+      file_stem,
+      img_rgb,
+      _AVG_LUMINANCE_THRESH,
+      _AVG_DELTA_LUMINANCE_THRESH)
 
 
 class LowLightBoostTest(its_base_test.ItsBaseTest):
@@ -206,7 +213,7 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
         logging.debug('target_preview_size: %s', target_preview_size)
 
         logging.debug('capture frame using camera2')
-        file_stem = f'{test_name}_camera2'
+        file_stem = f'{test_name}_{self.camera_id}_camera2'
         _capture_and_analyze(cam, file_stem, self.camera_id,
                              target_preview_size, _EXTENSION_NONE,
                              should_mirror)
@@ -219,7 +226,7 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
         logging.debug('target_preview_size: %s', target_preview_size)
 
         logging.debug('capture frame using night mode extension')
-        file_stem = f'{test_name}_camera_extension'
+        file_stem = f'{test_name}_{self.camera_id}_camera_extension'
         _capture_and_analyze(cam, file_stem, self.camera_id,
                              target_preview_size, _EXTENSION_NIGHT,
                              should_mirror)

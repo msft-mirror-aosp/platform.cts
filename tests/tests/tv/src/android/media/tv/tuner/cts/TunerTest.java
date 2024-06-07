@@ -153,7 +153,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-@CddTest(requirements = {"3/T-1-1"})
+@CddTest(requirements = {"2.3.3/3/T-1-1"})
 public class TunerTest {
     private static final String TAG = "MediaTunerTest";
 

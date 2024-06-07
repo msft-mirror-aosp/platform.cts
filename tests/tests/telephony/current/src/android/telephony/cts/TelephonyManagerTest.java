@@ -6995,17 +6995,23 @@ public class TelephonyManagerTest {
             return;
         }
 
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(true));
-        boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
-        assertTrue(enabled);
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(true));
+            boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
+            assertTrue(enabled);
 
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(false));
-        enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
-        assertFalse(enabled);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(false));
+            enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
+            assertFalse(enabled);
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test
@@ -7021,15 +7027,21 @@ public class TelephonyManagerTest {
             return;
         }
 
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.setEnableCellularIdentifierDisclosureNotifications(true);
-                }
-        );
+        try {
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.setEnableCellularIdentifierDisclosureNotifications(true);
+                    }
+            );
 
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.isCellularIdentifierDisclosureNotificationsEnabled();
-                }
-        );
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.isCellularIdentifierDisclosureNotificationsEnabled();
+                    }
+            );
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test
@@ -7092,18 +7104,23 @@ public class TelephonyManagerTest {
                     "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
         }
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setNullCipherNotificationsEnabled(true));
+            boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isNullCipherNotificationsEnabled());
+            assertTrue(enabled);
 
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setNullCipherNotificationsEnabled(true));
-        boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isNullCipherNotificationsEnabled());
-        assertTrue(enabled);
-
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setNullCipherNotificationsEnabled(false));
-        enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isNullCipherNotificationsEnabled());
-        assertFalse(enabled);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setNullCipherNotificationsEnabled(false));
+            enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isNullCipherNotificationsEnabled());
+            assertFalse(enabled);
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test
@@ -7119,15 +7136,20 @@ public class TelephonyManagerTest {
             return;
         }
 
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.setNullCipherNotificationsEnabled(true);
-                }
-        );
-
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.isNullCipherNotificationsEnabled();
-                }
-        );
+        try {
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.setNullCipherNotificationsEnabled(true);
+                    }
+            );
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.isNullCipherNotificationsEnabled();
+                    }
+            );
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test

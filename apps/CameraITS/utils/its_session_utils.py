@@ -2931,6 +2931,15 @@ def remove_frame_files(dir_name, save_files_list=None):
         os.remove(image)
 
 
+def remove_file(file_name_with_path):
+  """Removes file at given path.
+
+  Args:
+    file_name_with_path: string, filename with path.
+  """
+  remove_mp4_file(file_name_with_path)
+
+
 def remove_mp4_file(file_name_with_path):
   """Removes the mp4 file at given path.
 

@@ -15,6 +15,8 @@
  */
 package com.android.compatibility.common.deviceinfo;
 
+import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
+
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.admin.DevicePolicyManager;
@@ -28,10 +30,12 @@ import android.content.pm.PermissionInfo;
 import android.os.Build;
 import android.os.Process;
 
+import androidx.annotation.NonNull;
+
 import com.android.compatibility.common.util.DeviceInfoStore;
 import com.android.compatibility.common.util.PackageUtil;
-
-import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
+import com.android.compatibility.common.util.SystemUtil;
+import com.android.modules.utils.build.SdkLevel;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -110,6 +114,10 @@ public class PackageDeviceInfo extends DeviceInfo {
         "android.intent.category.MASTER_CLEAR.permission.C2D_MESSAGE"
     }));
 
+    private static final String SHARED_UID_ALLOWLIST = "shared_uid_allowlist";
+    private static final String PACKAGES = "packages";
+    private static final String SHARED_USER_NAME = "shared_user_name";
+
 
     @Override
     protected void collectDeviceInfo(DeviceInfoStore store) throws Exception {
@@ -168,6 +176,10 @@ public class PackageDeviceInfo extends DeviceInfo {
             store.endGroup();
         }
         store.endArray(); // "package"
+
+        if (SdkLevel.isAtLeastV()) {
+            collectSharedUidAllowlist(store);
+        }
     }
 
     private static void collectRequestedPermissions(DeviceInfoStore store,
@@ -403,5 +415,27 @@ public class PackageDeviceInfo extends DeviceInfo {
                 () -> roleManager.getRoleHolders(roleName),
                         Manifest.permission.MANAGE_ROLE_HOLDERS);
     }
-}
 
+    private static void collectSharedUidAllowlist(@NonNull DeviceInfoStore store)
+            throws IOException {
+        final String output = SystemUtil.runShellCommandOrThrow("pm get-shared-uid-allowlist")
+                .trim();
+        store.startGroup(SHARED_UID_ALLOWLIST);
+        store.startArray(PACKAGES);
+        for (String line : output.split("\n")) {
+            line = line.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            final String[] fields = line.split(" ");
+            final String packageName = fields[0];
+            final String sharedUserName = fields[1];
+            store.startGroup();
+            store.addResult(NAME, packageName);
+            store.addResult(SHARED_USER_NAME, sharedUserName);
+            store.endGroup();
+        }
+        store.endArray(); // "packages"
+        store.endGroup(); // "shared_uid_allowlist"
+    }
+}

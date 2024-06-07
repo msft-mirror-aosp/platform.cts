@@ -46,6 +46,7 @@ _GREEN_DARK = (0, 190, 0)
 _MAX_ITER = 30
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _RED = (255, 0, 0)
+_VALID_CONTROLLERS = ('arduino', 'external')
 _WIDE_ZOOM = 1
 _ZOOM_STEP = 0.5
 _ZOOM_STEP_REDUCTION = 0.1
@@ -458,9 +459,9 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
       # Initialize rotation rig
       rot_rig['cntl'] = self.rotator_cntl
       rot_rig['ch'] = self.rotator_ch
-      if rot_rig['cntl'].lower() != 'arduino':
+      if rot_rig['cntl'].lower() not in _VALID_CONTROLLERS:
         raise AssertionError(
-            f'You must use the arduino controller for {_NAME}.')
+            f'You must use the {_VALID_CONTROLLERS} controller for {_NAME}.')
 
       # Determine preview size
       preview_size = preview_processing_utils.get_max_preview_test_size(
@@ -512,13 +513,13 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
 
         # Don't change print to logging. Used for KPI.
         print(f'{_NAME}_{z_str}_zoom: ', zoom)
-        print(f'{_NAME}_{z_str}_camera_id: ', cam_id)
+        print(f'{_NAME}_{z_str}_physical_id: ', cam_id)
         print(f'{_NAME}_{z_str}_chkr_distortion_error: ', chkr_distortion_err)
         print(f'{_NAME}_{z_str}_chkr_chart_coverage: ', chkr_chart_coverage)
         print(f'{_NAME}_{z_str}_aruco_distortion_error: ', arc_distortion_err)
         print(f'{_NAME}_{z_str}_aruco_chart_coverage: ', arc_chart_coverage)
         logging.debug('%s_%s_zoom: %s', _NAME, z_str, zoom)
-        logging.debug('%s_%s_camera_id: %s', _NAME, z_str, cam_id)
+        logging.debug('%s_%s_physical_id: %s', _NAME, z_str, cam_id)
         logging.debug('%s_%s_chkr_distortion_error: %s', _NAME, z_str,
                       chkr_distortion_err)
         logging.debug('%s_%s_chkr_chart_coverage: %s', _NAME, z_str,

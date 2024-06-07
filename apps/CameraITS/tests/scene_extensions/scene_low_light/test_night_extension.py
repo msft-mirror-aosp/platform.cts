@@ -34,6 +34,9 @@ _TABLET_BRIGHTNESS = '6'  # Highest minimum brightness on a supported tablet
 _TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _TEST_REQUIRED_MPC = 34
 
+_AVG_DELTA_LUMINANCE_THRESH = 17
+_AVG_LUMINANCE_THRESH = 100
+
 _IMAGE_FORMATS_TO_CONSTANTS = (('yuv', 35), ('jpeg', 256))
 
 _X_STRING = 'x'
@@ -182,7 +185,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       # Set tablet brightness to darken scene
       self.set_screen_brightness(_TABLET_BRIGHTNESS)
 
-      file_stem = f'{test_name}_{accepted_format}_{width}x{height}'
+      file_stem = f'{test_name}_{self.camera_id}_{accepted_format}_{width}x{height}'
       out_surfaces = {
           'format': accepted_format, 'width': width, 'height': height}
       req = capture_request_utils.auto_capture_request()
@@ -195,7 +198,9 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       # Assert correct behavior and create luminosity plots
       low_light_utils.analyze_low_light_scene_capture(
           f'{file_stem}_night',
-          cv2.cvtColor(rgb_night_img, cv2.COLOR_RGB2BGR)
+          cv2.cvtColor(rgb_night_img, cv2.COLOR_RGB2BGR),
+          _AVG_LUMINANCE_THRESH,
+          _AVG_DELTA_LUMINANCE_THRESH
       )
 
 if __name__ == '__main__':
