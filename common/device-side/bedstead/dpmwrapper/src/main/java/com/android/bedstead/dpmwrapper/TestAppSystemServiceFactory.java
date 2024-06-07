@@ -37,6 +37,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.HardwarePropertiesManager;
 import android.os.UserHandle;
@@ -116,7 +117,8 @@ public final class TestAppSystemServiceFactory {
     }
 
     private static boolean isSingleUser(Context context) {
-        return SystemUtil.runWithShellPermissionIdentity(() ->
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
+                && SystemUtil.runWithShellPermissionIdentity(() ->
                 context.getSystemService(DevicePolicyManager.class).getHeadlessDeviceOwnerMode()
                         == HEADLESS_DEVICE_OWNER_MODE_SINGLE_USER);
     }
