@@ -132,9 +132,9 @@ public class AdaptivePlaybackFrameDropTest extends FrameDropTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirement = "2.2.7.1/5.3/H-1-2")
     public void test4k() throws Exception {
-        Assume.assumeTrue("Test is limited to U performance class devices or devices that do not " +
-                        "advertise performance class",
-            Utils.isUPerfClass() || !Utils.isPerfClass());
+        Assume.assumeTrue("Test is limited to U,V performance class devices or devices that do"
+                        + "not advertise performance class",
+                Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
         int frameRate = 60;
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
