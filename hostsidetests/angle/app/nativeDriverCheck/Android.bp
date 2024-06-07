@@ -33,4 +33,5 @@ android_test_helper_app {
         "androidx.test.rules",
         "AngleIntegrationTestCommon",
     ],
+    sdk_version: "test_current",
 }

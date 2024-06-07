@@ -51,4 +51,5 @@ android_test {
         "general-tests",
         "mts-art",
     ],
+    sdk_version: "test_current",
 }
