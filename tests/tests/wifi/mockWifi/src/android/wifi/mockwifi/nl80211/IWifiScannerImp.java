@@ -59,7 +59,7 @@ public class IWifiScannerImp extends IWifiScannerImpl.Stub {
     private boolean isMethodOverridden(WifiScannerInterfaceMock wifiScannerInterfaceMock,
             String methodName) throws NoSuchMethodException {
         if (methodName.equals("startPnoScan")) {
-            return wifiScannerInterfaceMock.getClass().getMethod(
+            return !wifiScannerInterfaceMock.getClass().getMethod(
                     methodName, PnoSettings.class).getDeclaringClass().equals(
                     WifiScannerInterfaceMock.class);
         }
@@ -104,9 +104,13 @@ public class IWifiScannerImp extends IWifiScannerImpl.Stub {
      * Otherwise the mocked scan result may not work because the frameworks keep use cache data
      * since there is no scan ready event.
      */
-    public void mockScanResultReadyEvent() {
+    public void mockScanResultReadyEvent(boolean isPno) {
         try {
-            if (mScanEventHandler != null) {
+            if (isPno) {
+                if (mIPnoScanEvent != null) {
+                    mIPnoScanEvent.OnPnoNetworkFound();
+                }
+            } else if (mScanEventHandler != null) {
                 mScanEventHandler.OnScanResultReady();
             }
         } catch (RemoteException re) {
@@ -179,12 +183,7 @@ public class IWifiScannerImp extends IWifiScannerImpl.Stub {
             Log.e(TAG, "startPnoScan: false mock!");
             return false;
         }
-        try {
-            mIPnoScanEvent.OnPnoNetworkFound();
-        } catch (RemoteException e) {
-            Log.d(TAG, "Failed to start pno scan due to remote exception");
-        }
-        return true;
+        return mWifiScannerInterfaceMock.startPnoScan(pnoSettings);
     }
 
     @Override
