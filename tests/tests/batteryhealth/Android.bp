@@ -43,4 +43,5 @@ android_test {
         "general-tests",
     ],
     per_testcase_directory: true,
+    sdk_version: "test_current",
 }
