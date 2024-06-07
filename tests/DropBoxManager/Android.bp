@@ -34,6 +34,7 @@ android_test {
         "general-tests",
     ],
     platform_apis: true,
+    sdk_version: "test_current",
 }
 
 android_test {
@@ -54,6 +55,7 @@ android_test {
     ],
     manifest: "AndroidManifest2.xml",
     test_config: "AndroidTest2.xml",
+    sdk_version: "test_current",
     target_sdk_version: "34",
     platform_apis: true,
 }
