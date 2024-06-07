@@ -198,10 +198,6 @@ class SensitiveNotificationAppHidingTest {
             notificationHelper.disableAssistant(NLS_PACKAGE_NAME)
             notificationHelper.enableOtherPkgAssistantIfNeeded(previousAssistant)
         }
-
-        if (Flags.sensitiveContentImprovements()) {
-            ToastVerifier.waitForNoToast()
-        }
     }
 
     @Test
@@ -216,12 +212,32 @@ class SensitiveNotificationAppHidingTest {
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             verifyScreenCaptureProtected(activityScenario)
-            if (Flags.sensitiveContentImprovements()) {
+        }
+    }
+
+    @Test
+    @CddTest(requirements = ["9.8.2/C-3-3"])
+    @RequiresFlagsEnabled(
+        Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION,
+            Flags.FLAG_SENSITIVE_CONTENT_IMPROVEMENTS
+    )
+    fun testScreenCaptureIsBlocked_notifyBeforeAppLaunch_withToast() {
+        sendSensitiveNotification()
+
+        uiAutomation.adoptShellPermissionIdentity()
+        mediaProjectionHelper.authorizeMediaProjection()
+        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        Truth.assertThat(mediaProjection).isNotNull()
+        ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
+            verifyScreenCaptureProtected(activityScenario)
+            try {
                 ToastVerifier.verifyToastShowsAndGoes()
                 // Stop and Resume the Activity (hides and re-shows window).
                 activityScenario.moveToState(State.CREATED)
                 activityScenario.moveToState(State.RESUMED)
                 ToastVerifier.verifyToastDoesNotShow()
+            } finally {
+                ToastVerifier.waitForNoToast()
             }
         }
     }
@@ -238,13 +254,32 @@ class SensitiveNotificationAppHidingTest {
             verifyScreenCaptureNotProtected(activityScenario)
             sendSensitiveNotification()
             verifyScreenCaptureProtected(activityScenario)
+        }
+    }
 
-            if (Flags.sensitiveContentImprovements()) {
+    @Test
+    @CddTest(requirements = ["9.8.2/C-3-3"])
+    @RequiresFlagsEnabled(
+        Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION,
+            Flags.FLAG_SENSITIVE_CONTENT_IMPROVEMENTS
+    )
+    fun testScreenCaptureIsBlocked_notifyAfterAppLaunch_withToast() {
+        uiAutomation.adoptShellPermissionIdentity()
+        mediaProjectionHelper.authorizeMediaProjection()
+        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        Truth.assertThat(mediaProjection).isNotNull()
+        ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
+            verifyScreenCaptureNotProtected(activityScenario)
+            sendSensitiveNotification()
+            verifyScreenCaptureProtected(activityScenario)
+            try {
                 ToastVerifier.verifyToastShowsAndGoes()
                 // Stop and Resume the Activity (hides and re-shows window).
                 activityScenario.moveToState(State.CREATED)
                 activityScenario.moveToState(State.RESUMED)
                 ToastVerifier.verifyToastDoesNotShow()
+            } finally {
+                ToastVerifier.waitForNoToast()
             }
         }
     }
@@ -263,9 +298,34 @@ class SensitiveNotificationAppHidingTest {
             activityScenario.moveToState(State.CREATED)
             sendSensitiveNotification()
             activityScenario.moveToState(State.RESUMED)
+            // This must come after verifying the Toast, since the window can take a bit of time to
+            // update.
+            verifyScreenCaptureProtected(activityScenario)
+        }
+    }
 
-            if (Flags.sensitiveContentImprovements()) {
+    @Test
+    @CddTest(requirements = ["9.8.2/C-3-3"])
+    @RequiresFlagsEnabled(
+        Flags.FLAG_SENSITIVE_NOTIFICATION_APP_PROTECTION,
+            Flags.FLAG_SENSITIVE_CONTENT_IMPROVEMENTS
+    )
+    fun testScreenCaptureIsBlocked_notifyAppInBackground_withToast() {
+        uiAutomation.adoptShellPermissionIdentity()
+        mediaProjectionHelper.authorizeMediaProjection()
+        val mediaProjection = mediaProjectionHelper.startMediaProjection()
+        Truth.assertThat(mediaProjection).isNotNull()
+        ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
+            verifyScreenCaptureNotProtected(activityScenario)
+
+            activityScenario.moveToState(State.CREATED)
+            sendSensitiveNotification()
+            activityScenario.moveToState(State.RESUMED)
+
+            try {
                 ToastVerifier.verifyToastShowsAndGoes()
+            } finally {
+                ToastVerifier.waitForNoToast()
             }
             // This must come after verifying the Toast, since the window can take a bit of time to
             // update.
