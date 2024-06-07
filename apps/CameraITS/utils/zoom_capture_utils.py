@@ -45,6 +45,7 @@ ZOOM_MIN_THRESH = 2.0
 ZOOM_MAX_THRESH = 10.0
 ZOOM_RTOL = 0.01  # variation of zoom ratio due to floating point
 PRV_Z_RTOL = 0.01  # variation of zoom ratio between request and result
+PREFERRED_BASE_ZOOM_RATIO = 1 # Preferred base image for zoom data verification.
 JPEG_STR = 'jpg'
 
 
@@ -336,6 +337,17 @@ def verify_zoom_data(test_data, size):
   # initialize relative size w/ zoom[0] for diff zoom ratio checks
   radius_0 = float(test_data[0].circle[2])
   z_0 = float(test_data[0].result_zoom)
+
+  # use 1x ~ 1.1x data as base image if available
+  if z_0 < PREFERRED_BASE_ZOOM_RATIO:
+    for i, data in enumerate(test_data):
+      if (test_data[i].result_zoom >= PREFERRED_BASE_ZOOM_RATIO and
+          math.isclose(test_data[i].result_zoom, PREFERRED_BASE_ZOOM_RATIO, rel_tol=0.1)):
+        radius_0 = float(test_data[i].circle[2])
+        z_0 = float(test_data[i].result_zoom)
+        break
+
+  logging.debug("z_0: %.3f, radius_0: %.3f", z_0, radius_0)
 
   for i, data in enumerate(test_data):
     logging.debug(' ')  # add blank line between frames
