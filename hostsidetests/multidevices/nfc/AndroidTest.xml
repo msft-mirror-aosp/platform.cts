@@ -15,48 +15,28 @@
   ~ limitations under the License.
   -->
 <configuration description="Config for CTS NFC multi device test cases">
-    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk34ModuleController" />
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="nfc" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
 
-    <device name="emulator">
-        <!-- For coverage to work, the APK should not be uninstalled until after coverage is pulled.
-             So it's a lot easier to install APKs outside the python code.
-        -->
-        <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-            <option name="cleanup-apks" value="true" />
-            <option name="force-install-mode" value="FULL"/>
-            <option name="test-file-name" value="NfcReaderTestApp.apk" />
+    <device name="AndroidDevice">
+        <target_preparer class="AndroidMinSdkVersionCheckDecorator">
+            <option name="min_sdk_version" value="34" />
         </target_preparer>
-        <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-            <option name="cleanup-apks" value="true" />
-            <option name="force-install-mode" value="FULL"/>
-            <option name="test-file-name" value="NfcEmulatorTestApp.apk" />
-        </target_preparer>
+        <target_preparer class="AndroidInstallAppsDecorator" />
     </device>
-    <device name="reader">
-        <!-- For coverage to work, the APK should not be uninstalled until after coverage is pulled.
-             So it's a lot easier to install APKs outside the python code.
-        -->
-        <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-            <option name="cleanup-apks" value="true" />
-            <option name="force-install-mode" value="FULL"/>
-            <option name="test-file-name" value="NfcReaderTestApp.apk" />
+    <device name="AndroidDevice">
+        <target_preparer class="AndroidMinSdkVersionCheckDecorator">
+            <option name="min_sdk_version" value="34" />
         </target_preparer>
-        <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-            <option name="cleanup-apks" value="true" />
-            <option name="force-install-mode" value="FULL"/>
-            <option name="test-file-name" value="NfcEmulatorTestApp.apk" />
-        </target_preparer>
+        <target_preparer class="AndroidInstallAppsDecorator" />
     </device>
 
-    <test class="com.android.tradefed.testtype.mobly.MoblyBinaryHostTest">
-        <!-- The mobly-par-file-name should match the module name -->
-        <option name="mobly-par-file-name" value="CtsNfcHceMultiDeviceTestCases" />
-        <!-- Timeout limit in milliseconds for all test cases of the python binary -->
-        <option name="mobly-test-timeout" value="600000" />
-    </test>
+    <test class="MoblyAospPackageTest" />
+
+    <option name="mobly_pkg" key="file" value="CtsNfcHceMultiDeviceTestCases" />
+    <option name="build_apk" key="file" value="NfcReaderTestApp.apk" />
+    <option name="build_apk" key="file" value="NfcEmulatorTestApp.apk" />
 </configuration>
