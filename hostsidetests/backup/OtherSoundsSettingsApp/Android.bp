@@ -34,4 +34,5 @@ android_test_helper_app {
     // sdk_version: "system_test_current",
     platform_apis: true,
 
+    sdk_version: "test_current",
 }

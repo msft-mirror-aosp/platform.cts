@@ -32,6 +32,7 @@ android_test_helper_app {
     static_libs: [
         "NotificationTrampolineBase",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -50,6 +51,7 @@ android_test_helper_app {
     static_libs: [
         "NotificationTrampolineBase",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -68,6 +70,7 @@ android_test_helper_app {
     static_libs: [
         "NotificationTrampolineBase",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -86,6 +89,7 @@ android_test_helper_app {
     static_libs: [
         "NotificationTrampolineBase",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -104,6 +108,7 @@ android_test_helper_app {
     static_libs: [
         "NotificationTrampolineBase",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -122,6 +127,7 @@ android_test_helper_app {
     static_libs: [
         "NotificationTrampolineBase",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -140,6 +146,7 @@ android_test_helper_app {
     static_libs: [
         "NotificationTrampolineBase",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -158,4 +165,5 @@ android_test_helper_app {
     static_libs: [
         "NotificationTrampolineBase",
     ],
+    sdk_version: "test_current",
 }

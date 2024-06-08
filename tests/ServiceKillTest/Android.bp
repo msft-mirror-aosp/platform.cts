@@ -37,4 +37,5 @@ android_test {
         ":CtsServiceKillTestApp",
     ],
     per_testcase_directory: true,
+    sdk_version: "test_current",
 }

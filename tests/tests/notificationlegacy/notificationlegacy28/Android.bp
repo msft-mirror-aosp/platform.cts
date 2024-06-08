@@ -42,4 +42,5 @@ android_test {
     ],
     min_sdk_version: "28",
     target_sdk_version: "28",
+    sdk_version: "test_current",
 }

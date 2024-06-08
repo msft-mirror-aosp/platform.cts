@@ -19,12 +19,13 @@ package {
 
 android_test {
     name: "CtsWindowManagerSdk29TestCases",
+    team: "trendy_team_windowing_sdk",
     defaults: ["cts_defaults"],
 
     srcs: [
         "src/**/*.java",
         ":cts-wm-decor-inset-test-base",
-        ":cts-wm-force-relayout-test-base"
+        ":cts-wm-force-relayout-test-base",
     ],
 
     // Intentionally don't set the compile SDK to 29, because we want to test
@@ -39,4 +40,5 @@ android_test {
         "cts",
         "general-tests",
     ],
+    sdk_version: "test_current",
 }

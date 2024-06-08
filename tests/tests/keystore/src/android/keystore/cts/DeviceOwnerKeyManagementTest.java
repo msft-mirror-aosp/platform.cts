@@ -216,7 +216,7 @@ public class DeviceOwnerKeyManagementTest {
          * * Other KeyMint implementations must not include anything in this tag.
          */
         final boolean isKeyMintV3 =
-                TestUtils.getFeatureVersionKeystore(sContext, useStrongbox) >= 300;
+                TestUtils.hasKeystoreVersion(useStrongbox, Attestation.KM_VERSION_KEYMINT_3);
         final boolean emptySecondImei = TextUtils.isEmpty(expectedSecondImei);
         final boolean deviceShippedWithKeyMint3 =
                 TestUtils.getVendorApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -529,7 +529,7 @@ public class DeviceOwnerKeyManagementTest {
                     assertThat(isDeviceIdAttestationSupported()).isFalse();
                 } catch (StrongBoxUnavailableException expected) {
                     // This exception must only be thrown if StrongBox attestation was requested.
-                    assertThat(useStrongBox && !hasStrongBox()).isTrue();
+                    assertThat(useStrongBox && !TestUtils.hasStrongBox(sContext)).isTrue();
                 }
             }
         }
@@ -657,10 +657,5 @@ public class DeviceOwnerKeyManagementTest {
                     && TestUtils.isGsiImage() && !isDeviceLocked));
             throw new Exception(e);
         }
-    }
-
-    boolean hasStrongBox() {
-        return sContext.getPackageManager()
-                .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE);
     }
 }

@@ -3021,17 +3021,21 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
         assertEquals("Success\n", SystemUtil.runShellCommand(
                 "pm install -t -g " + HELLO_WORLD_UPDATED_APK));
         assertTrue(isAppInstalled(HELLO_WORLD_PACKAGE_NAME));
-        // Not pending restore.
-        pendingRestore = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
-                "    pendingRestore=");
-        assertThat(pendingRestore).isNull();
-        // Uninstall, keep data.
-        assertEquals("Success\n",
-                SystemUtil.runShellCommand("pm uninstall -k " + HELLO_WORLD_PACKAGE_NAME));
-        // Not pending restore.
-        pendingRestore = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
-                "    pendingRestore=");
-        assertThat(pendingRestore).isNull();
+        // pendingRestore flag will only be unset if the restore is successfully performed.
+        // On devices that don't support backup & restore, the following checks will be skipped.
+        if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_BACKUP)) {
+            // Not pending restore.
+            pendingRestore = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
+                    "    pendingRestore=");
+            assertThat(pendingRestore).isNull();
+            // Uninstall, keep data.
+            assertEquals("Success\n",
+                    SystemUtil.runShellCommand("pm uninstall -k " + HELLO_WORLD_PACKAGE_NAME));
+            // Not pending restore.
+            pendingRestore = parsePackageDump(HELLO_WORLD_PACKAGE_NAME,
+                    "    pendingRestore=");
+            assertThat(pendingRestore).isNull();
+        }
         // Full uninstall.
         assertEquals("Success\n",
                 SystemUtil.runShellCommand("pm uninstall " + HELLO_WORLD_PACKAGE_NAME));
