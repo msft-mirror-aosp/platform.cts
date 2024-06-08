@@ -118,6 +118,7 @@ android_test_helper_app {
     manifest: "AndroidManifest_number_provider_a.xml",
     jni_libs: ["libsplitapp_number_provider_a"],
     test_suites: TARGET_TEST_SUITES,
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -126,6 +127,7 @@ android_test_helper_app {
     manifest: "AndroidManifest_number_provider_b.xml",
     jni_libs: ["libsplitapp_number_provider_b"],
     test_suites: TARGET_TEST_SUITES,
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -134,4 +136,5 @@ android_test_helper_app {
     manifest: "AndroidManifest_number_proxy.xml",
     jni_libs: ["libsplitapp_number_proxy"],
     test_suites: TARGET_TEST_SUITES,
+    sdk_version: "test_current",
 }

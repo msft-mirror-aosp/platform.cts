@@ -41,6 +41,7 @@ android_test_helper_app {
         "mcts-permission",
     ],
     manifest: "testapp1/AndroidManifest.xml",
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -68,6 +69,7 @@ android_test_helper_app {
         "mcts-permission",
     ],
     manifest: "testapp2/AndroidManifest.xml",
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -95,6 +97,7 @@ android_test_helper_app {
         "mcts-permission",
     ],
     manifest: "testapp3/AndroidManifest.xml",
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -122,6 +125,7 @@ android_test_helper_app {
         "mcts-permission",
     ],
     manifest: "testapp4/AndroidManifest.xml",
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -135,6 +139,7 @@ android_test_helper_app {
         "mcts-permission",
     ],
     manifest: "shareduidapp1/AndroidManifest.xml",
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -148,4 +153,5 @@ android_test_helper_app {
         "mcts-permission",
     ],
     manifest: "shareduidapp2/AndroidManifest.xml",
+    sdk_version: "test_current",
 }

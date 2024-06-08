@@ -19,7 +19,7 @@ package com.android.bedstead.harrier;
 import static android.app.AppOpsManager.OPSTR_START_FOREGROUND;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
-import static com.android.bedstead.harrier.UsersComponentKt.user;
+import static com.android.bedstead.multiuser.UsersComponentKt.user;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.harrier.UserType.SECONDARY_USER;

@@ -36,4 +36,5 @@ android_test {
         "general-tests",
     ],
     target_sdk_version: "33",
+    sdk_version: "test_current",
 }

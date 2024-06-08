@@ -41,8 +41,9 @@ android_test {
         "sts",
     ],
     data: [
-         ":CtsRecordServiceApi34",
-         ":CtsRecordServiceApi34NoCap",
-         ":CtsRecordServiceApi33",
+        ":CtsRecordServiceApi34",
+        ":CtsRecordServiceApi34NoCap",
+        ":CtsRecordServiceApi33",
     ],
+    sdk_version: "test_current",
 }

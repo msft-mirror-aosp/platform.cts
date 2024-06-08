@@ -240,6 +240,7 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
         super.testScreenCaptureDisabled_assist();
     }
 
+    @FlakyTest
     @Override
     @PermissionsTest
     @Test
@@ -254,6 +255,7 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
         super.testSetMeteredDataDisabledPackages();
     }
 
+    @FlakyTest
     @Override
     @PermissionsTest
     @Test

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.companion.multidevice
+package android.companion.cts.multidevice
 
 import android.app.Instrumentation
 import android.bluetooth.BluetoothManager
@@ -23,8 +23,8 @@ import android.companion.AssociationRequest
 import android.companion.BluetoothDeviceFilter
 import android.companion.CompanionDeviceManager
 import android.companion.cts.common.CompanionActivity
+import android.companion.cts.multidevice.CallbackUtils.SystemDataTransferCallback
 import android.companion.cts.uicommon.CompanionDeviceManagerUi
-import android.companion.multidevice.CallbackUtils.SystemDataTransferCallback
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerExecutor
@@ -156,6 +156,11 @@ class CompanionDeviceManagerSnippet : Snippet {
         val callback = SystemDataTransferCallback()
         companionDeviceManager.startSystemDataTransfer(associationId, executor, callback)
         callback.waitForCompletion()
+    }
+
+    @Rpc(description = "Remove bluetooth bond.")
+    fun removeBond(associationId: Int): Boolean {
+        return companionDeviceManager.removeBond(associationId)
     }
 
     @Rpc(description = "Attach client socket.")

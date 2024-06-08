@@ -46,4 +46,5 @@ android_test {
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",
     target_sdk_version: "31",
+    sdk_version: "test_current",
 }

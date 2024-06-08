@@ -60,4 +60,5 @@ android_test_helper_app {
     dist: {
         targets: ["cts"],
     },
+    sdk_version: "test_current",
 }

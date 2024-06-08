@@ -40,6 +40,7 @@ annotation class UsesAnnotationExecutor(
         const val FLAGS = "com.android.bedstead.flags.FlagsAnnotationExecutor"
         const val MULTI_USER = "com.android.bedstead.multiuser.MultiUserAnnotationExecutor"
         const val ENTERPRISE = "com.android.bedstead.enterprise.EnterpriseAnnotationExecutor"
+        const val MAIN = "com.android.bedstead.harrier.MainAnnotationExecutor"
     }
 }
 

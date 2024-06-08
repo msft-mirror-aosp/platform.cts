@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsDeviceStateManagerTestCases",
+    team: "trendy_team_interactions_frameworks",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.junit",

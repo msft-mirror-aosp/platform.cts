@@ -34,6 +34,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(RequireUserSupportedGroup.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface RequireUserSupported {
     String value();
     FailureMode failureMode() default FailureMode.SKIP;

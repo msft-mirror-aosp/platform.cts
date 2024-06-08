@@ -1246,15 +1246,15 @@ public class CipherTest {
                 "RSA/ECB/OAEPWithSHA-384AndMGF1Padding",
                 "RSA/ECB/OAEPWithSHA-512AndMGF1Padding"
         });
-        int kmVersion = TestUtils.getFeatureVersionKeystore(getContext());
         for (String algorithm : EXPECTED_ALGORITHMS) {
-            if (kmVersion < Attestation.KM_VERSION_KEYMINT_3
+            if (!TestUtils.hasKeystoreVersion(false /*isStrongBoxBased*/,
+                    Attestation.KM_VERSION_KEYMINT_3)
                     && keymasterNonSupportedAlgos.contains(algorithm)) {
                 // Skipping algorithms which are not supported in older KeyMaster.
                 // This functionality has to support through software emulation.
                 android.util.Log.d("CipherTest",
-                        " Skipping " + algorithm + " because it is not supported in KM version "
-                                + kmVersion);
+                        " Skipping " + algorithm + " because it is not supported in KM version"
+                        + " below " + Attestation.KM_VERSION_KEYMINT_3);
                 continue;
             }
             ImportedKey key = importDefaultKatKey(algorithm,
