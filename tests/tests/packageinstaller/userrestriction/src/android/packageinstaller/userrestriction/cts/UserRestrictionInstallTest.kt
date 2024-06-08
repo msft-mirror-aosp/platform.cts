@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package android.packageinstaller.install.cts
+package android.packageinstaller.userrestriction.cts
 
 import android.app.Activity
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller.EXTRA_STATUS
 import android.content.pm.PackageInstaller.STATUS_FAILURE_INVALID
@@ -25,9 +26,17 @@ import android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION
 import android.content.pm.PackageInstaller.Session
 import android.content.pm.PackageInstaller.SessionParams
 import android.platform.test.annotations.AppModeFull
+import android.util.Log
 import androidx.core.content.FileProvider
+import androidx.test.InstrumentationRegistry
+import androidx.test.rule.ActivityTestRule
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject
+import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.UiSelector
+import androidx.test.uiautomator.Until
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
@@ -39,7 +48,7 @@ import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.annotations.enterprise.DevicePolicyRelevant
 import com.android.bedstead.nene.TestApis
-import com.android.bedstead.nene.appops.CommonAppOps.OPSTR_REQUEST_INSTALL_PACKAGES
+import android.app.AppOpsManager.OPSTR_REQUEST_INSTALL_PACKAGES
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_DEBUGGING_FEATURES
@@ -48,11 +57,15 @@ import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.BlockingBroadcastReceiver
+import com.android.compatibility.common.util.FutureResultActivity
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import java.io.File
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 import kotlin.test.assertFailsWith
+import org.junit.Assert
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.ClassRule
@@ -62,16 +75,38 @@ import org.junit.runner.RunWith
 
 @RunWith(BedsteadJUnit4::class)
 @AppModeFull(reason = "DEVICE_POLICY_SERVICE is null in instant mode")
-class UserRestrictionInstallTest : PackageInstallerTestBase() {
-    private val APP_INSTALL_ACTION =
-            "android.packageinstaller.install.cts.UserRestrictionInstallTest.action"
+class UserRestrictionInstallTest {
 
     companion object {
+        const val INSTALL_BUTTON_ID = "button1"
+        const val CANCEL_BUTTON_ID = "button2"
+
+        const val PACKAGE_INSTALLER_PACKAGE_NAME = "com.android.packageinstaller"
+        const val SYSTEM_PACKAGE_NAME = "android"
+
+        const val TEST_APK_NAME = "CtsEmptyTestApp.apk"
+        const val TEST_APK_PACKAGE_NAME = "android.packageinstaller.emptytestapp.cts"
+        const val TEST_APK_LOCATION = "/data/local/tmp/cts/packageinstaller"
+
+        const val CONTENT_AUTHORITY = "android.packageinstaller.userrestriction.cts.fileprovider"
+        const val APP_INSTALL_ACTION = "android.packageinstaller.userrestriction.cts.action"
+
+        const val TIMEOUT = 60000L
+
         @JvmField
         @ClassRule
         @Rule
         val sDeviceState = DeviceState()
     }
+
+    val TAG = UserRestrictionInstallTest::class.java.simpleName
+
+    @get:Rule
+    val installDialogStarter = ActivityTestRule(FutureResultActivity::class.java)
+
+    val context: Context = InstrumentationRegistry.getTargetContext()
+    val apkFile = File(context.filesDir, TEST_APK_NAME)
+    val uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
 
     @Before
     fun uninstallTestApp() {
@@ -82,6 +117,11 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
         } catch (_: AdbException) {
             fail("Could not uninstall $TEST_APK_PACKAGE_NAME")
         }
+    }
+
+    @Before
+    fun copyTestApk() {
+        File(TEST_APK_LOCATION, TEST_APK_NAME).copyTo(target = apkFile, overwrite = true)
     }
 
     @Test
@@ -97,13 +137,15 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
         installPackageViaAdb(apkPath = "$TEST_APK_LOCATION/$TEST_APK_NAME")
 
         assertWithMessage("Test app should be installed in initial user")
-                .that(TestApis.packages().find(TEST_APK_PACKAGE_NAME).installedOnUser(initialUser))
-                .isTrue()
+            .that(TestApis.packages().find(TEST_APK_PACKAGE_NAME).installedOnUser(initialUser))
+            .isTrue()
 
-        assertWithMessage("Test app shouldn't be installed in a work profile with " +
-                "$DISALLOW_DEBUGGING_FEATURES set")
-                .that(TestApis.packages().find(TEST_APK_PACKAGE_NAME).installedOnUser(workProfile))
-                .isFalse()
+        assertWithMessage(
+            "Test app shouldn't be installed in a work profile with " +
+                "$DISALLOW_DEBUGGING_FEATURES set"
+        )
+            .that(TestApis.packages().find(TEST_APK_PACKAGE_NAME).installedOnUser(workProfile))
+            .isFalse()
     }
 
     @Test
@@ -117,10 +159,12 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
 
         installPackageViaAdb(apkPath = "$TEST_APK_LOCATION/$TEST_APK_NAME", user = workProfile)
 
-        assertWithMessage("Test app shouldn't be installed in a work profile with " +
-                "$DISALLOW_DEBUGGING_FEATURES set")
-                .that(TestApis.packages().find(TEST_APK_PACKAGE_NAME).installedOnUser(workProfile))
-                .isFalse()
+        assertWithMessage(
+            "Test app shouldn't be installed in a work profile with " +
+                "$DISALLOW_DEBUGGING_FEATURES set"
+        )
+            .that(TestApis.packages().find(TEST_APK_PACKAGE_NAME).installedOnUser(workProfile))
+            .isFalse()
     }
 
     @Test
@@ -138,7 +182,7 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
             val result: Intent? = commitSessionAsUser(workProfile, session)
             assertThat(result).isNotNull()
             assertThat(result!!.getIntExtra(EXTRA_STATUS, STATUS_FAILURE_INVALID))
-                    .isEqualTo(STATUS_PENDING_USER_ACTION)
+                .isEqualTo(STATUS_PENDING_USER_ACTION)
         } finally {
             session.abandon()
         }
@@ -153,7 +197,7 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
     @RequireRunOnWorkProfile
     fun disallowDebuggingFeatures_intentInstallOnWorkProfile_installationSucceeds() {
         val context = TestApis.context().instrumentedContext()
-        val apkFile = File(context.filesDir, TEST_APK_NAME)
+        // val apkFile = File(context.filesDir, TEST_APK_NAME)
         val appInstallIntent = getAppInstallationIntent(apkFile)
 
         val installation = startInstallationViaIntent(appInstallIntent)
@@ -168,8 +212,10 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
     @DevicePolicyRelevant
     @EnsureHasWorkProfile
     @EnsureHasUserRestriction(value = DISALLOW_INSTALL_APPS, onUser = UserType.WORK_PROFILE)
-    @EnsureDoesNotHaveUserRestriction(value = DISALLOW_DEBUGGING_FEATURES,
-            onUser = UserType.WORK_PROFILE)
+    @EnsureDoesNotHaveUserRestriction(
+        value = DISALLOW_DEBUGGING_FEATURES,
+        onUser = UserType.WORK_PROFILE
+    )
     fun disallowInstallApps_adbInstallOnAllUsers_installedOnUnrestrictedUser() {
         val initialUser = sDeviceState.initialUser()
         val workProfile = sDeviceState.workProfile()
@@ -180,14 +226,17 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
             it.packageName().equals(TEST_APK_PACKAGE_NAME)
         }
         assertWithMessage("Test app should be installed in initial user")
-                .that(targetPackage.size).isNotEqualTo(0)
+            .that(targetPackage.size)
+            .isNotEqualTo(0)
 
         targetPackage = TestApis.packages().installedForUser(workProfile).filter {
             it.packageName().equals(TEST_APK_PACKAGE_NAME)
         }
-        assertWithMessage("Test app shouldn't be installed in a work profile with " +
-                "$DISALLOW_INSTALL_APPS set")
-                .that(targetPackage.size).isEqualTo(0)
+        assertWithMessage(
+            "Test app shouldn't be installed in a work profile with $DISALLOW_INSTALL_APPS set"
+        )
+            .that(targetPackage.size)
+            .isEqualTo(0)
     }
 
     @Test
@@ -195,21 +244,27 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
     @DevicePolicyRelevant
     @EnsureHasWorkProfile
     @EnsureHasUserRestriction(value = DISALLOW_INSTALL_APPS, onUser = UserType.WORK_PROFILE)
-    @EnsureDoesNotHaveUserRestriction(value = DISALLOW_DEBUGGING_FEATURES,
-            onUser = UserType.WORK_PROFILE)
+    @EnsureDoesNotHaveUserRestriction(
+        value = DISALLOW_DEBUGGING_FEATURES,
+        onUser = UserType.WORK_PROFILE
+    )
     fun disallowInstallApps_adbInstallOnWorkProfile_fails() {
         val workProfile = sDeviceState.workProfile()
-        assertThat(TestApis.devicePolicy().userRestrictions(workProfile)
-                .isSet(DISALLOW_INSTALL_APPS)).isTrue()
+        assertThat(
+            TestApis.devicePolicy().userRestrictions(workProfile).isSet(DISALLOW_INSTALL_APPS)
+        ).isTrue()
 
         installPackageViaAdb(apkPath = "$TEST_APK_LOCATION/$TEST_APK_NAME", user = workProfile)
 
         val targetPackage = TestApis.packages().installedForUser(workProfile).filter {
             it.packageName().equals(TEST_APK_PACKAGE_NAME)
         }
-        assertWithMessage("Test app shouldn't be installed in a work profile with " +
-                "$DISALLOW_DEBUGGING_FEATURES set")
-                .that(targetPackage.size).isEqualTo(0)
+        assertWithMessage(
+            "Test app shouldn't be installed in a work profile with " +
+                "$DISALLOW_DEBUGGING_FEATURES set"
+        )
+            .that(targetPackage.size)
+            .isEqualTo(0)
     }
 
     @Test
@@ -217,8 +272,10 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
     @DevicePolicyRelevant
     @EnsureHasWorkProfile
     @EnsureHasUserRestriction(value = DISALLOW_INSTALL_APPS, onUser = UserType.WORK_PROFILE)
-    @EnsureDoesNotHaveUserRestriction(value = DISALLOW_DEBUGGING_FEATURES,
-            onUser = UserType.WORK_PROFILE)
+    @EnsureDoesNotHaveUserRestriction(
+        value = DISALLOW_DEBUGGING_FEATURES,
+        onUser = UserType.WORK_PROFILE
+    )
     @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
     fun disallowInstallApps_sessionInstallOnWorkProfile_throwsException() {
         val workProfile = sDeviceState.workProfile()
@@ -231,13 +288,15 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
     @ApiTest(apis = ["android.os.UserManager#DISALLOW_INSTALL_APPS"])
     @DevicePolicyRelevant
     @EnsureHasUserRestriction(value = DISALLOW_INSTALL_APPS, onUser = UserType.WORK_PROFILE)
-    @EnsureDoesNotHaveUserRestriction(value = DISALLOW_DEBUGGING_FEATURES,
-            onUser = UserType.WORK_PROFILE)
+    @EnsureDoesNotHaveUserRestriction(
+        value = DISALLOW_DEBUGGING_FEATURES,
+        onUser = UserType.WORK_PROFILE
+    )
     @EnsureHasAppOp(OPSTR_REQUEST_INSTALL_PACKAGES)
     @RequireRunOnWorkProfile
     fun disallowInstallApps_intentInstallOnWorkProfile_installationFails() {
         val context = TestApis.context().instrumentedContext()
-        val apkFile = File(context.filesDir, TEST_APK_NAME)
+        // val apkFile = File(context.filesDir, TEST_APK_NAME)
         val appInstallIntent = getAppInstallationIntent(apkFile)
 
         val installation = startInstallationViaIntent(appInstallIntent)
@@ -249,24 +308,30 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
 
         // Install should have failed
         assertThat(installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
-                .isEqualTo(Activity.RESULT_CANCELED)
+            .isEqualTo(Activity.RESULT_CANCELED)
     }
 
     @Test
-    @ApiTest(apis = ["android.os.UserManager#DISALLOW_DEBUGGING_FEATURES",
-        "android.os.UserManager#DISALLOW_INSTALL_APPS"])
+    @ApiTest(
+        apis = ["android.os.UserManager#DISALLOW_DEBUGGING_FEATURES",
+        "android.os.UserManager#DISALLOW_INSTALL_APPS"]
+    )
     @DevicePolicyRelevant
     @EnsureHasWorkProfile
-    @EnsureDoesNotHaveUserRestriction(value = DISALLOW_DEBUGGING_FEATURES,
-            onUser = UserType.WORK_PROFILE)
+    @EnsureDoesNotHaveUserRestriction(
+        value = DISALLOW_DEBUGGING_FEATURES,
+        onUser = UserType.WORK_PROFILE
+    )
     @EnsureDoesNotHaveUserRestriction(value = DISALLOW_INSTALL_APPS, onUser = UserType.WORK_PROFILE)
     fun unrestrictedWorkProfile_adbInstallOnAllUsers_installedOnAllUsers() {
         val initialUser = sDeviceState.initialUser()
         val workProfile = sDeviceState.workProfile()
-        assertThat(TestApis.devicePolicy().userRestrictions(workProfile)
-                .isSet(DISALLOW_DEBUGGING_FEATURES)).isFalse()
-        assertThat(TestApis.devicePolicy().userRestrictions(workProfile)
-                .isSet(DISALLOW_INSTALL_APPS)).isFalse()
+        assertThat(
+            TestApis.devicePolicy().userRestrictions(workProfile).isSet(DISALLOW_DEBUGGING_FEATURES)
+        ).isFalse()
+        assertThat(
+            TestApis.devicePolicy().userRestrictions(workProfile).isSet(DISALLOW_INSTALL_APPS)
+        ).isFalse()
 
         installPackageViaAdb(apkPath = "$TEST_APK_LOCATION/$TEST_APK_NAME")
 
@@ -274,13 +339,22 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
             it.packageName().equals(TEST_APK_PACKAGE_NAME)
         }
         assertWithMessage("Test app should be installed in initial user")
-                .that(targetPackage.size).isNotEqualTo(0)
+            .that(targetPackage.size)
+            .isNotEqualTo(0)
 
         targetPackage = TestApis.packages().installedForUser(workProfile).filter {
             it.packageName().equals(TEST_APK_PACKAGE_NAME)
         }
         assertWithMessage("Test app should be installed in work profile")
-                .that(targetPackage.size).isNotEqualTo(0)
+            .that(targetPackage.size)
+            .isNotEqualTo(0)
+    }
+
+    /**
+     * Start an installation via an Intent
+     */
+    private fun startInstallationViaIntent(intent: Intent): CompletableFuture<Int> {
+        return installDialogStarter.activity.startActivityForResult(intent)
     }
 
     private fun installPackageViaAdb(apkPath: String, user: UserReference? = null): String? {
@@ -310,11 +384,11 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
     }
 
     private fun writeSessionAsUser(
-            user: UserReference = sDeviceState.initialUser(),
-            session: Session
+        user: UserReference = sDeviceState.initialUser(),
+        session: Session
     ) {
         val context = TestApis.context().androidContextAsUser(user)
-        val apkFile = File(context.filesDir, TEST_APK_NAME)
+        // val apkFile = File(context.filesDir, TEST_APK_NAME)
         // Write data to session
         apkFile.inputStream().use { fileOnDisk ->
             session.openWrite(TEST_APK_NAME, 0, -1).use { sessionFile ->
@@ -324,8 +398,8 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
     }
 
     private fun commitSessionAsUser(
-            user: UserReference = sDeviceState.initialUser(),
-            session: Session
+        user: UserReference = sDeviceState.initialUser(),
+        session: Session
     ): Intent? {
         val context = TestApis.context().androidContextAsUser(user)
         val receiver: BlockingBroadcastReceiver =
@@ -335,8 +409,11 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
         val intent = Intent(APP_INSTALL_ACTION).setPackage(context.packageName)
                 .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         val pendingIntent = PendingIntent.getBroadcast(
-                context, 0 /* requestCode */, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+            context,
+            0 /* requestCode */,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
 
         session.commit(pendingIntent.intentSender)
 
@@ -350,5 +427,66 @@ class UserRestrictionInstallTest : PackageInstallerTestBase() {
         intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
         intent.putExtra(Intent.EXTRA_RETURN_RESULT, true)
         return intent
+    }
+
+    /**
+     * Click a button in the UI of the installer app
+     *
+     * @param resId The resource ID of the button to click
+     */
+    fun clickInstallerUIButton(resId: String) {
+        clickInstallerUIButton(getBySelector(resId))
+    }
+
+    fun getBySelector(id: String): BySelector {
+        // Normally, we wouldn't need to look for buttons from 2 different packages.
+        // However, to fix b/297132020, AlertController was replaced with AlertDialog and shared
+        // to selective partners, leading to fragmentation in which button surfaces in an OEM's
+        // installer app.
+        return By.res(
+            Pattern.compile(
+                String.format(
+                    "(?:^%s|^%s):id/%s", PACKAGE_INSTALLER_PACKAGE_NAME, SYSTEM_PACKAGE_NAME, id
+                )
+            )
+        )
+    }
+
+    /**
+     * Click a button in the UI of the installer app
+     *
+     * @param bySelector The bySelector of the button to click
+     */
+    fun clickInstallerUIButton(bySelector: BySelector) {
+        var button: UiObject2? = null
+        val startTime = System.currentTimeMillis()
+        while (startTime + TIMEOUT > System.currentTimeMillis()) {
+            try {
+                button = uiDevice.wait(Until.findObject(bySelector), 1000)
+                if (button != null) {
+                    Log.d(
+                        TAG,
+                        "Found bounds: ${button.getVisibleBounds()} of button $bySelector," +
+                        " text: ${button.getText()}," +
+                        " package: ${button.getApplicationPackage()}"
+                    )
+                    button.click()
+                    return
+                } else {
+                    // Maybe the screen is small. Swipe down and attempt to click
+                    swipeDown()
+                }
+            } catch (ignore: Throwable) {
+            }
+        }
+        Assert.fail("Failed to click the button: $bySelector")
+    }
+
+    private fun swipeDown() {
+        // Perform a swipe from the center of the screen to the top of the screen.
+        // Higher the "steps" value, slower is the swipe
+        val centerX = uiDevice.displayWidth / 2
+        val centerY = uiDevice.displayHeight / 2
+        uiDevice.swipe(centerX, centerY, centerX, 0, 10)
     }
 }
