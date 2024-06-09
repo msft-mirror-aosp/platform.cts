@@ -22,10 +22,12 @@ import android.media.FaceDetector;
 import android.media.FaceDetector.Face;
 import android.test.InstrumentationTestCase;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import java.util.List;
 
+@FrameworkSpecificTest
 @NonMainlineTest
 public class FaceDetector_FaceTest extends InstrumentationTestCase {
     private FaceDetectorStub mActivity;

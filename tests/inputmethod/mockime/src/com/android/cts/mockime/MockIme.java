@@ -362,6 +362,9 @@ public final class MockIme extends InputMethodService {
                         final boolean enabled = command.getExtras().getBoolean("enabled");
                         return getMemorizedOrCurrentInputConnection().reportFullscreenMode(enabled);
                     }
+                    case "getOnEvaluateFullscreenMode": {
+                        return onEvaluateFullscreenMode();
+                    }
                     case "performSpellCheck": {
                         return getMemorizedOrCurrentInputConnection().performSpellCheck();
                     }

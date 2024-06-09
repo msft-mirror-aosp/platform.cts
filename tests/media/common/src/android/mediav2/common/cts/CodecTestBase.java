@@ -39,6 +39,7 @@ import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.media.cts.TestUtils;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PersistableBundle;
@@ -959,19 +960,44 @@ public abstract class CodecTestBase {
             ArrayList<String> totalListOfCodecs =
                     selectCodecs(mediaType, null /* formats */, features, isEncoder, selectSwitch);
             ArrayList<String> listOfCodecs = new ArrayList<>();
-            if (codecPrefix != null || codecFilter != null) {
-                for (String codec : totalListOfCodecs) {
-                    if ((codecPrefix != null && codec.startsWith(codecPrefix))
-                            || (codecFilter != null && codecFilter.matcher(codec).matches())) {
-                        listOfCodecs.add(codec);
-                    }
-                }
-            } else {
-                listOfCodecs = totalListOfCodecs;
-            }
-            if (mustTestAllCodecs && listOfCodecs.size() == 0 && codecPrefix == null) {
+
+            // when mustTestAllCodecs, verify that we start with a non-empty list of
+            // codecs to test.  If there are no codecs, the system is broken. We will
+            // usually trim that list (e.g. as part of CTS/MCTS partitioning) to get the
+            // set of codecs that we will actually run in this mode.
+            //
+            if (mustTestAllCodecs && totalListOfCodecs.size() == 0) {
                 listOfCodecs.add(INVALID_CODEC + mediaType);
             }
+
+            for (String codec : totalListOfCodecs) {
+                // general mode exclusions
+                if (!TestUtils.isTestableCodecInCurrentMode(codec)) {
+                    Log.v(LOG_TAG, "codec " + codec + " skipped in mode "
+                                    + TestUtils.currentTestModeName());
+                    continue;
+                }
+                // and then prefix checking exclusions
+                if (codecPrefix != null && !codec.startsWith(codecPrefix)) {
+                    Log.v(LOG_TAG, "codec " + codec + " skipped, doesn't match prefix "
+                                    + codecPrefix);
+                    continue;
+                }
+                if (codecFilter != null && !codecFilter.matcher(codec).matches()) {
+                    Log.v(LOG_TAG, "codec " + codec + " skipped, doesn't match pattern");
+                    continue;
+                }
+                listOfCodecs.add(codec);
+            }
+
+            // we excluded eligible codecs all the way down to nothing.
+            // So we don't need to mess with adding to argsList.
+            // we trimmed the candidates down to an empty list; go look at the
+            // next mediatype
+            if (listOfCodecs.size() == 0) {
+                continue;
+            }
+
             boolean miss = true;
             for (Object[] arg : exhaustiveArgsList) {
                 if (mediaType.equals(arg[0])) {
@@ -985,20 +1011,31 @@ public abstract class CodecTestBase {
                     miss = false;
                 }
             }
+
+            // when we're testing exhaustively... see if we are looking at a media type
+            // that has no test vectors.
+            // This means
+            // -- we're looking at an optional or new media type.
+            // -- our test suite is broken, we *should* have an asset for this type.
+            //
             if (miss && mustTestAllCodecs) {
                 if (!cddRequiredMediaTypesList.contains(mediaType)) {
                     Log.w(LOG_TAG, "no test vectors available for optional mediaType type "
                             + mediaType);
                     continue;
                 }
-                for (String codec : listOfCodecs) {
-                    Object[] argUpdate = new Object[argLength + 2];
-                    argUpdate[0] = codec;
-                    argUpdate[1] = mediaType;
-                    System.arraycopy(exhaustiveArgsList.get(0), 1, argUpdate, 2, argLength - 1);
-                    argUpdate[argLength + 1] = paramToString(argUpdate);
-                    argsList.add(argUpdate);
-                }
+
+                // create a fake codec name that indicates the
+                // brokenness of this particular test case
+                // (since it's painful to fail within the parameterization calculation)
+                //
+                Object[] argUpdate = new Object[argLength + 2];
+                argUpdate[0] = "No.Test.Assets.Exist.For." + mediaType;
+                argUpdate[1] = mediaType;
+                // skipping the initial 'mediatype' slot in the args list
+                System.arraycopy(exhaustiveArgsList.get(0), 1, argUpdate, 2, argLength - 1);
+                argUpdate[argLength + 1] = paramToString(argUpdate);
+                argsList.add(argUpdate);
             }
         }
         return argsList;

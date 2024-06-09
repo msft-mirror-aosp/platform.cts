@@ -41,6 +41,7 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
@@ -49,6 +50,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.List;
 
+@FrameworkSpecificTest
 @NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 public class CamcorderProfileTest {

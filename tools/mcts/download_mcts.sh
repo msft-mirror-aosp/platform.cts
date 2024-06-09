@@ -34,7 +34,7 @@
 #    ./download_mcts.sh  --abi arm64 --year 2024 --month 01
 
 # All the files will be downloaded to
-# /tmp/mcts_dynamic_download/android/xts/mcts/android_version/abi/
+# $HOME/xts/mcts_dynamic_download/android/xts/mcts/android_version/abi/
 
 set -e
 
@@ -91,7 +91,7 @@ function download_mcts()
       echo "There is ${file}, checking if it is up to date"
       # %W time of file birth, seconds since Epoch
       # %s seconds since the Epoch (1970-01-01 00:00 UTC)
-      file_download_time=$(date -d "@$(stat -c %W ${file})" +%s ) #1716367108
+      file_download_time=$(date -d "@$(stat -c %W ${file})" +%s )
       url_link_last_modified_string=$(curl -sI ${url} | grep -i "last-modified" |  cut -d: -f2- | xargs)
       url_link_time_stamp=$(date -d "${url_link_last_modified_string}" +%s )
       if [[ ${file_download_time} -lt ${url_link_time_stamp} ]]; then
@@ -143,4 +143,9 @@ for file in ${files[@]}; do
   download_mcts $path $file
 done
 chmod -R 777 $full_dir_path
+for file in $full_dir_path/* ; do
+  echo "touch $file to update the timestamp"
+  touch $file
+done
+
 echo "Download all files"

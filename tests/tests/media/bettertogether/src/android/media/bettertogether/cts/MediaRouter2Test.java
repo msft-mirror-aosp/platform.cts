@@ -77,6 +77,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.PollingCheck;
 
@@ -107,6 +108,7 @@ import java.util.stream.Collectors;
 @RunWith(BedsteadJUnit4.class)
 @AppModeFull(reason = "The system should be able to bind to StubMediaRoute2ProviderService")
 @LargeTest
+@FrameworkSpecificTest
 @NonMainlineTest
 public class MediaRouter2Test {
     private static final String TAG = "MR2Test";
