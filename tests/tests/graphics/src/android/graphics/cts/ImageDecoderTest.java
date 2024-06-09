@@ -293,10 +293,7 @@ public class ImageDecoderTest {
                 ImageDecoder.isMimeTypeSupported("image/avif"));
 
         try {
-            ImageDecoder.Source src = ImageDecoder
-                .createSource(getResources(), R.raw.avif_yuv_420_10bit);
-            assertNotNull(src);
-            Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, source) -> {
+            Bitmap bm = decodeUnscaledBitmap(R.raw.avif_yuv_420_10bit, (decoder, info, source) -> {
                 decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
             });
             assertNotNull(bm);
@@ -305,6 +302,23 @@ public class ImageDecoderTest {
             assertEquals(Bitmap.Config.RGBA_1010102, bm.getConfig());
         } catch (IOException e) {
             fail("Failed with exception " + e);
+        }
+    }
+
+    private Bitmap decodeUnscaledBitmap(
+            int resId, ImageDecoder.OnHeaderDecodedListener listener) throws IOException {
+        // For tests which rely on ImageDecoder *not* scaling to account for density.
+        // Temporarily change the DisplayMetrics to prevent that scaling.
+        Resources res = getResources();
+        final int originalDensity = res.getDisplayMetrics().densityDpi;
+        res.getDisplayMetrics().densityDpi = DisplayMetrics.DENSITY_DEFAULT;
+
+        try {
+            ImageDecoder.Source src = ImageDecoder.createSource(res, resId);
+            assertNotNull(src);
+            return ImageDecoder.decodeBitmap(src, listener);
+        } finally {
+            res.getDisplayMetrics().densityDpi = originalDensity;
         }
     }
 
@@ -347,7 +361,7 @@ public class ImageDecoderTest {
                 R.raw.avif_yuv_420_10bit);
         assertNotNull(src);
         try {
-            Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, source) -> {
+            Bitmap bm = decodeUnscaledBitmap(R.raw.avif_yuv_420_10bit, (decoder, info, source) -> {
                 decoder.setMemorySizePolicy(ImageDecoder.MEMORY_POLICY_LOW_RAM);
                 decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
             });
@@ -527,27 +541,18 @@ public class ImageDecoderTest {
                 }
             }
         };
-        Listener l = new Listener();
 
-        // This test relies on ImageDecoder *not* scaling to account for density.
-        // Temporarily change the DisplayMetrics to prevent that scaling.
-        Resources res = getResources();
-        final int originalDensity = res.getDisplayMetrics().densityDpi;
-        res.getDisplayMetrics().densityDpi = DisplayMetrics.DENSITY_DEFAULT;
-        ImageDecoder.Source src = ImageDecoder.createSource(res, record.resId);
-        assertNotNull(src);
+        Listener l = new Listener();
         l.doCrop = doCrop;
         l.doScale = doScale;
         l.allocator = allocator;
 
         Bitmap bm = null;
         try {
-            bm = ImageDecoder.decodeBitmap(src, l);
+            bm = decodeUnscaledBitmap(record.resId, l);
         } catch (IOException e) {
             fail("Failed " + Utils.getAsResourceUri(record.resId)
                     + " with exception " + e);
-        } finally {
-            res.getDisplayMetrics().densityDpi = originalDensity;
         }
         assertNotNull(bm);
 
@@ -562,6 +567,7 @@ public class ImageDecoderTest {
                 assertNotEquals(Bitmap.Config.HARDWARE, bm.getConfig());
 
                 if (!doScale && !doCrop) {
+                    Resources res = getResources();
                     BitmapFactory.Options options = new BitmapFactory.Options();
                     options.inScaled = false;
                     Bitmap reference = BitmapFactory.decodeResource(res,
