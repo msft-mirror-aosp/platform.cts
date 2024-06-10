@@ -1947,4 +1947,9 @@ public class MockImeSession implements AutoCloseable {
         params.putBoolean("visible", visible);
         return callCommandInternal("setImeCaptionBarVisible", params);
     }
+
+    @NonNull
+    public ImeCommand callGetImeCaptionBarHeight() {
+        return callCommandInternal("getImeCaptionBarHeight", new Bundle());
+    }
 }

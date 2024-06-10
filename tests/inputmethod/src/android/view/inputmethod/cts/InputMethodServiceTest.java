@@ -20,6 +20,7 @@ import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.inputmethodservice.InputMethodService.DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
+import static android.view.WindowInsets.Type.ime;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
 import static android.view.inputmethod.cts.util.ConstantsUtils.DISAPPROVE_IME_PACKAGE_NAME;
@@ -94,6 +95,7 @@ import androidx.window.extensions.layout.DisplayFeature;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
@@ -1125,6 +1127,74 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
 
             expectCommand(stream, imeSession.callSetImeCaptionBarVisible(true), TIMEOUT);
             expectImeVisible(TIMEOUT);
+        }
+    }
+
+    /**
+     * Checks that the IME insets are at least as big as the IME navigation bar (when visible),
+     * even if the IME overrides the insets, or gives an empty input view.
+     */
+    @Test
+    public void testImeNavigationBarInsets() throws Exception {
+        runImeNavigationBarTest(false /* useFullscreenMode */);
+    }
+
+    /**
+     * Checks that the IME insets are not modified to be at least as big as the IME navigation bar,
+     * when the IME is using fullscreen mode.
+     */
+    @Test
+    public void testImeNavigationBarInsets_FullscreenMode() throws Exception {
+        runImeNavigationBarTest(true /* useFullscreenMode */);
+    }
+
+    /**
+     * Test implementation for checking that the IME insets are at least as big as the IME
+     * navigation bar (when visible). When using fullscreen mode, the IME requesting app should
+     * receive zero IME insets.
+     *
+     * @param useFullscreenMode whether the IME should use the fullscreen mode.
+     */
+    private void runImeNavigationBarTest(boolean useFullscreenMode) throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder()
+                        .setZeroInsets(true)
+                        .setDrawsBehindNavBar(true)
+                        .setFullscreenModePolicy(
+                                useFullscreenMode
+                                        ? ImeSettings.FullscreenModePolicy.FORCE_FULLSCREEN
+                                        : ImeSettings.FullscreenModePolicy.NO_FULLSCREEN))) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final var activity = createTestActivity(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+            final var decorView = activity.getWindow().getDecorView();
+            int imeHeight = decorView.getRootWindowInsets().getInsets(ime()).bottom;
+
+            assertEquals(0, imeHeight);
+
+            imeSession.callRequestShowSelf(0 /* flags */);
+
+            PollingCheck.waitFor(TIMEOUT, () -> decorView.getRootWindowInsets().isVisible(ime()));
+
+            imeHeight = decorView.getRootWindowInsets().getInsets(ime()).bottom;
+            final boolean isFullscreen = expectCommand(stream,
+                    imeSession.callGetOnEvaluateFullscreenMode(), TIMEOUT)
+                    .getReturnBooleanValue();
+            assertEquals(isFullscreen, useFullscreenMode);
+            if (isFullscreen) {
+                // In Fullscreen mode the IME doesn't provide any insets.
+                assertEquals("Height of ime: " + imeHeight + " should be zero in fullscreen mode",
+                        0, imeHeight);
+            } else {
+                final int imeNavBarHeight = expectCommand(stream,
+                        imeSession.callGetImeCaptionBarHeight(), TIMEOUT)
+                        .getReturnIntegerValue();
+                assertTrue("Height of ime: " + imeHeight + " should be at least as big as"
+                                + " the height of the IME navigation bar: " + imeNavBarHeight,
+                        imeHeight >= imeNavBarHeight);
+            }
         }
     }
 

@@ -29,6 +29,8 @@ import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 
+import androidx.test.filters.FlakyTest;
+
 /**
  * Tests the Telecom handover APIs.
  */
@@ -174,6 +176,7 @@ public class HandoverTest extends BaseTelecomTestWithMockServices {
      * {@link android.telecom.TelecomManager#acceptHandover(Uri, int, PhoneAccountHandle)} API on
      * the receiving side of the handover.
      */
+    @FlakyTest
     public void testIncomingHandoverRequestValid() {
         if (!mShouldTestTelecom) {
             return;

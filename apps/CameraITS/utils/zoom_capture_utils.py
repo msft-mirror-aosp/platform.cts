@@ -351,9 +351,9 @@ def verify_zoom_data(test_data, size):
     radius_ratio = data.circle[2] / radius_0
     logging.debug('r ratio req: %.3f, measured: %.3f',
                   z_ratio, radius_ratio)
-    msg = (f'{i} Circle radius ratio: result({data.result_zoom:.2f}/{z_0:.2f}):'
-           f' {z_ratio:.2f}, circle: {radius_ratio:.2f}, '
-           f'RTOL: {data.radius_tol}')
+    msg = (f'{i} Circle radius ratio: result({data.result_zoom:.3f}/{z_0:.3f}):'
+           f' {z_ratio:.3f}, circle({data.circle[2]:.3f}/{radius_0:.3f}):'
+           f' {radius_ratio:.3f}, RTOL: {data.radius_tol}')
     if not math.isclose(z_ratio, radius_ratio, rel_tol=data.radius_tol):
       test_success = False
       logging.error(msg)

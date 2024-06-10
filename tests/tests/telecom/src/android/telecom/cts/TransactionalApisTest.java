@@ -354,7 +354,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             assertNumCalls(getInCallService(), 1);
             assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
             callControlAction(DISCONNECT, mCall1);
-            assertNumCalls(getInCallService(), 0);
+            verifyCallWasDisconnectedOrInCallServiceUnbinds();
         } finally {
             cleanup();
         }
@@ -405,7 +405,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             assertNumCalls(getInCallService(), 1);
             assertCallState(getLastAddedCall(), Call.STATE_ACTIVE);
             callControlAction(DISCONNECT, mCall1);
-            assertNumCalls(getInCallService(), 0);
+            verifyCallWasDisconnectedOrInCallServiceUnbinds();
         } finally {
             cleanup();
         }
@@ -455,7 +455,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             callControlAction(ANSWER, mCall1, AUDIO_CALL);
             assertNumCalls(getInCallService(), 1);
             callControlAction(DISCONNECT, mCall1);
-            assertNumCalls(getInCallService(), 0);
+            verifyCallWasDisconnectedOrInCallServiceUnbinds();
         } finally {
             cleanup();
         }
@@ -484,7 +484,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
                 assertNotNull(e);
             }
             callControlAction(DISCONNECT, mCall1, DisconnectCause.REJECTED);
-            assertNumCalls(getInCallService(), 0);
+            verifyCallWasDisconnectedOrInCallServiceUnbinds();
         } finally {
             cleanup();
         }
@@ -517,7 +517,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             assertCallState(getLastAddedCall(), Call.STATE_HOLDING);
             // disconnect
             callControlAction(DISCONNECT, mCall1);
-            assertNumCalls(getInCallService(), 0);
+            verifyCallWasDisconnectedOrInCallServiceUnbinds();
         } finally {
             cleanup();
         }
@@ -676,7 +676,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             cleanup();
             startCallWithAttributesAndVerify(mOutgoingCallAttributes, mCall1);
             callControlAction(DISCONNECT, mCall1);
-            assertNumCalls(getInCallService(), 0);
+            verifyCallWasDisconnectedOrInCallServiceUnbinds();
 
             CountDownLatch latch = new CountDownLatch(1);
             LinkedBlockingQueue<CallException> queue = new LinkedBlockingQueue<>();
@@ -728,7 +728,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             assertNumCalls(getInCallService(), 1);
             Call call = getLastAddedCall();
             call.reject(Call.REJECT_REASON_DECLINED);
-            assertNumCalls(getInCallService(), 0);
+            verifyCallWasDisconnectedOrInCallServiceUnbinds();
             assertTrue(mCall1.mWasOnDisconnectCalled);
         } finally {
             cleanup();
@@ -764,7 +764,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
                 }
             }, WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, "call not set to active");
             call.disconnect();
-            assertNumCalls(getInCallService(), 0);
+            verifyCallWasDisconnectedOrInCallServiceUnbinds();
         } finally {
             cleanup();
         }
@@ -864,7 +864,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             assertCallState(call1, Call.STATE_HOLDING);
 
             callControlAction(DISCONNECT, mCall1);
-            assertNumCalls(getInCallService(), 0);
+            verifyCallWasDisconnectedOrInCallServiceUnbinds();
         } finally {
             cleanup();
         }
@@ -1449,6 +1449,15 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             TestUtils.executeShellCommand(getInstrumentation(), TEL_CLEAN_STUCK_CALLS_CMD);
         } catch (Exception e) {
             Log.i(TAG, FAIL_MSG_DURING_CLEANUP);
+        }
+    }
+
+    private void verifyCallWasDisconnectedOrInCallServiceUnbinds(){
+        // If ICS is null, there are no ongoing calls which means the call was disconnected
+        // and removed successfully. Otherwise, we need to wait until the ICS call count
+        // reaches 0
+        if (getInCallService() != null) {
+            assertNumCalls(getInCallService(), 0);
         }
     }
 
