@@ -2530,6 +2530,131 @@ public class PackageManagerShellCommandInstallTest {
         }
     }
 
+    @Test
+    public void testEmergencyInstallerUninstallNoAttribiute() throws Exception {
+        assumeTrue(mDataLoaderType == DATA_LOADER_TYPE_NONE);
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.EMERGENCY_INSTALL_PACKAGES,
+                Manifest.permission.REQUEST_DELETE_PACKAGES,
+                Manifest.permission.INSTALL_PACKAGES);
+
+        try {
+            installPackage(TEST_INSTALLER_APP_ABSENT);
+            assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            installer.openSession(sessionId);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+
+            installer.uninstall(TEST_APP_PACKAGE,
+                    new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                        @Override
+                        public void send(int code, Intent intent, String resolvedType,
+                                IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                                String requiredPermission, Bundle options) throws RemoteException {
+                            status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                                    Integer.MIN_VALUE));
+                            statusMessage.complete(
+                                    intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                        }
+                    }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testEmergencyInstallerUninstallNoPermission() throws Exception {
+        assumeTrue(mDataLoaderType == DATA_LOADER_TYPE_NONE);
+
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.REQUEST_DELETE_PACKAGES,
+                Manifest.permission.INSTALL_PACKAGES);
+
+        try {
+            installPackage(TEST_INSTALLER_APP);
+            assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            installer.openSession(sessionId);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+
+            installer.uninstall(TEST_APP_PACKAGE,
+                    new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                        @Override
+                        public void send(int code, Intent intent, String resolvedType,
+                                IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                                String requiredPermission, Bundle options) throws RemoteException {
+                            status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                                    Integer.MIN_VALUE));
+                            statusMessage.complete(
+                                    intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                        }
+                    }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    // We can't test uninstalling a system app in CTS tests; this positive test will be in GTS tests
+    // instead.
+    @Test
+    public void testEmergencyInstallerUninstallNonSystemApp() throws Exception {
+        assumeTrue(mDataLoaderType == DATA_LOADER_TYPE_NONE);
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.EMERGENCY_INSTALL_PACKAGES,
+                Manifest.permission.REQUEST_DELETE_PACKAGES,
+                Manifest.permission.INSTALL_PACKAGES);
+
+        try {
+            installPackage(TEST_INSTALLER_APP);
+            assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            installer.openSession(sessionId);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+
+            installer.uninstall(TEST_APP_PACKAGE,
+                    new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                        @Override
+                        public void send(int code, Intent intent, String resolvedType,
+                                IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                                String requiredPermission, Bundle options) throws RemoteException {
+                            status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                                    Integer.MIN_VALUE));
+                            statusMessage.complete(
+                                    intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                        }
+                    }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
     private List<SharedLibraryInfo> getSharedLibraries() {
         getUiAutomation().adoptShellPermissionIdentity();
         try {
