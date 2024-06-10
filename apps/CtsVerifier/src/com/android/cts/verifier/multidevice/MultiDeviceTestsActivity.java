@@ -25,8 +25,8 @@ public class MultiDeviceTestsActivity extends HostTestsActivity {
 
   public MultiDeviceTestsActivity() {
     super(
-        R.string.multi_device_tests_dialog_title,
-        R.string.multi_device_tests_dialog_content,
+        R.string.nfc_tests_dialog_title,
+        R.string.nfc_tests_dialog_content,
         new HostTestCategory("Multidevice Tests")
             .addTest(
                 "CtsNfcHceMultiDeviceTestCases#test_conflicting_non_payment",

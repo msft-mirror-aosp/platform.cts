@@ -178,4 +178,7 @@
     <!-- b/236205588#comment26 -->
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
+
+    <!-- b/337678518#comment25 Missing vendor_required_attestation_certificates.xml -->
+    <option name="compatibility:exclude-filter" value="CtsCompanionDeviceManagerMultiDeviceTestCases" />
 </configuration>

@@ -304,7 +304,7 @@ public class AppCloningHostTest extends AppCloningBaseHostTest {
     @LargeTest
     public void testDeletionOfAppInNotParentProfile_notDeletesCloneApp()
             throws Exception {
-        assumeTrue(isAtLeastU(sDevice));
+        assumeTrue(isAtLeastV(sDevice));
 
         int currentUserId = getCurrentUserId();
         String managedProfileId = createAndStartManagedProfileUser();

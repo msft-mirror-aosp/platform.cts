@@ -16,28 +16,34 @@
 
 package android.devicepolicy.cts;
 
+import static android.content.pm.PackageManager.FEATURE_TELEPHONY_EUICC;
+
 import static com.android.bedstead.nene.utils.Assert.assertThrows;
 
 import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assume.assumeTrue;
 
 import android.app.admin.flags.Flags;
 import android.content.Intent;
 import android.telephony.euicc.DownloadableSubscription;
 import android.telephony.euicc.EuiccManager;
 
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.harrier.policies.EmbeddedSubscription;
 import com.android.bedstead.harrier.policies.EmbeddedSubscriptionSwitchAfterDownload;
 import com.android.bedstead.nene.utils.BlockingPendingIntent;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,6 +53,7 @@ import java.util.Set;
 
 @RunWith(BedsteadJUnit4.class)
 @RequireTelephonySupport
+@RequireFeature(FEATURE_TELEPHONY_EUICC)
 public final class EmbeddedSubscriptionsTest {
 
     @ClassRule
@@ -79,6 +86,7 @@ public final class EmbeddedSubscriptionsTest {
                 () -> sDeviceState.dpc().devicePolicyManager().getSubscriptionIds());
     }
 
+    @Ignore("Re-enable this after b/343259674 is fixed")
     @ApiTest(apis = "android.telephony.euicc.EuiccManager#downloadSubscription")
     @CanSetPolicyTest(policy = EmbeddedSubscription.class)
     @RequireFlagsEnabled(Flags.FLAG_ESIM_MANAGEMENT_ENABLED)
@@ -99,6 +107,7 @@ public final class EmbeddedSubscriptionsTest {
                 0)).isEqualTo(EuiccManager.ERROR_INVALID_ACTIVATION_CODE);
     }
 
+    @Ignore("Re-enable this after b/343259674 is fixed")
     @ApiTest(apis = "android.telephony.euicc.EuiccManager#downloadSubscription")
     @CanSetPolicyTest(policy = EmbeddedSubscriptionSwitchAfterDownload.class)
     @RequireFlagsEnabled(Flags.FLAG_ESIM_MANAGEMENT_ENABLED)
@@ -125,6 +134,8 @@ public final class EmbeddedSubscriptionsTest {
     @Postsubmit(reason = "new test")
     @Test
     public void downloadSubscription_withSwitchAfterDownloadAsTrue_failsAsNotAllowed() {
+        assumeTrue("Test requires embedded subscriptions to be enabled on the device",
+                sDeviceState.dpc().euiccManager().isEnabled());
         BlockingPendingIntent blockingPendingIntent = BlockingPendingIntent.getBroadcast();
         DownloadableSubscription downloadableSubscription =
                 DownloadableSubscription.forActivationCode("");

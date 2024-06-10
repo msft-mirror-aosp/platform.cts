@@ -9,7 +9,7 @@ from mobly import utils
 from mobly.controllers import android_device
 from time import sleep
 
-CDM_SNIPPET_PACKAGE = 'android.companion.multidevice'
+CDM_SNIPPET_PACKAGE = 'android.companion.cts.multidevice'
 
 BT_DISCOVERABLE_TIME = 15
 OPERATION_DELAY_TIME = 5
