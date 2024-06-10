@@ -48,6 +48,32 @@ _ZOOM_RANGE_UW_W = (0.95, 2.05)  # UW/W crossover range
 _ZOOM_STEP = 0.01
 
 
+def _get_error_msg(failed_awb_msg, failed_ae_msg, failed_af_msg):
+  """"Returns the error message string.
+
+  Args:
+    failed_awb_msg: list of awb error msgs
+    failed_ae_msg: list of ae error msgs
+    failed_af_msg: list of af error msgs
+  Returns:
+    error_msg: str; error_msg string
+  """
+  error_msg = ''
+  if failed_awb_msg:
+    error_msg = f'{error_msg}----AWB Check----\n'
+    for msg in failed_awb_msg:
+      error_msg = f'{error_msg}{msg}\n'
+  if failed_ae_msg:
+    error_msg = f'{error_msg}----AE Check----\n'
+    for msg in failed_ae_msg:
+      error_msg = f'{error_msg}{msg}\n'
+  if failed_af_msg:
+    error_msg = f'{error_msg}----AF Check----\n'
+    for msg in failed_af_msg:
+      error_msg = f'{error_msg}{msg}\n'
+  return error_msg
+
+
 def _check_orientation_and_flip(props, uw_img, w_img, img_name_stem):
   """Checks the sensor orientation and flips image.
 
@@ -106,7 +132,10 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
     w_img: image captured using W lens.
     log_path: path to save the image.
     suffix: str; patch suffix to be used in file name.
+  Returns:
+    Failed AE check messages if any. None otherwise.
   """
+  failed_ae_msg = []
   file_stem = f'{os.path.join(log_path, _NAME)}_{suffix}'
   uw_y = _extract_y(
       uw_img, f'{file_stem}_uw_y.png')
@@ -121,12 +150,14 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
   logging.debug('y_avg_change_percent: %.4f', y_avg_change_percent)
 
   if not math.isclose(uw_y_avg, w_y_avg, rel_tol=_AE_RTOL, abs_tol=_AE_ATOL):
-    raise AssertionError('y_avg change is greater than threshold value: '
+    failed_ae_msg.append('y_avg change is greater than threshold value for '
+                         f'patch: {suffix} '
                          f'diff: {abs(w_y_avg-uw_y_avg):.4f} '
                          f'ATOL: {_AE_ATOL} '
                          f'RTOL: {_AE_RTOL} '
                          f'uw_y_avg: {uw_y_avg:.4f} '
                          f'w_y_avg: {w_y_avg:.4f} ')
+  return failed_ae_msg
 
 
 def _do_af_check(uw_img, w_img, log_path):
@@ -136,7 +167,10 @@ def _do_af_check(uw_img, w_img, log_path):
     uw_img: image captured using UW lens.
     w_img: image captured using W lens.
     log_path: path to save the image.
+  Returns:
+    Failed AF check messages if any. None otherwise.
   """
+  failed_af_msg = []
   file_stem = f'{os.path.join(log_path, _NAME)}_slanted_edge'
   sharpness_uw = _compute_slanted_edge_sharpness(uw_img, f'{file_stem}_uw.png')
   logging.debug('Sharpness for UW patch: %.2f', sharpness_uw)
@@ -145,10 +179,11 @@ def _do_af_check(uw_img, w_img, log_path):
   logging.debug('Sharpness for W patch: %.2f', sharpness_w)
 
   if not math.isclose(sharpness_w, sharpness_uw, abs_tol=_AF_ATOL):
-    raise AssertionError('Sharpness change is greater than the threshold value.'
+    failed_af_msg.append('Sharpness > threshold value.'
                          f' ATOL: {_AF_ATOL} '
-                         f'sharpness_w: {sharpness_w} '
-                         f'sharpness_uw: {sharpness_uw}')
+                         f'sharpness_w: {sharpness_w:.4f} '
+                         f'sharpness_uw: {sharpness_uw:.4f}')
+  return failed_af_msg
 
 
 def _do_awb_check(uw_img, w_img):
@@ -157,22 +192,26 @@ def _do_awb_check(uw_img, w_img):
   Args:
     uw_img: image captured using UW lens.
     w_img: image captured using W lens.
+  Returns:
+    Failed AWB check messages if any. None otherwise.
   """
+  failed_awb_msg = []
   uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img, 'UW')
   w_r_g_ratio, w_b_g_ratio = _get_color_ratios(w_img, 'W')
 
   if not math.isclose(uw_r_g_ratio, w_r_g_ratio,
                       abs_tol=_AWB_ATOL):
-    raise AssertionError(f'R/G change is greater than the threshold value: '
-                         f'ATOL: {_AWB_ATOL} '
-                         f'uw_r_g_ratio: {uw_r_g_ratio:.4f} '
-                         f'w_r_g_ratio: {w_r_g_ratio:.4f}')
+    failed_awb_msg.append(f'R/G change is greater than the threshold value: '
+                          f'ATOL: {_AWB_ATOL} '
+                          f'uw_r_g_ratio: {uw_r_g_ratio:.4f} '
+                          f'w_r_g_ratio: {w_r_g_ratio:.4f}')
   if not math.isclose(uw_b_g_ratio, w_b_g_ratio,
                       abs_tol=_AWB_ATOL):
-    raise AssertionError(f'B/G change is greater than the threshold value: '
-                         f'ATOL: {_AWB_ATOL} '
-                         f'uw_b_g_ratio: {uw_b_g_ratio:.4f} '
-                         f'w_b_g_ratio: {w_b_g_ratio:.4f}')
+    failed_awb_msg.append(f'B/G change is greater than the threshold value: '
+                          f'ATOL: {_AWB_ATOL} '
+                          f'uw_b_g_ratio: {uw_b_g_ratio:.4f} '
+                          f'w_b_g_ratio: {w_b_g_ratio:.4f}')
+  return failed_awb_msg
 
 
 def _extract_main_patch(corners, ids, img_rgb, img_path, lens_suffix):
@@ -319,6 +358,9 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
       chart_distance = self.chart_distance
+      failed_awb_msg = []
+      failed_ae_msg = []
+      failed_af_msg = []
 
       # check SKIP conditions
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
@@ -404,9 +446,9 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # Convert UW and W img to numpy array
       uw_img = image_processing_utils.convert_image_to_numpy_array(
-          uw_name)
+          str(uw_name))
       w_img = image_processing_utils.convert_image_to_numpy_array(
-          w_name)
+          str(w_name))
 
       # Check the sensor orientation and flip image
       if (props['android.lens.facing'] ==
@@ -444,13 +486,17 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
           uw_four_patches, w_four_patches, _COLORS):
         logging.debug('Checking for quadrant color: %s', color)
         # AE Check: Extract the Y component from rectangle patch
-        _do_ae_check(uw_patch, w_patch, self.log_path, color)
+        failed_ae_msg = _do_ae_check(uw_patch, w_patch, self.log_path, color)
 
         # AWB Check : Verify that R/G and B/G ratios are within the limits
-        _do_awb_check(uw_patch, w_patch)
+        failed_awb_msg = _do_awb_check(uw_patch, w_patch)
 
       # AF check using slanted edge
-      _do_af_check(uw_chart_patch, w_chart_patch, self.log_path)
+      failed_af_msg = _do_af_check(uw_chart_patch, w_chart_patch, self.log_path)
+      if failed_awb_msg or failed_ae_msg or failed_af_msg:
+        error_msg = _get_error_msg(failed_awb_msg, failed_ae_msg, failed_af_msg)
+        raise AssertionError(f'{_NAME} failed with following errors:\n'
+                             f'{error_msg}')
 
 if __name__ == '__main__':
   test_runner.main()
