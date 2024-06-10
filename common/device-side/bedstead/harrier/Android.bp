@@ -85,6 +85,9 @@ android_library {
 
         //TODO(b/336991736) below lines are temporary for compatibility with other repositories
         ":bedstead-enterprise-harrier-temporary-srcs",
+
+        //TODO(b/334025286) below filegroup is temporary until multiuser is fully decoupled
+        ":bedstead-multiuser-harrier-temporary-srcs",
     ],
 
     static_libs: [

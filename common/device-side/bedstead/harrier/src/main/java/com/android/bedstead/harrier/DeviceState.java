@@ -17,7 +17,6 @@
 package com.android.bedstead.harrier;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
-import static android.app.admin.DevicePolicyManager.ENCRYPTION_STATUS_UNSUPPORTED;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 import static android.os.Build.VERSION.SDK_INT;
 
@@ -38,13 +37,10 @@ import static com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthe
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 
-import android.app.ActivityManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.content.Intent;
@@ -72,9 +68,7 @@ import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
 import com.android.bedstead.harrier.annotations.EnsureHasAccount;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts;
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
-import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent;
@@ -84,64 +78,37 @@ import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
 import com.android.bedstead.harrier.annotations.EnsurePasswordSet;
 import com.android.bedstead.harrier.annotations.EnsurePolicyOperationUnsafe;
 import com.android.bedstead.harrier.annotations.EnsurePropertySet;
-import com.android.bedstead.harrier.annotations.EnsureScreenIsOn;
 import com.android.bedstead.harrier.annotations.EnsureSecureSettingSet;
 import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
-import com.android.bedstead.harrier.annotations.EnsureUnlocked;
 import com.android.bedstead.harrier.annotations.EnsureUsingDisplayTheme;
 import com.android.bedstead.harrier.annotations.EnsureUsingScreenOrientation;
 import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.FailureMode;
-import com.android.bedstead.harrier.annotations.OtherUser;
-import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
-import com.android.bedstead.harrier.annotations.RequireFactoryResetProtectionPolicySupported;
-import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
-import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireInstantApp;
-import com.android.bedstead.harrier.annotations.RequireLowRamDevice;
-import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntent;
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
-import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice;
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay;
 import com.android.bedstead.harrier.annotations.RequirePackageInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent;
-import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport;
-import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue;
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnSingleUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
-import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported;
-import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsupported;
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
 import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
-import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled;
-import com.android.bedstead.harrier.annotations.RequireUserSupported;
-import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers;
-import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay;
 import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasNoProfileAnnotation;
-import com.android.bedstead.harrier.annotations.meta.EnsureHasNoUserAnnotation;
 import com.android.bedstead.harrier.annotations.meta.EnsureHasProfileAnnotation;
-import com.android.bedstead.harrier.annotations.meta.EnsureHasUserAnnotation;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequireRunOnProfileAnnotation;
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnUserAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
+import com.android.bedstead.multiuser.UsersComponent;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountReference;
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy;
@@ -222,7 +189,6 @@ import java.util.stream.Collectors;
  * {@code assumeTrue} will be used, so tests which do not meet preconditions will be skipped.
  */
 public final class DeviceState extends HarrierRule {
-    private static final String SWITCHED_TO_USER = "switchedToUser";
     private static final String SWITCHED_TO_PARENT_USER = "switchedToParentUser";
     public static final String INSTALL_INSTRUMENTED_APP = "installInstrumentedApp";
     private static final String IS_QUIET_MODE_ENABLED = "isQuietModeEnabled";
@@ -459,11 +425,8 @@ public final class DeviceState extends HarrierRule {
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
     }
 
-    void applyAnnotation (Annotation annotation) {
-        // TODO: Refactor applyAnnotations to call into this and move everything in here
-    }
-
     private void applyAnnotations(List<Annotation> annotations, boolean isTest) throws Throwable {
+        //TODO b/345391598 move handling annotations to AnnotationExecutors
         Log.d(LOG_TAG, "Applying annotations: " + annotations);
         for (final Annotation annotation : annotations) {
             Log.v(LOG_TAG, "Applying annotation " + annotation);
@@ -545,28 +508,6 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            EnsureHasNoUserAnnotation ensureHasNoUserAnnotation =
-                    annotationType.getAnnotation(EnsureHasNoUserAnnotation.class);
-            if (ensureHasNoUserAnnotation != null) {
-                mUsersComponent.ensureHasNoUser(ensureHasNoUserAnnotation.value());
-                continue;
-            }
-
-            EnsureHasUserAnnotation ensureHasUserAnnotation =
-                    annotationType.getAnnotation(EnsureHasUserAnnotation.class);
-            if (ensureHasUserAnnotation != null) {
-                OptionalBoolean installInstrumentedApp = (OptionalBoolean)
-                        annotation.annotationType()
-                                .getMethod(INSTALL_INSTRUMENTED_APP).invoke(annotation);
-                OptionalBoolean switchedToUser = (OptionalBoolean)
-                        annotation.annotationType()
-                                .getMethod(SWITCHED_TO_USER).invoke(annotation);
-                mUsersComponent.ensureHasUser(
-                        ensureHasUserAnnotation.value(), installInstrumentedApp,
-                        switchedToUser);
-                continue;
-            }
-
             if (annotation instanceof EnsureDefaultContentSuggestionsServiceEnabled ensureDefaultContentSuggestionsServiceEnabledAnnotation) {
 
                 ensureDefaultContentSuggestionsServiceEnabled(
@@ -588,42 +529,6 @@ public final class DeviceState extends HarrierRule {
             if (annotation instanceof EnsureHasTestContentSuggestionsService ensureHasTestContentSuggestionsServiceAnnotation) {
                 ensureHasTestContentSuggestionsService(
                         ensureHasTestContentSuggestionsServiceAnnotation.onUser());
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasAdditionalUser ensureHasAdditionalUserAnnotation) {
-                mUsersComponent.ensureHasAdditionalUser(
-                        ensureHasAdditionalUserAnnotation.installInstrumentedApp(),
-                        ensureHasAdditionalUserAnnotation.switchedToUser());
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasNoAdditionalUser) {
-                mUsersComponent.ensureHasNoAdditionalUser();
-                continue;
-            }
-
-            if (annotation instanceof RequireRunOnAdditionalUser requireRunOnAdditionalUserAnnotation) {
-                mUsersComponent.requireRunOnAdditionalUser(
-                        requireRunOnAdditionalUserAnnotation.switchedToUser());
-                continue;
-            }
-
-            if (annotation instanceof RequireRunOnSingleUser) {
-                mUsersComponent.requireRunOnSingleUser();
-                continue;
-            }
-
-            RequireRunOnUserAnnotation requireRunOnUserAnnotation =
-                    annotationType.getAnnotation(RequireRunOnUserAnnotation.class);
-            if (requireRunOnUserAnnotation != null) {
-                OptionalBoolean switchedToUser = (OptionalBoolean)
-                        annotation.annotationType()
-                                .getMethod(SWITCHED_TO_USER).invoke(annotation);
-                mUsersComponent.requireRunOnUser(
-                        requireRunOnUserAnnotation.value(),
-                        switchedToUser
-                );
                 continue;
             }
 
@@ -724,97 +629,6 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof RequireFeature requireFeatureAnnotation) {
-                requireFeature(
-                        requireFeatureAnnotation.value(),
-                        requireFeatureAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireUsbDataSignalingCanBeDisabled requireUsbDataSignalingCanBeDisabledAnnotation) {
-                requireUsbDataSignalingCanBeDisabled();
-                continue;
-            }
-
-            if (annotation instanceof RequireDoesNotHaveFeature requireDoesNotHaveFeatureAnnotation) {
-                requireDoesNotHaveFeature(
-                        requireDoesNotHaveFeatureAnnotation.value(),
-                        requireDoesNotHaveFeatureAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireUserSupported requireUserSupportedAnnotation) {
-                mUsersComponent.requireUserSupported(
-                        requireUserSupportedAnnotation.value(),
-                        requireUserSupportedAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequirePrivateSpaceSupported requirePrivateSpaceSupported) {
-                requirePrivateSpaceSupported(requirePrivateSpaceSupported.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireLowRamDevice requireLowRamDeviceAnnotation) {
-                requireLowRamDevice(requireLowRamDeviceAnnotation.reason(),
-                        requireLowRamDeviceAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireNotLowRamDevice requireNotLowRamDeviceAnnotation) {
-                requireNotLowRamDevice(requireNotLowRamDeviceAnnotation.reason(),
-                        requireNotLowRamDeviceAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireVisibleBackgroundUsers) {
-                RequireVisibleBackgroundUsers castedAnnotation =
-                        (RequireVisibleBackgroundUsers) annotation;
-                requireVisibleBackgroundUsersSupported(castedAnnotation.reason(),
-                        castedAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireNotVisibleBackgroundUsers) {
-                RequireNotVisibleBackgroundUsers castedAnnotation =
-                        (RequireNotVisibleBackgroundUsers) annotation;
-                requireVisibleBackgroundUsersNotSupported(castedAnnotation.reason(),
-                        castedAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireVisibleBackgroundUsersOnDefaultDisplay) {
-                RequireVisibleBackgroundUsersOnDefaultDisplay castedAnnotation =
-                        (RequireVisibleBackgroundUsersOnDefaultDisplay) annotation;
-                requireVisibleBackgroundUsersOnDefaultDisplaySupported(castedAnnotation.reason(),
-                        castedAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireNotVisibleBackgroundUsersOnDefaultDisplay) {
-                RequireNotVisibleBackgroundUsersOnDefaultDisplay castedAnnotation =
-                        (RequireNotVisibleBackgroundUsersOnDefaultDisplay) annotation;
-                requireVisibleBackgroundUsersOnDefaultDisplayNotSupported(castedAnnotation.reason(),
-                        castedAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireRunOnVisibleBackgroundNonProfileUser) {
-                if (!isNonProfileUserRunningVisibleOnBackground()) {
-                    failOrSkip("Test only runs non-profile user that's running visible in the "
-                            + "background", FailureMode.SKIP);
-                }
-                continue;
-            }
-
-            if (annotation instanceof RequireRunNotOnVisibleBackgroundNonProfileUser) {
-                if (isNonProfileUserRunningVisibleOnBackground()) {
-                    failOrSkip("Test cannot run on non-profile user that's running visible in the "
-                            + "background", FailureMode.SKIP);
-                }
-                continue;
-            }
-
             if (annotation instanceof RequireSystemServiceAvailable requireSystemServiceAvailableAnnotation) {
                 requireSystemServiceAvailable(requireSystemServiceAvailableAnnotation.value(),
                         requireSystemServiceAvailableAnnotation.failureMode());
@@ -879,27 +693,6 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof RequireNotHeadlessSystemUserMode requireNotHeadlessSystemUserModeAnnotation) {
-                requireNotHeadlessSystemUserMode(
-                        requireNotHeadlessSystemUserModeAnnotation.reason());
-                continue;
-            }
-
-            if (annotation instanceof RequireHeadlessSystemUserMode requireHeadlessSystemUserModeAnnotation) {
-                requireHeadlessSystemUserMode(requireHeadlessSystemUserModeAnnotation.reason());
-                continue;
-            }
-
-            if (annotation instanceof EnsureScreenIsOn) {
-                ensureScreenIsOn();
-                continue;
-            }
-
-            if (annotation instanceof EnsureUnlocked) {
-                ensureUnlocked();
-                continue;
-            }
-
             if (annotation instanceof EnsurePasswordSet ensurePasswordSetAnnotation) {
                 mUsersComponent.ensurePasswordSet(
                         ensurePasswordSetAnnotation.forUser(),
@@ -909,11 +702,6 @@ public final class DeviceState extends HarrierRule {
 
             if (annotation instanceof EnsurePasswordNotSet ensurePasswordNotSetAnnotation) {
                 mUsersComponent.ensurePasswordNotSet(ensurePasswordNotSetAnnotation.forUser());
-                continue;
-            }
-
-            if (annotation instanceof OtherUser otherUserAnnotation) {
-                mOtherUserType = otherUserAnnotation.value();
                 continue;
             }
 
@@ -965,11 +753,6 @@ public final class DeviceState extends HarrierRule {
                 ensureGlobalSettingSet(
                         ensureGlobalSettingSetAnnotation.key(),
                         ensureGlobalSettingSetAnnotation.value());
-                continue;
-            }
-
-            if (annotation instanceof RequireMultiUserSupport requireMultiUserSupportAnnotation) {
-                requireMultiUserSupport(requireMultiUserSupportAnnotation.failureMode());
                 continue;
             }
 
@@ -1057,26 +840,10 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof RequireStorageEncryptionSupported) {
-                requireStorageEncryptionSupported();
-
-                continue;
-            }
-
-            if (annotation instanceof RequireStorageEncryptionUnsupported) {
-                requireStorageEncryptionUnsupported();
-                continue;
-            }
-
             if (annotation instanceof EnsurePolicyOperationUnsafe ensurePolicyOperationUnsafeAnnotation) {
                 ensurePolicyOperationUnsafe(ensurePolicyOperationUnsafeAnnotation.operation(),
                         ensurePolicyOperationUnsafeAnnotation.reason());
 
-                continue;
-            }
-
-            if (annotation instanceof RequireFactoryResetProtectionPolicySupported) {
-                requireFactoryResetProtectionPolicySupported();
                 continue;
             }
 
@@ -1108,11 +875,6 @@ public final class DeviceState extends HarrierRule {
                 ensureNoPackageRespondsToIntent(
                         ensureNoPackageRespondsToIntentAnnotation.intent(),
                         ensureNoPackageRespondsToIntentAnnotation.user());
-                continue;
-            }
-
-            if (annotation instanceof RequireResourcesBooleanValue requireResourcesBooleanValue) {
-                requireSystemBooleanResource(requireResourcesBooleanValue);
                 continue;
             }
         }
@@ -1379,16 +1141,6 @@ public final class DeviceState extends HarrierRule {
                 TestApis.packages().features().contains(feature), failureMode);
     }
 
-    private void requireUsbDataSignalingCanBeDisabled() {
-        assumeTrue("device must be able to control usb data signaling",
-                TestApis.devicePolicy().canUsbDataSignalingBeDisabled());
-    }
-
-    private void requireDoesNotHaveFeature(String feature, FailureMode failureMode) {
-        checkFailOrSkip("Device must not have feature " + feature,
-                !TestApis.packages().features().contains(feature), failureMode);
-    }
-
     private void requireTargetSdkVersion(
             int min, int max, FailureMode failureMode) {
         int targetSdkVersion = TestApis.packages().instrumented().targetSdkVersion();
@@ -1416,17 +1168,11 @@ public final class DeviceState extends HarrierRule {
         );
     }
 
-    private void requirePrivateSpaceSupported(FailureMode failureMode) {
-        checkFailOrSkip("Device must support Private Space.",
-                TestApis.users().canAddPrivateProfile(), failureMode);
-    }
-
     private static final String LOG_TAG = "DeviceState";
 
     private static final Context sContext = TestApis.context().instrumentedContext();
     private final Map<com.android.bedstead.nene.users.UserType, Map<UserReference, UserReference>>
             mProfiles = new HashMap<>();
-    private UserType mOtherUserType;
 
     private final Map<UserReference, Set<String>> mAddedUserRestrictions = new ConcurrentHashMap<>();
     private final Map<UserReference, Set<String>> mRemovedUserRestrictions = new ConcurrentHashMap<>();
@@ -1719,11 +1465,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no "other" user
      */
     public UserReference otherUser() {
-        if (mOtherUserType == null) {
-            throw new IllegalStateException("No other user specified. Use @OtherUser");
-        }
-
-        return resolveUserTypeToUser(mOtherUserType);
+        return mUsersComponent.otherUser();
     }
 
     private UserReference ensureHasProfile(
@@ -2063,7 +1805,6 @@ public final class DeviceState extends HarrierRule {
             broadcastReceiver.unregisterQuietly();
         }
         mRegisteredBroadcastReceivers.clear();
-        mOtherUserType = null;
         mAccounts.clear();
         mAccountAuthenticators.clear();
 
@@ -2318,79 +2059,6 @@ public final class DeviceState extends HarrierRule {
         return mTestAppsComponent.testApp(key);
     }
 
-    private void requireNotHeadlessSystemUserMode(String reason) {
-        assumeFalse(reason, TestApis.users().isHeadlessSystemUserMode());
-    }
-
-    private void requireHeadlessSystemUserMode(String reason) {
-        assumeTrue(reason, TestApis.users().isHeadlessSystemUserMode());
-    }
-
-    private void requireLowRamDevice(String reason, FailureMode failureMode) {
-        checkFailOrSkip(reason,
-                TestApis.context().instrumentedContext()
-                        .getSystemService(ActivityManager.class)
-                        .isLowRamDevice(),
-                failureMode);
-    }
-
-    private void requireNotLowRamDevice(String reason, FailureMode failureMode) {
-        checkFailOrSkip(reason,
-                !TestApis.context().instrumentedContext()
-                        .getSystemService(ActivityManager.class)
-                        .isLowRamDevice(),
-                failureMode);
-    }
-
-    private void requireVisibleBackgroundUsersSupported(String reason, FailureMode failureMode) {
-        if (!TestApis.users().isVisibleBackgroundUsersSupported()) {
-            String message = "Device does not support visible background users, but test requires "
-                    + "it. Reason: " + reason;
-            failOrSkip(message, failureMode);
-        }
-    }
-
-    private void requireVisibleBackgroundUsersNotSupported(String reason, FailureMode failureMode) {
-        if (TestApis.users().isVisibleBackgroundUsersSupported()) {
-            String message = "Device supports visible background users, but test requires that it "
-                    + "doesn't. Reason: " + reason;
-            failOrSkip(message, failureMode);
-        }
-    }
-
-    private void requireVisibleBackgroundUsersOnDefaultDisplaySupported(String reason,
-                                                                        FailureMode failureMode) {
-        if (!TestApis.users().isVisibleBackgroundUsersOnDefaultDisplaySupported()) {
-            String message = "Device does not support visible background users on default display, "
-                    + "but test requires it. Reason: " + reason;
-            failOrSkip(message, failureMode);
-        }
-    }
-
-    private void requireVisibleBackgroundUsersOnDefaultDisplayNotSupported(String reason,
-                                                                           FailureMode failureMode) {
-        if (TestApis.users().isVisibleBackgroundUsersOnDefaultDisplaySupported()) {
-            String message = "Device supports visible background users on default display, but test"
-                    + " requires that it doesn't. Reason: " + reason;
-            failOrSkip(message, failureMode);
-        }
-    }
-
-    private boolean isNonProfileUserRunningVisibleOnBackground() {
-        UserReference user = TestApis.users().instrumented();
-        boolean isIt = user.isVisibleBagroundNonProfileUser();
-        Log.d(LOG_TAG, "isNonProfileUserRunningVisibleOnBackground(" + user + "): " + isIt);
-        return isIt;
-    }
-
-    private void ensureScreenIsOn() {
-        TestApis.device().wakeUp();
-    }
-
-    private void ensureUnlocked() {
-        TestApis.device().unlock();
-    }
-
     private void ensureBluetoothEnabled() {
         // TODO(b/220306133): bluetooth from background
         Assume.assumeTrue("Can only configure bluetooth from foreground",
@@ -2501,11 +2169,6 @@ public final class DeviceState extends HarrierRule {
         mTemporaryContentSuggestionsServiceSet.add(user);
 
         TestApis.content().suggestions().setTemporaryService(user, mContentSuggestionsService);
-    }
-
-    private void requireMultiUserSupport(FailureMode failureMode) {
-        checkFailOrSkip("This test is only supported on multi user devices",
-                TestApis.users().supportsMultipleUsers(), failureMode);
     }
 
     private void requireInstantApp(String reason, FailureMode failureMode) {
@@ -2816,7 +2479,15 @@ public final class DeviceState extends HarrierRule {
         return true;
     }
 
-    void ensureDoesNotHaveUserRestriction(String restriction, UserType onUser) {
+    /**
+     * Ensure that a user restriction isn't set on the given user.
+     * <p>
+     * @deprecated Do not use this method inside tests,
+     * instead use the {@link EnsureDoesNotHaveUserRestriction} annotation.
+     */
+    //TODO(karzelek): move it outside of DeviceState
+    @Deprecated
+    public void ensureDoesNotHaveUserRestriction(String restriction, UserType onUser) {
         if (onUser == UserType.ANY) {
             for (UserReference userReference : TestApis.users().all()) {
                 ensureDoesNotHaveUserRestriction(restriction, userReference);
@@ -2924,18 +2595,6 @@ public final class DeviceState extends HarrierRule {
     }
 
 
-    private void requireStorageEncryptionSupported() {
-        checkFailOrSkip("Requires storage encryption to be supported.",
-                TestApis.devicePolicy().getStorageEncryptionStatus() != ENCRYPTION_STATUS_UNSUPPORTED,
-                FailureMode.SKIP);
-    }
-    private void requireStorageEncryptionUnsupported() {
-        checkFailOrSkip("Requires storage encryption to not be supported.",
-                TestApis.devicePolicy().getStorageEncryptionStatus()
-                        == ENCRYPTION_STATUS_UNSUPPORTED,
-                FailureMode.SKIP);
-    }
-
     private void ensurePolicyOperationUnsafe(
             CommonDevicePolicy.DevicePolicyOperation operation,
             CommonDevicePolicy.OperationSafetyReason reason) {
@@ -2943,12 +2602,6 @@ public final class DeviceState extends HarrierRule {
         TestApis.devicePolicy().setNextOperationSafety(operation, reason);
         mNextSafetyOperationSet = true;
         TestApis.devicePolicy().setNextOperationSafety(operation, reason);
-    }
-
-    private void requireFactoryResetProtectionPolicySupported() {
-        checkFailOrSkip("Requires factory reset protection policy to be supported",
-                TestApis.devicePolicy().isFactoryResetProtectionPolicySupported(),
-                FailureMode.FAIL);
     }
 
     private void ensurePropertySet(String key, String value) {
@@ -3034,21 +2687,6 @@ public final class DeviceState extends HarrierRule {
             String packageName = resolveInfoWrapper.activityInfo().packageName;
             ensurePackageNotInstalled(packageName, user);
         }
-    }
-
-    private void requireSystemBooleanResource(
-            RequireResourcesBooleanValue requireResourcesBooleanValue
-    ) {
-        boolean resourceValue = TestApis
-                .resources()
-                .system()
-                .getBoolean(requireResourcesBooleanValue.configName());
-
-        assumeThat(
-                "resource with configName: " + requireResourcesBooleanValue.configName(),
-                resourceValue,
-                is(requireResourcesBooleanValue.requiredValue())
-        );
     }
 
     void onTestFailed(Throwable exception) {
