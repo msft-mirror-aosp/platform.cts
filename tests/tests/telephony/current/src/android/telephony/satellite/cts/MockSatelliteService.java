@@ -38,6 +38,7 @@ import android.telephony.satellite.stub.SatelliteImplBase;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 import android.telephony.satellite.stub.SatelliteService;
+import android.telephony.satellite.stub.SystemSelectionSpecifier;
 import android.util.Log;
 
 import com.android.internal.util.FunctionalUtils;
@@ -606,6 +607,29 @@ public class MockSatelliteService extends SatelliteImplBase {
             if (mShouldRespondTelephony.get()) {
                 runWithExecutor(() -> resultCallback.accept(mErrorCode));
             }
+        }
+    }
+
+    @Override
+    public void updateSatelliteSubscription(@NonNull String iccId,
+            @NonNull IIntegerConsumer resultCallback) {
+        logd("updateSatelliteSubscription: iccId=" + iccId + " mErrorCode=" + mErrorCode);
+
+        if (mShouldRespondTelephony.get()) {
+            runWithExecutor(() -> resultCallback.accept(mErrorCode));
+        }
+    }
+
+    @Override
+    public void updateSystemSelectionChannels(
+            @NonNull List<SystemSelectionSpecifier> systemSelectionSpecifiers,
+            @NonNull IIntegerConsumer resultCallback) {
+        logd(" updateSystemSelectionChannels: "
+                + "systemSelectionSpecifiers=" + systemSelectionSpecifiers
+                + " mErrorCode=" + mErrorCode);
+
+        if (mShouldRespondTelephony.get()) {
+            runWithExecutor(() -> resultCallback.accept(mErrorCode));
         }
     }
 
