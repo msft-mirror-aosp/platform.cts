@@ -56,6 +56,7 @@ class ZoomTestData:
   radius_tol: float
   offset_tol: float
   focal_length: float
+  physical_id: int = dataclasses.field(default=None)
 
 
 def get_test_tols_and_cap_size(cam, props, chart_distance, debug):
@@ -350,8 +351,9 @@ def verify_zoom_data(test_data, size):
     radius_ratio = data.circle[2] / radius_0
     logging.debug('r ratio req: %.3f, measured: %.3f',
                   z_ratio, radius_ratio)
-    msg = (f'{i} Circle radius ratio req({data.result_zoom:.2f}/{z_0:.2f}): '
-           f'{z_ratio:.2f}, cap: {radius_ratio:.2f}, RTOL: {data.radius_tol}')
+    msg = (f'{i} Circle radius ratio: result({data.result_zoom:.2f}/{z_0:.2f}):'
+           f' {z_ratio:.2f}, circle: {radius_ratio:.2f}, '
+           f'RTOL: {data.radius_tol}')
     if not math.isclose(z_ratio, radius_ratio, rel_tol=data.radius_tol):
       test_success = False
       logging.error(msg)

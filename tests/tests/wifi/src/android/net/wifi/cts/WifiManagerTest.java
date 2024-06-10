@@ -2355,7 +2355,9 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         allowedUIDs.add(Process.SHELL_UID);
         allowedUIDs.add(Process.PHONE_UID);
         allowedUIDs.add(Process.NETWORK_STACK_UID);
-        allowedUIDs.add(Process.NFC_UID);
+        if (!SdkLevel.isAtLeastV()) {
+            allowedUIDs.add(Process.NFC_UID);
+        }
 
         // only quick settings is allowed to bind to the BIND_QUICK_SETTINGS_TILE permission, using
         // this fact to determined allowed package name for sysui. This is a signature permission,

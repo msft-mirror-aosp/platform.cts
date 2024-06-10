@@ -59,21 +59,8 @@ class EnterpriseAnnotationExecutor(locator: BedsteadServiceLocator) : Annotation
                     TestAppProvider().query(annotation.dpc)
                 )
 
-            is com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner ->
-                deviceOwnerComponent.ensureHasDeviceOwner(
-                    annotation.failureMode,
-                    annotation.isPrimary,
-                    annotation.headlessDeviceOwnerType,
-                    annotation.affiliationIds.toHashSet(),
-                    annotation.type,
-                    annotation.key,
-                    TestAppProvider().query(annotation.dpc)
-                )
-
             is EnsureHasNoDelegate -> enterpriseComponent.ensureHasNoDelegate(annotation.admin)
             is EnsureHasNoDeviceOwner -> deviceOwnerComponent.ensureHasNoDeviceOwner()
-            is com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner ->
-                deviceOwnerComponent.ensureHasNoDeviceOwner()
 
             is EnsureHasNoProfileOwner ->
                 profileOwnersComponent.ensureHasNoProfileOwner(annotation.onUser)
