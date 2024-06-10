@@ -34,7 +34,6 @@ import android.content.IntentSender;
 import android.content.pm.PackageInstaller;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.core.content.FileProvider;
@@ -63,6 +62,8 @@ public class MainActivity extends Activity {
             "android.packageinstaller.cts.cujinstaller.action.REQUEST_INSTALLER";
     private static final String ACTION_RESPONSE_INSTALLER =
             "android.packageinstaller.cts.cujinstaller.action.RESPONSE_INSTALLER";
+    private static final String ACTION_INSTALL_RESULT =
+            "android.packageinstaller.cts.cujinstaller.action.INSTALL_RESULT";
     private static final String EXTRA_EVENT = "extra_event";
     private static final String EXTRA_TEST_APK_URI = "extra_test_apk_uri";
     private static final String EXTRA_TEST_APK_V2_URI = "extra_test_apk_v2_uri";
@@ -80,7 +81,6 @@ public class MainActivity extends Activity {
 
 
     private PackageInstaller mPackageInstaller;
-    private InstallResultReceiver mInstallResultReceiver;
     private RequestInstallerReceiver mRequestInstallerReceiver;
     private boolean mNotifyReady = true;
 
@@ -106,9 +106,6 @@ public class MainActivity extends Activity {
 
     private void cleanUp() {
         cleanUpSessions();
-        if (mInstallResultReceiver != null) {
-            getApplicationContext().unregisterReceiver(mInstallResultReceiver);
-        }
         getApplicationContext().unregisterReceiver(mRequestInstallerReceiver);
     }
 
@@ -122,6 +119,14 @@ public class MainActivity extends Activity {
                 // do nothing
             }
         }
+    }
+
+    private static IntentSender getIntentSender(Context context) {
+        Intent intent = new Intent(ACTION_INSTALL_RESULT).setPackage(context.getPackageName())
+                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+        PendingIntent pending = PendingIntent.getBroadcast(context, 0, intent,
+                FLAG_UPDATE_CURRENT | FLAG_MUTABLE);
+        return pending.getIntentSender();
     }
 
     @Override
@@ -180,8 +185,7 @@ public class MainActivity extends Activity {
             writeFullStream(is, os);
         }
 
-        mInstallResultReceiver = new InstallResultReceiver();
-        session.commit(mInstallResultReceiver.getIntentSender(getApplicationContext()));
+        session.commit(getIntentSender(getApplicationContext()));
     }
 
     private void startInstallationViaIntent(boolean getResult, String apkName) {
@@ -222,9 +226,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private static class InstallResultReceiver extends BroadcastReceiver {
-        private static final String ACTION = InstallResultReceiver.class.getName()
-                + "_" + SystemClock.elapsedRealtime();
+    public static class InstallResultReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -236,15 +238,6 @@ public class MainActivity extends Activity {
                 extraIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(extraIntent);
             }
-        }
-
-        public IntentSender getIntentSender(Context context) {
-            context.registerReceiver(this, new IntentFilter(ACTION), Context.RECEIVER_EXPORTED);
-            Intent intent = new Intent(ACTION).setPackage(context.getPackageName())
-                    .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
-            PendingIntent pending = PendingIntent.getBroadcast(context, 0, intent,
-                    FLAG_UPDATE_CURRENT | FLAG_MUTABLE);
-            return pending.getIntentSender();
         }
 
         private static String prettyPrint(Intent intent) {
