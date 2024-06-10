@@ -13,11 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier
+package com.android.bedstead.multiuser
 
 import android.os.UserManager
 import android.util.Log
+import com.android.bedstead.harrier.AnnotationExecutorUtil
+import com.android.bedstead.harrier.Defaults
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.annotations.OtherUser
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.packages
 import com.android.bedstead.nene.TestApis.users
@@ -48,6 +53,7 @@ class UsersComponent(private val deviceState: DeviceState) : DeviceStateComponen
     private var mAnnotationHasSwitchedUser = false
     private val mUsers: MutableMap<UserType, UserReference> = HashMap()
     private val mUsersSetPasswords: MutableList<UserReference> = mutableListOf()
+    private var otherUserType: com.android.bedstead.harrier.UserType? = null
 
     /**
      * Remove the user and record the change
@@ -354,14 +360,6 @@ class UsersComponent(private val deviceState: DeviceState) : DeviceStateComponen
         mAdditionalUser = additionalUserOrNull()
     }
 
-    fun requireRunOnSingleUser() {
-        AnnotationExecutorUtil.checkFailOrSkip(
-            "This test requires running on a single user on a headless device",
-            users().instrumented() == users().main(),
-            FailureMode.SKIP
-        )
-    }
-
     fun requireRunOnUser(userTypes: Array<String>, switchedToUser: OptionalBoolean) {
         var mutableSwitchedToUser = switchedToUser
         val instrumentedUser = users().instrumented()
@@ -508,12 +506,28 @@ class UsersComponent(private val deviceState: DeviceState) : DeviceStateComponen
         mUsers.clear()
         mAnnotationHasSwitchedUser = false
         mAdditionalUser = null
+        otherUserType = null
     }
 
     override fun prepareTestState() {
         if (mOriginalSwitchedUser == null) {
             mOriginalSwitchedUser = users().current()
         }
+    }
+
+    /**
+     * See [OtherUser]
+     */
+    fun handleOtherUser(userType: com.android.bedstead.harrier.UserType) {
+        otherUserType = userType
+    }
+
+    /**
+     * See [com.android.bedstead.harrier.DeviceState.otherUser]
+     */
+    fun otherUser(): UserReference {
+        checkNotNull(otherUserType) { "No other user specified. Use @OtherUser" }
+        return deviceState.resolveUserTypeToUser(otherUserType)
     }
 
     companion object {

@@ -167,7 +167,7 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
             "2.2.7.1/5.1/H-1-9",
             "2.2.7.1/5.1/H-1-10"})
     public void test4k() throws Exception {
-        Assume.assumeTrue(Utils.isUPerfClass() || !Utils.isPerfClass());
+        Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
         boolean isFirstSecure = isSecureSupportedCodec(mFirstPair.second, mFirstPair.first);
         boolean isSecondSecure = isSecureSupportedCodec(mSecondPair.second, mSecondPair.first);
         boolean onlyOneSecure = isFirstSecure ^ isSecondSecure;
@@ -196,7 +196,7 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
             "2.2.7.1/5.1/H-1-9",
             "2.2.7.1/5.1/H-1-10"})
     public void test4kHbd() throws Exception {
-        Assume.assumeTrue(Utils.isUPerfClass() || !Utils.isPerfClass());
+        Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
         boolean isFirstSecure = isSecureSupportedCodec(mFirstPair.second, mFirstPair.first);
         boolean isSecondSecure = isSecureSupportedCodec(mSecondPair.second, mSecondPair.first);
         boolean onlyOneSecure = isFirstSecure ^ isSecondSecure;

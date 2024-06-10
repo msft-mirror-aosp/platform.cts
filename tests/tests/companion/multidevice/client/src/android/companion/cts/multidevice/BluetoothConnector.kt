@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.companion.multidevice
+package android.companion.cts.multidevice
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
