@@ -16,10 +16,14 @@
 
 package android.harmfulappwarning.cts;
 
+import static com.android.tradefed.targetprep.UserHelper.getRunTestsAsUser;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
+
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
-import com.android.tradefed.device.PackageInfo;
-import com.android.tradefed.result.InputStreamSource;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
@@ -27,13 +31,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.Scanner;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 /**
  * Host-side tests for the harmful app launch warning
@@ -61,20 +58,20 @@ public class HarmfulAppWarningTest extends BaseHostJUnit4Test {
     private static final String TEST_APP_LAUNCHED_STRING = "Sample activity started.";
 
     private static final String WARNING_MESSAGE = "This is a warning message.";
-    private static final String SET_HARMFUL_APP_WARNING_COMMAND = String.format(
-            "cmd package set-harmful-app-warning %s \"" + WARNING_MESSAGE + "\"",
-            TEST_APP_PACKAGE_NAME);
 
-    private static final String CLEAR_HARMFUL_APP_WARNING_COMMAND = String.format(
-            "cmd package set-harmful-app-warning %s", TEST_APP_PACKAGE_NAME);
+    private static final String SET_HARMFUL_APP_WARNING_COMMAND =
+            "cmd package set-harmful-app-warning --user %d " + TEST_APP_PACKAGE_NAME
+            + " \"" + WARNING_MESSAGE + "\"";
 
-    private static final String GET_HARMFUL_APP_WARNING_COMMAND = String.format(
-            "cmd package get-harmful-app-warning %s", TEST_APP_PACKAGE_NAME);
+    private static final String GET_HARMFUL_APP_WARNING_COMMAND =
+            "cmd package get-harmful-app-warning --user %d " + TEST_APP_PACKAGE_NAME;
 
     private static final String LIST_PACKAGES_COMMAND =
             "cmd package list packages --user %d " + TEST_APP_PACKAGE_NAME;
 
     private ITestDevice mDevice;
+
+    private int mTestRunningUserId;
 
     @Before
     public void setUp() throws Exception {
@@ -85,21 +82,30 @@ public class HarmfulAppWarningTest extends BaseHostJUnit4Test {
         // Skip the tests for wearable devices. This feature is not used on wearable
         // devices, for now (no wearable UI, etc.)
         assumeFalse(hasFeature(FEATURE_WEARABLE));
+
+        // The test runs as the current user in most cases. For secondary_user_on_secondary_display
+        // case, we set mTestRunningUserId from RUN_TEST_AS_USER.
+        mTestRunningUserId = getDevice().getCurrentUser();
+        if (getDevice().isVisibleBackgroundUsersSupported()) {
+            mTestRunningUserId = getRunTestsAsUser(getTestInformation());
+        }
     }
 
     private void runDeviceTest(String testName) throws DeviceNotAvailableException {
-        runDeviceTests("android.harmfulappwarning.testapp",
+        runDeviceTests(getDevice(), "android.harmfulappwarning.testapp",
                 "android.harmfulappwarning.testapp.HarmfulAppWarningDeviceTest",
-                testName);
+                testName, mTestRunningUserId, /* testTimeoutMs= */ null);
     }
 
     private void verifyHarmfulAppWarningSet() throws DeviceNotAvailableException {
-        String warning = getDevice().executeShellCommand(GET_HARMFUL_APP_WARNING_COMMAND);
+        String warning = getDevice().executeShellCommand(
+                String.format(GET_HARMFUL_APP_WARNING_COMMAND, mTestRunningUserId));
         assertEquals(WARNING_MESSAGE, warning.trim());
     }
 
     private void verifyHarmfulAppWarningUnset() throws DeviceNotAvailableException {
-        String warning = getDevice().executeShellCommand(GET_HARMFUL_APP_WARNING_COMMAND);
+        String warning = getDevice().executeShellCommand(
+                String.format(GET_HARMFUL_APP_WARNING_COMMAND, mTestRunningUserId));
         if (warning != null) {
             warning = warning.trim();
         }
@@ -108,13 +114,13 @@ public class HarmfulAppWarningTest extends BaseHostJUnit4Test {
 
     private void verifySampleAppUninstalled() throws DeviceNotAvailableException {
         String installedPackage = getDevice().executeShellCommand(
-                String.format(LIST_PACKAGES_COMMAND, getDevice().getCurrentUser()));
+                String.format(LIST_PACKAGES_COMMAND, mTestRunningUserId));
         Assert.assertTrue("Harmful application was not uninstalled", installedPackage.isEmpty());
     }
 
     private void verifySampleAppInstalled() throws DeviceNotAvailableException {
         String installedPackage = getDevice().executeShellCommand(
-                String.format(LIST_PACKAGES_COMMAND, getDevice().getCurrentUser()));
+                String.format(LIST_PACKAGES_COMMAND, mTestRunningUserId));
         Assert.assertFalse("Harmful application was uninstalled", installedPackage.isEmpty());
     }
 
@@ -133,7 +139,8 @@ public class HarmfulAppWarningTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testLaunchAnyway() throws DeviceNotAvailableException {
-        mDevice.executeShellCommand(SET_HARMFUL_APP_WARNING_COMMAND);
+        mDevice.executeShellCommand(
+                String.format(SET_HARMFUL_APP_WARNING_COMMAND, mTestRunningUserId));
         runDeviceTest("testLaunchAnyway");
 
         verifyHarmfulAppWarningUnset();
@@ -145,7 +152,8 @@ public class HarmfulAppWarningTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testUninstall() throws DeviceNotAvailableException {
-        mDevice.executeShellCommand(SET_HARMFUL_APP_WARNING_COMMAND);
+        mDevice.executeShellCommand(
+                String.format(SET_HARMFUL_APP_WARNING_COMMAND, mTestRunningUserId));
         runDeviceTest("testUninstall");
         verifySampleAppUninstalled();
     }
@@ -155,7 +163,8 @@ public class HarmfulAppWarningTest extends BaseHostJUnit4Test {
      */
     @Test
     public void testDismissDialog() throws DeviceNotAvailableException {
-        mDevice.executeShellCommand(SET_HARMFUL_APP_WARNING_COMMAND);
+        mDevice.executeShellCommand(
+                String.format(SET_HARMFUL_APP_WARNING_COMMAND, mTestRunningUserId));
         runDeviceTest("testDismissDialog");
         verifyHarmfulAppWarningSet();
         verifySampleAppInstalled();

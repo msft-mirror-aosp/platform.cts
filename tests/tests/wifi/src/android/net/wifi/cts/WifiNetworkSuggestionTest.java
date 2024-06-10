@@ -1189,8 +1189,10 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
         // Should not disconnect immediately
         assertFalse(callback.onLostCalled);
         // After linger time out, should disconnect.
-        Thread.sleep(DURATION_NETWORK_LINGER_MILLIS);
-        assertTrue(callback.onLostCalled);
+        PollingCheck.check(
+                "Wifi not disconnected",
+                DURATION_NETWORK_LINGER_MILLIS,
+                () -> callback.onLostCalled);
     }
 
     /**
