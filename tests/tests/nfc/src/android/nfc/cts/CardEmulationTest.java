@@ -65,6 +65,7 @@ import org.mockito.internal.util.reflection.FieldReader;
 import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 
@@ -406,6 +407,43 @@ public class CardEmulationTest {
                     ensurePreferredService(WalletRoleTestUtils.WALLET_HOLDER_SERVICE_DESC);
                     notifyPollingLoopAndWait(new ArrayList<PollingFrame>(frames),
                             WalletRoleTestUtils.getWalletRoleHolderService().getClassName());
+                    adapter.notifyHceDeactivated();
+                });
+    }
+
+    @Test
+    @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
+            android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
+    public void testCustomFrameToCustomInTwoFullLoops() {
+        WalletRoleTestUtils.runWithRole(mContext, WalletRoleTestUtils.WALLET_HOLDER_PACKAGE_NAME,
+                () -> {
+                    NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+                    adapter.notifyHceDeactivated();
+                    CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+                    ComponentName customServiceName = new ComponentName(mContext,
+                            CustomHostApduService.class);
+                    String testName = new Object() {
+                    }.getClass().getEnclosingMethod().getName();
+                    String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
+                    Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(
+                            customServiceName,
+                            annotationStringHex, false));
+                    ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(6);
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_ON));
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_A));
+                    frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                            HexFormat.of().parseHex(annotationStringHex)));
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_OFF));
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_ON));
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_A));
+                    frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                            HexFormat.of().parseHex(annotationStringHex)));
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_OFF));
+                    ensurePreferredService(WalletRoleTestUtils.WALLET_HOLDER_SERVICE_DESC);
+                    // Only the frames matching the filter should be delivered.
+                    notifyPollingLoopAndWait(new ArrayList<PollingFrame>(
+                                    Arrays.asList(frames.get(2), frames.get(6))),
+                            CustomHostApduService.class.getName());
                     adapter.notifyHceDeactivated();
                 });
     }
@@ -1231,7 +1269,7 @@ public class CardEmulationTest {
         PollLoopReceiver(List<PollingFrame> frames, String serviceName) {
             mFrames = frames;
             mServiceName = serviceName;
-            mReceivedFrames = new ArrayList<PollingFrame>(1);
+            mReceivedFrames = new ArrayList<PollingFrame>();
         }
 
         void notifyPollingLoop(String className, List<PollingFrame> receivedFrames) {
@@ -1246,10 +1284,12 @@ public class CardEmulationTest {
         }
 
         void test() {
+            if (mReceivedFrames.size() > mFrames.size()) {
+                Assert.fail("received more frames than sent");
+            } else if (mReceivedFrames.size() < mFrames.size()) {
+                Assert.fail("received fewer frames than sent");
+            }
             for (PollingFrame receivedFrame : mReceivedFrames) {
-                if (mFrameIndex >= mFrames.size()) {
-                    Assert.fail("received more frames than sent: " + receivedFrame);
-                }
                 Assert.assertEquals(mFrames.get(mFrameIndex).getType(), receivedFrame.getType());
                 Assert.assertEquals(mFrames.get(mFrameIndex).getVendorSpecificGain(),
                         receivedFrame.getVendorSpecificGain());
