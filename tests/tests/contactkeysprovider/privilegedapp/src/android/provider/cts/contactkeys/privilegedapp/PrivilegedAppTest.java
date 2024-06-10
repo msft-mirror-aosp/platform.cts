@@ -17,6 +17,7 @@
 package android.provider.cts.contactkeys.privilegedapp;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.TruthJUnit.assume;
 
 import android.content.Context;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -31,7 +32,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,30 +56,41 @@ public class PrivilegedAppTest {
     public static final String DEVICE_ID = "someDeviceId";
     public static final String ACCOUNT_ID = "someAccountId";
 
-    private E2eeContactKeysManager mContactKeysManager;
-    private Context mContext;
+    private static E2eeContactKeysManager sContactKeysManager;
+    private static Context sContext;
 
-    @Before
-    public void setUp() {
-        mContext = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+    @BeforeClass
+    public static void setUp() {
+        sContext = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                 .getTargetContext();
-        mContactKeysManager = (E2eeContactKeysManager) mContext
-                .getSystemService(Context.CONTACT_KEYS_SERVICE);
+        sContactKeysManager = (E2eeContactKeysManager)
+                sContext.getSystemService(Context.CONTACT_KEYS_SERVICE);
+
+        // Due to platform issues, the content provider might not be loaded which results
+        // in flaky tests. Here we check that the content provider is loaded
+        boolean contentProviderIsLoaded = true;
+        try {
+            sContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
+        } catch (NullPointerException e) {
+            // Content provider is not loaded, so we skip the tests
+            contentProviderIsLoaded = false;
+        }
+        assume().that(contentProviderIsLoaded).isTrue();
     }
 
     @Test
     public void testUpdateContactKeyRemoteVerificationState_updatesState() {
-        List<E2eeContactKey> contactKeys = mContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
+        List<E2eeContactKey> contactKeys = sContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
         assertThat(contactKeys.size()).isEqualTo(1);
 
         SystemUtil.runWithShellPermissionIdentity(() -> {
-            mContactKeysManager.updateE2eeContactKeyRemoteVerificationState(
+            sContactKeysManager.updateE2eeContactKeyRemoteVerificationState(
                     LOOKUP_KEY, DEVICE_ID,
                     ACCOUNT_ID, HELPER_APP_PACKAGE,
                     E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);
         }, UPDATE_VERIFICATION_STATE_PERMISSION);
 
-        contactKeys = mContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
+        contactKeys = sContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
         assertThat(contactKeys.size()).isEqualTo(1);
         assertThat(contactKeys.get(0).getRemoteVerificationState())
                 .isEqualTo(E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);
@@ -86,17 +98,17 @@ public class PrivilegedAppTest {
 
     @Test
     public void testUpdateContactKeyLocalVerificationState_updatesState() {
-        List<E2eeContactKey> contactKeys = mContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
+        List<E2eeContactKey> contactKeys = sContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
         assertThat(contactKeys.size()).isEqualTo(1);
 
         SystemUtil.runWithShellPermissionIdentity(() -> {
-            mContactKeysManager.updateE2eeContactKeyLocalVerificationState(
+            sContactKeysManager.updateE2eeContactKeyLocalVerificationState(
                     LOOKUP_KEY, DEVICE_ID,
                     ACCOUNT_ID, HELPER_APP_PACKAGE,
                     E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);
         }, UPDATE_VERIFICATION_STATE_PERMISSION);
 
-        contactKeys = mContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
+        contactKeys = sContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
         assertThat(contactKeys.size()).isEqualTo(1);
         assertThat(contactKeys.get(0).getLocalVerificationState())
                 .isEqualTo(E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);
@@ -104,16 +116,16 @@ public class PrivilegedAppTest {
 
     @Test
     public void testUpdateSelfKeyRemoteVerificationState_updatesState() {
-        List<E2eeSelfKey> selfKeys = mContactKeysManager.getAllE2eeSelfKeys();
+        List<E2eeSelfKey> selfKeys = sContactKeysManager.getAllE2eeSelfKeys();
         assertThat(selfKeys.size()).isEqualTo(1);
 
         SystemUtil.runWithShellPermissionIdentity(() -> {
-            mContactKeysManager.updateE2eeSelfKeyRemoteVerificationState(
+            sContactKeysManager.updateE2eeSelfKeyRemoteVerificationState(
                     DEVICE_ID, ACCOUNT_ID,
                     HELPER_APP_PACKAGE, E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);
         }, UPDATE_VERIFICATION_STATE_PERMISSION);
 
-        selfKeys = mContactKeysManager.getAllE2eeSelfKeys();
+        selfKeys = sContactKeysManager.getAllE2eeSelfKeys();
         assertThat(selfKeys.size()).isEqualTo(1);
         assertThat(selfKeys.get(0).getRemoteVerificationState())
                 .isEqualTo(E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);

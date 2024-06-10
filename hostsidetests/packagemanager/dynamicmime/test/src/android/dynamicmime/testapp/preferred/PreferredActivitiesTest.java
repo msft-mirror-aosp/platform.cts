@@ -37,6 +37,7 @@ import android.dynamicmime.testapp.BaseDynamicMimeTest;
 import android.dynamicmime.testapp.assertions.MimeGroupAssertions;
 import android.dynamicmime.testapp.commands.MimeGroupCommands;
 import android.dynamicmime.testapp.util.Utils;
+import android.os.SystemClock;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.uiautomator.By;
@@ -376,6 +377,7 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
             if (scrollable.exists()) {
                 scrollable.scrollToBeginning(Integer.MAX_VALUE);
                 scrollable.scrollIntoView(selector);
+                SystemClock.sleep(1000L);
             }
         } catch (UiObjectNotFoundException ignore) {
             throw new AssertionError("Scrollable view was lost.");
