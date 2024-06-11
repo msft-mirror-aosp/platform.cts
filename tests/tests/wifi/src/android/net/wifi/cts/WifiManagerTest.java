@@ -6570,6 +6570,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         assertEquals(dstPort, downlinkParams.getDestinationPort());
         assertArrayEquals(flowLabel, downlinkParams.getFlowLabel());
 
+        if (ApiLevelUtil.getApiLevel() == Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Log.i(TAG, "Uplink policies were not tested, since they are not supported before V");
+            return;
+        }
+
         // Valid uplink parameters
         QosPolicyParams uplinkParams =
                 new QosPolicyParams.Builder(policyId, QosPolicyParams.DIRECTION_UPLINK)
