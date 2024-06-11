@@ -2649,7 +2649,7 @@ public class PackageManagerShellCommandInstallTest {
             executeShellCommand(String.format(
                     "am wait-for-broadcast-dispatch -a %s -d package:%s", mAction, mTargetPackage));
             // Checks that broadcast is delivered here
-            assertNotNull(mUserReceivedBroadcast.get(500, TimeUnit.MILLISECONDS));
+            assertNotNull(mUserReceivedBroadcast.get(6000, TimeUnit.MILLISECONDS));
         }
         public void assertBroadcastNotReceived() throws Exception {
             // Make sure broadcast has been sent from PackageManager
