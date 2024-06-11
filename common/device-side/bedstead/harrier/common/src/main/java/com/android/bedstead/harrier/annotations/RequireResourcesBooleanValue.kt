@@ -30,6 +30,7 @@ package com.android.bedstead.harrier.annotations
 )
 @Retention(AnnotationRetention.RUNTIME)
 @JvmRepeatable(RequireResourceValueGroup::class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 annotation class RequireResourcesBooleanValue(
     val configName: String,
     val requiredValue: Boolean,

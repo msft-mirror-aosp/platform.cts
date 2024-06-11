@@ -155,6 +155,10 @@ def _do_ae_check(light, dark, file_name_with_path):
   y_avg_change = (
       (dark_y_avg-light_y_avg)/light_y_avg)*_PERCENTAGE
   logging.debug('Y-average percentage change: %.4f', y_avg_change)
+
+  # Don't change print to logging. Used for KPI.
+  print(f'{_NAME}_ae_y_change: ', y_avg_change)
+
   if y_avg_change < _AE_CHANGE_THRESH:
     raise AssertionError(
         f'Luma change {y_avg_change} is less than the threshold: '
@@ -185,6 +189,10 @@ def _do_awb_check(blue, yellow):
   r_b_ratio_change = (
       (blue_r_b_ratio-yellow_r_b_ratio)/yellow_r_b_ratio)*_PERCENTAGE
   logging.debug('R/B ratio change in percentage: %.4f', r_b_ratio_change)
+
+  # Don't change print to logging. Used for KPI.
+  print(f'{_NAME}_awb_rb_change: ', r_b_ratio_change)
+
   if r_b_ratio_change < _AWB_CHANGE_THRESH:
     raise AssertionError(
         f'R/B ratio change {r_b_ratio_change} is less than the'

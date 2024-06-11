@@ -18,7 +18,6 @@ package android.server.wm.activity.lifecycle;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
-import static android.content.pm.PackageManager.FEATURE_PC;
 import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.server.wm.ComponentNameUtils.getWindowName;
@@ -36,8 +35,9 @@ import static android.server.wm.activity.lifecycle.TransitionVerifier.assertSequ
 import static android.server.wm.app27.Components.SDK_27_LAUNCHING_ACTIVITY;
 import static android.server.wm.app27.Components.SDK_27_TEST_ACTIVITY;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -45,10 +45,9 @@ import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.WindowManagerState;
 
 import androidx.test.filters.MediumTest;
-
-import com.android.window.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -57,7 +56,7 @@ import java.util.Collections;
 
 /**
  * Build/Install/Run:
- *     atest CtsWindowManagerDeviceActivity:ActivityLifecycleFreeformTests
+ * atest CtsWindowManagerDeviceActivity:ActivityLifecycleFreeformTests
  */
 @MediumTest
 @Presubmit
@@ -72,12 +71,6 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
 
     @Test
     public void testLaunchInFreeform() throws Exception {
-        // TODO(b/341891289): Remove check once activity lifecycle sequence is relaxed.
-        // Ignore test if desktop windowing is enabled on tablets as sequence of lifecycle events
-        // for activity has changed.
-        assumeFalse(Flags.enableDesktopWindowingMode()
-                && (isTablet() && !hasDeviceFeature(FEATURE_PC)));
-
         // Launch a fullscreen activity, mainly to prevent setting pending due to task switching.
         launchActivityInFullscreenAndWait(CallbackTrackingActivity.class);
 
@@ -93,18 +86,11 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
         waitAndAssertActivityState(getComponentName(FirstActivity.class), STATE_RESUMED,
                 "Activity should be resumed after launch");
         TransitionVerifier.assertLaunchSequence(FirstActivity.class, getTransitionLog());
-        TransitionVerifier.assertLaunchSequence(
-                CallbackTrackingActivity.class, getTransitionLog(), ON_TOP_POSITION_LOST);
+        assertFullscreenActivityBehaviour();
     }
 
     @Test
     public void testMultiLaunchInFreeform() throws Exception {
-        // TODO(b/341891289): Remove check once activity lifecycle sequence is relaxed.
-        // Ignore test if desktop windowing is enabled on tablets as sequence of lifecycle events
-        // for activity has changed.
-        assumeFalse(Flags.enableDesktopWindowingMode()
-                && (isTablet() && !hasDeviceFeature(FEATURE_PC)));
-
         // Launch a fullscreen activity, mainly to prevent setting pending due to task switching.
         launchActivityInFullscreenAndWait(CallbackTrackingActivity.class);
 
@@ -137,18 +123,11 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
         TransitionVerifier.assertLaunchSequence(FirstActivity.class, getTransitionLog());
         TransitionVerifier.assertLaunchSequence(SecondActivity.class, getTransitionLog());
         TransitionVerifier.assertLaunchSequence(ThirdActivity.class, getTransitionLog());
-        TransitionVerifier.assertLaunchSequence(
-                CallbackTrackingActivity.class, getTransitionLog(), ON_TOP_POSITION_LOST);
+        assertFullscreenActivityBehaviour();
     }
 
     @Test
     public void testLaunchOccludingInFreeform() throws Exception {
-        // TODO(b/341891289): Remove check once activity lifecycle sequence is relaxed.
-        // Ignore test if desktop windowing is enabled on tablets as sequence of lifecycle events
-        // for activity has changed.
-        assumeFalse(Flags.enableDesktopWindowingMode()
-                && (isTablet() && !hasDeviceFeature(FEATURE_PC)));
-
         // Launch a fullscreen activity, mainly to prevent setting pending due to task switching.
         launchActivityInFullscreenAndWait(CallbackTrackingActivity.class);
 
@@ -180,8 +159,7 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
         TransitionVerifier.assertLaunchAndStopSequence(FirstActivity.class, getTransitionLog());
         TransitionVerifier.assertLaunchSequence(SecondActivity.class, getTransitionLog());
         TransitionVerifier.assertLaunchSequence(ThirdActivity.class, getTransitionLog());
-        TransitionVerifier.assertLaunchSequence(
-                CallbackTrackingActivity.class, getTransitionLog(), ON_TOP_POSITION_LOST);
+        assertFullscreenActivityBehaviour();
 
         // Finish the activity that was occluding the first one
         getTransitionLog().clear();
@@ -206,12 +184,6 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
 
     @Test
     public void testLaunchTranslucentInFreeform() throws Exception {
-        // TODO(b/341891289): Remove check once activity lifecycle sequence is relaxed.
-        // Ignore test if desktop windowing is enabled on tablets as sequence of lifecycle events
-        // for activity has changed.
-        assumeFalse(Flags.enableDesktopWindowingMode()
-                && (isTablet() && !hasDeviceFeature(FEATURE_PC)));
-
         // Launch a fullscreen activity, mainly to prevent setting pending due to task switching.
         launchActivityInFullscreenAndWait(CallbackTrackingActivity.class);
 
@@ -244,8 +216,7 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
         assertLaunchAndPauseSequence(FirstActivity.class, getTransitionLog());
         TransitionVerifier.assertLaunchSequence(TranslucentActivity.class, getTransitionLog());
         TransitionVerifier.assertLaunchSequence(ThirdActivity.class, getTransitionLog());
-        TransitionVerifier.assertLaunchSequence(
-                CallbackTrackingActivity.class, getTransitionLog(), ON_TOP_POSITION_LOST);
+        assertFullscreenActivityBehaviour();
 
         // Finish the activity that was occluding the first one
         getTransitionLog().clear();
@@ -301,11 +272,26 @@ public class ActivityLifecycleFreeformTests extends ActivityLifecycleClientTestB
     }
 
     private Activity launchActivityInFullscreenAndWait(Class<? extends Activity> activityClass)
-        throws Exception {
+            throws Exception {
         final ActivityOptions launchOptions = ActivityOptions.makeBasic();
         launchOptions.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
         return new Launcher(activityClass)
-            .setOptions(launchOptions)
-            .launch();
+                .setOptions(launchOptions)
+                .launch();
+    }
+
+    private void assertFullscreenActivityBehaviour() {
+        WindowManagerState.Task task = mWmState.getTopRootTaskByWindowingMode(
+                WINDOWING_MODE_FULLSCREEN);
+        assertThat(task).isNotNull();
+
+        // Check if the top fullscreen task is CallbackTrackingActivity
+        if (task == mWmState.getRootTaskByActivity(
+                getComponentName(CallbackTrackingActivity.class))) {
+            TransitionVerifier.assertLaunchSequence(
+                    CallbackTrackingActivity.class, getTransitionLog(), ON_TOP_POSITION_LOST);
+        } else {
+            assertThat(task.getResumedActivity()).isNotNull();
+        }
     }
 }

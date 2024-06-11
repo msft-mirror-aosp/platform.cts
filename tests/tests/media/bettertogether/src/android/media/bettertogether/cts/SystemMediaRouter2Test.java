@@ -17,6 +17,8 @@
 package android.media.bettertogether.cts;
 
 import static android.content.Context.AUDIO_SERVICE;
+import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
+import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
 import static android.media.MediaRoute2Info.PLAYBACK_VOLUME_VARIABLE;
 import static android.media.MediaRoute2ProviderService.REASON_REJECTED;
@@ -42,6 +44,7 @@ import static org.junit.Assert.assertThrows;
 import android.Manifest;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.media.AudioManager;
@@ -242,6 +245,19 @@ public class SystemMediaRouter2Test {
     }
 
     @Test
+    public void showMediaOutputSwitcher_showsOutputSwitcher() throws InterruptedException {
+        assertThat(mSystemRouter2ForCts.showSystemOutputSwitcher()).isTrue();
+
+        // Wait for the dialog to show before dismissing it.
+        Thread.sleep(WAIT_MS);
+
+        // Dismiss the system output switcher dialog in order to clean up, leaving the device in
+        // the same state as it was when the test started.
+        mContext.sendBroadcast(
+                new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
+    }
+
+    @Test
     public void testGetClientPackageName() {
         assertThat(mSystemRouter2ForCts.getClientPackageName())
                 .isEqualTo(mContext.getPackageName());
@@ -420,13 +436,6 @@ public class SystemMediaRouter2Test {
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> mSystemRouter2ForCts.setRouteListingPreference(rlp));
-    }
-
-    @Test
-    public void showSystemOutputSwitcher_onPrivilegedInstance_throws() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> mSystemRouter2ForCts.showSystemOutputSwitcher());
     }
 
     @Test

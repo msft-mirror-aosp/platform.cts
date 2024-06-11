@@ -25,6 +25,7 @@ import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.getActi
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.supportsMultiDisplay;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.DisplayUtils.VirtualDisplaySession;
 import static android.accessibilityservice.cts.utils.WindowCreationUtils.TOP_WINDOW_TITLE;
 import static android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE;
@@ -40,6 +41,7 @@ import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_TITLE
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -413,6 +415,8 @@ public class AccessibilityWindowReportingTest {
     @AppModeFull
     @Test
     public void showNotTouchableWindow_activityWindowIsNotVisible() throws TimeoutException {
+        // TODO: b/336552993 - Investigate and re-enable this test on Android Auto.
+        assumeFalse(isAutomotive(sInstrumentation.getTargetContext()));
         try {
             launchNotTouchableWindowTestActivityFromShell();
 
@@ -443,6 +447,8 @@ public class AccessibilityWindowReportingTest {
     @AppModeFull
     @Test
     public void showNotTouchableTrustedWindow_activityWindowIsVisible() {
+        // TODO: b/336552993 - Investigate and re-enable this test on Android Auto.
+        assumeFalse(isAutomotive(sInstrumentation.getTargetContext()));
         try {
             launchNotTouchableWindowTestActivityFromShell();
 
