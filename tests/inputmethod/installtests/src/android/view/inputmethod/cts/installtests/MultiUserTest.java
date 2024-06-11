@@ -245,11 +245,10 @@ public class MultiUserTest {
         assertIsStylusHandwritingAvailable(profileUserId, currentUserId);
 
         // Install Test App for the profile user and make sure it is available as it is used next.
-        final Package testActivityPackage =
-                TestApis.packages().find(MockTestActivityUtil.TEST_ACTIVITY.getPackageName());
-        assertTrue(testActivityPackage.exists());
-        testActivityPackage.installExisting(profileUser);
-        assertTrue(testActivityPackage.installedOnUser(profileUser));
+        installExistingPackageAsUser(MockTestActivityUtil.TEST_ACTIVITY.getPackageName(),
+                profileUserId);
+        assertPackageExistsInApiResult(MockTestActivityUtil.TEST_ACTIVITY.getPackageName(),
+                profileUserId);
 
         // Make sure that IME switches depending on the target user.
         assertConnectingToTheSameUserIme(currentUserId);
@@ -266,6 +265,18 @@ public class MultiUserTest {
         // check getCurrentInputMethodInfoAsUser(userId)
         assertImeInCurrentInputMethodInfo(Ime1Constants.IME_ID, currentUserId);
         assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, profileUserId);
+    }
+
+    private void assertPackageExistsInApiResult(String packageName, int userId) {
+        PackageManager packageManager = mContext.getPackageManager();
+        SystemUtil.runWithShellPermissionIdentity(() -> PollingCheck.check(
+                        "Package " + packageName + " must exist for user " + userId, TIMEOUT,
+                        () -> packageManager.getInstalledPackagesAsUser(
+                                PackageManager.MATCH_INSTANT, userId).stream().anyMatch(
+                                        packageInfo -> TextUtils.equals(packageInfo.packageName,
+                                                packageName))),
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+                Manifest.permission.ACCESS_INSTANT_APPS);
     }
 
     private void assertImeExistsInApiResult(String imeId, int userId) {
@@ -407,6 +418,22 @@ public class MultiUserTest {
     private boolean isMultiUserMultiDisplayIme() {
         String result = runShellCommandOrThrow("dumpsys input_method");
         return result.contains("InputMethodManagerServiceProxy");
+    }
+
+    /**
+     * Use shell command to install an existing package for another user.
+     *
+     * <p>Unlike {@link Package#installExisting(UserReference)}, this approach works for instant
+     * apps.</p>
+     *
+     * @param packageName the package name of the app to be installed
+     * @param userId the target user Id
+     */
+    private void installExistingPackageAsUser(String packageName, int userId) {
+        Log.v(TAG, "Installing existing package: " + packageName + " for user " + userId);
+        runShellCommandOrThrow(ShellCommandUtils.installExistingPackageAsUser(packageName, userId,
+                isInstantApp()));
+        runShellCommandOrThrow(ShellCommandUtils.waitForBroadcastBarrier());
     }
 
     private boolean isInstantApp() {
