@@ -36,6 +36,7 @@ java_defaults {
         ":CtsCompilationApp_dm",
         ":CtsCompilationApp_with_bad_profile",
         ":CtsCompilationApp_with_good_profile",
+        ":CtsCompilationApp_debuggable",
         ":disable_embedded_profile_dm",
         ":empty_config_dm",
     ],

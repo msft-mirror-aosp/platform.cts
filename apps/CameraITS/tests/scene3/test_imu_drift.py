@@ -26,6 +26,7 @@ import its_base_test
 import camera_properties_utils
 import imu_processing_utils
 import its_session_utils
+import video_processing_utils
 
 _ADV_FEATURE_GYRO_DRIFT_ATOL = 1  # deg/min
 _RAD_TO_DEG = 180/math.pi
@@ -226,9 +227,10 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(cam, props, self.scene,
                                    self.tablet, self.chart_distance)
 
-      # determine preview size
-      supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      preview_size = supported_preview_sizes[-1]
+      # determine largest common preview/video size
+      preview_size = video_processing_utils.get_largest_common_preview_video_size(
+          cam, self.camera_id
+      )
       logging.debug('Tested preview resolution: %s', preview_size)
 
       # start collecting IMU events
@@ -236,9 +238,13 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       cam.start_sensor_events()
 
       # do preview recording
+      preview_stabilization_supported = (
+          camera_properties_utils.preview_stabilization_supported(props)
+      )
       cam.do_preview_recording(
           video_size=preview_size, duration=_IMU_EVENTS_WAIT_TIME,
-          stabilize=True)
+          stabilize=preview_stabilization_supported
+      )
 
       # dump IMU events
       sensor_events = cam.get_sensor_events()

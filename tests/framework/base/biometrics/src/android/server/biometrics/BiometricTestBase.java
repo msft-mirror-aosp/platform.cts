@@ -422,7 +422,7 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
             String logoDescription) throws Exception {
         final Handler handler = new Handler(Looper.getMainLooper());
         final Executor executor = handler::post;
-        final BiometricPrompt prompt = new BiometricPrompt.Builder(mContext)
+        final BiometricPrompt.Builder builder = new BiometricPrompt.Builder(mContext)
                 .setTitle("Title")
                 .setSubtitle("Subtitle")
                 .setDescription("Description")
@@ -432,10 +432,16 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
                 })
                 .setAllowBackgroundAuthentication(true)
                 .setAllowedSensorIds(new ArrayList<>(Collections.singletonList(sensorId)))
-                .setLogoRes(logoRes)
-                .setLogoBitmap(logoBitmap)
-                .setLogoDescription(logoDescription)
-                .build();
+                .setLogoDescription(logoDescription);
+
+        if (logoRes != -1) {
+            builder.setLogoRes(logoRes);
+        }
+        if (logoBitmap != null) {
+            builder.setLogoBitmap(logoBitmap);
+        }
+
+        final BiometricPrompt prompt = builder.build();
         prompt.authenticate(cancellationSignal, executor, callback);
 
         waitForState(STATE_AUTH_STARTED_UI_SHOWING);

@@ -38,7 +38,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickInstallButton();
 
@@ -54,7 +54,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         pressBack();
 
@@ -70,7 +70,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         touchOutside();
 
@@ -86,7 +86,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickCancelButton();
 
@@ -102,7 +102,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
         assertInstallFailureAborted();
         assertTestPackageNotInstalled();
@@ -174,7 +174,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickUpdateButton();
 
@@ -192,7 +192,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         pressBack();
 
@@ -210,7 +210,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         touchOutside();
 
@@ -228,7 +228,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickCancelButton();
 
@@ -246,7 +246,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
         assertInstallFailureAborted();
         assertTestPackageInstalled();

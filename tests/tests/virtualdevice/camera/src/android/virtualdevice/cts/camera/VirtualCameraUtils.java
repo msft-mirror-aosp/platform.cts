@@ -72,6 +72,8 @@ import android.os.UserHandle;
 import android.util.Log;
 import android.view.Surface;
 
+import androidx.annotation.ColorInt;
+
 import com.google.common.collect.Iterables;
 
 import java.io.File;
@@ -120,10 +122,14 @@ public final class VirtualCameraUtils {
         assertThat(config.getLensFacing()).isEqualTo(lensFacing);
     }
 
-    static void paintSurfaceRed(Surface surface) {
+    static void paintSurface(Surface surface, @ColorInt int color) {
         Canvas canvas = surface.lockCanvas(null);
-        canvas.drawColor(Color.RED);
+        canvas.drawColor(color);
         surface.unlockCanvasAndPost(canvas);
+    }
+
+    static void paintSurfaceRed(Surface surface) {
+        paintSurface(surface, Color.RED);
     }
 
     // Converts YUV to ARGB int representation,

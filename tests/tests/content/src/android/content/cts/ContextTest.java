@@ -69,6 +69,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -85,6 +86,7 @@ import android.util.Log;
 import android.util.Xml;
 import android.view.WindowManager;
 
+import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -249,6 +251,7 @@ public class ContextTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testCreateAttributionContext() throws Exception {
         final String tag = "testCreateAttributionContext";
         final Context attrib = mContext.createAttributionContext(tag);
@@ -257,6 +260,7 @@ public class ContextTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testCreateAttributionContextFromParams() throws Exception {
         final ContextParams params = new ContextParams.Builder()
                 .setAttributionTag("foo")
@@ -275,6 +279,7 @@ public class ContextTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testContextParams() throws Exception {
         final ContextParams params = new ContextParams.Builder()
                 .setAttributionTag("foo")
@@ -290,14 +295,25 @@ public class ContextTest {
         assertEquals("baz", params.getNextAttributionSource().getAttributionTag());
     }
 
-    private AttributionSource buildFakeAttributionSource() {
-        return new AttributionSource.Builder(2)
+    // TODO: Add `buildFakeAttributionSource()` and `validateContextParams()` methods back, later
+    //  when Android R (sdk version 30) is no longer supported
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @ApiTest(apis = {"android.content.AttributionSource.Builder#setNext"})
+    public void testAttributionSourceSetNext() throws Exception {
+        final AttributionSource next = new AttributionSource.Builder(2)
                 .setPackageName("nextBar")
                 .setAttributionTag("nextBaz")
                 .build();
-    }
-
-    private void validateContextParams(ContextParams params) throws Exception {
+        final ContextParams params = new ContextParams.Builder()
+                .setAttributionTag("foo")
+                .setNextAttributionSource(new AttributionSource.Builder(1)
+                        .setPackageName("bar")
+                        .setAttributionTag("baz")
+                        .setNext(next)
+                        .build())
+                .build();
         // Setting a 'next' should not affect prev.
         assertEquals("foo", params.getAttributionTag());
         assertEquals(1, params.getNextAttributionSource().getUid());
@@ -312,24 +328,13 @@ public class ContextTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.content.AttributionSource.Builder#setNext"})
-    public void testAttributionSourceSetNext() throws Exception {
-        final AttributionSource next = buildFakeAttributionSource();
-        final ContextParams params = new ContextParams.Builder()
-                .setAttributionTag("foo")
-                .setNextAttributionSource(new AttributionSource.Builder(1)
-                        .setPackageName("bar")
-                        .setAttributionTag("baz")
-                        .setNext(next)
-                        .build())
-                .build();
-        validateContextParams(params);
-    }
-
-    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @ApiTest(apis = {"android.content.AttributionSource.Builder#setNextAttributionSource"})
     public void testAttributionSourceSetNextAttributionSource() throws Exception {
-        final AttributionSource next = buildFakeAttributionSource();
+        final AttributionSource next = new AttributionSource.Builder(2)
+                .setPackageName("nextBar")
+                .setAttributionTag("nextBaz")
+                .build();
         final ContextParams params = new ContextParams.Builder()
                 .setAttributionTag("foo")
                 .setNextAttributionSource(new AttributionSource.Builder(1)
@@ -338,7 +343,17 @@ public class ContextTest {
                         .setNextAttributionSource(next)
                         .build())
                 .build();
-        validateContextParams(params);
+        // Setting a 'next' should not affect prev.
+        assertEquals("foo", params.getAttributionTag());
+        assertEquals(1, params.getNextAttributionSource().getUid());
+        assertEquals("bar", params.getNextAttributionSource().getPackageName());
+        assertEquals("baz", params.getNextAttributionSource().getAttributionTag());
+
+        final AttributionSource check =
+                params.getNextAttributionSource().getNext();
+        assertEquals(2, check.getUid());
+        assertEquals("nextBar", check.getPackageName());
+        assertEquals("nextBaz", check.getAttributionTag());
     }
 
     @Test
@@ -473,9 +488,9 @@ public class ContextTest {
         assertNotNull(testTheme);
 
         int[] attrs = {
-            android.R.attr.windowNoTitle,
-            android.R.attr.panelColorForeground,
-            android.R.attr.panelColorBackground
+                android.R.attr.windowNoTitle,
+                android.R.attr.panelColorForeground,
+                android.R.attr.panelColorBackground
         };
         TypedArray attrArray = null;
         try {
@@ -520,7 +535,7 @@ public class ContextTest {
         }
 
         // Test obtainStyledAttributes(AttributeSet, int[]) with unavailable resource id.
-        int testInt[] = { 0, 0 };
+        int[] testInt = {0, 0};
         testTypedArray = mContext.obtainStyledAttributes(-1, testInt);
         // fail("Wrong resource id should not be accepted.");
         assertNotNull(testTypedArray);
@@ -652,10 +667,9 @@ public class ContextTest {
     }
 
     static void beginDocument(XmlPullParser parser, String firstElementName)
-            throws XmlPullParserException, IOException
-    {
+            throws XmlPullParserException, IOException {
         int type;
-        while ((type=parser.next()) != parser.START_TAG
+        while ((type = parser.next()) != parser.START_TAG
                 && type != parser.END_DOCUMENT) {
             ;
         }
@@ -789,7 +803,7 @@ public class ContextTest {
                 null, //initial data
                 null); // initial extras
 
-        new PollingCheck(BROADCAST_TIMEOUT){
+        new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
             protected boolean check() {
                 return receiver.hasReceivedBroadCast()
@@ -801,7 +815,7 @@ public class ContextTest {
             receiver.notify();
         }
 
-        new PollingCheck(BROADCAST_TIMEOUT){
+        new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
             protected boolean check() {
                 // ensure that first receiver has received broadcast before final receiver
@@ -1028,11 +1042,11 @@ public class ContextTest {
 
         SQLiteDatabase.CursorFactory factory = new SQLiteDatabase.CursorFactory() {
             public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery,
-                                    String editTable, SQLiteQuery query) {
+                    String editTable, SQLiteQuery query) {
                 return new android.database.sqlite.SQLiteCursor(db, masterQuery, editTable, query) {
                     @Override
                     public boolean requery() {
-                        setSelectionArguments(new String[] { "2" });
+                        setSelectionArguments(new String[]{"2"});
                         return super.requery();
                     }
                 };
@@ -1161,7 +1175,7 @@ public class ContextTest {
     }
 
     @Test
-    public void testStartActivity()  {
+    public void testStartActivity() {
         try (ActivitySession activitySession = new ActivitySession()) {
             Intent intent = new Intent(mContext, AvailableIntentsActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -1207,7 +1221,7 @@ public class ContextTest {
 
     @Test
     public void testCreatePackageContextAsUser() throws Exception {
-        for (UserHandle user : new UserHandle[] {
+        for (UserHandle user : new UserHandle[]{
                 android.os.Process.myUserHandle(),
                 UserHandle.ALL, UserHandle.CURRENT, UserHandle.SYSTEM
         }) {
@@ -1218,7 +1232,7 @@ public class ContextTest {
 
     @Test
     public void testCreateContextAsUser() throws Exception {
-        for (UserHandle user : new UserHandle[] {
+        for (UserHandle user : new UserHandle[]{
                 android.os.Process.myUserHandle(),
                 UserHandle.ALL, UserHandle.CURRENT, UserHandle.SYSTEM
         }) {
@@ -1672,7 +1686,7 @@ public class ContextTest {
      * This test does the following:
      * 1. Binds to TestService in {@link android.content.cts.contenturitestapp}.
      * 2. Sends a message to TestService requesting a content URI that this package has (or doesn't
-     *    have) access to via grants or general permissions.
+     * have) access to via grants or general permissions.
      * 3. Checks the result from checkContentUriPermissionFull().
      */
     @RequiresFlagsEnabled(android.security.Flags.FLAG_CONTENT_URI_PERMISSION_APIS)
@@ -1684,18 +1698,18 @@ public class ContextTest {
             internalTestCheckContentUriPermissionFull(PKG_ACCESS_TYPE_NONE,
                     /* modeFlagsTestHasAccessTo */ 0);
 
-            int[] packageAccessTypeValues = new int[] {
+            int[] packageAccessTypeValues = new int[]{
                     PKG_ACCESS_TYPE_GRANT,
                     PKG_ACCESS_TYPE_GENERAL
             };
-            int[] modeFlagsTestHasAccessToValues = new int[] {
+            int[] modeFlagsTestHasAccessToValues = new int[]{
                     Intent.FLAG_GRANT_READ_URI_PERMISSION,
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             };
 
-            for (int packageAccessType: packageAccessTypeValues) {
-                for (int modeFlagsTestHasAccessTo: modeFlagsTestHasAccessToValues) {
+            for (int packageAccessType : packageAccessTypeValues) {
+                for (int modeFlagsTestHasAccessTo : modeFlagsTestHasAccessToValues) {
                     internalTestCheckContentUriPermissionFull(packageAccessType,
                             modeFlagsTestHasAccessTo);
                 }
@@ -1786,6 +1800,7 @@ public class ContextTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testCheckCallingUriPermissions() {
         List<Uri> uris = new ArrayList<>();
         Uri uri1 = Uri.parse("content://ctstest1");
@@ -1844,7 +1859,7 @@ public class ContextTest {
         mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION)
                 .setPackage(mContext.getPackageName()));
 
-        new PollingCheck(BROADCAST_TIMEOUT){
+        new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
             protected boolean check() {
                 return receiver.hasReceivedBroadCast();
@@ -1861,7 +1876,7 @@ public class ContextTest {
         mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION)
                 .setPackage(mContext.getPackageName()), null);
 
-        new PollingCheck(BROADCAST_TIMEOUT){
+        new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
             protected boolean check() {
                 return receiver.hasReceivedBroadCast();
@@ -1880,12 +1895,12 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setRequireAllOfPermissions(
-                new String[] { // this test APK has both these permissions
+                new String[]{ // this test APK has both these permissions
                         android.Manifest.permission.ACCESS_WIFI_STATE,
                         android.Manifest.permission.ACCESS_NETWORK_STATE
                 });
         mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION)
-                        .setPackage(mContext.getPackageName()), null, options.toBundle());
+                .setPackage(mContext.getPackageName()), null, options.toBundle());
 
         new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
@@ -1905,7 +1920,7 @@ public class ContextTest {
         BroadcastOptions options = BroadcastOptions.makeBasic();
         // The test APK has this AppOp permission.
         options.setRequireAllOfPermissions(
-                new String[] {android.Manifest.permission.PACKAGE_USAGE_STATS});
+                new String[]{android.Manifest.permission.PACKAGE_USAGE_STATS});
 
         mContext.sendBroadcast(
                 new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
@@ -1928,7 +1943,7 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setRequireAllOfPermissions(
-                new String[] {android.Manifest.permission.PACKAGE_USAGE_STATS});
+                new String[]{android.Manifest.permission.PACKAGE_USAGE_STATS});
 
         mContext.sendBroadcast(
                 new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
@@ -1951,7 +1966,7 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setRequireAllOfPermissions(
-                new String[] {android.Manifest.permission.PACKAGE_USAGE_STATS});
+                new String[]{android.Manifest.permission.PACKAGE_USAGE_STATS});
 
         mContext.sendBroadcast(
                 new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
@@ -1971,7 +1986,7 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setRequireAllOfPermissions(
-                new String[] { // this test APK only has ACCESS_WIFI_STATE
+                new String[]{ // this test APK only has ACCESS_WIFI_STATE
                         android.Manifest.permission.ACCESS_WIFI_STATE,
                         android.Manifest.permission.NETWORK_STACK,
                 });
@@ -1995,16 +2010,16 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setRequireAllOfPermissions(
-                new String[] { // this test APK has both these permissions
+                new String[]{ // this test APK has both these permissions
                         android.Manifest.permission.ACCESS_WIFI_STATE,
                         android.Manifest.permission.ACCESS_NETWORK_STATE
                 });
         options.setRequireNoneOfPermissions(
-                new String[] { // test package does not have NETWORK_STACK
+                new String[]{ // test package does not have NETWORK_STACK
                         android.Manifest.permission.NETWORK_STACK
                 });
         mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION)
-                        .setPackage(mContext.getPackageName()), null, options.toBundle());
+                .setPackage(mContext.getPackageName()), null, options.toBundle());
 
         new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
@@ -2025,11 +2040,11 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setRequireAllOfPermissions(
-                new String[] { // this test APK has ACCESS_WIFI_STATE
+                new String[]{ // this test APK has ACCESS_WIFI_STATE
                         android.Manifest.permission.ACCESS_WIFI_STATE
                 });
         options.setRequireNoneOfPermissions(
-                new String[] { // test package has ACCESS_NETWORK_STATE
+                new String[]{ // test package has ACCESS_NETWORK_STATE
                         android.Manifest.permission.ACCESS_NETWORK_STATE
                 });
         mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION)
@@ -2050,7 +2065,7 @@ public class ContextTest {
 
         mContext.sendBroadcastWithMultiplePermissions(
                 new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
-                new String[] { // this test APK has both these permissions
+                new String[]{ // this test APK has both these permissions
                         android.Manifest.permission.ACCESS_WIFI_STATE,
                         android.Manifest.permission.ACCESS_NETWORK_STATE,
                 });
@@ -2073,7 +2088,7 @@ public class ContextTest {
 
         mContext.sendBroadcastWithMultiplePermissions(
                 new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
-                new String[] { // this test APK only has ACCESS_WIFI_STATE
+                new String[]{ // this test APK only has ACCESS_WIFI_STATE
                         android.Manifest.permission.ACCESS_WIFI_STATE,
                         android.Manifest.permission.NETWORK_STACK,
                 });
@@ -2092,7 +2107,7 @@ public class ContextTest {
 
         mContext.sendBroadcastWithMultiplePermissions(
                 new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
-                new String[] { // this test APK has neither of these permissions
+                new String[]{ // this test APK has neither of these permissions
                         android.Manifest.permission.NETWORK_SETTINGS,
                         android.Manifest.permission.NETWORK_STACK,
                 });
@@ -2396,7 +2411,7 @@ public class ContextTest {
             return mHadReceivedBroadCast;
         }
 
-        void reset(){
+        void reset() {
             mHadReceivedBroadCast = false;
         }
     }
@@ -2426,7 +2441,7 @@ public class ContextTest {
             return mHadReceivedBroadCast2;
         }
 
-        public void reset(){
+        public void reset() {
             mHadReceivedBroadCast1 = false;
             mHadReceivedBroadCast2 = false;
         }

@@ -65,6 +65,45 @@ VIDEO_QUALITY_SIZE = {
 }
 
 
+def get_largest_common_preview_video_size(cam, camera_id):
+  """Returns the largest, common size between preview and video.
+
+  Args:
+    cam: camera object.
+    camera_id: str; camera ID.
+
+  Returns:
+    largest_common_size: str; largest common size between preview & video.
+  """
+  supported_preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
+  supported_video_qualities = cam.get_supported_video_qualities(camera_id)
+  logging.debug('Supported video profiles & IDs: %s', supported_video_qualities)
+
+  # Make a list of supported_video_sizes from video qualities
+  supported_video_sizes = []
+  for quality in supported_video_qualities:
+    video_quality = quality.split(':')[0]  # form is ['CIF:3', '480P:4', ...]
+    if video_quality in VIDEO_QUALITY_SIZE:
+      supported_video_sizes.append(VIDEO_QUALITY_SIZE[video_quality])
+  logging.debug(
+      'Supported video sizes: %s', supported_video_sizes)
+
+  # Use areas of video sizes to find the largest common size
+  size_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+  largest_common_size = ''
+  largest_area = 0
+  common_sizes = list(set(supported_preview_sizes) & set(supported_video_sizes))
+  for size in common_sizes:
+    area = size_to_area(size)
+    if area > largest_area:
+      largest_area = area
+      largest_common_size = size
+  if not largest_common_size:
+    raise AssertionError('No common size between Preview and Video!')
+  logging.debug('Largest common size: %s', largest_common_size)
+  return largest_common_size
+
+
 def get_lowest_common_preview_video_size(
     supported_preview_sizes, supported_video_qualities, min_area):
   """Returns the common, smallest size above minimum in preview and video.

@@ -45,6 +45,7 @@ import android.util.DisplayMetrics;
 import android.view.DisplayCutout;
 import android.view.WindowMetrics;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
@@ -73,6 +74,12 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
 
     private WindowManagerState.DisplayContent mDisplay;
     private WindowState mWindowState;
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        launchHomeActivity();
+    }
 
     @Test
     public void testGravityAndDefaultSizeTopLeft() throws Exception {

@@ -69,9 +69,11 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
       imgs = {}
       cam.do_3a()
       req = capture_request_utils.auto_capture_request()
+      req['android.statistics.lensShadingMapMode'] = (
+          image_processing_utils.LENS_SHADING_MAP_ON)
       cap_raw_full = cam.do_capture(req, cam.CAP_RAW)
-      rgb_full_img = image_processing_utils.convert_capture_to_rgb_image(
-          cap_raw_full, props=props)
+      rgb_full_img = image_processing_utils.convert_raw_capture_to_rgb_image(
+          cap_raw_full, props, 'raw', name_with_log_path)
       image_processing_utils.write_image(
           rgb_full_img, f'{name_with_log_path}_raw_full.jpg')
       imgs['raw_full'] = rgb_full_img
@@ -82,8 +84,9 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
         req['android.control.zoomRatio'] = z
         cam.do_3a(zoom_ratio=z)
         cap_zoomed_raw = cam.do_capture(req, cam.CAP_CROPPED_RAW)
-        rgb_zoomed_raw = image_processing_utils.convert_capture_to_rgb_image(
-            cap_zoomed_raw, props=props)
+        rgb_zoomed_raw = (
+            image_processing_utils.convert_raw_capture_to_rgb_image(
+                cap_zoomed_raw, props, 'raw', name_with_log_path))
         # Dump zoomed in RAW image
         img_name = f'{name_with_log_path}_zoomed_raw_{z:.2f}.jpg'
         image_processing_utils.write_image(rgb_zoomed_raw, img_name)

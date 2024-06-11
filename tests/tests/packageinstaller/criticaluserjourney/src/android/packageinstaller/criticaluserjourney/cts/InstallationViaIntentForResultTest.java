@@ -38,7 +38,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
@@ -54,7 +54,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         pressBack();
 
@@ -70,7 +70,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         touchOutside();
 
@@ -86,7 +86,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickCancelButton();
 
@@ -102,7 +102,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageNotInstalled();
@@ -174,7 +174,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
@@ -192,7 +192,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         pressBack();
 
@@ -210,7 +210,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         touchOutside();
 
@@ -228,7 +228,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickCancelButton();
 
@@ -246,7 +246,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageInstalled();
@@ -326,7 +326,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickUpdateButton(/* checkInstallingDialog= */ false, /* checkGPPDialog= */ false);
 
@@ -344,7 +344,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         pressBack();
 
@@ -362,7 +362,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         touchOutside();
 
@@ -380,7 +380,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickCancelButton();
 
@@ -398,7 +398,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageInstalled();

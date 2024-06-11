@@ -65,10 +65,6 @@
           "exclude-filter": "android.os.cts.BuildTest#testSdkInt"
         },
         {
-          // TODO(b/221873359)
-          "exclude-filter": "android.os.cts.CompanionDeviceManagerTest#testProfiles"
-        },
-        {
           // Requires a discoverable bluetooth device nearby
           "exclude-filter": "android.os.cts.CompanionDeviceManagerTest#testRequestNotifications"
         },
