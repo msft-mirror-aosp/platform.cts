@@ -176,7 +176,7 @@ public class CodecInfoTest {
      */
     @CddTest(requirements = {"5.1.7/C-1-2", "5.1.7/C-1-3", "5.1.7/C-4-1", "5.12/C-6-5",
             "5.12/C-7-1", "5.12/C-7-3"})
-    @VsrTest(requirements = {"VSR-4.4.011"})
+    @VsrTest(requirements = {"VSR-4.4-011"})
     @Test
     public void testColorFormatSupport() {
         Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
@@ -290,7 +290,7 @@ public class CodecInfoTest {
     @RequiresFlagsEnabled(FLAG_DYNAMIC_COLOR_ASPECTS)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
-    @VsrTest(requirements = {"VSR-4.2.005.001"})
+    @VsrTest(requirements = {"VSR-4.2-005.001"})
     @Test
     public void testDynamicColorAspectSupport() {
         Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
@@ -309,7 +309,7 @@ public class CodecInfoTest {
      * Components advertising support for compression technologies that were introduced after 2002
      * must support a given resolution in both portrait and landscape mode.
      */
-    @VsrTest(requirements = {"VSR-4.2.004.002"})
+    @VsrTest(requirements = {"VSR-4.2-004.002"})
     @Test
     public void testResolutionSupport() {
         Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
