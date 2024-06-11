@@ -31,7 +31,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.projection.MediaProjection;
 import android.os.UserManager;
-import android.permission.flags.Flags;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -45,7 +44,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -80,13 +78,6 @@ public class ViewSensitiveContentTest {
                 isHeadlessSystemUser(mContext));
 
         startMediaProjection();
-    }
-
-    @After
-    public void teardown() {
-        if (Flags.sensitiveContentImprovements()) {
-            ToastVerifier.Companion.waitForNoToast();
-        }
     }
 
     @Test
@@ -189,6 +180,9 @@ public class ViewSensitiveContentTest {
         try (ActivityScenario<SensitiveContentActivity> ignored =
                      ActivityScenario.launch(SensitiveContentActivity.class)) {
             ToastVerifier.Companion.verifyToastShowsAndGoes();
+        }
+        finally {
+            ToastVerifier.Companion.waitForNoToast();
         }
     }
 

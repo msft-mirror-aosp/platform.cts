@@ -87,6 +87,7 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DeviceOwnerKeyManagementTest {
     private static final Context sContext = TestApis.context().instrumentedContext();
@@ -215,7 +216,7 @@ public class DeviceOwnerKeyManagementTest {
          * * Other KeyMint implementations must not include anything in this tag.
          */
         final boolean isKeyMintV3 =
-                TestUtils.getFeatureVersionKeystore(sContext, useStrongbox) >= 300;
+                TestUtils.hasKeystoreVersion(useStrongbox, Attestation.KM_VERSION_KEYMINT_3);
         final boolean emptySecondImei = TextUtils.isEmpty(expectedSecondImei);
         final boolean deviceShippedWithKeyMint3 =
                 TestUtils.getVendorApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -250,7 +251,10 @@ public class DeviceOwnerKeyManagementTest {
                                                             boolean useStrongbox)
             throws CertificateParsingException, IOException {
         ParsedAttestationRecord parsedAttestationRecord =
-                createParsedAttestationRecord(Arrays.asList((X509Certificate[]) certs));
+                createParsedAttestationRecord(
+                    Arrays.stream(certs)
+                    .map(certificate -> (X509Certificate) certificate)
+                    .collect(Collectors.toList()));
 
         com.google.android.attestation.AuthorizationList teeAttestation =
                 parsedAttestationRecord.teeEnforced;
@@ -413,7 +417,7 @@ public class DeviceOwnerKeyManagementTest {
             List<Certificate> attestation = generated.getAttestationRecord();
             validateAttestationRecord(attestation, attestationChallenge);
             validateSignatureChain(attestation, keyPair.getPublic());
-            return (Certificate[]) attestation.toArray();
+            return attestation.toArray(new Certificate[0]);
         } catch (UnsupportedOperationException ex) {
             assertWithMessage(
                     String.format(
@@ -525,7 +529,7 @@ public class DeviceOwnerKeyManagementTest {
                     assertThat(isDeviceIdAttestationSupported()).isFalse();
                 } catch (StrongBoxUnavailableException expected) {
                     // This exception must only be thrown if StrongBox attestation was requested.
-                    assertThat(useStrongBox && !hasStrongBox()).isTrue();
+                    assertThat(useStrongBox && !TestUtils.hasStrongBox(sContext)).isTrue();
                 }
             }
         }
@@ -653,10 +657,5 @@ public class DeviceOwnerKeyManagementTest {
                     && TestUtils.isGsiImage() && !isDeviceLocked));
             throw new Exception(e);
         }
-    }
-
-    boolean hasStrongBox() {
-        return sContext.getPackageManager()
-                .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE);
     }
 }

@@ -19,6 +19,7 @@ package {
 
 android_test {
     name: "CtsRenderscriptLegacyTestCases",
+    team: "trendy_team_renderscript_nnapi",
     defaults: ["cts_defaults"],
     static_libs: ["ctstestrunner-axt"],
     srcs: ["src/**/*.java"],

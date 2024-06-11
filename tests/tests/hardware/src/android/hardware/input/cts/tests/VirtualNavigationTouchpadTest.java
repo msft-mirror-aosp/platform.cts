@@ -18,11 +18,13 @@ package android.hardware.input.cts.tests;
 
 import static org.junit.Assert.assertThrows;
 
+import android.companion.virtual.flags.Flags;
 import android.hardware.input.VirtualNavigationTouchpad;
 import android.hardware.input.VirtualTouchEvent;
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -41,8 +43,8 @@ import java.util.Arrays;
 public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
 
     private static final String DEVICE_NAME = "CtsVirtualNavigationTouchpadTestDevice";
-    private static final int TOUCHPAD_HEIGHT = 50;
-    private static final int TOUCHPAD_WIDTH = 50;
+    private static final int TOUCHPAD_HEIGHT = 500;
+    private static final int TOUCHPAD_WIDTH = 500;
 
     private VirtualNavigationTouchpad mVirtualNavigationTouchpad;
 
@@ -67,13 +69,7 @@ public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
                 .setMajorAxisSize(inputSize)
                 .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
                 .build());
-        mVirtualNavigationTouchpad.sendTouchEvent(new VirtualTouchEvent.Builder()
-                .setAction(VirtualTouchEvent.ACTION_UP)
-                .setPointerId(1)
-                .setX(x)
-                .setY(y)
-                .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                .build());
+        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_UP);
         // Convert the input axis size to its equivalent fraction of the total touchpad size.
         final float computedSize = inputSize / (TOUCHPAD_WIDTH - 1f);
 
@@ -87,21 +83,12 @@ public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
 
     @Test
     public void sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        final float inputSize = 1f;
         final float x = 30f;
         final float y = 30f;
         mRule.runWithoutPermissions(
                 () -> assertThrows(SecurityException.class,
-                        () -> mVirtualNavigationTouchpad.sendTouchEvent(
-                                new VirtualTouchEvent.Builder()
-                                        .setAction(VirtualTouchEvent.ACTION_DOWN)
-                                        .setPointerId(1)
-                                        .setX(x)
-                                        .setY(y)
-                                        .setPressure(255f)
-                                        .setMajorAxisSize(inputSize)
-                                        .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                                        .build())));
+                        () -> sendVirtualNavigationTouchEvent(x, y,
+                                VirtualTouchEvent.ACTION_DOWN)));
     }
 
     @Test
@@ -116,21 +103,8 @@ public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
 
         final float x = 30f;
         final float y = 30f;
-        mVirtualNavigationTouchpad.sendTouchEvent(new VirtualTouchEvent.Builder()
-                .setAction(VirtualTouchEvent.ACTION_DOWN)
-                .setPointerId(1)
-                .setX(x)
-                .setY(y)
-                .setPressure(255f)
-                .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                .build());
-        mVirtualNavigationTouchpad.sendTouchEvent(new VirtualTouchEvent.Builder()
-                .setAction(VirtualTouchEvent.ACTION_UP)
-                .setPointerId(1)
-                .setX(x)
-                .setY(y)
-                .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                .build());
+        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_DOWN);
+        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_UP);
 
         verifyEvents(Arrays.asList(
                 createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER),
@@ -199,23 +173,10 @@ public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
 
         float x = 30f;
         float y = 30f;
-        mVirtualNavigationTouchpad.sendTouchEvent(new VirtualTouchEvent.Builder()
-                .setAction(VirtualTouchEvent.ACTION_DOWN)
-                .setPointerId(1)
-                .setX(x)
-                .setY(y)
-                .setPressure(255f)
-                .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                .build());
+        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_DOWN);
         // TODO(b/277040837): Use custom timestamps for virtual input events instead of sleep.
         SystemClock.sleep(600);
-        mVirtualNavigationTouchpad.sendTouchEvent(new VirtualTouchEvent.Builder()
-                .setAction(VirtualTouchEvent.ACTION_UP)
-                .setPointerId(1)
-                .setX(x)
-                .setY(y)
-                .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                .build());
+        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_UP);
 
         verifyNoKeyEvents();
     }
@@ -230,6 +191,29 @@ public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
         verifyNoKeyEvents();
     }
 
+    // Test case for fling with a set of coordinates that results into negative velocity calculation
+    // when using LSQ2 velocity strategy. Verify that we get the correct behaviour for touch
+    // navigation (as it internally uses impulse velocity strategy).
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IMPULSE_VELOCITY_STRATEGY_FOR_TOUCH_NAVIGATION)
+    public void sendFlingDown_withSpecialCoordinates_motionEventNotConsumed_getsConvertedToDpadDown() {
+        setConsumeGenericMotionEvents(false);
+
+        sendVirtualNavigationTouchEvent(1, 98, VirtualTouchEvent.ACTION_DOWN);
+        SystemClock.sleep(5);
+        sendVirtualNavigationTouchEvent(1, 247, VirtualTouchEvent.ACTION_MOVE);
+        SystemClock.sleep(5);
+        sendVirtualNavigationTouchEvent(1, 310, VirtualTouchEvent.ACTION_MOVE);
+        SystemClock.sleep(5);
+        sendVirtualNavigationTouchEvent(1, 324, VirtualTouchEvent.ACTION_MOVE);
+        SystemClock.sleep(5);
+        sendVirtualNavigationTouchEvent(1, 324, VirtualTouchEvent.ACTION_UP);
+
+        verifyEvents(Arrays.asList(
+                createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_DOWN),
+                createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_DOWN)));
+    }
+
     private void sendFlingEvents(float startX, float startY, float diffX, float diffY) {
         sendContinuousEvents(startX, startY, diffX, diffY, 7 /* eventTimeGapMs */);
     }
@@ -238,34 +222,27 @@ public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
             long eventTimeGapMs) {
         int eventCount = 4;
         // Starts with ACTION_DOWN.
-        mVirtualNavigationTouchpad.sendTouchEvent(new VirtualTouchEvent.Builder()
-                .setAction(VirtualTouchEvent.ACTION_DOWN)
-                .setPointerId(1)
-                .setX(startX)
-                .setY(startY)
-                .setPressure(255f)
-                .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                .build());
+        sendVirtualNavigationTouchEvent(startX, startY, VirtualTouchEvent.ACTION_DOWN);
         SystemClock.sleep(eventTimeGapMs);
 
         for (int i = 1; i <= eventCount; i++) {
-            mVirtualNavigationTouchpad.sendTouchEvent(new VirtualTouchEvent.Builder()
-                    .setAction(VirtualTouchEvent.ACTION_MOVE)
-                    .setPointerId(1)
-                    .setX(startX + i * diffX / eventCount)
-                    .setY(startY + i * diffY / eventCount)
-                    .setPressure(255f)
-                    .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                    .build());
+            sendVirtualNavigationTouchEvent(startX + i * diffX / eventCount,
+                    startY + i * diffY / eventCount, VirtualTouchEvent.ACTION_MOVE);
             SystemClock.sleep(eventTimeGapMs);
         }
 
         // Ends with ACTION_UP.
+        sendVirtualNavigationTouchEvent(startX + diffX, startY + diffY,
+                VirtualTouchEvent.ACTION_UP);
+    }
+
+    private void sendVirtualNavigationTouchEvent(float x, float y, int action) {
         mVirtualNavigationTouchpad.sendTouchEvent(new VirtualTouchEvent.Builder()
-                .setAction(VirtualTouchEvent.ACTION_UP)
+                .setAction(action)
                 .setPointerId(1)
-                .setX(startX + diffX)
-                .setY(startY + diffY)
+                .setX(x)
+                .setY(y)
+                .setPressure(action == VirtualTouchEvent.ACTION_UP ? 0f : 255f)
                 .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
                 .build());
     }
