@@ -240,11 +240,12 @@ public class ItsService extends Service implements SensorEventListener {
         CAMCORDER_PROFILE_QUALITIES_MAP.put(CamcorderProfile.QUALITY_VGA, "VGA");
     }
 
+    private static final String JPEG_R_FMT = "jpeg_r";
     private static HashMap<Integer, String> sFormatMap = new HashMap<>();
     static {
         sFormatMap.put(ImageFormat.PRIVATE, "priv");
         sFormatMap.put(ImageFormat.JPEG, "jpeg");
-        sFormatMap.put(ImageFormat.JPEG_R, "jpegr");
+        sFormatMap.put(ImageFormat.JPEG_R, JPEG_R_FMT);
         sFormatMap.put(ImageFormat.YUV_420_888, "yuv");
     }
 
@@ -1326,7 +1327,7 @@ public class ItsService extends Service implements SensorEventListener {
                     } else if (format == ImageFormat.JPEG) {
                         jsonSurface.put("format", "jpeg");
                     } else if (format == ImageFormat.JPEG_R) {
-                        jsonSurface.put("format", "jpeg_r");
+                        jsonSurface.put("format", JPEG_R_FMT);
                     } else if (format == ImageFormat.PRIVATE) {
                         jsonSurface.put("format", "priv");
                     } else if (format == ImageFormat.YUV_420_888) {
@@ -2425,7 +2426,7 @@ public class ItsService extends Service implements SensorEventListener {
                     } else if ("jpg".equals(sformat) || "jpeg".equals(sformat)) {
                         outputFormats[i] = ImageFormat.JPEG;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
-                    } else if ("jpeg_r".equals(sformat)) {
+                    } else if (JPEG_R_FMT.equals(sformat)) {
                         outputFormats[i] = ImageFormat.JPEG_R;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
                         is10bitOutputPresent = true;
