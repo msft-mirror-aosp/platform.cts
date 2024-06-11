@@ -135,7 +135,7 @@ public class CtsCredentialProviderServiceDeviceTest {
     // Assumption fails, and all tests skipped if the credential manager feature
     // is not found on the device
     @Rule
-    public static final RequiredFeatureRule mRequiredFeatureRule =
+    public final RequiredFeatureRule mRequiredFeatureRule =
             new RequiredFeatureRule(PackageManager.FEATURE_CREDENTIALS);
 
 
