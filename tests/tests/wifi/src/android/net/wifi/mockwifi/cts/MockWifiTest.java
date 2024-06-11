@@ -64,6 +64,7 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
@@ -389,7 +390,7 @@ public class MockWifiTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void testMockPnoScanResultsOnMockWifi() throws Exception {
-        if (!sWifiManager.isPreferredNetworkOffloadSupported()) {
+        if (!sWifiManager.isPreferredNetworkOffloadSupported() || FeatureUtil.isAutomotive()) {
             return;
         }
         if (!hasLocationFeature()) {
