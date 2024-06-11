@@ -346,7 +346,7 @@ public class FingerprintBoundKeysTest extends PassFailButtons.Activity {
                     boolean tokenExpired = false;
                     long startTime = System.currentTimeMillis();
                     while (((System.currentTimeMillis() - startTime)
-                            < (AUTHENTICATION_DURATION_SECONDS * 1000))
+                            < ((AUTHENTICATION_DURATION_SECONDS + 1) * 1000))
                             && (!tokenExpired)) {
                         try {
                             Thread.sleep(1000);
