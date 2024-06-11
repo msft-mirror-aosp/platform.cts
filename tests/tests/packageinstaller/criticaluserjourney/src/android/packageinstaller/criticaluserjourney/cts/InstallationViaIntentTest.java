@@ -38,7 +38,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
@@ -54,7 +54,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         pressBack();
 
@@ -69,7 +69,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         touchOutside();
 
@@ -84,7 +84,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickCancelButton();
 
@@ -99,7 +99,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
         assertTestPackageNotInstalled();
     }
@@ -167,7 +167,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
@@ -185,7 +185,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         pressBack();
 
@@ -202,7 +202,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         touchOutside();
 
@@ -219,7 +219,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickCancelButton();
 
@@ -236,7 +236,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
         assertTestPackageInstalled();
     }
@@ -312,7 +312,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickUpdateButton(/* checkInstallingDialog= */ false, /* checkGPPDialog= */ false);
 
@@ -330,7 +330,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         pressBack();
 
@@ -347,7 +347,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         touchOutside();
 
@@ -364,7 +364,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickCancelButton();
 
@@ -381,7 +381,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
         assertTestPackageInstalled();
     }
