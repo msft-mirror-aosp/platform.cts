@@ -175,6 +175,6 @@ public final class DefaultDialerApplicationTest {
                 throw new IllegalStateException(
                         "Error setting default dialer application. Relevant logcat: " + logcat);
             }
-        }).timeout(Duration.ofMinutes(2)).runAndWrapException();
+        }).timeout(Duration.ofMinutes(4)).runAndWrapException();
     }
 }

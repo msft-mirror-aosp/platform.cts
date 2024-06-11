@@ -15,12 +15,13 @@
  */
 package com.android.bedstead.harrier
 
+import com.android.bedstead.multiuser.UsersComponent
 import kotlin.reflect.KClass
 
 class MainLocatorModule(private val deviceState: DeviceState) : BedsteadServiceLocator.Module {
     override fun <T : Any> getDependency(clazz: KClass<T>): T? {
         val dependency: Any? = when (clazz) {
-            DeviceStateUsers::class -> DeviceStateUsers(deviceState)
+            UsersComponent::class -> UsersComponent(deviceState)
             DeviceState::class -> deviceState
             else -> null
         }

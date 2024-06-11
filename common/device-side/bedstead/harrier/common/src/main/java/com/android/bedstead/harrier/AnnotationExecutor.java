@@ -23,7 +23,7 @@ import java.lang.annotation.Annotation;
 
 /**
  * Interface used to register a new class which can execute Harrier annotations.
- *
+ * <p>
  * This can be used to add additional harrier-compatible annotations without modifying harrier
  */
 // This is written in Java because Kotlin interfaces can't expose default methods to Java
@@ -33,6 +33,8 @@ public interface AnnotationExecutor extends FailureDumper, DeviceStateComponent 
      *
      * <p>This should take care of recording any state necessary to correctly restore state after
      * the test.
+     * Annotations that don't need the context of device state components
+     * could be handled by extension functions like: {@link AnnotationLogicExtensionsKt}
      */
     void applyAnnotation(@NonNull Annotation annotation);
 

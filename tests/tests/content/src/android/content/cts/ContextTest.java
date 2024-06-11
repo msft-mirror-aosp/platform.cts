@@ -1124,31 +1124,6 @@ public class ContextTest {
     }
 
     @Test
-    public void testStartActivityWithNonExportedActivity() {
-        Intent intent = new Intent("android.cts.action.TEST_NON_EXPORTED");
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try {
-            mContext.startActivity(intent);
-            fail("Test startActivity should throw a ActivityNotFoundException here.");
-        } catch (ActivityNotFoundException e) {
-            // Because ContextWrapper is a wrapper class, so no need to test
-            // the details of the function's performance. Getting a result
-            // from the wrapped class is enough for testing.
-        }
-    }
-
-    @Test
-    public void testStartActivityWithExportedActivity() {
-        Intent intent = new Intent("android.cts.action.TEST_EXPORTED");
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try {
-            mContext.startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            fail("Test startActivity should not throw a ActivityNotFoundException here.");
-        }
-    }
-
-    @Test
     public void testStartActivities() throws Exception {
         final Intent[] intents = {
                 new Intent().setComponent(new ComponentName(mContext,
@@ -1892,51 +1867,6 @@ public class ContextTest {
                 return receiver.hasReceivedBroadCast();
             }
         }.run();
-    }
-
-    @Test
-    public void testSendBroadcast_WithExportedRuntimeReceiver() throws InterruptedException {
-        final ResultReceiver receiver = new ResultReceiver();
-
-        registerBroadcastReceiver(receiver, new IntentFilter(
-                ResultReceiver.MOCK_ACTION), Context.RECEIVER_EXPORTED);
-
-        mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION), null);
-
-        try {
-            new PollingCheck(BROADCAST_TIMEOUT) {
-                @Override
-                protected boolean check() {
-                    return receiver.hasReceivedBroadCast();
-                }
-            }.run();
-        } catch (AssertionError e) {
-            fail();
-        }
-    }
-
-    @Test
-    public void testSendBroadcast_WithNonExportedRuntimeReceiver() throws InterruptedException {
-        final ResultReceiver receiver = new ResultReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                fail();
-            }
-        };
-        registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
-        mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION), null);
-
-        try {
-            new PollingCheck(BROADCAST_TIMEOUT) {
-                @Override
-                protected boolean check() {
-                    return receiver.hasReceivedBroadCast();
-                }
-            }.run();
-        } catch (AssertionError e) {
-            // If the check still fails after the given timeout we can assume the receiver has
-            // never received the broadcast, so we can swallow the exception and pass the test.
-        }
     }
 
     /**

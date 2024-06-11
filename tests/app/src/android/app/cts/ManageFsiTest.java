@@ -31,6 +31,11 @@ import android.provider.Settings;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -39,6 +44,11 @@ public class ManageFsiTest {
 
     private static final String STUB_PACKAGE_NAME = "android.app.stubs";
 
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
+    @RequireNotAutomotive(reason = "AAOS does not support fullscreen intents")
     @Test
     public void testManageAppUseFsiIntent_ResolvesToActivity() {
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
