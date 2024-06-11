@@ -32,4 +32,5 @@ android_test {
         "general-tests",
     ],
     min_sdk_version: "30",
+    sdk_version: "test_current",
 }

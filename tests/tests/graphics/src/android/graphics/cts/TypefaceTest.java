@@ -701,18 +701,22 @@ public class TypefaceTest {
         paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
                 .setFontVariationSettings("'wght' 100").build());
         assertEquals(10.0f, paint.measureText("a"), 0.0f);
+        assertEquals(100, paint.getTypeface().getWeight());
 
         paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
                 .setFontVariationSettings("'wght' 300").build());
         assertEquals(30.0f, paint.measureText("a"), 0.0f);
+        assertEquals(300, paint.getTypeface().getWeight());
 
         paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
                 .setFontVariationSettings("'wght' 800").build());
         assertEquals(80.0f, paint.measureText("a"), 0.0f);
+        assertEquals(800, paint.getTypeface().getWeight());
 
         paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
                 .setFontVariationSettings("'wght' 550").build());
         assertEquals(55.0f, paint.measureText("a"), 0.0f);
+        assertEquals(550, paint.getTypeface().getWeight());
     }
 
     @Test

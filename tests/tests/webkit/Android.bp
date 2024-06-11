@@ -60,4 +60,5 @@ android_test {
     // uncomment when dalvik.annotation.Test* are removed or part of SDK
     //sdk_version: "current"
     platform_apis: true,
+    sdk_version: "test_current",
 }

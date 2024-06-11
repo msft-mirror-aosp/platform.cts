@@ -1401,9 +1401,9 @@ public class BlobStoreManagerTest {
         final long startTimeMs = System.currentTimeMillis();
         final long blobId = commitBlob(blobData);
         assertThat(runShellCmd("cmd blob_store query-blob-existence -b " + blobId)).isEqualTo("1");
-        final long commitDurationMs = System.currentTimeMillis() - startTimeMs;
 
-        SystemClock.sleep(Math.abs(expiryDurationMs - commitDurationMs));
+        // Wait for the blob to expire
+        SystemClock.sleep(expiryDurationMs);
 
         assertThrows(SecurityException.class,
                 () -> mBlobStoreManager.openBlob(blobData.getBlobHandle()));
