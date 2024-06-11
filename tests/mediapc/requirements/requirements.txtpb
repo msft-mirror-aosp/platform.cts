@@ -893,7 +893,127 @@ requirements {
 }
 requirements {
   id: "5.2/H-2-1"
-  description: "- Video encoding quality"
+  name: "VEQ"
+  description: "Video encoding quality (VEQ) tests."
+  measurements: {
+    key: "bdrate_vmaf"
+    value: {
+      description: "BDRATE-VMAF result"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "calculated"
+    value: {
+      description:
+        "Was BDRATE-VMAF calculated. "
+        "Because 0 is a passing BDRATE-VMAF result, setting this field verifies "
+        "the calculation was done."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "codec_name"
+    value: {
+      description: "Codec name"
+      measurement_type: MEASUREMENT_TYPE_STRING
+      comparison: COMPARISON_INFO_ONLY
+    }
+  }
+  measurements: {
+    key: "bframes_allowed"
+    value: {
+      description: "The encoding is allowed to include b-frames."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_INFO_ONLY
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description:
+        "The resolution of the video written as height x width p "
+        "(for example 1080x1920p)."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_INFO_ONLY
+    }
+  }
+  specs {
+    key: 34
+    value {
+      mpc: MEDIA_PERFORMANCE_CLASS_14
+      specification:
+        "MUST meet the minimum quality target defined by the video encoder "
+        "rate-distortion curves for hardware AVC and HEVC codecs, as defined "
+        "in Run Performance Class 14 (PC14)-Video encoding quality (VEQ) tests."
+      required_values: {
+        key: "bdrate_vmaf"
+        value {
+          double_value: 0.0
+        }
+      }
+      required_values: {
+        key: "calculated"
+        value {
+          bool_value: true
+        }
+      }
+      required_values: {
+        key: "codec_name"
+        value {
+        }
+      }
+      required_values: {
+        key: "bframes_allowed"
+        value {
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+        }
+      }
+    }
+  }
+  specs {
+    key: 35
+    value {
+      mpc: MEDIA_PERFORMANCE_CLASS_14
+      specification:
+        "MUST meet the minimum quality target defined by the video encoder "
+        "rate-distortion curves for hardware AVC and HEVC codecs, as defined "
+        "in Run Performance Class 14 (PC14)-Video encoding quality (VEQ) tests."
+      required_values: {
+        key: "bdrate_vmaf"
+        value {
+          double_value: 0.0
+        }
+      }
+      required_values: {
+        key: "calculated"
+        value {
+          bool_value: true
+        }
+      }
+      required_values: {
+        key: "codec_name"
+        value {
+        }
+      }
+      required_values: {
+        key: "bframes_allowed"
+        value {
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+        }
+      }
+    }
+  }
 }
 requirements {
   id: "5.3/H-1-1"

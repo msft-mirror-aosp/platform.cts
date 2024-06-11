@@ -75,6 +75,9 @@ import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerState;
 import android.support.test.uiautomator.UiObject2;
 import android.text.TextUtils;
@@ -87,6 +90,7 @@ import android.view.ViewTreeObserver;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethod;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.AutoCloseableWrapper;
@@ -145,6 +149,8 @@ import java.util.function.Predicate;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
     private static final String TAG = KeyboardVisibilityControlTest.class.getSimpleName();
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(6);
     private static final long START_INPUT_TIMEOUT = TimeUnit.SECONDS.toMillis(10);
@@ -457,7 +463,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             notExpectEvent(stream, showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
 
             getOnMainSync(() -> imm.hideSoftInputFromWindow(
-                            nonFocusedEditText.getWindowToken(), 0));
+                    nonFocusedEditText.getWindowToken(), 0));
             // IME was never shown, so there should be no hideSoftInput.
             notExpectEvent(stream, hideSoftInputMatcher(), TIMEOUT);
             expectImeInvisible(TIMEOUT);
@@ -610,6 +616,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testShowSoftInputWithShowForcedFlagWhenAppIsLeaving() throws Exception {
         final InputMethodManager imm = mInstrumentation
                 .getTargetContext().getSystemService(InputMethodManager.class);

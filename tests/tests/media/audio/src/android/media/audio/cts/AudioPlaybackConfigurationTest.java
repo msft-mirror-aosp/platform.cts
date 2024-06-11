@@ -297,9 +297,12 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             callback.reset();
             mMp.pause();
 
+            Thread.sleep(TEST_TIMING_TOLERANCE_MS);
             assertTrue("onPlaybackConfigChanged should have been called for PLAYER_STATE_PAUSED",
-                    callback.waitForCallbacks(1, TEST_TIMING_TOLERANCE_MS));
+                    callback.getCbInvocationNumber() >= 1);
 
+            // TODO: improve this check which can be flaky when multiple players are
+            // still active in the platform from the same uid/pid
             assertEquals("number of active players not expected after pause",
                     nbActivePlayersBeforeStart/*expected*/, callback.getNbConfigs());
 
@@ -695,10 +698,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         AudioManager am = new AudioManager(getContext());
         assertNotNull("Could not create AudioManager", am);
 
-        boolean isMuted = am.isStreamMute(TEST_STREAM_FOR_USAGE);
-        if (isMuted) {
-            adjustUnMuteStreamVolume(am);
-        }
         Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
 
         MyAudioPlaybackCallback callback = new MyAudioPlaybackCallback();
@@ -714,12 +713,9 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                         + "PLAYER_STATE_STARTED, PLAYER_UPDATE_FORMAT, and PLAYER_UPDATE_DEVICE_ID",
                         callback.waitForCallbacks(3,
                                 TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
-                if (mAt != null) {
-                    Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
-                }
-            } else {
-                Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
             }
+
+            Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
 
             // mute with Runnable
             callback.reset();
@@ -749,10 +745,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         } finally {
             am.unregisterAudioPlaybackCallback(callback);
             unmute.run();
-
-            if (isMuted) {
-                adjustMuteStreamVolume(am);
-            }
         }
     }
 
@@ -1007,7 +999,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                 throws InterruptedException {
             int signalsCounted =
                     mOnCalledMonitor.waitForCountedSignals(calledCount, timeoutMs);
-            return (signalsCounted == calledCount);
+            return (signalsCounted >= calledCount);
         }
     }
 

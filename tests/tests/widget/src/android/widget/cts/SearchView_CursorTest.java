@@ -226,6 +226,12 @@ public class SearchView_CursorTest {
         assertTrue(mSearchView.hasFocus());
         assertEquals(mSuggestionsAdapter, mSearchView.getSuggestionsAdapter());
 
+        // The popup candidate window requires window focus but because of the timing issue, the
+        // window focus may not be obtained at the time of showing candidate window triggered by
+        // setQuery method call below. We should wait for window focus before calling setQuery.
+        PollingCheck.waitFor(() -> mSearchView.hasWindowFocus());
+        assertTrue(mSearchView.hasWindowFocus());
+
         mActivityRule.runOnUiThread(() -> mSearchView.setQuery("Di", false));
         PollingCheck.waitFor(() -> {
             UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);

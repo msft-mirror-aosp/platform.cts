@@ -70,7 +70,7 @@ public class TestUtils {
         // Only take a screenshot once the screen is stable enough.
         waitForIdle();
 
-        Bitmap bt = mAutomation.takeScreenshot();
+        Bitmap bt = mAutomation.takeScreenshot(mRule.getActivity().getWindow());
         assertNotNull("Screenshot must not return null", bt);
 
         // Crop-out the status bar to avoid flakiness with changing notifications / time.

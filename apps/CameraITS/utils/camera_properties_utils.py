@@ -763,8 +763,12 @@ def get_intrinsic_calibration(props, metadata, debug, fd=None):
          [0, f_y, c_y],
          [0,   0,   1]]
   """
-  if metadata['android.lens.intrinsicCalibration']:
+  if metadata.get('android.lens.intrinsicCalibration'):
     ical = np.array(metadata['android.lens.intrinsicCalibration'])
+    logging.debug('Using capture metadata android.lens.intrinsicCalibration')
+  elif props.get('android.lens.intrinsicCalibration'):
+    ical = np.array(props['android.lens.intrinsicCalibration'])
+    logging.debug('Using camera property android.lens.intrinsicCalibration')
   else:
     logging.error('Camera does not have android.lens.intrinsicCalibration.')
     return None
@@ -1063,6 +1067,25 @@ def awb_regions(props):
   """
   return 'android.control.maxRegionsAwb' in props and props[
       'android.control.maxRegionsAwb'] != 0
+
+
+def preview_stabilization_supported(props):
+  """Returns whether preview stabilization is supported.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if preview stabilization is supported.
+  """
+  supported_stabilization_modes = props[
+      'android.control.availableVideoStabilizationModes'
+  ]
+  supported = (
+      supported_stabilization_modes is not None and
+      STABILIZATION_MODE_PREVIEW in supported_stabilization_modes
+  )
+  return supported
 
 
 def optical_stabilization_supported(props):

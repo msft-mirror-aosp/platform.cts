@@ -20,6 +20,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.annotations.StringQuery;
 
@@ -45,6 +46,7 @@ import java.lang.annotation.Target;
 @EnsureTestAppInstalled(key = MostRestrictiveCoexistenceTest.DPC_2,
         query = @Query(packageName = @StringQuery(
                 isEqualTo = "com.android.bedstead.testapp.TestOnlyDeviceAdminTestApp")))
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 public @interface MostRestrictiveCoexistenceTest {
 
     String DPC_1 = "dpc1";
@@ -57,7 +59,7 @@ public @interface MostRestrictiveCoexistenceTest {
      */
     Class<?> policy();
 
-     /**
+    /**
      * Priority sets the order that annotations will be resolved.
      *
      * <p>Annotations with a lower priority will be resolved before annotations with a higher
@@ -66,7 +68,8 @@ public @interface MostRestrictiveCoexistenceTest {
      * <p>If there is an order requirement between annotations, ensure that the priority of the
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
-     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
+     * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any
+     * {@link int}.
      */
     int priority() default LATE;
 }
