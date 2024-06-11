@@ -1069,6 +1069,25 @@ def awb_regions(props):
       'android.control.maxRegionsAwb'] != 0
 
 
+def preview_stabilization_supported(props):
+  """Returns whether preview stabilization is supported.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if preview stabilization is supported.
+  """
+  supported_stabilization_modes = props[
+      'android.control.availableVideoStabilizationModes'
+  ]
+  supported = (
+      supported_stabilization_modes is not None and
+      STABILIZATION_MODE_PREVIEW in supported_stabilization_modes
+  )
+  return supported
+
+
 def optical_stabilization_supported(props):
   """Returns whether optical image stabilization is supported.
 
