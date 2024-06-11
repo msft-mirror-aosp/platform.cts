@@ -20,7 +20,6 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
@@ -29,6 +28,10 @@ public class NonRecoverableTest extends GwpAsanBaseTest {
 
     protected String getTestApk() {
         return "CtsGwpAsanEnabled.apk";
+    }
+
+    protected String getTestNameSuffix() {
+        return "NonRecoverable";
     }
 
     @Before
@@ -47,26 +50,5 @@ public class NonRecoverableTest extends GwpAsanBaseTest {
         mDevice.setProperty(RECOVERABLE_SYSPROP + TEST_PKG, "");
         mDevice.setProperty(RECOVERABLE_SYSPROP + TEST_PKG + ":gwp_asan_enabled", "");
         mDevice.setProperty(RECOVERABLE_SYSPROP + TEST_PKG + ":gwp_asan_default", "");
-    }
-
-    @Test
-    public void testGwpAsanEnabled() throws Exception {
-        runTest(".GwpAsanActivityTest", "testEnablement");
-        runTest(".GwpAsanServiceTest", "testEnablement");
-    }
-
-    @Test
-    public void testCrashToDropbox() throws Exception {
-        runTest(".GwpAsanActivityTest", "testCrashToDropboxNonRecoverableEnabled");
-        runTest(".GwpAsanActivityTest", "testCrashToDropboxNonRecoverableDefault");
-        runTest(".GwpAsanServiceTest", "testCrashToDropboxNonRecoverableEnabled");
-        runTest(".GwpAsanServiceTest", "testCrashToDropboxNonRecoverableDefault");
-    }
-
-    @Test
-    public void testAppExitInfo() throws Exception {
-        resetAppExitInfo();
-        runTest(".GwpAsanActivityTest", "testCrashToDropboxNonRecoverableDefault");
-        runTest(".GwpAsanActivityTest", "checkAppExitInfo");
     }
 }
