@@ -411,10 +411,14 @@ public class ItsTestActivity extends DialogTestListActivity {
                         JSONArray metrics = sceneResult.getJSONArray("mpc_metrics");
                         for (int i = 0; i < metrics.length(); i++) {
                             String mpcResult = metrics.getString(i);
-                            if (!matchMpcResult(cameraId, mpcResult)) {
-                                Log.e(TAG, "Error parsing MPC result string:" + mpcResult);
-                                return;
+                            try {
+                                if (!matchMpcResult(cameraId, mpcResult)) {
+                                    Log.e(TAG, "Error parsing MPC result string:" + mpcResult);
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error parsing MPC result string:" + mpcResult, e);
                             }
+
                         }
 
                         if (sceneResult.isNull("performance_metrics")) {
@@ -426,9 +430,12 @@ public class ItsTestActivity extends DialogTestListActivity {
                         JSONArray mArr = sceneResult.getJSONArray("performance_metrics");
                         for (int i = 0; i < mArr.length(); i++) {
                             String perfResult = mArr.getString(i);
-                            if (!matchPerfMetricsResult(perfResult, camJsonObj)) {
-                                Log.e(TAG, "Error parsing perf result string:" + perfResult);
-                                return;
+                            try {
+                                if (!matchPerfMetricsResult(perfResult, camJsonObj)) {
+                                    Log.e(TAG, "Error parsing perf result string:" + perfResult);
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error parsing perf result string:" + perfResult, e);
                             }
                         }
                     }
