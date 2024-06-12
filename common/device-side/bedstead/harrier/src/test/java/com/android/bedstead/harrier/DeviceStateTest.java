@@ -17,15 +17,14 @@
 package com.android.bedstead.harrier;
 
 import static android.app.AppOpsManager.OPSTR_START_FOREGROUND;
-import static android.app.admin.DeviceAdminInfo.USES_POLICY_EXPIRE_PASSWORD;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
+import static com.android.bedstead.multiuser.UsersComponentKt.user;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.harrier.UserType.SECONDARY_USER;
 import static com.android.bedstead.harrier.annotations.RequireAospBuild.GMS_CORE_PACKAGE;
 import static com.android.bedstead.harrier.annotations.RequireCnGmsBuild.CHINA_GOOGLE_SERVICES_FEATURE;
-import static com.android.bedstead.multiuser.UsersComponentKt.user;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
@@ -41,19 +40,13 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.testng.Assert.assertThrows;
 
 import android.app.ActivityManager;
-import android.app.admin.DeviceAdminInfo;
 import android.app.contentsuggestions.ContentSuggestionsManager;
 import android.app.role.RoleManager;
-import android.content.ComponentName;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.view.contentcapture.ContentCaptureManager;
 
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin;
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
@@ -137,12 +130,10 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.policies.DisallowBluetooth;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.devicepolicy.DeviceAdmin;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.display.Display;
 import com.android.bedstead.nene.display.DisplayProperties;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserReference;
@@ -151,7 +142,6 @@ import com.android.bedstead.testapp.NotFoundException;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.queryable.annotations.IntegerQuery;
-import com.android.queryable.annotations.IntegerSetQuery;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.annotations.StringQuery;
 
@@ -160,8 +150,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.Set;
 
 @RunWith(BedsteadJUnit4.class)
 public class DeviceStateTest {
@@ -187,8 +175,6 @@ public class DeviceStateTest {
 
     private static final String USER_RESTRICTION = UserManager.DISALLOW_AUTOFILL;
     private static final String SECOND_USER_RESTRICTION = UserManager.DISALLOW_AIRPLANE_MODE;
-    private static final String REMOTE_DEVICE_ADMIN_APP_PACKAGE_PREFIX =
-            "com.android.cts.RemoteDeviceAdmin";
 
     @Test
     @RequireRunOnWorkProfile
@@ -1149,61 +1135,5 @@ public class DeviceStateTest {
     @IncludeLightMode
     public void includeRunOnLightModeDevice_themeIsSet() {
         assertThat(Display.INSTANCE.getDisplayTheme()).isEqualTo(DisplayProperties.Theme.LIGHT);
-    }
-
-    @Test
-    @EnsureHasDeviceAdmin(dpc = @Query(usesPolicies = @IntegerSetQuery(contains = {
-            USES_POLICY_EXPIRE_PASSWORD})))
-    public void ensureHasDeviceAdminAnnotation_queryByPolicy_hasCorrectDeviceAdmin()
-            throws Exception {
-        assertThat(createDeviceAdminInfo(new ComponentReference(
-                sDeviceState.deviceAdmin().componentName())).usesPolicy(
-                        USES_POLICY_EXPIRE_PASSWORD)).isTrue();
-    }
-
-    @Test
-    @EnsureHasDeviceAdmin
-    public void ensureHasDeviceAdminAnnotation_hasDeviceAdmin() {
-        assertThat(isRemoteDeviceAdmin(sDeviceState.deviceAdmin().componentName())).isTrue();
-    }
-
-    @Test
-    @EnsureHasNoTestDeviceAdmin
-    public void deviceAdmin_noTestDeviceAdmin_throws() {
-        assertThrows(IllegalStateException.class, sDeviceState::deviceAdmin);
-    }
-
-    @Test
-    @EnsureHasNoTestDeviceAdmin
-    public void ensureHasNoTestDeviceAdminAnnotation_hasNoTestDeviceAdmins() {
-        Set<DeviceAdmin> deviceAdmins = TestApis.devicePolicy().getActiveAdmins();
-
-        assertThat(deviceAdmins.stream().noneMatch(a -> isRemoteDeviceAdmin(a.componentName())))
-                .isTrue();
-    }
-
-    @Test
-    @EnsureHasDeviceAdmin(key = "remoteDeviceAdmin1")
-    @EnsureHasDeviceAdmin(key = "remoteDeviceAdmin2")
-    public void ensureHasDeviceAdminAnnotation_multipleWithKey_deviceAdmin_returns() {
-        assertThat(isRemoteDeviceAdmin(
-                sDeviceState.deviceAdmin("remoteDeviceAdmin1").componentName())).isTrue();
-        assertThat(isRemoteDeviceAdmin(
-                sDeviceState.deviceAdmin("remoteDeviceAdmin2").componentName())).isTrue();
-    }
-
-    private static boolean isRemoteDeviceAdmin(ComponentName componentName) {
-        return componentName != null
-                && componentName.getPackageName().startsWith(REMOTE_DEVICE_ADMIN_APP_PACKAGE_PREFIX)
-                && componentName.getClassName().equals(
-                componentName.getPackageName() + ".DeviceAdminReceiver");
-    }
-
-    private static DeviceAdminInfo createDeviceAdminInfo(ComponentReference componentReference)
-            throws Exception {
-        ResolveInfo resolveInfo = new ResolveInfo();
-        resolveInfo.activityInfo = TestApis.context().instrumentedContext().getPackageManager()
-                .getReceiverInfo(componentReference.componentName(), PackageManager.GET_META_DATA);
-        return new DeviceAdminInfo(TestApis.context().instrumentedContext(), resolveInfo);
     }
 }
