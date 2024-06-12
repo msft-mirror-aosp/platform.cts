@@ -16,6 +16,7 @@
 package android.devicepolicy.cts
 
 import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
 import android.content.pm.PackageManager
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
@@ -34,6 +35,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.devicepolicy.DeviceAdmin
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.packages.ComponentReference
@@ -199,9 +201,13 @@ class DeviceOwnerTest {
             ) {
                 TestApis.devicePolicy().getActiveAdmins(TestApis.users().system())
             }
-                    .toMeet { !it.contains(TEST_ONLY_DPC_COMPONENT) }
-                    .errorOnFail("Expected active admins to not contain DPC")
-                    .await()
+                    .toMeet { i: Set<DeviceAdmin> -> !i.contains(
+                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                                    ComponentName(
+                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                    }
+                .errorOnFail("Expected active admins to not contain DPC")
+                .await()
         }
     }
 
@@ -232,9 +238,13 @@ class DeviceOwnerTest {
             Poll.forValue(
                     "Active admins"
             ) { TestApis.devicePolicy().getActiveAdmins(TestApis.users().system()) }
-                    .toMeet { !it.contains(TEST_ONLY_DPC_COMPONENT) }
-                    .errorOnFail("Expected active admins to not contain DPC")
-                    .await()
+                    .toMeet { i: Set<DeviceAdmin> -> !i.contains(
+                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                                    ComponentName(
+                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                    }
+                .errorOnFail("Expected active admins to not contain DPC")
+                .await()
         }
     }
 
@@ -268,9 +278,13 @@ class DeviceOwnerTest {
             Poll.forValue(
                     "Active admins"
             ) { TestApis.devicePolicy().getActiveAdmins(TestApis.users().system()) }
-                    .toMeet { !it.contains(TEST_ONLY_DPC_COMPONENT) }
-                    .errorOnFail("Expected active admins to not contain DPC")
-                    .await()
+                    .toMeet { i: Set<DeviceAdmin> -> !i.contains(
+                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                                    ComponentName(
+                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                    }
+                .errorOnFail("Expected active admins to not contain DPC")
+                .await()
         }
     }
 
@@ -320,14 +334,16 @@ class DeviceOwnerTest {
         } finally {
             // After attempting and failing to set the device owner, it will remain as an active
             // admin for a short while
-            Poll.forValue("Active admins") {
-                TestApis.devicePolicy().getActiveAdmins(TestApis.users().system())
-            }
-                    .toMeet { i: Set<ComponentReference> ->
-                        !i.contains(NOT_TEST_ONLY_DPC_COMPONENT)
-                    }
-                    .errorOnFail("Expected active admins to not contain DPC")
-                    .await()
+            Poll.forValue(
+                "Active admins"
+            ) { TestApis.devicePolicy().getActiveAdmins(TestApis.users().system()) }
+                .toMeet { i: Set<DeviceAdmin> -> !i.contains(
+                        DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                                ComponentName(
+                                        TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                }
+                .errorOnFail("Expected active admins to not contain DPC")
+                .await()
         }
     }
 

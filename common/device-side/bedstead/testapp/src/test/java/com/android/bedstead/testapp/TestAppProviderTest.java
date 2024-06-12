@@ -28,6 +28,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.queryable.annotations.BooleanQuery;
 import com.android.queryable.annotations.IntegerQuery;
+import com.android.queryable.annotations.IntegerSetQuery;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.annotations.StringQuery;
 
@@ -78,8 +79,8 @@ public final class TestAppProviderTest {
     private TestAppProvider mTestAppProvider;
 
     @AutoAnnotation
-    public static Query query(StringQuery packageName, IntegerQuery minSdkVersion, IntegerQuery maxSdkVersion, IntegerQuery targetSdkVersion, BooleanQuery isDeviceAdmin, BooleanQuery isHeadlessDOSingleUser) {
-        return new AutoAnnotation_TestAppProviderTest_query(packageName, minSdkVersion, maxSdkVersion, targetSdkVersion, isDeviceAdmin, isHeadlessDOSingleUser);
+    public static Query query(StringQuery packageName, IntegerQuery minSdkVersion, IntegerQuery maxSdkVersion, IntegerQuery targetSdkVersion, BooleanQuery isDeviceAdmin, IntegerSetQuery usesPolicies, BooleanQuery isHeadlessDOSingleUser) {
+        return new AutoAnnotation_TestAppProviderTest_query(packageName, minSdkVersion, maxSdkVersion, targetSdkVersion, isDeviceAdmin, usesPolicies, isHeadlessDOSingleUser);
     }
 
     @AutoAnnotation
@@ -97,12 +98,18 @@ public final class TestAppProviderTest {
         return new AutoAnnotation_TestAppProviderTest_booleanQuery(isEqualTo);
     }
 
+    @AutoAnnotation
+    public static IntegerSetQuery integerSetQuery(int[] contains) {
+        return new AutoAnnotation_TestAppProviderTest_integerSetQuery(contains);
+    }
+
     static final class QueryBuilder {
         private StringQuery mPackageName = null;
         private IntegerQuery mMinSdkVersion = null;
         private IntegerQuery mMaxSdkVersion = null;
         private IntegerQuery mTargetSdkVersion = null;
         private BooleanQuery mIsDeviceAdmin = null;
+        private IntegerSetQuery mUsesPolicies = null;
         private BooleanQuery mIsHeadlessDOSingleUser = null;
 
         public QueryBuilder packageName(StringQuery packageName) {
@@ -130,6 +137,11 @@ public final class TestAppProviderTest {
             return this;
         }
 
+        public QueryBuilder usesPolicies(IntegerSetQuery usesPolicies) {
+            mUsesPolicies = usesPolicies;
+            return this;
+        }
+
         public QueryBuilder isHeadlessDOSingleUser(BooleanQuery isHeadlessDOSingleUser) {
             mIsHeadlessDOSingleUser = isHeadlessDOSingleUser;
             return this;
@@ -142,6 +154,7 @@ public final class TestAppProviderTest {
                     mMaxSdkVersion != null ? mMaxSdkVersion : integerQueryBuilder().build(),
                     mTargetSdkVersion != null ? mTargetSdkVersion : integerQueryBuilder().build(),
                     mIsDeviceAdmin != null ? mIsDeviceAdmin : booleanQueryBuilder().build(),
+                    mUsesPolicies != null ? mUsesPolicies : integerSetQueryBuilder().build(),
                     mIsHeadlessDOSingleUser != null ? mIsHeadlessDOSingleUser : booleanQueryBuilder().build()
             );
         }
@@ -231,6 +244,19 @@ public final class TestAppProviderTest {
         }
     }
 
+    static final class IntegerSetQueryBuilder {
+        private int[] mContains = {};
+
+        public IntegerSetQueryBuilder contains(int[] contains) {
+            mContains = contains;
+            return this;
+        }
+
+        public IntegerSetQuery build() {
+            return integerSetQuery(mContains);
+        }
+    }
+
     // TODO: The below AutoBuilder should work instead of the custom one but we get
     // [AutoBuilderNoVisible] No visible constructor for com.android.queryable.annotations.Query
 
@@ -278,6 +304,10 @@ public final class TestAppProviderTest {
         return new BooleanQueryBuilder();
     }
 
+    static IntegerSetQueryBuilder integerSetQueryBuilder() {
+        return new IntegerSetQueryBuilder();
+    }
+
     @Before
     public void setup() {
         mTestAppProvider = new TestAppProvider();
@@ -321,7 +351,8 @@ public final class TestAppProviderTest {
     public void query_onlyReturnsTestAppOnce() {
         mTestAppProvider.query().wherePackageName().isEqualTo(EXISTING_PACKAGENAME).get();
 
-        TestAppQueryBuilder query = mTestAppProvider.query().wherePackageName().isEqualTo(EXISTING_PACKAGENAME);
+        TestAppQueryBuilder query = mTestAppProvider.query().wherePackageName().isEqualTo(
+                EXISTING_PACKAGENAME);
 
         assertThrows(NotFoundException.class, query::get);
     }
@@ -450,7 +481,50 @@ public final class TestAppProviderTest {
                 .whereMetadata().key(METADATA_KEY).stringValue().isEqualTo(METADATA_VALUE)
                 .get();
 
-        assertThat(testApp.metadata().get(METADATA_KEY)).isEqualTo(METADATA_VALUE);
+        assertThat(testApp.metadata().stream().anyMatch(m -> m.key().equals(METADATA_KEY)
+                && m.value().asString().equals(METADATA_VALUE))).isTrue();
+    }
+
+    @Test
+    public void query_matchStringInXml_returnsMatching() {
+        TestApp testApp = mTestAppProvider.query()
+                .whereMetadata().key("test-metadata-with-res-key")
+                .resourceValue().asXml().path("/test-tag-1").exists()
+                .whereMetadata().key("test-metadata-with-res-key")
+                .resourceValue().asXml().path("/test-tag-1").asText().isEqualTo("test-value-1")
+                .get();
+
+        assertThat(testApp.packageName())
+                .isEqualTo("com.android.bedstead.testapp.NotEmptyTestApp");
+    }
+
+    @Test
+    public void query_searchExistingTag_returnsMatching() {
+        TestApp testApp = mTestAppProvider.query()
+                .whereMetadata().key("test-metadata-with-res-key")
+                .resourceValue().asXml().path("/test-tag-1").exists()
+                .get();
+
+        assertThat(testApp.packageName())
+                .isEqualTo("com.android.bedstead.testapp.NotEmptyTestApp");
+    }
+
+    @Test
+    public void query_matchMultiplePathsInXml_returnsMatching() {
+        TestApp testApp = mTestAppProvider.query()
+                .whereMetadata().key("test-metadata-with-res-key")
+                .resourceValue().asXml().path("/test-tag-1").asText().isEqualTo("test-value-1")
+                .whereMetadata().key("test-metadata-with-res-key")
+                .resourceValue().asXml().path("/test-tag-2").exists()
+                .whereMetadata().key("test-metadata-with-res-key")
+                .resourceValue().asXml().path("/test-tag-3/foo").asText().isEqualTo(
+                        "test-value-3")
+                .whereMetadata().key("test-metadata-with-res-key")
+                .resourceValue().asXml().path("/test-tag-4/foo").exists()
+                .get();
+
+        assertThat(testApp.packageName())
+                .isEqualTo("com.android.bedstead.testapp.NotEmptyTestApp");
     }
 
     @Test
@@ -458,7 +532,7 @@ public final class TestAppProviderTest {
         TestApp testApp = mTestAppProvider.query()
                 .whereActivities().contains(
                         activity().where().activityClass()
-                            .className().isEqualTo(KNOWN_EXISTING_TESTAPP_ACTIVITY_CLASSNAME)
+                                .className().isEqualTo(KNOWN_EXISTING_TESTAPP_ACTIVITY_CLASSNAME)
                 )
                 .get();
 
@@ -512,8 +586,11 @@ public final class TestAppProviderTest {
                 .whereIsHeadlessDOSingleUser().isTrue()
                 .get();
 
-        assertThat(testApp.metadata().getString("headless_do_single_user"))
-                .isEqualTo("true");
+        assertThat(testApp.metadata().stream().anyMatch(m ->
+                        m.key() != null && m.value() != null && m.value().asString() != null
+                                && m.key().equals("headless_do_single_user")
+                                && m.value().asString().equals("true")))
+                .isTrue();
     }
 
     @Test
@@ -523,7 +600,11 @@ public final class TestAppProviderTest {
                 .whereIsHeadlessDOSingleUser().isFalse()
                 .get();
 
-        assertThat(testApp.metadata().getString("headless_do_single_user")).isNull();
+        assertThat(testApp.metadata().stream().noneMatch(m ->
+                m.key() != null && m.value() != null && m.value().asString() != null
+                        && m.key().equals("headless_do_single_user")
+                        && m.value().asString().equals("true")))
+                .isTrue();
     }
 
     @Test
