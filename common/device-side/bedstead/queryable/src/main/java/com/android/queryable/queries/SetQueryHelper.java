@@ -34,14 +34,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class SetQueryHelper<E extends Queryable, F> implements SetQuery<E, F>, Serializable {
+public class SetQueryHelper<E extends Queryable, F> implements SetQuery<E, F>, Serializable {
 
     private static final long serialVersionUID = 1;
 
     private final transient E mQuery;
     private final IntegerQueryHelper<E> mSizeQuery;
     private final Set<Query<F>> mContainsByQuery;
-    private final Set<F> mContainsByType;
+    protected final Set<F> mContainsByType;
     private final Set<Query<F>> mDoesNotContainByQuery;
     private final Set<F> mDoesNotContainByType;
 

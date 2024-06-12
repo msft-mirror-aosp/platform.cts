@@ -53,6 +53,20 @@ public @interface EnterprisePolicy {
         int modifiers() default NO;
     }
 
+    /**
+     * The Device Admin required to exercise the policy.
+     */
+    @interface DeviceAdmin {
+        /** A key which uniquely identifies the device admin for the test. */
+        String key() default EnsureHasDeviceAdmin.DEFAULT_KEY;
+        /** Flags indicating who the policy applies to when applied in this way. */
+        int appliesTo();
+        /** Additional modifiers. */
+        int modifiers() default NO;
+        /** The policies this device admin must have enabled. */
+        int[] usesPolicies() default {};
+    }
+
     /** A policy that cannot be applied. */
     int NO = 0;
 
@@ -212,4 +226,12 @@ public @interface EnterprisePolicy {
      * <p>This applies to {@link #dpc()} entries with the {@link #CAN_BE_DELEGATED} flag.
      */
     String[] delegatedScopes() default {};
+
+    /**
+     * {@link DeviceAdmin} configurations for non-DPC device administrators which are able to set
+     * this policy.
+     *
+     * <p>Note that this currently does not generate any additional tests but may do in future.
+     */
+    DeviceAdmin[] deviceAdmins() default {};
 }
