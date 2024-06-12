@@ -40,6 +40,7 @@ cc_test_library {
 
 android_test {
     name: "CtsMediaMuxerTestCases",
+    team: "trendy_team_android_media_audio_framework",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
