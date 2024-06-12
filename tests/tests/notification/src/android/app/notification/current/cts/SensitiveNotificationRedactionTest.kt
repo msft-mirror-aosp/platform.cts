@@ -17,6 +17,7 @@ package android.app.notification.current.cts
 
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.RECEIVE_SENSITIVE_NOTIFICATIONS
+import android.app.AppOpsManager
 import android.app.Notification
 import android.app.Notification.CATEGORY_MESSAGE
 import android.app.Notification.EXTRA_MESSAGES
@@ -40,6 +41,7 @@ import android.graphics.drawable.Icon
 import android.net.MacAddress
 import android.os.Bundle
 import android.os.Parcelable
+import android.os.Process
 import android.permission.cts.PermissionUtils
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
@@ -56,6 +58,7 @@ import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Assert
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Before
@@ -377,7 +380,7 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
-    fun testListenerWithReceiveSensitiveNotificationsGetsUnredacted() {
+    fun testListenerWithReceiveSensitiveNotificationsPermissionsGetsUnredacted() {
         runWithShellPermissionIdentity(
             {
                 // Trusted status is cached on helper enable, so disable + enable the listener
@@ -387,6 +390,41 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             },
             RECEIVE_SENSITIVE_NOTIFICATIONS
         )
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
+    fun testListenerWithReceiveSensitiveNotificationsAppOpGetsUnredacted() {
+        val appOpsManager = mContext.getSystemService(AppOpsManager::class.java)!!
+        try {
+            runWithShellPermissionIdentity {
+                assertEquals(
+                    AppOpsManager.MODE_IGNORED,
+                    appOpsManager.checkOp(
+                        AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS,
+                        Process.myUid(),
+                        STUB_PACKAGE_NAME
+                    )
+                )
+                appOpsManager.setUidMode(
+                    AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS,
+                    Process.myUid(),
+                    AppOpsManager.MODE_ALLOWED
+                )
+            }
+            // Trusted status is cached on helper enable, so disable + enable the listener
+            mNotificationHelper.disableListener(STUB_PACKAGE_NAME)
+            mNotificationHelper.enableListener(STUB_PACKAGE_NAME)
+            assertNotificationNotRedacted()
+        } finally {
+            runWithShellPermissionIdentity {
+                appOpsManager.setUidMode(
+                    AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS,
+                    Process.myUid(),
+                    AppOpsManager.MODE_IGNORED
+                )
+            }
+        }
     }
 
     @Test
