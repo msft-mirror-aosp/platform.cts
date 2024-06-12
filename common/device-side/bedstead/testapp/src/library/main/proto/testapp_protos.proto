@@ -60,13 +60,12 @@ message Service {
 message Metadata {
   string name = 1;
   string value = 2;
-  string resource = 3;
 }
 
 message Receiver {
-  string name = 1;
-  string permission = 2;
-  bool exported = 3;
-  repeated Metadata metadata = 4;
-  repeated IntentFilter intent_filters = 5;
+    string name = 1;
+    string permission = 2;
+    bool exported = 3;
+    repeated Metadata metadata = 4;
+    repeated IntentFilter intent_filters = 5;
 }

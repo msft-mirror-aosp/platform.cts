@@ -20,17 +20,14 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.Set;
 
 /**
  * Annotation used to represent a TestApp query in bedstead annotations.
  *
- * </p> for e.g. @EnsureHasDeviceOwner(query = @Query(targetSdkVersion = @IntegerQuery(equalTo =
- * 29)))
+ * </p> for e.g. @EnsureHasDeviceOwner(query = @Query(targetSdkVersion = @Int(equalTo = 29)))
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-// TODO(b/273291850): enable generic resource content queries
 public @interface Query {
 
     // If adding fields to this annotation - update {@code TestAppProvider#query}.
@@ -49,12 +46,6 @@ public @interface Query {
 
     /** Require the dpc to be or not be a device admin app. */
     BooleanQuery isDeviceAdmin() default @BooleanQuery;
-
-    /**
-     * Require the policies match the {@link Set<Integer>} query
-     * Use any of {@code CommonDeviceAdminInfo.USES_POLICY constants}
-     */
-    IntegerSetQuery usesPolicies() default @IntegerSetQuery();
 
     /** Require the dpc to be or not be a headless device owner single user app. */
     BooleanQuery isHeadlessDOSingleUser() default @BooleanQuery;
