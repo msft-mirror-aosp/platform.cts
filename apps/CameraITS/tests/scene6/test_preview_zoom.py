@@ -33,7 +33,7 @@ _CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
 _FLOAT_TOL = 0.01
 _JPEG = '.jpg'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_STEPS = 100
+_NUM_STEPS = 50
 
 
 def save_image_as_jpg(img_name, img_bgr, quality=85):
@@ -104,7 +104,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       # Determine test zoom range and step size
       z_range = props['android.control.zoomRatioRange']
       logging.debug('z_range = %s', str(z_range))
-      z_min, z_max, z_step_size = zoom_capture_utils.get_zoom_params(
+      z_min, z_max, z_step_size = zoom_capture_utils.get_preview_zoom_params(
           z_range, _NUM_STEPS)
       camera_properties_utils.skip_unless(
           z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
