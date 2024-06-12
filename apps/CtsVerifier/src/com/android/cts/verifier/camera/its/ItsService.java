@@ -1928,12 +1928,14 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("camera1080pJpegCaptureMs", Double.toString(jpegCaptureMs));
     }
 
-    private static long getReaderUsage(int format, boolean has10bitOutput) {
+    private static long getReaderUsage(int format, boolean has10bitOutput, int inputFormat) {
         // Private image format camera readers will default to ZSL usage unless
         // explicitly configured to use a common consumer such as display.
-        // We don't support the ZSL use case within the 10-bit use case.
-        return (format == ImageFormat.PRIVATE && has10bitOutput) ?
-                HardwareBuffer.USAGE_COMPOSER_OVERLAY : HardwareBuffer.USAGE_CPU_READ_OFTEN;
+        // We don't support the ZSL use case for the 10-bit use case, or if the input format
+        // is not PRIVATE.
+        boolean notForZslReprocess = (inputFormat != format);
+        return (format == ImageFormat.PRIVATE && (has10bitOutput || notForZslReprocess))
+                ? HardwareBuffer.USAGE_COMPOSER_OVERLAY : HardwareBuffer.USAGE_CPU_READ_OFTEN;
     }
 
     private List<OutputConfiguration> getCaptureOutputConfigurations(
@@ -1992,19 +1994,20 @@ public class ItsService extends Service implements SensorEventListener {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
                         MAX_CONCURRENT_READER_BUFFERS + maxInputBuffers,
-                        getReaderUsage(outputFormats[i], has10bitOutput));
+                        getReaderUsage(outputFormats[i], has10bitOutput, inputFormat));
                 mInputImageReader = mOutputImageReaders[i];
             } else {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
                         MAX_CONCURRENT_READER_BUFFERS, getReaderUsage(outputFormats[i],
-                            has10bitOutput));
+                            has10bitOutput, inputFormat));
             }
         }
 
         if (inputSize != null && mInputImageReader == null) {
             mInputImageReader = ImageReader.newInstance(inputSize.getWidth(), inputSize.getHeight(),
-                    inputFormat, maxInputBuffers, getReaderUsage(inputFormat, has10bitOutput));
+                    inputFormat, maxInputBuffers,
+                    getReaderUsage(inputFormat, has10bitOutput, inputFormat));
         }
         mImageReaderArgs = ImageReaderArgs.valueOf(outputSizes, outputFormats, inputSize,
                 inputFormat, maxInputBuffers, has10bitOutput);
@@ -2074,7 +2077,8 @@ public class ItsService extends Service implements SensorEventListener {
                     mThreeAOutputImageReader = ImageReader.newInstance(
                             size.getWidth(), size.getHeight(), outputFormat,
                             MAX_CONCURRENT_READER_BUFFERS,
-                            getReaderUsage(outputFormat, /*has10bitOutput=*/false));
+                            getReaderUsage(outputFormat, /*has10bitOutput=*/false,
+                                    /*inputFormat*/-1));
                 }
             }
 
