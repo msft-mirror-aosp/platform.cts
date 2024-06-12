@@ -127,6 +127,11 @@ public class ItsTestActivity extends DialogTestListActivity {
             Pattern.compile("test_imu_drift_.*");
     private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
             Pattern.compile("test_burst_capture_.*");
+
+    private static final String PERF_METRICS_KEY_PREFIX_BURST_CAPTURE = "burst_capture";
+    private static final String PERF_METRICS_KEY_FRAMEDURATION =
+            "max_frame_time_minus_frameduration_ns";
+
     private static final Pattern PERF_METRICS_LOW_LIGHT_BOOST_PATTERN =
             Pattern.compile("test_low_light_boost_.*");
     private static final Pattern PERF_METRICS_EXTENSION_NIGHT_MODE_PATTERN =
@@ -651,10 +656,10 @@ public class ItsTestActivity extends DialogTestListActivity {
 
 
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
-                        && !imuDriftMetricsMatches && !distortionMetricsMatches
-                        && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
-                        && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches
-                        && !multiCamMetricsMatches) {
+                        && !imuDriftMetricsMatches && !burstCaptureMetricsMatches
+                        && !distortionMetricsMatches && !intrinsicMetricsMatches
+                        && !lowLightBoostMetricsMatches && !nightModeExtensionMetricsMatches
+                        && !aeAwbMetricsMatches && !multiCamMetricsMatches) {
                 return false;
             }
 
@@ -688,9 +693,9 @@ public class ItsTestActivity extends DialogTestListActivity {
                 }
 
                 if (burstCaptureMetricsMatches) {
-                    Log.i(TAG, "burst capture  matches");
-                    float value = Float.parseFloat(burstCaptureMetricsMatcher.group(1));
-                    obj.put("burst_capture_max_frame_time_minus_frameDuration_ns", value);
+                    Log.i(TAG, "burst capture matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_BURST_CAPTURE, perfMetricsResult,
+                            obj);
                 }
 
                 if (distortionMetricsMatches) {
@@ -772,6 +777,9 @@ public class ItsTestActivity extends DialogTestListActivity {
         } else if (resultKey.contains(PERF_METRICS_KEY_AVG_LUMA)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + "_" + PERF_METRICS_KEY_AVG_LUMA, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_BURST_CAPTURE)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_FRAMEDURATION, floatValue);
         }
     }
 
