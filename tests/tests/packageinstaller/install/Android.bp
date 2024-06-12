@@ -58,6 +58,7 @@ android_test {
         ":CtsDisabledLauncherActivityApp",
         ":CtsEmptyTestApp_AppMetadataInApk",
         ":CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit",
+        ":CtsEmptyTestApp_LowTargetSdk",
     ],
     java_resources: [
         ":HelloWorldSdk1",
