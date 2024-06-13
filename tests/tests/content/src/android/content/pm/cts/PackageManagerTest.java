@@ -1889,7 +1889,12 @@ public class PackageManagerTest {
     }
 
     @Test
-    public void testUpdateShellFailed() {
+    public void testUpdateShellFailed() throws Exception {
+        // First make sure that shell is not updatable, otherwise the test would eventually fail
+        // and put the system in bad state.
+        String isShellUpdatable = parsePackageDump(SHELL_PACKAGE_NAME, "    updatableSystem=");
+        assertThat(isShellUpdatable).contains("false");
+
         var result = SystemUtil.runShellCommand("pm install -t -g " + SHELL_NAME_APK);
         boolean installationNotAllowed = result.contains(
                 "Installation of this package is not allowed");
