@@ -14,6 +14,12 @@
 
 syntax = "proto2";
 
+// Changes to this file require manaul update of the AOSP Go code.
+// update the go code with:
+//   aprotoc --go_out=paths=source_relative:. \
+//     cts/tests/mediapc/requirements/mpc.proto \
+//     cts/tests/mediapc/requirements/requirements.proto
+
 package android.media.performanceclass.requirements;
 
 import "cts/tests/mediapc/requirements/mpc.proto";
