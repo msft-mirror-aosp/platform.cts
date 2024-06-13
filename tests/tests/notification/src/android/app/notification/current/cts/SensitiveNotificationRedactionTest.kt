@@ -40,12 +40,10 @@ import android.graphics.drawable.Icon
 import android.net.MacAddress
 import android.os.Bundle
 import android.os.Parcelable
-import android.os.SystemProperties
 import android.permission.cts.PermissionUtils
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
-import android.provider.DeviceConfig
 import android.service.notification.Adjustment
 import android.service.notification.Adjustment.KEY_IMPORTANCE
 import android.service.notification.Adjustment.KEY_RANKING_SCORE
@@ -54,14 +52,12 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.CddTest
-import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Assert
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -405,7 +401,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @CddTest(requirement = "3.8.3.4/C-1-1")
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testE2ERedaction_shouldRedact() {
-        assumeFlagEnabled()
         assertTrue(
             "Expected a notification assistant to be present",
             mPreviousEnabledAssistant != null
@@ -470,7 +465,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @CddTest(requirement = "3.8.3.4/C-1-1")
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testE2ERedaction_shouldNotRedact() {
-        assumeFlagEnabled()
         assertTrue(
             "Expected a notification assistant to be present",
             mPreviousEnabledAssistant != null
@@ -524,19 +518,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
                         "\n$redactedFailures"
             )
         }
-    }
-
-    private fun assumeFlagEnabled() {
-        // TODO b/331633527: STOPSHIP remove once flag ramped
-        assumeTrue(
-            callWithShellPermissionIdentity {
-                return@callWithShellPermissionIdentity DeviceConfig.getBoolean(
-                    "device_personalization_services",
-                    "Notification__enable_otp_in_smart_suggestion",
-                    false
-                ) || SystemProperties.get("ro.product.name", "").startsWith("aosp")
-            }
-        )
     }
 
     private fun assertNotificationNotRedacted() {
