@@ -19,6 +19,7 @@ import dataclasses
 import logging
 import math
 import cv2
+import matplotlib.pyplot as plt
 import numpy
 
 import camera_properties_utils
@@ -316,7 +317,7 @@ def verify_zoom_results(test_data, size, z_max, z_min):
   return test_success and verify_zoom_data(test_data, size)
 
 
-def verify_zoom_data(test_data, size):
+def verify_zoom_data(test_data, size, plot_name_stem=None):
   """Verify that the output images' zoom level reflects the correct zoom ratios.
 
   This test verifies that the center and radius of the circles in the output
@@ -327,6 +328,7 @@ def verify_zoom_data(test_data, size):
   Args:
     test_data: Iterable[ZoomTestData]
     size: array; the width and height of the images
+    plot_name_stem: str; log path and name of the plot
 
   Returns:
     Boolean whether the test passes (True) or not (False)
@@ -348,7 +350,11 @@ def verify_zoom_data(test_data, size):
         z_0 = float(test_data[i].result_zoom)
         break
   logging.debug('z_0: %.3f, radius_0: %.3f', z_0, radius_0)
-
+  if plot_name_stem:
+    frame_numbers = []
+    z_variations = []
+    rel_variations = []
+    radius_tols = []
   for i, data in enumerate(test_data):
     logging.debug(' ')  # add blank line between frames
     logging.debug('Frame# %d {%s}', i, preview_zoom_data_to_string(data))
@@ -361,11 +367,24 @@ def verify_zoom_data(test_data, size):
 
     # check relative size against zoom[0]
     radius_ratio = data.circle[2] / radius_0
+
+    # Calculate variations
+    z_variation = z_ratio - radius_ratio
+    relative_variation = abs(z_variation) / max(abs(z_ratio), abs(radius_ratio))
+
+    # Store values for plotting
+    if plot_name_stem:
+      frame_numbers.append(i)
+      z_variations.append(z_variation)
+      rel_variations.append(relative_variation)
+      radius_tols.append(data.radius_tol)
+
     logging.debug('r ratio req: %.3f, measured: %.3f',
                   z_ratio, radius_ratio)
     msg = (f'{i} Circle radius ratio: result({data.result_zoom:.3f}/{z_0:.3f}):'
            f' {z_ratio:.3f}, circle({data.circle[2]:.3f}/{radius_0:.3f}):'
-           f' {radius_ratio:.3f}, RTOL: {data.radius_tol}')
+           f' {radius_ratio:.3f}, RTOL: {data.radius_tol}'
+           f' z_var: {z_variation:.3f}, rel_var: {relative_variation:.3f}')
     if not math.isclose(z_ratio, radius_ratio, rel_tol=data.radius_tol):
       test_success = False
       logging.error(msg)
@@ -407,10 +426,17 @@ def verify_zoom_data(test_data, size):
                  f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
         logging.debug(d_msg)
 
+  if plot_name_stem:
+    plot_variation(frame_numbers, z_variations, None,
+                   f'{plot_name_stem}_variations.png', 'Zoom Variation')
+    plot_variation(frame_numbers, rel_variations, radius_tols,
+                   f'{plot_name_stem}_relative.png', 'Relative Variation')
+
   return test_success
 
 
-def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size):
+def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
+                                plot_name_stem):
   """Verify that the output images' zoom level reflects the correct zoom ratios.
 
   This test verifies that the center and radius of the circles in the output
@@ -425,6 +451,7 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size):
     z_max: float; the maximum zoom ratio being tested
     z_min: float; the minimum zoom ratio being tested
     z_step_size: float; zoom step size to zoom from z_min to z_max
+    plot_name_stem: str; log path and name of the plot
 
   Returns:
     Boolean whether the test passes (True) or not (False)
@@ -458,7 +485,7 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size):
              f'not close to {z_min:.2f} by {PRV_Z_RTOL:.2f} tolerance.')
     logging.error(e_msg)
 
-  return test_success and verify_zoom_data(test_data, size)
+  return test_success and verify_zoom_data(test_data, size, plot_name_stem)
 
 
 def get_zoom_params(zoom_range, steps):
@@ -485,3 +512,35 @@ def get_zoom_params(zoom_range, steps):
                 str(zoom_range), zoom_min, zoom_max, zoom_step_size)
 
   return zoom_min, zoom_max, zoom_step_size
+
+
+def plot_variation(frame_numbers, variations, tolerances, plot_name, ylabel):
+  """Plots a variation against frame numbers with corresponding tolerances.
+
+  Args:
+    frame_numbers: List of frame numbers.
+    variations: List of variations.
+    tolerances: List of tolerances corresponding to each variation.
+    plot_name: Name for the plot file.
+    ylabel: Label for the y-axis.
+  """
+
+  plt.figure(figsize=(40, 10))
+
+  plt.scatter(frame_numbers, variations, marker='o', linestyle='-',
+              color='blue', label=ylabel)
+
+  if tolerances:
+    plt.plot(frame_numbers, tolerances, linestyle='--', color='red',
+             label='Tolerance')
+
+  plt.xlabel('Frame Number', fontsize=12)
+  plt.ylabel(ylabel, fontsize=12)
+  plt.title(f'{ylabel} vs. Frame Number', fontsize=14)
+
+  plt.legend()
+
+  plt.grid(axis='y', linestyle='--')
+  plt.savefig(plot_name)
+  plt.close()
+
