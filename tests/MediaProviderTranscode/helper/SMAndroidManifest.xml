@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="android.mediaprovidertranscode.cts.testapp"
+          package="android.mediaprovidertranscode.cts.testapp.sm"
           android:versionCode="1"
           android:versionName="1.0">
 
@@ -36,7 +36,7 @@
 
       <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="android.mediaprovidertranscode.cts.testapp"
+            android:authorities="android.mediaprovidertranscode.cts.testapp.sm"
             android:exported="false"
             android:grantUriPermissions="true">
           <meta-data
