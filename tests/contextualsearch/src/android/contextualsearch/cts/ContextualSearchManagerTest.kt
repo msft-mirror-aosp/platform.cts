@@ -162,6 +162,12 @@ class ContextualSearchManagerTest {
                 CallbackToken::class.java
             )
         ).isNotNull()
+        assertThat(
+            callback.results.get(0).extras.getParcelable(
+                ContextualSearchManager.EXTRA_SCREENSHOT,
+                Bitmap::class.java
+            )
+        ).isNotNull()
         assertThat(callback.results.get(1).structure).isNotNull()
         assertThat(callback.results.get(1).content).isNotNull()
         assertThat(callback.results.get(1).extras).isNotNull()
