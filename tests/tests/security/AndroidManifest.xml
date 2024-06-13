@@ -287,6 +287,10 @@
 
         <activity android:name="android.security.cts.BUG_293602970.PocActivity" />
 
+        <activity android:name="android.security.cts.BUG_283103220.PipActivity"
+            android:process=":pipActivity"
+            android:supportsPictureInPicture="true" />
+
         <service
             android:name="android.security.cts.CVE_2024_23713.PocNotificationListenerService"
             android:exported="false"
