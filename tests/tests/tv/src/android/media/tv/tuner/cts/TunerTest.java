@@ -118,6 +118,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.tv.cts.R;
 import android.util.SparseIntArray;
 
 import androidx.test.InstrumentationRegistry;
