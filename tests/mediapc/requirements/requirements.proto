@@ -34,7 +34,7 @@ message RequirementList {
 message Requirement {
   // ID exactly as shown in the CDD
   optional string id = 1;
-  // Short human readable name.
+  // Short human readable name. Must be unique.
   optional string name = 2;
   optional string description = 3;
   optional Group group = 4;

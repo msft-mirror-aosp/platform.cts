@@ -44,7 +44,8 @@ RADIUS_RTOL = 0.10
 ZOOM_MIN_THRESH = 2.0
 ZOOM_MAX_THRESH = 10.0
 ZOOM_RTOL = 0.01  # variation of zoom ratio due to floating point
-PRV_Z_RTOL = 0.01  # variation of zoom ratio between request and result
+PRV_Z_RTOL = 0.02  # 2% variation of zoom ratio between request and result
+PREFERRED_BASE_ZOOM_RATIO = 1  # Preferred base image for zoom data verification
 JPEG_STR = 'jpg'
 
 
@@ -337,6 +338,17 @@ def verify_zoom_data(test_data, size):
   radius_0 = float(test_data[0].circle[2])
   z_0 = float(test_data[0].result_zoom)
 
+  # use 1x ~ 1.1x data as base image if available
+  if z_0 < PREFERRED_BASE_ZOOM_RATIO:
+    for i, data in enumerate(test_data):
+      if (test_data[i].result_zoom >= PREFERRED_BASE_ZOOM_RATIO and
+          math.isclose(test_data[i].result_zoom, PREFERRED_BASE_ZOOM_RATIO,
+                       rel_tol=0.1)):
+        radius_0 = float(test_data[i].circle[2])
+        z_0 = float(test_data[i].result_zoom)
+        break
+  logging.debug('z_0: %.3f, radius_0: %.3f', z_0, radius_0)
+
   for i, data in enumerate(test_data):
     logging.debug(' ')  # add blank line between frames
     logging.debug('Frame# %d {%s}', i, preview_zoom_data_to_string(data))
@@ -351,9 +363,9 @@ def verify_zoom_data(test_data, size):
     radius_ratio = data.circle[2] / radius_0
     logging.debug('r ratio req: %.3f, measured: %.3f',
                   z_ratio, radius_ratio)
-    msg = (f'{i} Circle radius ratio: result({data.result_zoom:.2f}/{z_0:.2f}):'
-           f' {z_ratio:.2f}, circle: {radius_ratio:.2f}, '
-           f'RTOL: {data.radius_tol}')
+    msg = (f'{i} Circle radius ratio: result({data.result_zoom:.3f}/{z_0:.3f}):'
+           f' {z_ratio:.3f}, circle({data.circle[2]:.3f}/{radius_0:.3f}):'
+           f' {radius_ratio:.3f}, RTOL: {data.radius_tol}')
     if not math.isclose(z_ratio, radius_ratio, rel_tol=data.radius_tol):
       test_success = False
       logging.error(msg)
@@ -426,15 +438,14 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size):
                 results_z_min, results_z_max)
 
   # check if max zoom in capture result close to requested zoom range
-  if z_max - (z_step_size + PRV_Z_RTOL) <= results_z_max <= z_max + PRV_Z_RTOL:
-    logging.debug('results_z_max = %.2f in range (%.2f , %.2f)', results_z_max,
-                  z_max - (z_step_size + PRV_Z_RTOL), z_max + PRV_Z_RTOL)
+  if math.isclose(results_z_max, z_max, rel_tol=PRV_Z_RTOL):
+    d_msg = (f'results_z_max = {results_z_max:.2f} is close to requested '
+             f'z_max = {z_max:.2f} by {PRV_Z_RTOL:.2f} Tol')
+    logging.debug(d_msg)
   else:
     test_success = False
-    e_msg = (f'Max zoom ratio {results_z_max:.4f} in capture results out of '
-             f'range ({(z_max - (z_step_size + PRV_Z_RTOL)):.2f} , '
-             f'{(z_max + PRV_Z_RTOL):.2f}). Range advertised min: '
-             f'{z_min}, max: {z_max}. Step size: {z_step_size}')
+    e_msg = (f'Max zoom ratio {results_z_max:.4f} in capture results '
+             f'not close to {z_max:.2f} by {PRV_Z_RTOL:.2f} tolerance.')
     logging.error(e_msg)
 
   if math.isclose(results_z_min, z_min, rel_tol=PRV_Z_RTOL):

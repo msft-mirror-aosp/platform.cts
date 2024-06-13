@@ -23,8 +23,8 @@ ELEMENT = "E"
 ATTRIBUTE = "A"
 
 def main():
-    args_parser = argparse.ArgumentParser(description='Generate index for test apps')
-    args_parser.add_argument('--directory', help='Directory containing test apps')
+    args_parser = argparse.ArgumentParser(description='Generate index for test apps and resources')
+    args_parser.add_argument('--directory', help='Directory containing raw resources')
     args_parser.add_argument('--aapt2', help='The path to aapt2')
     args = args_parser.parse_args()
 
@@ -36,7 +36,7 @@ def main():
     for file_name in file_names:
         aapt2_command = [
             args.aapt2, 'd', 'xmltree', '--file', 'AndroidManifest.xml', args.directory + "/" + file_name]
-        index.apps.append(parse(str(subprocess.check_output(aapt2_command)), file_name))
+        index.apps.append(parse(str(subprocess.check_output(aapt2_command)), args.directory, file_name, args.aapt2))
 
     with open(args.directory + "/index.txt", "wb") as fd:
         fd.write(index.SerializeToString())
@@ -121,7 +121,7 @@ def augment(element):
 
     return Element(name, attributes, children)
 
-def parse(manifest_content, file_name):
+def parse(manifest_content, raw_dir, file_name, aapt2):
     manifest_content = manifest_content.split("\\n")
     # strip namespaces as not important for our uses
     # Also strip the last line which is a quotation mark because of the way it's imported
@@ -237,6 +237,8 @@ def parse_metadata(application_element, android_app):
         if "value" in meta_data_element.attributes:
             # This forces every value into a string
             metadata.value = meta_data_element.attributes["value"]
+        if "resource" in meta_data_element.attributes:
+            metadata.resource = meta_data_element.attributes["resource"]
 
         android_app.metadata.append(metadata)
 
