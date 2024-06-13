@@ -46,6 +46,14 @@ public final class ShellCommandUtils {
         return "ime reset --user all";
     }
 
+
+    /** Command to install an existing package for another user. */
+    public static String installExistingPackageAsUser(String packageName, int userId,
+            boolean instant) {
+        return "pm install-existing --wait --user " + userId + (instant ? " --instant "
+                : " --full ") + packageName;
+    }
+
     /** Command to turn on the display (if it's sleeping). */
     public static String wakeUp() {
         return "input keyevent KEYCODE_WAKEUP";

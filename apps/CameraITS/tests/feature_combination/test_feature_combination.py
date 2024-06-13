@@ -135,7 +135,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             fmt = capture_request_utils.FMT_CODE_PRIV
           elif stream['format'] == 'jpeg':
             fmt = capture_request_utils.FMT_CODE_JPEG
-          elif stream['format'] == 'jpegr':
+          elif stream['format'] == its_session_utils.JPEG_R_FMT_STR:
             fmt = capture_request_utils.FMT_CODE_JPEG_R
           config = [x for x in configs if
                     x['format'] == fmt and

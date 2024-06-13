@@ -127,6 +127,11 @@ public class ItsTestActivity extends DialogTestListActivity {
             Pattern.compile("test_imu_drift_.*");
     private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
             Pattern.compile("test_burst_capture_.*");
+
+    private static final String PERF_METRICS_KEY_PREFIX_BURST_CAPTURE = "burst_capture";
+    private static final String PERF_METRICS_KEY_FRAMEDURATION =
+            "max_frame_time_minus_frameduration_ns";
+
     private static final Pattern PERF_METRICS_LOW_LIGHT_BOOST_PATTERN =
             Pattern.compile("test_low_light_boost_.*");
     private static final Pattern PERF_METRICS_EXTENSION_NIGHT_MODE_PATTERN =
@@ -150,6 +155,9 @@ public class ItsTestActivity extends DialogTestListActivity {
 
     private static final String ZOOM = "zoom";
     private static final String TEST_PATTERN = "^test_";
+    private static final Pattern PERF_METRICS_MULTICAM_PATTERN =
+            Pattern.compile("test_multi_camera_switch_.*");
+
 
     private final ResultReceiver mResultsReceiver = new ResultReceiver();
     private final BroadcastReceiver mCommandReceiver = new BroadcastReceiver() {
@@ -408,10 +416,14 @@ public class ItsTestActivity extends DialogTestListActivity {
                         JSONArray metrics = sceneResult.getJSONArray("mpc_metrics");
                         for (int i = 0; i < metrics.length(); i++) {
                             String mpcResult = metrics.getString(i);
-                            if (!matchMpcResult(cameraId, mpcResult)) {
-                                Log.e(TAG, "Error parsing MPC result string:" + mpcResult);
-                                return;
+                            try {
+                                if (!matchMpcResult(cameraId, mpcResult)) {
+                                    Log.e(TAG, "Error parsing MPC result string:" + mpcResult);
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error parsing MPC result string:" + mpcResult, e);
                             }
+
                         }
 
                         if (sceneResult.isNull("performance_metrics")) {
@@ -423,9 +435,12 @@ public class ItsTestActivity extends DialogTestListActivity {
                         JSONArray mArr = sceneResult.getJSONArray("performance_metrics");
                         for (int i = 0; i < mArr.length(); i++) {
                             String perfResult = mArr.getString(i);
-                            if (!matchPerfMetricsResult(perfResult, camJsonObj)) {
-                                Log.e(TAG, "Error parsing perf result string:" + perfResult);
-                                return;
+                            try {
+                                if (!matchPerfMetricsResult(perfResult, camJsonObj)) {
+                                    Log.e(TAG, "Error parsing perf result string:" + perfResult);
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error parsing perf result string:" + perfResult, e);
                             }
                         }
                     }
@@ -635,10 +650,16 @@ public class ItsTestActivity extends DialogTestListActivity {
                     perfMetricsResult);
             boolean aeAwbMetricsMatches = aeAwbMetricsMatcher.matches();
 
+            Matcher multiCamMetricsMatcher = PERF_METRICS_MULTICAM_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean multiCamMetricsMatches = multiCamMetricsMatcher.matches();
+
+
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
-                        && !imuDriftMetricsMatches && !distortionMetricsMatches
-                        && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
-                        && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches) {
+                        && !imuDriftMetricsMatches && !burstCaptureMetricsMatches
+                        && !distortionMetricsMatches && !intrinsicMetricsMatches
+                        && !lowLightBoostMetricsMatches && !nightModeExtensionMetricsMatches
+                        && !aeAwbMetricsMatches && !multiCamMetricsMatches) {
                 return false;
             }
 
@@ -672,9 +693,9 @@ public class ItsTestActivity extends DialogTestListActivity {
                 }
 
                 if (burstCaptureMetricsMatches) {
-                    Log.i(TAG, "burst capture  matches");
-                    float value = Float.parseFloat(burstCaptureMetricsMatcher.group(1));
-                    obj.put("burst_capture_max_frame_time_minus_frameDuration_ns", value);
+                    Log.i(TAG, "burst capture matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_BURST_CAPTURE, perfMetricsResult,
+                            obj);
                 }
 
                 if (distortionMetricsMatches) {
@@ -706,11 +727,30 @@ public class ItsTestActivity extends DialogTestListActivity {
                     Log.i(TAG, "night mode extension matches");
                     addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_NIGHT, perfMetricsResult, obj);
                 }
+
+                if (multiCamMetricsMatches) {
+                    Log.i(TAG, "multi cam metrics matches");
+                    addMultiCamPerfMetricsResult(perfMetricsResult, obj);
+                }
             } catch (org.json.JSONException e) {
                 Log.e(TAG, "Error when serializing the metrics into a JSONObject" , e);
             }
 
             return true;
+        }
+    }
+
+    private void addMultiCamPerfMetricsResult(String perfMetricsResult,
+            JSONObject obj) throws org.json.JSONException {
+        String[] parts = perfMetricsResult.split(":", 2); // Limit to 2 to avoid splitting values
+        if (parts.length == 2) {
+            String key = parts[0].trim().replaceFirst(TEST_PATTERN, "");
+            String value = parts[1].trim();
+            Log.i(TAG, "Key: " + key);
+            Log.i(TAG, "Value: " + value);
+            obj.put(key, value);
+        } else {
+            Log.i(TAG, "Invalid output string");
         }
     }
 
@@ -737,6 +777,9 @@ public class ItsTestActivity extends DialogTestListActivity {
         } else if (resultKey.contains(PERF_METRICS_KEY_AVG_LUMA)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + "_" + PERF_METRICS_KEY_AVG_LUMA, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_BURST_CAPTURE)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_FRAMEDURATION, floatValue);
         }
     }
 

@@ -18,21 +18,28 @@ package android.server.wm.window;
 
 import static android.content.res.Resources.ID_NULL;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
+import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
+import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.WindowManagerTestBase;
 import android.server.wm.cts.R;
+import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
@@ -50,7 +57,6 @@ import java.util.concurrent.TimeUnit;
  * Build/Install/Run:
  *     atest CtsWindowManagerDeviceWindow:WindowPolicyTests
  */
-@RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
 @Presubmit
 public class WindowPolicyTests extends WindowManagerTestBase {
 
@@ -62,9 +68,10 @@ public class WindowPolicyTests extends WindowManagerTestBase {
                 TestActivity.LAYOUT_IN_DISPLAY_CUTOUT_MODE_UNSPECIFIED;
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowInsets() {
-        final TestActivity activity = startTestActivitySync();
+        final TestActivity activity = startActivitySync(TestActivity.class);
 
         getInstrumentation().runOnMainSync(() -> {
             assertEquals(
@@ -97,69 +104,128 @@ public class WindowPolicyTests extends WindowManagerTestBase {
                 location[1] + view.getHeight());
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_unspecified() {
-        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeAlways;
-        assertFillWindowBounds(startTestActivitySync());
+        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeUnspecified;
+        assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_never() {
-        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeAlways;
-        assertFillWindowBounds(startTestActivitySync());
+        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeNever;
+        assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_default() {
-        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeAlways;
-        assertFillWindowBounds(startTestActivitySync());
+        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeDefault;
+        assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_shortEdges() {
-        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeAlways;
-        assertFillWindowBounds(startTestActivitySync());
+        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeShortEdges;
+        assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_always() {
         TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeAlways;
-        assertFillWindowBounds(startTestActivitySync());
+        assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_unspecified() {
-        assertFillWindowBounds(startTestActivitySync());
+        assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_never() {
-        TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
-        assertFillWindowBounds(startTestActivitySync());
+        TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
+        assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_default() {
-        TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
-        assertFillWindowBounds(startTestActivitySync());
+        TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
+        assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_shortEdges() {
-        TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
-        assertFillWindowBounds(startTestActivitySync());
+        TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_always() {
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
-        assertFillWindowBounds(startTestActivitySync());
+        assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_INSETS_DECOUPLED_CONFIGURATION)
+    @Test
+    public void testOptOutEdgeToEdgeAppBounds() {
+        TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+        TestActivity activity = startActivitySync(OptOutEdgeToEdgeActivity.class);
+        getInstrumentation().runOnMainSync(() -> {
+            final WindowInsets windowInsets =
+                    activity.getWindow().getDecorView().getRootWindowInsets();
+            final Insets insets = windowInsets.getInsets(
+                    WindowInsets.Type.displayCutout() | WindowInsets.Type.navigationBars());
+            final Rect expectedBounds = new Rect(
+                    activity.getResources().getConfiguration().windowConfiguration.getBounds());
+            expectedBounds.inset(insets);
+            assertEquals(
+                    "The bounds must exclude display cutout and navigation bar area.",
+                    expectedBounds,
+                    activity.getResources().getConfiguration().windowConfiguration.getAppBounds());
+        });
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_INSETS_DECOUPLED_CONFIGURATION)
+    @Test
+    public void testOptOutEdgeToEdgeDisplayMetrics() {
+        TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+        TestActivity activity = startActivitySync(OptOutEdgeToEdgeActivity.class);
+        getInstrumentation().runOnMainSync(() -> {
+            final WindowInsets windowInsets =
+                    activity.getWindow().getDecorView().getRootWindowInsets();
+            final Insets insets = windowInsets.getInsets(
+                    WindowInsets.Type.displayCutout() | WindowInsets.Type.navigationBars());
+            final Rect expectedBounds = new Rect(
+                    activity.getResources().getConfiguration().windowConfiguration.getBounds());
+            expectedBounds.inset(insets);
+            final Display display = activity.getDisplay();
+            assertNotNull(display);
+            final DisplayMetrics displayMetrics = new DisplayMetrics();
+            display.getMetrics(displayMetrics);
+            assertEquals(
+                    "The width must exclude display cutout and navigation bar area.",
+                    expectedBounds.width(),
+                    displayMetrics.widthPixels);
+            assertEquals(
+                    "The height must exclude display cutout and navigation bar area.",
+                    expectedBounds.height(),
+                    displayMetrics.heightPixels);
+        });
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testSystemBarColor() {
         TestActivity.sStyleId = R.style.BlackSystemBars;
-        final TestActivity activity = startTestActivitySync();
+        final TestActivity activity = startActivitySync(TestActivity.class);
         getInstrumentation().runOnMainSync(() -> {
             final Window window = activity.getWindow();
             assertEquals("Status bar color must be transparent.",
@@ -181,8 +247,8 @@ public class WindowPolicyTests extends WindowManagerTestBase {
         });
     }
 
-    private static TestActivity startTestActivitySync() {
-        final TestActivity activity = startActivity(TestActivity.class);
+    private static <T extends TestActivity> TestActivity startActivitySync(Class<T> activityClass) {
+        final TestActivity activity = startActivity(activityClass);
         activity.waitForLayout();
         return activity;
     }
@@ -233,6 +299,8 @@ public class WindowPolicyTests extends WindowManagerTestBase {
                 return super.onApplyWindowInsets(insets);
             }
         }
+    }
 
+    public static class OptOutEdgeToEdgeActivity extends TestActivity {
     }
 }

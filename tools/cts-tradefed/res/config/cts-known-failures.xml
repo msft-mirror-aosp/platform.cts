@@ -307,8 +307,4 @@
 
     <!-- b/337925894 -->
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordLocalMono16BitShort" />
-
-    <!-- b/335116158 -->
-    <option name="compatibility:exclude-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testIsUserForeground_differentContext_noPermission" />
-    <option name="compatibility:exclude-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testIsAdminUserForOtherUserContextFailsWithoutPermission" />
 </configuration>

@@ -74,7 +74,6 @@ import com.android.compatibility.common.util.UserSettings;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -135,8 +134,8 @@ public class CtsCredentialProviderServiceDeviceTest {
 
     // Assumption fails, and all tests skipped if the credential manager feature
     // is not found on the device
-    @ClassRule
-    public static final RequiredFeatureRule mRequiredFeatureRule =
+    @Rule
+    public final RequiredFeatureRule mRequiredFeatureRule =
             new RequiredFeatureRule(PackageManager.FEATURE_CREDENTIALS);
 
 

@@ -158,6 +158,10 @@ public class EncoderLevelTest extends EncoderProfileLevelTestBase {
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testVideoEncodeLevels() throws IOException, InterruptedException,
             CloneNotSupportedException {
+        // This test was added after Android U and some devices with VNDK version
+        // <= Android U do not support the cases where level is not set or level is
+        // set to a lower value than what is required for the current configuration.
+        Assume.assumeFalse("Test is limited to VNDK > Android U.", VNDK_IS_AT_MOST_U);
         if (mEncCfgParams[0].mInputBitDepth != 8) {
             Assume.assumeTrue(mCodecName + " doesn't support " + colorFormatToString(
                             mEncCfgParams[0].mColorFormat, mEncCfgParams[0].mInputBitDepth),

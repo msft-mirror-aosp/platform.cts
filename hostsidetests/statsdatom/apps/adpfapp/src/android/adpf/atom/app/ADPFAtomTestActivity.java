@@ -17,22 +17,27 @@
 package android.adpf.atom.app;
 
 import static android.adpf.atom.common.ADPFAtomTestConstants.ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND;
+import static android.adpf.atom.common.ADPFAtomTestConstants.ACTION_CREATE_REGULAR_HINT_SESSIONS;
 import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_RESULT_TIDS;
 import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_UID;
 import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_URI_STRING;
 import static android.adpf.atom.common.ADPFAtomTestConstants.INTENT_ACTION_KEY;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeNotNull;
 
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.PerformanceHintManager;
 import android.os.Process;
 import android.util.ArrayMap;
 import android.util.Log;
+
+import com.android.compatibility.common.util.PropertyUtil;
 
 import java.util.Map;
 import java.util.StringJoiner;
@@ -45,6 +50,8 @@ public class ADPFAtomTestActivity extends Activity {
 
 
     private final Map<String, Bundle> mResult = new ArrayMap<>();
+
+    private static final int FIRST_API_LEVEL = PropertyUtil.getFirstApiLevel();
 
     @Override
     public void onCreate(Bundle bundle) {
@@ -72,6 +79,14 @@ public class ADPFAtomTestActivity extends Activity {
                 }
                 moveTaskToBack(true);
                 Log.i(TAG, "Moved task ADPFHintSessionDeviceActivity to back");
+                break;
+            case ACTION_CREATE_REGULAR_HINT_SESSIONS:
+                PerformanceHintManager.Session session = createPerformanceHintSession();
+                if (FIRST_API_LEVEL < Build.VERSION_CODES.S) {
+                    assumeNotNull(session);
+                } else {
+                    assertNotNull(session);
+                }
                 break;
         }
     }
@@ -114,5 +129,14 @@ public class ADPFAtomTestActivity extends Activity {
         }
         latch.await();
         return tids;
+    }
+
+    private PerformanceHintManager.Session createPerformanceHintSession() {
+        final long testTargetDuration = 12345678L;
+        PerformanceHintManager hintManager = getApplicationContext().getSystemService(
+                PerformanceHintManager.class);
+        assertNotNull(hintManager);
+        return hintManager.createHintSession(
+                new int[]{android.os.Process.myTid()}, testTargetDuration);
     }
 }

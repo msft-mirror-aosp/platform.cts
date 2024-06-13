@@ -149,16 +149,17 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
             img_bgr, img_path, size, z, z_min, circlish_rtol=circlish_rtol,
             debug=debug, draw_color=_CV2_RED, write_img=False)
 
-        if not math.isclose(last_circle_radius, circle[2], rel_tol=_FLOAT_TOL):
-          save_image_as_jpg(img_path, img_bgr)
-          last_circle_radius = circle[2]
-
-        its_session_utils.remove_file(img_path)
-
         # Zoom is too large to find center circle
         if circle is None:
           logging.error('Unable to detect circle in %s', img_path)
           break
+
+        if not math.isclose(last_circle_radius, circle[2], rel_tol=_FLOAT_TOL):
+          save_image_as_jpg(img_path, img_bgr)
+          last_circle_radius = circle[2]
+
+        # Remove png file
+        its_session_utils.remove_file(img_path)
 
         test_data.append(
             zoom_capture_utils.ZoomTestData(

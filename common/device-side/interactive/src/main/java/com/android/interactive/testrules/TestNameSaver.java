@@ -37,6 +37,10 @@ public class TestNameSaver implements TestRule {
     // packageName + className of a test class.
     private final String mPackageClass;
 
+    public TestNameSaver(Object testInstance) {
+        this(testInstance.getClass());
+    }
+
     public TestNameSaver(Class<?> testClass) {
         mPackageClass = testClass.getCanonicalName();
     }

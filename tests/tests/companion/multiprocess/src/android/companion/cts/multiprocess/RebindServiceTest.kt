@@ -15,13 +15,9 @@
  */
 package android.companion.cts.multiprocess
 
-import android.Manifest
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
-import android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
-import android.Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
 import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
 import android.companion.Flags
-import android.companion.ObservingDevicePresenceRequest
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_B
 import android.companion.cts.common.PRIMARY_PROCESS_NAME
@@ -138,15 +134,7 @@ class RebindServiceTest : TestBase() {
     @RequiresFlagsEnabled(Flags.FLAG_DEVICE_PRESENCE)
     @Test
     fun test_ObservingDeviceUuidPresence_rebind() {
-        val request = ObservingDevicePresenceRequest.Builder().setUuid(UUID_A).build()
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_SCAN
-        ) {
-            cdm.startObservingDevicePresence(request)
-        }
+        startObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         assertApplicationBinds(cdm)
@@ -165,14 +153,7 @@ class RebindServiceTest : TestBase() {
         // Primary service should be still bound.
         assertServiceBound("PrimaryCompanionService")
 
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_SCAN
-        ) {
-            cdm.stopObservingDevicePresence(request)
-        }
+        stopObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
     }
 
     private fun assertServiceBound(component: String) {

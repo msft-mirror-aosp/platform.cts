@@ -24,7 +24,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.OutcomeReceiver
 import android.os.SystemClock
+import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -38,12 +40,13 @@ import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assume
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
 @RunWith(AndroidJUnit4::class)
 class ContextualSearchManagerTest {
+    @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
@@ -66,11 +69,13 @@ class ContextualSearchManagerTest {
     @After
     fun teardown() {
         setTemporaryPackage()
+        setTokenDuration()
         mWatcher = null
         CtsContextualSearchActivity.WATCHER = null
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
     fun testContextualSearchInvocation() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
@@ -80,6 +85,7 @@ class ContextualSearchManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
     fun testContextualSearchExtras() {
         val beforeMs = SystemClock.uptimeMillis()
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
@@ -113,6 +119,8 @@ class ContextualSearchManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_TOKEN_REFRESH)
     fun testRequestContextualSearchState() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
@@ -133,7 +141,35 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    fun testTokenValidity() {
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE, Flags.FLAG_ENABLE_TOKEN_REFRESH)
+    fun testRequestContextualSearchStateWithTokenRefresh() {
+        mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
+        await(
+            mWatcher?.created,
+            "Waiting for CtsContextualSearchActivity.onCreate to be called."
+        )
+        // Now that the activity has launched, we can get the token and register our callback.
+        val token = mWatcher!!.launchExtras!!
+                .getParcelable(ContextualSearchManager.EXTRA_TOKEN, CallbackToken::class.java)!!
+        val callback = TestOutcomeReceiver(CountDownLatch(2))
+        token.getContextualSearchState(context.mainExecutor, callback)
+        // Waiting for the service to post data.
+        await(callback.resultLatch, "Waiting for the service to post data.")
+        // Verifying that the data posted is as expected.
+        assertThat(
+            callback.results.get(0).extras.getParcelable(
+                ContextualSearchManager.EXTRA_TOKEN,
+                CallbackToken::class.java
+            )
+        ).isNotNull()
+        assertThat(callback.results.get(1).structure).isNotNull()
+        assertThat(callback.results.get(1).content).isNotNull()
+        assertThat(callback.results.get(1).extras).isNotNull()
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
+    fun testTokenWithinValidDuration() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
             mWatcher?.created,
@@ -152,17 +188,42 @@ class ContextualSearchManagerTest {
         assertThat(callback.resultLatch.count).isEqualTo(0)
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
+    fun testTokenAfterValidDuration() {
+        // The token should expire immediately.
+        setTokenDuration(1)
+        mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
+        await(
+                mWatcher?.created,
+                "Waiting for CtsContextualSearchActivity.onCreate to be called."
+        )
+        // Now that the activity has launched, we can get the token and register our callback.
+        val token = mWatcher!!.launchExtras!!
+                .getParcelable(ContextualSearchManager.EXTRA_TOKEN, CallbackToken::class.java)!!
+        val callback = TestOutcomeReceiver()
+
+        Thread.sleep(10)
+        // The token should now be expired. Using it should invoke failure in the callback.
+        token.getContextualSearchState(context.mainExecutor, callback)
+        await(callback.errorLatch, "Waiting for the service to throw error.")
+        // Validate that there was an error.
+        assertThat(callback.errorLatch.count).isEqualTo(0)
+    }
+
     private class TestOutcomeReceiver(
         val resultLatch: CountDownLatch = CountDownLatch(1),
         val errorLatch: CountDownLatch = CountDownLatch(1),
-        var result: ContextualSearchState? = null
     ) : OutcomeReceiver<ContextualSearchState, Throwable> {
+        val results = mutableListOf<ContextualSearchState>()
+        val result get() = results.getOrElse(0) { null }
         override fun onResult(result: ContextualSearchState?) {
-            this.result = result
+            result?.let { this.results.add(it) }
             resultLatch.countDown()
         }
 
         override fun onError(error: Throwable) {
+            Log.d(TAG, "onError: $error")
             errorLatch.countDown()
         }
     }
@@ -183,6 +244,14 @@ class ContextualSearchManagerTest {
                 )
             } else {
                 runShellCommand("cmd contextual_search set")
+            }
+        }
+
+        private fun setTokenDuration(durationMs: Int = 0) {
+            if (durationMs > 0) {
+                runShellCommand("cmd contextual_search set token-duration $durationMs")
+            } else {
+                runShellCommand("cmd contextual_search set token-duration")
             }
         }
 

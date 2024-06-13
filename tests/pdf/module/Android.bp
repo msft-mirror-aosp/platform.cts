@@ -43,6 +43,7 @@ android_test {
         "ctstestrunner-axt",
         "junit",
         "modules-utils-native-coverage-listener",
+        "platform-compat-test-rules",
     ],
     jni_libs: [
         "libnativecoverage",
