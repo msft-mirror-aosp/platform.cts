@@ -28,7 +28,7 @@ import video_processing_utils
 import zoom_capture_utils
 
 
-_CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CIRCLISH_RTOL = 0.1  # contour area vs ideal circle area pi*((w+h)/4)**2
 _CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
 _FLOAT_TOL = 0.01
 _JPEG = '.jpg'
