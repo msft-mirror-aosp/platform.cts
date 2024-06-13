@@ -36,29 +36,15 @@ android_library {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "testng",
+        "CtsTvTunerTestCases_lib",
     ],
 
     // sdk_version: "test_current",
     platform_apis: true,
-    resource_dirs: ["res"],
-}
-
-android_test {
-    name: "CtsTvTestCases",
-    defaults: ["cts_defaults"],
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
+    resource_dirs: [
+        "res",
+        "src/android/media/tv/tuner/cts/res",
     ],
-
-    static_libs: [
-        "CtsTvTestCases_lib",
-    ],
-    // sdk_version: "test_current",
-    platform_apis: true,
-    resource_dirs: [],
-    sdk_version: "test_current",
 }
 
 android_test_helper_app {

@@ -25,9 +25,8 @@ import android.media.tv.TvInputManager;
 import android.media.tv.TvView;
 import android.platform.test.annotations.Presubmit;
 import android.test.ActivityInstrumentationTestCase2;
-import android.util.ArrayMap;
-
 import android.tv.cts.R;
+import android.util.ArrayMap;
 
 import com.android.compatibility.common.util.PollingCheck;
 

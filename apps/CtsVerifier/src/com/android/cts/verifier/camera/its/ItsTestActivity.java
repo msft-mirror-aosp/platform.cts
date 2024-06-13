@@ -121,8 +121,16 @@ public class ItsTestActivity extends DialogTestListActivity {
 
     private static final Pattern PERF_METRICS_YUV_PLUS_JPEG_PATTERN =
             Pattern.compile("test_yuv_plus_jpeg_rms_diff:(\\d+(\\.\\d+)?)");
+    /* TODO b/346817862 - More concise regex. */
     private static final Pattern PERF_METRICS_YUV_PLUS_RAW_PATTERN =
-            Pattern.compile("test_yuv_plus_(raw|raw10|raw12)_rms_diff:(\\d+(\\.\\d+)?)");
+            Pattern.compile("test_yuv_plus_raw.*");
+
+    private static final String PERF_METRICS_KEY_PREFIX_YUV_PLUS = "yuv_plus";
+    private static final String PERF_METRICS_KEY_RAW = "raw_";
+    private static final String PERF_METRICS_KEY_RAW10 = "raw10";
+    private static final String PERF_METRICS_KEY_RAW12 = "raw12";
+    private static final String PERF_METRICS_KEY_RMS_DIFF = "rms_diff";
+
     private static final Pattern PERF_METRICS_IMU_DRIFT_PATTERN =
             Pattern.compile("test_imu_drift_.*");
     private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
@@ -671,11 +679,8 @@ public class ItsTestActivity extends DialogTestListActivity {
                 }
 
                 if (yuvPlusRawMetricsMatches) {
-                    Log.i(TAG, "raw pattern  matches");
-                    String fmtMatcher = yuvPlusRawMetricsMatcher.group(1); // "raw", "raw10", etc.
-                    float diff = Float.parseFloat(yuvPlusRawMetricsMatcher.group(2));
-                    String keyname = "yuv_plus_" + fmtMatcher + "_rms_diff";
-                    obj.put(keyname, diff);
+                    Log.i(TAG, "yuv plus raw pattern matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_YUV_PLUS, perfMetricsResult, obj);
                 }
 
                 if (imuDriftMetricsMatches) {
@@ -754,6 +759,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         }
     }
 
+    /* TODO b/346817862 - Move logic to regex as string splits and trims are brittle. */
     private void addPerfMetricsResult(String keyPrefix, String perfMetricsResult,
             JSONObject obj) throws org.json.JSONException {
         // remove "test_" from the result
@@ -777,6 +783,17 @@ public class ItsTestActivity extends DialogTestListActivity {
         } else if (resultKey.contains(PERF_METRICS_KEY_AVG_LUMA)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + "_" + PERF_METRICS_KEY_AVG_LUMA, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_RAW)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + PERF_METRICS_KEY_RAW + PERF_METRICS_KEY_RMS_DIFF, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_RAW10)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + PERF_METRICS_KEY_RAW10 + "_" + PERF_METRICS_KEY_RMS_DIFF,
+                    floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_RAW12)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + PERF_METRICS_KEY_RAW12 + "_" + PERF_METRICS_KEY_RMS_DIFF,
+                    floatValue);
         } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_BURST_CAPTURE)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + "_" + PERF_METRICS_KEY_FRAMEDURATION, floatValue);

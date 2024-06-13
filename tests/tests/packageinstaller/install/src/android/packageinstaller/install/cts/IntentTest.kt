@@ -237,7 +237,7 @@ class IntentTest : PackageInstallerTestBase() {
         intent.putExtra(Intent.EXTRA_RETURN_RESULT, false)
         intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
 
-        installDialogStarter.activity.startActivityForResult(intent)
+        startInstallationViaIntent(intent)
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         // Wait for success dialog
@@ -251,6 +251,28 @@ class IntentTest : PackageInstallerTestBase() {
             "Open button should not be shown",
             uiDevice.wait(Until.findObject(getBySelector(INSTALL_BUTTON_ID)), 5000)
         )
+    }
+
+    @Test
+    fun installLowTargetSdkApp_installFailedVisible() {
+        // We want the InstallFailed dialog to be visible. Thus, pass EXTRA_RETURN_RESULT as false
+        val installIntent = getInstallationIntent(TEST_LOW_TARGET_SDK_APK_NAME)
+        installIntent.putExtra(Intent.EXTRA_RETURN_RESULT, false)
+
+        val installation = startInstallationViaIntent(installIntent)
+        clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+        // GPP dialog should be shown. Clicking on "Got it" should cancel the installation
+        val gppDefaultBtn = uiDevice.wait(Until.findObject(By.text("Got it")), FIND_OBJECT_TIMEOUT)
+        if (gppDefaultBtn != null) {
+            gppDefaultBtn.click()
+        }
+
+        // Click the positive button on the InstallFailed dialog
+        clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+        assertNotInstalled(TEST_LOW_TARGET_SDK_APK_PACKAGE_NAME)
     }
 
     private fun getInstallSourceInfo(): InstallSourceInfo {

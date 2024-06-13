@@ -37,9 +37,9 @@ import android.view.Display;
 
 import org.junit.Test;
 
-/** Build/Install/Run: atest CtsWindowManagerDeviceActivity:AspectRatioTests */
+/** Build/Install/Run: atest CtsWindowManagerDeviceActivity:AspectRatioSdk34Tests */
 @Presubmit
-public class AspectRatioTests extends AspectRatioTestsBase {
+public class AspectRatioSdk34Tests extends AspectRatioTestsBase {
 
     // The max. aspect ratio the test activities are using.
     private static final float MAX_ASPECT_RATIO = 1.0f;

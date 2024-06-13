@@ -298,8 +298,10 @@ class SensitiveNotificationAppHidingTest {
             activityScenario.moveToState(State.CREATED)
             sendSensitiveNotification()
             activityScenario.moveToState(State.RESUMED)
-            // This must come after verifying the Toast, since the window can take a bit of time to
-            // update.
+
+            // Sometimes app needs extra time to update its window state to reflect sensitive
+            // protection state
+            Thread.sleep(500)
             verifyScreenCaptureProtected(activityScenario)
         }
     }

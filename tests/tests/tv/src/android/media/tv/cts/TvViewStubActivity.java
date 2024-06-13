@@ -17,8 +17,6 @@
 package android.media.tv.cts;
 
 import android.app.Activity;
-import android.content.ComponentName;
-import android.content.Intent;
 import android.media.tv.TvView;
 import android.os.Bundle;
 import android.tv.cts.R;

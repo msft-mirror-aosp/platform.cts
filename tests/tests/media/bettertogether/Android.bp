@@ -15,11 +15,11 @@
 package {
     // See: http://go/android-license-faq
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_media_better_together",
 }
 
 android_test {
     name: "CtsMediaBetterTogetherTestCases",
-    team: "trendy_team_android_media_solutions",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.truth",
