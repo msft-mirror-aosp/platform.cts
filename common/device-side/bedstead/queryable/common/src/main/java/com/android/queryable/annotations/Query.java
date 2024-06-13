@@ -49,4 +49,11 @@ public @interface Query {
 
     /** Require the dpc to be or not be a headless device owner single user app. */
     BooleanQuery isHeadlessDOSingleUser() default @BooleanQuery;
+
+    /**
+     * Require the policies match the {@link Set<Integer>} query
+     * Use any of {@code CommonDeviceAdminInfo.USES_POLICY constants}
+     */
+    IntegerSetQuery usesPolicies() default @IntegerSetQuery();
+
 }

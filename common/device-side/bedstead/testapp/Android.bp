@@ -134,6 +134,18 @@ java_genrule {
         ":MLCTestApp",
         ":MultipleActivitiesTestApp",
         ":HeadlessDOSingleUserTestApp",
+        ":RemoteDeviceAdminTestApp",
+        ":RemoteDeviceAdminUsesLimitPasswordPolicyTestApp",
+        ":RemoteDeviceAdminUsesWatchLoginPolicyTestApp",
+        ":RemoteDeviceAdminUsesEncryptedStoragePolicyTestApp",
+        ":RemoteDeviceAdminUsesWipeDataPolicyTestApp",
+        ":RemoteDeviceAdminUsesSetsGlobalProxyPolicyTestApp",
+        ":RemoteDeviceAdminUsesExpirePasswordPolicyTestApp",
+        ":RemoteDeviceAdminUsesResetPasswordPolicyTestApp",
+        ":RemoteDeviceAdminUsesDisableKeyguardFeaturesPolicyTestApp",
+        ":RemoteDeviceAdminUsesForceLockPolicyTestApp",
+        ":RemoteDeviceAdminUsesDisableCameraPolicyTestApp",
+        ":TestApp_Resources",
     ],
     out: [
         "testapps/index.txt",
@@ -157,6 +169,17 @@ java_genrule {
         "testapps/MLCTestApp.apk",
         "testapps/MultipleActivitiesTestApp.apk",
         "testapps/HeadlessDOSingleUserTestApp.apk",
+        "testapps/RemoteDeviceAdminTestApp.apk",
+        "testapps/RemoteDeviceAdminUsesLimitPasswordPolicyTestApp.apk",
+        "testapps/RemoteDeviceAdminUsesWatchLoginPolicyTestApp.apk",
+        "testapps/RemoteDeviceAdminUsesEncryptedStoragePolicyTestApp.apk",
+        "testapps/RemoteDeviceAdminUsesWipeDataPolicyTestApp.apk",
+        "testapps/RemoteDeviceAdminUsesSetsGlobalProxyPolicyTestApp.apk",
+        "testapps/RemoteDeviceAdminUsesExpirePasswordPolicyTestApp.apk",
+        "testapps/RemoteDeviceAdminUsesResetPasswordPolicyTestApp.apk",
+        "testapps/RemoteDeviceAdminUsesDisableKeyguardFeaturesPolicyTestApp.apk",
+        "testapps/RemoteDeviceAdminUsesForceLockPolicyTestApp.apk",
+        "testapps/RemoteDeviceAdminUsesDisableCameraPolicyTestApp.apk",
     ],
     tools: [
         "index_testapps",
@@ -183,7 +206,26 @@ java_genrule {
         " && cp $(location :MLCTestApp) $(genDir)/testapps" +
         " && cp $(location :MultipleActivitiesTestApp) $(genDir)/testapps" +
         " && cp $(location :HeadlessDOSingleUserTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminUsesLimitPasswordPolicyTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminUsesWatchLoginPolicyTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminUsesEncryptedStoragePolicyTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminUsesWipeDataPolicyTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminUsesSetsGlobalProxyPolicyTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminUsesExpirePasswordPolicyTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminUsesDisableCameraPolicyTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminUsesResetPasswordPolicyTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminUsesDisableKeyguardFeaturesPolicyTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDeviceAdminUsesForceLockPolicyTestApp) $(genDir)/testapps" +
+        " && cp $(locations :TestApp_Resources) $(genDir)/testapps" +
         " && $(location index_testapps) --directory $(genDir)/testapps --aapt2 $(location aapt2)"
+}
+
+filegroup {
+    name: "TestApp_Resources",
+    srcs: [
+        "src/testapps/main/res/**/xml/*"
+    ]
 }
 
 android_test_helper_app {
@@ -437,6 +479,127 @@ android_test_helper_app {
     ],
     defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/MultipleActivitiesTestAppManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/RemoteDeviceAdminManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminUsesLimitPasswordPolicyTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/usespolicy/RemoteDeviceAdminUsesLimitPasswordPolicyManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminUsesWatchLoginPolicyTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/usespolicy/RemoteDeviceAdminUsesWatchLoginPolicyManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminUsesEncryptedStoragePolicyTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/usespolicy/RemoteDeviceAdminUsesEncryptedStoragePolicyManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminUsesWipeDataPolicyTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/usespolicy/RemoteDeviceAdminUsesWipeDataPolicyManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminUsesSetsGlobalProxyPolicyTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/usespolicy/RemoteDeviceAdminUsesSetsGlobalProxyPolicyManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminUsesExpirePasswordPolicyTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/usespolicy/RemoteDeviceAdminUsesExpirePasswordPolicyManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminUsesResetPasswordPolicyTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/usespolicy/RemoteDeviceAdminUsesResetPasswordPolicyManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminUsesDisableKeyguardFeaturesPolicyTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/usespolicy/RemoteDeviceAdminUsesDisableKeyguardFeaturesPolicyManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminUsesForceLockPolicyTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/usespolicy/RemoteDeviceAdminUsesForceLockPolicyManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+}
+
+android_test_helper_app {
+    name: "RemoteDeviceAdminUsesDisableCameraPolicyTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/deviceadmin/usespolicy/RemoteDeviceAdminUsesDisableCameraPolicyManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
 }

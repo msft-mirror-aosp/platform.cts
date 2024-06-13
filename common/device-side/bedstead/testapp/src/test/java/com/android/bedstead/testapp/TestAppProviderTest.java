@@ -28,6 +28,7 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.queryable.annotations.BooleanQuery;
 import com.android.queryable.annotations.IntegerQuery;
+import com.android.queryable.annotations.IntegerSetQuery;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.annotations.StringQuery;
 
@@ -78,23 +79,36 @@ public final class TestAppProviderTest {
     private TestAppProvider mTestAppProvider;
 
     @AutoAnnotation
-    public static Query query(StringQuery packageName, IntegerQuery minSdkVersion, IntegerQuery maxSdkVersion, IntegerQuery targetSdkVersion, BooleanQuery isDeviceAdmin, BooleanQuery isHeadlessDOSingleUser) {
-        return new AutoAnnotation_TestAppProviderTest_query(packageName, minSdkVersion, maxSdkVersion, targetSdkVersion, isDeviceAdmin, isHeadlessDOSingleUser);
+    public static Query query(StringQuery packageName, IntegerQuery minSdkVersion,
+            IntegerQuery maxSdkVersion, IntegerQuery targetSdkVersion, BooleanQuery isDeviceAdmin,
+            IntegerSetQuery usesPolicies, BooleanQuery isHeadlessDOSingleUser) {
+        return new AutoAnnotation_TestAppProviderTest_query(packageName, minSdkVersion,
+                maxSdkVersion, targetSdkVersion, isDeviceAdmin, usesPolicies,
+                isHeadlessDOSingleUser);
     }
 
     @AutoAnnotation
-    public static StringQuery stringQuery(String startsWith, String isEqualTo, String isNotEqualTo, OptionalBoolean isNull) {
-        return new AutoAnnotation_TestAppProviderTest_stringQuery(startsWith, isEqualTo, isNotEqualTo, isNull);
+    public static StringQuery stringQuery(String startsWith, String isEqualTo, String isNotEqualTo,
+            OptionalBoolean isNull) {
+        return new AutoAnnotation_TestAppProviderTest_stringQuery(startsWith, isEqualTo, 
+                isNotEqualTo, isNull);
     }
 
     @AutoAnnotation
-    public static IntegerQuery integerQuery(int isEqualTo, int isGreaterThan, int isGreaterThanOrEqualTo, int isLessThan, int isLessThanOrEqualTo) {
-        return new AutoAnnotation_TestAppProviderTest_integerQuery(isEqualTo, isGreaterThan, isGreaterThanOrEqualTo, isLessThan, isLessThanOrEqualTo);
+    public static IntegerQuery integerQuery(int isEqualTo, int isGreaterThan,
+            int isGreaterThanOrEqualTo, int isLessThan, int isLessThanOrEqualTo) {
+        return new AutoAnnotation_TestAppProviderTest_integerQuery(isEqualTo, isGreaterThan, 
+                isGreaterThanOrEqualTo, isLessThan, isLessThanOrEqualTo);
     }
 
     @AutoAnnotation
     public static BooleanQuery booleanQuery(OptionalBoolean isEqualTo) {
         return new AutoAnnotation_TestAppProviderTest_booleanQuery(isEqualTo);
+    }
+
+    @AutoAnnotation
+    public static IntegerSetQuery integerSetQuery(int[] contains) {
+        return new AutoAnnotation_TestAppProviderTest_integerSetQuery(contains);
     }
 
     static final class QueryBuilder {
@@ -104,6 +118,7 @@ public final class TestAppProviderTest {
         private IntegerQuery mTargetSdkVersion = null;
         private BooleanQuery mIsDeviceAdmin = null;
         private BooleanQuery mIsHeadlessDOSingleUser = null;
+        private IntegerSetQuery mUsesPolicies = null;
 
         public QueryBuilder packageName(StringQuery packageName) {
             mPackageName = packageName;
@@ -135,6 +150,11 @@ public final class TestAppProviderTest {
             return this;
         }
 
+        public QueryBuilder usesPolicies(IntegerSetQuery usesPolicies) {
+            mUsesPolicies = usesPolicies;
+            return this;
+        }
+
         public Query build() {
             return query(
                     mPackageName != null ? mPackageName : stringQueryBuilder().build(),
@@ -142,6 +162,7 @@ public final class TestAppProviderTest {
                     mMaxSdkVersion != null ? mMaxSdkVersion : integerQueryBuilder().build(),
                     mTargetSdkVersion != null ? mTargetSdkVersion : integerQueryBuilder().build(),
                     mIsDeviceAdmin != null ? mIsDeviceAdmin : booleanQueryBuilder().build(),
+                    mUsesPolicies != null ? mUsesPolicies : integerSetQueryBuilder().build(),
                     mIsHeadlessDOSingleUser != null ? mIsHeadlessDOSingleUser : booleanQueryBuilder().build()
             );
         }
@@ -231,6 +252,19 @@ public final class TestAppProviderTest {
         }
     }
 
+    static final class IntegerSetQueryBuilder {
+        private int[] mContains = {};
+
+        public IntegerSetQueryBuilder contains(int[] contains) {
+            mContains = contains;
+            return this;
+        }
+
+        public IntegerSetQuery build() {
+            return integerSetQuery(mContains);
+        }
+    }
+
     // TODO: The below AutoBuilder should work instead of the custom one but we get
     // [AutoBuilderNoVisible] No visible constructor for com.android.queryable.annotations.Query
 
@@ -276,6 +310,10 @@ public final class TestAppProviderTest {
 
     static BooleanQueryBuilder booleanQueryBuilder() {
         return new BooleanQueryBuilder();
+    }
+
+    static IntegerSetQueryBuilder integerSetQueryBuilder() {
+        return new IntegerSetQueryBuilder();
     }
 
     @Before

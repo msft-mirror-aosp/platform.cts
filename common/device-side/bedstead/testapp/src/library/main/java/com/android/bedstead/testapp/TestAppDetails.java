@@ -36,6 +36,7 @@ class TestAppDetails {
     final Set<ActivityInfo> mActivityAliases = new HashSet<>();
     final Set<ServiceInfo> mServices = new HashSet<>();
     final Set<ReceiverInfo> mReceivers = new HashSet<>();
+    final Set<Integer> mPolicies = new HashSet<>();
 
     /**
      * Gets the shared user ID of the test app, or {@code Null} if none.

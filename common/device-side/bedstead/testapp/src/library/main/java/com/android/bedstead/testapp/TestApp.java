@@ -242,6 +242,12 @@ public final class TestApp {
         return mDetails.mMetadata;
     }
 
+    // TODO(b/325036316): Move policies to device admin test app
+    /** The policies used by the test app. */
+    public Set<Integer> policies() {
+        return mDetails.mPolicies;
+    }
+
     @Override
     public String toString() {
         return "TestApp{"
