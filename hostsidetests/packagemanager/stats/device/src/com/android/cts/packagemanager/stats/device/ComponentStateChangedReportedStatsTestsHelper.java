@@ -102,6 +102,23 @@ public class ComponentStateChangedReportedStatsTestsHelper {
     }
 
     @Test
+    public void testComponentStateChangedReportedEnabledThenDisabledWholeApp() {
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                mPackageManager.setApplicationEnabledSetting(TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
+                        COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP));
+        assertEquals(COMPONENT_ENABLED_STATE_ENABLED,
+                mPackageManager.getApplicationEnabledSetting(
+                        TEST_COMPONENT_STATE_APP_PACKAGE_NAME));
+
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                mPackageManager.setApplicationEnabledSetting(TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
+                        COMPONENT_ENABLED_STATE_DISABLED, DONT_KILL_APP));
+        assertEquals(COMPONENT_ENABLED_STATE_DISABLED,
+                mPackageManager.getApplicationEnabledSetting(
+                        TEST_COMPONENT_STATE_APP_PACKAGE_NAME));
+    }
+
+    @Test
     public void testComponentStateChangedReportedForTwoDifferentStateLauncherActivities() {
         ComponentName firstComponentName = new ComponentName(TEST_COMPONENT_STATE_APP_PACKAGE_NAME,
                 FAKE_DEFAULT_ENABLED_LAUNCHER_ACTIVITY_NAME);
