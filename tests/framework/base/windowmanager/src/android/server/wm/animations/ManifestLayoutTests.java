@@ -42,8 +42,11 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.WindowState;
 import android.util.DisplayMetrics;
+import android.util.Size;
 import android.view.DisplayCutout;
 import android.view.WindowMetrics;
+
+import androidx.annotation.NonNull;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -82,23 +85,43 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
     }
 
     @Test
-    public void testGravityAndDefaultSizeTopLeft() throws Exception {
-        testLayout(GRAVITY_VER_TOP, GRAVITY_HOR_LEFT, false /*fraction*/);
+    public void testGravityInfluencesSizeTopLeft() throws Exception {
+        validateGravityInfluencesSize(GRAVITY_VER_TOP, GRAVITY_HOR_LEFT, false /* fraction */);
     }
 
     @Test
-    public void testGravityAndDefaultSizeTopRight() throws Exception {
-        testLayout(GRAVITY_VER_TOP, GRAVITY_HOR_RIGHT, true /*fraction*/);
+    public void testGravityInfluencesPositionTopLeft() throws Exception {
+        validateGravityInfluencesPosition(GRAVITY_VER_TOP, GRAVITY_HOR_LEFT);
     }
 
     @Test
-    public void testGravityAndDefaultSizeBottomLeft() throws Exception {
-        testLayout(GRAVITY_VER_BOTTOM, GRAVITY_HOR_LEFT, true /*fraction*/);
+    public void testGravityInfluencesSizeTopRight() throws Exception {
+        validateGravityInfluencesSize(GRAVITY_VER_TOP, GRAVITY_HOR_RIGHT, true /* fraction */);
     }
 
     @Test
-    public void testGravityAndDefaultSizeBottomRight() throws Exception {
-        testLayout(GRAVITY_VER_BOTTOM, GRAVITY_HOR_RIGHT, false /*fraction*/);
+    public void testGravityInfluencesPositionTopRight() throws Exception {
+        validateGravityInfluencesPosition(GRAVITY_VER_TOP, GRAVITY_HOR_RIGHT);
+    }
+
+    @Test
+    public void testGravityInfluencesSizeBottomLeft() throws Exception {
+        validateGravityInfluencesSize(GRAVITY_VER_BOTTOM, GRAVITY_HOR_LEFT, true /* fraction */);
+    }
+
+    @Test
+    public void testGravityInfluencesPositionBottomLeft() throws Exception {
+        validateGravityInfluencesPosition(GRAVITY_VER_BOTTOM, GRAVITY_HOR_LEFT);
+    }
+
+    @Test
+    public void testGravityInfluencesSizeBottomRight() throws Exception {
+        validateGravityInfluencesSize(GRAVITY_VER_BOTTOM, GRAVITY_HOR_RIGHT, false /* fraction */);
+    }
+
+    @Test
+    public void testGravityInfluencesPositionBottomRight() throws Exception {
+        validateGravityInfluencesPosition(GRAVITY_VER_BOTTOM, GRAVITY_HOR_RIGHT);
     }
 
     @Test
@@ -154,23 +177,8 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
         }
     }
 
-    private void testLayout(
-            int vGravity, int hGravity, boolean fraction) throws Exception {
-        assumeTrue("Skipping test: no freeform support", supportsFreeform());
-
-        final ComponentName activityName;
-        if (vGravity == GRAVITY_VER_TOP) {
-            activityName = (hGravity == GRAVITY_HOR_LEFT) ? TOP_LEFT_LAYOUT_ACTIVITY
-                    : TOP_RIGHT_LAYOUT_ACTIVITY;
-        } else {
-            activityName = (hGravity == GRAVITY_HOR_LEFT) ? BOTTOM_LEFT_LAYOUT_ACTIVITY
-                    : BOTTOM_RIGHT_LAYOUT_ACTIVITY;
-        }
-
-        final WindowMetrics windowMetrics = mWm.getMaximumWindowMetrics();
-        final Rect stableBounds = new Rect(windowMetrics.getBounds());
-        stableBounds.inset(windowMetrics.getWindowInsets().getInsetsIgnoringVisibility(
-                systemBars() & ~captionBar()));
+    /** Returns expected size of the frame in pixels. */
+    private static Size calculateExpectedSize(Rect stableBounds, boolean fraction) {
         final int expectedWidthPx, expectedHeightPx;
         // Evaluate the expected window size in px. If we're using fraction dimensions,
         // calculate the size based on the app rect size. Otherwise, convert the expected
@@ -183,17 +191,94 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
             expectedWidthPx = dpToPx(DEFAULT_WIDTH_DP, densityDpi);
             expectedHeightPx = dpToPx(DEFAULT_HEIGHT_DP, densityDpi);
         }
+        return new Size(expectedWidthPx, expectedHeightPx);
+    }
+
+    private static @NonNull Rect getStableBounds(@NonNull WindowMetrics maxWindowMetrics) {
+        final Rect stableBounds = new Rect(maxWindowMetrics.getBounds());
+        stableBounds.inset(maxWindowMetrics.getWindowInsets().getInsetsIgnoringVisibility(
+                systemBars() & ~captionBar()));
+        return stableBounds;
+    }
+
+    /**
+     * Validate the activity launched with the given gravity has the expected size.
+     *
+     * <p>Gravity influences size, since the window position pushes it against different insets,
+     * which will influence the frame size.
+     */
+    private void validateGravityInfluencesSize(int vGravity, int hGravity, boolean fraction)
+            throws Exception {
+        assumeTrue("Skipping test: no freeform support", supportsFreeform());
+
+        final ComponentName componentName = getComponentNameForGravity(vGravity, hGravity);
+        final Rect stableBounds = getStableBounds(mWm.getMaximumWindowMetrics());
+        final Size expectedSize = calculateExpectedSize(stableBounds, fraction);
 
         // Launch in freeform stack
-        launchActivity(activityName, WINDOWING_MODE_FREEFORM);
+        launchActivity(componentName, WINDOWING_MODE_FREEFORM);
+        // Load up mWindowState
+        getDisplayAndWindowState(componentName, true);
 
-        getDisplayAndWindowState(activityName, true);
-
-        final Rect parentFrame = mWindowState.getParentFrame();
-
-        verifyFrameSizeAndPosition(vGravity, hGravity, expectedWidthPx, expectedHeightPx,
-                parentFrame, stableBounds);
+        verifyFrameSize(hGravity, expectedSize, mWindowState.getParentFrame());
     }
+
+    /** Validate the activity launched with the given gravity has the expected position. */
+    private void validateGravityInfluencesPosition(int vGravity, int hGravity) throws Exception {
+        assumeTrue("Skipping test: no freeform support", supportsFreeform());
+
+        final ComponentName componentName = getComponentNameForGravity(vGravity, hGravity);
+        final Rect stableBounds = getStableBounds(mWm.getMaximumWindowMetrics());
+
+        // Launch in freeform stack
+        launchActivity(componentName, WINDOWING_MODE_FREEFORM);
+        // Load up mWindowState
+        getDisplayAndWindowState(componentName, true);
+
+        // Given some gravity values, we expect the window to be positioned accordingly.
+        verifyFramePosition(vGravity, hGravity, mWindowState.getParentFrame(), stableBounds);
+    }
+
+    /** Identifies the activity corresponding to the declared gravity. */
+    private @NonNull ComponentName getComponentNameForGravity(int vGravity, int hGravity) {
+        final ComponentName componentName;
+        if (vGravity == GRAVITY_VER_TOP) {
+            componentName = (hGravity == GRAVITY_HOR_LEFT) ? TOP_LEFT_LAYOUT_ACTIVITY
+                    : TOP_RIGHT_LAYOUT_ACTIVITY;
+        } else {
+            componentName = (hGravity == GRAVITY_HOR_LEFT) ? BOTTOM_LEFT_LAYOUT_ACTIVITY
+                    : BOTTOM_RIGHT_LAYOUT_ACTIVITY;
+        }
+        return componentName;
+    }
+
+    /** Verify that the frame is the expected size. */
+    private void verifyFrameSize(int hGravity, @NonNull Size expectedSizePx,
+            @NonNull Rect parentFrame) {
+        final int cutoutSize = getCutoutSizeByHorGravity(hGravity);
+        assertEquals("Width is incorrect", expectedSizePx.getWidth(),
+                parentFrame.width() + cutoutSize);
+        assertEquals("Height is incorrect", expectedSizePx.getHeight(), parentFrame.height());
+    }
+
+    /** Verify that the frame is positioned according to the given gravity values. */
+    private void verifyFramePosition(int vGravity, int hGravity, @NonNull Rect parentFrame,
+            @NonNull Rect stableBounds) {
+        final int cutoutSize = getCutoutSizeByHorGravity(hGravity);
+        if (vGravity == GRAVITY_VER_TOP) {
+            assertEquals("Should be on the top", stableBounds.top, parentFrame.top);
+        } else if (vGravity == GRAVITY_VER_BOTTOM) {
+            assertEquals("Should be on the bottom", stableBounds.bottom, parentFrame.bottom);
+        }
+
+        if (hGravity == GRAVITY_HOR_LEFT) {
+            assertEquals("Should be on the left", stableBounds.left, parentFrame.left - cutoutSize);
+        } else if (hGravity == GRAVITY_HOR_RIGHT) {
+            assertEquals("Should be on the right", stableBounds.right,
+                    parentFrame.right + cutoutSize);
+        }
+    }
+
 
     private void getDisplayAndWindowState(ComponentName activityName, boolean checkFocus)
             throws Exception {
@@ -218,29 +303,6 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
 
         mDisplay = mWmState.getDisplay(mWindowState.getDisplayId());
         assertNotNull("Should be on a display", mDisplay);
-    }
-
-    private void verifyFrameSizeAndPosition(
-            int vGravity, int hGravity, int expectedWidthPx, int expectedHeightPx,
-            Rect parentFrame, Rect stableBounds) {
-        final int cutoutSize = getCutoutSizeByHorGravity(hGravity);
-        assertEquals("Width is incorrect",
-                expectedWidthPx, parentFrame.width() + cutoutSize);
-        assertEquals("Height is incorrect", expectedHeightPx, parentFrame.height());
-
-        if (vGravity == GRAVITY_VER_TOP) {
-            assertEquals("Should be on the top", stableBounds.top, parentFrame.top);
-        } else if (vGravity == GRAVITY_VER_BOTTOM) {
-            assertEquals("Should be on the bottom", stableBounds.bottom, parentFrame.bottom);
-        }
-
-        if (hGravity == GRAVITY_HOR_LEFT) {
-            assertEquals("Should be on the left",
-                    stableBounds.left, parentFrame.left - cutoutSize);
-        } else if (hGravity == GRAVITY_HOR_RIGHT){
-            assertEquals("Should be on the right",
-                    stableBounds.right, parentFrame.right + cutoutSize);
-        }
     }
 
     private int getCutoutSizeByHorGravity(int hGravity) {

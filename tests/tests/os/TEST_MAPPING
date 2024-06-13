@@ -54,13 +54,6 @@
           "exclude-filter": "android.os.cts.AutoRevokeTest#testUnusedApp_uninstallApp"
         },
         {
-          // TODO(b/201545116)
-          "exclude-filter": "android.os.cts.AutoRevokeTest#testUnusedApp_getsPermissionRevoked"
-        },
-        {
-          "exclude-filter": "android.os.cts.AutoRevokeTest#testPreRUnusedApp_doesntGetPermissionRevoked"
-        },
-        {
           // TODO(b/203876506)
           "exclude-filter": "android.os.cts.BuildTest#testSdkInt"
         },

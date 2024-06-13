@@ -63,7 +63,6 @@ import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.queryable.annotations.BooleanQuery
 import com.android.queryable.annotations.IntegerQuery
 import com.android.queryable.annotations.Query
-import com.android.queryable.info.MetadataInfo
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule
 import org.junit.Rule
@@ -185,12 +184,8 @@ class EnterpriseAnnotationExecutorTest {
     @Test
     fun additionalQueryParameters_isHeadlessDOSingleUser_isRespected() {
         assertThat(
-                sDeviceState.dpc().testApp().metadata().stream().anyMatch {
-                    it.key() != null && it.value() != null && it.value().asString() != null &&
-                            it.key().equals("headless_do_single_user") &&
-                            it.value().asBoolean() == true
-                }
-        ).isTrue()
+            sDeviceState.dpc().testApp().metadata().getString("headless_do_single_user")
+        ).isEqualTo("true")
     }
 
     @EnsureHasDeviceOwner(
@@ -201,12 +196,8 @@ class EnterpriseAnnotationExecutorTest {
     @Test
     fun additionalQueryParameters_isNotHeadlessDOSingleUser_isRespected() {
         assertThat(
-                sDeviceState.dpc().testApp().metadata().stream().anyMatch {
-                    it.key() != null && it.value() != null && it.value().asString() != null &&
-                            it.key().equals("headless_do_single_user") &&
-                            it.value().asBoolean() == false
-                }
-        ).isFalse()
+            sDeviceState.dpc().testApp().metadata().getString("headless_do_single_user")
+        ).isNull()
     }
 
     @EnsureHasDeviceOwner

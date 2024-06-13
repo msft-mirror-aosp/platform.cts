@@ -48,15 +48,12 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.util.Log;
 
-import com.android.bedstead.enterprise.DeviceAdminComponent;
 import com.android.bedstead.enterprise.DeviceOwnerComponent;
 import com.android.bedstead.enterprise.EnterpriseComponent;
 import com.android.bedstead.enterprise.ProfileOwnersComponent;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin;
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwnerKt;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
@@ -134,7 +131,6 @@ import com.android.bedstead.nene.utils.ResolveInfoWrapper;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator;
-import com.android.bedstead.remotedpc.RemoteDeviceAdmin;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
@@ -270,7 +266,6 @@ public final class DeviceState extends HarrierRule {
         mEnterpriseComponent = mLocator.get(EnterpriseComponent.class);
         mDeviceOwnerComponent = mLocator.get(DeviceOwnerComponent.class);
         mProfileOwnersComponent = mLocator.get(ProfileOwnersComponent.class);
-        mDeviceAdminComponent = mLocator.get(DeviceAdminComponent.class);
         mTestAppsComponent = mLocator.get(TestAppsComponent.class);
         mContentTestApp = testApps()
                 .query()
@@ -852,12 +847,7 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            /*if (annotation instanceof RequireFactoryResetProtectionPolicySupported) {
-                requireFactoryResetProtectionPolicySupported();
-                continue;
-            }*/
-
-            if (annotation instanceof RequirePackageRespondsToIntent requirePackageRespondsToIntentAnnotation) {
+            if(annotation instanceof RequirePackageRespondsToIntent requirePackageRespondsToIntentAnnotation) {
                 requirePackageRespondsToIntent(
                         requirePackageRespondsToIntentAnnotation.intent(),
                         resolveUserTypeToUser(requirePackageRespondsToIntentAnnotation.user()),
@@ -865,7 +855,7 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof RequireNoPackageRespondsToIntent requireNoPackageRespondsToIntentAnnotation) {
+            if(annotation instanceof RequireNoPackageRespondsToIntent requireNoPackageRespondsToIntentAnnotation) {
                 requireNoPackageRespondsToIntent(
                         requireNoPackageRespondsToIntentAnnotation.intent(),
                         resolveUserTypeToUser(requireNoPackageRespondsToIntentAnnotation.user()),
@@ -873,7 +863,7 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof EnsurePackageRespondsToIntent ensurePackageRespondsToIntentAnnotation) {
+            if(annotation instanceof EnsurePackageRespondsToIntent ensurePackageRespondsToIntentAnnotation) {
                 ensurePackageRespondsToIntent(
                         ensurePackageRespondsToIntentAnnotation.intent(),
                         resolveUserTypeToUser(ensurePackageRespondsToIntentAnnotation.user()),
@@ -881,38 +871,10 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof EnsureNoPackageRespondsToIntent ensureNoPackageRespondsToIntentAnnotation) {
+            if(annotation instanceof EnsureNoPackageRespondsToIntent ensureNoPackageRespondsToIntentAnnotation) {
                 ensureNoPackageRespondsToIntent(
                         ensureNoPackageRespondsToIntentAnnotation.intent(),
                         ensureNoPackageRespondsToIntentAnnotation.user());
-                continue;
-            }
-
-            /*if (annotation instanceof RequireResourcesBooleanValue requireResourcesBooleanValue) {
-                requireSystemBooleanResource(requireResourcesBooleanValue);
-                continue;
-            }*/
-
-            if (annotation instanceof EnsureHasDeviceAdmin) {
-                EnsureHasDeviceAdmin ensureHasDeviceAdminAnnotation =
-                        (EnsureHasDeviceAdmin) annotation;
-
-                TestAppQueryBuilder deviceAdminQuery = getDpcQueryFromAnnotation(annotation);
-
-                mDeviceAdminComponent.ensureHasDeviceAdmin(
-                        ensureHasDeviceAdminAnnotation.key(),
-                        ensureHasDeviceAdminAnnotation.onUser(),
-                        ensureHasDeviceAdminAnnotation.isPrimary(),
-                        deviceAdminQuery);
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasNoTestDeviceAdmin) {
-                EnsureHasNoTestDeviceAdmin ensureHasNoTestDeviceAdmin =
-                        (EnsureHasNoTestDeviceAdmin) annotation;
-
-                mDeviceAdminComponent.ensureHasNoTestDeviceAdmin(
-                        ensureHasNoTestDeviceAdmin.onUser());
                 continue;
             }
         }
@@ -1139,10 +1101,10 @@ public final class DeviceState extends HarrierRule {
     }
 
     private void requireRunOnProfile(String userType,
-            OptionalBoolean installInstrumentedAppInParent,
-            boolean hasProfileOwner, boolean dpcIsPrimary, boolean useParentInstance,
-            OptionalBoolean switchedToParentUser, Set<String> affiliationIds,
-            String dpcKey, TestAppQueryBuilder dpcQuery) {
+                                     OptionalBoolean installInstrumentedAppInParent,
+                                     boolean hasProfileOwner, boolean dpcIsPrimary, boolean useParentInstance,
+                                     OptionalBoolean switchedToParentUser, Set<String> affiliationIds,
+                                     String dpcKey, TestAppQueryBuilder dpcQuery) {
         UserReference instrumentedUser = TestApis.users().instrumented();
 
         assumeTrue("This test only runs on users of type " + userType,
@@ -1218,10 +1180,8 @@ public final class DeviceState extends HarrierRule {
     private final EnterpriseComponent mEnterpriseComponent;
     private final DeviceOwnerComponent mDeviceOwnerComponent;
     private final ProfileOwnersComponent mProfileOwnersComponent;
-    private final DeviceAdminComponent mDeviceAdminComponent;
     private final TestAppsComponent mTestAppsComponent;
     private final List<BlockingBroadcastReceiver> mRegisteredBroadcastReceivers = new ArrayList<>();
-
     private Boolean mOriginalBluetoothEnabled;
     private DisplayProperties.Theme mOriginalDisplayTheme;
     private DisplayProperties.ScreenOrientation mOriginalScreenOrientation;
@@ -1954,7 +1914,6 @@ public final class DeviceState extends HarrierRule {
         return mDeviceOwnerComponent.deviceOwner();
     }
 
-
     /**
      * Get the {@link RemoteDpc} for the profile owner on the current user controlled by Harrier.
      *
@@ -1990,26 +1949,6 @@ public final class DeviceState extends HarrierRule {
      */
     public RemoteDpc profileOwner(UserReference onUser) {
         return mProfileOwnersComponent.profileOwner(onUser);
-    }
-
-    /**
-     * Get the [RemoteDeviceAdmin] for the device admin set using
-     * `EnsureHasDeviceAdmin` without specifying a custom key.
-     *
-     * If no Harrier-managed device admin exists, an exception will be thrown.
-     */
-    public RemoteDeviceAdmin deviceAdmin() {
-        return mDeviceAdminComponent.deviceAdmin(EnsureHasDeviceAdmin.DEFAULT_KEY);
-    }
-
-    /**
-     * Get the [RemoteDeviceAdmin] for the device admin with the specified key set on the
-     * user and controlled by Harrier.
-     *
-     * If no Harrier-managed device admin exists for the given key, an exception will be thrown.
-     */
-    public RemoteDeviceAdmin deviceAdmin(String key) {
-        return mDeviceAdminComponent.deviceAdmin(key);
     }
 
     private void requirePackageInstalled(
@@ -2075,8 +2014,7 @@ public final class DeviceState extends HarrierRule {
      * {@link CanSetPolicyTest}
      * {@link CannotSetPolicyTest}
      *
-     * <p>This may be a DPC, a delegate, a device admin, or a normal app with or without given
-     * permissions.
+     * <p>This may be a DPC, a delegate, or a normal app with or without given permissions.
      *
      * <p>If no policy manager is set as "primary" for the device state, then this method will first
      * check for a profile owner in the current user, or else check for a device owner.
@@ -2201,7 +2139,7 @@ public final class DeviceState extends HarrierRule {
     }
 
     private void ensureDefaultContentSuggestionsServiceEnabled(UserReference user,
-            boolean enabled) {
+                                                               boolean enabled) {
         boolean currentValue = TestApis.content().suggestions().defaultServiceEnabled(user);
 
         if (currentValue == enabled) {
@@ -2284,7 +2222,7 @@ public final class DeviceState extends HarrierRule {
 
 
     private AccountReference ensureHasAccount(UserType onUser, String key, String[] features,
-            Set<AccountReference> ignoredAccounts) {
+                                              Set<AccountReference> ignoredAccounts) {
         ensureHasAccountAuthenticator(onUser);
 
         Optional<AccountReference> account =
@@ -2635,7 +2573,7 @@ public final class DeviceState extends HarrierRule {
             String message =
                     "Infra cannot remove user restriction " + restriction + (shouldRunAsRoot ? ""
                             : ". If this test requires capabilities only available on devices "
-                                    + "where adb has root, add @RequireAdbRoot to the test.");
+                            + "where adb has root, add @RequireAdbRoot to the test.");
             throw new AssumptionViolatedException(message);
         }
 
@@ -2655,6 +2593,7 @@ public final class DeviceState extends HarrierRule {
         checkFailOrSkip("Requires " + serviceClass + " to be available",
                 TestApis.services().serviceIsAvailable(serviceClass), failureMode);
     }
+
 
     private void ensurePolicyOperationUnsafe(
             CommonDevicePolicy.DevicePolicyOperation operation,
@@ -2687,12 +2626,9 @@ public final class DeviceState extends HarrierRule {
         Display.INSTANCE.setScreenOrientation(orientation);
     }
 
-    private void requirePackageRespondsToIntent(
-            com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user,
-            FailureMode failureMode) {
+    private void requirePackageRespondsToIntent(com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user, FailureMode failureMode) {
         Intent intent = new Intent(/* action= */ paramIntent.action());
-        boolean packageResponded = TestApis.packages().queryIntentActivities(user,
-                intent, /* flags= */0).size() > 0;
+        boolean packageResponded = TestApis.packages().queryIntentActivities(user, intent, /* flags= */0).size() > 0;
 
         if(packageResponded) {
             checkFailOrSkip(
@@ -2705,12 +2641,9 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void requireNoPackageRespondsToIntent(
-            com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user,
-            FailureMode failureMode) {
+    private void requireNoPackageRespondsToIntent(com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user, FailureMode failureMode) {
         Intent intent = new Intent(/* action= */ paramIntent.action());
-        boolean noPackageResponded = TestApis.packages().queryIntentActivities(user,
-                intent, /* flags= */0).isEmpty();
+        boolean noPackageResponded = TestApis.packages().queryIntentActivities(user, intent, /* flags= */0).isEmpty();
 
         if(noPackageResponded) {
             checkFailOrSkip(
@@ -2723,20 +2656,16 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void ensurePackageRespondsToIntent(
-            com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user,
-            FailureMode failureMode) {
+    private void ensurePackageRespondsToIntent(com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user, FailureMode failureMode) {
         Intent intent = new Intent(/* action= */ paramIntent.action());
-        boolean packageResponded = TestApis.packages().queryIntentActivities(user,
-                intent, /* flags= */0).size() > 0;
+        boolean packageResponded = TestApis.packages().queryIntentActivities(user, intent, /* flags= */0).size() > 0;
 
-        if (!packageResponded) {
+        if(!packageResponded) {
             try {
                 mTestAppsComponent.ensureTestAppInstalled(
                         /* testApp= */ testApps().query().whereActivities().contains(
                                         activity().where().intentFilters().contains(
-                                                intentFilter().where().actions().contains(
-                                                        paramIntent.action())))
+                                                intentFilter().where().actions().contains(paramIntent.action())))
                                 .get()
                         , user);
             } catch (NotFoundException notFoundException) {
@@ -2750,11 +2679,9 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void ensureNoPackageRespondsToIntent(
-            com.android.bedstead.harrier.annotations.Intent paramIntent, UserType user) {
+    private void ensureNoPackageRespondsToIntent(com.android.bedstead.harrier.annotations.Intent paramIntent, UserType user) {
         Intent intent = new Intent(/* action= */ paramIntent.action());
-        List<ResolveInfoWrapper> resolveInfoWrappers = TestApis.packages().queryIntentActivities(
-                resolveUserTypeToUser(user), intent, /* flags= */0);
+        List<ResolveInfoWrapper> resolveInfoWrappers = TestApis.packages().queryIntentActivities(resolveUserTypeToUser(user), intent, /* flags= */0);
 
         for (ResolveInfoWrapper resolveInfoWrapper : resolveInfoWrappers) {
             String packageName = resolveInfoWrapper.activityInfo().packageName;

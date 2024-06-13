@@ -23,11 +23,10 @@ import com.android.queryable.info.ReceiverInfo;
 import com.android.queryable.info.ServiceInfo;
 import com.android.queryable.queries.BooleanQuery;
 import com.android.queryable.queries.BooleanQueryHelper;
+import com.android.queryable.queries.BundleQuery;
+import com.android.queryable.queries.BundleQueryHelper;
 import com.android.queryable.queries.IntegerQuery;
 import com.android.queryable.queries.IntegerQueryHelper;
-import com.android.queryable.queries.IntegerSetQueryHelper;
-import com.android.queryable.queries.MetadataQuery;
-import com.android.queryable.queries.MetadataQueryHelper;
 import com.android.queryable.queries.SetQuery;
 import com.android.queryable.queries.SetQueryHelper;
 import com.android.queryable.queries.StringQuery;
@@ -41,7 +40,7 @@ public final class TestAppQueryBuilder implements Queryable {
 
     StringQueryHelper<TestAppQueryBuilder> mLabel = new StringQueryHelper<>(this);
     StringQueryHelper<TestAppQueryBuilder> mPackageName = new StringQueryHelper<>(this);
-    MetadataQueryHelper<TestAppQueryBuilder> mMetadata = new MetadataQueryHelper<>(this);
+    BundleQueryHelper<TestAppQueryBuilder> mMetadata = new BundleQueryHelper<>(this);
     IntegerQueryHelper<TestAppQueryBuilder> mMinSdkVersion = new IntegerQueryHelper<>(this);
     IntegerQueryHelper<TestAppQueryBuilder> mMaxSdkVersion = new IntegerQueryHelper<>(this);
     IntegerQueryHelper<TestAppQueryBuilder> mTargetSdkVersion = new IntegerQueryHelper<>(this);
@@ -58,9 +57,7 @@ public final class TestAppQueryBuilder implements Queryable {
     BooleanQueryHelper<TestAppQueryBuilder> mIsDeviceAdmin = new BooleanQueryHelper<>(this);
     StringQueryHelper<TestAppQueryBuilder> mSharedUserId = new StringQueryHelper<>(this);
     SetQueryHelper<TestAppQueryBuilder, ReceiverInfo> mReceivers = new SetQueryHelper<>(this);
-    IntegerSetQueryHelper<TestAppQueryBuilder> mPolicies = new IntegerSetQueryHelper<>(this);
-    BooleanQueryHelper<TestAppQueryBuilder> mIsHeadlessDOSingleUser =
-            new BooleanQueryHelper<>(this);
+    BooleanQueryHelper<TestAppQueryBuilder> mIsHeadlessDOSingleUser = new BooleanQueryHelper<>(this);
     private boolean mAllowInternalBedsteadTestApps = false;
 
     /**
@@ -97,7 +94,6 @@ public final class TestAppQueryBuilder implements Queryable {
         queryBuilder = queryBuilder.whereMaxSdkVersion().matchesAnnotation(query.maxSdkVersion());
         queryBuilder = queryBuilder.wherePackageName().matchesAnnotation(query.packageName());
         queryBuilder = queryBuilder.whereIsDeviceAdmin().matchesAnnotation(query.isDeviceAdmin());
-        queryBuilder = queryBuilder.wherePolicies().matchesAnnotation(query.usesPolicies());
         queryBuilder = queryBuilder.whereIsHeadlessDOSingleUser().matchesAnnotation(
                 query.isHeadlessDOSingleUser());
         return queryBuilder;
@@ -124,7 +120,7 @@ public final class TestAppQueryBuilder implements Queryable {
     /**
      * Query for a {@link TestApp} by metadata.
      */
-    public MetadataQuery<TestAppQueryBuilder> whereMetadata() {
+    public BundleQuery<TestAppQueryBuilder> whereMetadata() {
         return mMetadata;
     }
 
@@ -220,13 +216,6 @@ public final class TestAppQueryBuilder implements Queryable {
     }
 
     /**
-     * Query for a {@link TestApp} by its policies.
-     */
-    public IntegerSetQueryHelper<TestAppQueryBuilder> wherePolicies() {
-        return mPolicies;
-    }
-
-    /**
      * Allow the query to return internal bedstead testapps.
      */
     public TestAppQueryBuilder allowInternalBedsteadTestApps() {
@@ -237,7 +226,7 @@ public final class TestAppQueryBuilder implements Queryable {
     /**
      * Get the {@link TestApp} matching the query.
      *
-     * @throws NotFoundException if there is no matching {@link TestApp}.
+     * @throws NotFoundException if there is no matching @{link TestApp}.
      */
     public TestApp get() {
         // TODO(scottjonathan): Provide instructions on adding the TestApp if the query fails
@@ -287,7 +276,6 @@ public final class TestAppQueryBuilder implements Queryable {
                 && Queryable.isEmptyQuery(mCrossProfile)
                 && Queryable.isEmptyQuery(mIsDeviceAdmin)
                 && Queryable.isEmptyQuery(mSharedUserId)
-                && Queryable.isEmptyQuery(mPolicies)
                 && Queryable.isEmptyQuery(mIsHeadlessDOSingleUser);
     }
 
@@ -300,7 +288,7 @@ public final class TestAppQueryBuilder implements Queryable {
             return false;
         }
 
-        if (!MetadataQueryHelper.matches(mMetadata, details.mMetadata)) {
+        if (!BundleQueryHelper.matches(mMetadata, details.mMetadata)) {
             return false;
         }
 
@@ -347,10 +335,6 @@ public final class TestAppQueryBuilder implements Queryable {
             return false;
         }
 
-        if (!IntegerSetQueryHelper.matches(mPolicies, details.mPolicies)) {
-            return false;
-        }
-
         // TODO(b/198419895): Actually query for the correct receiver + metadata
         boolean isDeviceAdmin = details.mApp.getPackageName().contains(
                 "DeviceAdminTestApp");
@@ -359,10 +343,8 @@ public final class TestAppQueryBuilder implements Queryable {
         }
 
         // TODO(b/320666412): Enable querying test apps using xml content
-        boolean isHeadlessDOSingleUser = details.mMetadata.stream().anyMatch(m ->
-                m.key() != null && m.value() != null && m.value().asString() != null
-                        && m.key().equals("headless_do_single_user")
-                        && m.value().asString().equals("true"));
+        boolean isHeadlessDOSingleUser = details.mMetadata.getString("headless_do_single_user",
+                "false").equals("true");
         if (!BooleanQueryHelper.matches(mIsHeadlessDOSingleUser, isHeadlessDOSingleUser)) {
             return false;
         }
@@ -377,10 +359,9 @@ public final class TestAppQueryBuilder implements Queryable {
             }
         }
 
-        if (!mAllowInternalBedsteadTestApps && details.mMetadata.stream().anyMatch(m ->
-                m.key() != null && m.value() != null && m.value().asString() != null
-                        && m.key().equals("testapp-package-query-only")
-                        && m.value().asString().equals("true"))) {
+        if (!mAllowInternalBedsteadTestApps
+                && details.mMetadata.getString("testapp-package-query-only", "false")
+                .equals("true")) {
             if (!mPackageName.isQueryingForExactMatch()) {
                 return false;
             }
@@ -406,7 +387,6 @@ public final class TestAppQueryBuilder implements Queryable {
                 mTestOnly.describeQuery("testOnly"),
                 mCrossProfile.describeQuery("crossProfile"),
                 mIsDeviceAdmin.describeQuery("isDeviceAdmin"),
-                mPolicies.describeQuery("mPolicies"),
                 mIsHeadlessDOSingleUser.describeQuery("isHeadlessDOSingleUser")
         ) + "}";
     }
@@ -422,7 +402,6 @@ public final class TestAppQueryBuilder implements Queryable {
                 mMinSdkVersion.toAnnotation(),
                 mMaxSdkVersion.toAnnotation(),
                 mIsDeviceAdmin.toAnnotation(),
-                mPolicies.toAnnotation(),
                 mIsHeadlessDOSingleUser.toAnnotation());
     }
 
@@ -433,10 +412,9 @@ public final class TestAppQueryBuilder implements Queryable {
             com.android.queryable.annotations.IntegerQuery minSdkVersion,
             com.android.queryable.annotations.IntegerQuery maxSdkVersion,
             com.android.queryable.annotations.BooleanQuery isDeviceAdmin,
-            com.android.queryable.annotations.IntegerSetQuery usesPolicies,
             com.android.queryable.annotations.BooleanQuery isHeadlessDOSingleUser) {
         return new AutoAnnotation_TestAppQueryBuilder_query(
                 packageName, targetSdkVersion, minSdkVersion, maxSdkVersion, isDeviceAdmin,
-                usesPolicies, isHeadlessDOSingleUser);
+                isHeadlessDOSingleUser);
     }
 }
