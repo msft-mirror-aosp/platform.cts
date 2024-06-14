@@ -33,7 +33,7 @@ _CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
 _FLOAT_TOL = 0.01
 _JPEG = '.jpg'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_STEPS = 100  # TODO: b/332322632 - improve test runtime
+_NUM_STEPS = 100
 
 
 def save_image_as_jpg(img_name, img_bgr, quality=85):
@@ -176,8 +176,9 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                       test_data[test_data_index])
         test_data_index = test_data_index + 1
 
+      plot_name_stem = f'{os.path.join(log_path, _NAME)}'
       if not zoom_capture_utils.verify_preview_zoom_results(
-          test_data, size, z_max, z_min, z_step_size):
+          test_data, size, z_max, z_min, z_step_size, plot_name_stem):
         raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')
 
 if __name__ == '__main__':
