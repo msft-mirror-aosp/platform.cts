@@ -62,7 +62,10 @@ android_library {
     ],
     manifest: "src/library/main/AndroidManifest.xml",
     min_sdk_version: "29",
-    assets: [":TestApp_Apps"],
+    assets: [
+        ":TestApp_Apps",
+        ":TestApp_Metadata_Resources"
+    ],
     plugins: [
         "ConnectedAppsSDK_Processor",
         "TestApp_Processor",
@@ -145,7 +148,6 @@ java_genrule {
         ":RemoteDeviceAdminUsesDisableKeyguardFeaturesPolicyTestApp",
         ":RemoteDeviceAdminUsesForceLockPolicyTestApp",
         ":RemoteDeviceAdminUsesDisableCameraPolicyTestApp",
-        ":TestApp_Resources",
     ],
     out: [
         "testapps/index.txt",
@@ -217,15 +219,33 @@ java_genrule {
         " && cp $(location :RemoteDeviceAdminUsesResetPasswordPolicyTestApp) $(genDir)/testapps" +
         " && cp $(location :RemoteDeviceAdminUsesDisableKeyguardFeaturesPolicyTestApp) $(genDir)/testapps" +
         " && cp $(location :RemoteDeviceAdminUsesForceLockPolicyTestApp) $(genDir)/testapps" +
-        " && cp $(locations :TestApp_Resources) $(genDir)/testapps" +
         " && $(location index_testapps) --directory $(genDir)/testapps --aapt2 $(location aapt2)"
 }
 
-filegroup {
-    name: "TestApp_Resources",
+java_genrule {
+    name: "TestApp_Metadata_Resources",
     srcs: [
-        "src/testapps/main/res/**/xml/*"
-    ]
+        "src/testapps/main/res/**/xml/*",
+    ],
+    out: [
+        "resources/device_admin.xml",
+        "resources/device_admin_uses_disable_camera_policy.xml",
+        "resources/device_admin_uses_disable_keyguard_features_policy.xml",
+        "resources/device_admin_uses_encrypted_storage_policy.xml",
+        "resources/device_admin_uses_expire_password_policy.xml",
+        "resources/device_admin_uses_force_lock_policy.xml",
+        "resources/device_admin_uses_limit_password_policy.xml",
+        "resources/device_admin_uses_reset_password_policy.xml",
+        "resources/device_admin_uses_sets_global_proxy_policy.xml",
+        "resources/device_admin_uses_watch_login_policy.xml",
+        "resources/device_admin_uses_wipe_data_policy.xml",
+        "resources/headless_single_user_device_admin.xml",
+        "resources/no_headless_device_owner_device_admin.xml",
+        "resources/test_xml.xml",
+    ],
+    cmd:
+        "mkdir -p $(genDir)/resources" +
+        " && cp $(in) $(genDir)/resources"
 }
 
 android_test_helper_app {
@@ -244,6 +264,7 @@ android_test_helper_app {
     static_libs: [
         "TestApp_TestApps",
     ],
+    resource_dirs: ["src/testapps/main/res/test_resources"],
     defaults: ["mts-target-sdk-version-current"],
     manifest: "manifests/NotEmptyTestAppManifest.xml",
     additional_manifests: ["CommonManifest.xml"],

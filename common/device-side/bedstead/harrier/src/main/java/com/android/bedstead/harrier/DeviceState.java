@@ -693,7 +693,7 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if(annotation instanceof RequirePackageRespondsToIntent requirePackageRespondsToIntentAnnotation) {
+            if (annotation instanceof RequirePackageRespondsToIntent requirePackageRespondsToIntentAnnotation) {
                 requirePackageRespondsToIntent(
                         requirePackageRespondsToIntentAnnotation.intent(),
                         resolveUserTypeToUser(requirePackageRespondsToIntentAnnotation.user()),
@@ -701,7 +701,7 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if(annotation instanceof RequireNoPackageRespondsToIntent requireNoPackageRespondsToIntentAnnotation) {
+            if (annotation instanceof RequireNoPackageRespondsToIntent requireNoPackageRespondsToIntentAnnotation) {
                 requireNoPackageRespondsToIntent(
                         requireNoPackageRespondsToIntentAnnotation.intent(),
                         resolveUserTypeToUser(requireNoPackageRespondsToIntentAnnotation.user()),
@@ -709,7 +709,7 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if(annotation instanceof EnsurePackageRespondsToIntent ensurePackageRespondsToIntentAnnotation) {
+            if (annotation instanceof EnsurePackageRespondsToIntent ensurePackageRespondsToIntentAnnotation) {
                 ensurePackageRespondsToIntent(
                         ensurePackageRespondsToIntentAnnotation.intent(),
                         resolveUserTypeToUser(ensurePackageRespondsToIntentAnnotation.user()),
@@ -1544,6 +1544,7 @@ public final class DeviceState extends HarrierRule {
         return mDeviceOwnerComponent.deviceOwner();
     }
 
+
     /**
      * Get the {@link RemoteDpc} for the profile owner on the current user controlled by Harrier.
      *
@@ -1779,7 +1780,7 @@ public final class DeviceState extends HarrierRule {
     }
 
     private void ensureDefaultContentSuggestionsServiceEnabled(UserReference user,
-                                                               boolean enabled) {
+            boolean enabled) {
         boolean currentValue = TestApis.content().suggestions().defaultServiceEnabled(user);
 
         if (currentValue == enabled) {
@@ -1852,7 +1853,7 @@ public final class DeviceState extends HarrierRule {
 
 
     private AccountReference ensureHasAccount(UserType onUser, String key, String[] features,
-                                              Set<AccountReference> ignoredAccounts) {
+            Set<AccountReference> ignoredAccounts) {
         ensureHasAccountAuthenticator(onUser);
 
         Optional<AccountReference> account =
@@ -1978,7 +1979,6 @@ public final class DeviceState extends HarrierRule {
                 TestApis.services().serviceIsAvailable(serviceClass), failureMode);
     }
 
-
     private void ensurePolicyOperationUnsafe(
             CommonDevicePolicy.DevicePolicyOperation operation,
             CommonDevicePolicy.OperationSafetyReason reason) {
@@ -2010,9 +2010,12 @@ public final class DeviceState extends HarrierRule {
         Display.INSTANCE.setScreenOrientation(orientation);
     }
 
-    private void requirePackageRespondsToIntent(com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user, FailureMode failureMode) {
+    private void requirePackageRespondsToIntent(
+            com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user,
+            FailureMode failureMode) {
         Intent intent = new Intent(/* action= */ paramIntent.action());
-        boolean packageResponded = TestApis.packages().queryIntentActivities(user, intent, /* flags= */0).size() > 0;
+        boolean packageResponded = TestApis.packages().queryIntentActivities(user,
+                intent, /* flags= */0).size() > 0;
 
         if(packageResponded) {
             checkFailOrSkip(
@@ -2025,9 +2028,12 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void requireNoPackageRespondsToIntent(com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user, FailureMode failureMode) {
+    private void requireNoPackageRespondsToIntent(
+            com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user,
+            FailureMode failureMode) {
         Intent intent = new Intent(/* action= */ paramIntent.action());
-        boolean noPackageResponded = TestApis.packages().queryIntentActivities(user, intent, /* flags= */0).isEmpty();
+        boolean noPackageResponded = TestApis.packages().queryIntentActivities(user,
+                intent, /* flags= */0).isEmpty();
 
         if(noPackageResponded) {
             checkFailOrSkip(
@@ -2040,16 +2046,20 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void ensurePackageRespondsToIntent(com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user, FailureMode failureMode) {
+    private void ensurePackageRespondsToIntent(
+            com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user,
+            FailureMode failureMode) {
         Intent intent = new Intent(/* action= */ paramIntent.action());
-        boolean packageResponded = TestApis.packages().queryIntentActivities(user, intent, /* flags= */0).size() > 0;
+        boolean packageResponded = TestApis.packages().queryIntentActivities(user,
+                intent, /* flags= */0).size() > 0;
 
-        if(!packageResponded) {
+        if (!packageResponded) {
             try {
                 mTestAppsComponent.ensureTestAppInstalled(
                         /* testApp= */ testApps().query().whereActivities().contains(
                                         activity().where().intentFilters().contains(
-                                                intentFilter().where().actions().contains(paramIntent.action())))
+                                                intentFilter().where().actions().contains(
+                                                        paramIntent.action())))
                                 .get()
                         , user);
             } catch (NotFoundException notFoundException) {
@@ -2063,9 +2073,11 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void ensureNoPackageRespondsToIntent(com.android.bedstead.harrier.annotations.Intent paramIntent, UserType user) {
+    private void ensureNoPackageRespondsToIntent(
+            com.android.bedstead.harrier.annotations.Intent paramIntent, UserType user) {
         Intent intent = new Intent(/* action= */ paramIntent.action());
-        List<ResolveInfoWrapper> resolveInfoWrappers = TestApis.packages().queryIntentActivities(resolveUserTypeToUser(user), intent, /* flags= */0);
+        List<ResolveInfoWrapper> resolveInfoWrappers = TestApis.packages().queryIntentActivities(
+                resolveUserTypeToUser(user), intent, /* flags= */0);
 
         for (ResolveInfoWrapper resolveInfoWrapper : resolveInfoWrappers) {
             String packageName = resolveInfoWrapper.activityInfo().packageName;

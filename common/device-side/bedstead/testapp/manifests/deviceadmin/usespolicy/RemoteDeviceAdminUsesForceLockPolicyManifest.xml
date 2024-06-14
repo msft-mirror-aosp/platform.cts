@@ -27,7 +27,7 @@
             android:permission="android.permission.BIND_DEVICE_ADMIN"
             android:exported="true">
             <meta-data android:name="android.app.device_admin"
-                android:value="device_admin_force_lock"
+                android:value="device_admin_uses_force_lock_policy"
                 android:resource="@xml/device_admin_uses_force_lock_policy"/>
             <intent-filter>
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED"/>

@@ -90,7 +90,7 @@ class DeviceAdminComponent(locator: BedsteadServiceLocator) : DeviceStateCompone
         val currentRemoteDeviceAdmin =
             RemoteDeviceAdmin.fetchRemoteDeviceAdmin(deviceAdminQueryMutable)
         val deviceAdmin: DevicePolicyController
-        if (currentRemoteDeviceAdmin == null) {
+        if (currentRemoteDeviceAdmin == null || !mAddedDeviceAdmins.containsKey(key)) {
             val user: UserReference = deviceState.resolveUserTypeToUser(userType)
             deviceAdmin = RemoteDeviceAdmin.setAsDeviceAdmin(user, deviceAdminQueryMutable)
                     .devicePolicyController()

@@ -21,6 +21,7 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 
 import com.android.queryable.info.ActivityInfo;
+import com.android.queryable.info.MetadataInfo;
 import com.android.queryable.info.ReceiverInfo;
 import com.android.queryable.info.ServiceInfo;
 
@@ -30,7 +31,8 @@ import java.util.Set;
 /** Details about a queryable test app. */
 class TestAppDetails {
     TestappProtos.AndroidApp mApp;
-    final Bundle mMetadata = new Bundle();
+    int mResourceIdentifier;
+    final Set<MetadataInfo> mMetadata = new HashSet<>();
     final Set<String> mPermissions = new HashSet<>();
     final Set<ActivityInfo> mActivities = new HashSet<>();
     final Set<ActivityInfo> mActivityAliases = new HashSet<>();
@@ -76,6 +78,7 @@ class TestAppDetails {
                 + ", mActivityAliases=" + mActivityAliases
                 + ", mServices=" + mServices
                 + ", mReceivers=" + mReceivers
+                + ", mPolicies=" + mPolicies
                 + '}';
     }
 }

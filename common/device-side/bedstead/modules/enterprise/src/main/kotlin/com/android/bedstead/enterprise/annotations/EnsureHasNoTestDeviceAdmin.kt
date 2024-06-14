@@ -18,6 +18,7 @@ package com.android.bedstead.enterprise.annotations
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
 /**
  * Mark that a test requires that there is no bedstead-controlled admin on the device.
@@ -31,9 +32,11 @@ import com.android.bedstead.harrier.annotations.RequireNotInstantApp
  * Note that this currently does not control the existence of non-bedstead-controlled admins
  * but ideally it will in the future.
  */
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER, AnnotationTarget.PROPERTY_SETTER, AnnotationTarget.ANNOTATION_CLASS, AnnotationTarget.CLASS)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER,
+        AnnotationTarget.PROPERTY_SETTER, AnnotationTarget.ANNOTATION_CLASS, AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME) // TODO(b/206441366): Add instant app support
 @RequireNotInstantApp(reason = "Instant Apps cannot run Enterprise Tests")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 annotation class EnsureHasNoTestDeviceAdmin(
         /** Which user type the device admin should not be installed on.  */
         val onUser: UserType = UserType.INSTRUMENTED_USER,

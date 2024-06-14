@@ -68,7 +68,13 @@ public final class TestAppProviderTest {
 
     private static final String METADATA_KEY = "test-metadata-key";
     private static final String METADATA_VALUE = "test-metadata-value";
-
+    private static final String METADATA_WITH_RESOURCE_KEY = "test-metadata-with-res-key";
+    private static final String XML_PATH = "/test-tag-1";
+    private static final String XML_VALUE = "test-value-1";
+    private static final String XML_PATH_TWO = "/test-tag-2";
+    private static final String XML_PATH_THREE = "/test-tag-3/foo";
+    private static final String XML_VALUE_THREE = "test-value-3";
+    private static final String XML_PATH_FOUR = "/test-tag-4/foo";
     private static final String STRING_VALUE = "String";
     private static final String DIFFERENT_STRING_VALUE = "Different String";
 
@@ -145,13 +151,13 @@ public final class TestAppProviderTest {
             return this;
         }
 
-        public QueryBuilder isHeadlessDOSingleUser(BooleanQuery isHeadlessDOSingleUser) {
-            mIsHeadlessDOSingleUser = isHeadlessDOSingleUser;
+        public QueryBuilder usesPolicies(IntegerSetQuery usesPolicies) {
+            mUsesPolicies = usesPolicies;
             return this;
         }
 
-        public QueryBuilder usesPolicies(IntegerSetQuery usesPolicies) {
-            mUsesPolicies = usesPolicies;
+        public QueryBuilder isHeadlessDOSingleUser(BooleanQuery isHeadlessDOSingleUser) {
+            mIsHeadlessDOSingleUser = isHeadlessDOSingleUser;
             return this;
         }
 
@@ -359,7 +365,8 @@ public final class TestAppProviderTest {
     public void query_onlyReturnsTestAppOnce() {
         mTestAppProvider.query().wherePackageName().isEqualTo(EXISTING_PACKAGENAME).get();
 
-        TestAppQueryBuilder query = mTestAppProvider.query().wherePackageName().isEqualTo(EXISTING_PACKAGENAME);
+        TestAppQueryBuilder query = mTestAppProvider.query().wherePackageName().isEqualTo(
+                EXISTING_PACKAGENAME);
 
         assertThrows(NotFoundException.class, query::get);
     }
@@ -488,7 +495,49 @@ public final class TestAppProviderTest {
                 .whereMetadata().key(METADATA_KEY).stringValue().isEqualTo(METADATA_VALUE)
                 .get();
 
-        assertThat(testApp.metadata().get(METADATA_KEY)).isEqualTo(METADATA_VALUE);
+        assertThat(testApp.metadata().stream().anyMatch(m -> m.key().equals(METADATA_KEY)
+                && m.value().asString().equals(METADATA_VALUE))).isTrue();
+    }
+
+    @Test
+    public void query_matchStringInXml_returnsMatching() {
+        TestApp testApp = mTestAppProvider.query()
+                .whereMetadata().key(METADATA_WITH_RESOURCE_KEY)
+                .resourceValue().asXml().path(XML_PATH).exists()
+                .whereMetadata().key(METADATA_WITH_RESOURCE_KEY)
+                .resourceValue().asXml().path(XML_PATH).asText().isEqualTo(XML_VALUE)
+                .get();
+
+        assertThat(testApp.packageName())
+                .isEqualTo("com.android.bedstead.testapp.NotEmptyTestApp");
+    }
+
+    @Test
+    public void query_searchExistingTag_returnsMatching() {
+        TestApp testApp = mTestAppProvider.query()
+                .whereMetadata().key(METADATA_WITH_RESOURCE_KEY)
+                .resourceValue().asXml().path(XML_PATH).exists()
+                .get();
+
+        assertThat(testApp.packageName())
+                .isEqualTo("com.android.bedstead.testapp.NotEmptyTestApp");
+    }
+
+    @Test
+    public void query_matchMultiplePathsInXml_returnsMatching() {
+        TestApp testApp = mTestAppProvider.query()
+                .whereMetadata().key(METADATA_WITH_RESOURCE_KEY)
+                .resourceValue().asXml().path(XML_PATH).asText().isEqualTo(XML_VALUE)
+                .whereMetadata().key(METADATA_WITH_RESOURCE_KEY)
+                .resourceValue().asXml().path(XML_PATH_TWO).exists()
+                .whereMetadata().key(METADATA_WITH_RESOURCE_KEY)
+                .resourceValue().asXml().path(XML_PATH_THREE).asText().isEqualTo(XML_VALUE_THREE)
+                .whereMetadata().key(METADATA_WITH_RESOURCE_KEY)
+                .resourceValue().asXml().path(XML_PATH_FOUR).exists()
+                .get();
+
+        assertThat(testApp.packageName())
+                .isEqualTo("com.android.bedstead.testapp.NotEmptyTestApp");
     }
 
     @Test
@@ -496,7 +545,7 @@ public final class TestAppProviderTest {
         TestApp testApp = mTestAppProvider.query()
                 .whereActivities().contains(
                         activity().where().activityClass()
-                            .className().isEqualTo(KNOWN_EXISTING_TESTAPP_ACTIVITY_CLASSNAME)
+                                .className().isEqualTo(KNOWN_EXISTING_TESTAPP_ACTIVITY_CLASSNAME)
                 )
                 .get();
 
@@ -550,8 +599,11 @@ public final class TestAppProviderTest {
                 .whereIsHeadlessDOSingleUser().isTrue()
                 .get();
 
-        assertThat(testApp.metadata().getString("headless_do_single_user"))
-                .isEqualTo("true");
+        assertThat(testApp.metadata().stream().anyMatch(m ->
+                        m.key() != null && m.value() != null && m.value().asString() != null
+                                && m.key().equals("headless_do_single_user")
+                                && m.value().asString().equals("true")))
+                .isTrue();
     }
 
     @Test
@@ -561,7 +613,11 @@ public final class TestAppProviderTest {
                 .whereIsHeadlessDOSingleUser().isFalse()
                 .get();
 
-        assertThat(testApp.metadata().getString("headless_do_single_user")).isNull();
+        assertThat(testApp.metadata().stream().noneMatch(m ->
+                m.key() != null && m.value() != null && m.value().asString() != null
+                        && m.key().equals("headless_do_single_user")
+                        && m.value().asString().equals("true")))
+                .isTrue();
     }
 
     @Test

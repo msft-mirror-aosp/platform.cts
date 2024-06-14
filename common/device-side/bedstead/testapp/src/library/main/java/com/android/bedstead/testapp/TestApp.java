@@ -19,7 +19,6 @@ package com.android.bedstead.testapp;
 import static com.android.bedstead.nene.utils.FileUtils.readInputStreamFully;
 
 import android.content.Context;
-import android.os.Bundle;
 import android.os.UserHandle;
 
 import androidx.annotation.Nullable;
@@ -31,6 +30,7 @@ import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.Users;
 import com.android.bedstead.testapp.processor.annotations.TestAppSender;
 import com.android.queryable.collections.QueryableActivityInfoHashSet;
+import com.android.queryable.info.MetadataInfo;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
@@ -238,7 +238,7 @@ public final class TestApp {
      *
      * <p>Note that currently all values are of type String.
      */
-    public Bundle metadata() {
+    public Set<MetadataInfo> metadata() {
         return mDetails.mMetadata;
     }
 
