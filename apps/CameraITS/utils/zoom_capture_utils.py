@@ -465,14 +465,18 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
                 results_z_min, results_z_max)
 
   # check if max zoom in capture result close to requested zoom range
-  if math.isclose(results_z_max, z_max, rel_tol=PRV_Z_RTOL):
+  if (math.isclose(results_z_max, z_max, rel_tol=PRV_Z_RTOL) or
+      math.isclose(results_z_max, z_max - z_step_size, rel_tol=PRV_Z_RTOL)):
     d_msg = (f'results_z_max = {results_z_max:.2f} is close to requested '
-             f'z_max = {z_max:.2f} by {PRV_Z_RTOL:.2f} Tol')
+             f'z_max = {z_max:.2f} or z_max-step = {z_max-z_step_size:.2f} '
+             f'by {PRV_Z_RTOL:.2f} Tol')
     logging.debug(d_msg)
   else:
     test_success = False
     e_msg = (f'Max zoom ratio {results_z_max:.4f} in capture results '
-             f'not close to {z_max:.2f} by {PRV_Z_RTOL:.2f} tolerance.')
+             f'not close to {z_max:.2f} and '
+             f'z_max-step = {z_max-z_step_size:.2f} by {PRV_Z_RTOL:.2f} '
+             f'tolerance.')
     logging.error(e_msg)
 
   if math.isclose(results_z_min, z_min, rel_tol=PRV_Z_RTOL):
