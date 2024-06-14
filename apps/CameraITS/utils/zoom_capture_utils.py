@@ -488,7 +488,7 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
   return test_success and verify_zoom_data(test_data, size, plot_name_stem)
 
 
-def get_zoom_params(zoom_range, steps):
+def get_preview_zoom_params(zoom_range, steps):
   """Returns zoom min, max, step_size based on zoom range and steps.
 
   Determine zoom min, max, step_size based on zoom range, steps.
@@ -506,7 +506,8 @@ def get_zoom_params(zoom_range, steps):
   # Determine test zoom range
   logging.debug('z_range = %s', str(zoom_range))
   zoom_min, zoom_max = float(zoom_range[0]), float(zoom_range[1])
-  zoom_max = min(zoom_max, ZOOM_MAX_THRESH)
+  zoom_max = min(zoom_max, ZOOM_MAX_THRESH * zoom_min)
+
   zoom_step_size = (zoom_max-zoom_min) / (steps-1)
   logging.debug('zoomRatioRange = %s z_min = %f z_max = %f z_stepSize = %f',
                 str(zoom_range), zoom_min, zoom_max, zoom_step_size)
