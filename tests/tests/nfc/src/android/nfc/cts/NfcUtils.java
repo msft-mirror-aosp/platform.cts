@@ -43,9 +43,13 @@ public final class NfcUtils {
             BroadcastReceiver nfcChangeListener = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
+                    int s = intent.getIntExtra(NfcAdapter.EXTRA_ADAPTER_STATE,
+                            NfcAdapter.STATE_OFF);
+                    if (s == NfcAdapter.STATE_TURNING_ON) {
+                        return;
+                    }
                     context.unregisterReceiver(this);
-                    state.set(intent.getIntExtra(NfcAdapter.EXTRA_ADAPTER_STATE,
-                            NfcAdapter.STATE_OFF));
+                    state.set(s);
                     countDownLatch.countDown();
                 }
             };
@@ -71,4 +75,47 @@ public final class NfcUtils {
                     .getUiAutomation().dropShellPermissionIdentity();
         }
     }
+
+    static boolean disableNfc(NfcAdapter nfcAdapter, Context context) {
+        try {
+            if (!nfcAdapter.isEnabled()) {
+                return true;
+            }
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            AtomicInteger state = new AtomicInteger(NfcAdapter.STATE_ON);
+            BroadcastReceiver nfcChangeListener = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    int s =  intent.getIntExtra(NfcAdapter.EXTRA_ADAPTER_STATE,
+                            NfcAdapter.STATE_ON);
+                    if (s == NfcAdapter.STATE_TURNING_OFF) {
+                        return;
+                    }
+                    context.unregisterReceiver(this);
+                    state.set(s);
+                    countDownLatch.countDown();
+                }
+            };
+            HandlerThread handlerThread = new HandlerThread("nfc_cts_listener");
+            handlerThread.start();
+            Handler handler = new Handler(handlerThread.getLooper());
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED);
+            context.registerReceiver(nfcChangeListener, intentFilter, null,
+                    handler);
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().adoptShellPermissionIdentity(WRITE_SECURE_SETTINGS);
+            if (!nfcAdapter.disable()) {
+                return false;
+            }
+            countDownLatch.await(2000, TimeUnit.MILLISECONDS);
+            return state.get() == NfcAdapter.STATE_OFF;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
 }
