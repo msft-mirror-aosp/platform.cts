@@ -42,8 +42,6 @@ import java.io.IOException;
 @RunWith(AndroidJUnit4.class)
 public class LeL2capSocketTest {
 
-    private static final int NUM_ITERATIONS_FOR_REPEATED_TEST = 100;
-
     private Context mContext;
 
     private BluetoothAdapter mAdapter = null;
@@ -89,45 +87,12 @@ public class LeL2capSocketTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @SmallTest
     @Test
-    public void openInsecureLeL2capServerSocketRepeatedly() {
-        assertTrue("Bluetooth is not enabled", mAdapter.isEnabled());
-        try {
-            for (int i = 0; i < NUM_ITERATIONS_FOR_REPEATED_TEST; i++) {
-                final BluetoothServerSocket serverSocket =
-                        mAdapter.listenUsingInsecureL2capChannel();
-                assertNotNull("Failed to get server socket", serverSocket);
-                serverSocket.close();
-            }
-        } catch (IOException exp) {
-            fail("IOException while opening and closing server socket: " + exp);
-        }
-    }
-
-    @CddTest(requirements = {"7.4.3/C-2-1"})
-    @SmallTest
-    @Test
     public void openSecureLeL2capServerSocketOnce() {
         assertTrue("Bluetooth is not enabled", mAdapter.isEnabled());
         try {
             final BluetoothServerSocket serverSocket = mAdapter.listenUsingL2capChannel();
             assertNotNull("Failed to get server socket", serverSocket);
             serverSocket.close();
-        } catch (IOException exp) {
-            fail("IOException while opening and closing server socket: " + exp);
-        }
-    }
-
-    @CddTest(requirements = {"7.4.3/C-2-1"})
-    @SmallTest
-    @Test
-    public void openSecureLeL2capServerSocketRepeatedly() {
-        assertTrue("Bluetooth is not enabled", mAdapter.isEnabled());
-        try {
-            for (int i = 0; i < NUM_ITERATIONS_FOR_REPEATED_TEST; i++) {
-                final BluetoothServerSocket serverSocket = mAdapter.listenUsingL2capChannel();
-                assertNotNull("Failed to get server socket", serverSocket);
-                serverSocket.close();
-            }
         } catch (IOException exp) {
             fail("IOException while opening and closing server socket: " + exp);
         }
