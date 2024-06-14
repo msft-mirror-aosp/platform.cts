@@ -376,6 +376,7 @@ public abstract class ListScenario extends Activity {
                     1f)));
 
             mLinearLayout.addView(mListView);
+            mLinearLayout.setFitsSystemWindows(true);
             setContentView(mLinearLayout);
         } else {
             mLinearLayout = new LinearLayout(this);
@@ -388,6 +389,7 @@ public abstract class ListScenario extends Activity {
                     0,
                     1f)));
             mLinearLayout.addView(mListView);
+            mLinearLayout.setFitsSystemWindows(true);
             setContentView(mLinearLayout);
         }
         mLinearLayout.restoreDefaultFocus();
