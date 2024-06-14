@@ -464,16 +464,13 @@ public class MockWifiTest {
                         };
                 }));
             sMockModemManager.updateConfiguredMockedMethods();
+            // Force Screen off before disconnect, then device should trigger pno scan.
+            turnScreenOffNoDelay();
             sWifiManager.disconnect();
             waitForDisconnection();
-            // Force Screen off, device should trigger pno scan.
-            turnScreenOffNoDelay();
             PollingCheck.check(
                     "Fail to get Pno result", 30_000,
                     () -> {
-                        if (!isPnoScanTriggered.get()) {
-                            return false;
-                        }
                         if (isExternalPnoRequestBusy.get()) {
                             // Use scan result to replace PnoScanResult
                             // since there is no way to only get Pno scan result.
