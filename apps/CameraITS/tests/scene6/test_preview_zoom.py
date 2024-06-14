@@ -14,8 +14,8 @@
 """Verify preview zoom ratio scales circle sizes correctly."""
 
 import logging
-import math
 import os.path
+import subprocess
 
 import cv2
 from mobly import test_runner
@@ -29,31 +29,30 @@ import zoom_capture_utils
 
 
 _CIRCLISH_RTOL = 0.1  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CRF = 23
 _CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
-_FLOAT_TOL = 0.01
-_JPEG = '.jpg'
+_FPS = 30
+_MP4V = 'mp4v'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 50
 
 
-def save_image_as_jpg(img_name, img_bgr, quality=85):
-  """Saves an image as a JPEG with specified quality.
+def compress_video(input_filename, output_filename, crf=_CRF):
+  """Compresses the given video using ffmpeg."""
 
-  Args:
-      img_name: string; filename (with or without extension).
-      img_bgr: numpy.ndarray; image data in BGR format.
-      quality: int; JPEG quality (0-100, higher is better).
-  """
+  ffmpeg_cmd = [
+      'ffmpeg',
+      '-i', input_filename,   # Input file
+      '-c:v', 'libx264',      # Use H.264 codec
+      '-crf', str(crf),       # Set Constant Rate Factor (adjust for quality)
+      '-preset', 'medium',    # Encoding speed/compression balance
+      '-c:a', 'copy',         # Copy audio stream without re-encoding
+      output_filename         # Output file
+  ]
 
-  base_name, _ = os.path.splitext(img_name)  # Remove existing extension
-  new_img_name = base_name + _JPEG
-
-  _, encoded_img = cv2.imencode(_JPEG, img_bgr,
-                                [cv2.IMWRITE_JPEG_QUALITY, quality])
-  logging.debug('save image: %s', new_img_name)
-
-  with open(new_img_name, 'wb') as f:
-    f.write(encoded_img)
+  with open(os.devnull, 'w') as devnull:
+    subprocess.run(ffmpeg_cmd, stdout=devnull,
+                   stderr=subprocess.STDOUT, check=False)
 
 
 class PreviewZoomTest(its_base_test.ItsBaseTest):
@@ -117,7 +116,13 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       test_data = []
       test_data_index = 0
-      last_circle_radius = 0
+      # Initialize video writer
+      fourcc = cv2.VideoWriter_fourcc(*_MP4V)
+      uncompressed_video = os.path.join(log_path,
+                                        'output_frames_uncompressed.mp4')
+      out = cv2.VideoWriter(uncompressed_video, fourcc, _FPS,
+                            (size[0], size[1]))
+
       for capture_result, img_name in zip(capture_results, file_list):
         z = float(capture_result['android.control.zoomRatio'])
         if camera_properties_utils.logical_multi_camera(props):
@@ -154,10 +159,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
           logging.error('Unable to detect circle in %s', img_path)
           break
 
-        if not math.isclose(last_circle_radius, circle[2], rel_tol=_FLOAT_TOL):
-          save_image_as_jpg(img_path, img_bgr)
-          last_circle_radius = circle[2]
-
+        out.write(img_bgr)
         # Remove png file
         its_session_utils.remove_file(img_path)
 
@@ -175,6 +177,14 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         logging.debug('test_data[%d] = %s', test_data_index,
                       test_data[test_data_index])
         test_data_index = test_data_index + 1
+
+      out.release()
+
+      # --- Compress Video ---
+      compressed_video = os.path.join(log_path, 'output_frames.mp4')
+      compress_video(uncompressed_video, compressed_video)
+
+      os.remove(uncompressed_video)
 
       plot_name_stem = f'{os.path.join(log_path, _NAME)}'
       if not zoom_capture_utils.verify_preview_zoom_results(
