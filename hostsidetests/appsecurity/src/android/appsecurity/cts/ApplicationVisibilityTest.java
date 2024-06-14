@@ -276,6 +276,8 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
 
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
+        final Map<String, String> testArgs = new HashMap<>();
+        testArgs.put("testUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         installTestAppForUser(TEST_WITH_PERMISSION_APK, testUserId);
@@ -291,7 +293,8 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
                 TEST_WITH_PERMISSION_PKG,
                 ".ApplicationVisibilityCrossUserTest",
                 "testGetPackagesForUidVisibility_anotherUserCrossUserGrant",
-                testUserId);
+                testUserId,
+                testArgs);
     }
 
     @Test
@@ -303,6 +306,8 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
 
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
+        final Map<String, String> testArgs = new HashMap<>();
+        testArgs.put("testUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         installTestAppForUser(TEST_WITH_PERMISSION_APK, testUserId);
@@ -318,7 +323,8 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
                 TEST_WITH_PERMISSION_PKG,
                 ".ApplicationVisibilityCrossUserTest",
                 "testGetPackagesForUidVisibility_anotherUserCrossUserNoGrant",
-                testUserId);
+                testUserId,
+                testArgs);
     }
 
     @Test
