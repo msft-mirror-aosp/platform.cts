@@ -1052,6 +1052,11 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     private String getLaunchableSystemPackage() throws DeviceNotAvailableException {
         final List<String> enabledSystemPackageNames = getEnabledSystemPackageNames();
         for (String enabledSystemPackage : enabledSystemPackageNames) {
+            if (enabledSystemPackage.equals("com.android.inputmethod.latin")) {
+                // com.android.inputmethod.latin package disables its launcher activity upon
+                // installation so not a suitable candidate for a launchable package.
+                continue;
+            }
             final String result = getDevice().executeShellCommand(
                     String.format(RESOLVE_ACTIVITY_CMD, mUserId, enabledSystemPackage));
             if (!result.contains("No activity found")) {
