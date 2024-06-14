@@ -88,7 +88,7 @@ public class ApplicationVisibilityCrossUserTest {
     public void testPackageVisibility_otherUserGrant() throws Exception {
         final PackageManager pm = mContext.getPackageManager();
         final List<PackageInfo> packageList =
-                pm.getInstalledPackagesAsUser(0, getTestUser());
+                pm.getInstalledPackagesAsUser(0, getInstallUser());
         assertTrue(isAppInPackageList(TINY_PKG, packageList));
     }
 
@@ -99,7 +99,7 @@ public class ApplicationVisibilityCrossUserTest {
         try {
             ungrantAcrossUsersPermission();
             final List<PackageInfo> packageList =
-                    pm.getInstalledPackagesAsUser(0, getTestUser());
+                    pm.getInstalledPackagesAsUser(0, getInstallUser());
             fail("Should have received a security exception");
         } catch (SecurityException ignore) {}
     }
@@ -139,7 +139,7 @@ public class ApplicationVisibilityCrossUserTest {
     public void testApplicationVisibility_otherUserGrant() throws Exception {
         final PackageManager pm = mContext.getPackageManager();
         final List<ApplicationInfo> applicationList =
-                pm.getInstalledApplicationsAsUser(0, getTestUser());
+                pm.getInstalledApplicationsAsUser(0, getInstallUser());
         assertTrue(isAppInApplicationList(TINY_PKG, applicationList));
     }
 
@@ -150,7 +150,7 @@ public class ApplicationVisibilityCrossUserTest {
         try {
             ungrantAcrossUsersPermission();
             final List<ApplicationInfo> applicationList =
-                    pm.getInstalledApplicationsAsUser(0, getTestUser());
+                    pm.getInstalledApplicationsAsUser(0, getInstallUser());
             fail("Should have received a security exception");
         } catch (SecurityException ignore) {}
     }
@@ -174,8 +174,8 @@ public class ApplicationVisibilityCrossUserTest {
     @Test
     public void testGetPackagesForUidVisibility_anotherUserCrossUserGrant() throws Exception {
         final PackageManager pm = mContext.getPackageManager();
-        final int firstAppUid = UserHandle.getUid(getTestUser(), Process.FIRST_APPLICATION_UID);
-        final int lastAppUid = UserHandle.getUid(getTestUser(), Process.LAST_APPLICATION_UID);
+        final int firstAppUid = UserHandle.getUid(getInstallUser(), Process.FIRST_APPLICATION_UID);
+        final int lastAppUid = UserHandle.getUid(getInstallUser(), Process.LAST_APPLICATION_UID);
         boolean found = false;
         for (int appUid = firstAppUid; appUid < lastAppUid; appUid++) {
             found = isAppInPackageNamesArray(TINY_PKG, pm.getPackagesForUid(appUid));
@@ -189,8 +189,8 @@ public class ApplicationVisibilityCrossUserTest {
     public void testGetPackagesForUidVisibility_anotherUserCrossUserNoGrant() throws Exception {
         final PackageManager pm = mContext.getPackageManager();
         ungrantAcrossUsersPermission();
-        final int firstAppUid = UserHandle.getUid(getTestUser(), Process.FIRST_APPLICATION_UID);
-        final int lastAppUid = UserHandle.getUid(getTestUser(), Process.LAST_APPLICATION_UID);
+        final int firstAppUid = UserHandle.getUid(getInstallUser(), Process.FIRST_APPLICATION_UID);
+        final int lastAppUid = UserHandle.getUid(getInstallUser(), Process.LAST_APPLICATION_UID);
         try {
             for (int appUid = firstAppUid; appUid < lastAppUid; appUid++) {
                 isAppInPackageNamesArray(TINY_PKG, pm.getPackagesForUid(appUid));
@@ -219,7 +219,7 @@ public class ApplicationVisibilityCrossUserTest {
      **/
     @Test
     public void testGetPackageUidVisibility_anotherUserCrossUserGrant() {
-        final PackageManager pm = mContext.createContextAsUser(UserHandle.of(getTestUser()),
+        final PackageManager pm = mContext.createContextAsUser(UserHandle.of(getInstallUser()),
                 0 /*flags*/).getPackageManager();
         try {
             pm.getPackageUid(TINY_PKG, MATCH_KNOWN_PACKAGES);
@@ -235,7 +235,7 @@ public class ApplicationVisibilityCrossUserTest {
     @Test
     public void testGetPackageUidVisibility_anotherUserCrossUserNoGrant()
             throws PackageManager.NameNotFoundException {
-        final PackageManager pm = mContext.createContextAsUser(UserHandle.of(getTestUser()),
+        final PackageManager pm = mContext.createContextAsUser(UserHandle.of(getInstallUser()),
                 0 /*flags*/).getPackageManager();
         ungrantAcrossUsersPermission();
         try {
@@ -266,7 +266,7 @@ public class ApplicationVisibilityCrossUserTest {
      **/
     @Test
     public void testGetPackageGidsVisibility_anotherUserCrossUserGrant() {
-        final PackageManager pm = mContext.createContextAsUser(UserHandle.of(getTestUser()),
+        final PackageManager pm = mContext.createContextAsUser(UserHandle.of(getInstallUser()),
                 0 /*flags*/).getPackageManager();
         try {
             pm.getPackageUid(TINY_PKG, MATCH_KNOWN_PACKAGES);
@@ -282,7 +282,7 @@ public class ApplicationVisibilityCrossUserTest {
     @Test
     public void testGetPackageGidsVisibility_anotherUserCrossUserNoGrant()
             throws PackageManager.NameNotFoundException {
-        final PackageManager pm = mContext.createContextAsUser(UserHandle.of(getTestUser()),
+        final PackageManager pm = mContext.createContextAsUser(UserHandle.of(getInstallUser()),
                 0 /*flags*/).getPackageManager();
         ungrantAcrossUsersPermission();
         try {
@@ -318,11 +318,11 @@ public class ApplicationVisibilityCrossUserTest {
                 name -> name.equals(packageName));
     }
 
-    private int getTestUser() {
+    private int getInstallUser() {
         final Bundle testArguments = InstrumentationRegistry.getArguments();
-        if (testArguments.containsKey("testUser")) {
+        if (testArguments.containsKey("installUser")) {
             try {
-                return Integer.parseInt(testArguments.getString("testUser"));
+                return Integer.parseInt(testArguments.getString("installUser"));
             } catch (NumberFormatException ignore) {}
         }
         return mContext.getUserId();
