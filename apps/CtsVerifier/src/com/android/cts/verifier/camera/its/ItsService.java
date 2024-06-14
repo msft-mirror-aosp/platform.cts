@@ -1598,9 +1598,9 @@ public class ItsService extends Service implements SensorEventListener {
     private SessionConfiguration getSessionConfiguration(JSONObject params)
             throws ItsException {
         JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
-        prepareImageReadersWithOutputSpecs(jsonOutputSpecs, /*inputSize*/null,
-                /*inputFormat*/0, /*maxInputBuffers*/0, /*backgroundRequest*/false,
-                /*reuseSession*/ false);
+        boolean has10bitOutput = prepareImageReadersWithOutputSpecs(jsonOutputSpecs,
+                /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
+                /*backgroundRequest*/false, /*reuseSession*/ false);
         int numSurfaces = mOutputImageReaders.length;
         List<OutputConfiguration> outputConfigs = new ArrayList<>(numSurfaces);
         for (int i = 0; i < numSurfaces; i++) {
@@ -1611,6 +1611,11 @@ public class ItsService extends Service implements SensorEventListener {
             }
             if (mStreamUseCaseMap.get(i) != null) {
                 config.setStreamUseCase(mStreamUseCaseMap.get(i));
+            }
+            boolean hlg10Compatible =
+                    isHlg10Compatible(mOutputImageReaders[i].getImageFormat());
+            if (has10bitOutput && hlg10Compatible) {
+                config.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
             }
             outputConfigs.add(config);
         }
@@ -1965,7 +1970,9 @@ public class ItsService extends Service implements SensorEventListener {
                     }
                 }
             }
-            if (is10bitOutputPresent) {
+            boolean hlg10Compatible =
+                    isHlg10Compatible(mOutputImageReaders[i].getImageFormat());
+            if (is10bitOutputPresent && hlg10Compatible) {
                 // HLG10 is mandatory for all 10-bit output capable devices
                 config.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
             }
@@ -2437,6 +2444,7 @@ public class ItsService extends Service implements SensorEventListener {
                     } else if ("priv".equals(sformat)) {
                         outputFormats[i] = ImageFormat.PRIVATE;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
+                        is10bitOutputPresent = surfaceObj.optBoolean("hlg10");
                     } else if ("raw".equals(sformat)) {
                         outputFormats[i] = ImageFormat.RAW_SENSOR;
                         sizes = ItsUtils.getRaw16OutputSizes(cameraCharacteristics);
@@ -5051,5 +5059,11 @@ public class ItsService extends Service implements SensorEventListener {
         if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
             throw new ItsException("Invalid cameraId " + cameraId);
         }
+    }
+
+    private boolean isHlg10Compatible(int format) {
+        return (format == ImageFormat.PRIVATE
+                || format == ImageFormat.JPEG_R
+                || format == ImageFormat.YCBCR_P010);
     }
 }
