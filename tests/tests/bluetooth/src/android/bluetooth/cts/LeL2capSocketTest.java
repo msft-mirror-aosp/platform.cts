@@ -15,24 +15,27 @@
  */
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.bluetooth.test_utils.TestUtils.isBleSupported;
+
+import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
-import android.content.Context;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
+import android.bluetooth.test_utils.Permissions;
 import android.os.Build;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.SmallTest;
+import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,61 +43,39 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 
 @RunWith(AndroidJUnit4.class)
+@MediumTest
 public class LeL2capSocketTest {
-
-    private Context mContext;
-
-    private BluetoothAdapter mAdapter = null;
+    private static final BluetoothAdapter sAdapter = BlockingBluetoothAdapter.getAdapter();
 
     @Before
     public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
+        assumeTrue(isBleSupported(InstrumentationRegistry.getInstrumentation().getContext()));
 
-        Assume.assumeTrue(ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU));
-        Assume.assumeTrue(TestUtils.isBleSupported(mContext));
-
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-            .adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_CONNECT);
-        mAdapter = BluetoothAdapter.getDefaultAdapter();
-        assertNotNull("BluetoothAdapter.getDefaultAdapter() returned null. "
-                + "Does this device have a Bluetooth adapter?", mAdapter);
-        if (!mAdapter.isEnabled()) {
-            assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-        }
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        mAdapter = null;
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-            .dropShellPermissionIdentity();
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
-    @SmallTest
     @Test
-    public void openInsecureLeL2capServerSocketOnce() {
-        assertTrue("Bluetooth is not enabled", mAdapter.isEnabled());
-        try {
-            final BluetoothServerSocket serverSocket = mAdapter.listenUsingInsecureL2capChannel();
-            assertNotNull("Failed to get server socket", serverSocket);
-            serverSocket.close();
-        } catch (IOException exp) {
-            fail("IOException while opening and closing server socket: " + exp);
+    public void openInsecureLeL2capServerSocket() throws IOException {
+        assertThrows(SecurityException.class, () -> sAdapter.listenUsingInsecureL2capChannel());
+        final BluetoothServerSocket serverSocket;
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            serverSocket = sAdapter.listenUsingInsecureL2capChannel();
         }
+        assertThat(serverSocket).isNotNull();
+        serverSocket.close();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
-    @SmallTest
     @Test
-    public void openSecureLeL2capServerSocketOnce() {
-        assertTrue("Bluetooth is not enabled", mAdapter.isEnabled());
-        try {
-            final BluetoothServerSocket serverSocket = mAdapter.listenUsingL2capChannel();
-            assertNotNull("Failed to get server socket", serverSocket);
-            serverSocket.close();
-        } catch (IOException exp) {
-            fail("IOException while opening and closing server socket: " + exp);
+    public void openSecureLeL2capServerSocket() throws IOException {
+        assertThrows(SecurityException.class, () -> sAdapter.listenUsingL2capChannel());
+        final BluetoothServerSocket serverSocket;
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            serverSocket = sAdapter.listenUsingL2capChannel();
         }
+        assertThat(serverSocket).isNotNull();
+        serverSocket.close();
     }
 }
