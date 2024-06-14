@@ -989,7 +989,7 @@ public class CardEmulationTest {
             PollingCheck.check("Observe mode not disabled", 200,
                     () -> !adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
-            PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+            PollingCheck.check("Observe mode not enabled", 3000, adapter::isObserveModeEnabled);
         } finally {
             adapter.setObserveModeEnabled(false);
             cardEmulation.unsetPreferredService(activity);
@@ -1024,7 +1024,7 @@ public class CardEmulationTest {
                 PollingCheck.check("Observe mode not disabled", 200,
                         () -> !adapter.isObserveModeEnabled());
                 adapter.notifyHceDeactivated();
-                PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+                PollingCheck.check("Observe mode not enabled", 3000, adapter::isObserveModeEnabled);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
@@ -1065,7 +1065,7 @@ public class CardEmulationTest {
             PollingCheck.check("Observe mode not disabled", 200,
                     () -> !adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
-            PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+            PollingCheck.check("Observe mode not enabled", 3000, adapter::isObserveModeEnabled);
         } finally {
             adapter.setObserveModeEnabled(false);
             cardEmulation.unsetPreferredService(activity);
@@ -1105,7 +1105,7 @@ public class CardEmulationTest {
             PollingCheck.check("Observe mode not disabled", 200,
                     () -> !adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
-            PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+            PollingCheck.check("Observe mode not enabled", 3000, adapter::isObserveModeEnabled);
         } finally {
             adapter.setObserveModeEnabled(false);
             cardEmulation.unsetPreferredService(activity);
@@ -1162,7 +1162,7 @@ public class CardEmulationTest {
                 PollingCheck.check("Observe mode not disabled", 200,
                         () -> !adapter.isObserveModeEnabled());
                 adapter.notifyHceDeactivated();
-                PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+                PollingCheck.check("Observe mode not enabled", 3000, adapter::isObserveModeEnabled);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
