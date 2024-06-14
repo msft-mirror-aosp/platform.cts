@@ -33,8 +33,6 @@ import android.os.UserManager;
 
 import androidx.test.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.SystemUtil;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -176,11 +174,8 @@ public class ApplicationVisibilityCrossUserTest {
     @Test
     public void testGetPackagesForUidVisibility_anotherUserCrossUserGrant() throws Exception {
         final PackageManager pm = mContext.getPackageManager();
-        final int mainUserId = SystemUtil.runWithShellPermissionIdentity(() -> {
-            return mUserManager.getMainUser().getIdentifier();
-        }, android.Manifest.permission.QUERY_USERS);
-        final int firstAppUid = UserHandle.getUid(mainUserId, Process.FIRST_APPLICATION_UID);
-        final int lastAppUid = UserHandle.getUid(mainUserId, Process.LAST_APPLICATION_UID);
+        final int firstAppUid = UserHandle.getUid(getTestUser(), Process.FIRST_APPLICATION_UID);
+        final int lastAppUid = UserHandle.getUid(getTestUser(), Process.LAST_APPLICATION_UID);
         boolean found = false;
         for (int appUid = firstAppUid; appUid < lastAppUid; appUid++) {
             found = isAppInPackageNamesArray(TINY_PKG, pm.getPackagesForUid(appUid));
@@ -194,11 +189,8 @@ public class ApplicationVisibilityCrossUserTest {
     public void testGetPackagesForUidVisibility_anotherUserCrossUserNoGrant() throws Exception {
         final PackageManager pm = mContext.getPackageManager();
         ungrantAcrossUsersPermission();
-        final int mainUserId = SystemUtil.runWithShellPermissionIdentity(() -> {
-            return mUserManager.getMainUser().getIdentifier();
-        }, android.Manifest.permission.QUERY_USERS);
-        final int firstAppUid = UserHandle.getUid(mainUserId, Process.FIRST_APPLICATION_UID);
-        final int lastAppUid = UserHandle.getUid(mainUserId, Process.LAST_APPLICATION_UID);
+        final int firstAppUid = UserHandle.getUid(getTestUser(), Process.FIRST_APPLICATION_UID);
+        final int lastAppUid = UserHandle.getUid(getTestUser(), Process.LAST_APPLICATION_UID);
         try {
             for (int appUid = firstAppUid; appUid < lastAppUid; appUid++) {
                 isAppInPackageNamesArray(TINY_PKG, pm.getPackagesForUid(appUid));
