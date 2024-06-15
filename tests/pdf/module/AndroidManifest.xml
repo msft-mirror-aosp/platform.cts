@@ -18,7 +18,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="android.graphics.pdf.cts.module"
           android:targetSandboxVersion="2">
-    <application android:label="PDF Viewer Device Test Cases">
+    <!-- Needed permission and android:requestLegacyExternalStorage to dump screenshots in case of
+      failure -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+
+    <application android:requestLegacyExternalStorage="true"
+        android:label="PDF Viewer Device Test Cases">
         <uses-library android:name="android.test.runner" />
     </application>
 

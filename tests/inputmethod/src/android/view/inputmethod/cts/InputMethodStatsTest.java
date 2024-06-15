@@ -21,6 +21,8 @@ import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeInvisible;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
 
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -101,8 +103,10 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
         mPkgName = mInstrumentation.getContext().getPackageName();
 
         // Finish tracking any pending IME visibility requests from previous tests to avoid issues.
-        mInstrumentation.getContext().getSystemService(InputMethodManager.class)
-                .finishTrackingPendingImeVisibilityRequests();
+        final var imm = mInstrumentation.getContext().getSystemService(InputMethodManager.class);
+        runWithShellPermissionIdentity(() -> {
+            imm.finishTrackingPendingImeVisibilityRequests();
+        });
 
         MetricsRecorder.removeConfig();
         MetricsRecorder.clearReports();

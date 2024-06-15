@@ -3112,7 +3112,7 @@
                        android:value="android.hardware.type.watch:android.software.leanback:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                 android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="9.8.2/C-0-6,C-3-1,C-3-2,C-3-3" />
+            <meta-data android:name="CddTest" android:value="9.8.2" />
         </activity>
         <service android:name=".notifications.NotificationHidingVerifierActivity$MediaProjectionService"
             android:exported="false"
