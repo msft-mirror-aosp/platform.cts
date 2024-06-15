@@ -173,6 +173,12 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final Pattern PERF_METRICS_MULTICAM_PATTERN =
             Pattern.compile("test_multi_camera_switch_.*");
 
+    private static final Pattern PERF_METRICS_PREVIEW_FRAME_DROP_PATTERN =
+            Pattern.compile("test_preview_frame_drop_.*");
+
+    private static final String PERF_METRICS_KEY_MAX_DELTA = "max_delta";
+    private static final String PERF_METRICS_KEY_PREFIX_PREVIEW_FRAME_DROP =
+            "preview_frame_drop";
 
     private final ResultReceiver mResultsReceiver = new ResultReceiver();
     private final BroadcastReceiver mCommandReceiver = new BroadcastReceiver() {
@@ -673,13 +679,17 @@ public class ItsTestActivity extends DialogTestListActivity {
                     perfMetricsResult);
             boolean multiCamMetricsMatches = multiCamMetricsMatcher.matches();
 
+            Matcher previewFrameDropMetricsMatcher =
+                    PERF_METRICS_PREVIEW_FRAME_DROP_PATTERN.matcher(perfMetricsResult);
+            boolean previewFrameDropMetricsMatches = previewFrameDropMetricsMatcher.matches();
+
 
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
                         && !imuDriftMetricsMatches && !sensorFusionMetricsMatches
                         && !burstCaptureMetricsMatches && !distortionMetricsMatches
                         && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
                         && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches
-                        && !multiCamMetricsMatches) {
+                        && !multiCamMetricsMatches && !previewFrameDropMetricsMatches) {
                 return false;
             }
 
@@ -755,8 +765,14 @@ public class ItsTestActivity extends DialogTestListActivity {
                     Log.i(TAG, "multi cam metrics matches");
                     addMultiCamPerfMetricsResult(perfMetricsResult, obj);
                 }
+
+                if (previewFrameDropMetricsMatches) {
+                    Log.i(TAG, "preview frame drop matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_PREVIEW_FRAME_DROP,
+                            perfMetricsResult, obj);
+                }
             } catch (org.json.JSONException e) {
-                Log.e(TAG, "Error when serializing the metrics into a JSONObject" , e);
+                Log.e(TAG, "Error when serializing the metrics into a JSONObject", e);
             }
 
             return true;
@@ -821,6 +837,9 @@ public class ItsTestActivity extends DialogTestListActivity {
         } else if (resultKey.contains(PERF_METRICS_KEY_OFFSET_MS)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + "_" + PERF_METRICS_KEY_OFFSET_MS, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_MAX_DELTA)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_MAX_DELTA, floatValue);
         }
     }
 

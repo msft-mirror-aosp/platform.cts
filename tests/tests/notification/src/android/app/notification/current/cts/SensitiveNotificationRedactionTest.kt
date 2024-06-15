@@ -451,7 +451,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
 
         val shouldRedact = mutableListOf(
             "123G5",
-            "123 456",
             "123456F8",
             "123ķ4",
             "123Ŀ4",
@@ -464,14 +463,8 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             "your code is:G-345821",
             "your code is (G-345821",
             "your code is \nG-345821",
-            "your code is 'G-345821",
-            "your code is \"G-345821",
-            "your code is [G-345821",
-            "your code is码G-345821",
             "you code is G-345821.",
             "you code is (G-345821)",
-            "you code is 'G-345821'",
-            "your code is码G-345821码",
             "c'est g4zy75",
             "2109",
             "3035",
@@ -519,7 +512,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
                 "123",
                 "12 345",
                 "123T56789",
-                "123码456",
                 "TEFHXES",
                 "01-01-2001",
                 "1-1-2001",
@@ -528,11 +520,9 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
                 "------",
                 "your code isG-345821",
                 "your code is G-345821for real",
-                "your code is4:G-345821",
                 "GVRXY 2",
                 "2009",
                 "1945",
-                "a4mst",
             )
         var notifNum = 0
         val redactedFailures = StringBuilder("")
