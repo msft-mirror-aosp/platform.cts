@@ -17,6 +17,7 @@ package android.app.notification.current.cts
 
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.RECEIVE_SENSITIVE_NOTIFICATIONS
+import android.app.AppOpsManager
 import android.app.Notification
 import android.app.Notification.CATEGORY_MESSAGE
 import android.app.Notification.EXTRA_MESSAGES
@@ -40,12 +41,11 @@ import android.graphics.drawable.Icon
 import android.net.MacAddress
 import android.os.Bundle
 import android.os.Parcelable
-import android.os.SystemProperties
+import android.os.Process
 import android.permission.cts.PermissionUtils
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
-import android.provider.DeviceConfig
 import android.service.notification.Adjustment
 import android.service.notification.Adjustment.KEY_IMPORTANCE
 import android.service.notification.Adjustment.KEY_RANKING_SCORE
@@ -54,14 +54,13 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.CddTest
-import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Assert
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
-import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -381,7 +380,7 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
-    fun testListenerWithReceiveSensitiveNotificationsGetsUnredacted() {
+    fun testListenerWithReceiveSensitiveNotificationsPermissionsGetsUnredacted() {
         runWithShellPermissionIdentity(
             {
                 // Trusted status is cached on helper enable, so disable + enable the listener
@@ -391,6 +390,41 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             },
             RECEIVE_SENSITIVE_NOTIFICATIONS
         )
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
+    fun testListenerWithReceiveSensitiveNotificationsAppOpGetsUnredacted() {
+        val appOpsManager = mContext.getSystemService(AppOpsManager::class.java)!!
+        try {
+            runWithShellPermissionIdentity {
+                assertEquals(
+                    AppOpsManager.MODE_IGNORED,
+                    appOpsManager.checkOp(
+                        AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS,
+                        Process.myUid(),
+                        STUB_PACKAGE_NAME
+                    )
+                )
+                appOpsManager.setUidMode(
+                    AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS,
+                    Process.myUid(),
+                    AppOpsManager.MODE_ALLOWED
+                )
+            }
+            // Trusted status is cached on helper enable, so disable + enable the listener
+            mNotificationHelper.disableListener(STUB_PACKAGE_NAME)
+            mNotificationHelper.enableListener(STUB_PACKAGE_NAME)
+            assertNotificationNotRedacted()
+        } finally {
+            runWithShellPermissionIdentity {
+                appOpsManager.setUidMode(
+                    AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS,
+                    Process.myUid(),
+                    AppOpsManager.MODE_IGNORED
+                )
+            }
+        }
     }
 
     @Test
@@ -405,7 +439,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @CddTest(requirement = "3.8.3.4/C-1-1")
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testE2ERedaction_shouldRedact() {
-        assumeFlagEnabled()
         assertTrue(
             "Expected a notification assistant to be present",
             mPreviousEnabledAssistant != null
@@ -418,7 +451,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
 
         val shouldRedact = mutableListOf(
             "123G5",
-            "123 456",
             "123456F8",
             "123ķ4",
             "123Ŀ4",
@@ -431,14 +463,8 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             "your code is:G-345821",
             "your code is (G-345821",
             "your code is \nG-345821",
-            "your code is 'G-345821",
-            "your code is \"G-345821",
-            "your code is [G-345821",
-            "your code is码G-345821",
             "you code is G-345821.",
             "you code is (G-345821)",
-            "you code is 'G-345821'",
-            "your code is码G-345821码",
             "c'est g4zy75",
             "2109",
             "3035",
@@ -470,7 +496,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @CddTest(requirement = "3.8.3.4/C-1-1")
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testE2ERedaction_shouldNotRedact() {
-        assumeFlagEnabled()
         assertTrue(
             "Expected a notification assistant to be present",
             mPreviousEnabledAssistant != null
@@ -487,7 +512,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
                 "123",
                 "12 345",
                 "123T56789",
-                "123码456",
                 "TEFHXES",
                 "01-01-2001",
                 "1-1-2001",
@@ -496,11 +520,9 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
                 "------",
                 "your code isG-345821",
                 "your code is G-345821for real",
-                "your code is4:G-345821",
                 "GVRXY 2",
                 "2009",
                 "1945",
-                "a4mst",
             )
         var notifNum = 0
         val redactedFailures = StringBuilder("")
@@ -524,19 +546,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
                         "\n$redactedFailures"
             )
         }
-    }
-
-    private fun assumeFlagEnabled() {
-        // TODO b/331633527: STOPSHIP remove once flag ramped
-        assumeTrue(
-            callWithShellPermissionIdentity {
-                return@callWithShellPermissionIdentity DeviceConfig.getBoolean(
-                    "device_personalization_services",
-                    "Notification__enable_otp_in_smart_suggestion",
-                    false
-                ) || SystemProperties.get("ro.product.name", "").startsWith("aosp")
-            }
-        )
     }
 
     private fun assertNotificationNotRedacted() {

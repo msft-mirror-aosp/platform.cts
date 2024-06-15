@@ -23,11 +23,6 @@ filegroup {
 }
 
 filegroup {
-    name: "cts-wm-aspect-ratio-test-base",
-    srcs: ["src/android/server/wm/activity/AspectRatioTestsBase.java"],
-}
-
-filegroup {
     name: "cts-wm-decor-inset-test-base",
     srcs: ["src/android/server/wm/insets/DecorInsetTestsBase.java"],
 }
