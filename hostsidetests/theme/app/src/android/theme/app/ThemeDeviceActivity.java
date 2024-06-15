@@ -67,18 +67,6 @@ public class ThemeDeviceActivity extends Activity {
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);
 
-        File fontFile = TypefaceTestUtil.getFirstFont("abc", new Paint());
-        if (!fontFile.getName().startsWith("Roboto")) {
-            Typeface robotoRegular = TypefaceTestUtil.getRobotoTypeface(400, false);
-            Typeface robotoBold = Typeface.create(robotoRegular, 700, false);
-            Typeface robotoItalic = Typeface.create(robotoRegular, 400, true);
-            Typeface robotoBoldItalic = Typeface.create(robotoRegular, 700, true);
-
-            mOldFontFamilies = Typeface.changeDefaultFontForTest(
-                    Arrays.asList(robotoRegular, robotoBold, robotoItalic, robotoBoldItalic),
-                    Arrays.asList(robotoRegular, Typeface.SERIF, Typeface.MONOSPACE));
-        }
-
         final Intent intent = getIntent();
         final int themeIndex = intent.getIntExtra(EXTRA_THEME, -1);
         if (themeIndex < 0) {
@@ -128,6 +116,33 @@ public class ThemeDeviceActivity extends Activity {
     protected void onResume() {
         super.onResume();
 
+        Paint paint = new Paint();
+        if (!Typeface.DEFAULT.equals(Typeface.SANS_SERIF)) {
+            Log.w(TAG, "The default font is different from sans-serif font.");
+            paint.setTypeface(Typeface.SANS_SERIF);
+        }
+        File fontFile = TypefaceTestUtil.getFirstFont("abc", new Paint());
+        boolean isRobotoSansSerif = fontFile.getName().startsWith("Roboto");
+        if (!isRobotoSansSerif) {
+            Log.i(
+                    TAG,
+                    "The sans-serif font is replaced from Roboto. "
+                            + "Replacing sans-serif with Roboto during tests.");
+            Typeface robotoRegular = Typeface.create("roboto", Typeface.NORMAL);
+            if (robotoRegular.equals(Typeface.DEFAULT)) {
+                throw new RuntimeException("The device missing \"roboto\" family.");
+            }
+            Typeface robotoBold = Typeface.create(robotoRegular, 700, false);
+            Typeface robotoItalic = Typeface.create(robotoRegular, 400, true);
+            Typeface robotoBoldItalic = Typeface.create(robotoRegular, 700, true);
+
+            mOldFontFamilies =
+                    Typeface.changeDefaultFontForTest(
+                            Arrays.asList(
+                                    robotoRegular, robotoBold, robotoItalic, robotoBoldItalic),
+                            Arrays.asList(robotoRegular, Typeface.SERIF, Typeface.MONOSPACE));
+        }
+
         mIsRunning = true;
     }
 
@@ -141,6 +156,10 @@ public class ThemeDeviceActivity extends Activity {
             Log.e(TAG, "onPause() called without a call to finish(), check system dialogs");
         }
 
+        if (mOldFontFamilies != null) {
+            Typeface.changeDefaultFontForTest(mOldFontFamilies.first, mOldFontFamilies.second);
+        }
+
         super.onPause();
     }
 
@@ -150,9 +169,6 @@ public class ThemeDeviceActivity extends Activity {
             finish("Only rendered " + mLayoutIndex + "/" + LAYOUTS.length + " layouts", false);
         }
 
-        if (mOldFontFamilies != null) {
-            Typeface.changeDefaultFontForTest(mOldFontFamilies.first, mOldFontFamilies.second);
-        }
 
         super.onDestroy();
     }
