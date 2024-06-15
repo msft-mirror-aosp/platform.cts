@@ -28,6 +28,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
@@ -229,6 +230,12 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
     @Test
     @RequiresFlagsEnabled(FLAG_POWERHINT_THREAD_CLEANUP)
     public void testAdpfHintSessionTidCleanupIsPushed() throws Exception {
+        final int apiLevel = Integer.parseInt(
+                DeviceUtils.getProperty(getDevice(), ("ro.vendor.api_level")));
+        final int minLevel = 202404;
+        assumeTrue("Test is only enforced on vendor API level >= " + minLevel
+                        + " while test device at = " + apiLevel, apiLevel >= minLevel);
+
         final String testMethod = "testAdpfTidCleanup";
         final TestDescription desc = TestDescription.fromString(
                 DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);

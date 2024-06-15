@@ -599,6 +599,61 @@ public class NfcAdapterTest {
         Assert.assertTrue(result);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testShouldDefaultToObserveModeAfterNfcOffOn() throws InterruptedException {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
+        adapter.notifyHceDeactivated();
+        Activity activity = createAndResumeActivity();
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        ComponentName ctsService = new ComponentName(mContext, CtsMyHostApduService.class);
+
+        try {
+            Assert.assertTrue(cardEmulation.setShouldDefaultToObserveModeForService(ctsService,
+                    true));
+
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, ctsService));
+            CardEmulationTest.ensurePreferredService(CtsMyHostApduService.class, mContext);
+
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext));
+            Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+        } finally {
+            cardEmulation.setShouldDefaultToObserveModeForService(ctsService,
+                    false);
+            cardEmulation.unsetPreferredService(activity);
+            adapter.notifyHceDeactivated();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OBSERVE_MODE)
+    public void testShouldDefaultToObserveModeWithNfcOff() throws InterruptedException {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
+        adapter.notifyHceDeactivated();
+        Activity activity = createAndResumeActivity();
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        ComponentName ctsService = new ComponentName(mContext, CtsMyHostApduService.class);
+        try {
+            Assert.assertTrue(NfcUtils.disableNfc(adapter, mContext));
+            Assert.assertTrue(cardEmulation.setShouldDefaultToObserveModeForService(ctsService,
+                    true));
+
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, ctsService));
+            CardEmulationTest.ensurePreferredService(CtsMyHostApduService.class, mContext);
+
+            Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+        } finally {
+            cardEmulation.setShouldDefaultToObserveModeForService(ctsService,
+                    false);
+            cardEmulation.unsetPreferredService(activity);
+            adapter.notifyHceDeactivated();
+        }
+    }
     private class NfcOemExtensionCallback implements NfcOemExtension.Callback {
         private final CountDownLatch mTagDetectedCountDownLatch;
 
