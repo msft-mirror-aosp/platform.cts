@@ -72,6 +72,8 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
             "testSetComponentEnabledSettingEnabledThenDisabled";
     private static final String TEST_METHOD_SET_COMPONENT_ENABLED_SETTING_TWO_LAUNCHER_ACTIVITIES =
             "testComponentStateChangedReportedForTwoDifferentStateLauncherActivities";
+    private static final String TEST_METHOD_SET_APPLICATION_ENABLED_THEN_DISABLED =
+            "testComponentStateChangedReportedEnabledThenDisabledWholeApp";
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -235,10 +237,56 @@ public class ComponentStateChangedReportedStatsTests extends BaseHostJUnit4Test 
                 PackagemanagerExtensionAtoms.componentStateChangedReported);
         assertThat(atom2.getUid()).isEqualTo(
                 PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
-        assertThat(atom2.getComponentOldState()).isEqualTo(COMPONENT_STATE_DEFAULT);
+        assertThat(atom2.getComponentOldState()).isEqualTo(COMPONENT_STATE_ENABLED);
         assertThat(atom2.getComponentNewState()).isEqualTo(COMPONENT_STATE_DISABLED);
         assertThat(atom2.getIsLauncher()).isFalse();
         assertThat(atom2.getIsForWholeApp()).isFalse();
+        assertThat(atom2.getCallingUid()).isEqualTo(
+                PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
+    }
+
+    @RequiresFlagsEnabled(FLAG_COMPONENT_STATE_CHANGED_METRICS)
+    @Test
+    public void testComponentStateChangedReportedEnabledThenDisabledWholeApp() throws Throwable {
+        ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                PackagemanagerExtensionAtoms.COMPONENT_STATE_CHANGED_REPORTED_FIELD_NUMBER);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
+
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        PackagemanagerExtensionAtoms.registerAllExtensions(registry);
+
+        installPackage(TEST_INSTALL_APK);
+        assertThat(getDevice().isPackageInstalled(TEST_INSTALL_PACKAGE,
+                String.valueOf(getDevice().getCurrentUser()))).isTrue();
+
+        // Run test in CTS package
+        runDeviceTests(getDevice(), HELPER_PACKAGE, HELPER_CLASS,
+                TEST_METHOD_SET_APPLICATION_ENABLED_THEN_DISABLED);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
+                registry);
+        assertThat(data.size()).isEqualTo(2);
+
+        ComponentStateChangedReported atom1 = data.get(0).getAtom().getExtension(
+                PackagemanagerExtensionAtoms.componentStateChangedReported);
+        assertThat(atom1.getUid()).isEqualTo(
+                PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
+        assertThat(atom1.getComponentOldState()).isEqualTo(COMPONENT_STATE_DEFAULT);
+        assertThat(atom1.getComponentNewState()).isEqualTo(COMPONENT_STATE_ENABLED);
+        assertThat(atom1.getIsLauncher()).isFalse();
+        assertThat(atom1.getIsForWholeApp()).isTrue();
+        assertThat(atom1.getCallingUid()).isEqualTo(
+                PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
+
+        ComponentStateChangedReported atom2 = data.get(1).getAtom().getExtension(
+                PackagemanagerExtensionAtoms.componentStateChangedReported);
+        assertThat(atom2.getUid()).isEqualTo(
+                PackageManagerStatsTestsBase.getAppUid(getDevice(), TEST_INSTALL_PACKAGE));
+        assertThat(atom2.getComponentOldState()).isEqualTo(COMPONENT_STATE_ENABLED);
+        assertThat(atom2.getComponentNewState()).isEqualTo(COMPONENT_STATE_DISABLED);
+        assertThat(atom2.getIsLauncher()).isFalse();
+        assertThat(atom2.getIsForWholeApp()).isTrue();
         assertThat(atom2.getCallingUid()).isEqualTo(
                 PackageManagerStatsTestsBase.getAppUid(getDevice(), HELPER_PACKAGE));
     }

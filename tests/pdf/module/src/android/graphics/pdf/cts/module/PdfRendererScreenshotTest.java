@@ -16,6 +16,7 @@
 
 package android.graphics.pdf.cts.module;
 
+import static android.graphics.pdf.cts.module.Utils.assertScreenshotsAreEqual;
 import static android.graphics.pdf.cts.module.Utils.createRenderer;
 
 import android.compat.testing.PlatformCompatChangeRule;
@@ -25,28 +26,21 @@ import android.graphics.BitmapFactory;
 import android.graphics.pdf.PdfRenderer;
 import android.os.Build;
 import android.os.Environment;
-import android.util.Log;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.RawRes;
-
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.compatibility.common.util.BitmapUtils;
 
 import libcore.junit.util.compat.CoreCompatChangeRule.DisableCompatChanges;
 import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
 
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
-
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -132,57 +126,8 @@ public class PdfRendererScreenshotTest {
                 Bitmap output = Bitmap.createBitmap(page.getWidth(), page.getHeight(),
                         Bitmap.Config.ARGB_8888);
                 page.render(output, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                assertScreenshotsAreEqual(golden, output, testName);
+                assertScreenshotsAreEqual(golden, output, testName, LOCAL_DIRECTORY);
             }
         }
     }
-
-    private void assertScreenshotsAreEqual(Bitmap before, Bitmap after, String testName) {
-        if (!BitmapUtils.compareBitmaps(before, after)) {
-            File beforeFile = null;
-            File afterFile = null;
-            try {
-                beforeFile = dumpBitmap(before, testName + "-golden.png");
-                afterFile = dumpBitmap(after, testName + "-test.png");
-            } catch (IOException e) {
-                Log.e(TAG, "Error dumping bitmap", e);
-            }
-            Assert.fail(
-                    "Screenshots do not match (check " + beforeFile + " and " + afterFile + ")");
-        }
-    }
-
-    private File dumpBitmap(Bitmap bitmap, String filename) throws IOException {
-        File file = createFile(filename);
-        if (file == null) return null;
-        Log.i(TAG, "Dumping bitmap at " + file);
-        BitmapUtils.saveBitmap(bitmap, file.getParent(), file.getName());
-        return file;
-
-    }
-
-    private static File createFile(String filename) throws IOException {
-        File dir = getLocalDirectory();
-        File file = new File(dir, filename);
-        if (file.exists()) {
-            Log.v(TAG, "Deleting file " + file);
-            file.delete();
-        }
-        if (!file.createNewFile()) {
-            Log.e(TAG, "couldn't create new file");
-            return null;
-        }
-        return file;
-    }
-
-    private static File getLocalDirectory() {
-        File dir = new File(LOCAL_DIRECTORY);
-        dir.mkdirs();
-        if (!dir.exists()) {
-            Log.e(TAG, "couldn't create directory");
-            return null;
-        }
-        return dir;
-    }
-
 }

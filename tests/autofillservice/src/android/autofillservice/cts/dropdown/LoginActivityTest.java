@@ -152,9 +152,6 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
     private static final String TAG = "LoginActivityTest";
 
-    public static final String DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE =
-            "include_invisible_view_group_in_assist_structure";
-
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -2272,10 +2269,6 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
                 "Device state is not REAR_DISPLAY",
                 !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.REAR_DISPLAY));
 
-        // Enable flag
-        Helper.setDeviceConfig(
-                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, true);
-
         // Set service.
         enableService();
 
@@ -2323,10 +2316,6 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
                 ID_USERNAME_CONTAINER);
         assertThat(usernameContainer).isNotNull();
         assertThat(usernameContainer.getChildCount()).isEqualTo(2);
-
-        // Disable flag
-        Helper.setDeviceConfig(
-                mContext, DEVICE_CONFIG_INCLUDE_INVISIBLE_VIEW_GROUP_IN_ASSIST_STRUCTURE, false);
     }
 
     @Presubmit

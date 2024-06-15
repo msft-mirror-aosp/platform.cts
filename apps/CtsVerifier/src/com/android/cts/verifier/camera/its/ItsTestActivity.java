@@ -133,6 +133,13 @@ public class ItsTestActivity extends DialogTestListActivity {
 
     private static final Pattern PERF_METRICS_IMU_DRIFT_PATTERN =
             Pattern.compile("test_imu_drift_.*");
+    private static final Pattern PERF_METRICS_SENSOR_FUSION_PATTERN =
+            Pattern.compile("test_sensor_fusion_.*");
+
+    private static final String PERF_METRICS_KEY_PREFIX_SENSOR_FUSION = "sensor_fusion";
+    private static final String PERF_METRICS_KEY_CORR_DIST = "corr_dist";
+    private static final String PERF_METRICS_KEY_OFFSET_MS = "offset_ms";
+
     private static final Pattern PERF_METRICS_BURST_CAPTURE_PATTERN =
             Pattern.compile("test_burst_capture_.*");
 
@@ -634,6 +641,10 @@ public class ItsTestActivity extends DialogTestListActivity {
                         perfMetricsResult);
             boolean imuDriftMetricsMatches = imuDriftMetricsMatcher.matches();
 
+            Matcher sensorFusionMetricsMatcher = PERF_METRICS_SENSOR_FUSION_PATTERN.matcher(
+                        perfMetricsResult);
+            boolean sensorFusionMetricsMatches = sensorFusionMetricsMatcher.matches();
+
             Matcher burstCaptureMetricsMatcher = PERF_METRICS_BURST_CAPTURE_PATTERN.matcher(
                         perfMetricsResult);
             boolean burstCaptureMetricsMatches = burstCaptureMetricsMatcher.matches();
@@ -664,10 +675,11 @@ public class ItsTestActivity extends DialogTestListActivity {
 
 
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
-                        && !imuDriftMetricsMatches && !burstCaptureMetricsMatches
-                        && !distortionMetricsMatches && !intrinsicMetricsMatches
-                        && !lowLightBoostMetricsMatches && !nightModeExtensionMetricsMatches
-                        && !aeAwbMetricsMatches && !multiCamMetricsMatches) {
+                        && !imuDriftMetricsMatches && !sensorFusionMetricsMatches
+                        && !burstCaptureMetricsMatches && !distortionMetricsMatches
+                        && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
+                        && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches
+                        && !multiCamMetricsMatches) {
                 return false;
             }
 
@@ -695,6 +707,12 @@ public class ItsTestActivity extends DialogTestListActivity {
                         String value = result.split(":")[1].strip();
                         obj.put(resultKey, value);
                     }
+                }
+
+                if (sensorFusionMetricsMatches) {
+                    Log.i(TAG, "sensor fusion matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_SENSOR_FUSION, perfMetricsResult,
+                            obj);
                 }
 
                 if (burstCaptureMetricsMatches) {
@@ -797,6 +815,12 @@ public class ItsTestActivity extends DialogTestListActivity {
         } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_BURST_CAPTURE)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + "_" + PERF_METRICS_KEY_FRAMEDURATION, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_CORR_DIST)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_CORR_DIST, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_OFFSET_MS)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_OFFSET_MS, floatValue);
         }
     }
 
