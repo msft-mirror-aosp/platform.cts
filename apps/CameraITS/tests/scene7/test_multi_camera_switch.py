@@ -133,7 +133,9 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
     log_path: path to save the image.
     suffix: str; patch suffix to be used in file name.
   Returns:
-    Failed AE check messages if any. None otherwise.
+    failed_ae_msg: Failed AE check messages if any. None otherwise.
+    uw_y_avg: y_avg value for UW lens
+    w_y_avg: y_avg value for W lens
   """
   failed_ae_msg = []
   file_stem = f'{os.path.join(log_path, _NAME)}_{suffix}'
@@ -157,7 +159,7 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
                          f'RTOL: {_AE_RTOL} '
                          f'uw_y_avg: {uw_y_avg:.4f} '
                          f'w_y_avg: {w_y_avg:.4f} ')
-  return failed_ae_msg
+  return failed_ae_msg, uw_y_avg, w_y_avg
 
 
 def _do_af_check(uw_img, w_img, log_path):
@@ -168,7 +170,9 @@ def _do_af_check(uw_img, w_img, log_path):
     w_img: image captured using W lens.
     log_path: path to save the image.
   Returns:
-    Failed AF check messages if any. None otherwise.
+    failed_af_msg: Failed AF check messages if any. None otherwise.
+    sharpness_uw: sharpness value for UW lens
+    sharpness_w: sharpness value for W lens
   """
   failed_af_msg = []
   file_stem = f'{os.path.join(log_path, _NAME)}_slanted_edge'
@@ -183,7 +187,7 @@ def _do_af_check(uw_img, w_img, log_path):
                          f' ATOL: {_AF_ATOL} '
                          f'sharpness_w: {sharpness_w:.4f} '
                          f'sharpness_uw: {sharpness_uw:.4f}')
-  return failed_af_msg
+  return failed_af_msg, sharpness_uw, sharpness_w
 
 
 def _do_awb_check(uw_img, w_img):
@@ -193,7 +197,7 @@ def _do_awb_check(uw_img, w_img):
     uw_img: image captured using UW lens.
     w_img: image captured using W lens.
   Returns:
-    Failed AWB check messages if any. None otherwise.
+    failed_awb_msg: Failed AWB check messages if any. None otherwise.
   """
   failed_awb_msg = []
   uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img, 'UW')
@@ -482,17 +486,33 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       w_four_patches = _get_four_quadrant_patches(
           w_chart_patch, w_path, 'w')
 
+      ae_uw_y_avgs = {}
+      ae_w_y_avgs = {}
+
       for uw_patch, w_patch, color in zip(
           uw_four_patches, w_four_patches, _COLORS):
         logging.debug('Checking for quadrant color: %s', color)
+
         # AE Check: Extract the Y component from rectangle patch
-        failed_ae_msg = _do_ae_check(uw_patch, w_patch, self.log_path, color)
+        failed_ae_msg, uw_y_avg, w_y_avg = _do_ae_check(
+            uw_patch, w_patch, self.log_path, color)
+        ae_uw_y_avgs.update({color: f'{uw_y_avg:.4f}'})
+        ae_w_y_avgs.update({color: f'{w_y_avg:.4f}'})
 
         # AWB Check : Verify that R/G and B/G ratios are within the limits
         failed_awb_msg = _do_awb_check(uw_patch, w_patch)
 
+      # Below print statements are for logging purpose.
+      # Do not replace with logging.
+      print(f'{_NAME}_ae_uw_y_avgs: ', ae_uw_y_avgs)
+      print(f'{_NAME}_ae_w_y_avgs: ', ae_w_y_avgs)
+
       # AF check using slanted edge
-      failed_af_msg = _do_af_check(uw_chart_patch, w_chart_patch, self.log_path)
+      failed_af_msg, sharpness_uw, sharpness_w = _do_af_check(
+          uw_chart_patch, w_chart_patch, self.log_path)
+      print(f'{_NAME}_uw_sharpness: {sharpness_uw:.4f}')
+      print(f'{_NAME}_w_sharpness: {sharpness_w:.4f}')
+
       if failed_awb_msg or failed_ae_msg or failed_af_msg:
         error_msg = _get_error_msg(failed_awb_msg, failed_ae_msg, failed_af_msg)
         raise AssertionError(f'{_NAME} failed with following errors:\n'
