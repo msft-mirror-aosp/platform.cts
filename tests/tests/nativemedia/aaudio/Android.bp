@@ -15,6 +15,7 @@
 package {
     // See: http://go/android-license-faq
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_media_audio_framework",
 }
 
 android_test {
