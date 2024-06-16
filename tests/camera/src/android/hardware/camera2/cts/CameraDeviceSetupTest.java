@@ -16,12 +16,19 @@
 
 package android.hardware.camera2.cts;
 
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG_R;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PRIV;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.YUV;
 import static android.hardware.camera2.cts.CameraTestUtils.assertNull;
 
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
 import android.graphics.ImageFormat;
+import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -30,6 +37,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.cts.CameraTestUtils.MockStateCallback;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
+import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.media.ImageReader;
@@ -38,6 +46,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
+import android.util.Range;
 import android.util.Size;
 
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
@@ -51,9 +60,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -68,7 +81,7 @@ import java.util.concurrent.Executors;
 @RunWith(Parameterized.class)
 public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     private static final String TAG = CameraDeviceSetupTest.class.getSimpleName();
-    public static final int CAMERA_STATE_TIMEOUT_MS = 3000;
+    private static final int CAMERA_STATE_TIMEOUT_MS = 3000;
 
     @Rule
     public final CheckFlagsRule mFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -440,5 +453,320 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
         } finally {
             closeDevice(cameraId);
         }
+    }
+
+    /**
+     * Verify if valid session characteristics can be fetched for a particular camera.
+     */
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    public void testFeatureCombinationQueryConsistency() throws Exception {
+        for (String cameraId : getCameraIdsUnderTest()) {
+            if (!mCameraManager.isCameraDeviceSetupSupported(cameraId)) {
+                Log.i(TAG, "CameraDeviceSetup not supported for camera id " + cameraId);
+                continue;
+            }
+
+            testFeatureCombinationQueryConsistencyByCamera(cameraId);
+        }
+    }
+
+    /**
+     * Check the feature combination query consistency between different feature combinations.
+     */
+    private void testFeatureCombinationQueryConsistencyByCamera(String cameraId) throws Exception {
+        CameraDevice.CameraDeviceSetup cameraDeviceSetup =
+                mCameraManager.getCameraDeviceSetup(cameraId);
+        assertNotNull("Failed to create camera device setup for id " + cameraId,
+                cameraDeviceSetup);
+
+        StaticMetadata staticInfo = mAllStaticInfo.get(cameraId);
+        if (!staticInfo.isColorOutputSupported()) {
+            Log.i(TAG, "Camera " + cameraId + " does not support color outputs, skipping");
+            return;
+        }
+
+        MaxStreamSizes maxStreamSizes = new MaxStreamSizes(staticInfo,
+                cameraDeviceSetup.getId(), mContext, /*matchSize*/true);
+        Set<Long> dynamicRangeProfiles = staticInfo.getAvailableDynamicRangeProfilesChecked();
+        int[] videoStabilizationModes = staticInfo.getAvailableVideoStabilizationModesChecked();
+        Range<Integer>[] fpsRanges = staticInfo.getAeAvailableTargetFpsRangesChecked();
+        final int kPreviewStabilization =
+                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION;
+        boolean supportPreviewStab = CameraTestUtils.contains(videoStabilizationModes,
+                kPreviewStabilization);
+        Map<CameraFeatureWrapper, Boolean> featureCombinationSupport = new HashMap<>();
+        for (int[] c : maxStreamSizes.getQueryableCombinations()) {
+            for (Long dynamicProfile : dynamicRangeProfiles) {
+                if (dynamicProfile != DynamicRangeProfiles.STANDARD
+                        && dynamicProfile != DynamicRangeProfiles.HLG10) {
+                    // Only verify HLG10 and STANDARD. Skip for others.
+                    continue;
+                }
+                // Setup outputs
+                List<OutputConfiguration> outputConfigs = new ArrayList<>();
+                long minFrameDuration = setupConfigurations(staticInfo, c, maxStreamSizes,
+                        outputConfigs, dynamicProfile);
+                if (minFrameDuration  == -1) {
+                    // Stream combination is not valid. For example, if the stream sizes are not
+                    // supported, or if the device doesn't support JPEG_R, minFrameDuration will
+                    // be -1.
+                    continue;
+                }
+
+                for (Range<Integer> fpsRange : fpsRanges) {
+                    if ((fpsRange.getUpper() != 60) && (fpsRange.getUpper() != 30)) {
+                        // Skip fps ranges that are not 30fps or 60fps.
+                        continue;
+                    }
+                    if (minFrameDuration > 1e9 * 1.01 / fpsRange.getUpper()) {
+                        // Skip the fps range because the minFrameDuration cannot meet the
+                        // required range
+                        continue;
+                    }
+
+                    String combinationStr = MaxStreamSizes.combinationToString(c)
+                            + ", dynamicRangeProfile " + dynamicProfile
+                            + ", fpsRange " + fpsRange.toString();
+                    try {
+                        CaptureRequest.Builder builder = cameraDeviceSetup.createCaptureRequest(
+                                CameraDevice.TEMPLATE_PREVIEW);
+                        builder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                                CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+                        CaptureRequest request = builder.build();
+                        SessionConfiguration sessionConfig = new SessionConfiguration(
+                                SessionConfiguration.SESSION_REGULAR, outputConfigs);
+                        sessionConfig.setSessionParameters(request);
+                        boolean isSupported = cameraDeviceSetup.isSessionConfigurationSupported(
+                                sessionConfig);
+
+                        // Make sure isSessionConfigurationSupported and getSessionCharacteristics
+                        // behaviors are consistent.
+                        try {
+                            cameraDeviceSetup.getSessionCharacteristics(sessionConfig);
+                            mCollector.expectTrue("getSessionCharacteristics succeeds, but "
+                                    + "isSessionConfigurationSupported return false!",
+                                    isSupported);
+                        } catch (IllegalArgumentException e) {
+                            mCollector.expectTrue(
+                                    "getSessionCharacteristics throws IllegalArgumentException,"
+                                    + "but isSessionConfigurationSupported returns true!",
+                                    !isSupported);
+                        }
+
+                        // If preview stabilization is supported, the return value of
+                        // isSessionConfigurationSupported when stabilization is off should match
+                        // the result value when preview stabilization is on.
+                        if (supportPreviewStab) {
+                            builder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                                    kPreviewStabilization);
+                            CaptureRequest requestWithStab = builder.build();
+                            SessionConfiguration sessionConfigWithStab = new SessionConfiguration(
+                                    SessionConfiguration.SESSION_REGULAR, outputConfigs);
+                            sessionConfigWithStab.setSessionParameters(requestWithStab);
+
+                            boolean isSupportedWithStab =
+                                    cameraDeviceSetup.isSessionConfigurationSupported(
+                                            sessionConfigWithStab);
+
+                            mCollector.expectEquals(
+                                    "isSessionCharacteristicsSupported returns " + isSupported
+                                    + " with stabilization off, but returns " + isSupportedWithStab
+                                    + " with preview stabilization on.", isSupported,
+                                    isSupportedWithStab);
+
+                            try {
+                                cameraDeviceSetup.getSessionCharacteristics(sessionConfigWithStab);
+                                mCollector.expectTrue(
+                                        "With stabilization on, getSessionCharacteristics "
+                                        + "succeeds, but isSessionConfigurationSupported return "
+                                        + "false!", isSupportedWithStab);
+                            } catch (IllegalArgumentException e) {
+                                mCollector.expectTrue("With stabilization on, "
+                                        + "getSessionCharacteristics throws "
+                                        + "IllegalArgumentException, but "
+                                        + "isSessionConfigurationSupported returns true!",
+                                        !isSupportedWithStab);
+                            }
+                        }
+
+                        featureCombinationSupport.put(
+                                new CameraFeatureWrapper(c, fpsRange, dynamicProfile),
+                                isSupported);
+                    } catch (Throwable e) {
+                        mCollector.addMessage(String.format(
+                                "Output combination %s failed due to: %s",
+                                combinationStr, e.getMessage()));
+                    }
+                }
+            }
+        }
+
+        // Verify that:
+        // - If a combination with JPEG_R is supported, replacing JPEG_R with JPEG is
+        //   still supported.
+        // - If a combination with 10-bit HDR is supported, replacing HDR with SDR is
+        //   still supported.
+        for (Map.Entry<CameraFeatureWrapper, Boolean> entry
+                : featureCombinationSupport.entrySet()) {
+            CameraFeatureWrapper features = entry.getKey();
+            boolean isSupported = entry.getValue();
+
+            Log.v(TAG, "Features: "
+                    + Arrays.toString(features.mStreamCombination) + ", isJpegR "
+                    + features.mIsJpegR + ", fpsRange: "
+                    + features.mFpsRange + ", dynamicProfile: "
+                    + features.mDynamicProfile);
+            if (features.mIsJpegR) {
+                CameraFeatureWrapper featuresNoJpegR = new CameraFeatureWrapper(features,
+                        /*isJpegR*/false);
+                assertTrue(featureCombinationSupport.containsKey(featuresNoJpegR));
+                boolean isSupportedNoJpegR = featureCombinationSupport.get(featuresNoJpegR);
+                mCollector.expectEquals(
+                        features.toString() + " (support: " + isSupported
+                        + ") doesn't match " + featuresNoJpegR.toString() + " (support: "
+                        + isSupportedNoJpegR, isSupported, isSupportedNoJpegR);
+            }
+
+            if (features.mDynamicProfile != DynamicRangeProfiles.STANDARD) {
+                CameraFeatureWrapper featuresNoHdr = new CameraFeatureWrapper(
+                        features, DynamicRangeProfiles.STANDARD);
+                assertTrue(featureCombinationSupport.containsKey(featuresNoHdr));
+                boolean isSupportedNoHdr = featureCombinationSupport.get(featuresNoHdr);
+                mCollector.expectEquals(
+                        features.toString() + " (support: " + isSupported
+                        + ") doesn't match " + featuresNoHdr.toString() + " (support: "
+                        + isSupportedNoHdr, isSupported, isSupportedNoHdr);
+            }
+        }
+    }
+
+    /**
+     * A helper class to wrap camera features.
+     */
+    static class CameraFeatureWrapper {
+        CameraFeatureWrapper(int[] streamCombination,
+                Range<Integer> fpsRange, long dynamicProfile) {
+            mFpsRange = fpsRange;
+            mDynamicProfile = dynamicProfile;
+            mStreamCombination = Arrays.copyOf(streamCombination, streamCombination.length);
+
+            // Replace JPEG_R format with JPEG, and use a boolean to indicate whether
+            // it's JPEG_R or JPEG. This is for easier feature look-up.
+            boolean hasJpegR = false;
+            for (int i = 0; i < mStreamCombination.length; i += 2) {
+                if (mStreamCombination[i] == JPEG_R) {
+                    mStreamCombination[i] = JPEG;
+                    hasJpegR = true;
+                    break;
+                }
+            }
+            mIsJpegR = hasJpegR;
+        }
+
+        CameraFeatureWrapper(CameraFeatureWrapper other, boolean isJpegR) {
+            this.mStreamCombination = other.mStreamCombination;
+            this.mIsJpegR = isJpegR;
+            this.mFpsRange = other.mFpsRange;
+            this.mDynamicProfile = other.mDynamicProfile;
+        }
+
+        CameraFeatureWrapper(CameraFeatureWrapper other, long dynamicRangeProfile) {
+            this.mStreamCombination = other.mStreamCombination;
+            this.mIsJpegR = other.mIsJpegR;
+            this.mFpsRange = other.mFpsRange;
+            this.mDynamicProfile = dynamicRangeProfile;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = 17;
+            for (int i : mStreamCombination) {
+                result = 31 * result + i;
+            }
+            result = 31 * result + (mIsJpegR ? 1 : 0);
+            result = 31 * result + mFpsRange.hashCode();
+            result = 31 * result + (int) mDynamicProfile;
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            } else if (obj == this) {
+                return true;
+            } else if (obj instanceof CameraFeatureWrapper) {
+                final CameraFeatureWrapper other = (CameraFeatureWrapper) obj;
+                return (Arrays.equals(mStreamCombination, other.mStreamCombination)
+                        && mIsJpegR == other.mIsJpegR
+                        && mFpsRange.equals(other.mFpsRange)
+                        && mDynamicProfile == other.mDynamicProfile);
+            }
+
+            return false;
+        }
+
+        @Override
+        public String toString() {
+            return "Stream combination: " + Arrays.toString(mStreamCombination)
+                    + ", isJpegR: " + mIsJpegR
+                    + ", fpsRange: " + mFpsRange
+                    + ", dynamicRangeProfile: " + mDynamicProfile;
+        }
+
+        public final int[] mStreamCombination;
+        public final boolean mIsJpegR;
+        public final Range<Integer> mFpsRange;
+        public final long mDynamicProfile;
+    }
+
+    private long setupConfigurations(StaticMetadata staticInfo, int[] configs,
+            MaxStreamSizes maxSizes, List<OutputConfiguration> outputConfigs, Long dynamicProfile) {
+        long frameDuration = -1;
+        for (int i = 0; i < configs.length; i += 2) {
+            int format = configs[i];
+            int sizeLimit = configs[i + 1];
+
+            Size targetSize = null;
+            switch (format) {
+                case PRIV: {
+                    targetSize = maxSizes.getOutputSizeForFormat(PRIV, sizeLimit);
+                    OutputConfiguration config = new OutputConfiguration(
+                            targetSize, SurfaceTexture.class);
+                    config.setDynamicRangeProfile(dynamicProfile);
+                    outputConfigs.add(config);
+                    break;
+                }
+                case JPEG:
+                case JPEG_R: {
+                    targetSize = maxSizes.getOutputSizeForFormat(format, sizeLimit);
+                    OutputConfiguration config = new OutputConfiguration(format, targetSize);
+                    outputConfigs.add(config);
+                    break;
+                }
+                case YUV: {
+                    if (dynamicProfile == DynamicRangeProfiles.HLG10) {
+                        format = ImageFormat.YCBCR_P010;
+                    }
+                    targetSize = maxSizes.getOutputSizeForFormat(YUV, sizeLimit);
+                    OutputConfiguration config = new OutputConfiguration(format, targetSize);
+                    config.setDynamicRangeProfile(dynamicProfile);
+                    outputConfigs.add(config);
+                    break;
+                }
+                default:
+                    fail("Unknown output format " + format);
+            }
+
+            Map<Size, Long> minFrameDurations =
+                    staticInfo.getAvailableMinFrameDurationsForFormatChecked(format);
+            if (minFrameDurations.containsKey(targetSize)
+                    && minFrameDurations.get(targetSize) > frameDuration) {
+                frameDuration = minFrameDurations.get(targetSize);
+            }
+        }
+
+        return frameDuration;
     }
 }

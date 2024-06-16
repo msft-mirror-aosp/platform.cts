@@ -787,7 +787,6 @@
 
         <activity android:name="android.widget.cts.MagnifierCtsActivity"
              android:label="MagnifierCtsActivity"
-             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

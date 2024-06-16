@@ -758,7 +758,7 @@ def get_intrinsic_calibration(props, metadata, debug, fd=None):
     fd: float; focal length from capture metadata.
 
   Returns:
-    intrinsic transformation matrix
+    numpy array for intrinsic transformation matrix or None
     k = [[f_x, s, c_x],
          [0, f_y, c_y],
          [0,   0,   1]]
@@ -1067,6 +1067,25 @@ def awb_regions(props):
   """
   return 'android.control.maxRegionsAwb' in props and props[
       'android.control.maxRegionsAwb'] != 0
+
+
+def preview_stabilization_supported(props):
+  """Returns whether preview stabilization is supported.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if preview stabilization is supported.
+  """
+  supported_stabilization_modes = props[
+      'android.control.availableVideoStabilizationModes'
+  ]
+  supported = (
+      supported_stabilization_modes is not None and
+      STABILIZATION_MODE_PREVIEW in supported_stabilization_modes
+  )
+  return supported
 
 
 def optical_stabilization_supported(props):
