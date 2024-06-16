@@ -61,6 +61,7 @@
         <option name="push" value="CtsEmptyTestApp_FullScreenIntent.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_FullScreenIntent.apk" />
         <option name="push" value="CtsEmptyTestApp_AppMetadataInApk.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk.apk" />
         <option name="push" value="CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk" />
+        <option name="push" value="CtsEmptyTestApp_LowTargetSdk.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_LowTargetSdk.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

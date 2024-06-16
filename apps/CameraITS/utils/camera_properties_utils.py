@@ -758,7 +758,7 @@ def get_intrinsic_calibration(props, metadata, debug, fd=None):
     fd: float; focal length from capture metadata.
 
   Returns:
-    intrinsic transformation matrix
+    numpy array for intrinsic transformation matrix or None
     k = [[f_x, s, c_x],
          [0, f_y, c_y],
          [0,   0,   1]]
