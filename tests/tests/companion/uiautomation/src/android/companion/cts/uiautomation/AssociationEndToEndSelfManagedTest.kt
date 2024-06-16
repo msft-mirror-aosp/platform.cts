@@ -2,6 +2,7 @@ package android.companion.cts.uiautomation
 
 import android.app.Activity
 import android.companion.AssociationInfo
+import android.companion.AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
 import android.companion.CompanionDeviceManager
 import android.companion.cts.common.CompanionActivity
@@ -40,6 +41,9 @@ class AssociationEndToEndSelfManagedTest(
         // confirmation UI (the "self-managed" flow variant).
         assumeFalse(profile == null)
         assumeFalse(profile == DEVICE_PROFILE_WATCH)
+        // Do not need to test the automotive_projection profile since it does not have
+        // the UI.
+        assumeFalse(profile == DEVICE_PROFILE_AUTOMOTIVE_PROJECTION)
     }
 
     @Test
