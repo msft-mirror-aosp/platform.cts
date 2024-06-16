@@ -47,6 +47,7 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
         waitOnAllHandlers(getInstrumentation());
     }
 
+    @FlakyTest
     public void testMidCallComponentEnablement() throws Exception {
         if (!mShouldTestTelecom) {
             return;

@@ -134,6 +134,7 @@ android_test {
     ],
 
     target_sdk_version: "current",
+    sdk_version: "test_current",
 }
 
 android_library {

@@ -46,4 +46,5 @@ android_test {
     // Tag this module as a cts test artifact
     test_suites: ["cts"],
     // sdk_version: "system_current",
+    sdk_version: "test_current",
 }
