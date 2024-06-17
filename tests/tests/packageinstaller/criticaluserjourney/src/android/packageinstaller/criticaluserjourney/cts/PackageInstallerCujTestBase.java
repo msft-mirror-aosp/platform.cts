@@ -88,14 +88,15 @@ public class PackageInstallerCujTestBase {
 
     private static final String CONTENT_AUTHORITY =
             "android.packageinstaller.criticaluserjourney.cts.fileprovider";
-    private static final String TEST_APK_LABEL = "Empty Test App";
-    private static final String TEST_APK_NAME = "CtsEmptyTestApp.apk";
-    private static final String TEST_APK_V2_LABEL = "Empty Test App V2";
-    private static final String TEST_APK_V2_NAME = "CtsEmptyTestAppV2.apk";
-    private static final String TEST_APK_PACKAGE_NAME = "android.packageinstaller.emptytestapp.cts";
+    private static final String TEST_APK_LABEL = "Installer CUJ Test App";
+    private static final String TEST_APK_NAME = "CtsInstallerCujTestApp.apk";
+    private static final String TEST_APK_V2_LABEL = "Installer CUJ Test App V2";
+    private static final String TEST_APK_V2_NAME = "CtsInstallerCujTestAppV2.apk";
+    private static final String TEST_APK_PACKAGE_NAME =
+            "android.packageinstaller.cts.cuj.app";
     private static final String TEST_INSTALLER_PACKAGE_NAME =
-            "android.packageinstaller.cts.cujinstaller";
-    private static final String TEST_INSTALLER_APK_NAME = "CtsCujInstallerTestApp.apk";
+            "android.packageinstaller.cts.cuj.installer";
+    private static final String TEST_INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
     private static final String TEST_APK_LOCATION = "/data/local/tmp/cts/packageinstaller/cuj";
     private static final String APP_INSTALLED_LABEL = "App installed";
     private static final String BUTTON_CANCEL_LABEL = "Cancel";
@@ -103,6 +104,7 @@ public class PackageInstallerCujTestBase {
     private static final String BUTTON_GPP_MORE_DETAILS_LABEL = "More details";
     private static final String BUTTON_GPP_INSTALL_ANYWAY_LABEL = "Install anyway";
     private static final String BUTTON_INSTALL_LABEL = "Install";
+    private static final String BUTTON_OPEN_LABEL = "Open";
     private static final String BUTTON_SETTINGS_LABEL = "Settings";
     private static final String BUTTON_UPDATE_LABEL = "Update";
     private static final String TOGGLE_ALLOW_LABEL = "allow";
@@ -113,13 +115,13 @@ public class PackageInstallerCujTestBase {
     private static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
 
     private static final String ACTION_LAUNCH_INSTALLER =
-            "android.packageinstaller.cts.cujinstaller.action.LAUNCH_INSTALLER";
+            "android.packageinstaller.cts.cuj.installer.action.LAUNCH_INSTALLER";
 
     private static final String ACTION_REQUEST_INSTALLER =
-            "android.packageinstaller.cts.cujinstaller.action.REQUEST_INSTALLER";
+            "android.packageinstaller.cts.cuj.installer.action.REQUEST_INSTALLER";
 
     private static final String ACTION_RESPONSE_INSTALLER =
-            "android.packageinstaller.cts.cujinstaller.action.RESPONSE_INSTALLER";
+            "android.packageinstaller.cts.cuj.installer.action.RESPONSE_INSTALLER";
 
     private static final String EXTRA_EVENT = "extra_event";
     private static final String EXTRA_TEST_APK_URI = "extra_test_apk_uri";
@@ -465,11 +467,38 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Assert the install success dialog and click the Done button.
+     * Assert the install success dialog and launch the test app. Assert the label of test
+     * app is {@link #TEST_APK_LABEL}.
      */
-    public static void assertInstallSuccessDialogAndClickDoneButton() throws Exception {
+    public static void assertInstallSuccessDialogAndLaunchTestApp() throws Exception {
+        assertInstallSuccessDialogAndLaunchTestApp(/* assertTestAppV2= */ false);
+    }
+
+    /**
+     * Assert the install success dialog and launch the test app. Assert the label of the test
+     * app is {@link #TEST_APK_LABEL} if {@code assertTestAppV2} is false. Otherwise, assert
+     * the label of the test app is {@link #TEST_APK_V2_LABEL}
+     */
+    public static void assertInstallSuccessDialogAndLaunchTestApp(boolean assertTestAppV2)
+            throws Exception {
+        // Assert the label and Done button exists
         findPackageInstallerObject(By.textContains(APP_INSTALLED_LABEL), /* checkNull= */ true);
-        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_DONE_LABEL));
+        findPackageInstallerObject(BUTTON_DONE_LABEL);
+
+        // Click the Open button to launch the test app
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_OPEN_LABEL));
+
+        String testAppLabel = null;
+        // Assert the activity is launched successfully
+        if (assertTestAppV2) {
+            testAppLabel = TEST_APK_V2_LABEL;
+        } else {
+            testAppLabel = TEST_APK_LABEL;
+        }
+        findObject(By.text(testAppLabel).pkg(TEST_APK_PACKAGE_NAME), /* checkNull= */ true);
+
+        // Press back to leave the test app
+        pressBack();
     }
 
     /**

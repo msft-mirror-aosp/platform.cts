@@ -42,7 +42,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndClickDoneButton();
+        assertInstallSuccessDialogAndLaunchTestApp();
         assertTestPackageInstalled();
     }
 
@@ -114,7 +114,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndClickDoneButton();
+        assertInstallSuccessDialogAndLaunchTestApp();
         assertTestPackageInstalled();
     }
 
@@ -171,7 +171,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndClickDoneButton();
+        // Update to TestAPP V2 version in the test case, check the app is TestAPP V2 version
+        assertInstallSuccessDialogAndLaunchTestApp(/* assertTestAppV2= */ true);
         assertTestPackageLabelV2Installed();
     }
 
@@ -253,7 +254,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndClickDoneButton();
+        // Update to TestAPP V2 version in the test case, check the app is TestAPP V2 version
+        assertInstallSuccessDialogAndLaunchTestApp(/* assertTestAppV2= */ true);
         assertTestPackageLabelV2Installed();
     }
 
@@ -316,7 +318,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ false, /* checkGPPDialog= */ false);
 
-        assertInstallSuccessDialogAndClickDoneButton();
+        assertInstallSuccessDialogAndLaunchTestApp();
         assertTestPackageInstalled();
     }
 
@@ -399,7 +401,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ false, /* checkGPPDialog= */ false);
 
-        assertInstallSuccessDialogAndClickDoneButton();
+        assertInstallSuccessDialogAndLaunchTestApp();
         assertTestPackageInstalled();
     }
 

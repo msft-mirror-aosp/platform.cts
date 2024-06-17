@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.packageinstaller.cts.cujinstaller;
+package android.packageinstaller.cts.cuj.installer;
 
 import static android.app.PendingIntent.FLAG_MUTABLE;
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
@@ -48,22 +48,23 @@ import java.util.List;
 
 public class MainActivity extends Activity {
 
-    private static final String TAG = "CtsCujInstaller";
-    private static final String TEST_APK_PACKAGE_NAME = "android.packageinstaller.emptytestapp.cts";
-    private static final String TEST_APK_NAME = "CtsEmptyTestApp.apk";
-    private static final String TEST_APK_V2_NAME = "CtsEmptyTestAppV2.apk";
+    private static final String TAG = "CtsPIACujTestInstaller";
+    private static final String TEST_APK_PACKAGE_NAME =
+            "android.packageinstaller.cts.cuj.app";
+    private static final String TEST_APK_NAME = "CtsInstallerCujTestApp.apk";
+    private static final String TEST_APK_V2_NAME = "CtsInstallerCujTestAppV2.apk";
 
     private static final String CONTENT_AUTHORITY =
-            "android.packageinstaller.cts.cujinstaller.fileprovider";
+            "android.packageinstaller.cts.cuj.installer.fileprovider";
 
     private static final String TEST_PACKAGE_NAME =
             "android.packageinstaller.criticaluserjourney.cts";
     private static final String ACTION_REQUEST_INSTALLER =
-            "android.packageinstaller.cts.cujinstaller.action.REQUEST_INSTALLER";
+            "android.packageinstaller.cts.cuj.installer.action.REQUEST_INSTALLER";
     private static final String ACTION_RESPONSE_INSTALLER =
-            "android.packageinstaller.cts.cujinstaller.action.RESPONSE_INSTALLER";
+            "android.packageinstaller.cts.cuj.installer.action.RESPONSE_INSTALLER";
     private static final String ACTION_INSTALL_RESULT =
-            "android.packageinstaller.cts.cujinstaller.action.INSTALL_RESULT";
+            "android.packageinstaller.cts.cuj.installer.action.INSTALL_RESULT";
     private static final String EXTRA_EVENT = "extra_event";
     private static final String EXTRA_TEST_APK_URI = "extra_test_apk_uri";
     private static final String EXTRA_TEST_APK_V2_URI = "extra_test_apk_v2_uri";
@@ -78,7 +79,6 @@ public class MainActivity extends Activity {
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI = 3;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT = 4;
     private static final int REQUEST_CODE = 311;
-
 
     private PackageInstaller mPackageInstaller;
     private RequestInstallerReceiver mRequestInstallerReceiver;
