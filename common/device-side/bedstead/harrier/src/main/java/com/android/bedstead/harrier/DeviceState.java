@@ -54,6 +54,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.UserManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.service.quicksettings.TileService;
 import android.util.Log;
 import androidx.annotation.Nullable;
@@ -126,6 +127,7 @@ import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent;
 import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
+import com.android.bedstead.harrier.annotations.RequireRunOnSingleUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported;
@@ -610,6 +612,11 @@ public final class DeviceState extends HarrierRule {
             if (annotation instanceof RequireRunOnAdditionalUser requireRunOnAdditionalUserAnnotation) {
                 requireRunOnAdditionalUser(
                         requireRunOnAdditionalUserAnnotation.switchedToUser());
+                continue;
+            }
+
+            if (annotation instanceof RequireRunOnSingleUser) {
+                requireRunOnSingleUser();
                 continue;
             }
 
@@ -1538,31 +1545,27 @@ public final class DeviceState extends HarrierRule {
         };
     }
 
-    private static final Map<Class<? extends Annotation>, Class<? extends Annotation>>
+    private static final Map<String, String>
             BANNED_ANNOTATIONS_TO_REPLACEMENTS = getBannedAnnotationsToReplacements();
 
-    private static Map<
-            Class<? extends Annotation>,
-            Class<? extends Annotation>> getBannedAnnotationsToReplacements() {
-        Map<
-                Class<? extends Annotation>,
-                Class<? extends Annotation>> bannedAnnotationsToReplacements = new HashMap<>();
-        bannedAnnotationsToReplacements.put(org.junit.BeforeClass.class, BeforeClass.class);
-        bannedAnnotationsToReplacements.put(org.junit.AfterClass.class, AfterClass.class);
+    private static Map<String, String> getBannedAnnotationsToReplacements() {
+        Map<String, String> bannedAnnotationsToReplacements = new HashMap<>();
+        bannedAnnotationsToReplacements.put(org.junit.BeforeClass.class.getCanonicalName(), BeforeClass.class.getCanonicalName());
+        bannedAnnotationsToReplacements.put(org.junit.AfterClass.class.getCanonicalName(), AfterClass.class.getCanonicalName());
+        // bannedAnnotationsToReplacements.put("android.platform.test.annotations.RequiresFlagsEnabled", "com.android.bedstead.flags.annotations.RequireFlagsEnabled");
+        // bannedAnnotationsToReplacements.put("android.platform.test.annotations.RequiresFlagsDisabled", "com.android.bedstead.flags.annotations.RequireFlagsDisabled");
         return bannedAnnotationsToReplacements;
     }
 
     private void checkValidAnnotations(Description classDescription) {
         for (Method method : classDescription.getTestClass().getMethods()) {
-            for (Map.Entry<
-                    Class<? extends Annotation>,
-                    Class<? extends Annotation>> bannedAnnotation
-                    : BANNED_ANNOTATIONS_TO_REPLACEMENTS.entrySet()) {
-                if (method.isAnnotationPresent(bannedAnnotation.getKey())) {
+            for (Map.Entry<String, String> bannedAnnotation : BANNED_ANNOTATIONS_TO_REPLACEMENTS.entrySet()) {
+
+                if (Arrays.stream(method.getAnnotations()).anyMatch((i) -> i.annotationType().getCanonicalName().equals(bannedAnnotation.getKey()))) {
                     throw new IllegalStateException("Do not use "
-                            + bannedAnnotation.getKey().getCanonicalName()
+                            + bannedAnnotation.getKey()
                             + " when using DeviceState, replace with "
-                            + bannedAnnotation.getValue().getCanonicalName());
+                            + bannedAnnotation.getValue());
                 }
             }
 
@@ -1615,6 +1618,11 @@ public final class DeviceState extends HarrierRule {
         }
 
         mAdditionalUser = additionalUserOrNull();
+    }
+
+    private void requireRunOnSingleUser() {
+        checkFailOrSkip("This test requires running on a single user on a headless device",
+                TestApis.users().instrumented().equals(TestApis.users().main()), FailureMode.SKIP);
     }
 
     private void requireRunOnUser(String[] userTypes, OptionalBoolean switchedToUser) {
@@ -3124,15 +3132,21 @@ public final class DeviceState extends HarrierRule {
             affiliationIds.add("DEFAULT_AFFILIATED"); // To ensure headless PO + DO are affiliated
         }
 
-        UserReference userReference = TestApis.users().system();
+        UserReference deviceOwnerUser;
 
-        if (isPrimary && mPrimaryPolicyManager != null && !userReference.equals(
+        if (headlessDeviceOwnerType == EnsureHasDeviceOwner.HeadlessDeviceOwnerType.SINGLE_USER) {
+            deviceOwnerUser = TestApis.users().main();
+        } else {
+            deviceOwnerUser = TestApis.users().system();
+        }
+
+        if (isPrimary && mPrimaryPolicyManager != null && !deviceOwnerUser.equals(
                 mPrimaryPolicyManager.user())) {
             throw new IllegalStateException(
                     "Only one DPC can be marked as primary per test (current primary is "
                             + mPrimaryPolicyManager + ")");
         }
-        if (!userReference.equals(TestApis.users().instrumented())) {
+        if (!deviceOwnerUser.equals(TestApis.users().instrumented())) {
             // INTERACT_ACROSS_USERS_FULL is required for RemoteDPC
             ensureCanGetPermission(INTERACT_ACROSS_USERS_FULL);
         }
@@ -3222,7 +3236,7 @@ public final class DeviceState extends HarrierRule {
                 ensureHasNoAccounts(UserType.SYSTEM_USER, /* allowPreCreatedAccounts= */ true,
                         FailureMode.FAIL);
             }
-            ensureHasNoProfileOwner(userReference);
+            ensureHasNoProfileOwner(deviceOwnerUser);
 
             if (!mHasChangedDeviceOwner) {
                 recordDeviceOwner();
@@ -3230,7 +3244,8 @@ public final class DeviceState extends HarrierRule {
                 mHasChangedDeviceOwnerType = true;
             }
 
-            mDeviceOwner = RemoteDpc.setAsDeviceOwner(dpcQuery).devicePolicyController();
+            mDeviceOwner = RemoteDpc.setAsDeviceOwner(dpcQuery,
+                        deviceOwnerUser).devicePolicyController();
         }
 
         if (isPrimary) {

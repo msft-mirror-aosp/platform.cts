@@ -99,7 +99,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -827,8 +826,11 @@ public class CameraTestUtils extends Assert {
                 new LinkedBlockingQueue<>();
         private final LinkedBlockingQueue<Integer> mAbortQueue =
                 new LinkedBlockingQueue<>();
-        // Pair<CaptureRequest, Long> is a pair of capture request and timestamp.
+        // Pair<CaptureRequest, Long> is a pair of capture request and start of exposure timestamp.
         private final LinkedBlockingQueue<Pair<CaptureRequest, Long>> mCaptureStartQueue =
+                new LinkedBlockingQueue<>();
+        // Pair<CaptureRequest, Long> is a pair of capture request and readout timestamp.
+        private final LinkedBlockingQueue<Pair<CaptureRequest, Long>> mReadoutStartQueue =
                 new LinkedBlockingQueue<>();
         // Pair<Int, Long> is a pair of sequence id and frame number
         private final LinkedBlockingQueue<Pair<Integer, Long>> mCaptureSequenceCompletedQueue =
@@ -844,6 +846,17 @@ public class CameraTestUtils extends Assert {
             } catch (InterruptedException e) {
                 throw new UnsupportedOperationException(
                         "Can't handle InterruptedException in onCaptureStarted");
+            }
+        }
+
+        @Override
+        public void onReadoutStarted(CameraCaptureSession session, CaptureRequest request,
+                long timestamp, long frameNumber) {
+            try {
+                mReadoutStartQueue.put(new Pair(request, timestamp));
+            } catch (InterruptedException e) {
+                throw new UnsupportedOperationException(
+                        "Can't handle InterruptedException in onReadoutStarted");
             }
         }
 
@@ -1245,7 +1258,6 @@ public class CameraTestUtils extends Assert {
         }
 
         public List<Long> getCaptureStartTimestamps(int count) {
-            Iterator<Pair<CaptureRequest, Long>> iter = mCaptureStartQueue.iterator();
             List<Long> timestamps = new ArrayList<Long>();
             try {
                 while (timestamps.size() < count) {
@@ -1262,12 +1274,36 @@ public class CameraTestUtils extends Assert {
             }
         }
 
+        /**
+         * Get start of readout timestamps
+         *
+         * @param count The number of captures
+         * @return The list of start of readout timestamps
+         */
+        public List<Long> getReadoutStartTimestamps(int count) {
+            List<Long> timestamps = new ArrayList<Long>();
+            try {
+                while (timestamps.size() < count) {
+                    Pair<CaptureRequest, Long> readoutStart = mReadoutStartQueue.poll(
+                            CAPTURE_RESULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                    assertNotNull("Wait for a readout start timed out in "
+                            + CAPTURE_RESULT_TIMEOUT_MS + "ms", readoutStart);
+
+                    timestamps.add(readoutStart.second);
+                }
+                return timestamps;
+            } catch (InterruptedException e) {
+                throw new UnsupportedOperationException("Unhandled interrupted exception", e);
+            }
+        }
+
         public void drain() {
             mQueue.clear();
             mNumFramesArrived.getAndSet(0);
             mFailureQueue.clear();
             mBufferLostQueue.clear();
             mCaptureStartQueue.clear();
+            mReadoutStartQueue.clear();
             mAbortQueue.clear();
         }
     }
@@ -2609,6 +2645,10 @@ public class CameraTestUtils extends Assert {
     public static void validateImage(Image image, int width, int height, int format,
             String filePath, ColorSpace colorSpace) {
         checkImage(image, width, height, format, colorSpace);
+
+        if (format == ImageFormat.PRIVATE) {
+            return;
+        }
 
         /**
          * TODO: validate timestamp:
@@ -4004,17 +4044,15 @@ public class CameraTestUtils extends Assert {
     }
 
     public static boolean isSessionConfigWithParamsSupported(
-            CameraManager manager, String cameraId,
+            CameraDevice.CameraDeviceSetup cameraDeviceSetup,
             Handler handler, List<OutputConfiguration> outputConfigs,
-            int operatingMode, CaptureRequest request) throws Exception {
+            int operatingMode, CaptureRequest request) throws CameraAccessException {
         BlockingSessionCallback sessionListener = new BlockingSessionCallback();
         SessionConfiguration sessionConfig = new SessionConfiguration(operatingMode, outputConfigs,
                 new HandlerExecutor(handler), sessionListener);
         sessionConfig.setSessionParameters(request);
 
-        boolean ret = manager.isSessionConfigurationWithParametersSupported(
-                cameraId, sessionConfig);
-        return ret;
+        return cameraDeviceSetup.isSessionConfigurationSupported(sessionConfig);
     }
 
 
@@ -5166,6 +5204,41 @@ public class CameraTestUtils extends Assert {
             }
             assertTrue("External camera is not connected on device with FEATURE_CAMERA_EXTERNAL",
                     externalCameraConnected);
+        }
+    }
+
+    /**
+     * Verifies the presence of keys in the supportedKeys list.
+     *
+     * @param keys list of keys to be checked
+     * @param supportedKeys list utilized to verify presence of keys
+     * @param expectedResult true if keys should be present, false if not
+     *
+     */
+    public static <T> void checkKeysAreSupported(T[] keys, Set<T> supportedKeys,
+            boolean expectedResult) {
+        String errorMsg = expectedResult ? " key should be present "
+                : " key should not be present ";
+        for (T currKey : keys) {
+            assertTrue(currKey + errorMsg
+                    + " among the supported keys!",
+                    supportedKeys.contains(currKey) == expectedResult);
+        }
+    }
+
+
+    /**
+     * Verifies the presence of keys in the supportedKeys list.
+     *
+     * @param keys list of keys to be checked
+     * @param supportedKeys list utilized to verify presence of keys
+     * @param expectedResult true if keys should be present, false if not
+     *
+     */
+    public static <T> void checkKeysAreSupported(List<T[]> keys, Set<T> supportedKeys,
+            boolean expectedResult) {
+        for (T[] k : keys) {
+            checkKeysAreSupported(k, supportedKeys, expectedResult);
         }
     }
 

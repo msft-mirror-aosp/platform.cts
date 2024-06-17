@@ -68,9 +68,9 @@ import java.util.HashMap;
 import java.util.Set;
 import android.util.Size;
 
+import org.junit.Test;
 import org.junit.runners.Parameterized;
 import org.junit.runner.RunWith;
-import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import java.util.concurrent.Executor;

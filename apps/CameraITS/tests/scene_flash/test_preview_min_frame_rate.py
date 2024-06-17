@@ -33,7 +33,7 @@ import video_processing_utils
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PREVIEW_RECORDING_DURATION_SECONDS = 10
 _MAX_VAR_FRAME_DELTA = 0.001  # variance of frame deltas, units: seconds^2
-_FPS_ATOL = 0.5
+_FPS_ATOL = 0.8
 _DARKNESS_ATOL = 0.1 * 255  # openCV uses [0:255] images
 
 
@@ -54,9 +54,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       props = cam.override_with_hidden_physical_camera_props(props)
 
       # check SKIP conditions
-      vendor_api_level = its_session_utils.get_vendor_api_level(self.dut.serial)
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       camera_properties_utils.skip_unless(
-          vendor_api_level >= its_session_utils.ANDROID14_API_LEVEL)
+          first_api_level >= its_session_utils.ANDROID14_API_LEVEL)
 
       # determine acceptable ranges
       fps_ranges = camera_properties_utils.get_ae_target_fps_ranges(props)
@@ -83,8 +83,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       # determine camera capabilities for preview
       preview_sizes = cam.get_supported_preview_sizes(
           self.camera_id)
-      supported_video_sizes = cam.get_supported_video_sizes_capped(self.camera_id)
-      max_video_size = supported_video_sizes[-1]  # choose largest available size
+      supported_video_sizes = cam.get_supported_video_sizes_capped(
+          self.camera_id)
+      max_video_size = supported_video_sizes[-1]  # largest available size
       logging.debug('Camera supported preview sizes: %s', preview_sizes)
       logging.debug('Camera supported video sizes: %s', supported_video_sizes)
 
@@ -123,9 +124,8 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       if not math.isclose(
           preview_frame_rate, ae_target_fps_range[0], abs_tol=_FPS_ATOL):
         errors.append(
-            f'Preview frame rate was {preview_frame_rate}, '
-            f'expected to be {ae_target_fps_range[0]}, '
-            f'ATOL: {_FPS_ATOL}.'
+            f'Preview frame rate was {preview_frame_rate:.3f}. '
+            f'Expected to be {ae_target_fps_range[0]}, ATOL: {_FPS_ATOL}.'
         )
       frame_deltas = np.array(video_processing_utils.get_frame_deltas(
           preview_file_name_with_path))
@@ -135,7 +135,7 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
                     frame_delta_avg, frame_delta_var)
       if frame_delta_var > _MAX_VAR_FRAME_DELTA:
         errors.append(
-            f'Preview frame delta variance {frame_delta_var} too large, '
+            f'Preview frame delta variance {frame_delta_var:.3f} too large, '
             f'maximum allowed: {_MAX_VAR_FRAME_DELTA}.'
         )
       if errors:

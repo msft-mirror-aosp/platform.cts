@@ -215,7 +215,7 @@ public class WindowMetricsTestHelper {
     }
 
     public static class OnLayoutChangeListener implements View.OnLayoutChangeListener {
-        private final CountDownLatch mLayoutLatch = new CountDownLatch(1);
+        private CountDownLatch mLayoutLatch = new CountDownLatch(1);
 
         private volatile Rect mOnLayoutBoundsInScreen;
         private volatile WindowInsets mOnLayoutInsets;
@@ -251,6 +251,7 @@ public class WindowMetricsTestHelper {
             try {
                 assertTrue("Timed out waiting for layout.",
                         mLayoutLatch.await(4, TimeUnit.SECONDS));
+                mLayoutLatch = new CountDownLatch(1);
             } catch (InterruptedException e) {
                 throw new AssertionError(e);
             }

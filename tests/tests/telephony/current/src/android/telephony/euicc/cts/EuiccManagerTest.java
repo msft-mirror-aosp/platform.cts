@@ -22,43 +22,52 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.service.euicc.EuiccService;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.TelephonyManager;
 import android.telephony.UiccCardInfo;
 import android.telephony.UiccPortInfo;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.euicc.DownloadableSubscription;
 import android.telephony.euicc.EuiccCardManager;
-
 import android.telephony.euicc.EuiccInfo;
 import android.telephony.euicc.EuiccManager;
 import android.text.TextUtils;
+import android.util.ArraySet;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public class EuiccManagerTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final int REQUEST_CODE = 0;
     private static final int CALLBACK_TIMEOUT_MILLIS = 2000;
@@ -107,6 +116,10 @@ public class EuiccManagerTest {
 
     @Before
     public void setUp() throws Exception {
+        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeTrue(EuiccUtil.hasEuiccFeature());
+        }
+
         mEuiccManager = (EuiccManager) getContext().getSystemService(Context.EUICC_SERVICE);
     }
 
@@ -114,6 +127,10 @@ public class EuiccManagerTest {
     public void tearDown() throws Exception {
         if (mCallbackReceiver != null) {
             getContext().unregisterReceiver(mCallbackReceiver);
+
+            if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+                mCallbackReceiver = null;
+            }
         }
     }
 
@@ -130,6 +147,44 @@ public class EuiccManagerTest {
         // verify result is null
         assertNull(eid);
     }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ESIM_AVAILABLE_MEMORY)
+    public void testGetAvailableMemoryInBytes_euiccManagerDisabled() {
+        if (mEuiccManager.isEnabled()) {
+            return;
+        }
+
+        long availableMemoryInBytes = mEuiccManager.getAvailableMemoryInBytes();
+        assertEquals(EuiccManager.EUICC_MEMORY_FIELD_UNAVAILABLE, availableMemoryInBytes);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ESIM_AVAILABLE_MEMORY)
+    public void testGetAvailableMemoryInBytes_euiccManagerEnabled() {
+        if (!mEuiccManager.isEnabled()) {
+            return;
+        }
+
+        long availableMemoryInBytes;
+        try {
+            availableMemoryInBytes = mEuiccManager.getAvailableMemoryInBytes();
+        } catch (UnsupportedOperationException e) {
+            String message = e.getMessage();
+            assertTrue(message != null && !message.isEmpty());
+            return;
+        } catch (Exception e) {
+            fail("Exception occurred when retrieving the available memory: " + e.toString());
+            return;
+        }
+
+        // EuiccManager.EUICC_MEMORY_FIELD_UNAVAILABLE: when it fails to retrieve available
+        // memory because eUICC is not ready
+        // >= 0: the eUICC memory size can vary from [0, x]
+        assertTrue(availableMemoryInBytes == EuiccManager.EUICC_MEMORY_FIELD_UNAVAILABLE
+                    || availableMemoryInBytes >= 0);
+    }
+
 
     @Test
     public void testCreateForCardId() {
@@ -769,6 +824,30 @@ public class EuiccManagerTest {
         // This confirms the EuiccService action mapped with the respective EuiccManager action
         assertEquals(ACTION_CONVERT_TO_EMBEDDED_SUBSCRIPTIONS, mCallbackReceiver.getResultData());
     }
+
+    @Test
+    public void testSetPsimConversionSupportedCarriers() {
+        if (!Flags.supportPsimToEsimConversion()) {
+            return;
+        }
+        // Only test it when EuiccManager is enabled.
+        try {
+            if (!mEuiccManager.isEnabled()) {
+                return;
+            }
+        } catch (UnsupportedOperationException e) {
+            fail(e.toString());
+        }
+
+        // Sets supported countries
+        Set<Integer> carrierIds = new ArraySet<>();
+        carrierIds.add(1);
+        mEuiccManager.setPsimConversionSupportedCarriers(carrierIds);
+
+        assertTrue(mEuiccManager.isPsimConversionSupported(1));
+        assertFalse(mEuiccManager.isPsimConversionSupported(2));
+    }
+
 
     private void setTestEuiccUiComponent() {
         try {

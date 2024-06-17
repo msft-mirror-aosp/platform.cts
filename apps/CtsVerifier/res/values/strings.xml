@@ -1365,6 +1365,7 @@
     <string name="nfc_hce_throughput_reader">HCE throughput test (Reader)</string>
     <string name="nfc_hce_throughput_emulator_help">This test verifies that your HCE implementation can reach a decent throughput. While Android does not have any requirements on HCE performance, many HCE applications such as transport and payment apps do. If the average APDU roundtrip time is more than 50ms, please take a look at your implementation to see where the delay is coming from.</string>
     <string name="nfc_hce_change_preinstalled_wallet">The device has an installed payment application that is currently set as default. To complete the test, you will be asked whether you want to make another app the default app. Select yes.</string>
+    <string name="nfc_hce_change_default_wallet">The device has an installed Wallet application that is currently set as default. To complete the test, you will be asked whether you want to make another app the default Wallet app. Select yes. Then make sure to select CTSVerifier app. Then hit OK. </string>
     <string name="nfc_hce_change_default_help">You will now be asked whether you want to make Payment Service #1 the default app. Select yes.</string>
     <string name="nfc_hce_conflicting_non_payment_help">When tapping the first time, you will be shown a dialog that asks you to choose between TransportService #1 and TransportService #2. Select TransportService #2. Verify a dialog is shown that asks you to tap again to complete. Now tap again, and if communication with TransportService #2 is successfull the pass button will be enabled."</string>
 
@@ -1382,6 +1383,26 @@
 
     <string name="nfc_hce_payment_prefix_aids_emulator_2">Payment prefix AIDs 2 (Emulator)</string>
     <string name="nfc_hce_payment_prefix_aids_reader_2">Payment prefix AIDs 2 (Reader)</string>
+
+    <string name="nfc_observe_mode_emulator">Observe Mode (Emulator)</string>
+    <string name="nfc_observe_mode_reader">Observe Mode (Reader)</string>
+    <string name="nfc_observe_mode_emulator_help">In observe mode there should not be any response from the emulator to the reader. If the emulator detects the reader and does not receive a command, it will enable the pass button and that represents a pass or the test.</string>
+    <string name="nfc_observe_mode_reader_help">In observe mode there should not be any response from the emulator to the reader. If the reader detects a response it will disable the pass button and this is a failure.</string>
+
+    <string name="nfc_polling_loop_a_emulator">Polling Loop A (Emulator)</string>
+    <string name="nfc_polling_loop_a_reader">Polling Loop A (Reader)</string>
+    <string name="nfc_polling_loop_b_emulator">Polling Loop B (Emulator)</string>
+    <string name="nfc_polling_loop_b_reader">Polling Loop B (Reader)</string>
+    <string name="nfc_polling_loop_ab_emulator">Polling Loop A and B (Emulator)</string>
+    <string name="nfc_polling_loop_custom_emulator">Polling Loop Custom (Emulator)</string>
+    <string name="nfc_polling_loop_ab_reader">Polling Loop A and B (Reader)</string>
+    <string name="nfc_polling_loop_a_emulator_help">The emulator will wait until it sees 3 NFC-A polling frames before responding. If it sees another type of frame, it will fail.</string>
+    <string name="nfc_polling_loop_a_reader_help">The reader will poll for NFC-A.</string>
+    <string name="nfc_polling_loop_b_emulator_help">The emulator will wait until it sees 3 NFC-B polling frames before responding. If it sees another type of frame, it will fail.</string>
+    <string name="nfc_polling_loop_b_reader_help">The reader will poll for NFC-B.</string>
+    <string name="nfc_polling_loop_ab_emulator_help">The emulator will wait until it sees 3 NFC-A polling frames and 3 NFC-B polling frames before responding. If it sees another type of frame, it will fail.</string>
+    <string name="nfc_polling_loop_ab_reader_help">The reader will poll for NFC-A and NFC-B.</string>
+    <string name="nfc_polling_loop_custom_emulator_help">Please connect the PN532 to your linux machine and follow the instructions. The emulator will wait until it sees the specified custom polling frame.</string>
 
     <string name="nfc_hce_other_prefix_aids_emulator">Other prefix AIDs (Emulator)</string>
     <string name="nfc_hce_other_prefix_aids_reader">Other prefix AIDs (Reader)</string>
@@ -2517,7 +2538,7 @@
         with Full Screen Intents.</string>
     <string name="fsi_lockscreen_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, lock the screen and press the power button as quickly as possible to go to the lock screen.\n
-        Wait for a heads up notification to appear.\n
+        Wait for a heads up notification to appear first in the list with a pill button.\n
         Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
         Fail the test if the notification does not appear as described.
     </string>
@@ -2529,9 +2550,9 @@
     </string>
     <string name="fsi_screen_off_without_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, press the power button as quickly as possible to turn off the screen.\n
-        Wait about 5 seconds to observe the behavior, then unlock screen to return to this page.\n
-        Pass the test if a notification appears on the screen with a pill button, or if a notification icon appears.\n
-        Fail the test if a page automatically launched with the message \"This page is a full screen intent.\".\n
+        Wait for a notification to appear on the screen with a pill button.\n
+        Unlock screen to return to this page after seeing the notification or after 5 seconds.\n
+        Fail the test if the notification does not appear as described.
     </string>
     <string name="fsi_screen_off_with_permission_instruction">Click the \"I\'m done\" button when you are ready.\n
         After clicking, press the power button as quickly as possible to turn off the screen.\n
@@ -5718,6 +5739,9 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_calibrate">Calibrate Audio</string>
     <string name="audio_datapaths_calibratetitle">Calibrate Loopback Audio</string>
 
+    <string name="audio_exempt_nonhandheld">This is a non-handheld device and is exempt from this test.
+        Press the \"Pass\" button (below) to continue.</string>
+
     <string name="audio_datapaths_speakermic_test">Audio Data Paths Speaker/Mic Test</string>
     <string name="audio_datapaths_speakermic_info">This test verifies basic functionality over a set of audio routes
         \n\nTest Setup:
@@ -7119,6 +7143,8 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="controls_panel_setting_test_false">2a. Controls Panel setting in extra test false value</string>
     <string name="controls_panel_setting_test_true">2b. Controls Panel setting in extra test true value</string>
+    <string name="controls_panel_dream_test_false">3a. Control Panel starting on keyguard test false value </string>
+    <string name="controls_panel_dream_test_true">3b. Control Panel starting as a dream test true value </string>
     <string name="controls_panel_setting_test_info">This test verifies that an app that shows a
     panel in the device controls space will receive the correct value of the setting for controlling
     devices on the lock screen as part of their intent extras.\n\n
@@ -7129,6 +7155,25 @@ You should be prompted to select credentials; choose the ones you just installed
         (you might need to enable other settings for it to be available). Set that setting to %1$s.
         \n Then, open the device controls space (instructions below the button) and verify that the
         text inside the panel indicates that the setting is %1$s
+    </string>
+    <string name="controls_panel_dream_true_test_instructions">
+   1 - Find the Home Control Panel \n
+      - Open Settings, Search for "Screen Saver", find \"Home Controls\", \n\n
+   2 - For Case When Dock is Available\n
+     - Place the device on the dock and wait for the device to time out. \n\n
+   3 - For Case When Dock is Not Available \n
+    - Update \"When to start\" to \"While Charging\". \n
+    - Press the preview button or wait for the device to time out to enter dream mode. \n\n
+   4 - Verification of Hosting Status \n
+     - Verify that the hosting status is \"Hosted in Dream Service\".
+    </string>
+
+    <string name="controls_panel_dream_false_test_instructions">
+        Using the button below, open Settings.
+        Find the setting that allows you to control external devices from the lockscreen
+        (you might need to enable other settings for it to be available). Set that setting to true.
+        \n Then, open the device controls space (instructions below the button) and verify that the
+        hosting status is \"Not Hosted in Dream Service\"
     </string>
 
     <!--  Strings for Input tests  -->
@@ -7188,6 +7233,60 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_clear_preferred_mixer_attributes_failed">Clearing preferred mixer attributes failed.</string>
     <string name="audio_get_preferred_mixer_attributes_should_be_null">Preferred mixer attributes is not null after calling AudioManager#clearPreferredMixerAttributes.</string>
     <string name="audio_no_callback_for_preferred_mixer_attributes_changed">Callback is not called when preferred mixer attributes changed.</string>
+
+    <!-- Strings for Sharesheet tests -->
+    <string name="category_sharesheet">Sharesheet</string>
+
+    <string name="sharesheet_payload_toggle_test">Sharesheet Payload Toggle Test</string>
+    <string name="sharesheet_payload_toggle_test_info">
+        This test verifies that the system sharesheet properly handles the API that allows for shared items to be chosen from a larger set of optional items.
+        \n\n
+        1. Press the \"Share\" button below to launch the system sharesheet.
+        \n\n
+        2. In the system sharesheet, select all images and send them to the CTS verifier app.
+    </string>
+    <string name="sharesheet_payload_toggle_action_test">Sharesheet Payload Toggle Chooser Action Test</string>
+    <string name="sharesheet_payload_toggle_chooser_action_test_info">
+        This test verifies that the system sharesheet properly handles the API that allows for chooser actions to be updated in response to a change in the set of shared items in the system sharesheet.
+        \n\n
+        1. Press the \"Share\" button below to launch the system sharesheet.
+        \n\n
+        2. In the system sharesheet, select all images and tap on the chooser action.
+    </string>
+    <string name="sharesheet_chooser_action">Test Action</string>
+    <string name="sharesheet_wrong_intent_action">Wrong intent action; test failed.</string>
+    <string name="sharesheet_wrong_intent_mime_type">Wrong intent mime type; test failed.</string>
+    <string name="sharesheet_wrong_shared_items">Wrong set of shared items; test failed.</string>
+
+    <string name="sharesheet_album_test">Sharesheet Album Label Test</string>
+    <string name="sharesheet_album_test_info">This test verifies that the system sharesheet responds to the \"album\" hint if provided by the app.</string>
+    <string name="sharesheet_skipping_for_flag">Skipping the test due to disabled feature flag</string>
+    <string name="sharesheet_share_label">Share</string>
+    <string name="sharesheet_no_title_message">No title on sharesheet, test passed.</string>
+    <string name="sharesheet_album_test_step_1">Press the \"Share\" button below to show the system sharesheet.
+        When it\'s shown, look for a headline at the top saying something like \"Sharing text\".
+        \n\nThen close the sharesheet and you\'ll be asked whether you saw a headline like that.</string>
+    <string name="sharesheet_album_test_step_2">Did you see a title in the UI like \"Sharing Text\"?\n\nIf not sure, press Share again.</string>
+    <string name="sharesheet_album_test_step_3">Now press the \"Share\" button again and see if the headline says something like \"Sharing album\" instead.
+        \n\nIf the sharesheet indicates that it\'s an album being shared, pass the test, otherwise fail.</string>
+
+    <!-- Sharesheet ChooserResult test -->
+    <string name="sharesheet_result_test">Sharesheet Chooser Result Test</string>
+    <string name="sharesheet_result_test_info">This test verifies an app is notified of actions taken when sharing content.</string>
+    <string name="sharesheet_result_test_instructions">For each step, tap the \"Share\" button below and then take the requested action within the Sharing UI.</string>
+    <string name="sharesheet_result_test_app_instructions">Tap the icon for \'CtsVerifier\'.
+        \n\nIf it does not appear, dismiss the Share UI. </string>
+    <string name="sharesheet_result_test_copy_instructions">Press the \"Copy\" button.
+        \n\nIf there is no \'Copy\' button, dismiss the Share UI. </string>
+    <string name="sharesheet_result_test_edit_instructions">Press the \"Edit\" button.
+        \n\nIf there is no \'Edit\' button, dismiss the Share UI. </string>
+    <string name="sharesheet_result_test_instructions_after_share">Choose from the options below:</string>
+    <string name="sharesheet_result_test_pressed">I pressed the button</string>
+    <string name="sharesheet_result_test_not_found">I couldn\'t locate the button</string>
+    <string name="sharesheet_result_test_try_again">Try again</string>
+    <string name="sharesheet_result_test_no_result_message">No result received - test failed</string>
+    <string name="sharesheet_result_test_no_button">Some actions not available - test passed</string>
+    <string name="sharesheet_result_test_passed">Test passed.</string>
 
     <!-- Strings for CaptureContentForNotes test -->
     <string name="ccfn_tests">Capture Content For Notes Tests</string>

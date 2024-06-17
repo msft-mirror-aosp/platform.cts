@@ -20,28 +20,36 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.MATCH_ARCHIVED_PACKAGES;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.getDefaultLauncher;
+import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.Flags;
+import android.content.pm.LauncherApps;
+import android.content.pm.LauncherApps.ArchiveCompatibilityParams;
 import android.content.pm.PackageInstaller;
+import android.content.pm.PackageInstaller.UnarchivalState;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.PackageInfoFlags;
 import android.os.Handler;
 import android.os.Looper;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -53,19 +61,21 @@ import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.install.lib.LocalIntentSender;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -78,6 +88,8 @@ public class ArchiveTest {
             "/data/local/tmp/cts/uninstall/CtsArchiveTestApp.apk";
     private static final String ARCHIVE_APK_PACKAGE_NAME =
             "android.packageinstaller.archive.cts.archiveapp";
+    private static final String ARCHIVE_APK_ACTIVITY_NAME =
+            ARCHIVE_APK_PACKAGE_NAME + ".MainActivity";
     private static final String SYSTEM_PACKAGE_NAME = "android";
 
     private static final long TIMEOUT_MS = 30000;
@@ -90,13 +102,20 @@ public class ArchiveTest {
     private UiDevice mUiDevice;
     private PackageManager mPackageManager;
     private PackageInstaller mPackageInstaller;
+    private LauncherApps mLauncherApps;
+    private String mDefaultHome;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setup() throws Exception {
+        assumeTrue("Form factor is not supported", isFormFactorSupported());
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = instrumentation.getTargetContext();
         mPackageManager = mContext.getPackageManager();
         mPackageInstaller = mPackageManager.getPackageInstaller();
+        mLauncherApps = mContext.getSystemService(LauncherApps.class);
         mContext.getPackageManager().setComponentEnabledSetting(
                 new ComponentName(mContext, UnarchiveBroadcastReceiver.class),
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
@@ -111,11 +130,21 @@ public class ArchiveTest {
         sUnarchiveId = new CompletableFuture<>();
         sUnarchiveReceiverPackageName = new CompletableFuture<>();
         sUnarchiveReceiverAllUsers = new CompletableFuture<>();
+        mDefaultHome = getDefaultLauncher(instrumentation);
+        ArchiveCompatibilityParams options = new ArchiveCompatibilityParams();
+        options.setEnableUnarchivalConfirmation(false);
+        mLauncherApps.setArchiveCompatibility(options);
+        // Prepare device to same state to make tests more independent.
+        prepareDevice();
+        abandonPendingUnarchivalSessions();
     }
 
     @After
     public void tearDown() {
         uninstallPackage(ARCHIVE_APK_PACKAGE_NAME);
+        if (mDefaultHome != null) {
+            setDefaultLauncher(InstrumentationRegistry.getInstrumentation(), mDefaultHome);
+        }
     }
 
     private void uninstallPackage(String packageName) {
@@ -151,13 +180,11 @@ public class ArchiveTest {
             }
         }
         dumpWindowHierarchy();
-        fail("Unable to wait for the uninstaller activity");
         return null;
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
-    @Ignore("b/315953294")
     public void requestArchive_confirmationDialog() throws Exception {
         installPackage(ARCHIVE_APK);
         assertFalse(mPackageManager.getPackageInfo(ARCHIVE_APK_PACKAGE_NAME,
@@ -166,8 +193,7 @@ public class ArchiveTest {
         LocalIntentSender sender = new LocalIntentSender();
         runWithShellPermissionIdentity(
                 () -> mPackageInstaller.requestArchive(ARCHIVE_APK_PACKAGE_NAME,
-                        sender.getIntentSender(),
-                        PackageManager.DELETE_SHOW_DIALOG),
+                        sender.getIntentSender()),
                 Manifest.permission.DELETE_PACKAGES);
         Intent intent = sender.getResult();
         assertThat(intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -100)).isEqualTo(
@@ -210,12 +236,15 @@ public class ArchiveTest {
         installPackage(ARCHIVE_APK);
         LocalIntentSender archiveSender = new LocalIntentSender();
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(ARCHIVE_APK_PACKAGE_NAME,
-                        archiveSender.getIntentSender(), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(ARCHIVE_APK_PACKAGE_NAME,
+                            archiveSender.getIntentSender());
+                    Intent archiveIntent = archiveSender.getResult();
+                    assertThat(archiveIntent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                            -100)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        Intent archiveIntent = archiveSender.getResult();
-        assertThat(archiveIntent.getIntExtra(PackageInstaller.EXTRA_STATUS, -100)).isEqualTo(
-                PackageInstaller.STATUS_SUCCESS);
 
         SessionListener sessionListener = new SessionListener();
         mPackageInstaller.registerSessionCallback(sessionListener,
@@ -247,12 +276,89 @@ public class ArchiveTest {
             Assert.fail("Restore button not shown");
         }
         clickableView.click();
+    }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
+    public void startUnarchival_permissionDialog() throws Exception {
+        installPackage(ARCHIVE_APK);
+        prepareDevice();
+        ArchiveCompatibilityParams options = new ArchiveCompatibilityParams();
+        options.setEnableIconOverlay(true);
+        options.setEnableUnarchivalConfirmation(true);
+        mLauncherApps.setArchiveCompatibility(options);
+        LocalIntentSender archiveSender = new LocalIntentSender();
+        runWithShellPermissionIdentity(
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            ARCHIVE_APK_PACKAGE_NAME,
+                            archiveSender.getIntentSender());
+                    assertThat(archiveSender.getResult().getIntExtra(PackageInstaller.EXTRA_STATUS,
+                            -100)).isEqualTo(PackageInstaller.STATUS_SUCCESS);
+                },
+                Manifest.permission.DELETE_PACKAGES);
+
+        ComponentName archiveComponentName = new ComponentName(ARCHIVE_APK_PACKAGE_NAME,
+                ARCHIVE_APK_ACTIVITY_NAME);
+        setDefaultLauncher(InstrumentationRegistry.getInstrumentation(), mContext.getPackageName());
+        prepareDevice();
+
+        Intent intent = new Intent();
+        intent.setComponent(archiveComponentName);
+        intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
+
+        mUiDevice.waitForIdle();
+        assertThat(waitFor(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1")))).isNotNull();
+        UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
+        if (clickableView == null) {
+            Assert.fail("Restore button not shown");
+        }
+        clickableView.click();
         assertThat(sUnarchiveReceiverPackageName.get(10, TimeUnit.SECONDS)).isEqualTo(
                 ARCHIVE_APK_PACKAGE_NAME);
-        int unarchiveId = sUnarchiveId.get(10, TimeUnit.MILLISECONDS);
+        assertThat(sUnarchiveReceiverPackageName.get()).isEqualTo(ARCHIVE_APK_PACKAGE_NAME);
+        assertThat(sUnarchiveReceiverAllUsers.get()).isFalse();
+    }
 
-        mPackageInstaller.abandonSession(unarchiveId);
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
+    public void startUnarchival_errorDialog() throws Exception {
+        installPackage(ARCHIVE_APK);
+        prepareDevice();
+        LocalIntentSender archiveSender = new LocalIntentSender();
+        runWithShellPermissionIdentity(
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            ARCHIVE_APK_PACKAGE_NAME,
+                            archiveSender.getIntentSender());
+                    Intent archiveIntent = archiveSender.getResult();
+                    assertThat(archiveIntent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                            -100)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
+                Manifest.permission.DELETE_PACKAGES);
+        ComponentName archiveComponentName = new ComponentName(ARCHIVE_APK_PACKAGE_NAME,
+                ARCHIVE_APK_ACTIVITY_NAME);
+        setDefaultLauncher(InstrumentationRegistry.getInstrumentation(), mContext.getPackageName());
+        prepareDevice();
+
+        Intent intent = new Intent();
+        intent.setComponent(archiveComponentName);
+        intent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
+
+        mUiDevice.waitForIdle();
+        int unarchiveId = getUnarchivalSessionId();
+        mPackageInstaller.reportUnarchivalState(
+                UnarchivalState.createGenericErrorState(unarchiveId));
+
+        assertThat(waitFor(Until.findObject(By.textContains("Something went wrong")))).isNotNull();
+        UiObject2 clickableView = mUiDevice.findObject(By.text("OK"));
+        if (clickableView == null) {
+            Assert.fail("OK button not shown");
+        }
+        clickableView.click();
     }
 
     private void prepareDevice() throws Exception {
@@ -286,6 +392,33 @@ public class ArchiveTest {
                     + mContext.getUser() + ": " + e);
             return false;
         }
+    }
+
+    private void abandonPendingUnarchivalSessions() {
+        List<PackageInstaller.SessionInfo> sessions = mPackageInstaller.getAllSessions();
+        for (PackageInstaller.SessionInfo session : sessions) {
+            if (ARCHIVE_APK_PACKAGE_NAME.equals(session.getAppPackageName())) {
+                mPackageInstaller.abandonSession(session.getSessionId());
+            }
+        }
+    }
+
+    private int getUnarchivalSessionId() {
+        List<PackageInstaller.SessionInfo> sessions = mPackageInstaller.getAllSessions();
+        for (PackageInstaller.SessionInfo session : sessions) {
+            if (session.getAppPackageName().equals(ARCHIVE_APK_PACKAGE_NAME)) {
+                return session.getSessionId();
+            }
+        }
+        return -1;
+    }
+
+    private static boolean isFormFactorSupported() {
+        return !FeatureUtil.isArc()
+                && !FeatureUtil.isAutomotive()
+                && !FeatureUtil.isTV()
+                && !FeatureUtil.isWatch()
+                && !FeatureUtil.isVrHeadset();
     }
 
     public static class UnarchiveBroadcastReceiver extends BroadcastReceiver {
@@ -339,5 +472,8 @@ public class ArchiveTest {
         public void onFinished(int sessionId, boolean success) {
             mSessionIdFinished.complete(sessionId);
         }
+    }
+
+    public static class Launcher extends Activity {
     }
 }
