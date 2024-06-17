@@ -28,6 +28,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -37,6 +38,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.text.TextUtils;
@@ -57,6 +59,7 @@ import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.DisableAnimationRule;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -71,6 +74,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -100,7 +105,12 @@ public class PackageInstallerCujTestBase {
     private static final String BUTTON_INSTALL_LABEL = "Install";
     private static final String BUTTON_SETTINGS_LABEL = "Settings";
     private static final String BUTTON_UPDATE_LABEL = "Update";
+    private static final String TOGGLE_ALLOW_LABEL = "allow";
     private static final String TOGGLE_ALLOW_FROM_LABEL = "Allow from";
+    private static final String TOGGLE_ALLOW_PERMISSION_LABEL = "allow permission";
+    private static final String TOGGLE_INSTALL_UNKNOWN_APPS_LABEL = "install unknown apps";
+    private static final String INSTALLING_LABEL = "Installing";
+    private static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
 
     private static final String ACTION_LAUNCH_INSTALLER =
             "android.packageinstaller.cts.cujinstaller.action.LAUNCH_INSTALLER";
@@ -137,6 +147,8 @@ public class PackageInstallerCujTestBase {
     private static InstallerResponseReceiver sInstallerResponseReceiver;
     private static Instrumentation sInstrumentation;
     private static UiDevice sUiDevice;
+    private static String sToggleLabel = null;
+    private static String sPackageInstallerPackageName = null;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -144,6 +156,8 @@ public class PackageInstallerCujTestBase {
         sContext = sInstrumentation.getTargetContext();
         sPackageManager = sContext.getPackageManager();
         sInstallerResponseReceiver = new InstallerResponseReceiver();
+        sPackageInstallerPackageName = getPackageInstallerPackageName();
+        Log.d(TAG, "sPackageInstallerPackageName = " + sPackageInstallerPackageName);
 
         copyTestFiles();
 
@@ -160,6 +174,11 @@ public class PackageInstallerCujTestBase {
 
     @Before
     public void setup() throws Exception {
+        assumeFalse("The device is not supported", isNotSupportedDevice());
+
+        assumeFalse("The device doesn't have package installer",
+                sPackageInstallerPackageName == null);
+
         uninstallTestPackage();
         assertTestPackageNotInstalled();
 
@@ -189,7 +208,7 @@ public class PackageInstallerCujTestBase {
     }
 
     @AfterClass
-    public static void teadDownClass() throws Exception {
+    public static void tearDownClass() throws Exception {
         sInstallerResponseReceiver.unregisterReceiver(sContext);
         sInstallerResponseReceiver = null;
         sPackageManager = null;
@@ -382,7 +401,7 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Assert the test packag is installed.
+     * Assert the test package is installed.
      */
     public static void assertTestPackageInstalled() {
         assertThat(isInstalledAndVerifyAppName(TEST_APK_PACKAGE_NAME, TEST_APK_LABEL)).isTrue();
@@ -392,7 +411,7 @@ public class PackageInstallerCujTestBase {
      * Assert the test package has the V2 label is installed.
      */
     public static void assertTestPackageLabelV2Installed() {
-        assertThat(isInstalledAndVerifyAppName(TEST_APK_PACKAGE_NAME, TEST_APK_V2_LABEL)).isTrue();
+        assertThat(isTestPackageLabelV2Installed()).isTrue();
     }
 
     /**
@@ -421,8 +440,14 @@ public class PackageInstallerCujTestBase {
         waitForUiIdle();
     }
 
+    private static void clickAndWaitForNewWindow(UiObject2 uiObject2) {
+        uiObject2.clickAndWait(Until.newWindow(), WAIT_OBJECT_GONE_TIMEOUT_MS);
+    }
+
     private static void allowInstallIfGPPDialogExists() {
-        UiObject2 more = findObject(BUTTON_GPP_MORE_DETAILS_LABEL, /* checkNull= */ false);
+        final Pattern morePattern = Pattern.compile(BUTTON_GPP_MORE_DETAILS_LABEL,
+                Pattern.CASE_INSENSITIVE);
+        UiObject2 more = sUiDevice.findObject(By.text(morePattern));
         if (more != null) {
             more.click();
             waitForUiIdle();
@@ -443,66 +468,147 @@ public class PackageInstallerCujTestBase {
      * Assert the install success dialog and click the Done button.
      */
     public static void assertInstallSuccessDialogAndClickDoneButton() throws Exception {
-        findObject(By.textContains(APP_INSTALLED_LABEL), /* checkNull= */ true);
-        findObject(BUTTON_DONE_LABEL).click();
-        waitForUiIdle();
+        findPackageInstallerObject(By.textContains(APP_INSTALLED_LABEL), /* checkNull= */ true);
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_DONE_LABEL));
     }
 
     /**
-     * Click the Install button and allow install if the GPP dialog exists.
+     * Click the Install button and wait for the dialog to disappear. Also allow install if the
+     * GPP dialog exists.
      */
     public static void clickInstallButton() {
-        findObject(BUTTON_INSTALL_LABEL).click();
-        waitForUiIdle();
-        allowInstallIfGPPDialogExists();
+        clickInstallButton(/* checkInstallingDialog= */ false);
     }
 
     /**
-     * Click the Update button and wait for the dialog disappears.
+     * Click the Install button and wait for the dialog to disappear. Also allow install if the
+     * GPP dialog exists. If {@code checkInstallingDialog} is true, check the Installing dialog.
+     * Otherwise, don't check the Installing dialog. E.g. The installation via intent triggers
+     * the Installing dialog.
+     */
+    public static void clickInstallButton(boolean checkInstallingDialog) {
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_INSTALL_LABEL));
+
+        if (checkInstallingDialog) {
+            waitForInstallingDialogGone();
+        }
+
+        if (!isTestPackageInstalled()) {
+            allowInstallIfGPPDialogExists();
+        }
+    }
+
+    /**
+     * Click the Update button and wait for the dialog to disappear. Also allow install if the
+     * GPP dialog exists.
      */
     public static void clickUpdateButton() {
-        findObject(BUTTON_UPDATE_LABEL).click();
-        waitForUiIdle();
-        // wait for the dialog disappear
-        waitUntilObjectGone(BUTTON_UPDATE_LABEL);
+        clickUpdateButton(/* checkInstallingDialog= */ false);
     }
 
     /**
-     * Click the Cancel button and wait for the dialog disappears.
+     * Click the Update button and wait for the dialog to disappear. Also allow install if the
+     * GPP dialog exists. If {@code checkInstallingDialog} is true, check the Installing dialog.
+     * Otherwise, don't check the Installing dialog. E.g. The installation via intent triggers
+     * the Installing dialog.
+     */
+    public static void clickUpdateButton(boolean checkInstallingDialog) {
+        clickUpdateButton(checkInstallingDialog, /* checkGPPDialog= */ true);
+    }
+
+    /**
+     * Click the Update button and wait for the dialog to disappear. If
+     * {@code checkInstallingDialog} is true, check the Installing dialog. Otherwise, don't
+     * check the Installing dialog. E.g. The installation via intent triggers Installing dialog.
+     * If {@code checkGPPDialog} is true, check the GPP dialog. Otherwise, don't check the GPP
+     * dialog. E.g. The installation via intent with package uri doesn't trigger the GPP dialog.
+     */
+    public static void clickUpdateButton(boolean checkInstallingDialog, boolean checkGPPDialog) {
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_UPDATE_LABEL));
+
+        if (checkInstallingDialog) {
+            waitForInstallingDialogGone();
+        }
+
+        if (checkGPPDialog && !isTestPackageLabelV2Installed()) {
+            allowInstallIfGPPDialogExists();
+        }
+    }
+
+    /**
+     * Click the Cancel button and wait for the dialog to disappear.
      */
     public static void clickCancelButton() {
-        findObject(BUTTON_CANCEL_LABEL).click();
-        waitForUiIdle();
-        // wait for the dialog disappear
-        waitUntilObjectGone(BUTTON_CANCEL_LABEL);
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_CANCEL_LABEL));
     }
 
     /**
-     * Click the Settings button and wait for the dialog disappears.
+     * Click the Settings button and wait for the dialog to disappear.
      */
     public static void clickSettingsButton() {
-        findObject(BUTTON_SETTINGS_LABEL).click();
-        waitForUiIdle();
-        // wait for the dialog disappear
-        waitUntilObjectGone(BUTTON_SETTINGS_LABEL);
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_SETTINGS_LABEL));
     }
 
     /**
-     * Toggle the Allow From Source to grant the permission to the CUJ Installer.
+     * Toggle to grant the AppOps permission REQUEST_INSTALL_PACKAGES to the CUJ Installer.
      */
-    public static void toggleAllowFromSource() {
-        findObject(By.textContains(TOGGLE_ALLOW_FROM_LABEL), /* checkNull= */ true).click();
-        waitForUiIdle();
+    public static void toggleToGrantRequestInstallPackagesPermission() {
+        // Already know which toggle label on the device, find it and click it directly
+        if (sToggleLabel != null) {
+            clickAndWaitForNewWindow(findObject(sToggleLabel));
+            return;
+        }
+
+        // Start to find the objects, find the checkable items first
+        final List<UiObject2> uiObjects = sUiDevice.wait(
+                Until.findObjects(By.checkable(true).checked(false)), FIND_OBJECT_TIMEOUT_MS);
+
+        if (uiObjects == null || uiObjects.isEmpty()) {
+            fail("No toggle to grant permission");
+        }
+
+        Log.d(TAG, "The count of checkable objects is " + uiObjects.size());
+
+        // Only one item, find the text object
+        if (uiObjects.size() == 1) {
+            UiObject2 toggle = uiObjects.get(0);
+            logUiObject(toggle);
+            UiObject2 text = findSiblingTextObject(toggle);
+            if (text != null) {
+                sToggleLabel = text.getText();
+                clickAndWaitForNewWindow(text);
+                return;
+            }
+            clickAndWaitForNewWindow(toggle);
+            return;
+        }
+
+        UiObject2 text = null;
+        for (int i = 0; i < uiObjects.size(); i++) {
+            UiObject2 toggle = uiObjects.get(i);
+            text = findSiblingTextObject(toggle);
+            if (text != null) {
+                break;
+            }
+        }
+        if (text != null) {
+            sToggleLabel = text.getText();
+            clickAndWaitForNewWindow(text);
+        } else {
+            fail("Do NOT find the suitable toggle to grant permission!");
+        }
     }
 
     /**
-     * Exit the Allow From Source settings and wait for it disappears.
+     * Exit the grant permission settings and wait for it to disappear.
      */
-    public static void exitAllowFromSettings() {
+    public static void exitGrantPermissionSettings() {
         pressBack();
         waitForUiIdle();
-        // wait for exiting the Allow from settings
-        waitUntilObjectGone(By.textContains(TOGGLE_ALLOW_FROM_LABEL));
+        if (sToggleLabel != null) {
+            // wait for exiting the grant permission settings
+            waitUntilObjectGone(By.text(sToggleLabel));
+        }
     }
 
     /**
@@ -514,23 +620,89 @@ public class PackageInstallerCujTestBase {
         waitForUiIdle();
     }
 
-    private static UiObject2 findObject(String name) {
-        return findObject(name, /* checkNull= */ true);
+    private static void waitForInstallingDialogGone() {
+        BySelector installingSelector =
+                getPackageInstallerBySelector(By.textContains(INSTALLING_LABEL));
+        UiObject2 installing = sUiDevice.findObject(installingSelector);
+        if (installing != null) {
+            waitUntilObjectGone(installingSelector);
+        }
     }
 
     @Nullable
-    private static UiObject2 findObject(String name, boolean checkNull) {
+    private static UiObject2 findSiblingTextObject(@NonNull UiObject2 uiObject) {
+        UiObject2 parent = uiObject.getParent();
+        if (parent == null) {
+            return null;
+        }
+
+        // If the child count is 1, it means the parent object only has the uiObject.
+        // Try to find the parent's parent that has more than two children.
+        while (parent.getChildCount() <= 1) {
+            parent = parent.getParent();
+            if (parent == null) {
+                return null;
+            }
+        }
+
+        // Find all TextViews to match the label
+        final List<UiObject2> uiObjects = parent.findObjects(By.clazz(TEXTVIEW_WIDGET_CLASSNAME));
+        Log.d(TAG, "The count of findSiblingTextObject objects is " + uiObjects.size());
+        for (int i = 0; i < uiObjects.size(); i++) {
+            UiObject2 uiObject2 = uiObjects.get(i);
+            if (uiObject2 != null) {
+                logUiObject(uiObject2);
+                if (uiObject2.getText() != null) {
+                    String label = uiObject2.getText().toLowerCase(Locale.ROOT);
+                    if (label.contains(TOGGLE_ALLOW_FROM_LABEL)
+                            || label.contains(TOGGLE_ALLOW_PERMISSION_LABEL)
+                            || label.contains(TOGGLE_INSTALL_UNKNOWN_APPS_LABEL)
+                            || label.contains(TOGGLE_ALLOW_LABEL)) {
+                        return uiObject2;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static void logUiObject(@NonNull UiObject2 uiObject) {
+        Log.d(TAG, "Found bounds: " + uiObject.getVisibleBounds()
+                + " of object: " + uiObject + ", text: " + uiObject.getText()
+                + ", package: " + uiObject.getApplicationPackage() + ", className: "
+                + uiObject.getClassName());
+    }
+
+    private static BySelector getPackageInstallerBySelector(BySelector bySelector) {
+        return bySelector.pkg(sPackageInstallerPackageName);
+    }
+
+    private static UiObject2 findPackageInstallerObject(String name) {
         final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
-        return findObject(By.text(namePattern), checkNull);
+        return findPackageInstallerObject(By.text(namePattern), /* checkNull= */ true);
+    }
+
+    private static UiObject2 findPackageInstallerObject(BySelector bySelector, boolean checkNull) {
+        return findObject(getPackageInstallerBySelector(bySelector), checkNull);
+    }
+
+    private static UiObject2 findObject(String name) {
+        final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
+        return findObject(By.text(namePattern), /* checkNull= */ true);
     }
 
     @Nullable
     private static UiObject2 findObject(BySelector bySelector, boolean checkNull) {
+        return findObject(bySelector, checkNull, FIND_OBJECT_TIMEOUT_MS);
+    }
+
+    @Nullable
+    private static UiObject2 findObject(BySelector bySelector, boolean checkNull, long timeoutMs) {
         waitForUiIdle();
 
         UiObject2 object = null;
         long startTime = System.currentTimeMillis();
-        while (startTime + FIND_OBJECT_TIMEOUT_MS > System.currentTimeMillis()) {
+        while (startTime + timeoutMs > System.currentTimeMillis()) {
             try {
                 object = sUiDevice.wait(Until.findObject(bySelector), /* timeout= */ 10 * 1000);
                 if (object != null) {
@@ -550,11 +722,6 @@ public class PackageInstallerCujTestBase {
             assertWithMessage("Can't find object " + bySelector).that(object).isNotNull();
         }
         return object;
-    }
-
-    private static void waitUntilObjectGone(String name) {
-        final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
-        waitUntilObjectGone(By.text(namePattern));
     }
 
     private static void waitUntilObjectGone(BySelector bySelector) {
@@ -611,6 +778,10 @@ public class PackageInstallerCujTestBase {
         }
     }
 
+    private static boolean isTestPackageLabelV2Installed() {
+        return isInstalledAndVerifyAppName(TEST_APK_PACKAGE_NAME, TEST_APK_V2_LABEL);
+    }
+
     private static boolean isInstalledAndVerifyAppName(@NonNull String packageName,
             @NonNull String expectedAppLabel) {
         Log.d(TAG, "Testing if package " + packageName + " is installed for user "
@@ -647,5 +818,21 @@ public class PackageInstallerCujTestBase {
         public void resetResult() {
             mInstallerResponseResult = new CompletableFuture();
         }
+    }
+
+    @Nullable
+    private static String getPackageInstallerPackageName() {
+        final Intent intent = new Intent(
+                Intent.ACTION_INSTALL_PACKAGE).setData(Uri.parse("content:"));
+        final ResolveInfo ri = sPackageManager.resolveActivity(intent, /* flags= */ 0);
+        return ri != null ? ri.activityInfo.packageName : null;
+    }
+
+    private static boolean isNotSupportedDevice() {
+        return FeatureUtil.isArc()
+                || FeatureUtil.isAutomotive()
+                || FeatureUtil.isTV()
+                || FeatureUtil.isWatch()
+                || FeatureUtil.isVrHeadset();
     }
 }

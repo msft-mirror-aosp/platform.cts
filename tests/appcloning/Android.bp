@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsAppCloningDeviceTestCases",
+    team: "trendy_team_android_profile_experiences",
     defaults: ["cts_defaults"],
     static_libs: [
         "compatibility-device-util-axt",

@@ -14,16 +14,12 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_interactions_frameworks",
 }
 
 filegroup {
     name: "cts-wm-components",
     srcs: ["**/Components.java"],
-}
-
-filegroup {
-    name: "cts-wm-aspect-ratio-test-base",
-    srcs: ["src/android/server/wm/activity/AspectRatioTestsBase.java"],
 }
 
 filegroup {

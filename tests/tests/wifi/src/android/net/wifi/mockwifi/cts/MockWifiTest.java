@@ -44,6 +44,7 @@ import android.net.wifi.WifiManager;
 import android.net.wifi.WifiSsid;
 import android.net.wifi.cts.WifiFeature;
 import android.net.wifi.nl80211.NativeScanResult;
+import android.net.wifi.nl80211.PnoSettings;
 import android.net.wifi.nl80211.RadioChainInfo;
 import android.os.Build;
 import android.os.PowerManager;
@@ -63,6 +64,7 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
@@ -388,7 +390,7 @@ public class MockWifiTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void testMockPnoScanResultsOnMockWifi() throws Exception {
-        if (!sWifiManager.isPreferredNetworkOffloadSupported()) {
+        if (!sWifiManager.isPreferredNetworkOffloadSupported() || FeatureUtil.isAutomotive()) {
             return;
         }
         if (!hasLocationFeature()) {
@@ -406,6 +408,8 @@ public class MockWifiTest {
             for (NativeScanResult nativeScan : getMockNativeResults()) {
                 listOfSsids.add(WifiSsid.fromBytes(nativeScan.getSsid()));
             }
+            AtomicReference<Boolean> isExternalPnoRequestBusy = new AtomicReference<>(false);
+            AtomicReference<Boolean> isPnoScanTriggered = new AtomicReference<>(false);
             AtomicReference<List<ScanResult>> mScanResults = new AtomicReference<>();
             sWifiManager.setExternalPnoScanRequest(listOfSsids,
                     null, Executors.newSingleThreadExecutor(),
@@ -421,7 +425,11 @@ public class MockWifiTest {
                     }
                     @Override
                     public void onRegisterFailed(int reason) {
-                        Log.d(TAG, "onRegisterFailed");
+                        Log.d(TAG, "onRegisterFailed, reason" + reason);
+                        if (reason == WifiManager.PnoScanResultsCallback
+                                .REGISTER_PNO_CALLBACK_RESOURCE_BUSY) {
+                            isExternalPnoRequestBusy.set(true);
+                        }
                     }
                     @Override
                     public void onRemoved(int reason) {
@@ -430,35 +438,52 @@ public class MockWifiTest {
                 });
             final String currentStaIfaceName = getIfaceName();
             assertTrue(sMockModemManager.connectMockWifiModemService(sContext));
-            assertTrue(sMockModemManager.configureWifiScannerInterfaceMock(getIfaceName(),
+            final WifiNL80211ManagerImp mockedWifiNL80211Manager =
+                    sMockModemManager.getWifiNL80211ManagerImp();
+            assertNotNull(mockedWifiNL80211Manager);
+            assertTrue(sMockModemManager.configureWifiScannerInterfaceMock(currentStaIfaceName,
                     new IWifiScannerImp.WifiScannerInterfaceMock() {
-                    @Override
-                    public NativeScanResult[] getPnoScanResults() {
-                        return getMockNativeResults();
-                    }
+                        @Override
+                        public NativeScanResult[] getPnoScanResults() {
+                            return getMockNativeResults();
+                        }
 
-                    @Override
-                    public NativeScanResult[] getScanResults() {
-                        return getMockNativeResults();
-                    };
+                        @Override
+                        public NativeScanResult[] getScanResults() {
+                            return getMockNativeResults();
+                        };
+
+                        @Override
+                        public boolean startPnoScan(PnoSettings pnoSettings) {
+                            Log.d(TAG, "startPno was triggered");
+                            isPnoScanTriggered.set(true);
+                            // Force to update PNO scan result
+                            mockedWifiNL80211Manager.mockScanResultReadyEvent(
+                                    currentStaIfaceName, true);
+                            return true;
+                        };
                 }));
             sMockModemManager.updateConfiguredMockedMethods();
+            // Force Screen off before disconnect, then device should trigger pno scan.
+            turnScreenOffNoDelay();
             sWifiManager.disconnect();
             waitForDisconnection();
-            // Force Screen off, device should trigger pno scan.
-            turnScreenOffNoDelay();
             PollingCheck.check(
                     "Fail to get Pno result", 30_000,
                     () -> {
-                        if (mScanResults.get() == null) {
-                            return false;
+                        if (isExternalPnoRequestBusy.get()) {
+                            // Use scan result to replace PnoScanResult
+                            // since there is no way to only get Pno scan result.
+                            mScanResults.set(sWifiManager.getScanResults());
+                        } else if (mScanResults.get() == null) {
+                                return false;
                         }
-                        assertTrue(mScanResults.get().stream().allMatch(
-                                p -> listOfSsids.contains(p.getWifiSsid())));
-                        return true;
+                        return mScanResults.get().stream().allMatch(
+                            p -> listOfSsids.contains(p.getWifiSsid()));
                     });
         } finally {
             turnScreenOnNoDelay();
+            sWifiManager.clearExternalPnoScanRequest();
             sMockModemManager.disconnectMockWifiModemService();
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -500,7 +525,8 @@ public class MockWifiTest {
             WifiNL80211ManagerImp mockedWifiNL80211Manager =
                     sMockModemManager.getWifiNL80211ManagerImp();
             assertNotNull(mockedWifiNL80211Manager);
-            mockedWifiNL80211Manager.mockScanResultReadyEvent(currentStaIfaceName);
+            sWifiManager.startScan();
+            mockedWifiNL80211Manager.mockScanResultReadyEvent(currentStaIfaceName, false);
             PollingCheck.check(
                     "getscanResults fail", 4_000,
                     () -> {

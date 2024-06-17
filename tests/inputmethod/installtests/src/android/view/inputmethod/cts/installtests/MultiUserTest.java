@@ -21,6 +21,7 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommandOr
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -46,11 +47,10 @@ import android.view.inputmethod.cts.util.SecureSettingsUtils;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
@@ -120,70 +120,65 @@ public class MultiUserTest {
      * APK installation
      */
     @Test
-    @EnsureHasSecondaryUser
-    @EnsureHasAdditionalUser  // Required on Android Automotive
-    public void testSecondaryUser() {
+    @EnsureHasAdditionalUser
+    public void testAdditionalUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference secondaryUser =
-                isRunningOnAuto() ? sDeviceState.additionalUser() : sDeviceState.secondaryUser();
+        final UserReference additionalUser = sDeviceState.additionalUser();
 
         final int currentUserId = currentUser.id();
-        final int secondaryUserId = secondaryUser.id();
+        final int additionalUserId = additionalUser.id();
 
-        assertTrue(secondaryUser.isRunning());
+        assertTrue(additionalUser.isRunning());
+        assertNotEquals(currentUserId, additionalUserId);
 
-        assertImeNotExistInApiResult(Ime1Constants.IME_ID, secondaryUserId);
+        assertImeNotExistInApiResult(Ime1Constants.IME_ID, additionalUserId);
         assertIme1ImplicitlyEnabledSubtypeNotExist(currentUserId);
-        assertIme1ImplicitlyEnabledSubtypeNotExist(secondaryUserId);
+        assertIme1ImplicitlyEnabledSubtypeNotExist(additionalUserId);
 
-        TestApis.packages().install(secondaryUser, new File(Ime1Constants.APK_PATH));
+        TestApis.packages().install(additionalUser, new File(Ime1Constants.APK_PATH));
 
         assertImeNotExistInApiResult(Ime1Constants.IME_ID, currentUserId);
-        assertImeExistsInApiResult(Ime1Constants.IME_ID, secondaryUserId);
+        assertImeExistsInApiResult(Ime1Constants.IME_ID, additionalUserId);
         assertIme1ImplicitlyEnabledSubtypeNotExist(currentUserId);
-        assertIme1ImplicitlyEnabledSubtypeExists(secondaryUserId);
+        assertIme1ImplicitlyEnabledSubtypeExists(additionalUserId);
         // check getCurrentInputMethodInfoAsUser(userId)
-        runShellCommandOrThrow(ShellCommandUtils.enableIme(Ime1Constants.IME_ID, secondaryUserId));
+        runShellCommandOrThrow(ShellCommandUtils.enableIme(Ime1Constants.IME_ID, additionalUserId));
         runShellCommandOrThrow(
-                ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID, secondaryUserId));
-        assertImeInCurrentInputMethodInfo(Ime1Constants.IME_ID, secondaryUserId);
+                ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID, additionalUserId));
+        assertImeInCurrentInputMethodInfo(Ime1Constants.IME_ID, additionalUserId);
         assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, currentUserId);
         assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, currentUserId);
-        assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, secondaryUserId);
+        assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, additionalUserId);
 
-        secondaryUser.switchTo();
+        additionalUser.switchTo();
 
         assertImeNotExistInApiResult(Ime1Constants.IME_ID, currentUserId);
-        assertImeExistsInApiResult(Ime1Constants.IME_ID, secondaryUserId);
+        assertImeExistsInApiResult(Ime1Constants.IME_ID, additionalUserId);
         assertIme1ImplicitlyEnabledSubtypeNotExist(currentUserId);
-        assertIme1ImplicitlyEnabledSubtypeExists(secondaryUserId);
+        assertIme1ImplicitlyEnabledSubtypeExists(additionalUserId);
         // check getCurrentInputMethodInfoAsUser(userId)
-        assertImeInCurrentInputMethodInfo(Ime1Constants.IME_ID, secondaryUserId);
+        assertImeInCurrentInputMethodInfo(Ime1Constants.IME_ID, additionalUserId);
         assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, currentUserId);
         assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, currentUserId);
-        assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, secondaryUserId);
+        assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, additionalUserId);
 
         currentUser.switchTo();
 
         // For devices that have config_multiuserDelayUserDataLocking set to true, the
-        // secondaryUserId will be stopped after switching to the currentUserId. This means that
+        // additionalUserId will be stopped after switching to the currentUserId. This means that
         // the InputMethodManager can no longer query for the Input Method Services since they have
         // all been stopped.
-        secondaryUser.start();
+        additionalUser.start();
 
         assertImeNotExistInApiResult(Ime1Constants.IME_ID, currentUserId);
-        assertImeExistsInApiResult(Ime1Constants.IME_ID, secondaryUserId);
+        assertImeExistsInApiResult(Ime1Constants.IME_ID, additionalUserId);
         assertIme1ImplicitlyEnabledSubtypeNotExist(currentUserId);
-        assertIme1ImplicitlyEnabledSubtypeExists(secondaryUserId);
+        assertIme1ImplicitlyEnabledSubtypeExists(additionalUserId);
         // check getCurrentInputMethodInfoAsUser(userId)
-        assertImeInCurrentInputMethodInfo(Ime1Constants.IME_ID, secondaryUserId);
+        assertImeInCurrentInputMethodInfo(Ime1Constants.IME_ID, additionalUserId);
         assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, currentUserId);
         assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, currentUserId);
-        assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, secondaryUserId);
-    }
-
-    private boolean isRunningOnAuto() {
-        return TestApis.packages().features().contains(PackageManager.FEATURE_AUTOMOTIVE);
+        assertImeNotCurrentInputMethodInfo(Ime2Constants.IME_ID, additionalUserId);
     }
 
     /**
@@ -245,11 +240,10 @@ public class MultiUserTest {
         assertIsStylusHandwritingAvailable(profileUserId, currentUserId);
 
         // Install Test App for the profile user and make sure it is available as it is used next.
-        final Package testActivityPackage =
-                TestApis.packages().find(MockTestActivityUtil.TEST_ACTIVITY.getPackageName());
-        assertTrue(testActivityPackage.exists());
-        testActivityPackage.installExisting(profileUser);
-        assertTrue(testActivityPackage.installedOnUser(profileUser));
+        installExistingPackageAsUser(MockTestActivityUtil.TEST_ACTIVITY.getPackageName(),
+                profileUserId);
+        assertPackageExistsInApiResult(MockTestActivityUtil.TEST_ACTIVITY.getPackageName(),
+                profileUserId);
 
         // Make sure that IME switches depending on the target user.
         assertConnectingToTheSameUserIme(currentUserId);
@@ -266,6 +260,18 @@ public class MultiUserTest {
         // check getCurrentInputMethodInfoAsUser(userId)
         assertImeInCurrentInputMethodInfo(Ime1Constants.IME_ID, currentUserId);
         assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, profileUserId);
+    }
+
+    private void assertPackageExistsInApiResult(String packageName, int userId) {
+        PackageManager packageManager = mContext.getPackageManager();
+        SystemUtil.runWithShellPermissionIdentity(() -> PollingCheck.check(
+                        "Package " + packageName + " must exist for user " + userId, TIMEOUT,
+                        () -> packageManager.getInstalledPackagesAsUser(
+                                PackageManager.MATCH_INSTANT, userId).stream().anyMatch(
+                                        packageInfo -> TextUtils.equals(packageInfo.packageName,
+                                                packageName))),
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+                Manifest.permission.ACCESS_INSTANT_APPS);
     }
 
     private void assertImeExistsInApiResult(String imeId, int userId) {
@@ -407,6 +413,22 @@ public class MultiUserTest {
     private boolean isMultiUserMultiDisplayIme() {
         String result = runShellCommandOrThrow("dumpsys input_method");
         return result.contains("InputMethodManagerServiceProxy");
+    }
+
+    /**
+     * Use shell command to install an existing package for another user.
+     *
+     * <p>Unlike {@link Package#installExisting(UserReference)}, this approach works for instant
+     * apps.</p>
+     *
+     * @param packageName the package name of the app to be installed
+     * @param userId the target user Id
+     */
+    private void installExistingPackageAsUser(String packageName, int userId) {
+        Log.v(TAG, "Installing existing package: " + packageName + " for user " + userId);
+        runShellCommandOrThrow(ShellCommandUtils.installExistingPackageAsUser(packageName, userId,
+                isInstantApp()));
+        runShellCommandOrThrow(ShellCommandUtils.waitForBroadcastBarrier());
     }
 
     private boolean isInstantApp() {

@@ -106,7 +106,7 @@ public class RemoteViewsThemeColorsTest {
     @Test
     public void apply_setSomeColorsInTheme_shouldChangeThoseColorsOnly() throws Throwable {
         List<Integer> changedColors = List.of(ALL_COLORS.get(10), ALL_COLORS.get(11),
-                ALL_COLORS.get(17), ALL_COLORS.get(8), ALL_COLORS.get(1));
+                ALL_COLORS.get(17), ALL_COLORS.get(8), ALL_COLORS.get(1), ALL_COLORS.get(101));
         SparseIntArray theme = new SparseIntArray();
         for (int i = 0; i < changedColors.size(); i++) {
             theme.put(changedColors.get(i), 0xffffff00 + i);
@@ -168,7 +168,7 @@ public class RemoteViewsThemeColorsTest {
     private static List<Integer> generateColorList() {
         List<Integer> colors = new ArrayList<>();
         for (int color = android.R.color.system_neutral1_0;
-                color <= android.R.color.system_accent3_1000; color++) {
+                color <= android.R.color.system_error_1000; color++) {
             colors.add(color);
         }
         return colors;

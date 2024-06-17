@@ -16,7 +16,6 @@
 
 package android.cts.statsdatom.sizecompatrestartbutton;
 
-import com.android.tradefed.util.RunUtil;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -34,6 +33,7 @@ import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.util.Pair;
+import com.android.tradefed.util.RunUtil;
 
 import java.util.List;
 
@@ -53,15 +53,15 @@ public class SizeCompatRestartButtonStatsTests extends DeviceTestCase implements
     private static final String CMD_PUT_STAY_ON_TEMPLATE =
             "settings put global stay_on_while_plugged_in %d";
     private static final int ENABLE_STAY_ON_CODE = 7;
-    private static final String CMD_GET_AVAILABLE_DEVICE_STATES =
-            "cmd device_state print-states-simple";
     private static final String CMD_RESET_DEVICE_STATE = "cmd device_state state reset";
     private static final String CMD_PUT_DEVICE_STATE_TEMPLATE = "cmd device_state state %d";
+    private static final String CMD_GET_CURRENT_DEVICE_STATE = "cmd device_state print-state";
     private static final int DEVICE_STATE_CLOSED = 0;
     private static final int DEVICE_STATE_OPENED = 2;
 
     private IBuildInfo mCtsBuild;
     private long mOriginalStayOnSetting;
+    private int mOriginalDeviceState;
 
     @Override
     protected void setUp() throws Exception {
@@ -69,6 +69,8 @@ public class SizeCompatRestartButtonStatsTests extends DeviceTestCase implements
         assertThat(mCtsBuild).isNotNull();
         mOriginalStayOnSetting = Long.parseLong(
                 getDevice().executeShellCommand(CMD_GET_STAY_ON).trim());
+        mOriginalDeviceState = Integer.parseInt(
+                getDevice().executeShellCommand(CMD_GET_CURRENT_DEVICE_STATE).trim());
         getDevice().executeShellCommand(
                 String.format(CMD_PUT_STAY_ON_TEMPLATE, ENABLE_STAY_ON_CODE));
         getDevice().executeShellCommand(
@@ -87,6 +89,8 @@ public class SizeCompatRestartButtonStatsTests extends DeviceTestCase implements
     protected void tearDown() throws Exception {
         getDevice().executeShellCommand(
                 String.format(CMD_PUT_STAY_ON_TEMPLATE, mOriginalStayOnSetting));
+        getDevice().executeShellCommand(
+                String.format(CMD_PUT_DEVICE_STATE_TEMPLATE, mOriginalDeviceState));
         getDevice().executeShellCommand(CMD_RESET_DEVICE_STATE);
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
@@ -114,6 +118,8 @@ public class SizeCompatRestartButtonStatsTests extends DeviceTestCase implements
         try (AutoCloseable a = DeviceUtils.withActivity(getDevice(),
                 DeviceUtils.STATSD_ATOM_TEST_PKG, NON_RESIZEABLE_PORTRAIT_ACTIVITY, "action",
                 "action.sleep_top")) {
+            // Wait before unfolding to make sure app is opened.
+            RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
             getDevice().executeShellCommand(
                     String.format(CMD_PUT_DEVICE_STATE_TEMPLATE, DEVICE_STATE_OPENED));
             RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
@@ -128,6 +134,8 @@ public class SizeCompatRestartButtonStatsTests extends DeviceTestCase implements
             CLog.i("Display size has not changed.");
             return;
         }
+        // Wait to make sure metric event is reported.
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         assertThat(data.size()).isEqualTo(1);
 

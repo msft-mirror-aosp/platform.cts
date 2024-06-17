@@ -246,6 +246,21 @@ public class ParcelTest {
     }
 
     @Test
+    public void testSetDataCapacityNegative() {
+        Parcel p;
+
+        p = Parcel.obtain();
+        try {
+            p.setDataCapacity(-1);
+            fail();
+        } catch (IllegalArgumentException e) {
+            // ignore
+        } finally {
+            p.recycle();
+        }
+    }
+
+    @Test
     public void testDataPosition() {
         Parcel p;
 

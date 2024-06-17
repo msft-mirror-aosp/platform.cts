@@ -38,11 +38,11 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickInstallButton();
 
-//        assertInstallSuccess();
+        assertInstallSuccess();
         assertTestPackageInstalled();
     }
 
@@ -54,11 +54,11 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         pressBack();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -70,11 +70,11 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         touchOutside();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -86,11 +86,11 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickCancelButton();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -102,9 +102,9 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -174,11 +174,11 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickUpdateButton();
 
-//        assertInstallSuccess();
+        assertInstallSuccess();
         assertTestPackageLabelV2Installed();
     }
 
@@ -192,11 +192,11 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         pressBack();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 
@@ -210,11 +210,11 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         touchOutside();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 
@@ -228,11 +228,11 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickCancelButton();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 
@@ -246,9 +246,9 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 

@@ -492,5 +492,11 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
 
   # skip frames which might not have 3A converged
   capture_results = capture_results[_SKIP_INITIAL_FRAMES:]
+  skipped_files = file_list[:_SKIP_INITIAL_FRAMES]
   file_list = file_list[_SKIP_INITIAL_FRAMES:]
+
+  # delete skipped files
+  for file_path in skipped_files:
+    its_session_utils.remove_file(os.path.join(log_path, file_path))
+
   return capture_results, file_list

@@ -212,21 +212,28 @@ public class RequirementConstants {
         NA, MET, UNMET
     }
 
+    public static final BiPredicate<Long, Long> LONG_INFO = RequirementConstants.info();
     public static final BiPredicate<Long, Long> LONG_GTE = RequirementConstants.gte();
     public static final BiPredicate<Long, Long> LONG_LTE = RequirementConstants.lte();
 
+    public static final BiPredicate<Integer, Integer> INTEGER_INFO = RequirementConstants.info();
     public static final BiPredicate<Integer, Integer> INTEGER_GTE = RequirementConstants.gte();
     public static final BiPredicate<Integer, Integer> INTEGER_LTE = RequirementConstants.lte();
     public static final BiPredicate<Integer, Integer> INTEGER_EQ = RequirementConstants.eq();
 
+    public static final BiPredicate<Double, Double> DOUBLE_INFO = RequirementConstants.info();
     public static final BiPredicate<Double, Double> DOUBLE_GTE = RequirementConstants.gte();
     public static final BiPredicate<Double, Double> DOUBLE_LTE = RequirementConstants.lte();
     public static final BiPredicate<Double, Double> DOUBLE_EQ = RequirementConstants.eq();
 
+    public static final BiPredicate<Float, Float> FLOAT_INFO = RequirementConstants.info();
     public static final BiPredicate<Float, Float> FLOAT_GTE = RequirementConstants.gte();
     public static final BiPredicate<Float, Float> FLOAT_LTE = RequirementConstants.lte();
 
     public static final BiPredicate<Boolean, Boolean> BOOLEAN_EQ = RequirementConstants.eq();
+    public static final BiPredicate<Boolean, Boolean> BOOLEAN_INFO = RequirementConstants.info();
+
+    public static final BiPredicate<String, String> STRING_INFO = RequirementConstants.info();
 
     /**
      * Creates a >= predicate.
@@ -243,6 +250,27 @@ public class RequirementConstants {
             @Override
             public String toString() {
                 return "Greater than or equal to";
+            }
+        };
+    }
+
+
+    /**
+     * Creates a bi predicate that always returns true because the measurements is for info only.
+     *
+     * <p>
+     * This is convenience method to get the types right.
+     */
+    private static <T> BiPredicate<T, T> info() {
+        return new BiPredicate<T, T>() {
+            @Override
+            public boolean test(T actual, T expected) {
+                return true;
+            }
+
+            @Override
+            public String toString() {
+                return "True. For info only";
             }
         };
     }

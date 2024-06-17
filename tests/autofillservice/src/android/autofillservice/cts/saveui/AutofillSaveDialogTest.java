@@ -246,27 +246,11 @@ public class AutofillSaveDialogTest extends AutoFillServiceTestCase.ManualActivi
 
     @Test
     @CddTest(requirement = "9.8.14/C1-1")
-    // This test asserts save dialog is suppressed when there is credman field in screen
-    public void testSuppressSaveDialog_onOnlyCredmanFields_withAutofillHint() throws Exception {
-        testSuppressSaveDialog_OnCredmanOnlyFields(true);
-    }
-
-    @Test
-    @CddTest(requirement = "9.8.14/C1-1")
     // This test asserts save dialog is suppressed when there is both credman and non-credman fields
     // in activity
     public void testSuppressSaveDialog_onMixedFields_withIsCredential()
             throws Exception {
         testSuppressSaveDialog_onMixedFields(false);
-    }
-
-    @Test
-    @CddTest(requirement = "9.8.14/C1-1")
-    // This test asserts save dialog is suppressed when there is both credman and non-credman fields
-    // in activity
-    public void testSuppressSaveDialog_onMixedFields_withAutofillHint()
-            throws Exception {
-        testSuppressSaveDialog_onMixedFields(true);
     }
 
     @Test

@@ -28,14 +28,12 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-media",
-        "mcts-media",
-        "mts",
     ],
     static_libs: [
         "compatibility-device-util-axt",
     ],
     resource_dirs: ["res"],
+    sdk_version: "test_current",
 }
 
 android_test {
@@ -51,7 +49,9 @@ android_test {
     test_suites: [
         "general-tests",
         "cts",
+        "mts-media",
         "mcts-media",
+        "mts",
     ],
     static_libs: [
         "compatibility-device-util-axt",
