@@ -208,7 +208,7 @@ android_test {
         "general-tests",
     ],
     sdk_version: "test_current",
-    min_sdk_version: "19",
+    min_sdk_version: "21",
     manifest: "DownloadManagerApi28Test/AndroidManifest.xml",
     test_config: "DownloadManagerApi28Test/AndroidTest.xml",
     lint: {
@@ -244,7 +244,7 @@ android_test {
         "general-tests",
     ],
     sdk_version: "test_current",
-    min_sdk_version: "19",
+    min_sdk_version: "21",
     manifest: "DownloadManagerInstallerTest/AndroidManifest.xml",
     test_config: "DownloadManagerInstallerTest/AndroidTest.xml",
     lint: {
