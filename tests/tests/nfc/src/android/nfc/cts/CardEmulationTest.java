@@ -960,6 +960,42 @@ public class CardEmulationTest {
         });
     }
 
+    @Test
+    @RequiresFlagsEnabled({com.android.nfc.flags.Flags.FLAG_AUTO_DISABLE_OBSERVE_MODE,
+                           android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
+                           Flags.FLAG_NFC_OBSERVE_MODE,
+                           android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
+    public void testAutoDisableObserveMode() throws Exception {
+        runWithRole(mContext, CTS_PACKAGE_NAME, () -> {
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+            assumeTrue(adapter.isObserveModeSupported());
+            adapter.notifyHceDeactivated();
+            String testName = new Object() {
+            }.getClass().getEnclosingMethod().getName();
+            String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
+            ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
+            frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                    HexFormat.of().parseHex(annotationStringHex)));
+            final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+            try {
+                ensurePreferredService(CtsMyHostApduService.class);
+                Assert.assertTrue(adapter.setObserveModeEnabled(true));
+                Assert.assertTrue(adapter.isObserveModeEnabled());
+                List<PollingFrame> receivedFrames =
+                        notifyPollingLoopAndWait(frames, CtsMyHostApduService.class.getName());
+                Assert.assertFalse(receivedFrames.get(0).getTriggeredAutoTransact());
+                PollingCheck.check("Observe mode not disabled", 4000,
+                        () -> !adapter.isObserveModeEnabled());
+                adapter.notifyHceDeactivated();
+                PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            } finally {
+                adapter.setObserveModeEnabled(false);
+            }
+        });
+    }
 
     @Test
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
