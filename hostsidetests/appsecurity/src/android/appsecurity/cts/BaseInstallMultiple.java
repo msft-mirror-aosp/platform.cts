@@ -199,6 +199,12 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
         return (T) this;
     }
 
+    T bypassLowTargetSdkBlock() {
+        addArg("--bypass-low-target-sdk-block");
+        return (T) this;
+    }
+
+
     protected String deriveRemoteName(String originalName, int index) {
         return index + "_" + originalName;
     }
@@ -219,7 +225,7 @@ public class BaseInstallMultiple<T extends BaseInstallMultiple<?>> {
         run(false, failure);
     }
 
-    private void run(boolean expectingSuccess, String failure) throws DeviceNotAvailableException {
+    void run(boolean expectingSuccess, String failure) throws DeviceNotAvailableException {
         if (mUseIncremental) {
             runIncremental(expectingSuccess, failure);
         } else {

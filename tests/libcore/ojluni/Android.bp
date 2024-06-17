@@ -49,6 +49,7 @@ android_test {
         "general-tests",
         "mcts-art",
         "mts-art",
+        "mcts-art",
     ],
     data: [
         ":CtsLibcoreTestRunner",

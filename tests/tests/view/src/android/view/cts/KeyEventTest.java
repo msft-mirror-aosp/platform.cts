@@ -18,6 +18,8 @@ package android.view.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -33,6 +35,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.method.MetaKeyKeyListener;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
@@ -54,12 +57,15 @@ import org.mockito.invocation.InvocationOnMock;
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class KeyEventTest {
     private KeyEvent mKeyEvent;
     private long mDownTime;
     private long mEventTime;
 
     private static native void nativeKeyEventTest(KeyEvent event);
+
+    private static native KeyEvent obtainKeyEventCopyFromNative(KeyEvent event);
 
     static {
         System.loadLibrary("ctsview_jni");
@@ -826,6 +832,27 @@ public class KeyEventTest {
         mKeyEvent = new KeyEvent(mDownTime, mEventTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A,
                 1, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0, InputDevice.SOURCE_TOUCHSCREEN);
         nativeKeyEventTest(mKeyEvent);
+    }
+
+    @Test
+    public void testNativeToJavaConverter() {
+        KeyEvent javaKeyEvent = new KeyEvent(mDownTime, mEventTime,
+                KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A, 1, 0,
+                KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
+                InputDevice.SOURCE_KEYBOARD);
+        KeyEvent keyEventFromNative = obtainKeyEventCopyFromNative(javaKeyEvent);
+        assertNotNull(keyEventFromNative);
+        assertNotSame(javaKeyEvent, keyEventFromNative);
+        assertEquals(javaKeyEvent.getDownTime(), keyEventFromNative.getDownTime());
+        assertEquals(javaKeyEvent.getEventTime(), keyEventFromNative.getEventTime());
+        assertEquals(javaKeyEvent.getAction(), keyEventFromNative.getAction());
+        assertEquals(javaKeyEvent.getKeyCode(), keyEventFromNative.getKeyCode());
+        assertEquals(javaKeyEvent.getRepeatCount(), keyEventFromNative.getRepeatCount());
+        assertEquals(javaKeyEvent.getMetaState(), keyEventFromNative.getMetaState());
+        assertEquals(javaKeyEvent.getDeviceId(), keyEventFromNative.getDeviceId());
+        assertEquals(javaKeyEvent.getScanCode(), keyEventFromNative.getScanCode());
+        assertEquals(javaKeyEvent.getFlags(), keyEventFromNative.getFlags());
+        assertEquals(javaKeyEvent.getSource(), keyEventFromNative.getSource());
     }
 
     // Parcel a KeyEvent, then create a new KeyEvent from this parcel. Return the new KeyEvent

@@ -24,6 +24,7 @@ import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_UNDEFINED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.content.Intent.ACTION_MAIN;
 import static android.content.Intent.CATEGORY_HOME;
@@ -82,6 +83,7 @@ import static android.server.wm.StateLogger.logE;
 import static android.server.wm.UiDeviceUtils.pressSleepButton;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
+import static android.server.wm.WindowManagerState.STATE_PAUSED;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.server.wm.app.Components.BROADCAST_RECEIVER_ACTIVITY;
@@ -96,6 +98,7 @@ import static android.server.wm.app.Components.LAUNCHING_ACTIVITY;
 import static android.server.wm.app.Components.LaunchingActivity.KEY_FINISH_BEFORE_LAUNCH;
 import static android.server.wm.app.Components.PipActivity.ACTION_CHANGE_ASPECT_RATIO;
 import static android.server.wm.app.Components.PipActivity.ACTION_ENTER_PIP;
+import static android.server.wm.app.Components.PipActivity.ACTION_ENTER_PIP_AND_WAIT_FOR_UI_STATE;
 import static android.server.wm.app.Components.PipActivity.ACTION_EXPAND_PIP;
 import static android.server.wm.app.Components.PipActivity.ACTION_SET_REQUESTED_ORIENTATION;
 import static android.server.wm.app.Components.PipActivity.ACTION_UPDATE_PIP_STATE;
@@ -505,6 +508,11 @@ public abstract class ActivityManagerTestBase {
             mContext.sendBroadcast(createIntentWithAction(ACTION_UPDATE_PIP_STATE)
                     .putExtra(EXTRA_SET_PIP_CALLBACK, callback)
                     .putExtra(EXTRA_SET_PIP_STASHED, stashed));
+        }
+
+        public void enterPipAndWaitForPipUiStateChange(RemoteCallback callback) {
+            mContext.sendBroadcast(createIntentWithAction(ACTION_ENTER_PIP_AND_WAIT_FOR_UI_STATE)
+                    .putExtra(EXTRA_SET_PIP_CALLBACK, callback));
         }
 
         public void requestOrientationForPip(int orientation) {
@@ -1963,6 +1971,38 @@ public abstract class ActivityManagerTestBase {
 
     protected boolean supportsInstallableIme() {
         return mContext.getPackageManager().hasSystemFeature(FEATURE_INPUT_METHODS);
+    }
+
+    /**
+     * Waits until the given activity has entered picture-in-picture mode (allowing for the
+     * subsequent animation to start).
+     */
+    protected void waitForEnterPip(@NonNull ComponentName activityName) {
+        mWmState.waitForWithAmState(wmState -> {
+            Task task = wmState.getTaskByActivity(activityName);
+            return task != null
+                    && task.getActivity(activityName).getWindowingMode() == WINDOWING_MODE_PINNED
+                    && task.isVisible();
+        }, "checking task windowing mode");
+    }
+
+    /**
+     * Waits until the picture-in-picture animation has finished.
+     */
+    protected void waitForEnterPipAnimationComplete(@NonNull ComponentName activityName) {
+        waitForEnterPip(activityName);
+        mWmState.waitForWithAmState(wmState -> {
+            Task task = wmState.getTaskByActivity(activityName);
+            if (task == null) {
+                return false;
+            }
+            WindowManagerState.Activity activity = task.getActivity(activityName);
+            return activity.getWindowingMode() == WINDOWING_MODE_PINNED
+                    && activity.getState().equals(STATE_PAUSED);
+        }, "checking activity windowing mode");
+        if (ENABLE_SHELL_TRANSITIONS) {
+            mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+        }
     }
 
     public static class CountSpec<T> {

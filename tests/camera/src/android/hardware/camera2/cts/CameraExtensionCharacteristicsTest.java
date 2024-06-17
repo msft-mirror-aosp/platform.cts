@@ -18,26 +18,38 @@ package android.hardware.camera2.cts;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraExtensionCharacteristics;
+import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
+import android.hardware.camera2.ExtensionCaptureRequest;
+import android.hardware.camera2.ExtensionCaptureResult;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestRule;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.ArraySet;
 import android.util.FeatureFlagUtils;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PropertyUtil;
+import com.android.internal.camera.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -55,6 +67,26 @@ public class CameraExtensionCharacteristicsTest {
     private ArrayList<Integer> mExtensionList = new ArrayList<>();
 
     private final Context mContext = InstrumentationRegistry.getTargetContext();
+
+    private static final CaptureRequest.Key[] EYES_FREE_AUTO_ZOOM_REQUEST_SET = {
+            ExtensionCaptureRequest.EFV_AUTO_ZOOM,
+            ExtensionCaptureRequest.EFV_MAX_PADDING_ZOOM_FACTOR};
+    private static final CaptureResult.Key[] EYES_FREE_AUTO_ZOOM_RESULT_SET = {
+            ExtensionCaptureResult.EFV_AUTO_ZOOM,
+            ExtensionCaptureResult.EFV_AUTO_ZOOM_PADDING_REGION,
+            ExtensionCaptureResult.EFV_MAX_PADDING_ZOOM_FACTOR};
+    private static final CaptureRequest.Key[] EYES_FREE_REQUEST_SET = {
+            ExtensionCaptureRequest.EFV_PADDING_ZOOM_FACTOR,
+            ExtensionCaptureRequest.EFV_STABILIZATION_MODE,
+            ExtensionCaptureRequest.EFV_TRANSLATE_VIEWPORT,
+            ExtensionCaptureRequest.EFV_ROTATE_VIEWPORT};
+    private static final CaptureResult.Key[] EYES_FREE_RESULT_SET = {
+            ExtensionCaptureResult.EFV_PADDING_REGION,
+            ExtensionCaptureResult.EFV_TARGET_COORDINATES,
+            ExtensionCaptureResult.EFV_PADDING_ZOOM_FACTOR,
+            ExtensionCaptureResult.EFV_STABILIZATION_MODE,
+            ExtensionCaptureResult.EFV_ROTATE_VIEWPORT,
+            ExtensionCaptureResult.EFV_TRANSLATE_VIEWPORT};
 
     @Rule
     public final Camera2AndroidTestRule mTestRule = new Camera2AndroidTestRule(mContext);
@@ -264,6 +296,8 @@ public class CameraExtensionCharacteristicsTest {
     public void testExtensionRequestKeys() throws Exception {
         ArraySet<CaptureRequest.Key> extensionRequestKeys = new ArraySet<>();
         extensionRequestKeys.add(CaptureRequest.EXTENSION_STRENGTH);
+        extensionRequestKeys.addAll(Arrays.asList(EYES_FREE_REQUEST_SET));
+        extensionRequestKeys.addAll(Arrays.asList(EYES_FREE_AUTO_ZOOM_REQUEST_SET));
 
         for (String id : mTestRule.getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
@@ -292,6 +326,13 @@ public class CameraExtensionCharacteristicsTest {
                     assertTrue(msg, staticMeta.areKeysAvailable(captureKey) ||
                             extensionRequestKeys.contains(captureKey));
                 }
+
+                // Ensure eyes-free specific keys are only supported for eyes-free extension
+                if (extension
+                        != CameraExtensionCharacteristics.EXTENSION_EYES_FREE_VIDEOGRAPHY) {
+                    CameraTestUtils.checkKeysAreSupported(Arrays.asList(EYES_FREE_REQUEST_SET,
+                            EYES_FREE_AUTO_ZOOM_REQUEST_SET), captureKeySet, false);
+                }
             }
         }
     }
@@ -301,6 +342,8 @@ public class CameraExtensionCharacteristicsTest {
         ArraySet<CaptureResult.Key> extensionResultKeys = new ArraySet<>();
         extensionResultKeys.add(CaptureResult.EXTENSION_STRENGTH);
         extensionResultKeys.add(CaptureResult.EXTENSION_CURRENT_TYPE);
+        extensionResultKeys.addAll(Arrays.asList(EYES_FREE_RESULT_SET));
+        extensionResultKeys.addAll(Arrays.asList(EYES_FREE_AUTO_ZOOM_RESULT_SET));
 
         for (String id : mTestRule.getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
@@ -347,6 +390,111 @@ public class CameraExtensionCharacteristicsTest {
                             requestKey.getName());
                     assertTrue(msg, resultKeyNames.contains(requestKey.getName()));
                 }
+
+                // Ensure eyes-free specific keys are only supported for eyes-free extension
+                if (extension
+                        != CameraExtensionCharacteristics.EXTENSION_EYES_FREE_VIDEOGRAPHY) {
+                    CameraTestUtils.checkKeysAreSupported(Arrays.asList(EYES_FREE_RESULT_SET,
+                            EYES_FREE_AUTO_ZOOM_RESULT_SET), resultKeySet, false);
+                }
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_EXTENSIONS_CHARACTERISTICS_GET)
+    public void testExtensionGetCharacteristics() throws Exception {
+        for (String id : mTestRule.getCameraIdsUnderTest()) {
+            StaticMetadata staticMeta =
+                    new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
+            if (!staticMeta.isColorOutputSupported()) {
+                continue;
+            }
+
+            CameraExtensionCharacteristics chars =
+                    mTestRule.getCameraManager().getCameraExtensionCharacteristics(id);
+
+            List<Integer> supportedExtensions = chars.getSupportedExtensions();
+            for (Integer extension : supportedExtensions) {
+                Set<CameraCharacteristics.Key> keys = chars.getKeys(extension);
+                for (CameraCharacteristics.Key key : keys) {
+                    assertNotNull("Associated value for key cannot be null.",
+                            chars.get(extension, key));
+                }
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_EXTENSIONS_CHARACTERISTICS_GET)
+    public void testGetRequiredKeys() throws Exception {
+        ArraySet<CameraCharacteristics.Key> requiredKeys = new ArraySet<>();
+        requiredKeys.add(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+        requiredKeys.add(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES);
+
+        for (String id : mTestRule.getCameraIdsUnderTest()) {
+            StaticMetadata staticMeta =
+                    new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
+            if (!staticMeta.isColorOutputSupported()) {
+                continue;
+            }
+
+            CameraExtensionCharacteristics chars =
+                    mTestRule.getCameraManager().getCameraExtensionCharacteristics(id);
+
+            List<Integer> supportedExtensions = chars.getSupportedExtensions();
+            for (Integer extension : supportedExtensions) {
+                Set<CameraCharacteristics.Key> keys = chars.getKeys(extension);
+                if (keys.isEmpty()) {
+                    continue;
+                }
+                for (CameraCharacteristics.Key key : requiredKeys) {
+                    assertTrue(keys.contains(key));
+                }
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_EXTENSIONS_CHARACTERISTICS_GET)
+    public void testGetUnsupportedCharacteristics() throws Exception {
+        for (String id : mTestRule.getCameraIdsUnderTest()) {
+            StaticMetadata staticMeta =
+                    new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
+            if (!staticMeta.isColorOutputSupported()) {
+                continue;
+            }
+
+            Set<Integer> unsupportedCapabilities = new HashSet<>(Arrays.asList(
+                    CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO,
+                    CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_DEPTH_OUTPUT,
+                    CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_OFFLINE_PROCESSING,
+                    CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_MONOCHROME,
+                    CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_PRIVATE_REPROCESSING,
+                    CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_RAW,
+                    CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_REMOSAIC_REPROCESSING,
+                    CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_SECURE_IMAGE_DATA,
+                    CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_SYSTEM_CAMERA,
+                    CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_YUV_REPROCESSING,
+                    CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_ULTRA_HIGH_RESOLUTION_SENSOR
+            ));
+
+            CameraExtensionCharacteristics chars =
+                    mTestRule.getCameraManager().getCameraExtensionCharacteristics(id);
+
+            List<Integer> supportedExtensions = chars.getSupportedExtensions();
+            for (Integer extension : supportedExtensions) {
+                int[] availableCapabilities =
+                        chars.get(extension, CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                if (availableCapabilities != null) {
+                    for (int c : availableCapabilities) {
+                        assertFalse("Capabilitiy is not supported by extensions",
+                                unsupportedCapabilities.contains(c));
+                    }
+                }
+                StreamConfigurationMap map = chars.get(extension,
+                        CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                assertNull("StreamConfigurationMap must not be present in get", map);
             }
         }
     }

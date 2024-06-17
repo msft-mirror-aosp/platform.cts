@@ -54,11 +54,9 @@ import android.view.cts.surfacevalidator.BitmapPixelChecker;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
-import androidx.lifecycle.Lifecycle;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.SystemUtil;
@@ -97,6 +95,7 @@ public class AttachedSurfaceControlTest {
             HandleConfigurationActivity.class);
 
     private HandleConfigurationActivity mActivity;
+
 
     private static class TransformHintListener implements
             AttachedSurfaceControl.OnBufferTransformHintChangedListener {
@@ -375,6 +374,7 @@ public class AttachedSurfaceControlTest {
         CountDownLatch mReadyLatch = new CountDownLatch(1);
         SurfaceControlViewHost mScvh;
         final View mView;
+
         ScvhSurfaceView(Context context, View view) {
             super(context);
             getHolder().addCallback(this);
@@ -416,7 +416,7 @@ public class AttachedSurfaceControlTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_GET_HOST_TOKEN_API)
+    @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     public void testGetHostToken() throws Throwable {
         try (ActivityScenario<TestActivity> scenario =
                      ActivityScenario.launch(TestActivity.class)) {
@@ -438,7 +438,7 @@ public class AttachedSurfaceControlTest {
 
             final AttachedSurfaceControl attachedSurfaceControl =
                     scvhSurfaceView[0].getRootSurfaceControl();
-            assertThat(attachedSurfaceControl.getHostToken())
+            assertThat(attachedSurfaceControl.getInputTransferToken())
                     .isNotEqualTo(null);
         }
     }

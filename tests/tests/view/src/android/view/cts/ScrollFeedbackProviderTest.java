@@ -20,17 +20,22 @@ import static android.view.flags.Flags.FLAG_SCROLL_FEEDBACK_API;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.Manifest;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.ScrollFeedbackProvider;
-import android.view.cts.util.InputDeviceUtils;
+import android.view.cts.util.InputDeviceIterators;
 
 import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,8 +48,14 @@ import org.junit.runner.RunWith;
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ScrollFeedbackProviderTest {
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<ViewTestCtsActivity> mActivityRule =
             new ActivityTestRule<>(ViewTestCtsActivity.class);
 
@@ -69,10 +80,8 @@ public class ScrollFeedbackProviderTest {
     @Test
     @RequiresFlagsEnabled(FLAG_SCROLL_FEEDBACK_API)
     public void testApisDontCrash_allExistingInputSourceAndAxesCombinations() {
-        InputDeviceUtils.runOnEveryInputDeviceMotionRange(deviceIdAndMotionRange -> {
-            InputDevice.MotionRange motionRange = deviceIdAndMotionRange.second;
-            runScrollScenarios(
-                    deviceIdAndMotionRange.first, motionRange.getSource(), motionRange.getAxis());
+        InputDeviceIterators.iteratorOverEveryInputDeviceMotionRange((deviceId, motionRange) -> {
+            runScrollScenarios(deviceId, motionRange.getSource(), motionRange.getAxis());
 
         });
     }
@@ -80,7 +89,7 @@ public class ScrollFeedbackProviderTest {
     @Test
     @RequiresFlagsEnabled(FLAG_SCROLL_FEEDBACK_API)
     public void testApisDontCrash_invalidDeviceIds() {
-        InputDeviceUtils.runOnInvalidDeviceIds((deviceId) -> {
+        InputDeviceIterators.iteratorOverInvalidDeviceIds((deviceId) -> {
             runScrollScenarios(
                     deviceId, InputDevice.SOURCE_ROTARY_ENCODER, MotionEvent.AXIS_SCROLL);
         });
@@ -89,7 +98,7 @@ public class ScrollFeedbackProviderTest {
     @Test
     @RequiresFlagsEnabled(FLAG_SCROLL_FEEDBACK_API)
     public void testApisDontCrash_invalidInputSourceAndAxesCombinations() {
-        InputDeviceUtils.runOnEveryValidDeviceId((deviceId) -> {
+        InputDeviceIterators.iteratorOverEveryValidDeviceId((deviceId) -> {
             runScrollScenarios(deviceId, InputDevice.SOURCE_ROTARY_ENCODER, MotionEvent.AXIS_X);
         });
     }

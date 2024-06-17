@@ -66,11 +66,15 @@ public class ImeSettings {
     private static final String VERIFY_CONTEXT_APIS_IN_ON_CREATE = "VerifyContextApisInOnCreate";
     private static final String WINDOW_LAYOUT_INFO_CALLBACK_ENABLED =
             "WindowLayoutInfoCallbackEnabled";
+    private static final String CONNECTIONLESS_HANDWRITING_ENABLED =
+            "ConnectionlessHandwritingEnabled";
 
     /**
      * Simulate the manifest flag enableOnBackInvokedCallback being true for the IME.
      */
     private static final String ON_BACK_CALLBACK_ENABLED = "onBackCallbackEnabled";
+
+    private static final String USE_CUSTOM_EXTRACT_TEXT_VIEW = "useCustomExtractTextView";
 
     @NonNull
     private final PersistableBundle mBundle;
@@ -202,6 +206,10 @@ public class ImeSettings {
         return mBundle.getBoolean(WINDOW_LAYOUT_INFO_CALLBACK_ENABLED, false);
     }
 
+    public boolean isConnectionlessHandwritingEnabled() {
+        return mBundle.getBoolean(CONNECTIONLESS_HANDWRITING_ENABLED, false);
+    }
+
     public boolean isOnBackCallbackEnabled() {
         return mBundle.getBoolean(ON_BACK_CALLBACK_ENABLED, false);
     }
@@ -210,6 +218,11 @@ public class ImeSettings {
         if (mChannel != null) {
             mChannel.close();
         }
+    }
+
+    /** Whether or not custom extract view hierarchy should be used. */
+    public boolean isCustomExtractTextViewEnabled() {
+        return mBundle.getBoolean(USE_CUSTOM_EXTRACT_TEXT_VIEW, false);
     }
 
     static Bundle serializeToBundle(@NonNull String eventCallbackActionName,
@@ -226,6 +239,42 @@ public class ImeSettings {
      */
     public static final class Builder {
         private final PersistableBundle mBundle = new PersistableBundle();
+
+        @MockImePackageNames
+        @NonNull
+        String mMockImePackageName = MockImePackageNames.MockIme1;
+
+        /**
+         * Specifies a non-default {@link MockIme} package name, which is by default
+         * {@code com.android.cts.mockime}.
+         *
+         * <p>You can use this to interact with multiple {@link MockIme} sessions at the same time.
+         * </p>
+         *
+         * @param packageName One of {@link MockImePackageNames}.
+         * @return this {@link Builder} object
+         */
+        public Builder setMockImePackageName(@MockImePackageNames String packageName) {
+            mMockImePackageName = packageName;
+            return this;
+        }
+
+        boolean mSuppressResetIme = false;
+        /**
+         * Specifies whether {@code adb shell ime reset} should be suppressed or not on
+         * {@link MockImeSession#create(android.content.Context)} and
+         * {@link MockImeSession#close()}.
+         *
+         * <p>The default value is {@code false}.</p>
+         *
+         * @param suppressResetIme {@code true} to suppress {@code adb shell ime reset} upon
+         *                         initialize and cleanup processes of {@link MockImeSession}.
+         * @return this {@link Builder} object
+         */
+        public Builder setSuppressResetIme(boolean suppressResetIme) {
+            mSuppressResetIme = suppressResetIme;
+            return this;
+        }
 
         @Nullable
         InputMethodSubtype[] mAdditionalSubtypes;
@@ -421,12 +470,27 @@ public class ImeSettings {
         }
 
         /**
+         * Sets whether to enable {@link
+         * android.inputmethodservice.InputMethodService#onStartConnectionlessStylusHandwriting}.
+         */
+        public Builder setConnectionlessHandwritingEnabled(boolean enabled) {
+            mBundle.putBoolean(CONNECTIONLESS_HANDWRITING_ENABLED, enabled);
+            return this;
+        }
+
+        /**
          * Sets whether the IME's
          * {@link android.content.pm.ApplicationInfo#isOnBackInvokedCallbackEnabled()}
          * should be set to {@code true}.
          */
         public Builder setOnBackCallbackEnabled(boolean enabled) {
             mBundle.putBoolean(ON_BACK_CALLBACK_ENABLED, enabled);
+            return this;
+        }
+
+        /** Sets whether or not custom extract view hierarchy should be used. */
+        public Builder setCustomExtractTextViewEnabled(boolean enabled) {
+            mBundle.putBoolean(USE_CUSTOM_EXTRACT_TEXT_VIEW, enabled);
             return this;
         }
     }
