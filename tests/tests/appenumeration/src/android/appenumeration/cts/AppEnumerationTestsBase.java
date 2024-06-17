@@ -24,6 +24,8 @@ import static android.appenumeration.cts.Constants.EXTRA_ID;
 import static android.appenumeration.cts.Constants.EXTRA_PENDING_INTENT;
 import static android.appenumeration.cts.Constants.EXTRA_REMOTE_CALLBACK;
 import static android.appenumeration.cts.Constants.EXTRA_REMOTE_READY_CALLBACK;
+import static android.appenumeration.cts.Constants.EXTRA_SEGMENT_RESULT;
+import static android.appenumeration.cts.Constants.EXTRA_SEGMENT_SIZE;
 import static android.appenumeration.cts.Utils.Result;
 import static android.appenumeration.cts.Utils.ThrowingBiFunction;
 import static android.appenumeration.cts.Utils.ThrowingFunction;
@@ -60,6 +62,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -125,8 +128,41 @@ public class AppEnumerationTestsBase {
         final AtomicReference<Bundle> resultReference = new AtomicReference<>();
         final RemoteCallback callback = new RemoteCallback(
                 bundle -> {
-                    resultReference.set(bundle);
-                    latch.open();
+                    if (bundle != null && bundle.containsKey(EXTRA_SEGMENT_RESULT)
+                            && bundle.containsKey(EXTRA_SEGMENT_SIZE)) {
+                        // Receive AppWidgetProviderInfo list in segments.
+                        Bundle resultReferenceBundle = resultReference.get();
+                        ArrayList<Parcelable> segmentParcelables =
+                                bundle.getParcelableArrayList(EXTRA_SEGMENT_RESULT);
+                        if (resultReferenceBundle != null) {
+                            // Splice the received data into parcelables.
+                            ArrayList<Parcelable> parcelables = resultReferenceBundle
+                                    .getParcelableArrayList(Intent.EXTRA_RETURN_RESULT);
+                            if (parcelables != null) {
+                                parcelables.addAll(segmentParcelables);
+                            } else {
+                                parcelables = segmentParcelables;
+                            }
+                            // Place the assembled list into bundle.
+                            bundle.putParcelableArrayList(Intent.EXTRA_RETURN_RESULT, parcelables);
+                        } else {
+                            // No need to assemble segment data the first time they are received.
+                            bundle.putParcelableArrayList(Intent.EXTRA_RETURN_RESULT,
+                                    segmentParcelables);
+                        }
+                        resultReference.set(bundle);
+                        if (bundle.getParcelableArrayList(Intent.EXTRA_RETURN_RESULT) == null
+                                || bundle.getParcelableArrayList(Intent.EXTRA_RETURN_RESULT).size()
+                                >= bundle.getShort(EXTRA_SEGMENT_SIZE)) {
+                            // Continue the testing process when the number of
+                            // received items reaches the expected number.
+                            latch.open();
+                        }
+                    } else {
+                        // Follow the default process when receiving other data.
+                        resultReference.set(bundle);
+                        latch.open();
+                    }
                 },
                 sResponseHandler);
         intent.putExtra(EXTRA_REMOTE_CALLBACK, callback);

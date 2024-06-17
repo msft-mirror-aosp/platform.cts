@@ -521,6 +521,9 @@ public class DisplayTest extends TestBase {
     }
 
     private void overrideHdrTypes() {
+        // TODO(b/347657922): HDR override not working for device without default HDR support.
+        // So run tests that require HDR override only for devices that support HDR by default.
+        assumeTrue(mDefaultDisplay.isHdr());
         mDisplayManager.overrideHdrTypes(DEFAULT_DISPLAY, new int[]{
                 HdrCapabilities.HDR_TYPE_DOLBY_VISION, HdrCapabilities.HDR_TYPE_HDR10,
                 HdrCapabilities.HDR_TYPE_HLG, HdrCapabilities.HDR_TYPE_HDR10_PLUS});
