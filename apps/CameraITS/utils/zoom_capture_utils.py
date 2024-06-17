@@ -355,6 +355,8 @@ def verify_zoom_data(test_data, size, plot_name_stem=None):
     z_variations = []
     rel_variations = []
     radius_tols = []
+    max_rel_variation = None
+    max_rel_variation_zoom = None
   for i, data in enumerate(test_data):
     logging.debug(' ')  # add blank line between frames
     logging.debug('Frame# %d {%s}', i, preview_zoom_data_to_string(data))
@@ -378,6 +380,9 @@ def verify_zoom_data(test_data, size, plot_name_stem=None):
       z_variations.append(z_variation)
       rel_variations.append(relative_variation)
       radius_tols.append(data.radius_tol)
+      if max_rel_variation is None or relative_variation > max_rel_variation:
+        max_rel_variation = relative_variation
+        max_rel_variation_zoom = data.result_zoom
 
     logging.debug('r ratio req: %.3f, measured: %.3f',
                   z_ratio, radius_ratio)
@@ -427,6 +432,19 @@ def verify_zoom_data(test_data, size, plot_name_stem=None):
         logging.debug(d_msg)
 
   if plot_name_stem:
+    plot_name = plot_name_stem.split('/')[-1].split('.')[0]
+    # Don't change print to logging. Used for KPI.
+    print(f'{plot_name}_max_rel_variation: ', max_rel_variation)
+    print(f'{plot_name}_max_rel_variation_zoom: ', max_rel_variation_zoom)
+
+    # Calculate RMS values
+    rms_z_variations = numpy.sqrt(numpy.mean(numpy.square(z_variations)))
+    rms_rel_variations = numpy.sqrt(numpy.mean(numpy.square(rel_variations)))
+
+    # Print RMS values
+    print(f'{plot_name}_rms_z_variations: ', rms_z_variations)
+    print(f'{plot_name}_rms_rel_variations: ', rms_rel_variations)
+
     plot_variation(frame_numbers, z_variations, None,
                    f'{plot_name_stem}_variations.png', 'Zoom Variation')
     plot_variation(frame_numbers, rel_variations, radius_tols,
