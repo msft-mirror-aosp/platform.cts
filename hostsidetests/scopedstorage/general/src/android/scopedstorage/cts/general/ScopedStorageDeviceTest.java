@@ -81,7 +81,6 @@ import static android.scopedstorage.cts.lib.TestUtils.installApp;
 import static android.scopedstorage.cts.lib.TestUtils.installAppWithStoragePermissions;
 import static android.scopedstorage.cts.lib.TestUtils.listAs;
 import static android.scopedstorage.cts.lib.TestUtils.openWithMediaProvider;
-import static android.scopedstorage.cts.lib.TestUtils.pollForPermission;
 import static android.scopedstorage.cts.lib.TestUtils.queryAudioFile;
 import static android.scopedstorage.cts.lib.TestUtils.queryFile;
 import static android.scopedstorage.cts.lib.TestUtils.queryFileExcludingPending;
@@ -148,6 +147,8 @@ import androidx.annotation.Nullable;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SdkSuppress;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.packages.Package;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.cts.install.lib.TestApp;
 import com.android.modules.utils.build.SdkLevel;
@@ -1317,7 +1318,6 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                 /* permission */ null, AppOpsManager.OPSTR_WRITE_MEDIA_VIDEO, /* forWrite */ true);
     }
 
-    @FlakyTest(bugId = 324388050)
     @Test
     public void testAccessMediaLocationInvalidation() throws Exception {
         File imgFile = new File(getDcimDir(), "access_media_location.jpg");
@@ -1341,31 +1341,22 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             installAppWithStoragePermissions(APP_GENERAL_ONLY);
 
             // Grant A_M_L and verify access to sensitive data
-            grantPermission(APP_GENERAL_ONLY.getPackageName(), Manifest.permission.ACCESS_MEDIA_LOCATION);
-            pollForPermission(APP_GENERAL_ONLY.getPackageName(),
-                    Manifest.permission.ACCESS_MEDIA_LOCATION, /* granted */ true);
+            Package generalPackage = TestApis.packages().find(APP_GENERAL_ONLY.getPackageName());
+            generalPackage.grantPermission(Manifest.permission.ACCESS_MEDIA_LOCATION);
+            assertTrue(generalPackage.hasPermission(Manifest.permission.ACCESS_MEDIA_LOCATION));
             HashMap<String, String> exifFromTestApp =
                     readExifMetadataFromTestApp(APP_GENERAL_ONLY, imgFile.getPath());
             assertExifMetadataMatch(exifFromTestApp, originalExif);
 
             // Revoke A_M_L and verify sensitive data redaction
-            revokePermission(
-                    APP_GENERAL_ONLY.getPackageName(), Manifest.permission.ACCESS_MEDIA_LOCATION);
-            // revokePermission waits for permission status to be updated, but MediaProvider still
-            // needs to get permission change callback and clear its permission cache.
-            pollForPermission(APP_GENERAL_ONLY.getPackageName(),
-                    Manifest.permission.ACCESS_MEDIA_LOCATION, /* granted */ false);
-            Thread.sleep(500);
+            generalPackage.denyPermission(Manifest.permission.ACCESS_MEDIA_LOCATION);
+            assertFalse(generalPackage.hasPermission(Manifest.permission.ACCESS_MEDIA_LOCATION));
             exifFromTestApp = readExifMetadataFromTestApp(APP_GENERAL_ONLY, imgFile.getPath());
             assertExifMetadataMismatch(exifFromTestApp, originalExif);
 
             // Re-grant A_M_L and verify access to sensitive data
-            grantPermission(APP_GENERAL_ONLY.getPackageName(), Manifest.permission.ACCESS_MEDIA_LOCATION);
-            // grantPermission waits for permission status to be updated, but MediaProvider still
-            // needs to get permission change callback and clear its permission cache.
-            pollForPermission(APP_GENERAL_ONLY.getPackageName(),
-                    Manifest.permission.ACCESS_MEDIA_LOCATION, /* granted */ true);
-            Thread.sleep(500);
+            generalPackage.grantPermission(Manifest.permission.ACCESS_MEDIA_LOCATION);
+            assertTrue(generalPackage.hasPermission(Manifest.permission.ACCESS_MEDIA_LOCATION));
             exifFromTestApp = readExifMetadataFromTestApp(APP_GENERAL_ONLY, imgFile.getPath());
             assertExifMetadataMatch(exifFromTestApp, originalExif);
         } finally {

@@ -12,8 +12,10 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
+<!-- NOTE: this file is only for Android U and lower devices. Latest changes should go into
+     xml-v35/device_admin.xml -->
 <device-admin xmlns:android="http://schemas.android.com/apk/res/android" android:visible="false">
-     <headless-system-user headless-device-owner-mode="single_user" device-owner-mode="single_user" />
+     <headless-system-user device-owner-mode="affiliated" />
      <uses-policies>
           <watch-login />
           <reset-password />

@@ -16,6 +16,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_mainline_modularization",
 }
 
 android_test {
@@ -28,22 +29,12 @@ android_test {
         "general-tests",
         "mts-extservices",
         "mcts-extservices",
-        "mts-crashrecovery",
     ],
-    libs: [
-        "android.test.base",
-        "android.test.runner",
-    ],
+    libs: ["android.test.base"],
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "truth",
-        "services.core",
-        "services.net",
-
-        "androidx.test.core",
-        "androidx.test.rules",
-        "platform-test-annotations",
     ],
     srcs: [
         "src/**/*.java",

@@ -79,6 +79,9 @@ public class OnDeviceIntelligenceServiceTest {
     @Test
     public void sandboxedServiceConfiguredShouldBeIsolated() throws Exception {
         assumeFalse("Service not configured.", TextUtils.isEmpty(sanboxedServiceComponentName));
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.INTERACT_ACROSS_USERS_FULL);
         try {
             validateSandboxedService(sanboxedServiceComponentName);
         } catch (PackageManager.NameNotFoundException e) {

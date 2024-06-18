@@ -14,6 +14,12 @@
 
 syntax = "proto2";
 
+// Changes to this file require manaul update of the AOSP Go code.
+// update the go code with:
+//   aprotoc --go_out=paths=source_relative:. \
+//     cts/tests/mediapc/requirements/mpc.proto \
+//     cts/tests/mediapc/requirements/requirements.proto
+
 package android.media.performanceclass.requirements;
 
 import "cts/tests/mediapc/requirements/mpc.proto";
@@ -34,7 +40,7 @@ message RequirementList {
 message Requirement {
   // ID exactly as shown in the CDD
   optional string id = 1;
-  // Short human readable name.
+  // Short human readable name. Must be unique.
   optional string name = 2;
   optional string description = 3;
   optional Group group = 4;
@@ -44,6 +50,10 @@ message Requirement {
   // measurement_id to RequiredMeasurements
   // The measurement_id is a field name safe string.
   map<string, RequiredMeasurement> measurements = 6;
+
+  // Whether this requirement is a non-CTS test. Cts tests require fields in the
+  // test cases proto to be repeated fields. Non-Cts tests need optional fields.
+  optional bool is_non_cts_test = 7 [default = false];
 
   // variant_id to Variant
   //
@@ -85,6 +95,11 @@ message RequiredMeasurement {
   optional string description = 2;
   optional MeasurementType measurement_type = 3;
   optional Comparison comparison = 4;
+
+  // Whether this measurement is used to differentiate between tests. Some
+  // requirements have multiple tests that test for different performance
+  // classes. ex: 5.1/H-1-2.
+  optional bool is_test_differentiator = 5 [default = false];
 }
 
 // A required value for a RequiredMeasurement at a given MPC level.

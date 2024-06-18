@@ -30,7 +30,8 @@ import static android.virtualdevice.cts.camera.VirtualCameraUtils.assertImagesSi
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.imageHasColor;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.jpegImageToBitmap;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.loadGolden;
+import static android.virtualdevice.cts.camera.VirtualCameraUtils.loadBitmapFromRaw;
+import static android.virtualdevice.cts.camera.VirtualCameraUtils.paintSurface;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.toFormat;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
@@ -106,7 +107,7 @@ public class VirtualCameraCaptureTest {
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
-            GRANT_RUNTIME_PERMISSIONS);
+            GRANT_RUNTIME_PERMISSIONS).withVirtualCameraSupportCheck();
 
     @Mock
     private VirtualCameraCallback mVirtualCameraCallback;
@@ -147,6 +148,32 @@ public class VirtualCameraCaptureTest {
                 mVirtualDevice.getDeviceId());
         mCameraManager = virtualDeviceContext.getSystemService(CameraManager.class);
         VirtualCameraUtils.grantCameraPermission(mVirtualDevice.getDeviceId());
+    }
+
+    @Test
+    public void virtualCamera_inputBuffer_doesntBlock() throws Exception {
+        try (VirtualCamera virtualCamera = createVirtualCamera()) {
+            String cameraId = getVirtualCameraId(virtualCamera);
+
+            try (ImageReader imageReader = createImageReader(YUV_420_888)) {
+                Image image = captureImage(cameraId, imageReader,
+                        (Surface surface) -> {
+                            // Submit 100 RED-colored buffers to virtual camera input surface.
+                            // This should not block, the buffers should be consumed immediately
+                            // although there are no incoming capture requests.
+                            for (int i = 0; i < 100; i++) {
+                                paintSurface(surface, Color.RED);
+                            }
+                            // Submit green buffer, expect this one will be visible.
+                            paintSurface(surface, Color.GREEN);
+                        });
+
+                assertThat(image.getFormat()).isEqualTo(YUV_420_888);
+                assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
+                assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
+                assertThat(imageHasColor(image, Color.GREEN)).isTrue();
+            }
+        }
     }
 
     @Parameters(method = "getOutputPixelFormats")
@@ -232,7 +259,7 @@ public class VirtualCameraCaptureTest {
                         new VirtualCameraUtils.VideoRenderer(R.raw.test_video));
 
                 Bitmap bitmap = jpegImageToBitmap(image);
-                Bitmap golden = loadGolden(R.raw.golden_test_video);
+                Bitmap golden = loadBitmapFromRaw(R.raw.golden_test_video);
                 assertImagesSimilar(bitmap, golden, "media_codec_virtual_camera");
             }
         }

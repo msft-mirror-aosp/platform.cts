@@ -25,6 +25,7 @@ import android.text.TextUtils;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.modules.utils.build.SdkLevel;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -295,7 +296,9 @@ public class Install {
             if (mIsStaged) {
                 params.setStaged();
             }
-            params.setInstallFlagAllowTest();
+            if (SdkLevel.isAtLeastS()) {
+                params.setInstallFlagAllowTest();
+            }
             params.setRequestDowngrade(mIsDowngrade);
             params.setEnableRollback(mEnableRollback, mRollbackDataPolicy);
             if (mEnableRollback && mLifetimeMillis > 0) {

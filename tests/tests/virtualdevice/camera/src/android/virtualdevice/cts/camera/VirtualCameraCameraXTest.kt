@@ -29,13 +29,11 @@ import android.graphics.ImageFormat
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.CheckFlagsRule
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.Surface
 import android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID
 import android.virtualdevice.cts.camera.VirtualCameraUtils.INFO_DEVICE_ID
 import android.virtualdevice.cts.camera.VirtualCameraUtils.assertImagesSimilar
-import android.virtualdevice.cts.camera.VirtualCameraUtils.loadGolden
+import android.virtualdevice.cts.camera.VirtualCameraUtils.loadBitmapFromRaw
 import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.camera2.Camera2Config
@@ -91,10 +89,7 @@ class VirtualCameraCameraXTest {
     @get:Rule
     val virtualDeviceRule: VirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
         Manifest.permission.GRANT_RUNTIME_PERMISSIONS
-    )
-
-    @get:Rule
-    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    ).withVirtualCameraSupportCheck()
 
     @Before
     fun setUp() {
@@ -149,7 +144,7 @@ class VirtualCameraCameraXTest {
 
     @Test
     fun virtualDeviceContext_takePicture() {
-        val golden = loadGolden(R.raw.golden_camerax_virtual_camera)
+        val golden = loadBitmapFromRaw(R.raw.golden_camerax_virtual_camera)
 
         createVirtualCamera(
             lensFacing = CameraMetadata.LENS_FACING_BACK

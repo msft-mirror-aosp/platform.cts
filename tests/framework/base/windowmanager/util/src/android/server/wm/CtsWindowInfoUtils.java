@@ -457,18 +457,12 @@ public class CtsWindowInfoUtils {
      * @param windowTokenSupplier Supplies the window token for the window to wait on. The supplier
      *                            is called each time window infos change. If the supplier returns
      *                            null, the window is assumed not visible yet.
-     * @param useGlobalInjection  Whether to use targeted injection (false) or global (true).
-     *                            Targeted injection will only send injected events to the owned
-     *                            test app, while global will send the events to the entire system,
-     *                            including spy windows (launcher/System UI). Always use targeted
-     *                            injection unless you know what you are doing.
      * @param outCoords           If non null, the tapped coordinates will be set in the object.
      * @return true if successfully tapped on the coordinates, false otherwise.
      * @throws InterruptedException if failed to wait for WindowInfo
      */
     public static boolean tapOnWindowCenter(Instrumentation instrumentation,
-            @NonNull Supplier<IBinder> windowTokenSupplier, boolean useGlobalInjection,
-            @Nullable Point outCoords)
+            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point outCoords)
             throws InterruptedException {
         Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
         if (bounds == null) {
@@ -477,7 +471,7 @@ public class CtsWindowInfoUtils {
 
         final Point coord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(instrumentation, coord, useGlobalInjection);
+        sendTap(instrumentation, coord);
         if (outCoords != null) {
             outCoords.set(coord.x, coord.y);
         }
@@ -494,17 +488,11 @@ public class CtsWindowInfoUtils {
      *                            null, the window is assumed not visible yet.
      * @param offset              The offset from 0,0 of the window to tap on. If null, it will be
      *                            ignored and 0,0 will be tapped.
-     * @param useGlobalInjection  Whether to use targeted injection (false) or global (true).
-     *                            Targeted injection will only send injected events to the owned
-     *                            test app, while global will send the events to the entire system,
-     *                            including spy windows (launcher/System UI). Always use targeted
-     *                            injection unless you know what you are doing.
      * @return true if successfully tapped on the coordinates, false otherwise.
      * @throws InterruptedException if failed to wait for WindowInfo
      */
     public static boolean tapOnWindow(Instrumentation instrumentation,
-            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset,
-            boolean useGlobalInjection)
+            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset)
             throws InterruptedException {
         Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
         if (bounds == null) {
@@ -513,7 +501,7 @@ public class CtsWindowInfoUtils {
 
         final Point coord = new Point(bounds.left + (offset != null ? offset.x : 0),
                 bounds.top + (offset != null ? offset.y : 0));
-        sendTap(instrumentation, coord, useGlobalInjection);
+        sendTap(instrumentation, coord);
         return true;
     }
 
@@ -563,28 +551,39 @@ public class CtsWindowInfoUtils {
     }
 
     /**
+     * Get the center coordinates of the specified window
+     *
+     * @param windowTokenSupplier Supplies the window token for the window to wait on. The supplier
+     *                            is called each time window infos change. If the supplier returns
+     *                            null, the window is assumed not visible yet.
+     * @return Point of the window center
+     * @throws InterruptedException if failed to wait for WindowInfo
+     */
+    public static Point getWindowCenter(@NonNull Supplier<IBinder> windowTokenSupplier)
+            throws InterruptedException {
+        final Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
+        if (bounds == null) {
+            throw new IllegalArgumentException("Could not get the bounds for window");
+        }
+        return new Point(bounds.left + bounds.width() / 2, bounds.top + bounds.height() / 2);
+    }
+
+    /**
      * Sends tap to the specified coordinates.
      * </p>
      *
      * @param instrumentation    Instrumentation object to use for tap.
      * @param coord              The coordinates to tap on in display space.
-     * @param useGlobalInjection Whether to use targeted injection (false) or global (true).
-     *                           Targeted injection will only send injected events to the owned
-     *                           test app, while global will send the events to the entire system,
-     *                           including spy windows (launcher/System UI). Always use targeted
-     *                           injection unless you know what you are doing.
      * @throws InterruptedException if failed to wait for WindowInfo
      */
-    public static void sendTap(Instrumentation instrumentation, Point coord,
-            boolean useGlobalInjection) {
+    public static void sendTap(Instrumentation instrumentation, Point coord) {
         // Get anchor coordinates on the screen
         final long downTime = SystemClock.uptimeMillis();
 
         CtsTouchUtils ctsTouchUtils = new CtsTouchUtils(instrumentation.getTargetContext());
         ctsTouchUtils.injectDownEvent(instrumentation, downTime, coord.x, coord.y,
-                /* eventInjectionListener= */ null, useGlobalInjection);
-        ctsTouchUtils.injectUpEvent(instrumentation, downTime, false, coord.x, coord.y,
-                /*waitForAnimations=*/ true, null, useGlobalInjection);
+                /* eventInjectionListener= */ null);
+        ctsTouchUtils.injectUpEvent(instrumentation, downTime, false, coord.x, coord.y, null);
 
         instrumentation.waitForIdleSync();
     }

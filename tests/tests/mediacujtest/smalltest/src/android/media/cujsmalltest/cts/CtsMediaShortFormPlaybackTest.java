@@ -291,6 +291,9 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   @Test
   @PlatinumTest(focusArea = "media")
   public void testVideoPlayback() throws Exception {
+    /* TODO(b/339628718, b/338342633) */
+    Assume.assumeFalse("Split screen test is skipped",
+        mCujTestParam.playerListener().isSplitScreenTest());
     if (mCujTestParam.playerListener().isOrientationTest()) {
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support orientation change.",
           !OrientationTestPlayerListener.getIgnoreOrientationRequest()
@@ -319,6 +322,11 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
     if (mCujTestParam.playerListener().getTestType().equals(TestType.DEVICE_LOCK_TEST)) {
       Assume.assumeFalse("Skipping " + mTestType + " on watch", isWatchDevice(mActivity));
       Assume.assumeFalse("Skipping " + mTestType + " on television", isTelevisionDevice(mActivity));
+      // Skipping DEVICE_LOCK_TEST for secondary_user_on_secondary_display, because currently
+      // there is no way to send a "press sleep/wake button" event to a secondary display.
+      Assume.assumeFalse("Skipping " + mTestType + " for a visible background user"
+              + " as individual lock/unlock on a secondary screen is not supported.",
+              isVisibleBackgroundNonProfileUser(mActivity));
     }
     play(mCujTestParam.mediaUrls(), mCujTestParam.timeoutMilliSeconds());
   }

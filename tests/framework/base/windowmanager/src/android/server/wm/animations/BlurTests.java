@@ -41,6 +41,7 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
 import android.server.wm.cts.R;
 import android.server.wm.settings.SettingsSession;
+import android.view.RoundedCorner;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -115,7 +116,7 @@ public class BlurTests extends WindowManagerTestBase {
         insetGivenFrame(windowState,
                 insetsSource -> (insetsSource.is(WindowInsets.Type.captionBar())),
                 mBackgroundActivityBounds);
-        mBackgroundActivityBounds.inset(mBackgroundActivity.getActivity().getSystemBarOverlaps());
+        mBackgroundActivityBounds.inset(mBackgroundActivity.getActivity().getInsetsToBeIgnored());
 
         // Basic checks common to all tests
         verifyOnlyBackgroundImageVisible();
@@ -434,7 +435,7 @@ public class BlurTests extends WindowManagerTestBase {
     }
 
     public static class BackgroundActivity extends FocusableActivity {
-        private Insets mSystemBarOverlaps = Insets.of(0, 0, 0, 0);
+        private Insets mInsetsToBeIgnored = Insets.of(0, 0, 0, 0);
 
         @Override
         protected void onCreate(Bundle savedInstanceState) {
@@ -446,13 +447,42 @@ public class BlurTests extends WindowManagerTestBase {
 
             View rootView = findViewById(android.R.id.content);
             rootView.setOnApplyWindowInsetsListener((v, insets) -> {
-                mSystemBarOverlaps = insets.getInsets(systemBars());
+                Insets systemBarInsets = insets.getInsets(systemBars());
+
+                int bottomLeftCornerRadius = 0;
+                int bottomRightCornerRadius = 0;
+                int topLeftCornerRadius = 0;
+                int topRightCornerRadius = 0;
+                if (insets.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_LEFT) != null) {
+                    bottomLeftCornerRadius = insets.getRoundedCorner(
+                            RoundedCorner.POSITION_BOTTOM_LEFT).getRadius();
+                }
+                if (insets.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_RIGHT) != null) {
+                    bottomRightCornerRadius = insets.getRoundedCorner(
+                            RoundedCorner.POSITION_BOTTOM_RIGHT).getRadius();
+                }
+                if (insets.getRoundedCorner(RoundedCorner.POSITION_TOP_LEFT) != null) {
+                    topLeftCornerRadius = insets.getRoundedCorner(
+                            RoundedCorner.POSITION_TOP_LEFT).getRadius();
+                }
+                if (insets.getRoundedCorner(RoundedCorner.POSITION_TOP_RIGHT) != null) {
+                    topRightCornerRadius = insets.getRoundedCorner(
+                            RoundedCorner.POSITION_TOP_RIGHT).getRadius();
+                }
+                Insets roundedCornerInsets = Insets.of(
+                        Math.max(bottomLeftCornerRadius, topLeftCornerRadius),
+                        Math.max(topLeftCornerRadius, topRightCornerRadius),
+                        Math.max(topRightCornerRadius, bottomRightCornerRadius),
+                        Math.max(bottomLeftCornerRadius, bottomRightCornerRadius)
+                );
+
+                mInsetsToBeIgnored = Insets.max(systemBarInsets, roundedCornerInsets);
                 return insets;
             });
         }
 
-        Insets getSystemBarOverlaps() {
-            return mSystemBarOverlaps;
+        Insets getInsetsToBeIgnored() {
+            return mInsetsToBeIgnored;
         }
     }
 
