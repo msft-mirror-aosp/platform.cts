@@ -307,4 +307,10 @@
 
     <!-- b/337925894 -->
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordLocalMono16BitShort" />
+
+    <!-- b/330018295 -->
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases[instant] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+
+
 </configuration>
