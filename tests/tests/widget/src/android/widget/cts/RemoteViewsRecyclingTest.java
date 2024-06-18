@@ -30,12 +30,12 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
+import android.widget.cts.util.RemoteViewsUtil;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.annotation.UiThreadTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
@@ -44,14 +44,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.concurrent.Executor;
 
-/**
- * Test {@link RemoteViews} recycling when adding views dynamically.
- */
+/** Test {@link RemoteViews} recycling when adding views dynamically. */
 @MediumTest
-@RunWith(AndroidJUnit4.class)
+@RunWith(Parameterized.class)
 public class RemoteViewsRecyclingTest {
     private static final String PACKAGE_NAME = "android.widget.cts";
     private static final int LAYOUT_ID = 1;
@@ -73,6 +72,19 @@ public class RemoteViewsRecyclingTest {
 
     @Rule
     public ExpectedException mExpectedException = ExpectedException.none();
+
+    @Parameterized.Parameters(name = "isProtoTest={0}")
+    public static Object[] parameters() {
+        return new Object[] {false, true};
+    }
+
+    /**
+     * When this parameter is true, the test serializes and deserializes the RemoteViews to/from
+     * proto before applying. This ensures that proto serialization does not cause a change in the
+     * structure or function of RemoteViews, apart from PendingIntent based APIs.
+     */
+    @Parameterized.Parameter(0)
+    public boolean isProtoTest;
 
     private Instrumentation mInstrumentation;
 
@@ -324,7 +336,7 @@ public class RemoteViewsRecyclingTest {
     private void doesntRecycleWhenViewIdDoesntMatch(boolean async) throws Throwable {
         RemoteViews rv = createRemoteViews(R.layout.remoteviews_recycle);
         rv.removeAllViews(R.id.remoteViews_recycle_container);
-        RemoteViews childView = createRemoteViews(R.layout.remoteviews_textview, 2345);
+        RemoteViews childView = createRemoteViews(R.layout.remoteviews_textview, R.id.view1);
         rv.addStableView(R.id.remoteViews_recycle_container, childView, FIRST_TEXT_ID);
         applyRemoteViews(rv);
         ViewGroup container = mResult.findViewById(R.id.remoteViews_recycle_container);
@@ -332,7 +344,7 @@ public class RemoteViewsRecyclingTest {
 
         rv = createRemoteViews(R.layout.remoteviews_recycle);
         rv.removeAllViews(R.id.remoteViews_recycle_container);
-        childView = createRemoteViews(R.layout.remoteviews_textview, 3456);
+        childView = createRemoteViews(R.layout.remoteviews_textview, R.id.view2);
         rv.addStableView(R.id.remoteViews_recycle_container, childView, FIRST_TEXT_ID);
         applyRemoteViews(rv);
         reapplyRemoteViews(rv, async);
@@ -352,11 +364,11 @@ public class RemoteViewsRecyclingTest {
     }
 
     private void recycleWhenViewIdDoesntMatchFailsInMultipleLayout(boolean async) throws Throwable {
-        RemoteViews childRv = createRemoteViews(R.layout.remoteviews_recycle, 2);
+        RemoteViews childRv = createRemoteViews(R.layout.remoteviews_recycle, R.id.view1);
         RemoteViews rv = new RemoteViews(childRv, childRv);
         applyRemoteViews(rv);
 
-        RemoteViews childRv2 = createRemoteViews(R.layout.remoteviews_recycle, 3);
+        RemoteViews childRv2 = createRemoteViews(R.layout.remoteviews_recycle, R.id.view2);
         RemoteViews rv2 = new RemoteViews(childRv2, childRv2);
 
         try {
@@ -380,10 +392,10 @@ public class RemoteViewsRecyclingTest {
     }
 
     private void recycleWhenViewIdDoesntMatchFailsInSimpleLayout(boolean async) throws Throwable {
-        RemoteViews rv = createRemoteViews(R.layout.remoteviews_recycle, 2);
+        RemoteViews rv = createRemoteViews(R.layout.remoteviews_recycle, R.id.view1);
         applyRemoteViews(rv);
 
-        RemoteViews rv2 = createRemoteViews(R.layout.remoteviews_recycle, 3);
+        RemoteViews rv2 = createRemoteViews(R.layout.remoteviews_recycle, R.id.view2);
         try {
             reapplyRemoteViews(rv2, async);
         } catch (RuntimeException ex) {
@@ -479,8 +491,9 @@ public class RemoteViewsRecyclingTest {
     }
 
     private void applyRemoteViews(RemoteViews remoteViews) throws Throwable {
+        mResult =
+                RemoteViewsUtil.applyRemoteViews(mActivityRule, mContext, remoteViews, isProtoTest);
         mActivityRule.runOnUiThread(() -> {
-            mResult = remoteViews.apply(mContext, null);
             // Add our host view to the activity behind this test. This is similar to how launchers
             // add widgets to the on-screen UI.
             ViewGroup root = mActivityRule.getActivity().findViewById(R.id.remoteView_host);
@@ -495,12 +508,16 @@ public class RemoteViewsRecyclingTest {
     }
 
     private void reapplyRemoteViews(RemoteViews remoteViews, boolean async) throws Throwable {
+        RemoteViewsUtil.reapplyRemoteViews(
+                mActivityRule,
+                mContext,
+                remoteViews,
+                mResult,
+                isProtoTest,
+                /* size= */ null,
+                async);
         if (async) {
-            mActivityRule.runOnUiThread(
-                    () -> remoteViews.reapplyAsync(mContext, mResult, null, null));
             Thread.sleep(100); // Wait for the UI to be updated
-        } else {
-            mActivityRule.runOnUiThread(() -> remoteViews.reapply(mContext, mResult));
         }
     }
 
