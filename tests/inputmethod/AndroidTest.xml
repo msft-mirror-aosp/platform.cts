@@ -125,6 +125,19 @@
         <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsMockInputMethodWithSubtypes.apk" />
     </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <!--
+            TestIme always needs to be installed as a full package, even when CTS is running for
+            instant apps.
+        -->
+        <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
+        <option name="test-file-name" value="TestIme.apk" />
+    </target_preparer>
 
     <!--
         TODO(yukawa): come up with a proper way to take care of devices that do not support

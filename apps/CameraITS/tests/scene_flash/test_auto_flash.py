@@ -28,6 +28,7 @@ import image_processing_utils
 import its_session_utils
 import lighting_control_utils
 import opencv_processing_utils
+import ui_interaction_utils
 
 _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 _MEAN_DELTA_ATOL = 15  # mean used for reflective charts
@@ -44,6 +45,9 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
   def setup_class(self):
     super().setup_class()
     self.ui_app = _JETPACK_CAMERA_APP_PACKAGE_NAME
+
+  def teardown_test(self):
+    ui_interaction_utils.force_stop_app(self.dut, self.ui_app)
 
   def test_auto_flash(self):
     with its_session_utils.ItsSession(

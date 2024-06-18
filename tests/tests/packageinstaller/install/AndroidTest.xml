@@ -38,11 +38,11 @@
         <option name="restore-settings" value="true" />
     </target_preparer>
 
-    <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
-        <option name="force-skip-system-props" value="true" />
-        <option name="set-system-setting" key="show_touches" value="1" />
-        <option name="set-system-setting" key="pointer_location" value="1" />
-        <option name="restore-settings" value="true" />
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="settings put system pointer_location 1" />
+        <option name="run-command" value="settings put system show_touches 1" />
+        <option name="teardown-command" value="settings put system pointer_location 0" />
+        <option name="teardown-command" value="settings put system show_touches 0" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
@@ -61,6 +61,7 @@
         <option name="push" value="CtsEmptyTestApp_FullScreenIntent.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_FullScreenIntent.apk" />
         <option name="push" value="CtsEmptyTestApp_AppMetadataInApk.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk.apk" />
         <option name="push" value="CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk" />
+        <option name="push" value="CtsEmptyTestApp_LowTargetSdk.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_LowTargetSdk.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

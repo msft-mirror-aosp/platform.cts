@@ -16,8 +16,6 @@
 
 package android.opengl.cts;
 
-import static org.junit.Assert.assertTrue;
-
 import android.app.Instrumentation;
 import android.content.Intent;
 
@@ -25,20 +23,13 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
-import static androidx.test.internal.util.Checks.checkState;
+
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import javax.microedition.khronos.egl.EGL10;
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.egl.EGLContext;
-import javax.microedition.khronos.egl.EGLDisplay;
-
-import android.util.Log;
-import java.lang.Runnable;
 
 /**
  * Test that gets a list of EGL configurations and tries to use each one in a GLSurfaceView.
@@ -50,7 +41,13 @@ public class EglConfigTest {
 
     private Instrumentation mInstrumentation;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<EglConfigCtsActivity> mActivityRule =
             new ActivityTestRule<>(EglConfigCtsActivity.class, false, false);
 

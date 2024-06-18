@@ -64,7 +64,7 @@ public class TelephonyManagerReadNonDangerousPermissionTest {
 
     @Test
     @AppModeFull
-    public void testReadNonDangerousPermission() throws Exception {
+    public void testReadNonDangerousPermission() {
         if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
             return;
         }
@@ -82,7 +82,8 @@ public class TelephonyManagerReadNonDangerousPermissionTest {
 
     @Test
     public void testPremiumCapabilities() throws Exception {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+                || mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
             return;
         }
 

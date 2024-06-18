@@ -26,6 +26,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.widget.Switch;
 
 import androidx.annotation.Nullable;
@@ -45,6 +47,7 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -88,6 +91,9 @@ public class AutoPrivacySettingsTest {
             return device.findObjects(By.clazz(RecyclerView.class)).size() > 1;
         }
     };
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
 
     @Before
@@ -249,6 +255,12 @@ public class AutoPrivacySettingsTest {
         final Intent intent = new Intent(ACTION_SETTINGS);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         mContext.startActivityAsUser(intent, mContext.getUser());
+        // wait for settings UI to come into focus, test is auto specific
+        mDevice.wait(
+            Until.hasObject(
+                By.res("com.android.car.settings:id/car_settings_activity_wrapper")
+                .focused(true)),
+              10000L);
     }
 
     private void goHome() {

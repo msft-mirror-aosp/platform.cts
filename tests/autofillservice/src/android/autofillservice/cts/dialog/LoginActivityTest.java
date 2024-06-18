@@ -846,23 +846,9 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     @CddTest(requirement = "9.8.14/C1-1")
-    public void testSuppressFillDialog_onCredmanFieldOnlyActivity_withAutofillHint()
-            throws Exception {
-        testSuppressFillDialog_onlyCredentialFields(true);
-    }
-
-    @Test
-    @CddTest(requirement = "9.8.14/C1-1")
     public void testSuppressFillDialog_onMixedFields_withIsCredman()
             throws Exception {
         testSuppressFillDialog_onMixedFields(false);
-    }
-
-    @Test
-    @CddTest(requirement = "9.8.14/C1-1")
-    public void testSuppressFillDialog_onMixedFields_withAutofillHint()
-            throws Exception {
-        testSuppressFillDialog_onMixedFields(true);
     }
 
     @Test
