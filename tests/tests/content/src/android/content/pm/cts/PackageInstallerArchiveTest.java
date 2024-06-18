@@ -23,6 +23,8 @@ import static android.content.pm.PackageManager.MATCH_ARCHIVED_PACKAGES;
 import static android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.getDefaultLauncher;
+import static com.android.server.pm.shortcutmanagertest.ShortcutManagerTestUtils.setDefaultLauncher;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -52,8 +54,11 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.Flags;
+import android.content.pm.LauncherApps;
+import android.content.pm.LauncherApps.ArchiveCompatibilityParams;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
+import android.content.pm.PackageInstaller.UnarchivalState;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.ApplicationInfoFlags;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -71,6 +76,7 @@ import android.os.Looper;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -89,6 +95,7 @@ import com.google.common.truth.Expect;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -98,6 +105,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 @AppModeFull
+@AppModeNonSdkSandbox
 @RunWith(AndroidJUnit4.class)
 public class PackageInstallerArchiveTest {
     private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/content/";
@@ -129,6 +137,7 @@ public class PackageInstallerArchiveTest {
     public AbandonAllPackageSessionsRule mAbandonSessionsRule = new AbandonAllPackageSessionsRule();
 
     private Context mContext;
+    private Instrumentation mInstrumentation;
     private UiDevice mUiDevice;
     private PackageManager mPackageManager;
     private PackageInstaller mPackageInstaller;
@@ -136,14 +145,15 @@ public class PackageInstallerArchiveTest {
     private ArchiveIntentSender mArchiveIntentSender;
     private UnarchiveIntentSender mUnarchiveIntentSender;
     private AppOpsManager mAppOpsManager;
+    private String mDefaultHome;
 
     @Before
     public void setup() throws Exception {
         assumeTrue("Form factor is not supported", isFormFactorSupported());
-        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mUiDevice = UiDevice.getInstance(
                 androidx.test.InstrumentationRegistry.getInstrumentation());
-        mContext = instrumentation.getContext();
+        mContext = mInstrumentation.getContext();
         mPackageManager = mContext.getPackageManager();
         mPackageInstaller = mPackageManager.getPackageInstaller();
         mStorageStatsManager = mContext.getSystemService(StorageStatsManager.class);
@@ -156,11 +166,15 @@ public class PackageInstallerArchiveTest {
         mContext.getPackageManager().setComponentEnabledSetting(
                 new ComponentName(mContext, UnarchiveBroadcastReceiver.class),
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED, DONT_KILL_APP);
+        mDefaultHome = getDefaultLauncher(mInstrumentation);
     }
 
     @After
     public void uninstall() {
         uninstallPackage(PACKAGE_NAME);
+        if (mDefaultHome != null) {
+            setDefaultLauncher(mInstrumentation, mDefaultHome);
+        }
     }
 
     @Test
@@ -171,13 +185,16 @@ public class PackageInstallerArchiveTest {
         PackageInfo packageInfo = getPackageInfo();
 
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mPackage.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PACKAGE_NAME);
+                    assertThat(
+                            mArchiveIntentSender.mStatus.get(10, TimeUnit.MILLISECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-
-        assertThat(mArchiveIntentSender.mPackage.get(5, TimeUnit.SECONDS)).isEqualTo(PACKAGE_NAME);
-        assertThat(mArchiveIntentSender.mStatus.get(10, TimeUnit.MILLISECONDS)).isEqualTo(
-                PackageInstaller.STATUS_SUCCESS);
         StorageStats stats =
                 runWithShellPermissionIdentity(() ->
                                 mStorageStatsManager.queryStatsForPackage(
@@ -195,12 +212,13 @@ public class PackageInstallerArchiveTest {
         installPackage(PACKAGE_NAME, APK_PATH);
 
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
-                PackageInstaller.STATUS_SUCCESS);
-
         ApplicationInfo applicationInfo = mPackageManager.getPackageInfo(PACKAGE_NAME,
                 PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
         Drawable actualIcon = mPackageManager.getApplicationIcon(applicationInfo);
@@ -211,17 +229,47 @@ public class PackageInstallerArchiveTest {
     }
 
     @Test
+    public void archiveApp_getApplicationIcon_compatOptionsOn() throws Exception {
+        installPackage(PACKAGE_NAME, APK_PATH);
+
+        runWithShellPermissionIdentity(
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
+                Manifest.permission.DELETE_PACKAGES);
+        ApplicationInfo applicationInfo = mPackageManager.getPackageInfo(PACKAGE_NAME,
+                PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
+        Drawable overlaidIcon = mPackageManager.getApplicationIcon(applicationInfo);
+        Bitmap overlaidBitmap = drawableToBitmap(overlaidIcon);
+
+        ArchiveCompatibilityParams options = new ArchiveCompatibilityParams();
+        options.setEnableIconOverlay(false);
+        mContext.getSystemService(LauncherApps.class).setArchiveCompatibility(options);
+        Drawable rawIcon = mPackageManager.getApplicationIcon(applicationInfo);
+        Bitmap rawBitmap = drawableToBitmap(rawIcon);
+
+        assertThat(overlaidBitmap.sameAs(rawBitmap)).isFalse();
+
+        recycleBitmap(overlaidIcon, overlaidBitmap);
+        recycleBitmap(rawIcon, rawBitmap);
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
     public void archiveApp_uninstallationWorksCorrectly() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
 
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
-                PackageInstaller.STATUS_SUCCESS);
-
         uninstallPackage(PACKAGE_NAME);
 
         assertThrows(PackageManager.NameNotFoundException.class,
@@ -238,7 +286,7 @@ public class PackageInstallerArchiveTest {
                         () -> assertThrows(
                                 PackageManager.NameNotFoundException.class,
                                 () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                                        new IntentSender((IIntentSender) mArchiveIntentSender), 0)),
+                                        new IntentSender((IIntentSender) mArchiveIntentSender))),
                         Manifest.permission.DELETE_PACKAGES);
 
         assertThat(e).hasMessageThat().isEqualTo("No installer found");
@@ -257,7 +305,7 @@ public class PackageInstallerArchiveTest {
                         () -> assertThrows(
                                 PackageManager.NameNotFoundException.class,
                                 () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                                        new IntentSender((IIntentSender) mArchiveIntentSender), 0)),
+                                        new IntentSender((IIntentSender) mArchiveIntentSender))),
                         Manifest.permission.DELETE_PACKAGES);
 
         assertThat(e).hasMessageThat().isEqualTo("Installer does not support unarchival");
@@ -270,7 +318,7 @@ public class PackageInstallerArchiveTest {
                         () -> assertThrows(
                                 PackageManager.NameNotFoundException.class,
                                 () -> mPackageInstaller.requestArchive("android",
-                                        new IntentSender((IIntentSender) mArchiveIntentSender), 0)),
+                                        new IntentSender((IIntentSender) mArchiveIntentSender))),
                         Manifest.permission.DELETE_PACKAGES);
 
         assertThat(e).hasMessageThat().isEqualTo("System apps cannot be archived.");
@@ -281,12 +329,14 @@ public class PackageInstallerArchiveTest {
         installPackage(PACKAGE_NAME, APK_PATH);
 
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
 
-        assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
-                PackageInstaller.STATUS_SUCCESS);
         assertThat(mPackageManager.getPackageInfo(PACKAGE_NAME,
                 PackageInfoFlags.of(
                         MATCH_UNINSTALLED_PACKAGES)).applicationInfo.isArchived).isTrue();
@@ -324,7 +374,7 @@ public class PackageInstallerArchiveTest {
                 assertThrows(
                         SecurityException.class,
                         () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mArchiveIntentSender), 0));
+                                new IntentSender((IIntentSender) mArchiveIntentSender)));
 
         assertThat(e).hasMessageThat().isEqualTo("You need the "
                 + "com.android.permission.DELETE_PACKAGES or "
@@ -338,18 +388,20 @@ public class PackageInstallerArchiveTest {
         installPackage(PACKAGE_NAME, APK_PATH);
 
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
-                PackageInstaller.STATUS_SUCCESS);
 
         PackageManager.NameNotFoundException e =
                 runWithShellPermissionIdentity(
                         () -> assertThrows(
                                 PackageManager.NameNotFoundException.class,
                                 () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                                        new IntentSender((IIntentSender) mArchiveIntentSender), 0)),
+                                        new IntentSender((IIntentSender) mArchiveIntentSender))),
                         Manifest.permission.DELETE_PACKAGES);
         assertThat(e).hasMessageThat().isEqualTo(PACKAGE_NAME + " is not installed.");
     }
@@ -360,11 +412,14 @@ public class PackageInstallerArchiveTest {
         installPackage(PACKAGE_NAME, APK_PATH);
         final long timestampBeforeArchive = System.currentTimeMillis();
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
 
-        assertThat(mArchiveIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
         final long timestampAfterArchive = System.currentTimeMillis();
 
         // Test that the archiveTimeMillis field is valid
@@ -380,11 +435,13 @@ public class PackageInstallerArchiveTest {
     public void archiveApp_archiveStateClearedAfterUpdate() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-
-        assertThat(mArchiveIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
 
         // Test that the archiveTimeMillis field is valid
         PackageInfo pi = mPackageManager.getPackageInfo(PACKAGE_NAME,
@@ -406,11 +463,13 @@ public class PackageInstallerArchiveTest {
     public void unarchiveApp() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
-                PackageInstaller.STATUS_SUCCESS);
 
         SessionListener sessionListener = new SessionListener();
         mPackageInstaller.registerSessionCallback(sessionListener,
@@ -449,11 +508,13 @@ public class PackageInstallerArchiveTest {
     public void unarchiveApp_repeatedCallsDeduplicated() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
-                PackageInstaller.STATUS_SUCCESS);
 
         runWithShellPermissionIdentity(
                 () -> mPackageInstaller.requestUnarchive(PACKAGE_NAME,
@@ -498,14 +559,16 @@ public class PackageInstallerArchiveTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
-    public void reportUnarchivalStatus_success() throws Exception {
+    public void reportUnarchivalState_success() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
-                PackageInstaller.STATUS_SUCCESS);
 
         SessionListener sessionListener = new SessionListener();
         mPackageInstaller.registerSessionCallback(sessionListener,
@@ -518,9 +581,8 @@ public class PackageInstallerArchiveTest {
         int unarchiveId = sUnarchiveId.get(5, TimeUnit.SECONDS);
 
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.reportUnarchivalStatus(unarchiveId,
-                        PackageInstaller.UNARCHIVAL_OK, /* requiredStorageBytes= */ 0,
-                        /* userActionIntent= */ null),
+                () -> mPackageInstaller.reportUnarchivalState(
+                        UnarchivalState.createOkState(unarchiveId)),
                 Manifest.permission.INSTALL_PACKAGES);
         assertThat(mUnarchiveIntentSender.mPackage.get(5, TimeUnit.SECONDS)).isEqualTo(
                 PACKAGE_NAME);
@@ -533,14 +595,17 @@ public class PackageInstallerArchiveTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
-    public void reportUnarchivalStatus_error() throws Exception {
+    @Ignore("b/321969592")
+    public void reportUnarchivalState_error() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                        new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
-                PackageInstaller.STATUS_SUCCESS);
 
         SessionListener sessionListener = new SessionListener();
         mPackageInstaller.registerSessionCallback(sessionListener,
@@ -555,9 +620,8 @@ public class PackageInstallerArchiveTest {
         int draftSessionId = sessionListener.mSessionIdCreated.get(10, TimeUnit.MILLISECONDS);
 
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.reportUnarchivalStatus(unarchiveId,
-                        PackageInstaller.UNARCHIVAL_GENERIC_ERROR, /* requiredStorageBytes= */ 0,
-                        /* userActionIntent= */ null),
+                () -> mPackageInstaller.reportUnarchivalState(
+                        UnarchivalState.createGenericErrorState(unarchiveId)),
                 Manifest.permission.INSTALL_PACKAGES);
         assertThat(mUnarchiveIntentSender.mPackage.get(5, TimeUnit.SECONDS)).isEqualTo(
                 PACKAGE_NAME);
@@ -581,7 +645,7 @@ public class PackageInstallerArchiveTest {
                         () -> assertThrows(
                                 PackageManager.NameNotFoundException.class,
                                 () -> mPackageInstaller.requestArchive(NO_ACTIVITY_PACKAGE_NAME,
-                                        new IntentSender((IIntentSender) mArchiveIntentSender), 0)),
+                                        new IntentSender((IIntentSender) mArchiveIntentSender))),
                         Manifest.permission.DELETE_PACKAGES);
 
         assertThat(e).hasMessageThat()
@@ -602,7 +666,7 @@ public class PackageInstallerArchiveTest {
                         () -> assertThrows(
                                 PackageManager.NameNotFoundException.class,
                                 () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                                        new IntentSender((IIntentSender) mArchiveIntentSender), 0)),
+                                        new IntentSender((IIntentSender) mArchiveIntentSender))),
                         Manifest.permission.DELETE_PACKAGES);
 
         assertThat(e).hasMessageThat().isEqualTo(
@@ -655,11 +719,13 @@ public class PackageInstallerArchiveTest {
             mContext.registerReceiver(removedBroadcastReceiver, intentFilter);
 
             runWithShellPermissionIdentity(
-                    () -> mPackageInstaller.requestArchive(PACKAGE_NAME,
-                            new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                    () -> {
+                        mPackageInstaller.requestArchive(PACKAGE_NAME,
+                                new IntentSender((IIntentSender) mArchiveIntentSender));
+                        assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                                PackageInstaller.STATUS_SUCCESS);
+                    },
                     Manifest.permission.DELETE_PACKAGES);
-            assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
-                    PackageInstaller.STATUS_SUCCESS);
 
             removedBroadcastReceiver.assertBroadcastReceived();
             Intent removedIntent = removedBroadcastReceiver.getBroadcastResult();
@@ -738,12 +804,14 @@ public class PackageInstallerArchiveTest {
             throws NameNotFoundException, ExecutionException, InterruptedException {
         installPackage(PACKAGE_NAME, APK_PATH);
         runWithShellPermissionIdentity(
-                () ->
-                        mPackageInstaller.requestArchive(
-                                PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mArchiveIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
         ComponentName archiveComponentName =
                 new ComponentName(PACKAGE_NAME, "ClassRandom.MainActivity");
         Intent callingIntent =
@@ -773,12 +841,14 @@ public class PackageInstallerArchiveTest {
             throws NameNotFoundException, ExecutionException, InterruptedException {
         installPackage(PACKAGE_NAME, APK_PATH);
         runWithShellPermissionIdentity(
-                () ->
-                        mPackageInstaller.requestArchive(
-                                PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mArchiveIntentSender), 0),
+                () -> {
+                    mPackageInstaller.requestArchive(
+                            PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get()).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
                 Manifest.permission.DELETE_PACKAGES);
-        assertThat(mArchiveIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
         ComponentName archiveComponentName = new ComponentName(PACKAGE_NAME, ACTIVITY_NAME);
         Intent callingIntent =
                 new Intent(Intent.ACTION_MAIN)
@@ -794,28 +864,6 @@ public class PackageInstallerArchiveTest {
                         () -> mContext.startActivity(callingIntent));
 
         assertThat(e).hasMessageThat().contains("Not allowed to start activity Intent");
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
-    public void startUnarchival_success() throws Exception {
-        installPackage(PACKAGE_NAME, APK_PATH);
-        runWithShellPermissionIdentity(
-                () ->
-                        mPackageInstaller.requestArchive(
-                                PACKAGE_NAME,
-                                new IntentSender((IIntentSender) mArchiveIntentSender), 0),
-                Manifest.permission.DELETE_PACKAGES);
-        assertThat(mArchiveIntentSender.mStatus.get()).isEqualTo(PackageInstaller.STATUS_SUCCESS);
-        ComponentName archiveComponentName = new ComponentName(PACKAGE_NAME, ACTIVITY_NAME);
-
-        SystemUtil.runShellCommand(
-                TextUtils.formatSimple(
-                        "am start -n %s", archiveComponentName.flattenToShortString()));
-
-        assertThat(sUnarchiveReceiverPackageName.get()).isEqualTo(PACKAGE_NAME);
-        assertThat(sUnarchiveReceiverAllUsers.get()).isFalse();
-        mPackageInstaller.abandonSession(sUnarchiveId.get());
     }
 
     private void launchTestActivity() {

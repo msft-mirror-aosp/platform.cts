@@ -131,6 +131,7 @@ public class VirtualSensorTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         mSensorManager = mContext.getSystemService(SensorManager.class);
+        assumeTrue(mSensorManager.getSensorList(Sensor.TYPE_ALL).size() > 0);
     }
 
     private VirtualSensor setUpVirtualSensor(VirtualSensorConfig sensorConfig) {
@@ -709,8 +710,7 @@ public class VirtualSensorTest {
         @Override
         public void onSensorChanged(SensorEvent event) {
             try {
-                mEvents.put(new SensorEvent(event.sensor, event.accuracy, event.timestamp,
-                        event.values));
+                mEvents.put(event);
             } catch (InterruptedException ex) {
                 fail("Interrupted while adding a SensorEvent to the queue");
             }

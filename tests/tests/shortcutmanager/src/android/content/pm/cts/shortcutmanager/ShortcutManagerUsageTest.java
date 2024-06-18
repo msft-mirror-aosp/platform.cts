@@ -25,7 +25,8 @@ import android.app.usage.UsageEvents.Event;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.pm.cts.shortcutmanager.common.Constants;
-import android.test.suitebuilder.annotation.SmallTest;
+
+import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
@@ -101,7 +102,7 @@ public class ShortcutManagerUsageTest extends ShortcutManagerCtsTestsBase {
         final String idManifest = "ms21";
         final String idNonexistance = "nonexistence";
 
-        runWithCallerWithStrictMode(mPackageContext1, () -> {
+        runWithCallerWithStrictMode(mPackageContext3, () -> {
             assertTrue(getManager().setDynamicShortcuts(list(
                     makeShortcut(id1),
                     makeShortcut(id2)
@@ -124,11 +125,11 @@ public class ShortcutManagerUsageTest extends ShortcutManagerCtsTestsBase {
 
         // Report usage.
         final long start2 = System.currentTimeMillis() - USAGE_STATS_RANGE_ALLOWANCE;
-        runWithCallerWithStrictMode(mPackageContext1, () -> getManager().reportShortcutUsed(id1));
+        runWithCallerWithStrictMode(mPackageContext3, () -> getManager().reportShortcutUsed(id1));
         final long end2 = System.currentTimeMillis() + USAGE_STATS_RANGE_ALLOWANCE;
 
         // Check the log.
-        checkEventReported(start2, end2, mPackageContext1, id1, "Events weren't populated");
+        checkEventReported(start2, end2, mPackageContext3, id1, "Events weren't populated");
 
         // Report usage.
         final long start3 = System.currentTimeMillis() - USAGE_STATS_RANGE_ALLOWANCE;

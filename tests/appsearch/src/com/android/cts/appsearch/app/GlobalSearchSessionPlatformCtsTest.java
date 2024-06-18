@@ -55,12 +55,16 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.SigningInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.cts.appsearch.ICommandReceiver;
 
@@ -72,6 +76,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -164,6 +169,252 @@ public class GlobalSearchSessionPlatformCtsTest {
 
         clearData(PKG_A, DB_NAME);
         clearData(PKG_B, DB_NAME);
+    }
+
+    // This does not have a fixed certificate, so we need to get it live
+    private byte[] getCtsPackageSha256Cert() {
+        try {
+            PackageInfo packageInfo = mContext.getPackageManager().getPackageInfo(
+                    mContext.getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
+            SigningInfo signingInfo = packageInfo.signingInfo;
+
+            if (signingInfo != null) {
+                MessageDigest md = MessageDigest.getInstance("SHA256");
+                md.update(signingInfo.getSigningCertificateHistory()[0].toByteArray());
+                return md.digest();
+            }
+        } catch (Exception e) {
+            // Invalid certificate or test setup failure, continue to return null
+        }
+        return null;
+    }
+
+    // We could add a third package, PKG_C, that the cts package cannot query. However, this does
+    // not allow us to bind to PKG_C, meaning we can't index documents in PKG_C, making it useless.
+    // Instead, we will take advantage of the fact that the cts package can query both PKG_A and
+    // PKG_B, while PKG_A and PKG_B cannot query each other. We'll focus on the fact that PKG_A
+    // cannot query PKG_B, but can query the cts package.
+    //
+    // So we'll index two schemas, one with a publiclyVisibleTargetPackage of the cts package, and
+    // another with a publiclyVisibleTargetPackage of PKG_B. We can't index these in PKG_A, as
+    // packages always have visibility to schemas they hold. We'll index them both in PKG_B,
+    // ensuring that the "cts schema" is still visible, as well as the cts package (this one),
+    // ensuring that the "PKG_B schema" is not visible.
+    //
+    // In summary:
+    // Doc in accessible package, accessible publiclyVisibleTargetPackage: searchable
+    // Doc in inaccessible package, accessible publiclyVisibleTargetPackage: searchable
+    // Doc in accessible package, inaccessible publiclyVisibleTargetPackage: not searchable
+    // Doc in inaccessible package, inaccessible publiclyVisibleTargetPackage: not searchable
+    @SdkSuppress(minSdkVersion = 34)
+    // TODO(b/275592563): Figure out why canPackageQuery works different on T
+    @Test
+    public void testPublicVisibility_accessibleTestPackage() throws Exception {
+        // Ensure manifest files are set up correctly.
+        String ctsPackageName = mContext.getPackageName();
+        String ctsSchemaName = ctsPackageName + "Schema";
+
+        assertThat(mContext.getPackageManager().canPackageQuery(PKG_A, ctsPackageName)).isTrue();
+        assertThat(mContext.getPackageManager().canPackageQuery(PKG_A, PKG_B)).isFalse();
+
+        AppSearchSchema ctsSchema = new AppSearchSchema.Builder(ctsSchemaName)
+                .addProperty(new StringPropertyConfig.Builder("searchable")
+                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                        .setIndexingType(StringPropertyConfig.INDEXING_TYPE_PREFIXES).build())
+                .build();
+        // pkg b schema
+        AppSearchSchema bSchema = new AppSearchSchema.Builder("BSchema")
+                .addProperty(new StringPropertyConfig.Builder("searchable")
+                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                        .setIndexingType(StringPropertyConfig.INDEXING_TYPE_PREFIXES).build())
+                .build();
+
+        // Index schemas in the cts package
+        mDb.setSchemaAsync(new SetSchemaRequest.Builder()
+                .addSchemas(ctsSchema, bSchema)
+                .setPubliclyVisibleSchema(ctsSchema.getSchemaType(),
+                        new PackageIdentifier(ctsPackageName, getCtsPackageSha256Cert()))
+                .setPubliclyVisibleSchema(bSchema.getSchemaType(),
+                        new PackageIdentifier(PKG_B, PKG_B_CERT_SHA256))
+                .build()).get();
+        GenericDocument ctsDoc =
+                new GenericDocument.Builder<>(NAMESPACE_NAME, "id1", ctsSchemaName)
+                        .setPropertyString("searchable", "pineapple from com.android.cts.appsearch")
+                        .build();
+        GenericDocument bDoc =
+                new GenericDocument.Builder<>(NAMESPACE_NAME, "id2", "BSchema")
+                        .setPropertyString("searchable",
+                                "pineapple from com.android.cts.appserach.helper.b")
+                        .build();
+        checkIsBatchResultSuccess(mDb.putAsync(new PutDocumentsRequest.Builder()
+                .addGenericDocuments(ctsDoc, bDoc).build()));
+
+        // Assert that this package can search for 2
+        SearchSpec searchSpec = new SearchSpec.Builder()
+                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                .build();
+
+        SearchResultsShim results = mDb.search("pineapple", searchSpec);
+        List<SearchResult> page = results.getNextPageAsync().get();
+        assertThat(page).hasSize(2);
+
+        // Assert PKG_A can see cts
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
+                bindToHelperService(PKG_A);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            List<String> packageBResults = commandReceiver.globalSearch("pineapple");
+            // Only the cts doc
+            assertThat(packageBResults).hasSize(1);
+            assertThat(packageBResults).containsExactly(ctsDoc.toString());
+        } finally {
+            serviceConnection.unbind();
+        }
+    }
+
+    @SdkSuppress(minSdkVersion = 34)
+    // TODO(b/275592563): Figure out why canPackageQuery works different on T
+    @Test
+    public void testPublicVisibility_inaccessibleHelperApp() throws Exception {
+        String ctsPackageName = mContext.getPackageName();
+        String ctsSchemaName = ctsPackageName + "Schema";
+        GenericDocument ctsDoc =
+                new GenericDocument.Builder<>(NAMESPACE_NAME, "id1", ctsSchemaName)
+                        .setPropertyString("searchable", "pineapple from com.android.cts.appsearch")
+                        .build();
+
+        assertThat(mContext.getPackageManager().canPackageQuery(PKG_A, ctsPackageName)).isTrue();
+        assertThat(mContext.getPackageManager().canPackageQuery(PKG_A, PKG_B)).isFalse();
+
+        // Index schemas in the B package
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
+                bindToHelperService(PKG_B);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            commandReceiver.setUpPubliclyVisibleDocuments(
+                    ctsPackageName, getCtsPackageSha256Cert(), PKG_B, PKG_B_CERT_SHA256);
+
+            // Assert that B sees two documents
+            List<String> results = commandReceiver.globalSearch("pineapple");
+            assertThat(results).hasSize(2);
+        } finally {
+            serviceConnection.unbind();
+        }
+
+        // Assert that A just sees the cts document
+        serviceConnection = bindToHelperService(PKG_A);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            List<String> results = commandReceiver.globalSearch("pineapple");
+            // Only the cts doc
+            assertThat(results).hasSize(1);
+            String resultWithoutTimestamp =
+                    results.get(0).replaceAll("creationTimestampMillis: [0-9]+",
+                            "creationTimestampMillis: " + ctsDoc.getCreationTimestampMillis());
+            assertThat(resultWithoutTimestamp).isEqualTo(ctsDoc.toString());
+
+        } finally {
+            serviceConnection.unbind();
+        }
+    }
+
+    @SdkSuppress(minSdkVersion = 34)
+    // TODO(b/275592563): Figure out why canPackageQuery works different on T
+    @Test
+    public void testPublicVisibility_invalidCertificate() throws Exception {
+        // Ensure manifest files are set up correctly.
+        String ctsPackageName = mContext.getPackageName();
+        String ctsSchemaName = ctsPackageName + "Schema";
+
+        // This test will index a publicly accessible document in both PKG_B and the cts package,
+        // but configured with an invalid sha 256 cert. Both should be inaccessible. We can also
+        // check that PKG_A can't access publicly visible documents with the publicly visible target
+        // package set to PKG_A itself if the certificate doesn't match.
+
+        assertThat(mContext.getPackageManager().canPackageQuery(PKG_A, ctsPackageName)).isTrue();
+        assertThat(mContext.getPackageManager().canPackageQuery(PKG_A, PKG_B)).isFalse();
+
+        AppSearchSchema ctsSchema = new AppSearchSchema.Builder(ctsSchemaName)
+                .addProperty(new StringPropertyConfig.Builder("searchable")
+                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                        .setIndexingType(StringPropertyConfig.INDEXING_TYPE_PREFIXES).build())
+                .build();
+        // pkg a schema
+        AppSearchSchema aSchema = new AppSearchSchema.Builder("ASchema")
+                .addProperty(new StringPropertyConfig.Builder("searchable")
+                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                        .setIndexingType(StringPropertyConfig.INDEXING_TYPE_PREFIXES).build())
+                .build();
+
+        byte[] invalidCert = new byte[32];
+        invalidCert[16] = 48;
+
+        // Index schemas in the cts package
+        mDb.setSchemaAsync(new SetSchemaRequest.Builder()
+                .addSchemas(ctsSchema, aSchema)
+                .setPubliclyVisibleSchema(ctsSchema.getSchemaType(),
+                        new PackageIdentifier(ctsPackageName, invalidCert))
+                .setPubliclyVisibleSchema(aSchema.getSchemaType(),
+                        new PackageIdentifier(PKG_A, invalidCert))
+                .build()).get();
+        GenericDocument ctsDoc =
+                new GenericDocument.Builder<>(NAMESPACE_NAME, "id1", ctsSchemaName)
+                        .setPropertyString("searchable", "pineapple from com.android.cts.appsearch")
+                        .build();
+        GenericDocument aDoc =
+                new GenericDocument.Builder<>(NAMESPACE_NAME, "id2", "ASchema")
+                        .setPropertyString("searchable",
+                                "pineapple from com.android.cts.appserach.helper.a")
+                        .build();
+        checkIsBatchResultSuccess(mDb.putAsync(new PutDocumentsRequest.Builder()
+                .addGenericDocuments(ctsDoc, aDoc).build()));
+
+        // Check that this package can search for 2
+        SearchSpec searchSpec = new SearchSpec.Builder()
+                .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                .build();
+        SearchResultsShim results = mDb.search("pineapple", searchSpec);
+        List<SearchResult> page = results.getNextPageAsync().get();
+        assertThat(page).hasSize(2);
+
+        // Assert PKG_A can't see the documents
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
+                bindToHelperService(PKG_A);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            List<String> ctsPackageResults = commandReceiver.globalSearch("pineapple");
+            assertThat(ctsPackageResults).isEmpty();
+        } finally {
+            serviceConnection.unbind();
+        }
+
+        // Index schemas in the B package
+        serviceConnection = bindToHelperService(PKG_B);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            commandReceiver.setUpPubliclyVisibleDocuments(
+                    ctsPackageName, invalidCert, PKG_A, invalidCert);
+
+            // Assert that B sees two documents
+            List<String> bResults = commandReceiver.globalSearch("pineapple");
+            assertThat(bResults).hasSize(2);
+        } finally {
+            serviceConnection.unbind();
+        }
+
+        // Assert that A just sees the cts document
+        serviceConnection = bindToHelperService(PKG_A);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            List<String> aResults = commandReceiver.globalSearch("pineapple");
+            assertThat(aResults).isEmpty();
+        } finally {
+            serviceConnection.unbind();
+        }
     }
 
     @Test
@@ -399,7 +650,7 @@ public class GlobalSearchSessionPlatformCtsTest {
                             GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
                                     .get();
 
-                    // Can get the document
+                    // Can't get the document
                     AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
                             .getByDocumentIdAsync(PKG_A, "database",
                                     new GetByDocumentIdRequest.Builder("namespace")
@@ -620,6 +871,282 @@ public class GlobalSearchSessionPlatformCtsTest {
         assertThat(errorMessageNonExistent.get()).isEqualTo(errorMessageUnauth.get());
         assertThat(errorMessageNonExistent.get())
                 .isEqualTo(noGlobalResult.getFailures().get("id1").getErrorMessage());
+    }
+
+    @Test
+    public void testGlobalGetById_requireAllVisibleToConfig_pkgAndPermission() throws Exception {
+        String ctsPackageName = mContext.getPackageName();
+        PackageIdentifier ctsPackage =
+                new PackageIdentifier(ctsPackageName, getCtsPackageSha256Cert());
+        PackageIdentifier otherPackage =
+                new PackageIdentifier("com.android.other", new byte[32]);
+        // index global searchable document in pkg_A and set it requires READ_SMS and accessible
+        // to cts package
+        indexGloballySearchableDocumentVisibleToConfig(PKG_A, DB_NAME, NAMESPACE_NAME, "id",
+                ImmutableSet.of(ctsPackage, otherPackage),
+                ImmutableSet.of(ImmutableSet.of(SetSchemaRequest.READ_SMS)),
+                /*publicAclPackage=*/null);
+
+        // Can get document with READ_SMS permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
+
+                    // Can get the document "id1".
+                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
+                            .getByDocumentIdAsync(PKG_A, "database",
+                                    new GetByDocumentIdRequest.Builder("namespace")
+                                            .addIds("id")
+                                            .build()).get();
+                    assertThat(result.getSuccesses()).hasSize(1);
+                },
+                READ_SMS);
+
+        // Cann't get document with READ_CALENDAR permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
+
+                    // Can't get the document "id2", even if we are while list package, but we don't
+                    // hold required permission.
+                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
+                            .getByDocumentIdAsync(PKG_A, "database",
+                                new GetByDocumentIdRequest.Builder("namespace")
+                                    .addIds("id")
+                                    .build()).get();
+                    assertThat(result.getSuccesses()).isEmpty();
+                },
+                READ_CALENDAR);
+
+        // Update the schema visibility setting and index global searchable document in pkg_A
+        // set it requires READ_SMS and NOT accessible to cts package
+        indexGloballySearchableDocumentVisibleToConfig(PKG_A, DB_NAME, NAMESPACE_NAME, "id",
+                ImmutableSet.of(otherPackage),
+                ImmutableSet.of(ImmutableSet.of(SetSchemaRequest.READ_SMS)),
+                /*publicAclPackage=*/null);
+        // Cann't get document with READ_SMS permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
+                    // Can't get the document "id2", even if we hold the required permission but
+                    // we are not in the while list packages.
+                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
+                            .getByDocumentIdAsync(PKG_A, "database",
+                                new GetByDocumentIdRequest.Builder("namespace")
+                                    .addIds("id")
+                                    .build()).get();
+                    assertThat(result.getSuccesses()).isEmpty();
+                },
+                READ_SMS);
+    }
+
+    @Test
+    public void testGlobalGetById_requireAllVisibleToConfig_publicAclAndPermission()
+            throws Exception {
+        String ctsPackageName = mContext.getPackageName();
+        assertThat(mContext.getPackageManager().canPackageQuery(ctsPackageName, PKG_A)).isTrue();
+        PackageIdentifier packageA = new PackageIdentifier(PKG_A, PKG_A_CERT_SHA256);
+        // index global searchable document in pkg_A and set it requires READ_SMS and is public to
+        // packages that can query other package
+        indexGloballySearchableDocumentVisibleToConfig(PKG_A, DB_NAME, NAMESPACE_NAME, "id",
+                /*visibleToPackages=*/ImmutableSet.of(),
+                ImmutableSet.of(ImmutableSet.of(SetSchemaRequest.READ_SMS)),
+                packageA);
+
+        // Can get document with READ_SMS permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
+
+                    // Can get the document
+                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
+                            .getByDocumentIdAsync(PKG_A, "database",
+                                new GetByDocumentIdRequest.Builder("namespace")
+                                    .addIds("id")
+                                    .build()).get();
+                    assertThat(result.getSuccesses()).hasSize(1);
+                },
+                READ_SMS);
+
+        // Cann't get document with READ_CALENDAR permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
+
+                    // Can't get the document, even if we are while list package, but we don't
+                    // hold required permission.
+                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
+                            .getByDocumentIdAsync(PKG_A, "database",
+                                new GetByDocumentIdRequest.Builder("namespace")
+                                    .addIds("id")
+                                    .build()).get();
+                    assertThat(result.getSuccesses()).isEmpty();
+                },
+                READ_CALENDAR);
+
+        // Update the schema visibility setting and index global searchable document in pkg_A
+        // set it requires READ_SMS and is public to packages that can query otherPackage
+        PackageIdentifier otherPackage =
+                new PackageIdentifier("com.android.other", new byte[32]);
+        indexGloballySearchableDocumentVisibleToConfig(PKG_A, DB_NAME, NAMESPACE_NAME, "id",
+                /*visibleToPackages=*/ImmutableSet.of(),
+                ImmutableSet.of(ImmutableSet.of(SetSchemaRequest.READ_SMS)),
+                otherPackage);
+        // Cann't get document with READ_SMS permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
+                    // Can't get the document "id2", even if we hold the required permission but
+                    // we are not in the while list packages.
+                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
+                            .getByDocumentIdAsync(PKG_A, "database",
+                                new GetByDocumentIdRequest.Builder("namespace")
+                                    .addIds("id")
+                                    .build()).get();
+                    assertThat(result.getSuccesses()).isEmpty();
+                },
+                READ_SMS);
+    }
+
+    @Test
+    public void testGlobalGetById_requireAllVisibleToConfig_all3Settings()
+            throws Exception {
+        String ctsPackageName = mContext.getPackageName();
+        assertThat(mContext.getPackageManager().canPackageQuery(ctsPackageName, PKG_A)).isTrue();
+        PackageIdentifier ctsPackage =
+                new PackageIdentifier(ctsPackageName, getCtsPackageSha256Cert());
+        PackageIdentifier packageA = new PackageIdentifier(PKG_A, PKG_A_CERT_SHA256);
+        PackageIdentifier otherPackage =
+                new PackageIdentifier("com.android.other", new byte[32]);
+        // index global searchable document in pkg_A and set it requires READ_SMS and accessible
+        // to cts package and is public to packages that can query other package
+        indexGloballySearchableDocumentVisibleToConfig(PKG_A, DB_NAME, NAMESPACE_NAME, "id",
+                ImmutableSet.of(ctsPackage, otherPackage),
+                ImmutableSet.of(ImmutableSet.of(SetSchemaRequest.READ_SMS)),
+                packageA);
+
+        // Can get document with READ_SMS permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
+
+                    // Can get the document
+                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
+                            .getByDocumentIdAsync(PKG_A, "database",
+                                new GetByDocumentIdRequest.Builder("namespace")
+                                    .addIds("id")
+                                    .build()).get();
+                    assertThat(result.getSuccesses()).hasSize(1);
+                },
+                READ_SMS);
+
+        // Cann't get document with READ_CALENDAR permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
+
+                    // Can't get the document "id2", even if we are while list package, but we don't
+                    // hold required permission.
+                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
+                            .getByDocumentIdAsync(PKG_A, "database",
+                                new GetByDocumentIdRequest.Builder("namespace")
+                                    .addIds("id1")
+                                    .build()).get();
+                    assertThat(result.getSuccesses()).isEmpty();
+                },
+                READ_CALENDAR);
+
+        // Update the schema visibility setting and index global searchable document in pkg_A.
+        // set it NOT accessible to cts package
+        indexGloballySearchableDocumentVisibleToConfig(PKG_A, DB_NAME, NAMESPACE_NAME, "id",
+                ImmutableSet.of(otherPackage),
+                ImmutableSet.of(ImmutableSet.of(SetSchemaRequest.READ_SMS)),
+                packageA);
+
+        // Cann't get document with READ_SMS permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
+                    // Can't get the document "id2", even if we hold the required permission but
+                    // we are not in the while list packages.
+                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
+                            .getByDocumentIdAsync(PKG_A, "database",
+                                new GetByDocumentIdRequest.Builder("namespace")
+                                    .addIds("id")
+                                    .build()).get();
+                    assertThat(result.getSuccesses()).isEmpty();
+                },
+                READ_SMS);
+
+        // Update the schema visibility setting and index global searchable document in pkg_A.
+        // set it requires READ_SMS and accessible to cts package and require can query to target
+        // the otherPackage.
+        indexGloballySearchableDocumentVisibleToConfig(PKG_A, DB_NAME, NAMESPACE_NAME, "id",
+                ImmutableSet.of(ctsPackage, otherPackage),
+                ImmutableSet.of(ImmutableSet.of(SetSchemaRequest.READ_SMS)),
+                /*publicAclPackage=*/otherPackage);
+
+        // Cann't get document with READ_SMS permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession =
+                        GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                            .get();
+                    // Can't get the document "id2", even if we hold the required permission but
+                    // we are not in the while list packages.
+                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
+                            .getByDocumentIdAsync(PKG_A, "database",
+                                new GetByDocumentIdRequest.Builder("namespace")
+                                    .addIds("id")
+                                    .build()).get();
+                    assertThat(result.getSuccesses()).isEmpty();
+                },
+                READ_SMS);
+    }
+
+    @Test
+    public void testGlobalGetById_requireAllVisibleToConfig_emptyConfig()
+            throws Exception {
+        // index global searchable document in pkg_A and set it requires empty config. This
+        // shouldn't accessible by anyone.
+        indexGloballySearchableDocumentVisibleToConfig(PKG_A, DB_NAME, NAMESPACE_NAME, "id",
+                /*visibleToPackages=*/ImmutableSet.of(),
+                /*visibleToPermissions=*/ImmutableSet.of(),
+                /*publicAclPackage=*/null);
+
+        // Cann't get document with READ_SMS permission.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mGlobalSearchSession =
+                            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync(mContext)
+                                    .get();
+
+                    AppSearchBatchResult<String, GenericDocument> result = mGlobalSearchSession
+                            .getByDocumentIdAsync(PKG_A, "database",
+                                    new GetByDocumentIdRequest.Builder("namespace")
+                                            .addIds("id")
+                                            .build()).get();
+                    assertThat(result.getSuccesses()).isEmpty();
+                },
+                READ_SMS);
     }
 
     @Test
@@ -1392,6 +1919,46 @@ public class GlobalSearchSessionPlatformCtsTest {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
             assertThat(commandReceiver.indexGloballySearchableDocument(
                     databaseName, namespace, id, permissionBundles)).isTrue();
+        } finally {
+            serviceConnection.unbind();
+        }
+    }
+
+    private void indexGloballySearchableDocumentVisibleToConfig(String pkg, String databaseName,
+            String namespace, String id, Set<PackageIdentifier> visibleToPackages,
+            Set<Set<Integer>> visibleToPermissions, PackageIdentifier publicAclPackage)
+            throws Exception {
+        // PackageIdentifierParcel is hidden, we need to use bundle to pass PackageIdentifier.
+        List<Bundle> packagesBundles = new ArrayList<>(visibleToPackages.size());
+        for (PackageIdentifier visibleToPackage: visibleToPackages) {
+            Bundle packageBundle = new Bundle();
+            packageBundle.putString("packageName", visibleToPackage.getPackageName());
+            packageBundle.putByteArray("sha256Cert", visibleToPackage.getSha256Certificate());
+            packagesBundles.add(packageBundle);
+        }
+
+        // binder won't accept Set or Integer, we need to convert to List<Bundle>.
+        List<Bundle> permissionBundles = new ArrayList<>(visibleToPermissions.size());
+        for (Set<Integer> allRequiredPermissions : visibleToPermissions) {
+            Bundle permissionBundle = new Bundle();
+            permissionBundle.putIntegerArrayList("permission",
+                    new ArrayList<>(allRequiredPermissions));
+            permissionBundles.add(permissionBundle);
+        }
+
+        Bundle publicAclBundle = null;
+        if (publicAclPackage != null) {
+            publicAclBundle = new Bundle();
+            publicAclBundle.putString("packageName", publicAclPackage.getPackageName());
+            publicAclBundle.putByteArray("sha256Cert", publicAclPackage.getSha256Certificate());
+        }
+
+        GlobalSearchSessionPlatformCtsTest.TestServiceConnection serviceConnection =
+                bindToHelperService(pkg);
+        try {
+            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
+            assertThat(commandReceiver.indexGloballySearchableDocumentVisibleToConfig(databaseName,
+                    namespace, id, packagesBundles, permissionBundles, publicAclBundle)).isTrue();
         } finally {
             serviceConnection.unbind();
         }

@@ -22,8 +22,8 @@ import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.MAXIMUM;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PREVIEW;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PRIV;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1440P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1080P;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1440P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S720P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.YUV;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
@@ -35,10 +35,10 @@ import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraDevice.CameraDeviceSetup;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
-import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.cts.CameraTestUtils.ImageDropperListener;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
@@ -55,18 +55,19 @@ import android.util.Range;
 import android.util.Size;
 import android.view.Surface;
 
+import com.android.compatibility.common.util.MediaUtils;
 import com.android.internal.camera.flags.Flags;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  * Tests for feature combinations.
@@ -89,7 +90,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
      * resolutions smaller than 1080P.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_FEATURE_COMBINATION_QUERY)
+    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
     public void testIsSessionConfigurationSupported() throws Exception {
         // Note: This must match the required stream combinations defined in
         // CameraCharacteristcs#INFO_SESSION_CONFIGURATION_QUERY_VERSION.
@@ -147,6 +148,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             }
 
             openDevice(id);
+            CameraDeviceSetup cameraDeviceSetup = mCameraManager.getCameraDeviceSetup(id);
 
             try {
                 for (int[] c : legacyCombinations) {
@@ -160,11 +162,14 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
                     if (testAspectRatios) {
                         // Test 16:9 version of the combination
-                        testIsSessionConfigurationSupported(id, AspectRatio.AR_16_9, c);
+                        testIsSessionConfigurationSupported(
+                                cameraDeviceSetup, AspectRatio.AR_16_9, c);
                         // Test 4:3 version of the combination
-                        testIsSessionConfigurationSupported(id, AspectRatio.AR_4_3, c);
+                        testIsSessionConfigurationSupported(
+                                cameraDeviceSetup, AspectRatio.AR_4_3, c);
                     } else {
-                        testIsSessionConfigurationSupported(id, AspectRatio.ARBITRARY, c);
+                        testIsSessionConfigurationSupported(
+                                cameraDeviceSetup, AspectRatio.ARBITRARY, c);
                     }
                 }
             } finally {
@@ -173,15 +178,18 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
         }
     }
 
-    private void testIsSessionConfigurationSupported(String cameraId,
+    private void testIsSessionConfigurationSupported(CameraDeviceSetup cameraDeviceSetup,
             AspectRatio aspectRatio, int[] combination) throws Exception {
+        final int kNumBuffers = 5;
+        final int kWarmupFrames = 2;
         MaxStreamSizes maxStreamSizes = new MaxStreamSizes(mStaticInfo,
-                cameraId, mContext, aspectRatio);
+                cameraDeviceSetup.getId(), mContext, aspectRatio);
 
         Set<Long> dynamicRangeProfiles = mStaticInfo.getAvailableDynamicRangeProfilesChecked();
         int[] videoStabilizationModes =
                 mStaticInfo.getAvailableVideoStabilizationModesChecked();
         Range<Integer>[] fpsRanges = mStaticInfo.getAeAvailableTargetFpsRangesChecked();
+        boolean hasReadoutTimestamp = mStaticInfo.isReadoutTimestampSupported();
 
         for (Long dynamicProfile : dynamicRangeProfiles) {
             // Setup outputs
@@ -198,7 +206,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
             long minFrameDuration = setupConfigurationTargets(combination, maxStreamSizes,
                     privTargets, jpegTargets, yuvTargets, outputConfigs,
-                    /*numBuffers*/1, dynamicProfile, /*hasUseCase*/ false);
+                    kNumBuffers, dynamicProfile, /*hasUseCase*/ false);
             if (minFrameDuration == -1) {
                 // Stream combination isn't valid.
                 continue;
@@ -227,17 +235,17 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
                     boolean haveSession = false;
                     try {
-                        CaptureRequest.Builder builder = mCameraManager.createCaptureRequest(
-                                cameraId, CameraDevice.TEMPLATE_PREVIEW);
+                        CaptureRequest.Builder builder = cameraDeviceSetup.createCaptureRequest(
+                                CameraDevice.TEMPLATE_PREVIEW);
                         builder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
                                 stabilizationMode);
                         builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRange);
                         CaptureRequest request = builder.build();
 
                         boolean sessionConfigSupport =
-                                isSessionConfigWithParamsSupported(mCameraManager,
-                                        cameraId, mHandler, outputConfigs,
-                                        SessionConfiguration.SESSION_REGULAR, request);
+                                isSessionConfigWithParamsSupported(cameraDeviceSetup, mHandler,
+                                        outputConfigs, SessionConfiguration.SESSION_REGULAR,
+                                        request);
                         if (!sessionConfigSupport) {
                             Log.i(TAG, String.format("Session configuration from combination [%s],"
                                     + " not supported", combinationStr));
@@ -271,16 +279,11 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                                     profiles.getProfileCaptureRequestConstraints(dynamicProfile);
                             if (compatibleProfiles.contains(DynamicRangeProfiles.STANDARD)) {
                                 surfaceList.addAll(secondarySurfaceList);
-                                surfaceSets.add(surfaceList);
-                            } else {
-                                if (!surfaceList.isEmpty()) {
-                                    surfaceSets.add(surfaceList);
-                                }
-                                if (!secondarySurfaceList.isEmpty()) {
-                                    surfaceSets.add(secondarySurfaceList);
-                                }
+                            } else if (!secondarySurfaceList.isEmpty()) {
+                                surfaceSets.add(secondarySurfaceList);
                             }
                         }
+                        surfaceSets.add(surfaceList);
 
                         for (List<Surface> surfaces : surfaceSets) {
                             CaptureRequest.Builder builderForSession = mCamera.createCaptureRequest(
@@ -293,43 +296,69 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                             for (Surface s : surfaces) {
                                 builderForSession.addTarget(s);
                             }
-                            request = builderForSession.build();
+                            List<CaptureRequest> burst = new ArrayList<>();
+                            for (int i = 0; i < kNumBuffers; i++) {
+                                burst.add(builderForSession.build());
+                            }
 
                             SimpleCaptureCallback captureCallback = new SimpleCaptureCallback();
-                            mCameraSession.capture(request, captureCallback, mHandler);
+                            mCameraSession.captureBurst(burst, captureCallback, mHandler);
 
-                            TotalCaptureResult result = captureCallback.getTotalCaptureResult(
-                                    CameraTestUtils.CAPTURE_RESULT_TIMEOUT_MS);
-                            mCollector.expectTrue("Result is null for combination "
-                                    + combinationStr, result != null);
+                            List<Long> readoutTimestamps = null;
+                            if (hasReadoutTimestamp) {
+                                readoutTimestamps =
+                                        captureCallback.getReadoutStartTimestamps(kNumBuffers);
+                            }
+                            CaptureResult[] results = new CaptureResult[kNumBuffers];
 
-                            // Check video stabiliztaion mode
-                            Integer videoStabilizationMode = result.get(
-                                    CaptureResult.CONTROL_VIDEO_STABILIZATION_MODE);
-                            mCollector.expectTrue(
-                                    "Stabilization mode doesn't match for combination "
-                                    + combinationStr, videoStabilizationMode == stabilizationMode);
+                            for (int i = 0; i < kNumBuffers; i++) {
+                                CaptureResult result = captureCallback.getCaptureResult(
+                                        CameraTestUtils.CAPTURE_RESULT_TIMEOUT_MS);
+                                mCollector.expectNotNull("Result is null for combination "
+                                        + combinationStr, result);
+                                results[i] = result;
 
-                            // Check frame rate
-                            if (fpsRange.getUpper().equals(fpsRange.getLower())) {
-                                Range<Integer> targetFpsRange = result.get(
-                                        CaptureResult.CONTROL_AE_TARGET_FPS_RANGE);
-                                mCollector.expectTrue("fpsRange doesn't match for combination "
-                                        + combinationStr, targetFpsRange.equals(fpsRange));
-                                Long frameDuration = result.get(
-                                        CaptureResult.SENSOR_FRAME_DURATION);
-                                mCollector.expectTrue("frameDuration doesn't match for "
-                                        + combinationStr + ", fpsRange is "
-                                        + fpsRange + ", but is " + frameDuration,
-                                        (frameDuration
-                                                > ((1e9 / fpsRange.getUpper()) * 0.99))
-                                        && (frameDuration
-                                                < ((1e9 / fpsRange.getLower()) * 1.01)));
+                                // Check video stabiliztaion mode
+                                Integer videoStabilizationMode = result.get(
+                                        CaptureResult.CONTROL_VIDEO_STABILIZATION_MODE);
+                                mCollector.expectEquals(
+                                        "Stabilization mode doesn't match for combination "
+                                                + combinationStr,
+                                        videoStabilizationMode, stabilizationMode);
+
+                                // Check frame rate
+                                if (fpsRange.getUpper().equals(fpsRange.getLower())) {
+                                    Range<Integer> resultFpsRange = result.get(
+                                            CaptureResult.CONTROL_AE_TARGET_FPS_RANGE);
+                                    mCollector.expectEquals("resultFpsRange doesn't match for "
+                                                    + "combination " + combinationStr,
+                                            resultFpsRange, fpsRange);
+                                    Long frameDuration = result.get(
+                                            CaptureResult.SENSOR_FRAME_DURATION);
+                                    mCollector.expectInRange("frameDuration doesn't match for "
+                                                    + combinationStr,
+                                            (double) frameDuration,
+                                            /*min=*/ (1e9 / fpsRange.getUpper()) * 0.95,
+                                            /*max=*/ (1e9 / fpsRange.getLower()) * 1.05);
+
+                                    // Check readout timestamp intervals to make sure targetFpsRange
+                                    // is met. Skip for Cuttlefish due to performance reasons.
+                                    // TODO: (b/321824310) Remove the check once cuttlefish
+                                    // performance is improved.
+                                    if (!MediaUtils.onCuttlefish() && i > kWarmupFrames
+                                            && readoutTimestamps != null) {
+                                        long readoutInterval = readoutTimestamps.get(i)
+                                                - readoutTimestamps.get(i - 1);
+                                        mCollector.expectInRange(
+                                                "Timestamp readout interval doesn't match for "
+                                                        + combinationStr,
+                                                (double) readoutInterval,
+                                                /*min=*/ (1e9 / fpsRange.getUpper()) * 0.95,
+                                                /*max=*/ (1e9 / fpsRange.getLower()) * 1.05);
+                                    }
+                                }
                             }
                         }
-                    } catch (UnsupportedOperationException e) {
-                        //TODO: Remove this once HAL implementation of createCaptureRequest
-                        //and isSessionConfigurationWithParametersSupported is in place.
                     } catch (Throwable e) {
                         mCollector.addMessage(String.format(
                                 "Output combination %s failed due to: %s",
@@ -339,7 +368,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                         try {
                             Log.i(TAG, String.format(
                                     "Done with camera %s, config %s, closing session",
-                                    cameraId, combinationStr));
+                                    cameraDeviceSetup.getId(), combinationStr));
                             stopCapture(/*fast*/false);
                         } catch (Throwable e) {
                             mCollector.addMessage(String.format(
@@ -423,13 +452,11 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                     fail("Unknown output format " + format);
             }
 
-            if (targetSize != null) {
-                Map<Size, Long> minFrameDurations =
-                        mStaticInfo.getAvailableMinFrameDurationsForFormatChecked(format);
-                if (minFrameDurations.containsKey(targetSize)
-                        && minFrameDurations.get(targetSize) > frameDuration) {
-                    frameDuration = minFrameDurations.get(targetSize);
-                }
+            Map<Size, Long> minFrameDurations =
+                    mStaticInfo.getAvailableMinFrameDurationsForFormatChecked(format);
+            if (minFrameDurations.containsKey(targetSize)
+                    && minFrameDurations.get(targetSize) > frameDuration) {
+                frameDuration = minFrameDurations.get(targetSize);
             }
         }
 

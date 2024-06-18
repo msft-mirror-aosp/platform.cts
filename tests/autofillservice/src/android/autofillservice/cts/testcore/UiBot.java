@@ -630,6 +630,24 @@ public class UiBot {
     }
 
     /**
+     * Sets a new text on a view.
+     *
+     * <p><b>Note:</b> First clear the view to the first character of the old string, then clear to
+     * empty. This is to accommodate the fix for the bug where views are reset to empty, causing
+     * save dialog to not show. The fix for this bug is to ignore sudden resets to empty, therefore
+     * CTS tests simulating field clearing have to progressively clear the field instead of
+     * resetting to empty at once.
+     */
+    public void clearTextByRelativeId(String id) throws Exception {
+        final UiObject2 object = waitForObject(By.res(mPackageName, id));
+        String oldText = object.getText();
+        if (!oldText.isEmpty()) {
+            object.setText(String.valueOf(oldText.charAt(0)));
+            object.setText("");
+        }
+    }
+
+    /**
      * Asserts the save snackbar is showing and returns it.
      */
     public UiObject2 assertSaveShowing(int type) throws Exception {
@@ -1192,13 +1210,31 @@ public class UiBot {
     }
 
     /**
+     * Trys to set the orientation, if possible. No-op if the device does not support rotation
+     *
+     * @return True if the device orientation matches the requested orientation, else false
+     */
+    public boolean maybeSetScreenOrientation(int orientation) {
+        mAutoman.setRotation(orientation);
+        final int currentRotation =
+                InstrumentationRegistry.getInstrumentation()
+                        .getContext()
+                        .getSystemService(DisplayManager.class)
+                        .getDisplay(Display.DEFAULT_DISPLAY)
+                        .getRotation();
+        return orientation == currentRotation;
+    }
+
+    /**
      * Sets the screen orientation.
      *
      * @param orientation typically {@link #LANDSCAPE} or {@link #PORTRAIT}.
-     *
+     * @throws org.junit.AssumptionViolatedException if device does not support rotation.
      * @throws RetryableException if value didn't change.
      */
     public void setScreenOrientation(int orientation) throws Exception {
+        assumeTrue("Rotation is supported", Helper.isRotationSupported(mContext));
+
         // Use the platform API instead of mDevice.getDisplayRotation(), which is slow due to
         // waitForIdle(). waitForIdle() is not needed here because in AutoFillServiceTestCase we
         // always use UiBot#setScreenOrientation() to change the screen rotation, which blocks until

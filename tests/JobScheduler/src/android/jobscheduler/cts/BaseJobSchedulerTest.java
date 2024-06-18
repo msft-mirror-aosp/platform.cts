@@ -36,6 +36,7 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.Process;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
@@ -54,6 +55,9 @@ import java.io.IOException;
  */
 @TargetApi(21)
 public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
+    private static final String TAG = BaseJobSchedulerTest.class.getSimpleName();
+    static final int HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
+
     /** Environment that notifies of JobScheduler callbacks. */
     static MockJobService.TestEnvironment kTestEnvironment =
             MockJobService.TestEnvironment.getTestEnvironment();
@@ -112,6 +116,9 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         } catch (IOException e) {
             Log.w("ConstraintTest", "Failed setting inactive false", e);
         }
+        if (HW_TIMEOUT_MULTIPLIER != 0) {
+            Log.i(TAG, "HW multiplier set to " + HW_TIMEOUT_MULTIPLIER);
+        }
     }
 
     public Context getContext() {
@@ -124,6 +131,11 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         super.setUp();
         mDeviceConfigStateHelper =
                 new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_JOB_SCHEDULER);
+        SystemUtil.runShellCommand("cmd jobscheduler cache-config-changes on");
+        // Disable batching behavior.
+        mDeviceConfigStateHelper.set("min_ready_cpu_only_jobs_count", "0");
+        mDeviceConfigStateHelper.set("min_ready_non_active_jobs_count", "0");
+        mDeviceConfigStateHelper.set("conn_transport_batch_threshold", "");
         // Disable flex behavior.
         mDeviceConfigStateHelper.set("fc_applied_constraints", "0");
         kTestEnvironment.setUp();
@@ -147,6 +159,7 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
     @CallSuper
     @Override
     public void tearDown() throws Exception {
+        SystemUtil.runShellCommand("cmd jobscheduler cache-config-changes off");
         SystemUtil.runShellCommand(getInstrumentation(), "cmd jobscheduler monitor-battery off");
         SystemUtil.runShellCommand(getInstrumentation(), "cmd battery reset");
         Settings.Global.putString(mContext.getContentResolver(),
@@ -268,6 +281,28 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
         mActivityStarted = false;
     }
 
+    void setDeviceConfigFlag(String key, String value, boolean waitForConfirmation)
+            throws Exception {
+        mDeviceConfigStateHelper.set(key, value);
+        if (waitForConfirmation) {
+            waitUntil("Config didn't update appropriately to '" + value
+                            + "'. Current value=" + getConfigValue(key),
+                    5 /* seconds */,
+                    () -> {
+                        final String curVal = getConfigValue(key);
+                        if (value == null) {
+                            return "null".equals(curVal);
+                        } else {
+                            return curVal.equals(value);
+                        }
+                    });
+        }
+    }
+
+    static String getConfigValue(String key) {
+        return SystemUtil.runShellCommand("cmd jobscheduler get-config-value " + key).trim();
+    }
+
     String getJobState(int jobId) throws Exception {
         return SystemUtil.runShellCommand(getInstrumentation(),
                 "cmd jobscheduler get-job-state --user cur "
@@ -294,6 +329,9 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
      */
     static void toggleScreenOn(final boolean screenon) throws Exception {
         BatteryUtils.turnOnScreen(screenon);
+        if (screenon) {
+            SystemUtil.runShellCommand("wm dismiss-keyguard");
+        }
         // Wait a little bit for the broadcasts to be processed.
         Thread.sleep(2_000);
     }
@@ -362,6 +400,11 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
     }
 
     void runSatisfiedJob(int jobId, String namespace) throws Exception {
+        if (HW_TIMEOUT_MULTIPLIER > 1) {
+            // Device has increased HW multiplier. Wait a short amount of time before sending the
+            // run command since there's a higher chance JobScheduler's processing is delayed.
+            Thread.sleep(1_000L);
+        }
         SystemUtil.runShellCommand(getInstrumentation(),
                 "cmd jobscheduler run -s"
                 + " -u " + UserHandle.myUserId()

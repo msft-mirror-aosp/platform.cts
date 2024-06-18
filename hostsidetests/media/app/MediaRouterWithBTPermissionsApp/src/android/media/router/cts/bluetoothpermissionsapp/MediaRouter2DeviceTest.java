@@ -46,21 +46,30 @@ import static org.junit.Assert.assertThrows;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
+import android.media.MediaRouter2.ScanRequest;
+import android.media.MediaRouter2.ScanToken;
 import android.media.MediaRouter2Manager;
 import android.media.RouteDiscoveryPreference;
 import android.media.RouteListingPreference;
+import android.media.cts.app.common.ScreenOnActivity;
 import android.os.ConditionVariable;
+import android.os.PowerManager;
+import android.os.SystemClock;
 import android.platform.test.annotations.LargeTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
+import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.media.flags.Flags;
 
 import com.google.common.truth.Correspondence;
 import com.google.common.truth.Truth;
@@ -72,12 +81,22 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** Device-side test for {@link MediaRouter2} functionality. */
+/**
+ * Device-side tests for regular {@link MediaRouter2} functionality.
+ *
+ * <p>These tests must run as host-side tests to ensure test cases are isolated and no {@link
+ * MediaRouter2} state is shared across tests. Host-side tests create a new process for each test
+ * method. See {@code MediaRouter2HostSideTest} for more information.
+ */
 @LargeTest
 public class MediaRouter2DeviceTest {
     /**
@@ -96,23 +115,28 @@ public class MediaRouter2DeviceTest {
     private static final Correspondence<MediaRoute2Info, String> ROUTE_HAS_ORIGINAL_ID =
             Correspondence.transforming(MediaRoute2Info::getOriginalId, "has original id");
 
-    private MediaRouter2 mRouter2;
-    private MediaRouter2Manager mRouter2Manager;
+    // TODO: b/316864909 - Stop relying on route ids once we can control system routing in CTS.
+    private static final String ROUTE_ID_BUILTIN_SPEAKER =
+            Flags.enableAudioPoliciesDeviceAndBluetoothController()
+                    ? "ROUTE_ID_BUILTIN_SPEAKER"
+                    : MediaRoute2Info.ROUTE_ID_DEVICE;
+    private static final int TIMEOUT_MS = 5000;
+
+    private ExecutorService mExecutor;
     private Context mContext;
     private ComponentName mPlaceholderComponentName;
     private Activity mScreenOnActivity;
+    private UiAutomation mUiAutomation;
 
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        mRouter2 = MediaRouter2.getInstance(mContext);
-
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
-        mRouter2Manager = MediaRouter2Manager.getInstance(mContext);
+        mExecutor = Executors.newSingleThreadExecutor();
+        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         mPlaceholderComponentName = new ComponentName(mContext, PlaceholderActivity.class);
+    }
 
+    private void launchScreenOnActivity() {
         // Launch ScreenOnActivity while tests are running for scanning to work. MediaRouter2 blocks
         // app scan requests while the screen is off for resource saving.
         Intent intent = new Intent(/* context= */ mContext, ScreenOnActivity.class);
@@ -122,17 +146,24 @@ public class MediaRouter2DeviceTest {
 
     @After
     public void tearDown() {
+        mUiAutomation.dropShellPermissionIdentity();
+
         // mScreenOnActivity may be null if we failed to launch the activity. The NPE would not
         // change the outcome of the test, but it would misdirect attention, away from the root
         // cause of the failure.
         if (mScreenOnActivity != null) {
             mScreenOnActivity.finish();
         }
+
+        mExecutor.shutdown();
     }
 
     @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
     public void deduplicationIds_propagateAcrossApps() throws TimeoutException {
+        launchScreenOnActivity();
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+
         RouteDiscoveryPreference preference =
                 new RouteDiscoveryPreference.Builder(
                                 List.of(FEATURE_SAMPLE), /* activeScan= */ true)
@@ -141,11 +172,13 @@ public class MediaRouter2DeviceTest {
         // we know the update should contain all the routes from each helper app.
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
+                        router,
                         preference,
                         Set.of(
                                 ROUTE_ID_APP_1_ROUTE_1,
                                 ROUTE_ID_APP_2_ROUTE_1,
-                                ROUTE_ID_APP_3_ROUTE_1));
+                                ROUTE_ID_APP_3_ROUTE_1),
+                        mExecutor);
 
         Truth.assertThat(routes.get(ROUTE_ID_APP_1_ROUTE_1).getDeduplicationIds()).isEmpty();
         Truth.assertThat(routes.get(ROUTE_ID_APP_1_ROUTE_2).getDeduplicationIds())
@@ -171,17 +204,22 @@ public class MediaRouter2DeviceTest {
     @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
     public void deviceType_propagatesAcrossApps() throws TimeoutException {
+        launchScreenOnActivity();
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+
         RouteDiscoveryPreference preference =
                 new RouteDiscoveryPreference.Builder(
                                 List.of(FEATURE_SAMPLE), /* activeScan= */ true)
                         .build();
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
+                        router,
                         preference,
                         Set.of(
                                 ROUTE_ID_APP_1_ROUTE_1,
                                 ROUTE_ID_APP_2_ROUTE_1,
-                                ROUTE_ID_APP_3_ROUTE_1));
+                                ROUTE_ID_APP_3_ROUTE_1),
+                        mExecutor);
         Truth.assertThat(routes.get(ROUTE_ID_APP_1_ROUTE_1).getType())
                 .isEqualTo(MediaRoute2Info.TYPE_REMOTE_TV);
         Truth.assertThat(routes.get(ROUTE_ID_APP_1_ROUTE_2).getType())
@@ -195,9 +233,128 @@ public class MediaRouter2DeviceTest {
                 .isEqualTo(MediaRoute2Info.TYPE_UNKNOWN);
     }
 
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
+        Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
+    })
+    @Test
+    public void requestScan_withOffScreenScan_triggersScanning() throws InterruptedException {
+        mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.MEDIA_ROUTING_CONTROL);
+        assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MEDIA_ROUTING_CONTROL))
+                .isEqualTo(PackageManager.PERMISSION_GRANTED);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        MediaRouter2.RouteCallback routeCallback =
+                new MediaRouter2.RouteCallback() {
+                    @Override
+                    public void onRoutesUpdated(@NonNull List<MediaRoute2Info> routes) {
+                        if (routes.stream()
+                                .anyMatch(r -> r.getFeatures().contains(FEATURE_SAMPLE))) {
+                            latch.countDown();
+                        }
+                    }
+                };
+
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of(FEATURE_SAMPLE), /* activeScan= */ false)
+                        .build();
+
+        MediaRouter2 instance = MediaRouter2.getInstance(mContext);
+        instance.registerRouteCallback(mExecutor, routeCallback, preference);
+
+        ScanToken token =
+                instance.requestScan(new ScanRequest.Builder().setScreenOffScan(true).build());
+        try {
+            assertThat(latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        } finally {
+            instance.cancelScanRequest(token);
+            instance.unregisterRouteCallback(routeCallback);
+        }
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING})
+    @Test
+    public void requestScan_withOnScreenScan_triggersScanning() throws InterruptedException {
+        launchScreenOnActivity();
+        CountDownLatch latch = new CountDownLatch(1);
+        MediaRouter2.RouteCallback routeCallback =
+                new MediaRouter2.RouteCallback() {
+                    @Override
+                    public void onRoutesUpdated(@NonNull List<MediaRoute2Info> routes) {
+                        if (routes.stream()
+                                .anyMatch(r -> r.getFeatures().contains(FEATURE_SAMPLE))) {
+                            latch.countDown();
+                        }
+                    }
+                };
+
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of(FEATURE_SAMPLE), /* activeScan= */ false)
+                        .build();
+
+        MediaRouter2 instance = MediaRouter2.getInstance(mContext);
+        instance.registerRouteCallback(mExecutor, routeCallback, preference);
+
+        ScanToken token = instance.requestScan(new ScanRequest.Builder().build());
+        try {
+            assertThat(latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        } finally {
+            instance.cancelScanRequest(token);
+            instance.unregisterRouteCallback(routeCallback);
+        }
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING})
+    @Test
+    public void requestScan_withOnScreenScan_withScreenOff_doesNotScan()
+            throws InterruptedException {
+        mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.DEVICE_POWER);
+
+        PowerManager pm = mContext.getSystemService(PowerManager.class);
+        pm.goToSleep(SystemClock.uptimeMillis());
+        assertThat(pm.isInteractive()).isFalse();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        MediaRouter2.RouteCallback routeCallback =
+                new MediaRouter2.RouteCallback() {
+                    @Override
+                    public void onRoutesUpdated(@NonNull List<MediaRoute2Info> routes) {
+                        if (routes.stream()
+                                .anyMatch(r -> r.getFeatures().contains(FEATURE_SAMPLE))) {
+                            latch.countDown();
+                        }
+                    }
+                };
+
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of(FEATURE_SAMPLE), /* activeScan= */ false)
+                        .build();
+
+        MediaRouter2 instance = MediaRouter2.getInstance(mContext);
+        instance.registerRouteCallback(mExecutor, routeCallback, preference);
+
+        ScanToken token = instance.requestScan(new ScanRequest.Builder().build());
+        try {
+            assertThat(latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isFalse();
+        } finally {
+            instance.cancelScanRequest(token);
+            instance.unregisterRouteCallback(routeCallback);
+        }
+    }
+
     @ApiTest(apis = {"android.media.RouteListingPreference, android.media.MediaRouter2"})
     @Test
     public void setRouteListingPreference_propagatesToManager() {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
+
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+        MediaRouter2Manager manager = MediaRouter2Manager.getInstance(mContext);
+
         List<RouteListingPreference.Item> items =
                 List.of(
                         new RouteListingPreference.Item.Builder(ROUTE_ID_APP_1_ROUTE_1)
@@ -223,8 +380,8 @@ public class MediaRouter2DeviceTest {
                         .build();
         MediaRouter2ManagerCallbackImpl mediaRouter2ManagerCallback =
                 new MediaRouter2ManagerCallbackImpl();
-        mRouter2Manager.registerCallback(Runnable::run, mediaRouter2ManagerCallback);
-        mRouter2.setRouteListingPreference(routeListingPreference);
+        manager.registerCallback(Runnable::run, mediaRouter2ManagerCallback);
+        router.setRouteListingPreference(routeListingPreference);
         mediaRouter2ManagerCallback.waitForRouteListingPreferenceUpdateOnManager();
         RouteListingPreference receivedRouteListingPreference =
                 mediaRouter2ManagerCallback.mRouteListingPreference;
@@ -232,8 +389,7 @@ public class MediaRouter2DeviceTest {
         Truth.assertThat(receivedRouteListingPreference)
                 .isNotSameInstanceAs(routeListingPreference);
         Truth.assertThat(receivedRouteListingPreference)
-                .isSameInstanceAs(
-                        mRouter2Manager.getRouteListingPreference(mContext.getPackageName()));
+                .isSameInstanceAs(manager.getRouteListingPreference(mContext.getPackageName()));
         Truth.assertThat(receivedRouteListingPreference.getUseSystemOrdering()).isFalse();
         Truth.assertThat(receivedRouteListingPreference.getItems().get(0).getFlags())
                 .isEqualTo(RouteListingPreference.Item.FLAG_ONGOING_SESSION);
@@ -249,7 +405,7 @@ public class MediaRouter2DeviceTest {
 
         // Check that null is also propagated correctly.
         mediaRouter2ManagerCallback.closeRouteListingPreferenceWaitingCondition();
-        mRouter2.setRouteListingPreference(null);
+        router.setRouteListingPreference(null);
         mediaRouter2ManagerCallback.waitForRouteListingPreferenceUpdateOnManager();
         Truth.assertThat(mediaRouter2ManagerCallback.mRouteListingPreference).isNull();
     }
@@ -257,6 +413,13 @@ public class MediaRouter2DeviceTest {
     @ApiTest(apis = {"android.media.RouteListingPreference, android.media.MediaRouter2"})
     @Test
     public void setRouteListingPreference_withCustomDisableReason_propagatesCorrectly() {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
+
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+        MediaRouter2Manager manager = MediaRouter2Manager.getInstance(mContext);
+
         List<RouteListingPreference.Item> item =
                 List.of(
                         new RouteListingPreference.Item.Builder(ROUTE_ID_APP_1_ROUTE_1)
@@ -267,9 +430,9 @@ public class MediaRouter2DeviceTest {
                 new RouteListingPreference.Builder().setItems(item).build();
         MediaRouter2ManagerCallbackImpl mediaRouter2ManagerCallback =
                 new MediaRouter2ManagerCallbackImpl();
-        mRouter2Manager.registerCallback(Runnable::run, mediaRouter2ManagerCallback);
+        manager.registerCallback(Runnable::run, mediaRouter2ManagerCallback);
 
-        mRouter2.setRouteListingPreference(routeListingPreference);
+        router.setRouteListingPreference(routeListingPreference);
         mediaRouter2ManagerCallback.waitForRouteListingPreferenceUpdateOnManager();
         RouteListingPreference receivedRouteListingPreference =
                 mediaRouter2ManagerCallback.mRouteListingPreference;
@@ -301,6 +464,10 @@ public class MediaRouter2DeviceTest {
 
     @Test
     public void getInstance_findsExternalPackage() {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
+
         MediaRouter2 systemRouter =
                 MediaRouter2.getInstance(mContext, MEDIA_ROUTER_PROVIDER_1_PACKAGE);
         Truth.assertThat(systemRouter).isNotNull();
@@ -309,6 +476,9 @@ public class MediaRouter2DeviceTest {
     @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @Test
     public void visibilityAndAllowedPackages_propagateAcrossApps() throws TimeoutException {
+        launchScreenOnActivity();
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+
         RouteDiscoveryPreference preference =
                 new RouteDiscoveryPreference.Builder(
                                 List.of(FEATURE_SAMPLE), /* activeScan= */ true)
@@ -317,11 +487,13 @@ public class MediaRouter2DeviceTest {
         // we know the update should contain all the routes from each helper app.
         Map<String, MediaRoute2Info> routes =
                 waitForAndGetRoutes(
+                        router,
                         preference,
                         Set.of(
                                 ROUTE_ID_APP_1_ROUTE_1,
                                 ROUTE_ID_APP_2_ROUTE_1,
-                                ROUTE_ID_APP_3_ROUTE_1));
+                                ROUTE_ID_APP_3_ROUTE_1),
+                        mExecutor);
 
         // public route
         Truth.assertThat(routes.get(ROUTE_ID_APP_1_ROUTE_4).getName()).isEqualTo(ROUTE_NAME_4);
@@ -338,6 +510,8 @@ public class MediaRouter2DeviceTest {
 
     @Test
     public void getRoutes_withoutBTPermissions_returnsDefaultRoute() throws TimeoutException {
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+
         assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MODIFY_AUDIO_ROUTING))
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
         assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.BLUETOOTH_SCAN))
@@ -347,15 +521,19 @@ public class MediaRouter2DeviceTest {
 
         assertThat(
                         waitForAndGetRoutes(
+                                        router,
                                         SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
                                         /* expectedRouteIds= */ Set.of(
-                                                MediaRoute2Info.ROUTE_ID_DEFAULT))
+                                                MediaRoute2Info.ROUTE_ID_DEFAULT),
+                                        mExecutor)
                                 .keySet())
                 .containsExactly(MediaRoute2Info.ROUTE_ID_DEFAULT);
     }
 
     @Test
     public void getRoutes_withBTPermissions_returnsDeviceRoute() throws TimeoutException {
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+
         assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MODIFY_AUDIO_ROUTING))
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
 
@@ -366,15 +544,18 @@ public class MediaRouter2DeviceTest {
 
         assertThat(
                         waitForAndGetRoutes(
+                                        router,
                                         SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
-                                        /* expectedRouteIds= */ Set.of(
-                                                MediaRoute2Info.ROUTE_ID_DEVICE))
+                                        /* expectedRouteIds= */ Set.of(ROUTE_ID_BUILTIN_SPEAKER),
+                                        mExecutor)
                                 .keySet())
-                .containsExactly(MediaRoute2Info.ROUTE_ID_DEVICE);
+                .containsExactly(ROUTE_ID_BUILTIN_SPEAKER);
     }
 
     @Test
     public void getSystemController_withBTPermissions_returnsDeviceRoute() {
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+
         assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MODIFY_AUDIO_ROUTING))
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
 
@@ -383,14 +564,16 @@ public class MediaRouter2DeviceTest {
         assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.BLUETOOTH_CONNECT))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED);
 
-        MediaRouter2.RoutingController systemController = mRouter2.getSystemController();
+        MediaRouter2.RoutingController systemController = router.getSystemController();
         assertThat(systemController.getSelectedRoutes())
                 .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
-                .containsExactly(MediaRoute2Info.ROUTE_ID_DEVICE);
+                .containsExactly(ROUTE_ID_BUILTIN_SPEAKER);
     }
 
     @Test
     public void getSystemController_withoutBTPermissions_returnsDefaultRoute() {
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+
         assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.MODIFY_AUDIO_ROUTING))
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
         assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.BLUETOOTH_SCAN))
@@ -398,7 +581,7 @@ public class MediaRouter2DeviceTest {
         assertThat(mContext.checkCallingOrSelfPermission(Manifest.permission.BLUETOOTH_CONNECT))
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
 
-        MediaRouter2.RoutingController systemController = mRouter2.getSystemController();
+        MediaRouter2.RoutingController systemController = router.getSystemController();
         assertThat(systemController.getSelectedRoutes())
                 .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
                 .containsExactly(MediaRoute2Info.ROUTE_ID_DEFAULT);
@@ -407,6 +590,9 @@ public class MediaRouter2DeviceTest {
     @ApiTest(apis = {"android.media.MediaRouter2"})
     @Test
     public void selfScanOnlyProvider_notScannedByAnotherApp() {
+        launchScreenOnActivity();
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+
         RouteDiscoveryPreference preference =
                 new RouteDiscoveryPreference.Builder(
                                 List.of(FEATURE_SAMPLE), /* activeScan= */ true)
@@ -416,8 +602,10 @@ public class MediaRouter2DeviceTest {
                 TimeoutException.class,
                 () ->
                         waitForAndGetRoutes(
+                                router,
                                 preference,
-                                /* expectedRouteIds= */ Set.of(ROUTE_ID_SELF_SCAN_ONLY)));
+                                /* expectedRouteIds= */ Set.of(ROUTE_ID_SELF_SCAN_ONLY),
+                                mExecutor));
     }
 
     /**
@@ -426,8 +614,11 @@ public class MediaRouter2DeviceTest {
      *
      * <p>Will only wait for up to {@link #ROUTE_UPDATE_MAX_WAIT_MS}.
      */
-    private Map<String, MediaRoute2Info> waitForAndGetRoutes(
-            RouteDiscoveryPreference preference, Set<String> expectedRouteIds)
+    private static Map<String, MediaRoute2Info> waitForAndGetRoutes(
+            MediaRouter2 router,
+            RouteDiscoveryPreference preference,
+            Set<String> expectedRouteIds,
+            Executor executor)
             throws TimeoutException {
         ConditionVariable condition = new ConditionVariable();
         MediaRouter2.RouteCallback routeCallback =
@@ -444,10 +635,9 @@ public class MediaRouter2DeviceTest {
                     }
                 };
 
-        mRouter2.registerRouteCallback(
-                Executors.newSingleThreadExecutor(), routeCallback, preference);
+        router.registerRouteCallback(executor, routeCallback, preference);
         Set<String> currentRoutes =
-                mRouter2.getRoutes().stream()
+                router.getRoutes().stream()
                         .map(MediaRoute2Info::getOriginalId)
                         .collect(Collectors.toSet());
         try {
@@ -458,16 +648,16 @@ public class MediaRouter2DeviceTest {
                                 + ROUTE_UPDATE_MAX_WAIT_MS
                                 + " milliseconds.");
             }
-            return mRouter2.getRoutes().stream()
+            return router.getRoutes().stream()
                     .collect(Collectors.toMap(MediaRoute2Info::getOriginalId, Function.identity()));
         } finally {
-            mRouter2.unregisterRouteCallback(routeCallback);
+            router.unregisterRouteCallback(routeCallback);
         }
     }
 
     private class MediaRouter2ManagerCallbackImpl implements MediaRouter2Manager.Callback {
 
-        private ConditionVariable mConditionVariable = new ConditionVariable();
+        private final ConditionVariable mConditionVariable = new ConditionVariable();
         private RouteListingPreference mRouteListingPreference;
 
         public void closeRouteListingPreferenceWaitingCondition() {

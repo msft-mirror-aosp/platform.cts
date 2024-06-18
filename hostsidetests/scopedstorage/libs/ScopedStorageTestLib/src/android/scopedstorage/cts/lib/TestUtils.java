@@ -444,8 +444,10 @@ public class TestUtils {
             throws Exception {
         final String actionName = QUERY_MEDIA_BY_URI_QUERY;
         final Bundle bundle = new Bundle();
-        for (String columnName : projection) {
-            bundle.putString(columnName, "");
+        if (projection != null) {
+            for (String columnName : projection) {
+                bundle.putString(columnName, "");
+            }
         }
 
         return getFromTestApp(testApp, uri, actionName, bundle).getBundle(actionName);
@@ -2313,7 +2315,7 @@ public class TestUtils {
         return MediaStore.Files.getContentUri(sStorageVolumeName);
     }
 
-    private static void pollForCondition(Supplier<Boolean> condition, String errorMessage)
+    public static void pollForCondition(Supplier<Boolean> condition, String errorMessage)
             throws Exception {
         for (int i = 0; i < POLLING_TIMEOUT_MILLIS / POLLING_SLEEP_MILLIS; i++) {
             if (condition.get()) {
