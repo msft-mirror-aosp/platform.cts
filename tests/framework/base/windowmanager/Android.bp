@@ -14,16 +14,12 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_interactions_frameworks",
 }
 
 filegroup {
     name: "cts-wm-components",
     srcs: ["**/Components.java"],
-}
-
-filegroup {
-    name: "cts-wm-aspect-ratio-test-base",
-    srcs: ["src/android/server/wm/activity/AspectRatioTestsBase.java"],
 }
 
 filegroup {
@@ -69,7 +65,9 @@ java_defaults {
         "com.android.window.flags.window-aconfig-java",
         "android.permission.flags-aconfig-java",
         "android.app.flags-aconfig-java",
+        "android.view.inputmethod.flags-aconfig-java",
         "ui-trace-collector",
+        "flag-junit",
     ],
 
     test_suites: [
@@ -157,6 +155,13 @@ filegroup {
 }
 
 filegroup {
+    name: "CtsWindowManagerDeviceAnimations-src",
+    srcs: [
+        "src/**/animations/*.java",
+    ],
+}
+
+filegroup {
     name: "CtsWindowManagerDeviceDisplay-src",
     srcs: [
         "src/**/display/*.java",
@@ -166,12 +171,38 @@ filegroup {
 
 filegroup {
     name: "CtsWindowManagerDeviceInsets-src",
-    srcs: ["src/**/insets/*.java"],
+    srcs: [
+        "src/**/insets/*.java",
+        "src/**/intent/Activities.java",
+    ],
+}
+
+filegroup {
+    name: "CtsWindowManagerDeviceMultiDisplay-src",
+    srcs: [
+        "src/**/multidisplay/*.java",
+    ],
 }
 
 filegroup {
     name: "CtsWindowManagerDeviceKeyguard-src",
     srcs: ["src/**/keyguard/*.java"],
+}
+
+filegroup {
+    name: "CtsWindowManagerDeviceIme-src",
+    srcs: [
+        "src/**/ime/*.java",
+        "src/**/intent/Activities.java",
+    ],
+}
+
+filegroup {
+    name: "CtsWindowManagerDeviceInput-src",
+    srcs: [
+        "src/**/input/*.java",
+        "src/**/input/*.kt",
+    ],
 }
 
 filegroup {
@@ -224,6 +255,16 @@ android_test {
 }
 
 android_test {
+    name: "CtsWindowManagerDeviceAnimations",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceAnimations-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
     name: "CtsWindowManagerDeviceDisplay",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
@@ -245,11 +286,35 @@ android_test {
 }
 
 android_test {
+    name: "CtsWindowManagerDeviceInput",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    kotlincflags: [
+        "-Werror",
+    ],
+
+    srcs: [
+        ":CtsWindowManagerDeviceInput-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
     name: "CtsWindowManagerDeviceInsets",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
         ":CtsWindowManagerDeviceInsets-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceIme",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceIme-src",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
 }
@@ -261,6 +326,17 @@ android_test {
     srcs: [
         ":CtsWindowManagerDeviceHelper-src",
         ":CtsWindowManagerDeviceTaskFragment-src",
+        ":CtsVerifierMockVrListenerServiceFiles",
+    ],
+}
+
+android_test {
+    name: "CtsWindowManagerDeviceMultiDisplay",
+    defaults: ["CtsWindowManagerDeviceDefault"],
+
+    srcs: [
+        ":CtsWindowManagerDeviceMultiDisplay-src",
+        ":CtsWindowManagerDeviceHelper-src",
         ":CtsVerifierMockVrListenerServiceFiles",
     ],
 }

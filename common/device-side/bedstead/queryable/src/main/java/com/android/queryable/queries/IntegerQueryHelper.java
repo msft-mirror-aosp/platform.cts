@@ -132,19 +132,19 @@ public final class IntegerQueryHelper<E extends Queryable> implements IntegerQue
     @Override
     public E matchesAnnotation(com.android.queryable.annotations.IntegerQuery queryAnnotation) {
         if (queryAnnotation.isEqualTo() != DEFAULT_INT_QUERY_PARAMETERS_VALUE) {
-            isEqualTo(queryAnnotation.isEqualTo());
+            E unused = isEqualTo(queryAnnotation.isEqualTo());
         }
         if (queryAnnotation.isGreaterThan() != DEFAULT_INT_QUERY_PARAMETERS_VALUE) {
-            isGreaterThan(queryAnnotation.isGreaterThan());
+            E unused = isGreaterThan(queryAnnotation.isGreaterThan());
         }
         if (queryAnnotation.isGreaterThanOrEqualTo() != DEFAULT_INT_QUERY_PARAMETERS_VALUE) {
-            isGreaterThanOrEqualTo(queryAnnotation.isGreaterThanOrEqualTo());
+            E unused = isGreaterThanOrEqualTo(queryAnnotation.isGreaterThanOrEqualTo());
         }
         if (queryAnnotation.isLessThan() != DEFAULT_INT_QUERY_PARAMETERS_VALUE) {
-            isLessThan(queryAnnotation.isLessThan());
+            E unused = isLessThan(queryAnnotation.isLessThan());
         }
         if (queryAnnotation.isLessThanOrEqualTo() != DEFAULT_INT_QUERY_PARAMETERS_VALUE) {
-            isLessThanOrEqualTo(queryAnnotation.isLessThanOrEqualTo());
+            E unused = isLessThanOrEqualTo(queryAnnotation.isLessThanOrEqualTo());
         }
 
         return mQuery;

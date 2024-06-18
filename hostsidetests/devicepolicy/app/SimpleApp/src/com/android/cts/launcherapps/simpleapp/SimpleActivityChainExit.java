@@ -16,9 +16,13 @@
 
 package com.android.cts.launcherapps.simpleapp;
 
+import static android.content.Intent.EXTRA_REMOTE_CALLBACK;
+import static android.content.Intent.EXTRA_RETURN_RESULT;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.RemoteCallback;
 import android.util.Log;
 
 /**
@@ -27,15 +31,13 @@ import android.util.Log;
  */
 public class SimpleActivityChainExit extends Activity {
     private static final String TAG = "SimpleActivityChainExit";
-    // This action.
-    private final static String ACTIVITY_CHAIN_EXIT_ACTION =
-            "com.android.cts.launchertests.LauncherAppsTests.CHAIN_EXIT_ACTION";
     // The action which will be called from here and then immediately exit again.
     private static final String SIMPLE_ACTIVITY_IMMEDIATE_EXIT = ".SimpleActivityImmediateExit";
     // Our package name.
     private static final String SIMPLE_PACKAGE_NAME = "com.android.cts.launcherapps.simpleapp";
     // Set to true once the activity was paused. Upon next resume the activity gets finished.
     private boolean mPaused = false;
+    private RemoteCallback mRemoteCallback;
 
     @Override
     public void onCreate(Bundle icicle) {
@@ -46,6 +48,9 @@ public class SimpleActivityChainExit extends Activity {
     @Override
     public void onStart() {
         super.onStart();
+        Log.i(TAG, "Starting SimpleActivityChainExit.");
+        mRemoteCallback = getIntent().getParcelableExtra(EXTRA_REMOTE_CALLBACK,
+                RemoteCallback.class);
         // Start our second activity which will quit itself immediately giving back control.
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.setClassName(SIMPLE_PACKAGE_NAME,
@@ -56,12 +61,14 @@ public class SimpleActivityChainExit extends Activity {
     @Override
     public void onPause() {
         super.onPause();
+        Log.i(TAG, "Pausing SimpleActivityChainExit.");
         mPaused = true;
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        Log.i(TAG, "Resuming SimpleActivityChainExit.");
         // We ignore any resumes coming in before we got at least paused once.
         if (mPaused) {
             // Since we were paused once we can finish ourselves now.
@@ -72,9 +79,13 @@ public class SimpleActivityChainExit extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
+        Log.i(TAG, "Stopping SimpleActivityChainExit.");
         // Notify a listener that this activity will end now.
-        Intent reply = new Intent();
-        reply.setAction(ACTIVITY_CHAIN_EXIT_ACTION);
-        sendBroadcast(reply);
+        if (mRemoteCallback != null) {
+            final Bundle result = new Bundle();
+            result.putInt(EXTRA_RETURN_RESULT, RESULT_OK);
+            Log.i(TAG, "Calling RemoteCallback.");
+            mRemoteCallback.sendResult(result);
+        }
     }
 }

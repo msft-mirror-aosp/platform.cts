@@ -29,16 +29,14 @@ import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 import com.android.car.power.CarPowerDumpProto;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ProtoUtils;
-import com.android.tradefed.log.LogUtil.CLog;
-import com.android.tradefed.result.InputStreamSource;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
-import com.android.tradefed.util.StreamUtil;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,6 +46,9 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     private static final long TIMEOUT_MS = 5_000;
     private static final int SUSPEND_SEC = 3;
     private static final long WAIT_FOR_SUSPEND_MS = SUSPEND_SEC * 1000 + 2000;
+    private static final String PRODUCT_MODEL_PROPERTY = "ro.product.model";
+    private static final String GOLDFISH_PROPERTY = "ro.kernel.qemu";
+    private static final String CUTTLEFISH_DEVICE_NAME_PREFIX = "Cuttlefish";
     private static final String POWER_ON = "ON";
     private static final String POWER_STATE_PATTERN =
             "mCurrentState:.*CpmsState=([A-Z_]+)\\(\\d+\\)";
@@ -58,13 +59,8 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     private static final String ANDROID_CLIENT_SERVICE = "android.car.cts.app/.CarPowerTestService";
     private static final String TEST_COMMAND_HEADER =
             "am start-foreground-service -n " + ANDROID_CLIENT_SERVICE + " --es power ";
-
-    // messages to wait to see printed out in logcat; having some issues reliably receiving these
-    // in suspend tests, so unused for now, but may become useful for to-do below
-    private static final String LISTENER_WOC_SET_MSG = "Listener without completion set";
-    private static final String LISTENER_WC_SET_MSG = "Listener with completion set";
-    private static final String S2R_WAKEUP_MSG = "Exit Deep Sleep simulation";
-    private static final String S2D_WAKEUP_MSG = "Exit Hibernation simulation";
+    private static final String LISTENER_DUMP_HEADER = "mListener set";
+    private static final String RESULT_DUMP_HEADER = "mResultBuf";
     private boolean mUseProtoDump;
 
     @Rule
@@ -100,8 +96,10 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToRam_protoDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(true);
-        testSetListenerInternal(/* listenerName= */ "listener-s2r", /* suspendType= */ "s2r",
+        testSetListenerInternal(/* suspendType= */ "s2r",
                 /* completionType= */ "without-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToRamAvailable(),
                 /* suspendDevice= */ () -> {
@@ -116,8 +114,10 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToRam_textDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(false);
-        testSetListenerInternal(/* listenerName= */ "listener-s2r", /* suspendType= */ "s2r",
+        testSetListenerInternal(/* suspendType= */ "s2r",
                 /* completionType= */ "without-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToRamAvailable(),
                 /* suspendDevice= */ () -> {
@@ -132,8 +132,10 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToDisk_protoDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(true);
-        testSetListenerInternal(/* listenerName= */ "listener-s2d", /* suspendType= */ "s2d",
+        testSetListenerInternal(/* suspendType= */ "s2d",
                 /* completionType= */ "without-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToDiskAvailable(),
                 /* suspendDevice= */ () -> {
@@ -148,8 +150,10 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithoutCompletion_suspendToDisk_textDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(false);
-        testSetListenerInternal(/* listenerName= */ "listener-s2d", /* suspendType= */ "s2d",
+        testSetListenerInternal(/* suspendType= */ "s2d",
                 /* completionType= */ "without-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToDiskAvailable(),
                 /* suspendDevice= */ () -> {
@@ -164,8 +168,10 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToRam_protoDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(true);
-        testSetListenerInternal(/* listenerName= */ "listener-wc-s2r", /* suspendType= */ "s2r",
+        testSetListenerInternal(/* suspendType= */ "s2r",
                 /* completionType= */ "with-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToRamAvailable(),
                 /* suspendDevice= */ () -> {
@@ -180,8 +186,9 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToRam_textDump() throws Exception {
+        assumeEmulatorBuild();
         setUseProtoDump(false);
-        testSetListenerInternal(/* listenerName= */ "listener-wc-s2r", /* suspendType= */ "s2r",
+        testSetListenerInternal(/* suspendType= */ "s2r",
                 /* completionType= */ "with-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToRamAvailable(),
                 /* suspendDevice= */ () -> {
@@ -196,8 +203,10 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToDisk_protoDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(true);
-        testSetListenerInternal(/* listenerName= */ "listener-wc-s2d", /* suspendType= */ "s2d",
+        testSetListenerInternal(/* suspendType= */ "s2d",
                 /* completionType= */ "with-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToDiskAvailable(),
                 /* suspendDevice= */ () -> {
@@ -212,8 +221,10 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
     public void testSetListenerWithCompletion_suspendToDisk_textDump() throws Exception {
+        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
+        assumeEmulatorBuild();
         setUseProtoDump(false);
-        testSetListenerInternal(/* listenerName= */ "listener-wc-s2d", /* suspendType= */ "s2d",
+        testSetListenerInternal(/* suspendType= */ "s2d",
                 /* completionType= */ "with-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToDiskAvailable(),
                 /* suspendDevice= */ () -> {
@@ -261,32 +272,54 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
         }
     }
 
-    private void testSetListenerInternal(String listenerName, String suspendType,
-            String completionType, Callable<Boolean> isSuspendAvailable, Runnable suspendDevice)
-            throws Exception {
+    private void testSetListenerInternal(String suspendType, String completionType,
+            Callable<Boolean> isSuspendAvailable, Runnable suspendDevice) throws Exception {
         assumeTrue(isSuspendAvailable.call());
         clearListener();
-        setPowerStateListener(listenerName, completionType, suspendType);
+        setPowerStateListener(completionType, suspendType);
         suspendDevice.run();
         // TODO(b/300515548): Replace sleep with a check that device has resumed from suspend
         sleep(WAIT_FOR_SUSPEND_MS);
 
         boolean statesMatchExpected =
-                listenerStatesMatchExpected(listenerName, completionType, suspendType);
+                listenerStatesMatchExpected(completionType, suspendType);
 
         assertWithMessage("Listener " + completionType + " power states match expected after "
                 + suspendType).that(statesMatchExpected).isTrue();
     }
 
-    private void waitForLogcatMsg(String logcatMsg) throws Exception {
-        PollingCheck.check("Wait for logcat message '" + logcatMsg + "' timed out",
-                TIMEOUT_MS, () -> {
-                try (InputStreamSource logcatOutput = getDevice().getLogcat()) {
-                    String logcat = StreamUtil.getStringFromSource(logcatOutput);
-                    CLog.d("Found msg: " + logcatMsg + " - " + logcat.contains(logcatMsg));
-                    return logcat.contains(logcatMsg);
+    private void waitForPowerListenerSet() throws Exception {
+        PollingCheck.check("Wait for listener set timed out", TIMEOUT_MS, () -> {
+            String[] lines = fetchServiceDumpsys().split("\n");
+            for (String line : lines) {
+                if (line.contains(LISTENER_DUMP_HEADER)) {
+                    return line.split(":")[1].trim().equals("true");
                 }
-            });
+            }
+            return false;
+        });
+    }
+
+    private void waitForPowerListenerCleared() throws Exception {
+        PollingCheck.check("Wait for listener cleared timed out", TIMEOUT_MS, () -> {
+            String[] lines = fetchServiceDumpsys().split("\n");
+            for (String line : lines) {
+                if (line.contains(LISTENER_DUMP_HEADER)) {
+                    return line.split(":")[1].trim().equals("false");
+                }
+            }
+            return false;
+        });
+    }
+
+    // TODO(b/328617252): remove this method once ADB reconnection from suspend is stable
+    private void assumeEmulatorBuild() throws Exception {
+        String productModel = Objects.requireNonNullElse(
+                getDevice().getProperty(PRODUCT_MODEL_PROPERTY), "");
+        String goldfishBuildProperty = Objects.requireNonNullElse(
+                getDevice().getProperty(GOLDFISH_PROPERTY), "");
+        assumeTrue(productModel.startsWith(CUTTLEFISH_DEVICE_NAME_PREFIX)
+                || goldfishBuildProperty.equals("1"));
     }
 
     private boolean isSuspendSupported(String suspendType) throws Exception {
@@ -329,25 +362,28 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
         }
     }
 
-    private void setPowerStateListener(String listenerName, String completionType,
-            String suspendType) throws Exception {
-        executeCommand("%s set-listener,%s,%s,%s", TEST_COMMAND_HEADER, listenerName,
-                completionType, suspendType);
-        waitForLogcatMsg("Listener set for " + listenerName);
+    private void setPowerStateListener(String completionType, String suspendType) throws Exception {
+        executeCommand("%s set-listener,%s,%s", TEST_COMMAND_HEADER, completionType,
+                suspendType);
+        waitForPowerListenerSet();
     }
 
     private void clearListener() throws Exception {
         executeCommand("%s clear-listener", TEST_COMMAND_HEADER);
-        waitForLogcatMsg("Listener cleared");
+        waitForPowerListenerCleared();
     }
 
-    private boolean listenerStatesMatchExpected(String listenerName, String completionType,
-            String suspendType) throws Exception {
-        executeCommand("%s get-listener-states-results,%s,%s,%s", TEST_COMMAND_HEADER,
-                listenerName, completionType, suspendType);
-        String dump = fetchServiceDumpsys();
-        CLog.d("Service dump: " + dump);
-        return dump.contains("true");
+    private boolean listenerStatesMatchExpected(String completionType, String suspendType)
+            throws Exception {
+        executeCommand("%s get-listener-states-results,%s,%s", TEST_COMMAND_HEADER,
+                completionType, suspendType);
+        String[] lines = fetchServiceDumpsys().split("\n");
+        for (String line : lines) {
+            if (line.contains(RESULT_DUMP_HEADER)) {
+                return line.split(":")[1].trim().contains("true");
+            }
+        }
+        return false;
     }
 
     private void suspendDeviceToRam() throws Exception {

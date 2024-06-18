@@ -15,6 +15,8 @@
  */
 package android.packageinstaller.uninstall.cts;
 
+import static android.app.PendingIntent.FLAG_MUTABLE;
+import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageManager.MATCH_ARCHIVED_PACKAGES;
@@ -33,10 +35,13 @@ import static org.junit.Assume.assumeTrue;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.IntentSender;
 import android.content.pm.Flags;
 import android.content.pm.LauncherApps;
 import android.content.pm.LauncherApps.ArchiveCompatibilityParams;
@@ -50,6 +55,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -73,7 +79,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -97,6 +107,7 @@ public class ArchiveTest {
     private static CompletableFuture<Integer> sUnarchiveId;
     private static CompletableFuture<String> sUnarchiveReceiverPackageName;
     private static CompletableFuture<Boolean> sUnarchiveReceiverAllUsers;
+    private static CompletableFuture<Integer> sInstallResult;
 
     private Context mContext;
     private UiDevice mUiDevice;
@@ -130,6 +141,7 @@ public class ArchiveTest {
         sUnarchiveId = new CompletableFuture<>();
         sUnarchiveReceiverPackageName = new CompletableFuture<>();
         sUnarchiveReceiverAllUsers = new CompletableFuture<>();
+        sInstallResult = new CompletableFuture<>();
         mDefaultHome = getDefaultLauncher(instrumentation);
         ArchiveCompatibilityParams options = new ArchiveCompatibilityParams();
         options.setEnableUnarchivalConfirmation(false);
@@ -251,10 +263,8 @@ public class ArchiveTest {
                 new Handler(Looper.getMainLooper()));
 
         LocalIntentSender unarchiveSender = new LocalIntentSender();
-        runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestUnarchive(ARCHIVE_APK_PACKAGE_NAME,
-                        unarchiveSender.getIntentSender()),
-                Manifest.permission.REQUEST_INSTALL_PACKAGES);
+        mPackageInstaller.requestUnarchive(ARCHIVE_APK_PACKAGE_NAME,
+                        unarchiveSender.getIntentSender());
         Intent unarchiveIntent = unarchiveSender.pollResult(5, TimeUnit.SECONDS);
         assertThat(unarchiveIntent.getStringExtra(PackageInstaller.EXTRA_PACKAGE_NAME)).isEqualTo(
                 ARCHIVE_APK_PACKAGE_NAME);
@@ -276,6 +286,44 @@ public class ArchiveTest {
             Assert.fail("Restore button not shown");
         }
         clickableView.click();
+
+        // Complete the unarchive request by installing the app back. Assert that the installation
+        // goes through without any additional confirmation dialog.
+        final int unarchiveId = sUnarchiveId.get(10, TimeUnit.SECONDS);
+        assertThat(unarchiveId).isGreaterThan(0);
+        mPackageInstaller.reportUnarchivalState(
+                PackageInstaller.UnarchivalState.createOkState(unarchiveId));
+        PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
+                PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+        params.setAppPackageName(ARCHIVE_APK_PACKAGE_NAME);
+        final int sessionId = mPackageInstaller.createSession(params);
+        assertThat(sessionId).isEqualTo(unarchiveId);
+        PackageInstaller.Session session = mPackageInstaller.openSession(sessionId);
+        File apkFile = new File(ARCHIVE_APK);
+        try (OutputStream os = session.openWrite("base.apk", 0, apkFile.length());
+                InputStream is = new FileInputStream(apkFile)) {
+            writeFullStream(is, os, apkFile.length());
+        }
+        var installResultReceiver = new InstallResultReceiver();
+        session.commit(installResultReceiver.getIntentSender(mContext));
+        assertThat(sInstallResult.get(10, TimeUnit.SECONDS)).isEqualTo(
+                PackageInstaller.STATUS_SUCCESS);
+        assertTrue(isInstalled());
+    }
+
+    private static void writeFullStream(InputStream inputStream, OutputStream outputStream,
+                                        long expected)
+            throws IOException {
+        byte[] buffer = new byte[1024];
+        long total = 0;
+        int length;
+        while ((length = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, length);
+            total += length;
+        }
+        if (expected > 0) {
+            assertThat(total).isEqualTo(expected);
+        }
     }
 
     @Test
@@ -309,6 +357,11 @@ public class ArchiveTest {
         mContext.startActivity(intent);
 
         mUiDevice.waitForIdle();
+        // Check the title includes the installer's label
+        UiObject2 headerTitle = waitFor(
+                Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "alertTitle")));
+        assertThat(headerTitle.getText()).contains("Cts Package Uninstaller Tests");
+
         assertThat(waitFor(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1")))).isNotNull();
         UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
         if (clickableView == null) {
@@ -397,8 +450,14 @@ public class ArchiveTest {
     private void abandonPendingUnarchivalSessions() {
         List<PackageInstaller.SessionInfo> sessions = mPackageInstaller.getAllSessions();
         for (PackageInstaller.SessionInfo session : sessions) {
-            if (ARCHIVE_APK_PACKAGE_NAME.equals(session.getAppPackageName())) {
-                mPackageInstaller.abandonSession(session.getSessionId());
+            if (TextUtils.equals(ARCHIVE_APK_PACKAGE_NAME, session.getAppPackageName())
+                    && TextUtils.equals(mContext.getPackageName(),
+                        session.getInstallerPackageName())) {
+                // The test app cannot abandon draft sessions
+                try {
+                    mPackageInstaller.abandonSession(session.getSessionId());
+                } catch (SecurityException ignored) {
+                }
             }
         }
     }
@@ -406,7 +465,7 @@ public class ArchiveTest {
     private int getUnarchivalSessionId() {
         List<PackageInstaller.SessionInfo> sessions = mPackageInstaller.getAllSessions();
         for (PackageInstaller.SessionInfo session : sessions) {
-            if (session.getAppPackageName().equals(ARCHIVE_APK_PACKAGE_NAME)) {
+            if (TextUtils.equals(ARCHIVE_APK_PACKAGE_NAME, session.getAppPackageName())) {
                 return session.getSessionId();
             }
         }
@@ -425,7 +484,7 @@ public class ArchiveTest {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (!intent.getAction().equals(Intent.ACTION_UNARCHIVE_PACKAGE)) {
+            if (!TextUtils.equals(Intent.ACTION_UNARCHIVE_PACKAGE, intent.getAction())) {
                 return;
             }
             if (sUnarchiveId == null) {
@@ -443,6 +502,26 @@ public class ArchiveTest {
             sUnarchiveReceiverAllUsers.complete(
                     intent.getBooleanExtra(PackageInstaller.EXTRA_UNARCHIVE_ALL_USERS,
                             true /* defaultValue */));
+        }
+    }
+
+    private static class InstallResultReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            sInstallResult.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                    PackageInstaller.STATUS_FAILURE));
+        }
+
+        public IntentSender getIntentSender(Context context) {
+            // Generate a unique string to ensure each LocalIntentSender gets its own results.
+            String action = InstallResultReceiver.class.getName();
+            context.registerReceiver(this, new IntentFilter(action),
+                    Context.RECEIVER_EXPORTED);
+            Intent intent = new Intent(action).setPackage(context.getPackageName())
+                    .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+            PendingIntent pending = PendingIntent.getBroadcast(context, 0, intent,
+                    FLAG_UPDATE_CURRENT | FLAG_MUTABLE);
+            return pending.getIntentSender();
         }
     }
 

@@ -353,6 +353,41 @@ public class MockModemManager {
         return result;
     }
 
+
+    /**
+     * Sets the logical slots that are currently capable of performing cellular simultaneous
+     * calling.
+     * @param slotId The logical slot ID where the simultaneous calling state has changed
+     * @param enabledLogicalSlots The other logical slots that will have simultaneous calling
+     *     enabled for this slot.
+     * @return true if the operation succeeded, false if it failed
+     */
+    public boolean setSimulCallingEnabledLogicalSlots(int slotId,
+            int[] enabledLogicalSlots) throws Exception {
+        Log.d(TAG, "setSimulCallingEnabledLogicalSlots[" + slotId + "]");
+        boolean result = true;
+
+        if (isSimCardPresent(slotId)) {
+            MockModemConfigInterface configInterface =
+                    mMockModemService.getMockModemConfigInterface();
+            if (configInterface != null) {
+                configInterface.setSimulCallingEnabledLogicalSlots(slotId, enabledLogicalSlots,
+                        TAG);
+
+                // Wait for telephony framework refresh data and carrier config
+                waitForTelephonyFrameworkDone(3);
+            } else {
+                Log.e(TAG, "setSimulCallingEnabledLogicalSlots: MockModemConfigInterface"
+                        + " == null!");
+                result = false;
+            }
+        } else {
+            Log.d(TAG, "setSimulCallingEnabledLogicalSlots: There is no SIM inserted.");
+            result = false;
+        }
+        return result;
+    }
+
     /**
      * Force the response error return for a specific RIL request
      *

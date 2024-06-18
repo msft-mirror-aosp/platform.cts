@@ -143,7 +143,7 @@ def assert_increasing_means(means, exps, sens, black_levels, white_level):
           e_msg += (f'exp[i-1]: {exps[i-2]:.3f}ms, '
                     f'mean[i-1]: {prev_mean[ch]:.2f}, ')
         e_msg += (f'exp[i]: {exps[i-1]:.3f}ms, mean[i]: {mean[ch]}, '
-                  f'TOL: {_IMG_DELTA_THRESH}')
+                  f'RTOL: {_IMG_DELTA_THRESH}')
         raise AssertionError(e_msg)
 
   # Check image saturates

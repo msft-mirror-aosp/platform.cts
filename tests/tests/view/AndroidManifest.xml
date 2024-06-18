@@ -54,6 +54,7 @@
         </activity>
 
         <activity android:name="android.view.cts.UsingViewsCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:screenOrientation="locked"
              android:label="Using Views Test"
              android:exported="true">
@@ -85,6 +86,7 @@
         </activity>
 
         <activity android:name="android.view.cts.ViewTestCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:enableOnBackInvokedCallback="false"
              android:screenOrientation="locked"
              android:label="ViewTestCtsActivity"
@@ -139,7 +141,7 @@
         </activity>
 
         <activity android:name="android.view.cts.TextureViewCtsActivity"
-             android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement.NoActionBar"
              android:screenOrientation="locked"
              android:label="TextureViewCtsActivity"
              android:exported="true">
@@ -252,6 +254,7 @@
         <activity android:name="android.view.cts.MockActivity"
              android:label="MockActivity"
              android:screenOrientation="locked"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <meta-data android:name="android.view.merge"
                  android:resource="@xml/merge"/>
@@ -367,6 +370,7 @@
         </activity>
 
         <activity android:name="android.view.cts.TooltipActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:screenOrientation="locked"
              android:label="TooltipActivity"
              android:exported="true">
@@ -377,6 +381,7 @@
         </activity>
 
         <activity android:name="android.view.cts.PointerCaptureCtsActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:screenOrientation="locked"
              android:label="PointerCaptureCtsActivity"
              android:exported="true">
@@ -413,6 +418,7 @@
         </activity>
 
         <activity android:name="android.view.cts.TouchDelegateTestActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -427,6 +433,7 @@
         </activity>
 
         <activity android:name="android.view.cts.SystemGestureExclusionActivity"
+             android:theme="@style/OptOutEdgeToEdgeEnforcement"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

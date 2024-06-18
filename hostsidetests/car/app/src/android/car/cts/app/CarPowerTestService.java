@@ -16,6 +16,11 @@
 
 package android.car.cts.app;
 
+import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
+
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.car.Car;
 import android.car.hardware.power.CarPowerManager;
@@ -44,8 +49,8 @@ import javax.annotation.concurrent.GuardedBy;
  *         adb shell am start -n android.car.cts.app/.CarPowerTestService /
  *         --es power [action]
  *         action:
- *            set-listener,[listener-name],[with-completion|without-completion],[s2r|s2d]
- *            get-listener-states-results,[listener-name],[with-completion|without-completion],
+ *            set-listener,[with-completion|without-completion],[s2r|s2d]
+ *            get-listener-states-results,[with-completion|without-completion],
  *            [s2r|s2d]
  *            clear-listener
  *     </pre>
@@ -81,15 +86,20 @@ public final class CarPowerTestService extends Service {
             CarPowerManager.STATE_POST_HIBERNATION_ENTER
     );
 
+    // Foreground service requirements
+    private static final String NOTIFICATION_CHANNEL_ID = TAG;
+    private static final String NOTIFICATION_CHANNEL_NAME = TAG;
+    private final int mCarPowerTestServiceNotificationId = this.hashCode();
+
     private final Object mLock = new Object();
 
     private final StringWriter mResultBuf = new StringWriter(RESULT_LOG_SIZE);
 
     private Car mCarApi;
     @GuardedBy("mLock")
-    private CarPowerManager mCarPowerManager;
+    private WaitablePowerStateListener mListener = new WaitablePowerStateListener(0);
     @GuardedBy("mLock")
-    private ArrayMap<String, WaitablePowerStateListener> mListeners = new ArrayMap<>();
+    private CarPowerManager mCarPowerManager;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -127,6 +137,23 @@ public final class CarPowerTestService extends Service {
         initCarApi();
     }
 
+    // Make CarPowerTestService run in the foreground so that it won't be killed during the test
+    void startForeground() {
+        NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
+                NOTIFICATION_CHANNEL_NAME, IMPORTANCE_DEFAULT);
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        manager.createNotificationChannel(notificationChannel);
+
+        Notification notification =
+                new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
+                        .setSmallIcon(android.R.drawable.checkbox_on_background)
+                        .setContentTitle(TAG)
+                        .setContentText(TAG)
+                        .setOngoing(true)
+                        .build();
+        startForeground(mCarPowerTestServiceNotificationId, notification);
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i(TAG, "onStartCommand");
@@ -142,6 +169,9 @@ public final class CarPowerTestService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "onStartCommand(): failed to handle cmd", e);
         }
+
+        startForeground();
+
         return START_NOT_STICKY;
     }
 
@@ -156,23 +186,27 @@ public final class CarPowerTestService extends Service {
 
     @Override
     protected void dump(FileDescriptor fd, PrintWriter writer, String[] args) {
-        Log.i(TAG, "Dumping mResultBuf: " + mResultBuf);
-        writer.println(mResultBuf);
+        Log.i(TAG, "Dumping CarPowerTestService");
+        writer.println("*CarPowerTestService*");
+        writer.printf("mResultBuf: %s\n", mResultBuf);
+        synchronized (mLock) {
+            writer.printf("mListener set: %b\n", mListener != null);
+        }
     }
 
     @GuardedBy("mLock")
-    private void setListenerWithoutCompletionLocked(String listenerName, int expectedStatesSize) {
+    private void setListenerWithoutCompletionLocked(int expectedStatesSize) {
         WaitablePowerStateListenerWithoutCompletion listener =
                 new WaitablePowerStateListenerWithoutCompletion(expectedStatesSize);
-        mListeners.put(listenerName, listener);
+        mListener = listener;
     }
 
     @GuardedBy("mLock")
-    private void setListenerWithCompletionLocked(String listenerName, int expectedStatesSize) {
+    private void setListenerWithCompletionLocked(int expectedStatesSize) {
         WaitablePowerStateListenerWithCompletion listener =
                 new WaitablePowerStateListenerWithCompletion(
                         expectedStatesSize, FUTURE_ALLOWING_STATES);
-        mListeners.put(listenerName, listener);
+        mListener = listener;
     }
 
     private boolean listenerStatesMatchExpected(WaitablePowerStateListener listener,
@@ -214,14 +248,14 @@ public final class CarPowerTestService extends Service {
         String[] tokens = commandString.split(",");
         switch(tokens[0]) {
             case CMD_SET_LISTENER:
-                if (tokens.length != 4) {
+                if (tokens.length != 3) {
                     Log.i(TAG, "incorrect set-listener command format: " + commandString
-                            + ", should be set-listener,[listener-name],"
-                            + "[with-completion|without-completion],[s2r|s2d]");
+                            + ", should be set-listener,[with-completion|without-completion],"
+                            + "[s2r|s2d]");
                     break;
                 }
 
-                String completionType = tokens[2];
+                String completionType = tokens[1];
                 Log.i(TAG, "Set listener command completion type: " + completionType);
                 boolean withCompletion;
                 try {
@@ -231,7 +265,7 @@ public final class CarPowerTestService extends Service {
                     break;
                 }
 
-                String suspendType = tokens[3];
+                String suspendType = tokens[2];
                 Log.i(TAG, "Set listener command suspend type: " + suspendType);
                 int expectedStatesSize;
                 try {
@@ -241,43 +275,33 @@ public final class CarPowerTestService extends Service {
                     break;
                 }
 
-                String listenerName = tokens[1];
-                Log.i(TAG, "Set listener command listener name: " + listenerName);
                 synchronized (mLock) {
-                    if (mListeners.containsKey(listenerName)) {
-                        Log.i(TAG, "there is already a with completion listener registered "
-                                + "with name " + listenerName);
-                        break;
-                    }
                     if (withCompletion) {
-                        setListenerWithCompletionLocked(listenerName, expectedStatesSize);
+                        setListenerWithCompletionLocked(expectedStatesSize);
                     } else {
-                        setListenerWithoutCompletionLocked(listenerName, expectedStatesSize);
+                        setListenerWithoutCompletionLocked(expectedStatesSize);
                     }
                 }
-                Log.i(TAG, "Listener set for " + listenerName);
+                Log.i(TAG, "Listener set");
                 break;
             case CMD_GET_LISTENER_STATES_RESULTS:
-                if (tokens.length != 4) {
+                if (tokens.length != 3) {
                     Log.i(TAG, "incorrect get-listener-states-results command format: "
                             + commandString + ", should be get-listener-states-results,"
-                            + "[listener-name],[with-completion|without-completion],[s2r|s2d]");
+                            + "[with-completion|without-completion],[s2r|s2d]");
                     break;
                 }
 
-                listenerName = tokens[1];
-                Log.i(TAG, "Get listener command get listener by name: " + listenerName);
                 WaitablePowerStateListener listener;
                 synchronized (mLock) {
-                    if (mListeners.containsKey(listenerName)) {
-                        listener = mListeners.get(listenerName);
-                    } else {
-                        Log.i(TAG, "there is no listener registered with name " + listenerName);
+                    if (mListener == null) {
+                        Log.i(TAG, "There is no listener registered");
                         break;
                     }
+                    listener = mListener;
                 }
 
-                completionType = tokens[2];
+                completionType = tokens[1];
                 Log.i(TAG, "Get listener command completion type: " + completionType);
                 try {
                     withCompletion = isListenerWithCompletion(completionType);
@@ -286,7 +310,7 @@ public final class CarPowerTestService extends Service {
                     break;
                 }
 
-                suspendType = tokens[3];
+                suspendType = tokens[2];
                 Log.i(TAG, "Get listener command suspend type: " + suspendType);
                 List<Integer> expectedStates;
                 try {
@@ -311,12 +335,14 @@ public final class CarPowerTestService extends Service {
                     mResultBuf.write(String.valueOf(statesMatchExpected));
                 } catch (InterruptedException e) {
                     Log.i(TAG, "Getting listener states timed out");
+                    mResultBuf.write("false");
                     break;
                 }
                 break;
             case CMD_CLEAR_LISTENER:
                 synchronized (mLock) {
                     mCarPowerManager.clearListener();
+                    mListener = null;
                 }
                 Log.i(TAG, "Listener cleared");
                 break;
@@ -353,8 +379,8 @@ public final class CarPowerTestService extends Service {
                     (state) -> {
                         mReceivedStates.add(state);
                         mLatch.countDown();
-                        Log.i(TAG, "Listener observed state: " + state + ", received "
-                                + "states: " + mReceivedStates + ", mLatch count:"
+                        Log.i(TAG, "Listener without completion observed state: " + state
+                                + ", received states: " + mReceivedStates + ", mLatch count:"
                                 + mLatch.getCount());
                     });
             Log.i(TAG, "Listener without completion set");
@@ -387,6 +413,9 @@ public final class CarPowerTestService extends Service {
                             }
                         }
                         mLatch.countDown();
+                        Log.i(TAG, "Listener with completion observed state: " + state
+                                + ", received states: " + mReceivedStates + ", mLatch count:"
+                                + mLatch.getCount());
                     });
             Log.i(TAG, "Listener with completion set");
         }

@@ -73,7 +73,7 @@ public class DisplayWakeReportedStatsTests extends DeviceTestCase implements IBu
     public void testDisplayWakeReportedFromWakeKey() throws Exception {
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".DisplayWakeReportedTests",
                 "testWakeWithWakeKey");
-
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
         assertWakeup(WAKE_REASON_WAKE_KEY, SYSTEM_UID);
     }
 

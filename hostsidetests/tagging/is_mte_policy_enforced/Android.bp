@@ -29,4 +29,5 @@ android_test_helper_app {
         "flag-junit",
         "device_policy_aconfig_flags_lib",
     ],
+    sdk_version: "test_current",
 }

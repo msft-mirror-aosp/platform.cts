@@ -60,11 +60,11 @@ import android.voiceinteraction.cts.testcore.VoiceInteractionServiceConnectedRul
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
@@ -92,7 +92,7 @@ import java.util.concurrent.TimeoutException;
  */
 @RunWith(BedsteadJUnit4.class)
 @AppModeFull(reason = "No real use case for instant mode")
-public class VoiceInteractionServiceTest extends AbstractHdsTestCase {
+public class VoiceInteractionServiceTest {
 
     @ClassRule
     @Rule
@@ -141,9 +141,6 @@ public class VoiceInteractionServiceTest extends AbstractHdsTestCase {
         // Check we can get the service, we need service object to call the service provided method
         Objects.requireNonNull(mService);
 
-        // Set whether voice activation permission enabled.
-        mService.setVoiceActivationPermissionEnabled(mVoiceActivationPermissionEnabled);
-
         VoiceInteractionTestReceiver.reset();
     }
 
@@ -172,6 +169,8 @@ public class VoiceInteractionServiceTest extends AbstractHdsTestCase {
     })
     @EnsureHasPrivateProfile
     @Test
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void onHandleScreenShotAndAssist_privateProfile_failed() throws Exception {
         try (TestAppInstance unused = startActivityAndShowSession(
                 sDeviceState.privateProfile())) {

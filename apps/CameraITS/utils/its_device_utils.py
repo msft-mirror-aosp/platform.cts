@@ -30,6 +30,23 @@ def run(cmd):
     subprocess.check_call(cmd.split(), stdout=devnull, stderr=subprocess.STDOUT)
 
 
+def run_adb_shell_command(device_id, command):
+  """Run adb shell command on device.
+
+  Args:
+    device_id: serial id of device.
+    command: adb command to run on device.
+
+  Raises:
+    RuntimeError: An error when running adb command.
+  """
+  adb_command = f'adb -s {device_id} shell {command}'
+  output = subprocess.run(adb_command, capture_output=True, shell=True,
+                          check=False)
+  if 'Exception occurred' in str(output):
+    raise RuntimeError(output)
+
+
 def start_its_test_activity(device_id):
   """Starts ItsTestActivity, waking the device if necessary.
 

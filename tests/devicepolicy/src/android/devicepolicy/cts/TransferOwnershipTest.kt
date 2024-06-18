@@ -22,11 +22,11 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.harrier.policies.TransferOwnership
 import com.android.bedstead.harrier.policies.TransferOwnershipForDeviceOwner
 import com.android.bedstead.harrier.policies.TransferOwnershipForProfileOwner

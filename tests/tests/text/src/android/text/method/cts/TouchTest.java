@@ -19,6 +19,7 @@ package android.text.method.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.os.SystemClock;
@@ -33,12 +34,12 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import androidx.test.annotation.UiThreadTest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WindowUtil;
 
 import org.junit.Before;
@@ -64,10 +65,14 @@ public class TouchTest {
     private boolean mReturnFromTouchEvent;
     private TextView mTextView;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<CtsActivity> mActivityRule = new ActivityTestRule<>(CtsActivity.class);
 
-    @UiThreadTest
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -130,8 +135,9 @@ public class TouchTest {
             textWidth = Math.round(paint.measureText(text));
         }
 
-        // Drag the difference between the text width and the screen width.
-        int dragAmount = Math.min(rootViewWidth, textWidth - rootViewWidth);
+        // Drag the difference between the text width and the screen width, and subtract 1
+        // in case it can't be scrolled to the rightmost.
+        int dragAmount = Math.min(rootViewWidth, textWidth - rootViewWidth) - 1;
         assertTrue(dragAmount > touchSlop);
         final String finalText = text;
         final SpannableString spannable = new SpannableString(finalText);

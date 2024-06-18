@@ -16,6 +16,8 @@
 
 package android.virtualdevice.cts.common;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
@@ -33,8 +35,7 @@ import android.companion.CompanionDeviceManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Process;
-
-import androidx.test.platform.app.InstrumentationRegistry;
+import android.util.Log;
 
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
@@ -45,6 +46,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 /**
@@ -52,13 +55,15 @@ import java.util.function.Consumer;
  * package for the duration of the test.
  */
 public class FakeAssociationRule extends ExternalResource {
+    private static final String TAG = "FakeAssociationRule";
 
     private static final String FAKE_ASSOCIATION_ADDRESS_FORMAT = "00:00:00:00:00:%02d";
 
     private static final int TIMEOUT_MS = 10000;
 
-    private final Context mContext =
-            InstrumentationRegistry.getInstrumentation().getTargetContext();
+    private final Context mContext = getInstrumentation().getTargetContext();
+
+    private final Executor mCallbackExecutor = Runnable::run;
     private final RoleManager mRoleManager = mContext.getSystemService(RoleManager.class);
 
     private final String mDeviceProfile;
@@ -81,7 +86,8 @@ public class FakeAssociationRule extends ExternalResource {
     }
 
     public AssociationInfo createManagedAssociation() {
-        String deviceAddress = String.format(FAKE_ASSOCIATION_ADDRESS_FORMAT, ++mNextDeviceId);
+        String deviceAddress = String.format(Locale.getDefault(Locale.Category.FORMAT),
+                FAKE_ASSOCIATION_ADDRESS_FORMAT, ++mNextDeviceId);
         if (mNextDeviceId > 99) {
             throw new IllegalArgumentException("At most 99 associations supported");
         }
@@ -89,13 +95,20 @@ public class FakeAssociationRule extends ExternalResource {
             throw new IllegalArgumentException("Multiple associations require API level 33");
         }
 
+        Log.d(TAG, "Associations before shell cmd: "
+                + mCompanionDeviceManager.getMyAssociations().size());
         reset(mOnAssociationsChangedListener);
-        SystemUtil.runShellCommand(String.format("cmd companiondevice associate %d %s %s %s",
-                Process.myUserHandle().getIdentifier(),
+        SystemUtil.runShellCommandOrThrow(String.format(Locale.getDefault(Locale.Category.FORMAT),
+                "cmd companiondevice associate %d %s %s %s",
+                getInstrumentation().getContext().getUserId(),
                 mContext.getPackageName(),
                 deviceAddress,
                 mDeviceProfile));
-        verify(mOnAssociationsChangedListener, timeout(TIMEOUT_MS)).onAssociationsChanged(any());
+        verify(mOnAssociationsChangedListener, timeout(TIMEOUT_MS)
+                .description(TAG
+                        + ": Association changed listener did not call back. Total associations: "
+                        + mCompanionDeviceManager.getMyAssociations().size()))
+                .onAssociationsChanged(any());
         List<AssociationInfo> associations = mCompanionDeviceManager.getMyAssociations();
 
         if (SdkLevel.isAtLeastT()) {
@@ -119,12 +132,12 @@ public class FakeAssociationRule extends ExternalResource {
         Consumer<Boolean> callback = mock(Consumer.class);
         SystemUtil.runWithShellPermissionIdentity(() -> {
             mCompanionDeviceManager.addOnAssociationsChangedListener(
-                    mContext.getMainExecutor(), mOnAssociationsChangedListener);
+                    mCallbackExecutor, mOnAssociationsChangedListener);
             mRoleManager.setBypassingRoleQualification(true);
             mRoleManager.addRoleHolderAsUser(
                     mDeviceProfile, mContext.getPackageName(),
                     RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
-                    mContext.getMainExecutor(), callback);
+                    mCallbackExecutor, callback);
             verify(callback, timeout(TIMEOUT_MS)).accept(eq(true));
         });
 
@@ -142,7 +155,7 @@ public class FakeAssociationRule extends ExternalResource {
             mRoleManager.removeRoleHolderAsUser(
                     mDeviceProfile, mContext.getPackageName(),
                     RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
-                    mContext.getMainExecutor(), callback);
+                    mCallbackExecutor, callback);
             verify(callback, timeout(TIMEOUT_MS)).accept(eq(true));
             mRoleManager.setBypassingRoleQualification(false);
             mCompanionDeviceManager.removeOnAssociationsChangedListener(

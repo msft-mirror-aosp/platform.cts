@@ -16,6 +16,7 @@
 
 package android.media.router.cts;
 
+import static android.media.cts.MediaRouterTestConstants.FEATURE_ACTIVE_SCAN_ONLY;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
 
 import android.media.MediaRoute2Info;
@@ -23,6 +24,7 @@ import android.media.MediaRoute2ProviderService;
 import android.media.RouteDiscoveryPreference;
 import android.os.Bundle;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -30,11 +32,17 @@ import java.util.Set;
 public abstract class BaseFakeRouteProviderService extends MediaRoute2ProviderService {
 
     /** Route information of routes provided by this instance. */
-    private final List<MediaRoute2Info> mRoutes;
+    private final List<MediaRoute2Info> mAllRoutes;
+
+    private final List<MediaRoute2Info> mPassiveScanRoutes;
 
     /** Creates an instance that provides the given route information. */
     protected BaseFakeRouteProviderService(MediaRoute2Info... routes) {
-        mRoutes = List.of(routes);
+        mAllRoutes = List.of(routes);
+        mPassiveScanRoutes =
+                Arrays.stream(routes)
+                        .filter(r -> !r.getFeatures().contains(FEATURE_ACTIVE_SCAN_ONLY))
+                        .toList();
     }
 
     protected static MediaRoute2Info createPublicRoute(
@@ -65,6 +73,16 @@ public abstract class BaseFakeRouteProviderService extends MediaRoute2ProviderSe
                 .build();
     }
 
+    protected static MediaRoute2Info createActiveScanOnlyRoute(
+            String id, String name, int type, String... deduplicationIds) {
+        return new MediaRoute2Info.Builder(id, name)
+                .setType(type)
+                .addFeature(FEATURE_ACTIVE_SCAN_ONLY)
+                .setDeduplicationIds(Set.of(deduplicationIds))
+                .setVisibilityPublic()
+                .build();
+    }
+
     // MediaRoute2ProviderService implementation.
 
     @Override
@@ -91,6 +109,10 @@ public abstract class BaseFakeRouteProviderService extends MediaRoute2ProviderSe
 
     @Override
     public void onDiscoveryPreferenceChanged(RouteDiscoveryPreference preference) {
-        notifyRoutes(mRoutes);
+        if (preference.shouldPerformActiveScan()) {
+            notifyRoutes(mAllRoutes);
+        } else {
+            notifyRoutes(mPassiveScanRoutes);
+        }
     }
 }

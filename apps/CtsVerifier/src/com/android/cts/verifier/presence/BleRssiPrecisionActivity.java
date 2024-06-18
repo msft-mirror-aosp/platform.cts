@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.presence;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.AdvertisingSetParameters;
@@ -34,16 +37,24 @@ import android.widget.Toast;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.PassFailButtons;
+import com.android.cts.verifier.R;
+import com.android.cts.verifier.presence.ble.BleAdvertiser;
 import com.android.cts.verifier.presence.ble.BleAdvertisingPacket;
 import com.android.cts.verifier.presence.ble.BleScanner;
-import com.android.cts.verifier.presence.ble.BleAdvertiser;
-import com.android.cts.verifier.R;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Random;
 
+/**
+ * Tests BLE Presence calibration requirement [7.4.3/C-10-1].
+ *
+ * <p>
+ * Link to requirement documentation is at <a
+ * href="https://source.android.com/docs/core/connect/presence-requirements#requirement_c-10-1">.
+ * ..</a>
+ */
 public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
     private static final String TAG = BleRssiPrecisionActivity.class.getName();
     private static final String DEVICE_NAME = Build.MODEL;
@@ -54,6 +65,7 @@ public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
 
     // Thresholds
     private static final int MAX_RSSI_RANGE_DBM = 18;
+    private static final int NUMBER_OF_TEST_SAMPLES = 1000;
 
     private boolean isReferenceDevice;
     private BleScanner mBleScanner;
@@ -156,9 +168,9 @@ public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
             mDeviceFoundTextView.setVisibility(View.VISIBLE);
             mReferenceDeviceName = referenceDeviceName;
             String deviceFoundText = getString(R.string.device_found_presence,
-                    resultList.size(), 1000);
+                    resultList.size(), NUMBER_OF_TEST_SAMPLES);
             mDeviceFoundTextView.setText(deviceFoundText);
-            if (resultList.size() >= 1000) {
+            if (resultList.size() >= NUMBER_OF_TEST_SAMPLES) {
                 Log.i(TAG, "Data collection complete");
                 mBleScanner.stopScanning();
                 mStartTestButton.setEnabled(true);
@@ -198,6 +210,7 @@ public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
         mIsReferenceDeviceCheckbox.setEnabled(true);
     }
 
+    /** Starts advertising with the generated device ID specific to the reference device. */
     private void startAdvertising() {
         if (!checkBluetoothEnabled()) {
             return;
@@ -256,6 +269,11 @@ public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
 
     private void makeToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, "ble_rssi_precision_activity");
     }
 
     @Override

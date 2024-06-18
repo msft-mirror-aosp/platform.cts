@@ -125,18 +125,18 @@ public class CtsCredentialViewTest {
                     }
                 };
 
-        assertNull(view.getCredentialManagerRequest());
-        assertNull(view.getCredentialManagerCallback());
+        assertNull(view.getPendingCredentialRequest());
+        assertNull(view.getPendingCredentialCallback());
 
-        view.setCredentialManagerRequest(request, callback);
+        view.setPendingCredentialRequest(request, callback);
 
-        assertEquals(view.getCredentialManagerRequest(), request);
-        assertEquals(view.getCredentialManagerCallback(), callback);
+        assertEquals(view.getPendingCredentialRequest(), request);
+        assertEquals(view.getPendingCredentialCallback(), callback);
 
-        view.clearCredentialManagerRequest();
+        view.clearPendingCredentialRequest();
 
-        assertNull(view.getCredentialManagerRequest());
-        assertNull(view.getCredentialManagerCallback());
+        assertNull(view.getPendingCredentialRequest());
+        assertNull(view.getPendingCredentialCallback());
     }
 
     @Test
@@ -165,12 +165,12 @@ public class CtsCredentialViewTest {
                     }
                 };
 
-        assertNull(view.getCredentialManagerRequest());
-        assertNull(view.getCredentialManagerCallback());
+        assertNull(view.getPendingCredentialRequest());
+        assertNull(view.getPendingCredentialCallback());
 
-        view.setCredentialManagerRequest(request, callback);
+        view.setPendingCredentialRequest(request, callback);
 
-        assertEquals(view.getCredentialManagerRequest(), request);
-        assertEquals(view.getCredentialManagerCallback(), callback);
+        assertEquals(view.getPendingCredentialRequest(), request);
+        assertEquals(view.getPendingCredentialCallback(), callback);
     }
 }

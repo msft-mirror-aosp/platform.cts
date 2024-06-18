@@ -39,6 +39,7 @@ import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.OperationCanceledException;
 import android.os.ParcelFileDescriptor;
+import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
@@ -1101,13 +1102,20 @@ public class ContentResolverTest extends AndroidTestCase {
             //expected.
         }
 
-        // javadoc says it will throw NullPointerException when values are null,
-        // but actually, it throws IllegalArgumentException here.
         try {
             mContentResolver.update(TABLE1_URI, null, null, null);
-            fail("did not throw IllegalArgumentException when values are null.");
-        } catch (IllegalArgumentException e) {
-            //expected.
+            fail("did not throw required exception when values are null.");
+        } catch (Exception e) {
+            // If this test is running in an SDK sandbox instead of a regular app, the
+            // ContentProvider runs in the app process. When the SDK sandbox interacts with the
+            // ContentProvider, and values are null, an NPE is thrown in ContentProviderNative. In
+            // apps however, since there is no IPC, this does not happen and an
+            // IllegalArgumentException is thrown instead when values are null.
+            Class<?> expectedErrorType =
+                    Process.isSdkSandbox()
+                            ? NullPointerException.class
+                            : IllegalArgumentException.class;
+            assertEquals(e.getClass(), expectedErrorType);
         }
     }
 

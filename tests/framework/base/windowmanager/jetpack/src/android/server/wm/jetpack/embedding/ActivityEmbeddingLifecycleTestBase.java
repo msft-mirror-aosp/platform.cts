@@ -55,7 +55,7 @@ public class ActivityEmbeddingLifecycleTestBase extends ActivityEmbeddingTestBas
 
     @Before
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         mSplitInfoConsumer = new SplitInfoLifecycleConsumer<>();
         mActivityEmbeddingComponent.setSplitInfoCallback(mSplitInfoConsumer);

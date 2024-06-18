@@ -19,11 +19,11 @@ package android.server.wm.jetpack.embedding;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.second.Components.PORTRAIT_ACTIVITY;
 import static android.server.wm.jetpack.second.Components.SECOND_UNTRUSTED_EMBEDDING_ACTIVITY;
 import static android.server.wm.jetpack.signed.Components.SIGNED_EMBEDDING_ACTIVITY;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createWildcardSplitPairRule;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.EXTRA_EMBED_ACTIVITY;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.startActivityFromActivity;
@@ -35,7 +35,6 @@ import static android.view.Surface.ROTATION_90;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -59,7 +58,6 @@ import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.window.extensions.WindowExtensions;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.SplitPairRule;
 
@@ -84,17 +82,15 @@ import java.util.function.BooleanSupplier;
 @Presubmit
 @RunWith(AndroidJUnit4.class)
 public class ActivityEmbeddingPolicyTests extends ActivityManagerTestBase {
-    protected ActivityEmbeddingComponent mActivityEmbeddingComponent;
+
+    private ActivityEmbeddingComponent mActivityEmbeddingComponent;
 
     @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        assumeExtensionSupportedDevice();
-        WindowExtensions windowExtensions = getWindowExtensions();
-        assumeNotNull(windowExtensions);
-        mActivityEmbeddingComponent = windowExtensions.getActivityEmbeddingComponent();
-        assumeNotNull(mActivityEmbeddingComponent);
+        assumeActivityEmbeddingSupportedDevice();
+        mActivityEmbeddingComponent = getWindowExtensions().getActivityEmbeddingComponent();
     }
 
     @After

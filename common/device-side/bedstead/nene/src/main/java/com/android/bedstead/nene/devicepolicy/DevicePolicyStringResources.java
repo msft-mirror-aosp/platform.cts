@@ -25,7 +25,7 @@ import android.app.admin.DevicePolicyResourcesManager;
 import android.app.admin.DevicePolicyStringResource;
 
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 
 import java.util.Arrays;
 import java.util.HashSet;

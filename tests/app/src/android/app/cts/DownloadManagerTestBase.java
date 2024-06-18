@@ -482,7 +482,6 @@ public class DownloadManagerTestBase {
      */
     protected void assumeDocumentsUiAvailableOnFormFactor() {
         final PackageManager pm = mContext.getPackageManager();
-        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
         assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)); // TVs
         assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_WATCH));
     }

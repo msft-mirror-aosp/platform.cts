@@ -16,6 +16,7 @@
 
 package android.telecom.cts;
 
+import static android.telecom.cts.TestUtils.hasTelephonyFeature;
 import static android.telecom.cts.TestUtils.shouldTestTelecom;
 import static android.telecom.cts.TestUtils.waitOnAllHandlers;
 
@@ -338,7 +339,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testNoPostCallActivityForOutgoingEmergencyCall() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -354,7 +355,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testNoPostCallActivityForIncomingEmergencyCall() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);

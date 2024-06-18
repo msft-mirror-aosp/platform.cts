@@ -16,6 +16,9 @@
 
 package android.content.cts;
 
+import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
+import static android.content.Intent.FLAG_RECEIVER_OFFLOAD;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -24,6 +27,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -1426,6 +1430,14 @@ public class IntentTest {
                         .setData(Uri.parse("z39.50r://example.org/db?123")));
     }
 
+    @Test
+    public void testMalformedUris() {
+        assertThrows(URISyntaxException.class, () -> Intent.parseUri(
+                "intent:#Intent;scheme=mailto;package=com.myapp;d.double=10.4", 0));
+        assertThrows(URISyntaxException.class, () -> Intent.parseUri(
+                "android-app://com.myapp/mailto#Intent;d.double=10.4", 0));
+    }
+
     private boolean compareIntents(Intent expected, Intent actual) {
         if (!Objects.equals(expected.getAction(), actual.getAction())) {
             return false;
@@ -2202,6 +2214,24 @@ public class IntentTest {
     }
 
     @Test
+    public void testIntegerEncoding() throws Exception {
+        var intent = new Intent("action#action")
+                .setFlags(FLAG_RECEIVER_OFFLOAD | FLAG_RECEIVER_FOREGROUND)
+                .addExtendedFlags(FLAG_RECEIVER_OFFLOAD)
+                .addExtendedFlags(FLAG_RECEIVER_FOREGROUND);
+        var uri = intent.toUri(Intent.URI_INTENT_SCHEME);
+        var otherIntent = Intent.parseUri(uri, Intent.URI_INTENT_SCHEME);
+
+        assertEquals(otherIntent.getFlags(), intent.getFlags());
+        assertEquals(otherIntent.getExtendedFlags(), intent.getExtendedFlags());
+
+        var badUri = "intent:#Intent;action=action%23action;launchFlags=0x990000000;"
+                + "extendedLaunchFlags=0x890000000;end";
+        assertThrows(NumberFormatException.class,
+                () -> Intent.parseUri(badUri, Intent.URI_INTENT_SCHEME));
+    }
+
+    @Test
     public void testEncoding() throws URISyntaxException {
         // This doesn't validate setPackage, as it's not possible to have both an explicit package
         // and a selector but the inner selector Intent later on will cover setPackage
@@ -2229,12 +2259,15 @@ public class IntentTest {
                 .putExtra("extraKey#selector", "extraValue#selector");
         intent.setSelector(selectorIntent);
 
+        intent.setFlags(FLAG_RECEIVER_OFFLOAD | FLAG_RECEIVER_FOREGROUND);
+
         var uriString = intent.toUri(Intent.URI_INTENT_SCHEME);
         var deserialized = Intent.parseUri(uriString, Intent.URI_INTENT_SCHEME);
 
         assertThat(uriString).isEqualTo(
                 "intent:#Intent;action=action%23base;category=category%23base;type=type%23base;"
-                        + "identifier=identifier%23base;component=package.sub%23base/"
+                        + "identifier=identifier%23base;launchFlags=0x90000000;"
+                        + "component=package.sub%23base/"
                         + ".Class%23Base;S.extraKey%23base=extraValue%23base;SEL;"
                         + "category=category%23selector;type=type%23selector;"
                         + "identifier=identifier%23selector;package=package%23selector;"

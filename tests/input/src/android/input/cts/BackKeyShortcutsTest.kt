@@ -17,38 +17,19 @@
 package android.input.cts
 
 import android.hardware.input.InputManager
-import android.view.InputDevice
 import android.view.KeyEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
-import com.android.cts.input.UinputDevice
+import com.android.cts.input.UinputKeyboard
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-
-private const val EV_KEY = 1
-private const val KEY_DOWN = 1
-private const val KEY_UP = 0
-private const val EV_SYN = 0
-private const val SYN_REPORT = 0
-
-private fun injectEvents(device: UinputDevice, events: IntArray) {
-    device.injectEvents(events.joinToString(prefix = "[", postfix = "]", separator = ","))
-}
-
-private fun injectKeyDown(device: UinputDevice, scanCode: Int) {
-    injectEvents(device, intArrayOf(EV_KEY, scanCode, KEY_DOWN, EV_SYN, SYN_REPORT, 0))
-}
-
-private fun injectKeyUp(device: UinputDevice, scanCode: Int) {
-    injectEvents(device, intArrayOf(EV_KEY, scanCode, KEY_UP, EV_SYN, SYN_REPORT, 0))
-}
 
 /**
  * Create virtual keyboard devices and inject 'hardware' key combinations for Back shortcuts
@@ -98,11 +79,7 @@ class BackKeyShortcutsTest {
 
     @Test
     fun testBackKeyMetaShortcuts() {
-        UinputDevice.create(
-            instrumentation,
-            R.raw.test_keyboard_register,
-            InputDevice.SOURCE_KEYBOARD
-        ).use { keyboardDevice ->
+        UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
 
             for (scanCode in intArrayOf(KEY_ESC, KEY_BACKSPACE, KEY_LEFT)) {

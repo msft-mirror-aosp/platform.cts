@@ -34,6 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.jetpack.utils.TestFocusActivity;
 import android.server.wm.jetpack.utils.TestFocusPrimaryActivity;
@@ -66,6 +67,8 @@ import java.util.Collections;
 @RunWith(AndroidJUnit4.class)
 public class ActivityEmbeddingFocusTests extends ActivityEmbeddingTestBase {
 
+    private static final long WAIT_FOR_WINDOW_FOCUS_SETTLED_MS = 100;
+
     /**
      * Tests if the focus can move to the other adjacent window after sending proper tab keys.
      */
@@ -77,8 +80,6 @@ public class ActivityEmbeddingFocusTests extends ActivityEmbeddingTestBase {
         final Pair<TestFocusActivity, TestFocusActivity> activityPair = setupActivities();
         final TestFocusActivity primaryActivity = activityPair.first;
         final TestFocusActivity secondaryActivity = activityPair.second;
-
-        exitTouchMode(secondaryActivity);
 
         // Make sure the focus can go to primaryActivity.
         primaryActivity.resetFocusCounter();
@@ -110,8 +111,6 @@ public class ActivityEmbeddingFocusTests extends ActivityEmbeddingTestBase {
         final TestFocusActivity primaryActivity = activityPair.first;
         final TestFocusActivity secondaryActivity = activityPair.second;
 
-        exitTouchMode(secondaryActivity);
-
         // Make sure the focus can go to primaryActivity.
         primaryActivity.resetFocusCounter();
         for (int i = 0; i < secondaryActivity.getFocusableViewCount(); i++) {
@@ -142,8 +141,6 @@ public class ActivityEmbeddingFocusTests extends ActivityEmbeddingTestBase {
         final Pair<TestFocusActivity, TestFocusActivity> activityPair = setupActivities();
         final TestFocusActivity primaryActivity = activityPair.first;
         final TestFocusActivity secondaryActivity = activityPair.second;
-
-        exitTouchMode(secondaryActivity);
 
         // Make sure the focus can go to primaryActivity.
         primaryActivity.resetFocusCounter();
@@ -189,26 +186,37 @@ public class ActivityEmbeddingFocusTests extends ActivityEmbeddingTestBase {
         final TestFocusActivity secondaryActivity =
                 (TestFocusActivity) getResumedActivityById(secondaryActivityId);
         secondaryActivity.waitForFocus();
+        exitTouchMode(secondaryActivity);
+
+        getInstrumentation().runOnMainSync(() -> {
+            assertFalse("The window of primaryActivity must not be in touch mode.",
+                    primaryActivity.getWindow().getDecorView().isInTouchMode());
+            assertFalse("The window of secondaryActivity must not be in touch mode.",
+                    secondaryActivity.getWindow().getDecorView().isInTouchMode());
+
+            assertTrue("The target view in primaryActivity must be focused.",
+                    primaryActivity.resetFocusedView());
+            assertTrue("The target view in secondaryActivity must be focused.",
+                    secondaryActivity.resetFocusedView());
+        });
         return new Pair<>(primaryActivity, secondaryActivity);
     }
 
     private void exitTouchMode(@NonNull TestFocusActivity focusedActivity) {
         sendKey(KEYCODE_1);
-        waitForIdle();
-        assertEquals("The focused window must receive the key event.",
-                KEYCODE_1, focusedActivity.getLastKeyCode());
-        assertFalse("This focused window must not be in touch mode.",
-                focusedActivity.getWindow().getDecorView().isInTouchMode());
+        getInstrumentation().runOnMainSync(() -> assertEquals(
+                "The focused window must receive the key event.",
+                KEYCODE_1, focusedActivity.getLastKeyCode()));
     }
 
     private static void sendKey(int keyCode) {
-        getInstrumentation().sendKeySync(new KeyEvent(ACTION_DOWN, keyCode));
-        getInstrumentation().sendKeySync(new KeyEvent(ACTION_UP, keyCode));
+        sendKey(keyCode, 0 /* metaState */);
     }
 
     private static void sendKey(int keyCode, int metaState) {
         getInstrumentation().sendKeySync(new KeyEvent(0, 0, ACTION_DOWN, keyCode, 0, metaState));
         getInstrumentation().sendKeySync(new KeyEvent(0, 0, ACTION_UP, keyCode, 0, metaState));
+        SystemClock.sleep(WAIT_FOR_WINDOW_FOCUS_SETTLED_MS);
     }
 
 }

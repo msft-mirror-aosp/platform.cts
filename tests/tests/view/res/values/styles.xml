@@ -199,7 +199,6 @@
     <!--
         TODO(b/309578419): Make activities handle insets properly and then remove this.
     -->
-    <style name="OptOutEdgeToEdgeEnforcement">
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
-    </style>
+    <style name="OptOutEdgeToEdgeEnforcement" />
+    <style name="OptOutEdgeToEdgeEnforcement.NoActionBar" />
 </resources>

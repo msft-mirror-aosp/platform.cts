@@ -6,11 +6,14 @@ import android.content.pm.PackageManager
 import android.content.pm.UserInfo
 import android.os.SystemClock
 import android.os.UserManager
+import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsEnabled
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
 import org.junit.After
 import org.junit.Assert
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Test
 
@@ -38,6 +41,7 @@ class AppOpsMultiUserTest {
 
     @Before
     fun setUp() {
+        Assume.assumeTrue(UserManager.supportsMultipleUsers())
         SystemUtil.runWithShellPermissionIdentity {
             preExistingUsers.addAll(userManager.users)
         }
@@ -62,6 +66,7 @@ class AppOpsMultiUserTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED)
     fun testUninstallDoesntAffectOtherUsers() {
         installApkForAllUsers(APK)
 

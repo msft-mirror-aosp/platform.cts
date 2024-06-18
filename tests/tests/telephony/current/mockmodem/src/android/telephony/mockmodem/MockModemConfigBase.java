@@ -33,6 +33,7 @@ import android.hardware.radio.voice.CdmaSignalInfoRecord;
 import android.hardware.radio.voice.LastCallFailCauseInfo;
 import android.hardware.radio.voice.UusInfo;
 import android.os.AsyncResult;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -42,6 +43,7 @@ import android.telephony.mockmodem.MockSimService.SimAppData;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 public class MockModemConfigBase implements MockModemConfigInterface {
@@ -67,6 +69,8 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     static final int EVENT_CURRENT_CALLS_RESPONSE = 6;
     static final int EVENT_CALL_INCOMING = 7;
     static final int EVENT_RINGBACK_TONE = 8;
+    static final int EVENT_SET_SIMUL_CALLING_LOGICAL_SLOTS = 9;
+    static final int EVENT_SET_MAX_ACTIVE_VOICE_SUBS = 10;
 
     // ***** Modem config values
     private String mBasebandVersion = MockModemConfigInterface.DEFAULT_BASEBAND_VERSION;
@@ -78,6 +82,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     private int mRadioState = MockModemConfigInterface.DEFAULT_RADIO_STATE;
     private byte mNumOfLiveModem = MockModemConfigInterface.DEFAULT_NUM_OF_LIVE_MODEM;
     private PhoneCapability mPhoneCapability = new PhoneCapability();
+    private int[] mEnabledLogicalSlots;
 
     // ***** Sim config values
     private SimSlotStatus[] mSimSlotStatus;
@@ -96,7 +101,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     private RegistrantList mNumOfLiveModemChangedRegistrants = new RegistrantList();
     private RegistrantList mPhoneCapabilityChangedRegistrants = new RegistrantList();
     private RegistrantList mSimSlotStatusChangedRegistrants = new RegistrantList();
-
+    private RegistrantList mSimultaneousCallingSupportChangedRegistrants = new RegistrantList();
     // ***** IRadioModem RegistrantLists
     private RegistrantList mBasebandVersionChangedRegistrants = new RegistrantList();
     private RegistrantList[] mDeviceIdentityChangedRegistrants;
@@ -421,6 +426,11 @@ public class MockModemConfigBase implements MockModemConfigInterface {
                         mServiceStateChangedRegistrants[mLogicalSlotId].notifyRegistrants(
                                 new AsyncResult(null, msg.obj, null));
                         break;
+                    case EVENT_SET_SIMUL_CALLING_LOGICAL_SLOTS:
+                        Log.d(mTAG, "EVENT_SET_SIMUL_CALLING_LOGICAL_SLOTS");
+                        mSimultaneousCallingSupportChangedRegistrants.notifyRegistrants(
+                                new AsyncResult(null, msg.obj, null));
+                        break;
                     case EVENT_SET_SIM_INFO:
                         int simInfoType = msg.getData().getInt("setSimInfo:type", -1);
                         String[] simInfoData = msg.getData().getStringArray("setSimInfo:data");
@@ -567,6 +577,9 @@ public class MockModemConfigBase implements MockModemConfigInterface {
         phoneCapability.logicalModemIds =
                 new byte[MockModemConfigInterface.MAX_NUM_OF_LOGICAL_MODEM];
         phoneCapability.maxActiveData = MockModemConfigInterface.DEFAULT_MAX_ACTIVE_DATA;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            phoneCapability.maxActiveVoice = MockModemConfigInterface.DEFAULT_MAX_ACTIVE_VOICE;
+        }
         phoneCapability.maxActiveInternetData =
                 MockModemConfigInterface.DEFAULT_MAX_ACTIVE_INTERNAL_DATA;
         phoneCapability.isInternetLingeringSupported =
@@ -790,6 +803,8 @@ public class MockModemConfigBase implements MockModemConfigInterface {
                 new AsyncResult(null, mPhoneCapability, null));
         mSimSlotStatusChangedRegistrants.notifyRegistrants(
                 new AsyncResult(null, mSimSlotStatus, null));
+        mSimultaneousCallingSupportChangedRegistrants.notifyRegistrants(
+                new AsyncResult(null, mEnabledLogicalSlots, null));
 
         // IRadioModem
         mBasebandVersionChangedRegistrants.notifyRegistrants(
@@ -834,6 +849,17 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     @Override
     public void unregisterForPhoneCapabilityChanged(int logicalSlotId, Handler h) {
         mPhoneCapabilityChangedRegistrants.remove(h);
+    }
+
+    @Override
+    public void registerForSimultaneousCallingSupportStatusChanged(
+            int logicalSlotId, Handler h, int what, Object obj) {
+        mSimultaneousCallingSupportChangedRegistrants.addUnique(h, what, obj);
+    }
+
+    @Override
+    public void unregisterForSimultaneousCallingSupportStatusChanged(Handler h) {
+        mSimultaneousCallingSupportChangedRegistrants.remove(h);
     }
 
     @Override
@@ -1177,6 +1203,17 @@ public class MockModemConfigBase implements MockModemConfigInterface {
         }
 
         return result;
+    }
+
+    @Override
+    public void setSimulCallingEnabledLogicalSlots(int logicalSlotId, int[] enabledLogicalSlots,
+            String client) {
+        Log.d(mTAG, "setSimulCallingEnabledLogicalSlots["
+                + Arrays.toString(enabledLogicalSlots) + "] from: " + client);
+
+        Message msg = mHandler[logicalSlotId].obtainMessage(EVENT_SET_SIMUL_CALLING_LOGICAL_SLOTS,
+                enabledLogicalSlots);
+        mHandler[logicalSlotId].sendMessage(msg);
     }
 
     @Override

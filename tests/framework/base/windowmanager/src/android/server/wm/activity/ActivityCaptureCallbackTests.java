@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Ensure Activity screencapture callback is invoked as expected.
  *
- * <p>Build/Install/Run: atest CtsWindowManagerDeviceWindow:ActivityCaptureCallbackTests
+ * <p>Build/Install/Run: atest CtsWindowManagerDeviceActivity:ActivityCaptureCallbackTests
  */
 @Presubmit
 @ApiTest(apis = {"android.app.Activity#registerScreenCaptureCallback",

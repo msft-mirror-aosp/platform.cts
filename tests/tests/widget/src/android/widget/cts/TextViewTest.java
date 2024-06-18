@@ -21,6 +21,7 @@ import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK
 import static com.android.text.flags.Flags.FLAG_DEPRECATE_UI_FONTS;
 import static com.android.text.flags.Flags.FLAG_LETTER_SPACING_JUSTIFICATION;
 import static com.android.text.flags.Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE;
+import static com.android.text.flags.Flags.FLAG_FIX_NULL_TYPEFACE_BOLDING;
 import static com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -52,6 +53,7 @@ import static org.mockito.Mockito.when;
 
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.Instrumentation.ActivityMonitor;
@@ -171,6 +173,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CtsKeyEventUtil;
 import com.android.compatibility.common.util.CtsTouchUtils;
@@ -223,7 +226,13 @@ public class TextViewTest {
 
     private CharSequence mTransformedText;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<TextViewCtsActivity> mActivityRule =
             new ActivityTestRule<>(TextViewCtsActivity.class);
 
@@ -346,6 +355,27 @@ public class TextViewTest {
         mActivityRule.runOnUiThread(() -> mTextView.setKeyListener(qwertyKeyListener));
         mInstrumentation.waitForIdleSync();
         assertSame(qwertyKeyListener, mTextView.getKeyListener());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_FIX_NULL_TYPEFACE_BOLDING)
+    public void testFontWeightAdjustment_forceBoldTextEnabled_typefaceNull_textIsBolded()
+            throws Throwable {
+        mActivityRule.runOnUiThread(() -> mTextView = findTextView(R.id.textview_text));
+        final int defaultFontWeight = mTextView.getTypeface().getWeight();
+        mInstrumentation.waitForIdleSync();
+        mActivityRule.runOnUiThread(() -> mTextView.setTypeface(null));
+        mInstrumentation.waitForIdleSync();
+
+        Configuration cf = new Configuration();
+        final int fontWeightAdjustment = FontStyle.FONT_WEIGHT_BOLD - defaultFontWeight;
+        cf.fontWeightAdjustment =
+                fontWeightAdjustment <= 0 ? FontStyle.FONT_WEIGHT_MAX : fontWeightAdjustment;
+        mActivityRule.runOnUiThread(() -> mTextView.dispatchConfigurationChanged(cf));
+        mInstrumentation.waitForIdleSync();
+
+        Typeface forceBoldedPaintTf = mTextView.getPaint().getTypeface();
+        assertEquals(Typeface.DEFAULT_BOLD, forceBoldedPaintTf);
     }
 
     @Test
@@ -9478,6 +9508,21 @@ public class TextViewTest {
 
         textView.measure(wMeasureSpec, hMeasureSpec);
         assertEquals(measuredWidth, textView.getMeasuredWidth());
+    }
+
+    @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH)
+    @Test
+    public void setGetShiftDrawingOffsetForStartOverhang() {
+        TextView textView = new TextView(mActivity);
+
+        // false by default
+        assertFalse(textView.getShiftDrawingOffsetForStartOverhang());
+
+        textView.setShiftDrawingOffsetForStartOverhang(true);
+        assertTrue(textView.getShiftDrawingOffsetForStartOverhang());
+
+        textView.setShiftDrawingOffsetForStartOverhang(false);
+        assertFalse(textView.getShiftDrawingOffsetForStartOverhang());
     }
 
     private static boolean isExpectedChangeType(AccessibilityEvent event, int changeType) {

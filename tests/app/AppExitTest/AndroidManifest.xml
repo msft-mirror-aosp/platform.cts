@@ -22,6 +22,7 @@
     <uses-permission android:name="android.permission.READ_LOGS"/>
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission android:name="android.permission.READ_DROPBOX_DATA" />
 
     <application android:usesCleartextTraffic="true">
         <uses-library android:name="android.test.runner" />

@@ -35,9 +35,9 @@ import com.android.activitycontext.ActivityContext;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.policies.KeyManagement;
 import com.android.bedstead.harrier.policies.KeyManagementWithAdminReceiver;
 import com.android.bedstead.harrier.policies.KeySelection;
@@ -45,7 +45,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.certificates.Certificates;
 import com.android.bedstead.nene.packages.ProcessReference;
 import com.android.bedstead.nene.utils.Poll;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.compatibility.common.util.BlockingCallback;
 import com.android.compatibility.common.util.FakeKeys;
 
@@ -55,19 +55,12 @@ import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.testng.Assert;
 
-import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -86,8 +79,7 @@ public final class KeyManagementTest {
     private static final String RSA = "RSA";
     private static final String RSA_ALIAS = "com.android.test.valid-rsa-key-1";
     private static final PrivateKey PRIVATE_KEY =
-            TestApis.certificates().generatePrivateKey(FakeKeys.FAKE_RSA_1.privateKey,
-                    Certificates.KeyAlgorithmType.RSA);
+            TestApis.certificates().generateRSAPrivateKey(FakeKeys.FAKE_RSA_1.privateKey);
     private static final Certificate CERTIFICATE =
             TestApis.certificates().generateCertificate(FakeKeys.FAKE_RSA_1.caCertificate);
     private static final Certificate[] CERTIFICATES = new Certificate[]{CERTIFICATE};

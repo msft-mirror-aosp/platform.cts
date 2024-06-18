@@ -16,6 +16,9 @@
 
 package android.credentials.cts;
 
+import static android.credentials.cts.testcore.CtsCredentialManagerUtils.DEVICE_CONFIG_ENABLE_CREDENTIAL_MANAGER;
+import static android.credentials.cts.testcore.CtsCredentialManagerUtils.enableCredentialManagerDeviceConfigFlag;
+import static android.credentials.cts.testcore.CtsCredentialManagerUtils.isWatch;
 import static android.credentials.flags.Flags.FLAG_SETTINGS_ACTIVITY_ENABLED;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -31,9 +34,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.credentials.ClearCredentialStateException;
 import android.credentials.ClearCredentialStateRequest;
 import android.credentials.CreateCredentialException;
@@ -58,23 +59,21 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
-import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.os.BuildCompat;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.android.compatibility.common.util.DeviceConfigStateManager;
 import com.android.compatibility.common.util.RequiredFeatureRule;
 import com.android.compatibility.common.util.Timeout;
 import com.android.compatibility.common.util.UserSettings;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -111,42 +110,38 @@ public class CtsCredentialProviderServiceDeviceTest {
     private static final String CREDENTIAL_SERVICE_PRIMARY = "credential_service_primary";
     private static final Timeout CONNECTION_TIMEOUT =
             new Timeout("CONNECTION_TIMEOUT", 1500, 2F, 1500);
-    private static final UserHandle USER_ID_HANDLE = UserHandle.getUserHandleForUid(USER_ID);
-    private static final int TEMPORARY_SERVICE_DURATION = 10000;
-    public static final String DEVICE_CONFIG_ENABLE_CREDENTIAL_MANAGER =
-            "enable_credential_manager";
     private static final String NOOP_SERVICE =
             "android.credentials.cts/android.credentials.cts.CtsNoOpCredentialProviderService";
     private static final String NOOP_SERVICE_ALT =
             "android.credentials.cts/android.credentials.cts.CtsNoOpCredentialProviderAltService";
     private static final String NOOP_SERVICE_SYSTEM =
             "android.credentials.cts/android.credentials.cts.CtsNoOpCredentialProviderSysService";
-    private static final List<String> CREDENTIAL_TYPES =
-            Arrays.asList(PASSKEY_CREDENTIAL_TYPE, PASSWORD_CREDENTIAL_TYPE);
     private static final List<String> PASSKEY_CREDENTIAL_TYPE_LIST =
             Arrays.asList(PASSKEY_CREDENTIAL_TYPE);
     private static final List<String> PASSWORD_CREDENTIAL_TYPE_LIST =
             Arrays.asList(PASSWORD_CREDENTIAL_TYPE);
-    private static final String PROVIDER_LABEL = "Test Provider Service";
-    private static final String PROVIDER_LABEL_ALT = "Test Provider Service Alternate";
-    private static final String PROVIDER_LABEL_SYSTEM = "Test Provider Service System";
-    private static final String PRIMARY_SETTINGS_INTENT = "android.settings.CREDENTIAL_PROVIDER";
-    private static final String SECONDARY_SETTINGS_INTENT = "android.settings.SYNC_SETTINGS";
-    private static final String CLASS_NAME = "android.credentials.cts.CtsNoOpCredentialProviderService";
+    private static final String CLASS_NAME =
+            "android.credentials.cts.CtsNoOpCredentialProviderService";
 
     private CredentialManager mCredentialManager;
     private final Context mContext = getInstrumentation().getContext();
     private final UserSettings mUserSettings = new UserSettings(mContext);
 
-    @Rule
-    public ActivityScenarioRule mActivityScenarioRule =
-            new ActivityScenarioRule(TestCredentialActivity.class);
+    // Checks annoted flags for each test, and skips test if flag is not enabled/disabled
+    @Rule(order = 0)
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    // Sets up the feature flag rule and the device flag rule
+
+    // Assumption fails, and all tests skipped if the credential manager feature
+    // is not found on the device
     @Rule
     public final RequiredFeatureRule mRequiredFeatureRule =
             new RequiredFeatureRule(PackageManager.FEATURE_CREDENTIALS);
 
+
+    // Assumption fails, and test skipped if flag is not enabled. This Rule is
+    // run before every test. This should never fail because we force enabled
+    // it in setup
     @Rule
     public final DeviceConfigStateRequiredRule mDeviceConfigStateRequiredRule =
             new DeviceConfigStateRequiredRule(
@@ -155,27 +150,40 @@ public class CtsCredentialProviderServiceDeviceTest {
                     mContext,
                     "true");
 
+    // Launches an activity before every test, and cleans it up after every test
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    public ActivityScenarioRule mActivityScenarioRule =
+            new ActivityScenarioRule(TestCredentialActivity.class);
 
-    @Before
-    public void setUp() {
-        assumeFalse("Skipping test: Wear does not support CredentialManager yet", isWatch());
-        Log.i(TAG, "Enabling service from scratch for " + CTS_SERVICE_NAME);
-        Log.i(TAG, "Enabling CredentialManager flags as well...");
-        enableCredentialManagerDeviceFeature(mContext);
-        mCredentialManager = mContext.getSystemService(CredentialManager.class);
-        assertThat(mCredentialManager).isNotNull();
+    @BeforeClass
+    public static void setUpClass() {
+        Log.i(TAG, "Skipping all tests in the file if we are not on the right SDK level...");
         assumeTrue("VERSION.SDK_INT=" + VERSION.SDK_INT, BuildCompat.isAtLeastU());
+    }
+
+    // To be run before every test
+    @Before
+    public void setUpTest() {
+        Log.i(TAG, "Skipping all tests in the file if we are not on the right device type...");
+        assumeFalse("Skipping tests: Wear does not "
+                + "support CredentialManager yet", isWatch(mContext));
         assumeFalse("Skipping test: Auto does not support CredentialManager yet",
                 CtsCredentialManagerUtils.isAuto(mContext));
+
+        Log.i(TAG, "Enabling CredentialManager flags as well...");
+        enableCredentialManagerDeviceConfigFlag(mContext);
+
+        mCredentialManager = mContext.getSystemService(CredentialManager.class);
+
+        Log.i(TAG, "For all tests, enabling service from scratch for " + CTS_SERVICE_NAME);
         clearAllTestCredentialProviderServices();
         bindToTestService();
     }
 
+    // To be run once after all the tests are done
     @After
     public void tearDown() {
-        Log.i(TAG, "Disabling credman services and device feature flag");
+        Log.i(TAG, "Disabling credman services");
         clearAllTestCredentialProviderServices();
     }
 
@@ -772,43 +780,6 @@ public class CtsCredentialProviderServiceDeviceTest {
         assertThat(mCredentialManager.isEnabledCredentialProviderService(testService)).isFalse();
     }
 
-    /**
-     * Enable the main credential manager feature. If this is off, any underlying changes for
-     * autofill-credentialManager integrations are off.
-     */
-    public static void enableCredentialManagerDeviceFeature(@NonNull Context context) {
-        setCredentialManagerFeature(context, true);
-    }
-
-    public static void disableCredentialManagerDeviceFeature(@NonNull Context context) {
-        setCredentialManagerFeature(context, false);
-    }
-
-    /** Enable Credential Manager related autofill changes */
-    public static void setCredentialManagerFeature(@NonNull Context context, boolean enabled) {
-        setDeviceConfig(context, DEVICE_CONFIG_ENABLE_CREDENTIAL_MANAGER, enabled);
-    }
-
-    /** Set device config to set flag values. */
-    public static void setDeviceConfig(
-            @NonNull Context context, @NonNull String feature, boolean value) {
-        DeviceConfigStateManager deviceConfigStateManager =
-                new DeviceConfigStateManager(context, DeviceConfig.NAMESPACE_CREDENTIAL, feature);
-        setDeviceConfig(deviceConfigStateManager, String.valueOf(value));
-    }
-
-    /** Set device config. */
-    public static void setDeviceConfig(
-            @NonNull DeviceConfigStateManager deviceConfigStateManager, @Nullable String value) {
-        final String previousValue = deviceConfigStateManager.get();
-        if (TextUtils.isEmpty(value) && TextUtils.isEmpty(previousValue)
-                || TextUtils.equals(previousValue, value)) {
-            Log.v(TAG, "No changed in config: " + deviceConfigStateManager);
-            return;
-        }
-        deviceConfigStateManager.set(value);
-    }
-
     private void bindToTestService() {
         // On Manager, bind to test service
         setTestableCredentialProviderService(CTS_SERVICE_NAME);
@@ -902,23 +873,5 @@ public class CtsCredentialProviderServiceDeviceTest {
         services.remove(service);
         String originalString = String.join(";", services);
         mUserSettings.set(CREDENTIAL_SERVICE, originalString);
-    }
-
-    /**
-     * Assert target intent can be handled by at least one Activity.
-     *
-     * @param intent - the Intent will be handled.
-     */
-    private void assertCanBeHandled(final Intent intent) {
-        PackageManager packageManager = mContext.getPackageManager();
-        List<ResolveInfo> resolveInfoList = packageManager.queryIntentActivities(intent, 0);
-        assertThat(resolveInfoList).isNotNull();
-        // one or more activity can handle this intent.
-        assertTrue(resolveInfoList.size() > 0);
-    }
-
-    private boolean isWatch() {
-        PackageManager pm = mContext.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 }

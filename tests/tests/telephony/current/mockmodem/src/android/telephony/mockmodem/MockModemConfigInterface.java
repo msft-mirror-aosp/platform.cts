@@ -56,6 +56,7 @@ public interface MockModemConfigInterface {
     int DEFAULT_RADIO_STATE = RADIO_STATE_UNAVAILABLE;
     int DEFAULT_NUM_OF_LIVE_MODEM = 1; // Should <= MAX_NUM_OF_MODEM
     int DEFAULT_MAX_ACTIVE_DATA = 2;
+    int DEFAULT_MAX_ACTIVE_VOICE = 2;
     int DEFAULT_MAX_ACTIVE_INTERNAL_DATA = 1;
     boolean DEFAULT_IS_INTERNAL_LINGERING_SUPPORTED = false;
     int DEFAULT_LOGICAL_MODEM1_ID = 0;
@@ -80,6 +81,12 @@ public interface MockModemConfigInterface {
     void registerForPhoneCapabilityChanged(int logicalSlotId, Handler h, int what, Object obj);
 
     void unregisterForPhoneCapabilityChanged(int logicalSlotId, Handler h);
+
+    /** Register/unregister notification handler for simultaneous calling support status changed */
+    void registerForSimultaneousCallingSupportStatusChanged(int logicalSlotId, Handler h, int what,
+            Object obj);
+
+    void unregisterForSimultaneousCallingSupportStatusChanged(Handler h);
 
     /** Register/unregister notification handler for sim slot status changed */
     void registerForSimSlotStatusChanged(int logicalSlotId, Handler h, int what, Object obj);
@@ -323,6 +330,16 @@ public interface MockModemConfigInterface {
      * @return boolean true if the operation succeeds.
      */
     boolean changeSimProfile(int logicalSlotId, int simProfileId, String client);
+
+    /**
+     * Sets the logical slots enabled for simultaneous calling for the provided logical slotId
+     *
+     * @param logicalSlotId the Id of logical sim slot.
+     * @param enabledLogicalSlots the phone slot Id's that support simultaneous cellular calling.
+     * @param client for tracking calling client.
+     */
+    void setSimulCallingEnabledLogicalSlots(int logicalSlotId, int[] enabledLogicalSlots,
+            String client);
 
     /**
      * Modify SIM info of the SIM such as MCC/MNC, IMSI, etc.

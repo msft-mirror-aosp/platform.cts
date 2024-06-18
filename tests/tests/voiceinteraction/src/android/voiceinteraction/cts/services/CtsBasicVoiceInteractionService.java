@@ -20,7 +20,6 @@ import static android.Manifest.permission.BIND_HOTWORD_DETECTION_SERVICE;
 import static android.Manifest.permission.BIND_VISUAL_QUERY_DETECTION_SERVICE;
 import static android.Manifest.permission.CAPTURE_AUDIO_HOTWORD;
 import static android.Manifest.permission.MANAGE_HOTWORD_DETECTION;
-import static android.Manifest.permission.RECEIVE_SANDBOX_TRIGGER_AUDIO;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.voiceinteraction.cts.testcore.Helper.WAIT_EXPECTED_NO_CALL_TIMEOUT_IN_MS;
 import static android.voiceinteraction.cts.testcore.Helper.WAIT_LONG_TIMEOUT_IN_MS;
@@ -33,7 +32,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.PersistableBundle;
-import android.permission.flags.Flags;
 import android.service.voice.AlwaysOnHotwordDetector;
 import android.service.voice.HotwordDetectionService;
 import android.service.voice.HotwordDetectionServiceFailure;
@@ -688,6 +686,9 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
 
                 private byte[] accumulateAccessibilityStreamedData(byte[] streamedData,
                         byte[] newData) {
+                    if (newData == null) {
+                        return streamedData;
+                    }
                     byte[] newStreamedData = new byte[streamedData.length + newData.length];
                     System.arraycopy(streamedData, 0, newStreamedData, 0,
                             streamedData.length);
@@ -1051,30 +1052,14 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
         return !result;
     }
 
-    public void setVoiceActivationPermissionEnabled(boolean val) {
-        mVoiceActivationPermissionEnabled = val;
-    }
-
     /**
-     * Creates always on hotword detector, appending RECEIVE_SANDBOX_TRIGGER_AUDIO permission to
-     * requested permissions when the relevant flag is enabled.
-     *
-     * <p> <b>Context:</b>  A new permission (RECEIVE_SANDBOX_TRIGGER_AUDIO) has been added to
-     * guard creating trusted hotword detectors. This permission guard is only enabled when
-     * {@link Flags.FLAG_VOICE_ACTIVATION_PERMISSION_APIS} is enabled.
+     * Creates always on hotword detector.
      *
      */
-    // TODO(b/305787465): Remove this method and request RECEIVE_SANDBOX_TRIGGER_AUDIO at the r
-    //  elevant locations once flag has been fully ramped up.
     private AlwaysOnHotwordDetector callCreateAlwaysOnHotwordDetectorWithNecessaryPerm(
             AlwaysOnHotwordDetector.Callback callback, boolean useExecutor,
             @Nullable PersistableBundle options, String... permissions) {
         List<String> requestedPermissions = new ArrayList<String>(Arrays.asList(permissions));
-
-        if (mVoiceActivationPermissionEnabled) {
-            Log.i(TAG, "Requesting voice activation permissions!");
-            requestedPermissions.add(RECEIVE_SANDBOX_TRIGGER_AUDIO);
-        }
 
         try {
             return callWithShellPermissionIdentity(() ->
@@ -1086,25 +1071,13 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
     }
 
     /**
-     * Creates software hotword detector, appending RECEIVE_SANDBOX_TRIGGER_AUDIO permission to
-     * requested permissions when the relevant flag is enabled.
-     *
-     * <p> <b>Context:</b>  A new permission (RECEIVE_SANDBOX_TRIGGER_AUDIO) has been added to
-     * guard creating trusted hotword detectors. This permission guard is only enabled when
-     *  {@link Flags.FLAG_VOICE_ACTIVATION_PERMISSION_APIS} is enabled.
+     * Creates software hotword detector.
      *
      */
-    // TODO(b/305787465): Remove this method and request RECEIVE_SANDBOX_TRIGGER_AUDIO at the r
-    //  elevant locations once flag has been fully ramped up.
     private HotwordDetector callCreateSoftwareDetectorWithNecessaryPerm(
             HotwordDetector.Callback callback, boolean useExecutor,
             @Nullable PersistableBundle options, String... permissions) {
         List<String> requestedPermissions = new ArrayList<String>(Arrays.asList(permissions));
-
-        if (mVoiceActivationPermissionEnabled) {
-            Log.i(TAG, "Requesting voice activation permissions!");
-            requestedPermissions.add(RECEIVE_SANDBOX_TRIGGER_AUDIO);
-        }
 
         try {
             return callWithShellPermissionIdentity(() ->

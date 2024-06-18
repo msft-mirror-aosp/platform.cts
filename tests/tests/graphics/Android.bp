@@ -43,6 +43,9 @@ android_test {
         "com.android.text.flags-aconfig-java",
         "com.android.window.flags.window-aconfig-java",
         "hwui_flags_java_lib",
+        "libmonet",
+        "android.view.flags-aconfig-java",
+        "ravenwood-junit",
     ],
     jni_libs: ["libctsgraphics_jni"],
     srcs: [
@@ -64,13 +67,20 @@ android_ravenwood_test {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "junit-params",
     ],
     srcs: [
+        "src/android/graphics/cts/ColorTest.java",
+        "src/android/graphics/cts/ColorSpaceTest.java",
         "src/android/graphics/cts/InsetsTest.java",
-        "src/android/graphics/cts/PointTest.java",
+        "src/android/graphics/cts/InterpolatorTest.java",
+        "src/android/graphics/cts/MatrixTest.java",
+        "src/android/graphics/cts/PathTest.java",
         "src/android/graphics/cts/PointFTest.java",
-        "src/android/graphics/cts/RectTest.java",
+        "src/android/graphics/cts/PointTest.java",
         "src/android/graphics/cts/RectFTest.java",
+        "src/android/graphics/cts/RectTest.java",
     ],
     auto_gen_config: true,
 }

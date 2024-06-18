@@ -25,6 +25,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
@@ -94,7 +95,9 @@ public class CarTaskViewControllerTest {
     public void setUp() {
         Car car = Car.createCar(mContext);
         mUiAutomation.adoptShellPermissionIdentity(
-                Car.PERMISSION_MANAGE_CAR_SYSTEM_UI /* for CAM.getCarTaskViewController */);
+                // for CAM.getCarTaskViewController
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Car.PERMISSION_MANAGE_CAR_SYSTEM_UI);
 
         mCarActivityManager =
                 (CarActivityManager) car.getCarManager(Car.CAR_ACTIVITY_SERVICE);
@@ -547,6 +550,10 @@ public class CarTaskViewControllerTest {
 
         @Override
         public void onTaskInfoChanged(@NonNull ActivityManager.RunningTaskInfo taskInfo) {
+            if (mCurrentTask == null && mNumTimesOnTaskVanished > 0) {
+                // The task is already vanished, skip handling it at all
+                return;
+            }
             mCurrentTask = taskInfo;
         }
 

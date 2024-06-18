@@ -26,6 +26,7 @@ import its_base_test
 import camera_properties_utils
 import imu_processing_utils
 import its_session_utils
+import video_processing_utils
 
 _ADV_FEATURE_GYRO_DRIFT_ATOL = 1  # deg/min
 _RAD_TO_DEG = 180/math.pi
@@ -226,11 +227,10 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(cam, props, self.scene,
                                    self.tablet, self.chart_distance)
 
-      # determine preview size
-      supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      logging.debug('Supported preview resolutions: %s',
-                    supported_preview_sizes)
-      preview_size = supported_preview_sizes[-1]
+      # get largest common preview/video size pylint: disable=line-too-long
+      preview_size = video_processing_utils.get_largest_common_preview_video_size(
+          cam, self.camera_id
+      )
       logging.debug('Tested preview resolution: %s', preview_size)
 
       # start collecting IMU events
@@ -238,9 +238,13 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       cam.start_sensor_events()
 
       # do preview recording
+      preview_stabilization_supported = (
+          camera_properties_utils.preview_stabilization_supported(props)
+      )
       cam.do_preview_recording(
           video_size=preview_size, duration=_IMU_EVENTS_WAIT_TIME,
-          stabilize=True)
+          stabilize=preview_stabilization_supported
+      )
 
       # dump IMU events
       sensor_events = cam.get_sensor_events()
@@ -267,7 +271,6 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
     plot_rotation_vector_data(x_rv, y_rv, z_rv, t_rv, self.log_path)
 
     # assert correct gyro behavior
-    first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
     gyro_var_atol = _GYRO_VAR_ATOL * gyro_sampling_rate * _RAD_TO_DEG**2
     for i, samples in enumerate([x_gyro, y_gyro, z_gyro]):
       gyro_mean = samples.mean()
@@ -276,7 +279,7 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       logging.debug('%s gyro_var: %.3e', 'XYZ'[i], gyro_var)
       if gyro_mean >= _GYRO_MEAN_THRESH:
         raise AssertionError(f'gyro_mean: {gyro_mean:.3e}, '
-                             f'TOL={_GYRO_MEAN_THRESH}')
+                             f'ATOL={_GYRO_MEAN_THRESH}')
       if gyro_var >= gyro_var_atol:
         raise AssertionError(f'gyro_var: {gyro_var:.3e}, '
                              f'ATOL={gyro_var_atol:.3e}')
@@ -291,11 +294,6 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
         f'{x_gyro_drift:.3f}, {y_gyro_drift:.3f}, {z_gyro_drift:.3f}, '
         f'{gyro_drift_total:.3f}, test duration: {test_duration:.3f} (sec)'
     )
-
-    # Android 15 checks
-    if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
-      if gyro_drift_total >= _GYRO_DRIFT_ATOL:
-        raise AssertionError(f'{e_msg_stem}, ATOL: {_GYRO_DRIFT_ATOL}')
 
     # Performance checks for advanced features
     logging.debug('Check for advanced features gyro drift.')

@@ -19,6 +19,7 @@ package {
 
 android_test {
     name: "CtsDevicePolicySimTestCases",
+    team: "trendy_team_enterprise",
     defaults: ["cts_defaults"],
     min_sdk_version: "29",
     target_sdk_version: "29",

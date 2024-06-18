@@ -24,62 +24,102 @@ import static org.junit.Assume.assumeFalse;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.BySelector;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
-import android.support.test.uiautomator.UiObjectNotFoundException;
-import android.support.test.uiautomator.UiScrollable;
-import android.support.test.uiautomator.UiSelector;
-import android.support.test.uiautomator.Until;
+import android.os.UserManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.widget.Switch;
 
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.Condition;
+import androidx.test.uiautomator.Direction;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.Until;
 
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.CddTest;
+import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+
 @RunWith(AndroidJUnit4.class)
 public class AutoPrivacySettingsTest {
-    private static final int TIMEOUT_MS = 2000;
+    private static final int TIMEOUT_MS = 10000;
     private static final String ACTION_SETTINGS = "android.settings.SETTINGS";
     private static final String PRIVACY = "Privacy";
     private static final String MICROPHONE = "Microphone";
     private static final String USE_MICROPHONE = "Use microphone";
+    private static final String MICROPHONE_ACCESS = "Microphone access";
     private static final String[] EXPECTED_MICROPHONE_ENABLED_SETTINGS = {
             USE_MICROPHONE, "Recently accessed", "Manage microphone permissions"};
+    private static final String[] EXPECTED_MICROPHONE_ENABLED_SETTINGS_V2 = {
+            MICROPHONE_ACCESS, "Recently accessed", "Manage microphone permissions"};
 
     // For the camera privacy setting test
     private static final String CAMERA = "Camera";
 
+    private static final String CAMERA_ACCESS = "Camera access";
+    private static final String INFOTAINMENT_APPS = "Infotainment apps";
     private static final String USE_CAMERA = "Use camera";
-    private static final String[] EXPECTED_CAMERA_ENABLED_SETTINGS = {
+    private static final String[] EXPECTED_CAMERA_ENABLED_ITEMS_V1 = {
             USE_CAMERA, "Recently accessed", "Manage camera permissions"};
+    private static final String[] EXPECTED_CAMERA_ENABLED_ITEMS_V2 = {
+            CAMERA_ACCESS, "Recently accessed", "Manage camera permissions"};
 
     // To support dual panes in AAOS S
     private static final int MAX_NUM_SCROLLABLES = 2;
 
     private final Context mContext = InstrumentationRegistry.getContext();
     private final UiDevice mDevice = UiDevice.getInstance(getInstrumentation());
+    private int mDisplayId;
+
+    private Condition mSearchCondition = new Condition<UiDevice, Boolean>() {
+
+        @Override
+        public Boolean apply(UiDevice device) {
+            return device.findObjects(By.clazz(RecyclerView.class)).size() > 1;
+        }
+    };
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
 
     @Before
     public void setUp() {
         assumeFalse("Skipping test: Requirements only apply to Auto",
                 !mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+        UserManager userManager = mContext.getSystemService(UserManager.class);
+        mDisplayId = userManager.getMainDisplayIdAssignedToUser();
     }
 
     /**
-     * MUST provide a user affordance to do microphone toggle in the following location:Settings
-     * > Privacy.
+     * MUST provide a user affordance to do microphone toggle in the following location:Settings >
+     * Privacy.
+     *
+     * This test is not enabled on visible background users.
      */
     @CddTest(requirement = "9.8.2/A-1-3")
     @Test
+    @RequiresFlagsEnabled(com.android.car.settings.Flags.FLAG_MICROPHONE_PRIVACY_UPDATES)
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     public void testPrivacyMicrophoneSettings() throws Exception {
+        PackageManager pm = mContext.getPackageManager();
+        if (!pm.hasSystemFeature(PackageManager.FEATURE_MICROPHONE)) {
+            // Skip this test if the system does not have a microphone.
+            return;
+        }
         goHome();
 
         launchActionSettings();
@@ -95,8 +135,18 @@ public class AutoPrivacySettingsTest {
 
         // verify state when mic is enabled
         disableCameraMicPrivacy();
-        for (String setting : EXPECTED_MICROPHONE_ENABLED_SETTINGS) {
-            assertScrollToAndFind(setting);
+        if (SdkLevel.isAtLeastV()) {
+            for (String setting : EXPECTED_MICROPHONE_ENABLED_SETTINGS_V2) {
+                assertScrollToAndFind(setting);
+            }
+            UiObject2 micAccessObj = scrollToText(MICROPHONE_ACCESS);
+            micAccessObj.click();
+            mDevice.waitForIdle();
+            assertScrollToAndFind(INFOTAINMENT_APPS);
+        } else {
+            for (String setting : EXPECTED_MICROPHONE_ENABLED_SETTINGS) {
+                assertScrollToAndFind(setting);
+            }
         }
 
         goHome();
@@ -105,10 +155,18 @@ public class AutoPrivacySettingsTest {
     /**
      * MUST provide a user affordance to do camera toggle in the following location:Settings >
      * Privacy.
+     *
+     * This test is not enabled on visible background users
      */
     @CddTest(requirement = "9.8.2/A-2-3")
     @Test
+    @RequiresFlagsEnabled(com.android.internal.camera.flags.Flags.FLAG_CAMERA_PRIVACY_ALLOWLIST)
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     public void testPrivacyCameraSettings() throws Exception {
+        assumeFalse(
+                "Skipping test: Enabling/Disabling Camera is not supported in Wear",
+                SettingsTestUtils.isWatch());
+
         PackageManager pm = mContext.getPackageManager();
         if (!pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
             // Skip this test if the system does not have a camera.
@@ -130,10 +188,19 @@ public class AutoPrivacySettingsTest {
 
         // verify state when camera is enabled
         disableCameraMicPrivacy();
-        for (String setting : EXPECTED_CAMERA_ENABLED_SETTINGS) {
-            assertScrollToAndFind(setting);
+        if (SdkLevel.isAtLeastV()) {
+            for (String item : EXPECTED_CAMERA_ENABLED_ITEMS_V2) {
+                assertScrollToAndFind(item);
+            }
+            UiObject2 camAccessObj = scrollToText(CAMERA_ACCESS);
+            camAccessObj.click();
+            mDevice.waitForIdle();
+            assertScrollToAndFind(INFOTAINMENT_APPS);
+        } else {
+            for (String item : EXPECTED_CAMERA_ENABLED_ITEMS_V1) {
+                assertScrollToAndFind(item);
+            }
         }
-
         goHome();
     }
 
@@ -141,7 +208,7 @@ public class AutoPrivacySettingsTest {
      * Find the specified text.
      */
     private UiObject2 assertFind(String text) {
-        UiObject2 obj = mDevice.findObject(By.text(text));
+        UiObject2 obj = mDevice.findObject(By.text(text).displayId(mDisplayId));
         assertNotNull("Failed to find '" + text + "'.", obj);
         return obj;
     }
@@ -160,19 +227,18 @@ public class AutoPrivacySettingsTest {
     @Nullable
     private UiObject2 scrollToText(String text) {
         UiObject2 foundObject = null;
-        // Iterate through multiple scrollables.
-        for (int i = 0; i < MAX_NUM_SCROLLABLES; i++) {
-            UiScrollable scrollable = new UiScrollable(
-                    new UiSelector().scrollable(true).instance(i));
-            scrollable.setMaxSearchSwipes(10);
-            try {
-                scrollable.scrollTextIntoView(text);
-            } catch (UiObjectNotFoundException e) {
-                // Ignore the exception if there's no scroll bar.
-            }
-            foundObject = mDevice.findObject(By.text(text));
+        // RecyclerViews take longer to load and aren't found even after waiting for idle
+        mDevice.wait(mSearchCondition, TIMEOUT_MS);
+        // Car-ui-lib replaces settings recyclerviews dynamically so cannot find by resource
+        List<UiObject2> recyclerViews =
+                mDevice.findObjects(By.clazz(RecyclerView.class).displayId(mDisplayId));
+        for (UiObject2 recyclerView : recyclerViews) {
+            // Make sure reclerview starts at the top
+            recyclerView.scroll(Direction.UP, 1);
+            recyclerView.scrollUntil(Direction.DOWN, Until.findObject(By.textContains(text)));
+            foundObject = mDevice.findObject(By.text(text).displayId(mDisplayId));
             if (foundObject != null) {
-                // No need to look at other scrollables.
+                // No need to look at other recyclerviews.
                 break;
             }
         }
@@ -188,14 +254,20 @@ public class AutoPrivacySettingsTest {
     private void launchActionSettings() {
         final Intent intent = new Intent(ACTION_SETTINGS);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        mContext.startActivity(intent);
+        mContext.startActivityAsUser(intent, mContext.getUser());
+        // wait for settings UI to come into focus, test is auto specific
+        mDevice.wait(
+            Until.hasObject(
+                By.res("com.android.car.settings:id/car_settings_activity_wrapper")
+                .focused(true)),
+              10000L);
     }
 
     private void goHome() {
         final Intent home = new Intent(Intent.ACTION_MAIN);
         home.addCategory(Intent.CATEGORY_HOME);
         home.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(home);
+        mContext.startActivityAsUser(home, mContext.getUser());
         mDevice.waitForIdle();
     }
 

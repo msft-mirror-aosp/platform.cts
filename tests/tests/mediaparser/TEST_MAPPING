@@ -4,6 +4,11 @@
       "name": "CtsMediaParserTestCases[com.google.android.media.apex]"
     }
   ],
+  "media-mainline-presubmit": [
+    {
+      "name": "CtsMediaParserTestCases"
+    }
+  ],
   "presubmit": [
     {
       "name": "CtsMediaParserTestCases"

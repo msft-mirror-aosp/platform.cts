@@ -20,14 +20,14 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.ComponentReference;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.eventlib.events.activities.ActivityEvents;
 
 /**
@@ -84,6 +84,7 @@ public abstract class TestAppActivityReference {
     /**
      * Starts the activity.
      */
+    @SuppressLint("NewApi")
     public com.android.bedstead.nene.activities.Activity<TestAppActivity> start(Bundle options) {
         Intent intent = new Intent();
         intent.setComponent(mComponent.componentName());

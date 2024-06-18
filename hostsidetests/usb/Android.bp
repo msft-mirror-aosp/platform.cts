@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_usb",
 }
 
 java_test_host {
@@ -24,6 +25,9 @@ java_test_host {
         "cts-tradefed",
         "tradefed",
         "compatibility-host-util",
+    ],
+    static_libs: [
+        "cts-statsd-atom-host-test-utils",
     ],
     // Tag this module as a cts test artifact
     test_suites: [

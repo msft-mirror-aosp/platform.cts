@@ -17,23 +17,22 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-// TODO(276742331): Restore host/device separation
 java_library_host {
-    name: "HarrierCommon",
+    name: "bedstead-core-annotations",
     srcs: [
-        "common/src/main/java/**/*.java",
-        "common/src/main/java/**/*.kt",
+        "common/src/main/java/com/android/bedstead/harrier/AnnotationExecutor.java",
+        "common/src/main/java/com/android/bedstead/harrier/DeviceStateComponent.java",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/enterprise/DevicePolicyRelevant.java",
+    ],
+
+    libs: [
+        "androidx.annotation_annotation",
     ],
 
     static_libs: [
-        "junit",
-        "auto_value_annotations",
-        "guava",
         "NeneCommon",
-        "QueryableCommon",
-        "truth",
-        "flag-junit-host",
-        "device_policy_aconfig_flags_lib_host",
     ],
 
     plugins: ["auto_annotation_plugin"],
@@ -45,17 +44,28 @@ android_library {
     srcs: [
         "common/src/main/java/**/*.java",
         "common/src/main/java/**/*.kt",
+
+        // TODO(329826539): Move this into a separate target
+        ":bedstead-permissions-common-srcs",
+
+        ":bedstead-enterprise-common-srcs",
+    ],
+
+    libs: [
+        "androidx.annotation_annotation",
     ],
 
     static_libs: [
         "junit",
         "auto_value_annotations",
+        "Nene",
         "guava",
         "NeneCommonAndroid",
         "QueryableCommonAndroid",
         "truth",
         "flag-junit",
         "device_policy_aconfig_flags_lib",
+        "TestApisReflection",
     ],
 
     manifest: "src/main/AndroidManifest.xml",
@@ -65,11 +75,19 @@ android_library {
 
 android_library {
     name: "Harrier",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 
     srcs: [
         "src/main/java/**/*.java",
         "src/main/java/**/*.kt",
+        // TODO(329826539): Move this into a separate target
+        ":bedstead-permissions-harrier-srcs",
+
+        //TODO(b/336991736) below lines are temporary for compatibility with other repositories
+        ":bedstead-enterprise-harrier-temporary-srcs",
+
+        //TODO(b/334025286) below filegroup is temporary until multiuser is fully decoupled
+        ":bedstead-multiuser-harrier-temporary-srcs",
     ],
 
     static_libs: [
@@ -80,6 +98,7 @@ android_library {
         "compatibility-device-util-axt",
         "androidx.test.ext.junit",
         "auto_value_annotations",
+        "bedstead-root-annotations",
     ],
 
     manifest: "src/main/AndroidManifest.xml",
@@ -110,5 +129,5 @@ android_test {
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
 }

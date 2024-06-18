@@ -88,6 +88,17 @@ public final class TestAppProvider {
         mTestApps.addAll(mTestAppsSnapshot);
     }
 
+    /**
+     * Release resources.
+     * <br><br>
+     * Note: This method is intended for internal use and should <b>not</b> be called outside core
+     * Bedstead infrastructure.
+     */
+    public void releaseResources() {
+        mTestApps.clear();
+        mTestAppsSnapshot.clear();
+    }
+
     private void initTestApps() {
         if (mTestAppsInitialised) {
             return;
@@ -136,6 +147,21 @@ public final class TestAppProvider {
                     .permission(activityEntry.getPermission().equals("") ? null
                             : activityEntry.getPermission())
                     .build());
+        }
+
+        for (int i = 0; i < app.getActivityAliasesCount(); i++) {
+            TestappProtos.ActivityAlias activityAliasEntry = app.getActivityAliases(i);
+            ActivityInfo activityInfo = ActivityInfo.builder()
+                    .activityClass(activityAliasEntry.getName())
+                    .exported(activityAliasEntry.getExported())
+                    .intentFilters(intentFilterSetFromProtoList(
+                            activityAliasEntry.getIntentFiltersList()))
+                    .permission(activityAliasEntry.getPermission().equals("") ? null
+                            : activityAliasEntry.getPermission())
+                    .build();
+
+            details.mActivityAliases.add(activityInfo);
+
         }
 
         for (int i = 0; i < app.getServicesCount(); i++) {

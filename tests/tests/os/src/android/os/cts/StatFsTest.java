@@ -15,12 +15,15 @@
  */
 package android.os.cts;
 
-import java.io.File;
-
-import junit.framework.TestCase;
 import android.os.Environment;
 import android.os.StatFs;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
+import junit.framework.TestCase;
+
+import java.io.File;
+
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class StatFsTest extends TestCase {
     public void testStatFs() {
         File path = Environment.getDataDirectory();

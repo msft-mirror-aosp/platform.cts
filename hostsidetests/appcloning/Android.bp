@@ -14,10 +14,12 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_profile_experiences",
 }
 
 java_test_host {
     name: "CtsAppCloningHostTest",
+    team: "trendy_team_android_profile_experiences",
     srcs: [
         "hostside/src/com/android/cts/appcloning/BaseHostTestCase.java",
         "hostside/src/com/android/cts/appcloning/AppCloningBaseHostTest.java",

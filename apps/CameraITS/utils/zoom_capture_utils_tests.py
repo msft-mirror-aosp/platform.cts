@@ -19,42 +19,83 @@ import unittest
 import zoom_capture_utils
 
 
+_CIRCLE_X = 320
+_CIRCLE_Y = 240
+_FOCAL_LENGTH = 1
+_IMG_SIZE = (640, 480)
+_OFFSET_RTOL = 0.1
+_RADIUS_RTOL = 0.1
+
+
+def _generate_valid_zoom_results():
+  return [
+      zoom_capture_utils.ZoomTestData(
+          result_zoom=1,
+          circle=[_CIRCLE_X, _CIRCLE_Y, 1],
+          radius_tol=_RADIUS_RTOL,
+          offset_tol=_OFFSET_RTOL,
+          focal_length=_FOCAL_LENGTH
+      ),
+      zoom_capture_utils.ZoomTestData(
+          result_zoom=2,
+          circle=[_CIRCLE_X, _CIRCLE_Y, 2],
+          radius_tol=_RADIUS_RTOL,
+          offset_tol=_OFFSET_RTOL,
+          focal_length=_FOCAL_LENGTH
+      ),
+      zoom_capture_utils.ZoomTestData(
+          result_zoom=3,
+          circle=[_CIRCLE_X, _CIRCLE_Y, 3],
+          radius_tol=_RADIUS_RTOL,
+          offset_tol=_OFFSET_RTOL,
+          focal_length=_FOCAL_LENGTH
+      ),
+      zoom_capture_utils.ZoomTestData(
+          result_zoom=4,
+          circle=[_CIRCLE_X, _CIRCLE_Y, 4],
+          radius_tol=_RADIUS_RTOL,
+          offset_tol=_OFFSET_RTOL,
+          focal_length=_FOCAL_LENGTH
+      ),
+  ]
+
+
 class ZoomCaptureUtilsTest(unittest.TestCase):
   """Unit tests for this module."""
 
-  def test_verify_zoom_results(self):
-    """Unit test for verify_zoom_results method."""
-    # Create ideal zoom results
-    focal_length = 1
-    img_size = (640, 480)
-    zoom_max = 4
-    zoom_min = 1
-    offset_tol = 0.1
-    radius_tol = 0.1
-    zoom_results = {}
-    for i in (zoom_min, zoom_min+1, zoom_max-1, zoom_max):
-      circle = [img_size[0]/2, img_size[1]/2, i]  # x, y, r
-      zoom_results[i-1] = {'z': i, 'circle': circle, 'r_tol': radius_tol,
-                           'o_tol': offset_tol, 'fl': focal_length}
+  def setUp(self):
+    super().setUp()
+    self.zoom_results = _generate_valid_zoom_results()
 
-    # Check basic functions
-    self.assertTrue(zoom_capture_utils.verify_zoom_results(
-        zoom_results, img_size, zoom_max, zoom_min))
+  def test_verify_zoom_results_enough_zoom_data(self):
+    self.assertTrue(
+        zoom_capture_utils.verify_zoom_results(
+            self.zoom_results, _IMG_SIZE, 4, 1
+        )
+    )
 
-    # Check not enough zoom
-    self.assertFalse(zoom_capture_utils.verify_zoom_results(
-        zoom_results, img_size, zoom_max+1, zoom_min))
+  def test_verify_zoom_results_not_enough_zoom(self):
+    self.assertFalse(
+        zoom_capture_utils.verify_zoom_results(
+            self.zoom_results, _IMG_SIZE, 5, 1
+        )
+    )
 
-    # Check wrong zoom
-    zoom_results[zoom_max-1]['z'] = zoom_max+1
-    self.assertFalse(zoom_capture_utils.verify_zoom_results(
-        zoom_results, img_size, zoom_max, zoom_min))
-    zoom_results[zoom_max-1]['z'] = zoom_max
+  def test_verify_zoom_results_wrong_zoom(self):
+    self.zoom_results[-1].result_zoom = 5
+    self.assertFalse(
+        zoom_capture_utils.verify_zoom_results(
+            self.zoom_results, _IMG_SIZE, 4, 1
+        )
+    )
 
-    # Check wrong offset
-    zoom_results[zoom_max-1]['circle'][0] = img_size[0]
-    self.assertFalse(zoom_capture_utils.verify_zoom_results(
-        zoom_results, img_size, zoom_max, zoom_min))
+  def test_verify_zoom_results_wrong_offset(self):
+    self.zoom_results[-1].circle[0] = 640
+    self.assertFalse(
+        zoom_capture_utils.verify_zoom_results(
+            self.zoom_results, _IMG_SIZE, 4, 1
+        )
+    )
 
 
 if __name__ == '__main__':

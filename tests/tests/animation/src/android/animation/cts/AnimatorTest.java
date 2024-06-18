@@ -35,6 +35,8 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -51,7 +53,14 @@ public class AnimatorTest {
     private long mDuration = 1000;
     private float mDurationScale = 1f;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
+            new AdoptShellPermissionsRule(
+                    androidx.test.platform.app.InstrumentationRegistry
+                            .getInstrumentation().getUiAutomation(),
+                    android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<AnimationActivity> mActivityRule =
             new ActivityTestRule<>(AnimationActivity.class);
 

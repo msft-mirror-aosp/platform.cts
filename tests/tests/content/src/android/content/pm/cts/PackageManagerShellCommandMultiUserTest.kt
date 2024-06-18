@@ -22,8 +22,10 @@ import android.content.Context
 import android.content.Context.RECEIVER_EXPORTED
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.Flags.FLAG_ARCHIVING
 import android.content.pm.Flags.FLAG_NULLABLE_DATA_DIR
 import android.content.pm.PackageInfo
+import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.MATCH_ANY_USER
 import android.content.pm.PackageManager.MATCH_ARCHIVED_PACKAGES
@@ -37,7 +39,9 @@ import android.content.pm.PackageManager.PackageInfoFlags
 import android.content.pm.cts.PackageManagerShellCommandInstallTest.PackageBroadcastReceiver
 import android.content.pm.cts.PackageManagerTest.CTS_SHIM_PACKAGE_NAME
 import android.content.pm.cts.PackageManagerTest.getInstalledState
+import android.content.pm.cts.PackageManagerTest.installArchivedAsUser
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.UserManager
@@ -46,16 +50,18 @@ import android.platform.test.annotations.AppModeNonSdkSandbox
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
+import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.users.UserType
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertThat
 import java.io.File
-import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -91,12 +97,21 @@ class PackageManagerShellCommandMultiUserTest {
 
         private const val TEST_HW_SYSTEM_USER_ONLY =
                 PackageManagerShellCommandInstallTest.TEST_HW_SYSTEM_USER_ONLY
+        private const val TEST_HW_MIME_GROUP = "HelloWorldMimeGroup.apk"
 
         private const val TEST_PROVIDER = "TestProvider"
         private const val TEST_SERVICE = "TestService"
 
         private const val SYSTEM_USER_ONLY_PROVIDER = "SystemUserOnlyProvider"
         private const val SYSTEM_USER_ONLY_SERVICE = "SystemUserOnlyService"
+
+        private const val ACTION_UPDATE_MIME_GROUP_REQUEST =
+                "com.example.helloworld.UPDATE_MIME_GROUP_REQUEST"
+        private const val ACTION_UPDATE_MIME_GROUP_RESPONSE =
+                "com.example.helloworld.UPDATE_MIME_GROUP_RESPONSE"
+        private const val EXTRA_MIME_GROUP = "EXTRA_MIME_GROUP"
+        private const val EXTRA_MIME_TYPES = "EXTRA_MIME_TYPES"
+        private const val MIME_GROUP = "mime_group"
 
         @JvmField
         @ClassRule(order = 0)
@@ -383,138 +398,156 @@ class PackageManagerShellCommandMultiUserTest {
                     secondaryUser.userHandle(),
                     0
                 )
-                contextPrimaryUser.registerReceiver(
-                    removedBroadcastReceiverForPrimaryUser,
-                    intentFilter,
-                    null,
-                    backgroundHandler,
-                    RECEIVER_EXPORTED
-                )
-                contextPrimaryUser.registerReceiver(
-                    fullyRemovedBroadcastReceiverForPrimaryUser,
-                    intentFilter,
-                    null,
-                    backgroundHandler,
-                    RECEIVER_EXPORTED
-                )
-                contextSecondaryUser.registerReceiver(
-                    removedBroadcastReceiverForSecondaryUser,
-                    intentFilter,
-                    null,
-                    backgroundHandler,
-                    RECEIVER_EXPORTED
-                )
-                contextSecondaryUser.registerReceiver(
-                    fullyRemovedBroadcastReceiverForSecondaryUser,
-                    intentFilter,
-                    null,
-                    backgroundHandler,
-                    RECEIVER_EXPORTED
-                )
-                contextPrimaryUser.registerReceiver(
-                        uidRemovedBroadcastReceiverForPrimaryUser,
-                        intentFilterForUidRemoved,
-                        null,
-                        backgroundHandler,
-                        RECEIVER_EXPORTED
-                )
-                contextSecondaryUser.registerReceiver(
-                        uidRemovedBroadcastReceiverForSecondaryUser,
-                        intentFilterForUidRemoved,
-                        null,
-                        backgroundHandler,
-                        RECEIVER_EXPORTED
-                )
+                try {
+                    contextPrimaryUser.registerReceiver(
+                            removedBroadcastReceiverForPrimaryUser,
+                            intentFilter,
+                            null,
+                            backgroundHandler,
+                            RECEIVER_EXPORTED
+                    )
+                    contextPrimaryUser.registerReceiver(
+                            fullyRemovedBroadcastReceiverForPrimaryUser,
+                            intentFilter,
+                            null,
+                            backgroundHandler,
+                            RECEIVER_EXPORTED
+                    )
+                    contextSecondaryUser.registerReceiver(
+                            removedBroadcastReceiverForSecondaryUser,
+                            intentFilter,
+                            null,
+                            backgroundHandler,
+                            RECEIVER_EXPORTED
+                    )
+                    contextSecondaryUser.registerReceiver(
+                            fullyRemovedBroadcastReceiverForSecondaryUser,
+                            intentFilter,
+                            null,
+                            backgroundHandler,
+                            RECEIVER_EXPORTED
+                    )
+                    contextPrimaryUser.registerReceiver(
+                            uidRemovedBroadcastReceiverForPrimaryUser,
+                            intentFilterForUidRemoved,
+                            null,
+                            backgroundHandler,
+                            RECEIVER_EXPORTED
+                    )
+                    contextSecondaryUser.registerReceiver(
+                            uidRemovedBroadcastReceiverForSecondaryUser,
+                            intentFilterForUidRemoved,
+                            null,
+                            backgroundHandler,
+                            RECEIVER_EXPORTED
+                    )
 
-                var uidPrimaryUser =
-                        contextPrimaryUser.packageManager.getPackageUid(TEST_APP_PACKAGE, 0)
-                var uidSecondaryUser =
-                        contextSecondaryUser.packageManager.getPackageUid(TEST_APP_PACKAGE, 0)
-                assertNotEquals(uidPrimaryUser, uidSecondaryUser)
-                // Uninstall w/o DELETE_KEEP_DATA sends PACKAGE_REMOVED, PACKAGE_FULLY_REMOVED, and
-                // UID_REMOVED broadcasts to the targeted user
-                uninstallPackageAsUser(TEST_APP_PACKAGE, secondaryUser)
-                removedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
-                fullyRemovedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
-                uidRemovedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
-                removedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
-                var result = removedBroadcastReceiverForSecondaryUser.broadcastResult
-                assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
-                fullyRemovedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
-                result = fullyRemovedBroadcastReceiverForSecondaryUser.broadcastResult
-                assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
-                uidRemovedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
-                result = uidRemovedBroadcastReceiverForSecondaryUser.broadcastResult
-                assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
-                assertNull(result.extras!!.getString(Intent.EXTRA_PACKAGE_NAME, null))
-                removedBroadcastReceiverForSecondaryUser.reset()
-                fullyRemovedBroadcastReceiverForSecondaryUser.reset()
-                uidRemovedBroadcastReceiverForSecondaryUser.reset()
+                    var uidPrimaryUser =
+                            contextPrimaryUser.packageManager.getPackageUid(TEST_APP_PACKAGE, 0)
+                    var uidSecondaryUser =
+                            contextSecondaryUser.packageManager.getPackageUid(TEST_APP_PACKAGE, 0)
+                    assertNotEquals(uidPrimaryUser, uidSecondaryUser)
+                    // Uninstall w/o DELETE_KEEP_DATA sends PACKAGE_REMOVED, PACKAGE_FULLY_REMOVED,
+                    // and UID_REMOVED broadcasts to the targeted user
+                    uninstallPackageAsUser(TEST_APP_PACKAGE, secondaryUser)
+                    removedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                    fullyRemovedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                    uidRemovedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                    removedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+                    var result = removedBroadcastReceiverForSecondaryUser.broadcastResult
+                    assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
+                    fullyRemovedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+                    result = fullyRemovedBroadcastReceiverForSecondaryUser.broadcastResult
+                    assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
+                    uidRemovedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+                    result = uidRemovedBroadcastReceiverForSecondaryUser.broadcastResult
+                    assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
+                    assertNull(result.extras!!.getString(Intent.EXTRA_PACKAGE_NAME, null))
+                    removedBroadcastReceiverForSecondaryUser.reset()
+                    fullyRemovedBroadcastReceiverForSecondaryUser.reset()
+                    uidRemovedBroadcastReceiverForSecondaryUser.reset()
 
-                installExistingPackageAsUser(TEST_APP_PACKAGE, secondaryUser)
-                // Uninstall on both users sends the broadcasts to both users
-                uninstallPackageSilently(TEST_APP_PACKAGE)
-                removedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
-                result = removedBroadcastReceiverForPrimaryUser.broadcastResult
-                assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidPrimaryUser)
-                fullyRemovedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
-                result = fullyRemovedBroadcastReceiverForPrimaryUser.broadcastResult
-                assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidPrimaryUser)
-                uidRemovedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
-                result = uidRemovedBroadcastReceiverForPrimaryUser.broadcastResult
-                assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidPrimaryUser)
-                assertNull(result.extras!!.getString(Intent.EXTRA_PACKAGE_NAME, null))
-                removedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
-                result = removedBroadcastReceiverForSecondaryUser.broadcastResult
-                assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
-                fullyRemovedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
-                result = fullyRemovedBroadcastReceiverForSecondaryUser.broadcastResult
-                assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
-                uidRemovedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
-                result = uidRemovedBroadcastReceiverForSecondaryUser.broadcastResult
-                assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
-                assertNull(result.extras!!.getString(Intent.EXTRA_PACKAGE_NAME, null))
-                removedBroadcastReceiverForPrimaryUser.reset()
-                fullyRemovedBroadcastReceiverForPrimaryUser.reset()
-                removedBroadcastReceiverForSecondaryUser.reset()
-                fullyRemovedBroadcastReceiverForSecondaryUser.reset()
+                    installExistingPackageAsUser(TEST_APP_PACKAGE, secondaryUser)
+                    // Uninstall on both users sends the broadcasts to both users
+                    uninstallPackageSilently(TEST_APP_PACKAGE)
+                    removedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+                    result = removedBroadcastReceiverForPrimaryUser.broadcastResult
+                    assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidPrimaryUser)
+                    fullyRemovedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+                    result = fullyRemovedBroadcastReceiverForPrimaryUser.broadcastResult
+                    assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidPrimaryUser)
+                    uidRemovedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+                    result = uidRemovedBroadcastReceiverForPrimaryUser.broadcastResult
+                    assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidPrimaryUser)
+                    assertNull(result.extras!!.getString(Intent.EXTRA_PACKAGE_NAME, null))
+                    removedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+                    result = removedBroadcastReceiverForSecondaryUser.broadcastResult
+                    assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
+                    fullyRemovedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+                    result = fullyRemovedBroadcastReceiverForSecondaryUser.broadcastResult
+                    assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
+                    uidRemovedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+                    result = uidRemovedBroadcastReceiverForSecondaryUser.broadcastResult
+                    assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
+                    assertNull(result.extras!!.getString(Intent.EXTRA_PACKAGE_NAME, null))
+                    removedBroadcastReceiverForPrimaryUser.reset()
+                    fullyRemovedBroadcastReceiverForPrimaryUser.reset()
+                    uidRemovedBroadcastReceiverForPrimaryUser.reset()
+                    removedBroadcastReceiverForSecondaryUser.reset()
+                    fullyRemovedBroadcastReceiverForSecondaryUser.reset()
+                    uidRemovedBroadcastReceiverForSecondaryUser.reset()
 
-                // Uninstall with "keep data" sends the REMOVED broadcast but not the FULLY_REMOVED
-                // Only the targeted user will get the broadcast
-                installPackage(TEST_HW5)
-                // The UIDs have been changed after uninstall + reinstall
-                uidPrimaryUser =
-                        contextPrimaryUser.packageManager.getPackageUid(TEST_APP_PACKAGE, 0)
-                uidSecondaryUser =
-                        contextSecondaryUser.packageManager.getPackageUid(TEST_APP_PACKAGE, 0)
-                assertNotEquals(uidPrimaryUser, uidSecondaryUser)
-                uninstallPackageWithKeepData(TEST_APP_PACKAGE, secondaryUser)
-                removedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
-                fullyRemovedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
-                removedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
-                result = removedBroadcastReceiverForSecondaryUser.broadcastResult
-                assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
-                fullyRemovedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
-                removedBroadcastReceiverForSecondaryUser.reset()
-                uninstallPackageWithKeepData(TEST_APP_PACKAGE, primaryUser)
-                removedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
-                result = removedBroadcastReceiverForPrimaryUser.broadcastResult
-                assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidPrimaryUser)
-                fullyRemovedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
-                removedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
-                fullyRemovedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
-                removedBroadcastReceiverForPrimaryUser.reset()
-
-                // Clean up
-                contextPrimaryUser.unregisterReceiver(removedBroadcastReceiverForPrimaryUser)
-                contextPrimaryUser.unregisterReceiver(fullyRemovedBroadcastReceiverForPrimaryUser)
-                contextPrimaryUser.unregisterReceiver(uidRemovedBroadcastReceiverForPrimaryUser)
-                contextSecondaryUser.unregisterReceiver(removedBroadcastReceiverForSecondaryUser)
-                contextSecondaryUser.unregisterReceiver(
-                    fullyRemovedBroadcastReceiverForSecondaryUser
-                )
-                contextSecondaryUser.unregisterReceiver(uidRemovedBroadcastReceiverForSecondaryUser)
-                backgroundThread.interrupt()
+                    // Uninstall with "keep data" sends the REMOVED broadcast but not the
+                    // FULLY_REMOVED and UID_REMOVED. Only the targeted user will get the broadcast
+                    installPackage(TEST_HW5)
+                    // The UIDs have been changed after uninstall + reinstall
+                    uidPrimaryUser =
+                            contextPrimaryUser.packageManager.getPackageUid(TEST_APP_PACKAGE, 0)
+                    uidSecondaryUser =
+                            contextSecondaryUser.packageManager.getPackageUid(TEST_APP_PACKAGE, 0)
+                    assertNotEquals(uidPrimaryUser, uidSecondaryUser)
+                    uninstallPackageWithKeepData(TEST_APP_PACKAGE, secondaryUser)
+                    removedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                    fullyRemovedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                    uidRemovedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                    removedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+                    result = removedBroadcastReceiverForSecondaryUser.broadcastResult
+                    assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidSecondaryUser)
+                    fullyRemovedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
+                    uidRemovedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
+                    removedBroadcastReceiverForSecondaryUser.reset()
+                    uninstallPackageWithKeepData(TEST_APP_PACKAGE, primaryUser)
+                    removedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+                    result = removedBroadcastReceiverForPrimaryUser.broadcastResult
+                    assertEquals(result.extras!!.getInt(Intent.EXTRA_UID, 0), uidPrimaryUser)
+                    fullyRemovedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                    uidRemovedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                    removedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
+                    fullyRemovedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
+                    uidRemovedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
+                    removedBroadcastReceiverForPrimaryUser.reset()
+                } finally {
+                    // Clean up
+                    contextPrimaryUser.unregisterReceiver(
+                            removedBroadcastReceiverForPrimaryUser
+                    )
+                    contextPrimaryUser.unregisterReceiver(
+                            fullyRemovedBroadcastReceiverForPrimaryUser
+                    )
+                    contextPrimaryUser.unregisterReceiver(
+                            uidRemovedBroadcastReceiverForPrimaryUser
+                    )
+                    contextSecondaryUser.unregisterReceiver(
+                            removedBroadcastReceiverForSecondaryUser
+                    )
+                    contextSecondaryUser.unregisterReceiver(
+                            fullyRemovedBroadcastReceiverForSecondaryUser
+                    )
+                    contextSecondaryUser.unregisterReceiver(
+                            uidRemovedBroadcastReceiverForSecondaryUser
+                    )
+                    backgroundThread.interrupt()
+                }
             },
             Manifest.permission.INTERACT_ACROSS_USERS,
             Manifest.permission.INTERACT_ACROSS_USERS_FULL
@@ -558,36 +591,6 @@ class PackageManagerShellCommandMultiUserTest {
         listedUids = out.split(":").last().split(",")
         assertTrue(out, listedUids.contains(primaryUid))
         assertTrue(out, listedUids.contains(secondaryUid))
-    }
-
-    @Test
-    fun testCreateUserCurAsType() {
-        val oldPropertyValue = getSystemProperty(UserManager.DEV_CREATE_OVERRIDE_PROPERTY)
-        setSystemProperty(UserManager.DEV_CREATE_OVERRIDE_PROPERTY, "1")
-        try {
-            val pattern = Pattern.compile("Success: created user id (\\d+)\\R*")
-            var commandResult = SystemUtil.runShellCommand(
-                "pm create-user --profileOf cur " +
-                    "--user-type android.os.usertype.profile.CLONE test"
-            )
-            var matcher = pattern.matcher(commandResult)
-            assertTrue(commandResult, matcher.find())
-            commandResult = SystemUtil.runShellCommand("pm remove-user " + matcher.group(1))
-            assertEquals("Success: removed user\n", commandResult)
-            commandResult = SystemUtil.runShellCommand(
-                "pm create-user --profileOf current " +
-                    "--user-type android.os.usertype.profile.CLONE test"
-            )
-            matcher = pattern.matcher(commandResult)
-            assertTrue(commandResult, matcher.find())
-            commandResult = SystemUtil.runShellCommand("pm remove-user " + matcher.group(1))
-            assertEquals("Success: removed user\n", commandResult)
-        } finally {
-            setSystemProperty(
-                UserManager.DEV_CREATE_OVERRIDE_PROPERTY,
-                if (oldPropertyValue.isEmpty()) "invalid" else oldPropertyValue
-            )
-        }
     }
 
     @Test
@@ -980,6 +983,358 @@ class PackageManagerShellCommandMultiUserTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_ARCHIVING)
+    fun testInstallArchived() {
+        installArchivedPackageAsUser(TEST_APP_PACKAGE, TEST_HW5, primaryUser)
+        assertTrue(isPackagePresentForUser(TEST_APP_PACKAGE, primaryUser))
+        assertTrue(isPackagePresentForUser(TEST_APP_PACKAGE, secondaryUser))
+        assertFalse(isAppInstalledForUser(TEST_APP_PACKAGE, primaryUser))
+        assertFalse(isAppInstalledForUser(TEST_APP_PACKAGE, secondaryUser))
+        assertThat(getInstalledState(TEST_APP_PACKAGE, primaryUser.id()))
+                .isEqualTo("false")
+        assertThat(getInstalledState(TEST_APP_PACKAGE, secondaryUser.id()))
+                .isEqualTo("false")
+
+        val newUser = TestApis.users().createUser()
+                .type(TestApis.users().supportedType(UserType.SECONDARY_USER_TYPE_NAME))
+                .createAndStart()
+        try {
+            assertThat(getInstalledState(TEST_APP_PACKAGE, primaryUser.id()))
+                    .isEqualTo("false")
+            assertThat(getInstalledState(TEST_APP_PACKAGE, secondaryUser.id()))
+                    .isEqualTo("false")
+            assertThat(getInstalledState(TEST_APP_PACKAGE, newUser.id()))
+                    .isEqualTo("false")
+
+            // Now install normally
+            installPackageAsUser(TEST_HW5, primaryUser)
+            assertTrue(isAppInstalledForUser(TEST_APP_PACKAGE, primaryUser))
+            assertFalse(isAppInstalledForUser(TEST_APP_PACKAGE, secondaryUser))
+            assertFalse(isAppInstalledForUser(TEST_APP_PACKAGE, newUser))
+        } finally {
+            newUser.removeWhenPossible()
+        }
+    }
+
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream"
+    )
+    @Test
+    fun testUpdateMimeGroup_changed_onlyInstalledUserReceivedBroadcast() {
+        if (!backgroundThread.isAlive) {
+            backgroundThread.start()
+        }
+        val backgroundHandler = Handler(backgroundThread.looper)
+        val packageName = context.packageName
+        installExistingPackageAsUser(packageName, secondaryUser)
+
+        assertTrue(isAppInstalledForUser(packageName, primaryUser))
+        assertTrue(isAppInstalledForUser(packageName, secondaryUser))
+
+        installPackageAsUser(TEST_HW_MIME_GROUP, primaryUser)
+
+        assertTrue(isAppInstalledForUser(TEST_APP_PACKAGE, primaryUser))
+        assertFalse(isAppInstalledForUser(TEST_APP_PACKAGE, secondaryUser))
+
+        val changedBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
+                TEST_APP_PACKAGE,
+                primaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val changedBroadcastReceiverForSecondaryUser = PackageBroadcastReceiver(
+                TEST_APP_PACKAGE,
+                secondaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val mimeGroupResponseBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
+                TEST_APP_PACKAGE,
+                primaryUser.id(),
+                ACTION_UPDATE_MIME_GROUP_RESPONSE
+        )
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(Intent.ACTION_PACKAGE_CHANGED)
+        intentFilter.addDataScheme("package")
+        runWithShellPermissionIdentity(
+                uiAutomation,
+                {
+                    val contextPrimaryUser = context.createContextAsUser(
+                            primaryUser.userHandle(),
+                            0
+                    )
+                    val contextSecondaryUser = context.createContextAsUser(
+                            secondaryUser.userHandle(),
+                            0
+                    )
+                    try {
+                        contextPrimaryUser.registerReceiver(
+                                changedBroadcastReceiverForPrimaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+                        contextSecondaryUser.registerReceiver(
+                                changedBroadcastReceiverForSecondaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+                        contextPrimaryUser.registerReceiver(
+                                mimeGroupResponseBroadcastReceiverForPrimaryUser,
+                                IntentFilter(ACTION_UPDATE_MIME_GROUP_RESPONSE),
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+
+                        // update mimeGroup via intent
+                        val mimeTypes = arrayListOf("text/*")
+                        val intent = Intent(ACTION_UPDATE_MIME_GROUP_REQUEST)
+                        intent.setPackage(TEST_APP_PACKAGE)
+                        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+                        intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                        intent.putExtra(EXTRA_MIME_GROUP, MIME_GROUP)
+                        intent.putStringArrayListExtra(EXTRA_MIME_TYPES, mimeTypes)
+                        contextPrimaryUser.sendBroadcast(intent)
+
+                        // make sure the setMimeGroup is called
+                        mimeGroupResponseBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+
+                        // Only the primary user receives the broadcast and the values are
+                        // the same
+                        changedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+                        assertReceivedComponents(
+                                changedBroadcastReceiverForPrimaryUser.broadcastResult,
+                                TEST_APP_PACKAGE
+                        )
+                        changedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
+                    } finally {
+                        contextPrimaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForPrimaryUser
+                        )
+                        contextPrimaryUser.unregisterReceiver(
+                                mimeGroupResponseBroadcastReceiverForPrimaryUser
+                        )
+                        contextSecondaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForSecondaryUser
+                        )
+                        backgroundThread.interrupt()
+                    }
+                },
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL
+        )
+    }
+
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream"
+    )
+    @Test
+    fun testUpdateMimeGroup_changed() {
+        if (!backgroundThread.isAlive) {
+            backgroundThread.start()
+        }
+        val backgroundHandler = Handler(backgroundThread.looper)
+        val packageName = context.packageName
+        installExistingPackageAsUser(packageName, secondaryUser)
+        assertTrue(isAppInstalledForUser(packageName, primaryUser))
+        assertTrue(isAppInstalledForUser(packageName, secondaryUser))
+        val changedBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
+                packageName,
+                primaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val changedBroadcastReceiverForSecondaryUser = PackageBroadcastReceiver(
+                packageName,
+                secondaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(Intent.ACTION_PACKAGE_CHANGED)
+        intentFilter.addDataScheme("package")
+        runWithShellPermissionIdentity(
+                uiAutomation,
+                {
+                    val contextPrimaryUser = context.createContextAsUser(
+                            primaryUser.userHandle(),
+                            0
+                    )
+                    val contextSecondaryUser = context.createContextAsUser(
+                            secondaryUser.userHandle(),
+                            0
+                    )
+                    try {
+                        contextPrimaryUser.registerReceiver(
+                                changedBroadcastReceiverForPrimaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+                        contextSecondaryUser.registerReceiver(
+                                changedBroadcastReceiverForSecondaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+                        val mimeTypes1 = setOf("text/*")
+                        // update mimeGroup on the primary user
+                        contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes1)
+
+                        // both primary and secondary users receive the broadcast and the values are
+                        // the same
+                        changedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+                        assertReceivedComponents(
+                                changedBroadcastReceiverForPrimaryUser.broadcastResult,
+                                packageName
+                        )
+                        assertThat(contextPrimaryUser.packageManager.getMimeGroup(MIME_GROUP))
+                                .isEqualTo(mimeTypes1)
+                        changedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+                        assertReceivedComponents(
+                                changedBroadcastReceiverForSecondaryUser.broadcastResult,
+                                packageName
+                        )
+                        assertThat(contextSecondaryUser.packageManager.getMimeGroup(MIME_GROUP))
+                                .isEqualTo(mimeTypes1)
+
+                        changedBroadcastReceiverForPrimaryUser.reset()
+                        changedBroadcastReceiverForSecondaryUser.reset()
+
+                        val mimeTypes2 = setOf("text/plain")
+                        // update mimeGroup on the second user
+                        contextSecondaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes2)
+
+                        // both primary and secondary users receive the broadcast and the values are
+                        // the same
+                        changedBroadcastReceiverForPrimaryUser.assertBroadcastReceived()
+                        assertReceivedComponents(
+                                changedBroadcastReceiverForPrimaryUser.broadcastResult,
+                                packageName
+                        )
+                        assertThat(contextPrimaryUser.packageManager.getMimeGroup(MIME_GROUP))
+                                .isEqualTo(mimeTypes2)
+                        changedBroadcastReceiverForSecondaryUser.assertBroadcastReceived()
+                        assertReceivedComponents(
+                                changedBroadcastReceiverForSecondaryUser.broadcastResult,
+                                packageName
+                        )
+                        assertThat(contextSecondaryUser.packageManager.getMimeGroup(MIME_GROUP))
+                                .isEqualTo(mimeTypes2)
+                    } finally {
+                        contextPrimaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForPrimaryUser
+                        )
+                        contextSecondaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForSecondaryUser
+                        )
+                        backgroundThread.interrupt()
+                    }
+                },
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL
+        )
+    }
+
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream"
+    )
+    @Test
+    fun testUpdateMimeGroup_noChanged_noBroadcastReceived() {
+        if (!backgroundThread.isAlive) {
+            backgroundThread.start()
+        }
+        val backgroundHandler = Handler(backgroundThread.looper)
+        val packageName = context.packageName
+        installExistingPackageAsUser(packageName, secondaryUser)
+        assertTrue(isAppInstalledForUser(packageName, primaryUser))
+        assertTrue(isAppInstalledForUser(packageName, secondaryUser))
+        val changedBroadcastReceiverForPrimaryUser = PackageBroadcastReceiver(
+                packageName,
+                primaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val changedBroadcastReceiverForSecondaryUser = PackageBroadcastReceiver(
+                packageName,
+                secondaryUser.id(),
+                Intent.ACTION_PACKAGE_CHANGED
+        )
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(Intent.ACTION_PACKAGE_CHANGED)
+        intentFilter.addDataScheme("package")
+        runWithShellPermissionIdentity(
+                uiAutomation,
+                {
+                    val contextPrimaryUser = context.createContextAsUser(
+                            primaryUser.userHandle(),
+                            0
+                    )
+                    val contextSecondaryUser = context.createContextAsUser(
+                            secondaryUser.userHandle(),
+                            0
+                    )
+                    try {
+                        contextPrimaryUser.registerReceiver(
+                                changedBroadcastReceiverForPrimaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+                        contextSecondaryUser.registerReceiver(
+                                changedBroadcastReceiverForSecondaryUser,
+                                intentFilter,
+                                null,
+                                backgroundHandler,
+                                RECEIVER_EXPORTED
+                        )
+
+                        val mimeTypes = contextPrimaryUser.packageManager.getMimeGroup(MIME_GROUP)
+                        // mimeGroup is not changed on the primary user and no broadcasts are
+                        // received
+                        contextPrimaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes)
+
+                        changedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                        changedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
+
+                        changedBroadcastReceiverForPrimaryUser.reset()
+                        changedBroadcastReceiverForSecondaryUser.reset()
+
+                        // mimeGroup is not changed on the secondary user and no broadcasts are
+                        // received
+                        contextSecondaryUser.packageManager.setMimeGroup(MIME_GROUP, mimeTypes)
+
+                        changedBroadcastReceiverForPrimaryUser.assertBroadcastNotReceived()
+                        changedBroadcastReceiverForSecondaryUser.assertBroadcastNotReceived()
+                    } finally {
+                        contextPrimaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForPrimaryUser
+                        )
+                        contextSecondaryUser.unregisterReceiver(
+                                changedBroadcastReceiverForSecondaryUser
+                        )
+                        backgroundThread.interrupt()
+                    }
+                },
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL
+        )
+    }
+
+    private fun assertReceivedComponents(intent: Intent, componentName: String) {
+        var receivedComponents = intent.getStringArrayExtra(
+                Intent.EXTRA_CHANGED_COMPONENT_NAME_LIST
+        )
+        assertThat(receivedComponents).isNotNull()
+        assertThat(receivedComponents!![0]).isEqualTo(componentName)
+    }
+
     private fun getUserManager(): UserManager {
         return context.getSystemService(UserManager::class.java)!!
     }
@@ -1015,6 +1370,30 @@ class PackageManagerShellCommandMultiUserTest {
             .isEqualTo("Success\n")
     }
 
+    private fun installArchivedPackageAsUser(
+            packageName: String,
+            baseName: String,
+            user: UserReference
+    ) {
+        installPackageAsUser(baseName, user)
+        runWithShellPermissionIdentity(
+                uiAutomation,
+                {
+                    val archivedPackage = context.createContextAsUser(user.userHandle(), 0)
+                            .packageManager.getArchivedPackage(packageName)
+                    assertThat(uninstallPackageSilently(packageName)).isEqualTo("Success\n")
+                    installArchivedAsUser(
+                            archivedPackage,
+                            PackageInstaller.STATUS_SUCCESS,
+                            null,
+                            user.userHandle()
+                    )
+                },
+                Manifest.permission.INTERACT_ACROSS_USERS,
+                Manifest.permission.INTERACT_ACROSS_USERS_FULL
+        )
+    }
+
     private fun uninstallPackageAsUser(packageName: String, user: UserReference) =
         assertThat(SystemUtil.runShellCommand("pm uninstall --user ${user.id()} $packageName"))
             .isEqualTo("Success\n")
@@ -1022,13 +1401,18 @@ class PackageManagerShellCommandMultiUserTest {
     private fun uninstallPackageWithKeepData(packageName: String, user: UserReference) =
         SystemUtil.runShellCommand("pm uninstall -k --user ${user.id()} $packageName")
 
-    private fun uninstallPackageSilently(packageName: String) =
+    private fun uninstallPackageSilently(packageName: String): String =
         SystemUtil.runShellCommand("pm uninstall $packageName")
 
     private fun isAppInstalledForUser(packageName: String, user: UserReference) =
         SystemUtil.runShellCommand("pm list packages --user ${user.id()} $packageName")
             .split("\\r?\\n".toRegex())
             .any { it == "package:$packageName" }
+
+    private fun isPackagePresentForUser(packageName: String, user: UserReference) =
+            SystemUtil.runShellCommand("pm list packages -a --user ${user.id()} $packageName")
+                    .split("\\r?\\n".toRegex())
+                    .any { it == "package:$packageName" }
 
     private fun setSystemProperty(name: String, value: String) =
         assertThat(SystemUtil.runShellCommand("setprop $name $value"))

@@ -16,7 +16,7 @@
 
 package com.android.bedstead.harrier;
 
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 /**
  * A DTO class that is used to contain an {@link EnterprisePolicy}

@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsTileServiceTestCases",
+    team: "trendy_team_controls",
     defaults: ["cts_defaults"],
 
     test_suites: [

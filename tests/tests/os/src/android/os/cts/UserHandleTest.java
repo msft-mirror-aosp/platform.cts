@@ -22,9 +22,11 @@ import static org.junit.Assert.assertSame;
 import android.os.Parcel;
 import android.os.Process;
 import android.os.UserHandle;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import org.junit.Test;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class UserHandleTest {
     private static final int TEST_APP_ID = 1234;
 

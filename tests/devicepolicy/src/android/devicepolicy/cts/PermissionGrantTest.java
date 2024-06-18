@@ -24,19 +24,19 @@ import static android.app.admin.DevicePolicyManager.PERMISSION_POLICY_AUTO_GRANT
 import static android.app.admin.DevicePolicyManager.PERMISSION_POLICY_PROMPT;
 
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
-import static com.android.bedstead.nene.permissions.CommonPermissions.ACCESS_BACKGROUND_LOCATION;
-import static com.android.bedstead.nene.permissions.CommonPermissions.ACCESS_COARSE_LOCATION;
-import static com.android.bedstead.nene.permissions.CommonPermissions.ACCESS_FINE_LOCATION;
-import static com.android.bedstead.nene.permissions.CommonPermissions.ACTIVITY_RECOGNITION;
-import static com.android.bedstead.nene.permissions.CommonPermissions.BODY_SENSORS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.CAMERA;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_CALENDAR;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_CONTACTS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_PHONE_STATE;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_SMS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.WRITE_CALENDAR;
 import static com.android.bedstead.nene.utils.Versions.U;
+import static com.android.bedstead.permissions.CommonPermissions.ACCESS_BACKGROUND_LOCATION;
+import static com.android.bedstead.permissions.CommonPermissions.ACCESS_COARSE_LOCATION;
+import static com.android.bedstead.permissions.CommonPermissions.ACCESS_FINE_LOCATION;
+import static com.android.bedstead.permissions.CommonPermissions.ACTIVITY_RECOGNITION;
+import static com.android.bedstead.permissions.CommonPermissions.BODY_SENSORS;
+import static com.android.bedstead.permissions.CommonPermissions.CAMERA;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.READ_CALENDAR;
+import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
+import static com.android.bedstead.permissions.CommonPermissions.READ_PHONE_STATE;
+import static com.android.bedstead.permissions.CommonPermissions.READ_SMS;
+import static com.android.bedstead.permissions.CommonPermissions.WRITE_CALENDAR;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -50,9 +50,15 @@ import android.app.admin.RemoteDevicePolicyManager;
 import android.content.ComponentName;
 import android.provider.Settings;
 
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
+import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn;
 import com.android.bedstead.harrier.annotations.EnsureUnlocked;
@@ -62,11 +68,6 @@ import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser;
 import com.android.bedstead.harrier.policies.SetPermissionGrantState;
 import com.android.bedstead.harrier.policies.SetPermissionPolicy;
 import com.android.bedstead.harrier.policies.SetSensorPermissionGranted;
@@ -86,7 +87,6 @@ import com.android.queryable.annotations.IntegerQuery;
 import com.android.queryable.annotations.Query;
 
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -169,12 +169,10 @@ public final class PermissionGrantTest {
     private static final TestApp sNotInstalledTestApp = sDeviceState.testApps().query()
             .wherePermissions().contains(GRANTABLE_PERMISSION)
             .whereActivities().isNotEmpty().get();
-    private static TestAppInstance sTestAppInstance =
-            sTestApp.install(TestApis.users().instrumented());
+    private static TestAppInstance sTestAppInstance;
 
-    @Before
-    public void setup() {
-        // TODO(279404339): For some reason this is sometimes uninstalled
+    @BeforeClass
+    public static void setupClass() {
         sTestAppInstance =
                 sTestApp.install(TestApis.users().instrumented());
     }

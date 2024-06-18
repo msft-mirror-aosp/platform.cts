@@ -19,12 +19,14 @@ package android.os.cts;
 import android.icu.util.ULocale;
 import android.os.LocaleList;
 import android.os.Parcel;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class LocaleListTest extends AndroidTestCase {
     public void testEmptyLocaleList() {
         LocaleList ll = new LocaleList();

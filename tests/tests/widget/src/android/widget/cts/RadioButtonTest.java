@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.text.TextUtils;
@@ -36,6 +37,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsTouchUtils;
 
 import org.junit.Before;
@@ -51,7 +53,13 @@ public class RadioButtonTest {
     private Activity mActivity;
     private RadioButton mRadioButton;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<RadioButtonCtsActivity> mActivityRule =
             new ActivityTestRule<>(RadioButtonCtsActivity.class);
 
@@ -172,15 +180,13 @@ public class RadioButtonTest {
         assertFalse(mRadioButton.isChecked());
 
         // tap to checked
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mRadioButton, false,
-                /* useGlobalInjection= */ false);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mRadioButton);
         // wait for the posted onClick() after the tap
         verify(mockCheckedChangeListener, timeout(5000)).onCheckedChanged(mRadioButton, true);
         assertTrue(mRadioButton.isChecked());
 
         // tap to not checked - this should leave the radio button in checked state
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mRadioButton, false,
-                /* useGlobalInjection= */ false);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mRadioButton);
         assertTrue(mRadioButton.isChecked());
 
         verifyNoMoreInteractions(mockCheckedChangeListener);

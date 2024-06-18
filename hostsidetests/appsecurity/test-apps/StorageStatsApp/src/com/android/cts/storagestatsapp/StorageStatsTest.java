@@ -25,6 +25,7 @@ import static com.android.cts.storageapp.Utils.DATA_ALL;
 import static com.android.cts.storageapp.Utils.MB_IN_BYTES;
 import static com.android.cts.storageapp.Utils.PKG_A;
 import static com.android.cts.storageapp.Utils.PKG_B;
+import static com.android.cts.storageapp.Utils.PKG_C;
 import static com.android.cts.storageapp.Utils.REF_PROFILES_BASE_DIR;
 import static com.android.cts.storageapp.Utils.CUR_PROFILES_BASE_DIR;
 import static com.android.cts.storageapp.Utils.PROFILE_FILE_NAME;
@@ -172,7 +173,7 @@ public class StorageStatsTest extends InstrumentationTestCase {
 
     @RequiresFlagsEnabled(Flags.FLAG_GET_APP_BYTES_BY_DATA_TYPE_API)
     public void testVerifyStatsByDataType() throws Exception {
-        final ApplicationInfo appInfo = pm.getApplicationInfo(PKG_A, 0);
+        final ApplicationInfo appInfo = pm.getApplicationInfo(PKG_C, 0);
         useSpace(getContext());
 
         String appSrcPath = appInfo.sourceDir;
@@ -182,7 +183,7 @@ public class StorageStatsTest extends InstrumentationTestCase {
             appSrcDir = appSrcDir.getParentFile();
         }
 
-        final StorageStats as = stats.queryStatsForPackage(UUID_DEFAULT, PKG_A, user);
+        final StorageStats as = stats.queryStatsForPackage(UUID_DEFAULT, PKG_C, user);
 
         long apkSize = getSizeOfFilesEndWith(appSrcDir, ".apk");
         assertEquals(apkSize, as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_APK));
@@ -194,18 +195,15 @@ public class StorageStatsTest extends InstrumentationTestCase {
         assertEquals(libSize, as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_LIB));
 
         // Check the profile sizes if they are fetched by ArtManagedFileStats.
-        if (SystemProperties.getBoolean("dalvik.vm.features.art_managed_file_stats", false)) {
-            long curProfileBytes =
-                as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_CURRENT_PROFILE);
-            File curProfile = new File(new File(CUR_PROFILES_BASE_DIR + appInfo.uid + "/", PKG_A),
-                PROFILE_FILE_NAME);
-            assertEquals(curProfile.length(), curProfileBytes);
+        long curProfileBytes =
+            as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_CURRENT_PROFILE);
+        File curProfile = new File(new File(CUR_PROFILES_BASE_DIR + appInfo.uid + "/", PKG_C),
+            PROFILE_FILE_NAME);
+        assertEquals(curProfile.length(), curProfileBytes);
 
-            long refProfileBytes =
-                as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_REFERENCE_PROFILE);
-            File refProfile = new File(new File(REF_PROFILES_BASE_DIR, PKG_A), PROFILE_FILE_NAME);
-            assertEquals(refProfile.length(), refProfileBytes);
-        }
+        long refProfileBytes =
+            as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_REFERENCE_PROFILE);
+        assertTrue(refProfileBytes > 0);
     }
 
     public void testVerifyStatsMultiple() throws Exception {

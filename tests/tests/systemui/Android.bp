@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsSystemUiTestCases",
+    team: "trendy_team_system_ui_please_use_a_more_specific_subteam_if_possible_",
     defaults: ["cts_defaults"],
     test_suites: [
         "cts",
@@ -41,6 +42,7 @@ android_test {
         "cts-wm-util",
         "permission-test-util-lib",
         "androidx.test.uiautomator_uiautomator",
+        "settingslib_flags_lib",
     ],
     srcs: [
         "src/**/*.java",

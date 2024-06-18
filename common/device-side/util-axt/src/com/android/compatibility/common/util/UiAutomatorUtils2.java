@@ -95,6 +95,11 @@ public class UiAutomatorUtils2 {
                 + "ms");
     }
 
+    // Will wrap any asserting exceptions thrown by the parameter with a UI dump
+    public static void assertWithUiDump(ThrowingRunnable assertion) {
+        ExceptionUtils.wrappingExceptions(UiDumpUtils::wrapWithUiDump, assertion);
+    }
+
     public static UiObject2 waitFindObject(BySelector selector) throws UiObjectNotFoundException {
         return waitFindObject(selector, 20_000);
     }
@@ -133,9 +138,10 @@ public class UiAutomatorUtils2 {
                     viewHeight = view.getVisibleBounds().height();
                 }
             } catch (StaleObjectException exception) {
-                // UiDevice.wait() may cause StaleObjectException if the {@link View} attached to
-                // UiObject2 is no longer in the view tree.
+                // UiDevice.wait() or view.getVisibleBounds() may cause StaleObjectException if
+                // the {@link View} attached to UiObject2 is no longer in the view tree.
                 Log.v(LOG_TAG, "UiObject2 view is no longer in the view tree.", exception);
+                view = null;
                 getUiDevice().waitForIdle();
                 continue;
             }

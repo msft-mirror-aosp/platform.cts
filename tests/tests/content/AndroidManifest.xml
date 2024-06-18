@@ -39,6 +39,7 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.READ_CELL_BROADCASTS" />
 
     <!-- Used for ContextTest#testCreatePackageContextAsUser -->
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>
@@ -227,11 +228,6 @@
         <required-not-feature android:name="android.software.cts.another.undefined"/>
     </uses-permission>
 
-    <permission android:name="android.content.cts.SIGNATURE_PERMISSION"
-         android:protectionLevel="signature"/>
-
-    <uses-permission android:name="android.content.cts.SIGNATURE_PERMISSION"/>
-
     <!-- Used for PackageManager test, don't delete! -->
     <uses-configuration/>
     <uses-feature android:name="android.hardware.camera"/>
@@ -322,37 +318,8 @@
                 <action android:name="android.intent.action.MAIN"/>
             </intent-filter>
         </activity>
-        <activity android:name="android.content.cts.ContextCtsExportedActivity"
-                  android:label="ContextCtsExportedActivity"
-                  android:exported="true">
-            <intent-filter>
-                <action android:name="android.cts.action.TEST_EXPORTED"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-        </activity>
-        <activity android:name="android.content.cts.ContextCtsNonExportedActivity"
-                  android:label="ContextCtsNonExportedActivity"
-                  android:exported="false">
-            <intent-filter>
-                <action android:name="android.cts.action.TEST_NON_EXPORTED"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-        </activity>
 
-        <receiver android:name="android.content.cts.MockReceiverFirst"
-             android:exported="true">
-            <intent-filter android:priority="3">
-                <action android:name="android.content.cts.BroadcastReceiverTest.BROADCAST_TESTABORT"/>
-            </intent-filter>
-        </receiver>
-        <receiver android:name="android.content.cts.MockReceiverAbort"
-             android:exported="true">
-            <intent-filter android:priority="2">
-                <action android:name="android.content.cts.BroadcastReceiverTest.BROADCAST_TESTABORT"/>
-            </intent-filter>
-        </receiver>
         <receiver android:name="android.content.cts.MockReceiver"
-             android:permission="android.content.cts.SIGNATURE_PERMISSION"
              android:exported="true">
 
             <!-- Receiver level metadata -->
@@ -375,21 +342,7 @@
                 <action android:name="android.content.cts.ContextTest.BROADCAST_TESTORDER"/>
             </intent-filter>
         </receiver>
-        <receiver android:name="android.content.cts.BroadcastReceiverTest$TestNonExportedReceiver"
-                  android:exported="false">
-            <intent-filter android:priority="3">
-                <action android:name="android.content.cts.BroadcastReceiverTest.TEST_NOT_EXPORTED"/>
-            </intent-filter>
-        </receiver>
 
-        <!-- Receiver that will be explicitly disabled at runtime -->
-        <receiver android:name="android.content.cts.MockReceiverDisableable"
-             android:enabled="true"
-             android:exported="true">
-            <intent-filter android:priority="1">
-                <action android:name="android.content.cts.BroadcastReceiverTest.BROADCAST_DISABLED"/>
-            </intent-filter>
-        </receiver>
         <receiver android:name="android.content.pm.cts.PackageInstallerArchiveTest$UnarchiveBroadcastReceiver"
                   android:enabled="true"
                   android:exported="true">
@@ -441,12 +394,39 @@
             </intent-filter>
         </receiver>
 
+        <!--Test for Safer Implicit Intent-->
+        <activity android:name="android.content.pm.cts.ImplicitLaunchActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.cts.EXPORTED_ACTION"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
+        <activity-alias
+            android:name="android.content.pm.cts.ImplicitLaunchActivityNonExported"
+            android:targetActivity="android.content.pm.cts.ImplicitLaunchActivity"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.cts.NON_EXPORTED_ACTION"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity-alias>
+
         <activity android:name="android.content.pm.cts.LauncherMockActivity"
              android:enabled="true"
              android:exported="true">
             <intent-filter android:priority="-10">
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.INFO"/>
+                <category android:name="android.intent.category.HOME"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
+        <activity android:name="android.content.pm.cts.FakeLauncherActivity"
+                  android:enabled="false"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.HOME"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
@@ -466,7 +446,8 @@
         <!-- Used for PackageManager test, don't delete this MockContentProvider provider -->
         <provider android:name="android.content.cts.MockContentProvider"
              android:authorities="ctstest"
-             android:multiprocess="false">
+             android:multiprocess="false"
+             android:exported="true">
             <!-- Provider level metadata -->
             <meta-data android:name="android.content.cts.string"
                        android:value="foo"/>
@@ -598,15 +579,26 @@
                  android:resource="@xml/always_syncable_account_access_adapter"/>
         </service>
 
-	<activity android:name="com.android.cts.content.StubCameraIntentHandlerActivity"
-    	 android:exported="true">
-           <intent-filter>
+        <activity android:name="com.android.cts.content.StubCameraIntentHandlerActivity"
+            android:exported="true">
+            <intent-filter>
                 <action android:name="android.media.action.IMAGE_CAPTURE"/>
                 <action android:name="android.media.action.IMAGE_CAPTURE_SECURE"/>
                 <action android:name="android.media.action.VIDEO_CAPTURE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
-	</activity>
+        </activity>
+
+        <activity-alias
+            android:name="android.content.pm.cts.mimeGroupActivity"
+            android:targetActivity="android.content.pm.cts.LauncherMockActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <data android:mimeGroup="mime_group"/>
+            </intent-filter>
+        </activity-alias>
 
         <!-- The test module disables manifest merging, so manually include AndroidX Activities -->
         <activity
@@ -647,6 +639,10 @@
                 <action android:name="android.content.cts.REQUIRE_CONTENT_URI_TEST_RECEIVER_ACTION" />
             </intent-filter>
         </receiver>
+
+        <activity
+            android:name="android.content.cts.ActivityRequireContentUriPermissionFromCallerTest$StartActivityForResultTestActivity"
+            android:exported="true"/>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

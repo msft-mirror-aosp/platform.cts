@@ -50,7 +50,6 @@ import com.android.compatibility.common.util.UiDumpUtils
 import com.android.compatibility.common.util.click
 import com.android.compatibility.common.util.depthFirstSearch
 import com.android.compatibility.common.util.textAsString
-import com.android.modules.utils.build.SdkLevel
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.hamcrest.Matcher
@@ -125,24 +124,6 @@ fun runBootCompleteReceiver(context: Context, testTag: String) {
         /* initialExtras= */ null)
     assertTrue("Timed out while waiting for boot receiver broadcast to be received",
         countdownLatch.await(BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS))
-}
-
-fun bypassBatterySavingRestrictions(context: Context) {
-    if (SdkLevel.isAtLeastU()) {
-        val userId = Process.myUserHandle().identifier
-        val permissionControllerPackageName =
-            context.packageManager.permissionControllerPackageName
-        runShellCommandOrThrow("cmd tare set-vip $userId $permissionControllerPackageName true")
-    }
-}
-
-fun resetBatterySavingRestrictions(context: Context) {
-    if (SdkLevel.isAtLeastU()) {
-        val userId = Process.myUserHandle().identifier
-        val permissionControllerPackageName =
-            context.packageManager.permissionControllerPackageName
-        runShellCommandOrThrow("cmd tare set-vip $userId $permissionControllerPackageName default")
-    }
 }
 
 fun resetJob(context: Context) {
@@ -295,12 +276,8 @@ fun openUnusedAppsNotification() {
     val notifSelector = By.textContains("unused app")
     if (hasFeatureWatch()) {
         val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        val clickRunnable = object : Runnable {
-            override fun run () {
-                waitFindObject(uiAutomation, notifSelector).click()
-            }
-        }
-        expandAndClickNotificationWatch(UiAutomatorUtils2.getUiDevice(), clickRunnable)
+        expandNotificationsWatch(UiAutomatorUtils2.getUiDevice())
+        waitFindObject(uiAutomation, notifSelector).click()
         // In wear os, notification has one additional button to open it
         waitFindObject(uiAutomation, By.textContains("Open")).click()
     } else {
@@ -345,27 +322,12 @@ fun hasFeatureAutomotive(): Boolean {
         PackageManager.FEATURE_AUTOMOTIVE)
 }
 
-private fun expandAndClickNotificationWatch(uiDevice: UiDevice, clickRunnable: Runnable) {
+private fun expandNotificationsWatch(uiDevice: UiDevice) {
     with(uiDevice) {
         wakeUp()
-        val x = displayWidth / 2
         // Swipe up from bottom to reveal notifications
+        val x = displayWidth / 2
         swipe(x, displayHeight, x, 0, 1)
-        try {
-            clickRunnable.run()
-            return
-        } catch (e: Exception) {
-            // TODO(b/338772456) we catch the exception here since som watches have their
-            // notifications tray on the horizontal swipe. Find a way to find a solution that does
-            // not require vertical/horizontal swipe retries.
-        }
-        // Upwards swipe did not find notifications. Undo the upwards swipe, and try sideways.
-        swipe(x, 0, x, displayHeight, 5)
-        val y = displayHeight / 2
-        swipe(0, y, displayWidth, y, 5)
-
-        clickRunnable.run()
-
     }
 }
 

@@ -16,13 +16,16 @@
 
 package com.android.bedstead.nene.services;
 
+import static java.util.Map.entry;
+
 import android.accounts.AccountManager;
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 //import android.app.ActivityTaskManager;
 import android.app.AlarmManager;
 import android.app.AppOpsManager;
 import android.app.DownloadManager;
-import android.app.DreamManager;
+// import android.app.DreamManager;
 import android.app.GameManager;
 import android.app.GrammaticalInflectionManager;
 import android.app.KeyguardManager;
@@ -77,7 +80,7 @@ import android.hardware.camera2.CameraManager;
 //import android.hardware.display.ColorDisplayManager;
 import android.hardware.display.DisplayManager;
 //import android.hardware.face.FaceManager;
-import android.hardware.fingerprint.FingerprintManager;
+//import android.hardware.fingerprint.FingerprintManager;
 import android.hardware.hdmi.HdmiControlManager;
 import android.hardware.input.InputManager;
 //import android.hardware.iris.IrisManager;
@@ -145,7 +148,7 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.CaptioningManager;
 //import android.view.autofill.AutofillManager;
-import android.view.contentcapture.ContentCaptureManager;
+//import android.view.contentcapture.ContentCaptureManager;
 import android.view.displayhash.DisplayHashManager;
 import android.view.inputmethod.InputMethodManager;
 //import android.view.selectiontoolbar.SelectionToolbarManager;
@@ -172,147 +175,148 @@ public final class Services {
     public static final Services sInstance = new Services();
 
     // Mapping from SystemServiceRegistry.java
-    private static final Map<String, Class<?>> sServiceMapping = new HashMap<>();
-    static {
-        sServiceMapping.put(Context.ACCESSIBILITY_SERVICE, AccessibilityManager.class);
-        sServiceMapping.put(Context.CAPTIONING_SERVICE, CaptioningManager.class);
-        sServiceMapping.put(Context.ACCOUNT_SERVICE, AccountManager.class);
-        sServiceMapping.put(Context.ACTIVITY_SERVICE, ActivityManager.class);
-//        sServiceMapping.put(Context.ACTIVITY_TASK_SERVICE, ActivityTaskManager.class);
-//        sServiceMapping.put(Context.URI_GRANTS_SERVICE, UriGrantsManager.class);
-        sServiceMapping.put(Context.ALARM_SERVICE, AlarmManager.class);
-        sServiceMapping.put(Context.AUDIO_SERVICE, AudioManager.class);
-        sServiceMapping.put(Context.AUDIO_DEVICE_VOLUME_SERVICE, AudioDeviceVolumeManager.class);
-        sServiceMapping.put(Context.MEDIA_ROUTER_SERVICE, MediaRouter.class);
-        sServiceMapping.put(Context.HDMI_CONTROL_SERVICE, HdmiControlManager.class);
-        sServiceMapping.put(Context.TEXT_CLASSIFICATION_SERVICE, TextClassificationManager.class);
-//        sServiceMapping.put(Context.SELECTION_TOOLBAR_SERVICE, SelectionToolbarManager.class);
-        sServiceMapping.put(Context.FONT_SERVICE, FontManager.class);
-        sServiceMapping.put(Context.CLIPBOARD_SERVICE, ClipboardManager.class);
-//        sServiceMapping.put(Context.PAC_PROXY_SERVICE, PacProxyManager.class);
-        sServiceMapping.put(Context.NETD_SERVICE, IBinder.class);
-        sServiceMapping.put(Context.TETHERING_SERVICE, TetheringManager.class);
-        sServiceMapping.put(Context.VPN_MANAGEMENT_SERVICE, VpnManager.class);
-//        sServiceMapping.put(Context.VCN_MANAGEMENT_SERVICE, VcnManager.class);
-//        sServiceMapping.put(Context.COUNTRY_DETECTOR, CountryDetector.class);
-        sServiceMapping.put(Context.DEVICE_POLICY_SERVICE, DevicePolicyManager.class);
-        sServiceMapping.put(Context.DOWNLOAD_SERVICE, DownloadManager.class);
-        sServiceMapping.put(Context.BATTERY_SERVICE, BatteryManager.class);
-        sServiceMapping.put(Context.DROPBOX_SERVICE, DropBoxManager.class);
-//        sServiceMapping.put(Context.BINARY_TRANSPARENCY_SERVICE, BinaryTransparencyManager.class);
-        sServiceMapping.put(Context.INPUT_SERVICE, InputManager.class);
-        sServiceMapping.put(Context.DISPLAY_SERVICE, DisplayManager.class);
-//        sServiceMapping.put(Context.COLOR_DISPLAY_SERVICE, ColorDisplayManager.class);
-        sServiceMapping.put(Context.INPUT_METHOD_SERVICE, InputMethodManager.class);
-        sServiceMapping.put(Context.TEXT_SERVICES_MANAGER_SERVICE, TextServicesManager.class);
-        sServiceMapping.put(Context.KEYGUARD_SERVICE, KeyguardManager.class);
-        sServiceMapping.put(Context.LAYOUT_INFLATER_SERVICE, LayoutInflater.class);
-        sServiceMapping.put(Context.LOCATION_SERVICE, LocationManager.class);
-//        sServiceMapping.put(Context.NETWORK_POLICY_SERVICE, NetworkPolicyManager.class);
-        sServiceMapping.put(Context.NOTIFICATION_SERVICE, NotificationManager.class);
-        sServiceMapping.put(Context.PEOPLE_SERVICE, PeopleManager.class);
-        sServiceMapping.put(Context.POWER_SERVICE, PowerManager.class);
-        sServiceMapping.put(Context.PERFORMANCE_HINT_SERVICE, PerformanceHintManager.class);
-//        sServiceMapping.put(Context.RECOVERY_SERVICE, RecoverySystem.class);
-        sServiceMapping.put(Context.SEARCH_SERVICE, SearchManager.class);
-        sServiceMapping.put(Context.SENSOR_SERVICE, SensorManager.class);
-//        sServiceMapping.put(Context.SENSOR_PRIVACY_SERVICE, SensorPrivacyManager.class);
-        sServiceMapping.put(Context.STATUS_BAR_SERVICE, StatusBarManager.class);
-        sServiceMapping.put(Context.STORAGE_SERVICE, StorageManager.class);
-        sServiceMapping.put(Context.STORAGE_STATS_SERVICE, StorageStatsManager.class);
-        sServiceMapping.put(Context.SYSTEM_UPDATE_SERVICE, SystemUpdateManager.class);
-        sServiceMapping.put(Context.SYSTEM_CONFIG_SERVICE, SystemConfigManager.class);
-//        sServiceMapping.put(Context.TELEPHONY_REGISTRY_SERVICE, TelephonyRegistryManager.class);
-        sServiceMapping.put(Context.TELECOM_SERVICE, TelecomManager.class);
-//        sServiceMapping.put(Context.MMS_SERVICE, MmsManager.class);
-        sServiceMapping.put(Context.UI_MODE_SERVICE, UiModeManager.class);
-        sServiceMapping.put(Context.USB_SERVICE, UsbManager.class);
-//        sServiceMapping.put(Context.ADB_SERVICE, AdbManager.class);
-//        sServiceMapping.put(Context.SERIAL_SERVICE, SerialManager.class);
-        sServiceMapping.put(Context.VIBRATOR_MANAGER_SERVICE, VibratorManager.class);
-        sServiceMapping.put(Context.VIBRATOR_SERVICE, Vibrator.class);
-        sServiceMapping.put(Context.WALLPAPER_SERVICE, WallpaperManager.class);
-        sServiceMapping.put(Context.WIFI_NL80211_SERVICE, WifiNl80211Manager.class);
-        sServiceMapping.put(Context.WINDOW_SERVICE, WindowManager.class);
-        sServiceMapping.put(Context.USER_SERVICE, UserManager.class);
-        sServiceMapping.put(Context.APP_OPS_SERVICE, AppOpsManager.class);
-        sServiceMapping.put(Context.CAMERA_SERVICE, CameraManager.class);
-        sServiceMapping.put(Context.LAUNCHER_APPS_SERVICE, LauncherApps.class);
-        sServiceMapping.put(Context.RESTRICTIONS_SERVICE, RestrictionsManager.class);
-        sServiceMapping.put(Context.PRINT_SERVICE, PrintManager.class);
-        sServiceMapping.put(Context.COMPANION_DEVICE_SERVICE, CompanionDeviceManager.class);
-        sServiceMapping.put(Context.VIRTUAL_DEVICE_SERVICE, VirtualDeviceManager.class);
-        sServiceMapping.put(Context.CONSUMER_IR_SERVICE, ConsumerIrManager.class);
-//        sServiceMapping.put(Context.TRUST_SERVICE, TrustManager.class);
-        sServiceMapping.put(Context.FINGERPRINT_SERVICE, FingerprintManager.class);
-//        sServiceMapping.put(Context.FACE_SERVICE, FaceManager.class);
-//        sServiceMapping.put(Context.IRIS_SERVICE, IrisManager.class);
-        sServiceMapping.put(Context.BIOMETRIC_SERVICE, BiometricManager.class);
-        sServiceMapping.put(Context.TV_INTERACTIVE_APP_SERVICE, TvInteractiveAppManager.class);
-        sServiceMapping.put(Context.TV_INPUT_SERVICE, TvInputManager.class);
-//        sServiceMapping.put(Context.TV_TUNER_RESOURCE_MGR_SERVICE, TunerResourceManager.class);
-        sServiceMapping.put(Context.NETWORK_SCORE_SERVICE, NetworkScoreManager.class);
-        sServiceMapping.put(Context.USAGE_STATS_SERVICE, UsageStatsManager.class);
-        sServiceMapping.put(Context.PERSISTENT_DATA_BLOCK_SERVICE, PersistentDataBlockManager.class);
-        sServiceMapping.put(Context.OEM_LOCK_SERVICE, OemLockManager.class);
-        sServiceMapping.put(Context.MEDIA_PROJECTION_SERVICE, MediaProjectionManager.class);
-        sServiceMapping.put(Context.APPWIDGET_SERVICE, AppWidgetManager.class);
-        sServiceMapping.put(Context.MIDI_SERVICE, MidiManager.class);
-//        sServiceMapping.put(Context.RADIO_SERVICE, RadioManager.class);
-        sServiceMapping.put(Context.HARDWARE_PROPERTIES_SERVICE, HardwarePropertiesManager.class);
-//        sServiceMapping.put(Context.SOUND_TRIGGER_SERVICE, SoundTriggerManager.class);
-        sServiceMapping.put(Context.SHORTCUT_SERVICE, ShortcutManager.class);
-        sServiceMapping.put(Context.OVERLAY_SERVICE, OverlayManager.class);
-//        sServiceMapping.put(Context.NETWORK_WATCHLIST_SERVICE, NetworkWatchlistManager.class);
-        sServiceMapping.put(Context.SYSTEM_HEALTH_SERVICE, SystemHealthManager.class);
-        sServiceMapping.put(Context.CONTEXTHUB_SERVICE, ContextHubManager.class);
-//        sServiceMapping.put(Context.INCIDENT_SERVICE, IncidentManager.class);
-        sServiceMapping.put(Context.BUGREPORT_SERVICE, BugreportManager.class);
-//        sServiceMapping.put(Context.AUTOFILL_MANAGER_SERVICE, AutofillManager.class);
-        sServiceMapping.put(Context.CREDENTIAL_SERVICE, CredentialManager.class);
-        sServiceMapping.put(Context.MUSIC_RECOGNITION_SERVICE, MusicRecognitionManager.class);
-        sServiceMapping.put(Context.CONTENT_CAPTURE_MANAGER_SERVICE, ContentCaptureManager.class);
-        sServiceMapping.put(Context.TRANSLATION_MANAGER_SERVICE, TranslationManager.class);
-        sServiceMapping.put(Context.UI_TRANSLATION_SERVICE, UiTranslationManager.class);
-        sServiceMapping.put(Context.SEARCH_UI_SERVICE, SearchUiManager.class);
-        sServiceMapping.put(Context.SMARTSPACE_SERVICE, SmartspaceManager.class);
-        sServiceMapping.put(Context.APP_PREDICTION_SERVICE, AppPredictionManager.class);
-        sServiceMapping.put(Context.VR_SERVICE, VrManager.class);
-        sServiceMapping.put(Context.CROSS_PROFILE_APPS_SERVICE, CrossProfileApps.class);
-//        sServiceMapping.put(Context.SLICE_SERVICE, SliceManager.class);
-//        sServiceMapping.put(Context.TIME_DETECTOR_SERVICE, TimeDetector.class);
-//        sServiceMapping.put(Context.TIME_ZONE_DETECTOR_SERVICE, TimeZoneDetector.class);
-        sServiceMapping.put(Context.TIME_MANAGER_SERVICE, TimeManager.class);
-        sServiceMapping.put(Context.PERMISSION_SERVICE, PermissionManager.class);
-//        sServiceMapping.put(Context.LEGACY_PERMISSION_SERVICE, LegacyPermissionManager.class);
-        sServiceMapping.put(Context.PERMISSION_CONTROLLER_SERVICE, PermissionControllerManager.class);
-//        sServiceMapping.put(Context.PERMISSION_CHECKER_SERVICE, PermissionCheckerManager.class);
-//        sServiceMapping.put(Context.PERMISSION_ENFORCER_SERVICE, PermissionEnforcer.class);
-//        sServiceMapping.put(Context.DYNAMIC_SYSTEM_SERVICE, DynamicSystemManager.class);
-        sServiceMapping.put(Context.BATTERY_STATS_SERVICE, BatteryStatsManager.class);
-//        sServiceMapping.put(Context.DATA_LOADER_MANAGER_SERVICE, DataLoaderManager.class);
-//        sServiceMapping.put(Context.LIGHTS_SERVICE, LightsManager.class);
-        sServiceMapping.put(Context.LOCALE_SERVICE, LocaleManager.class);
-//        sServiceMapping.put(Context.INCREMENTAL_SERVICE, IncrementalManager.class);
-        sServiceMapping.put(Context.FILE_INTEGRITY_SERVICE, FileIntegrityManager.class);
-        sServiceMapping.put(Context.APP_INTEGRITY_SERVICE, AppIntegrityManager.class);
-        sServiceMapping.put(Context.APP_HIBERNATION_SERVICE, AppHibernationManager.class);
-        sServiceMapping.put(Context.DREAM_SERVICE, DreamManager.class);
-//        sServiceMapping.put(Context.DEVICE_STATE_SERVICE, DeviceStateManager.class);
-        sServiceMapping.put(Context.MEDIA_METRICS_SERVICE, MediaMetricsManager.class);
-        sServiceMapping.put(Context.GAME_SERVICE, GameManager.class);
-        sServiceMapping.put(Context.DOMAIN_VERIFICATION_SERVICE, DomainVerificationManager.class);
-        sServiceMapping.put(Context.DISPLAY_HASH_SERVICE, DisplayHashManager.class);
-        sServiceMapping.put(Context.AMBIENT_CONTEXT_SERVICE, AmbientContextManager.class);
-        sServiceMapping.put(Context.WEARABLE_SENSING_SERVICE, WearableSensingManager.class);
-        sServiceMapping.put(Context.GRAMMATICAL_INFLECTION_SERVICE, GrammaticalInflectionManager.class);
-        sServiceMapping.put(Context.SHARED_CONNECTIVITY_SERVICE, SharedConnectivityManager.class);
-        sServiceMapping.put(Context.CONTENT_SUGGESTIONS_SERVICE, ContentSuggestionsManager.class);
-        sServiceMapping.put(Context.WALLPAPER_EFFECTS_GENERATION_SERVICE,
-                WallpaperEffectsGenerationManager.class);
-//        sServiceMapping.put(Context.ATTESTATION_VERIFICATION_SERVICE,
-//                AttestationVerificationManager.class);
-    }
+    @SuppressLint("NewApi")
+    private static final Map<String, Class<?>> sServiceMapping = 
+            Map.ofEntries(
+                    entry(Context.ACCESSIBILITY_SERVICE, AccessibilityManager.class),
+                    entry(Context.CAPTIONING_SERVICE, CaptioningManager.class),
+                    entry(Context.ACCOUNT_SERVICE, AccountManager.class),
+                    entry(Context.ACTIVITY_SERVICE, ActivityManager.class),
+//        entry(Context.ACTIVITY_TASK_SERVICE, ActivityTaskManager.class),
+//        entry(Context.URI_GRANTS_SERVICE, UriGrantsManager.class),
+                    entry(Context.ALARM_SERVICE, AlarmManager.class),
+                    entry(Context.AUDIO_SERVICE, AudioManager.class),
+                    entry(Context.AUDIO_DEVICE_VOLUME_SERVICE, AudioDeviceVolumeManager.class),
+                    entry(Context.MEDIA_ROUTER_SERVICE, MediaRouter.class),
+                    entry(Context.HDMI_CONTROL_SERVICE, HdmiControlManager.class),
+                    entry(Context.TEXT_CLASSIFICATION_SERVICE, TextClassificationManager.class),
+//        entry(Context.SELECTION_TOOLBAR_SERVICE, SelectionToolbarManager.class),
+                    entry(Context.FONT_SERVICE, FontManager.class),
+                    entry(Context.CLIPBOARD_SERVICE, ClipboardManager.class),
+//        entry(Context.PAC_PROXY_SERVICE, PacProxyManager.class),
+                    entry(Context.NETD_SERVICE, IBinder.class),
+                    entry(Context.TETHERING_SERVICE, TetheringManager.class),
+                    entry(Context.VPN_MANAGEMENT_SERVICE, VpnManager.class),
+//        entry(Context.VCN_MANAGEMENT_SERVICE, VcnManager.class),
+//        entry(Context.COUNTRY_DETECTOR, CountryDetector.class),
+                    entry(Context.DEVICE_POLICY_SERVICE, DevicePolicyManager.class),
+                    entry(Context.DOWNLOAD_SERVICE, DownloadManager.class),
+                    entry(Context.BATTERY_SERVICE, BatteryManager.class),
+                    entry(Context.DROPBOX_SERVICE, DropBoxManager.class),
+//        entry(Context.BINARY_TRANSPARENCY_SERVICE, BinaryTransparencyManager.class),
+                    entry(Context.INPUT_SERVICE, InputManager.class),
+                    entry(Context.DISPLAY_SERVICE, DisplayManager.class),
+//        entry(Context.COLOR_DISPLAY_SERVICE, ColorDisplayManager.class),
+                    entry(Context.INPUT_METHOD_SERVICE, InputMethodManager.class),
+                    entry(Context.TEXT_SERVICES_MANAGER_SERVICE, TextServicesManager.class),
+                    entry(Context.KEYGUARD_SERVICE, KeyguardManager.class),
+                    entry(Context.LAYOUT_INFLATER_SERVICE, LayoutInflater.class),
+                    entry(Context.LOCATION_SERVICE, LocationManager.class),
+//        entry(Context.NETWORK_POLICY_SERVICE, NetworkPolicyManager.class),
+                    entry(Context.NOTIFICATION_SERVICE, NotificationManager.class),
+                    entry(Context.PEOPLE_SERVICE, PeopleManager.class),
+                    entry(Context.POWER_SERVICE, PowerManager.class),
+                    entry(Context.PERFORMANCE_HINT_SERVICE, PerformanceHintManager.class),
+//        entry(Context.RECOVERY_SERVICE, RecoverySystem.class),
+                    entry(Context.SEARCH_SERVICE, SearchManager.class),
+                    entry(Context.SENSOR_SERVICE, SensorManager.class),
+//        entry(Context.SENSOR_PRIVACY_SERVICE, SensorPrivacyManager.class),
+                    entry(Context.STATUS_BAR_SERVICE, StatusBarManager.class),
+                    entry(Context.STORAGE_SERVICE, StorageManager.class),
+                    entry(Context.STORAGE_STATS_SERVICE, StorageStatsManager.class),
+                    entry(Context.SYSTEM_UPDATE_SERVICE, SystemUpdateManager.class),
+                    entry(Context.SYSTEM_CONFIG_SERVICE, SystemConfigManager.class),
+//        entry(Context.TELEPHONY_REGISTRY_SERVICE, TelephonyRegistryManager.class),
+                    entry(Context.TELECOM_SERVICE, TelecomManager.class),
+//        entry(Context.MMS_SERVICE, MmsManager.class),
+                    entry(Context.UI_MODE_SERVICE, UiModeManager.class),
+                    entry(Context.USB_SERVICE, UsbManager.class),
+//        entry(Context.ADB_SERVICE, AdbManager.class),
+//        entry(Context.SERIAL_SERVICE, SerialManager.class),
+                    entry(Context.VIBRATOR_MANAGER_SERVICE, VibratorManager.class),
+                    entry(Context.VIBRATOR_SERVICE, Vibrator.class),
+                    entry(Context.WALLPAPER_SERVICE, WallpaperManager.class),
+                    entry(Context.WIFI_NL80211_SERVICE, WifiNl80211Manager.class),
+                    entry(Context.WINDOW_SERVICE, WindowManager.class),
+                    entry(Context.USER_SERVICE, UserManager.class),
+                    entry(Context.APP_OPS_SERVICE, AppOpsManager.class),
+                    entry(Context.CAMERA_SERVICE, CameraManager.class),
+                    entry(Context.LAUNCHER_APPS_SERVICE, LauncherApps.class),
+                    entry(Context.RESTRICTIONS_SERVICE, RestrictionsManager.class),
+                    entry(Context.PRINT_SERVICE, PrintManager.class),
+                    entry(Context.COMPANION_DEVICE_SERVICE, CompanionDeviceManager.class),
+                    entry(Context.VIRTUAL_DEVICE_SERVICE, VirtualDeviceManager.class),
+                    entry(Context.CONSUMER_IR_SERVICE, ConsumerIrManager.class),
+//        entry(Context.TRUST_SERVICE, TrustManager.class),
+//                    entry(Context.FINGERPRINT_SERVICE, FingerprintManager.class),
+//        entry(Context.FACE_SERVICE, FaceManager.class),
+//        entry(Context.IRIS_SERVICE, IrisManager.class),
+                    entry(Context.BIOMETRIC_SERVICE, BiometricManager.class),
+                    entry(Context.TV_INTERACTIVE_APP_SERVICE, TvInteractiveAppManager.class),
+                    entry(Context.TV_INPUT_SERVICE, TvInputManager.class),
+//        entry(Context.TV_TUNER_RESOURCE_MGR_SERVICE, TunerResourceManager.class),
+                    entry(Context.NETWORK_SCORE_SERVICE, NetworkScoreManager.class),
+                    entry(Context.USAGE_STATS_SERVICE, UsageStatsManager.class),
+                    entry(Context.PERSISTENT_DATA_BLOCK_SERVICE, PersistentDataBlockManager.class),
+                    entry(Context.OEM_LOCK_SERVICE, OemLockManager.class),
+                    entry(Context.MEDIA_PROJECTION_SERVICE, MediaProjectionManager.class),
+                    entry(Context.APPWIDGET_SERVICE, AppWidgetManager.class),
+                    entry(Context.MIDI_SERVICE, MidiManager.class),
+//        entry(Context.RADIO_SERVICE, RadioManager.class),
+                    entry(Context.HARDWARE_PROPERTIES_SERVICE, HardwarePropertiesManager.class),
+//        entry(Context.SOUND_TRIGGER_SERVICE, SoundTriggerManager.class),
+                    entry(Context.SHORTCUT_SERVICE, ShortcutManager.class),
+                    entry(Context.OVERLAY_SERVICE, OverlayManager.class),
+//        entry(Context.NETWORK_WATCHLIST_SERVICE, NetworkWatchlistManager.class),
+                    entry(Context.SYSTEM_HEALTH_SERVICE, SystemHealthManager.class),
+                    entry(Context.CONTEXTHUB_SERVICE, ContextHubManager.class),
+//        entry(Context.INCIDENT_SERVICE, IncidentManager.class),
+                    entry(Context.BUGREPORT_SERVICE, BugreportManager.class),
+//        entry(Context.AUTOFILL_MANAGER_SERVICE, AutofillManager.class),
+                    entry(Context.CREDENTIAL_SERVICE, CredentialManager.class),
+                    entry(Context.MUSIC_RECOGNITION_SERVICE, MusicRecognitionManager.class),
+//                    entry(Context.CONTENT_CAPTURE_MANAGER_SERVICE, ContentCaptureManager.class),
+                    entry(Context.TRANSLATION_MANAGER_SERVICE, TranslationManager.class),
+                    entry(Context.UI_TRANSLATION_SERVICE, UiTranslationManager.class),
+                    entry(Context.SEARCH_UI_SERVICE, SearchUiManager.class),
+                    entry(Context.SMARTSPACE_SERVICE, SmartspaceManager.class),
+                    entry(Context.APP_PREDICTION_SERVICE, AppPredictionManager.class),
+                    entry(Context.VR_SERVICE, VrManager.class),
+                    entry(Context.CROSS_PROFILE_APPS_SERVICE, CrossProfileApps.class),
+//        entry(Context.SLICE_SERVICE, SliceManager.class),
+//        entry(Context.TIME_DETECTOR_SERVICE, TimeDetector.class),
+//        entry(Context.TIME_ZONE_DETECTOR_SERVICE, TimeZoneDetector.class),
+                    entry(Context.TIME_MANAGER_SERVICE, TimeManager.class),
+                    entry(Context.PERMISSION_SERVICE, PermissionManager.class),
+//        entry(Context.LEGACY_PERMISSION_SERVICE, LegacyPermissionManager.class),
+                    entry(Context.PERMISSION_CONTROLLER_SERVICE, PermissionControllerManager.class),
+//        entry(Context.PERMISSION_CHECKER_SERVICE, PermissionCheckerManager.class),
+//        entry(Context.PERMISSION_ENFORCER_SERVICE, PermissionEnforcer.class),
+//        entry(Context.DYNAMIC_SYSTEM_SERVICE, DynamicSystemManager.class),
+                    entry(Context.BATTERY_STATS_SERVICE, BatteryStatsManager.class),
+//        entry(Context.DATA_LOADER_MANAGER_SERVICE, DataLoaderManager.class),
+//        entry(Context.LIGHTS_SERVICE, LightsManager.class),
+                    entry(Context.LOCALE_SERVICE, LocaleManager.class),
+//        entry(Context.INCREMENTAL_SERVICE, IncrementalManager.class),
+                    entry(Context.FILE_INTEGRITY_SERVICE, FileIntegrityManager.class),
+                    entry(Context.APP_INTEGRITY_SERVICE, AppIntegrityManager.class),
+                    entry(Context.APP_HIBERNATION_SERVICE, AppHibernationManager.class),
+//                    entry(Context.DREAM_SERVICE, DreamManager.class),
+//        entry(Context.DEVICE_STATE_SERVICE, DeviceStateManager.class),
+                    entry(Context.MEDIA_METRICS_SERVICE, MediaMetricsManager.class),
+                    entry(Context.GAME_SERVICE, GameManager.class),
+                    entry(Context.DOMAIN_VERIFICATION_SERVICE, DomainVerificationManager.class),
+                    entry(Context.DISPLAY_HASH_SERVICE, DisplayHashManager.class),
+                    entry(Context.AMBIENT_CONTEXT_SERVICE, AmbientContextManager.class),
+                    entry(Context.WEARABLE_SENSING_SERVICE, WearableSensingManager.class),
+                    entry(Context.GRAMMATICAL_INFLECTION_SERVICE, GrammaticalInflectionManager.class),
+                    entry(Context.SHARED_CONNECTIVITY_SERVICE, SharedConnectivityManager.class),
+                    entry(Context.CONTENT_SUGGESTIONS_SERVICE, ContentSuggestionsManager.class),
+                    entry(Context.WALLPAPER_EFFECTS_GENERATION_SERVICE,
+                            WallpaperEffectsGenerationManager.class)
+//        entry(Context.ATTESTATION_VERIFICATION_SERVICE,
+//                AttestationVerificationManager.class),
+            );
     private static final Map<Class<?>, String> sServiceNameMapping =
             sServiceMapping.entrySet().stream().collect(
                     Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));

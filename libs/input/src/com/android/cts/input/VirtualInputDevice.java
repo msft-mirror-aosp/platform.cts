@@ -80,7 +80,7 @@ public abstract class VirtualInputDevice implements
     abstract void readResults();
 
     public VirtualInputDevice(Instrumentation instrumentation, int id, int vendorId, int productId,
-            int sources, String registerCommand) {
+            int sources, RegisterCommand registerCommand) {
         mInstrumentation = instrumentation;
         mInputManager = mInstrumentation.getContext().getSystemService(InputManager.class);
         setupPipes();
@@ -110,7 +110,7 @@ public abstract class VirtualInputDevice implements
         // Register input device listener
         mInputManager.registerInputDeviceListener(VirtualInputDevice.this, mHandler);
         // Register virtual input device
-        registerInputDevice(registerCommand);
+        registerInputDevice(registerCommand.toString());
     }
 
     protected byte[] readData() throws IOException {

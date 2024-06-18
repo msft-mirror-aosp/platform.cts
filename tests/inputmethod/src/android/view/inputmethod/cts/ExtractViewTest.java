@@ -24,8 +24,8 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.Instrumentation;
-import android.os.SystemClock;
 import android.view.WindowInsets;
+import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -55,12 +55,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class ExtractViewTest {
+public class ExtractViewTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long START_INPUT_TIMEOUT = TimeUnit.SECONDS.toMillis(10);
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.ExtractViewTest";
 
     // https://developer.android.com/reference/android/R.id#inputExtractEditText
     private static final BySelector EXTRACT_EDIT_TEXT_SELECTOR =
@@ -76,10 +73,6 @@ public class ExtractViewTest {
 
     private Instrumentation mInstrumentation;
     private UiDevice mUiDevice;
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/" + SystemClock.elapsedRealtimeNanos();
-    }
 
     @Before
     public void setUp() {
@@ -111,7 +104,6 @@ public class ExtractViewTest {
             // Call commitText() and verify the committed text.
             final String text = "commitText-" + marker;
             imeSession.callCommitText(text, 1 /* newCursorPosition */);
-            assertThat(mUiDevice.wait(Until.findObject(By.text(text)), TIMEOUT)).isNotNull();
             SystemUtil.eventually(
                     () -> assertThat(editText.getText().toString()).isEqualTo(text), TIMEOUT);
         }
@@ -148,7 +140,6 @@ public class ExtractViewTest {
             // Call commitText() and verify the committed text.
             final String text = "commitText-" + marker;
             imeSession.callCommitText(text, 1 /* newCursorPosition */);
-            assertThat(mUiDevice.wait(Until.findObject(By.text(text)), TIMEOUT)).isNotNull();
             SystemUtil.eventually(
                     () -> assertThat(editText.getText().toString()).isEqualTo(text), TIMEOUT);
         }
@@ -187,7 +178,6 @@ public class ExtractViewTest {
             // Call commitText() and verify the committed text.
             final String text = "commitText-" + marker;
             imeSession.callCommitText(text, 1 /* newCursorPosition */);
-            assertThat(mUiDevice.wait(Until.findObject(By.text(text)), TIMEOUT)).isNotNull();
             SystemUtil.eventually(
                     () -> assertThat(editText.getText().toString()).isEqualTo(text), TIMEOUT);
         }

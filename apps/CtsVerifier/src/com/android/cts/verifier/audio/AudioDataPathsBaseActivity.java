@@ -28,6 +28,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.android.compatibility.common.util.ResultType;
@@ -75,16 +76,19 @@ public abstract class AudioDataPathsBaseActivity
     private boolean mIsLessThanV;
 
     // UI
-    private View mStartBtn;
-    private View mCancelButton;
-    private View mClearResultsBtn;
+    protected View mStartBtn;
+    protected View mCancelButton;
+    protected View mClearResultsBtn;
+
+    private Button mCalibrateButton;
+    private Button mDevicesButton;
 
     private TextView mRoutesTx;
     private WebView mResultsView;
 
     private WaveScopeView mWaveView = null;
 
-    private  HtmlFormatter mHtmlFormatter = new HtmlFormatter();
+    private HtmlFormatter mHtmlFormatter = new HtmlFormatter();
 
     // Test Manager
     protected TestManager mTestManager = new TestManager();
@@ -96,7 +100,6 @@ public abstract class AudioDataPathsBaseActivity
     private boolean mSupportsMMAP;
     private boolean mSupportsMMAPExclusive;
 
-    protected boolean mHasUsb;
     protected boolean mIsHandheld;
 
     // Analysis
@@ -116,14 +119,14 @@ public abstract class AudioDataPathsBaseActivity
         //
         // Header Fields
         //
-        mSupportsMMAP = Globals.isMMapSupported();
-        mSupportsMMAPExclusive = Globals.isMMapExclusiveSupported();
+        // When it is first created, isMMapEnabled will always return false due to b/326989822
+        // Reenable this code when the fix lands in extern/oboe.
+        mSupportsMMAP = Globals.isMMapSupported() /*&& Globals.isMMapEnabled()*/;
+        mSupportsMMAPExclusive = Globals.isMMapExclusiveSupported() /*&& Globals.isMMapEnabled()*/;
 
         mHasMic = AudioSystemFlags.claimsInput(this);
         mHasSpeaker = AudioSystemFlags.claimsOutput(this);
 
-        // Use as a proxy for "has a USB port"
-        mHasUsb = AudioSystemFlags.claimsProAudio(this);
         mIsHandheld = AudioSystemFlags.isHandheld(this);
 
         String yesString = getResources().getString(R.string.audio_general_yes);
@@ -139,7 +142,11 @@ public abstract class AudioDataPathsBaseActivity
 
         mIsLessThanV = Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
-        findViewById(R.id.audio_datapaths_calibrate_button).setOnClickListener(this);
+        mCalibrateButton = findViewById(R.id.audio_datapaths_calibrate_button);
+        mCalibrateButton.setOnClickListener(this);
+
+        mDevicesButton = findViewById(R.id.audio_datapaths_devices_button);
+        mDevicesButton.setOnClickListener(this);
 
         mStartBtn = findViewById(R.id.audio_datapaths_start);
         mStartBtn.setOnClickListener(this);
@@ -184,6 +191,11 @@ public abstract class AudioDataPathsBaseActivity
     //
     // UI Helpers
     //
+    protected void enableTestButtons(boolean enabled) {
+        mStartBtn.setEnabled(enabled);
+        mClearResultsBtn.setEnabled(enabled);
+    }
+
     private void showDeviceView() {
         mRoutesTx.setVisibility(View.VISIBLE);
         mWaveView.setVisibility(View.VISIBLE);
@@ -242,7 +254,11 @@ public abstract class AudioDataPathsBaseActivity
         private String mSectionTitle = null;
         private String mDescription = "";
 
-        int[] mTestState;
+        private static final String PLAYER_FAILED_TO_GET_STRING = "Player failed to get ";
+        private static final String RECORDER_FAILED_TO_GET_STRING = "Recorder failed to get ";
+
+        int[] mTestStateCode;
+        TestStateData[] mTestStateData;
 
         TestResults[] mTestResults;
 
@@ -250,6 +266,89 @@ public abstract class AudioDataPathsBaseActivity
         static final double MIN_SIGNAL_PASS_MAGNITUDE = 0.01;
         static final double MAX_SIGNAL_PASS_JITTER = 0.1;
         static final double MAX_XTALK_PASS_MAGNITUDE = 0.02;
+
+        //
+        // A set of classes to store information specific to the
+        // different failure modes
+        //
+        abstract  class TestStateData {
+            final TestModule  mTestModule;
+
+            TestStateData(TestModule testModule) {
+                mTestModule = testModule;
+            }
+
+            abstract String buildErrorString(TestModule testModule);
+        }
+
+        //
+        // Stores information about sharing mode failures
+        //
+        class BadSharingTestState extends TestStateData {
+            final boolean mPlayerFailed;
+            final boolean mRecorderFailed;
+
+            BadSharingTestState(TestModule testModule,
+                                boolean playerFailed, boolean recorderFailed) {
+                super(testModule);
+
+                mPlayerFailed = playerFailed;
+                mRecorderFailed = recorderFailed;
+            }
+
+            String buildErrorString(TestModule testModule) {
+                StringBuilder sb = new StringBuilder();
+
+                if (testModule.mTransferType == TRANSFER_LEGACY) {
+                    sb.append(" SKIP: can't set LEGACY mode");
+                } else if (testModule.mTransferType == TRANSFER_MMAP_EXCLUSIVE) {
+                    sb.append(" SKIP: can't set MMAP EXCLUSIVE mode");
+                } else {
+                    sb.append(" SKIP: can't set MMAP SHARED mode");
+                }
+
+                sb.append(" - ");
+                if (mPlayerFailed) {
+                    sb.append("Player");
+                    if (mRecorderFailed) {
+                        sb.append("|");
+                    }
+                }
+                if (mRecorderFailed) {
+                    sb.append("Recorder");
+                }
+                return sb.toString();
+            }
+        }
+
+        class BadMMAPTestState extends TestStateData {
+            final boolean mPlayerFailed;
+            final boolean mRecorderFailed;
+
+            BadMMAPTestState(TestModule testModule,
+                                boolean playerFailed, boolean recorderFailed) {
+                super(testModule);
+
+                mPlayerFailed = playerFailed;
+                mRecorderFailed = recorderFailed;
+            }
+
+            String buildErrorString(TestModule testModule) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(" Didn't get MMAP");
+                sb.append(" - ");
+                if (mPlayerFailed) {
+                    sb.append("Player");
+                    if (mRecorderFailed) {
+                        sb.append("|");
+                    }
+                }
+                if (mRecorderFailed) {
+                    sb.append("Recorder");
+                }
+                return sb.toString();
+            }
+        }
 
         TestModule(int outDeviceType, int outSampleRate, int outChannelCount,
                    int inDeviceType, int inSampleRate, int inChannelCount) {
@@ -266,13 +365,14 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         private void initializeTestState() {
-            mTestState = new int[NUM_TEST_APIS];
+            mTestStateCode = new int[NUM_TEST_APIS];
+            mTestStateData = new TestStateData[NUM_TEST_APIS];
             for (int api = 0; api < NUM_TEST_APIS; api++) {
-                mTestState[api] = TestModule.TESTSTATUS_NOT_RUN;
+                mTestStateCode[api] = TestModule.TESTSTATUS_NOT_RUN;
             }
             mTestResults = new TestResults[NUM_TEST_APIS];
-
         }
+
         /**
          * We need a more-or-less deep copy so as not to share mTestState and mTestResults
          * arrays. We are only using this to setup closely related test modules, so it is
@@ -303,28 +403,34 @@ public abstract class AudioDataPathsBaseActivity
         public static final int TESTSTATUS_BAD_START = -1;
         public static final int TESTSTATUS_BAD_ROUTING = -2;
         public static final int TESTSTATUS_BAD_ANALYSIS_CHANNEL = -3;
-        public static final int TESTSTATUS_BAD_MMAP = -4;
+        public static final int TESTSTATUS_CANT_SET_MMAP = -4;
         public static final int TESTSTATUS_BAD_SHARINGMODE = -5;
+        public static final int TESTSTATUS_MISMATCH_MMAP = -6;  // we didn't get the MMAP mode
+                                                                // we asked for
+        public static final int TESTSTATUS_BAD_BUILD = -7;
 
         void clearTestState(int api) {
-            mTestState[api] = TESTSTATUS_NOT_RUN;
+            mTestStateCode[api] = TESTSTATUS_NOT_RUN;
             mTestResults[api] = null;
+            mTestHasBeenRun = false;
+            mTestCanceled = false;
         }
 
         int getTestState(int api) {
-            return mTestState[api];
+            return mTestStateCode[api];
         }
 
-        int setTestState(int api, int state) {
-            return mTestState[api] = state;
+        int setTestState(int api, int state, TestStateData data) {
+            mTestStateData[api] = data;
+            return mTestStateCode[api] = state;
         }
 
         String getOutDeviceName() {
-            return AudioDeviceUtils.getDeviceTypeName(mOutDeviceType);
+            return AudioDeviceUtils.getShortDeviceTypeName(mOutDeviceType);
         }
 
         String getInDeviceName() {
-            return AudioDeviceUtils.getDeviceTypeName(mInDeviceType);
+            return AudioDeviceUtils.getShortDeviceTypeName(mInDeviceType);
         }
 
         void setSectionTitle(String title) {
@@ -407,7 +513,7 @@ public abstract class AudioDataPathsBaseActivity
         // Should've been able to run, but ran into errors opening/starting streams
         boolean hasError(int api) {
             // TESTSTATUS_NOT_RUN && TESTSTATUS_RUN are not errors
-            return mTestState[api] < 0;
+            return mTestStateCode[api] < 0;
         }
 
         boolean wasTestValid(int api) {
@@ -417,6 +523,49 @@ public abstract class AudioDataPathsBaseActivity
         //
         // UI Helpers
         //
+        static String transferTypeToString(int transferType) {
+            switch (transferType) {
+                case TRANSFER_LEGACY:
+                    return "Legacy";
+                case TRANSFER_MMAP_SHARED:
+                    return "MMAP-Shared";
+                case TRANSFER_MMAP_EXCLUSIVE:
+                    return "MMAP-Exclusive";
+                default:
+                    return "Unknown Transfer Type [" + transferType + "]";
+            }
+        }
+
+        static String transferTypeToSharingString(int transferType) {
+            switch (transferType) {
+                case TRANSFER_LEGACY:
+                case TRANSFER_MMAP_SHARED:
+                    return "Shared";
+                case TRANSFER_MMAP_EXCLUSIVE:
+                    return "Exclusive";
+                default:
+                    return "Unknown Transfer Type [" + transferType + "]";
+            }
+        }
+
+        // {device}:{channel}:{channelCount}:{SR}:{path}
+        // SpeakerSafe:0:2:48000:Legacy
+        String formatOutputAttributes() {
+            String deviceName = AudioDeviceUtils.getShortDeviceTypeName(mOutDeviceType);
+            return deviceName + ":" + mAnalysisChannel
+                    + ":" + mOutChannelCount
+                    + ":" + mOutSampleRate
+                    + ":" + transferTypeToString(mTransferType);
+        }
+
+        String formatInputAttributes() {
+            String deviceName = AudioDeviceUtils.getShortDeviceTypeName(mInDeviceType);
+            return deviceName + ":" + mAnalysisChannel
+                    + ":" + mInChannelCount
+                    + ":" + mInSampleRate
+                    + ":" + transferTypeToString(mTransferType);
+        }
+
         String getTestStateString(int api) {
             int state = getTestState(api);
             switch (state) {
@@ -430,15 +579,22 @@ public abstract class AudioDataPathsBaseActivity
                         return hasPassed(api) ? " PASS" : " FAIL";
                     }
                 case TESTSTATUS_BAD_START:
-                    return " BAD START";
+                    return " BAD START - Couldn't start streams";
+                case TESTSTATUS_BAD_BUILD:
+                    return " BAD BUILD - Couldn't open streams";
                 case TESTSTATUS_BAD_ROUTING:
                     return " BAD ROUTE";
                 case TESTSTATUS_BAD_ANALYSIS_CHANNEL:
                     return " BAD ANALYSIS CHANNEL";
-                case TESTSTATUS_BAD_MMAP:
-                    return " BAD MMAP MODE";
-                case TESTSTATUS_BAD_SHARINGMODE:
-                    return " BAD SHARING MODE";
+                case TESTSTATUS_CANT_SET_MMAP:
+                case TESTSTATUS_MISMATCH_MMAP: {
+                    BadMMAPTestState errorData = (BadMMAPTestState) mTestStateData[api];
+                    return errorData.buildErrorString(this);
+                }
+                case TESTSTATUS_BAD_SHARINGMODE: {
+                    BadSharingTestState errorData = (BadSharingTestState) mTestStateData[api];
+                    return errorData.buildErrorString(this);
+                }
                 default:
                     return " UNKNOWN STATE ID [" + state + "]";
             }
@@ -458,9 +614,8 @@ public abstract class AudioDataPathsBaseActivity
                 } else {
                     Log.e(TAG, "Invalid analysis channel " + mAnalysisChannel
                             + " for " + mInChannelCount + " input signal.");
-                    return setTestState(api, TESTSTATUS_BAD_ANALYSIS_CHANNEL);
+                    return setTestState(api, TESTSTATUS_BAD_ANALYSIS_CHANNEL, null);
                 }
-
 
                 // Player
                 mDuplexAudioManager.setSources(mSourceProvider, mSinkProvider);
@@ -480,16 +635,27 @@ public abstract class AudioDataPathsBaseActivity
 
                 boolean enableMMAP = mTransferType != TRANSFER_LEGACY;
                 Globals.setMMapEnabled(enableMMAP);
+                // This should never happen as MMAP TestModules will not get allocated
+                // in the case that MMAP isn't supported on the device.
+                // See addTestModule() and initialization of
+                // mSupportsMMAP and mSupportsMMAPExclusive.
                 if (Globals.isMMapEnabled() != enableMMAP) {
                     Log.d(TAG, "  Invalid MMAP request - " + getDescription());
                     Globals.setMMapEnabled(Globals.isMMapSupported());
-                    return setTestState(api, TESTSTATUS_BAD_MMAP);
+                    return setTestState(api, TESTSTATUS_CANT_SET_MMAP,
+                            new BadMMAPTestState(this, false, false));
                 }
                 try {
                     // Open the streams.
                     // Note AudioSources and AudioSinks get allocated at this point
-                    mDuplexAudioManager.buildStreams(mAudioApi, mAudioApi);
+                    int errorCode = mDuplexAudioManager.buildStreams(mAudioApi, mAudioApi);
+                    if (errorCode != StreamBase.OK) {
+                        Log.e(TAG, "  mDuplexAudioManager.buildStreams() failed error:"
+                                + errorCode);
+                        return setTestState(api, TESTSTATUS_BAD_BUILD, null);
+                    }
                 } finally {
+                    // handle the failure here...
                     Globals.setMMapEnabled(Globals.isMMapSupported());
                 }
 
@@ -506,27 +672,56 @@ public abstract class AudioDataPathsBaseActivity
 
                 mWaveView.setNumChannels(mInChannelCount);
 
+                // Validate Sharing Mode
+                boolean playerSharingModeVerified =
+                        mDuplexAudioManager.isSpecifiedPlayerSharingMode();
+                boolean recorderSharingModeVerified =
+                        mDuplexAudioManager.isSpecifiedRecorderSharingMode();
+                if (!playerSharingModeVerified || !recorderSharingModeVerified) {
+                    Log.w(TAG, "  Invalid Sharing Mode - " + getDescription());
+                    return setTestState(api, TESTSTATUS_BAD_SHARINGMODE,
+                            new BadSharingTestState(this,
+                                    !playerSharingModeVerified,
+                                    !recorderSharingModeVerified));
+                }
+
+                // Validate MMAP
+                boolean playerIsMMap = false;
+                boolean recorderIsMMap = false;
+                if (mTransferType != TRANSFER_LEGACY) {
+                    // This is (should be) an MMAP stream
+                    playerIsMMap = mDuplexAudioManager.isPlayerStreamMMap();
+                    recorderIsMMap = mDuplexAudioManager.isRecorderStreamMMap();
+
+                    if (!playerIsMMap && !recorderIsMMap) {
+                        Log.w(TAG, "  Neither stream is MMAP - " + getDescription());
+                        return setTestState(api, TESTSTATUS_MISMATCH_MMAP,
+                                new BadMMAPTestState(this, !playerIsMMap, !recorderIsMMap));
+                    }
+                }
+
                 if (mDuplexAudioManager.start() != StreamBase.OK) {
                     Log.e(TAG, "  Couldn't start duplex streams - " + getDescription());
-                    return setTestState(api, TESTSTATUS_BAD_START);
+                    return setTestState(api, TESTSTATUS_BAD_START, null);
                 }
 
                 // Validate routing
                 if (!mDuplexAudioManager.validateRouting()) {
                     Log.w(TAG, "  Invalid Routing - " + getDescription());
-                    return setTestState(api, TESTSTATUS_BAD_ROUTING);
+                    return setTestState(api, TESTSTATUS_BAD_ROUTING, null);
                 }
 
-                // Validate Sharing Mode
-                if (!mDuplexAudioManager.validateSharingModes()) {
-                    Log.w(TAG, "  Invalid Sharing Mode - " + getDescription());
-                    return setTestState(api, TESTSTATUS_BAD_SHARINGMODE);
+                BadMMAPTestState mmapState = null;
+                if (mTransferType != TRANSFER_LEGACY && (!playerIsMMap || !recorderIsMMap)) {
+                    // asked for MMAP, but at least one route is Legacy
+                    Log.w(TAG, "  Both streams aren't MMAP - " + getDescription());
+                    mmapState = new BadMMAPTestState(this, !playerIsMMap, !recorderIsMMap);
                 }
 
-                return setTestState(api, TESTSTATUS_RUN);
+                return setTestState(api, TESTSTATUS_RUN, mmapState);
             }
 
-            return setTestState(api, TESTSTATUS_NOT_RUN);
+            return setTestState(api, TESTSTATUS_NOT_RUN, null);
         }
 
         int advanceTestPhase(int api) {
@@ -545,21 +740,86 @@ public abstract class AudioDataPathsBaseActivity
                         .openBold()
                         .appendText(getTestStateString(api))
                         .closeBold();
-            } else {
-                boolean isErrorState = hasError(api);
-                if (isErrorState) {
-                    htmlFormatter.openTextColor("red");
-                }
 
-                htmlFormatter.appendBreak()
-                        .openBold()
-                        .appendText(getTestStateString(api))
-                        .closeBold();
-                if (mTestState[api] == TESTSTATUS_NOT_RUN) {
-                    htmlFormatter.appendText(mTestCanceled
-                            ? " - Test Cancelled" : " - Invalid Route or Sharing Mode");
+                TestStateData stateData = mTestStateData[api];
+                if (stateData != null) {
+                    htmlFormatter.appendBreak()
+                            .openTextColor("blue")
+                            .appendText(stateData.buildErrorString(this))
+                            .closeTextColor();
                 }
-                if (isErrorState) {
+            } else {
+                if (hasError(api)) {
+                    htmlFormatter.appendBreak();
+                    switch (mTestStateCode[api]) {
+                        case TESTSTATUS_BAD_START:
+                            htmlFormatter.openTextColor("red");
+                            htmlFormatter.appendText("Error : Couldn't Start Stream");
+                            htmlFormatter.closeTextColor();
+                            break;
+                        case TESTSTATUS_BAD_BUILD:
+                            htmlFormatter.openTextColor("red");
+                            htmlFormatter.appendText("Error : Couldn't Open Stream");
+                            htmlFormatter.closeTextColor();
+                            break;
+                        case TESTSTATUS_BAD_ROUTING:
+                            htmlFormatter.openTextColor("red");
+                            htmlFormatter.appendText("Error : Invalid Route");
+                            htmlFormatter.closeTextColor();
+                            break;
+                        case TESTSTATUS_BAD_ANALYSIS_CHANNEL:
+                            htmlFormatter.openTextColor("red");
+                            htmlFormatter.appendText("Error : Invalid Analysis Channel");
+                            htmlFormatter.closeTextColor();
+                            break;
+                        case TESTSTATUS_CANT_SET_MMAP:
+                            htmlFormatter.openTextColor("red");
+                            htmlFormatter.appendText("Error : Did not set MMAP mode - "
+                                    + transferTypeToSharingString(mTransferType));
+                            htmlFormatter.closeTextColor();
+                            break;
+                        case TESTSTATUS_MISMATCH_MMAP: {
+                            htmlFormatter.openTextColor("blue");
+                            htmlFormatter.appendText("Note : ");
+                            BadMMAPTestState errorData = (BadMMAPTestState) mTestStateData[api];
+                            String transferTypeString = transferTypeToSharingString(mTransferType);
+                            if (errorData.mPlayerFailed) {
+                                htmlFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
+                                        + transferTypeString);
+                                htmlFormatter.appendBreak();
+                                htmlFormatter.appendText(formatOutputAttributes());
+                            }
+                            if (errorData.mRecorderFailed) {
+                                if (errorData.mPlayerFailed) {
+                                    htmlFormatter.appendBreak();
+                                }
+                                htmlFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
+                                        + transferTypeString);
+                                htmlFormatter.appendBreak();
+                                htmlFormatter.appendText(formatInputAttributes());
+                            }
+                            htmlFormatter.closeTextColor();
+                        }
+                            break;
+                        case TESTSTATUS_BAD_SHARINGMODE:
+                            htmlFormatter.openTextColor("blue");
+                            htmlFormatter.appendText("Note : ");
+                            BadSharingTestState errorData =
+                                    (BadSharingTestState) mTestStateData[api];
+                            String transferTypeString = transferTypeToSharingString(mTransferType);
+                            if (errorData.mPlayerFailed) {
+                                htmlFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
+                                        + transferTypeString);
+                            }
+                            if (errorData.mRecorderFailed) {
+                                htmlFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
+                                        + transferTypeString);
+                            }
+                            htmlFormatter.appendBreak();
+                            htmlFormatter.appendText(formatOutputAttributes());
+                            htmlFormatter.closeTextColor();
+                            break;
+                    }
                     htmlFormatter.closeTextColor();
                 }
             }
@@ -612,8 +872,11 @@ public abstract class AudioDataPathsBaseActivity
                 htmlFormatter.closeTextColor();
 
                 htmlFormatter.appendBreak();
-            } // results != null
-
+            } else {
+                // results == null
+                htmlFormatter.appendBreak();
+                htmlFormatter.appendText("No Results.");
+            }
             htmlFormatter.closeParagraph();
 
             return htmlFormatter;
@@ -829,7 +1092,10 @@ public abstract class AudioDataPathsBaseActivity
             for (TestModule testModule : mTestModules) {
                 // Check to see if we have a (physical) device of this type
                 for (AudioDeviceInfo devInfo : outputDevices) {
-                    testModule.mOutDeviceInfo = null;
+                    // Don't invalidate previously validated devices
+                    // Tests that test multiple device instances (like USB headset/interface)
+                    // need to remember what devices are valid after being disconnected
+                    // in order to connect the next device instance.
                     if (testModule.mOutDeviceType == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
                             && !mHasSpeaker) {
                         break;
@@ -846,7 +1112,8 @@ public abstract class AudioDataPathsBaseActivity
             for (TestModule testModule : mTestModules) {
                 // Check to see if we have a (physical) device of this type
                 for (AudioDeviceInfo devInfo : inputDevices) {
-                    testModule.mInDeviceInfo = null;
+                    // Don't invalidate previously validated devices?
+                    // See comment above.
                     if (testModule.mInDeviceType == AudioDeviceInfo.TYPE_BUILTIN_MIC
                             && !mHasMic) {
                         break;
@@ -877,7 +1144,11 @@ public abstract class AudioDataPathsBaseActivity
         public int countValidTestModules() {
             int numValid = 0;
             for (TestModule testModule : mTestModules) {
-                if (testModule.mOutDeviceInfo != null && testModule.mInDeviceInfo != null) {
+                if (testModule.mOutDeviceInfo != null && testModule.mInDeviceInfo != null
+                        // ignore MMAP Failures
+                        && testModule.mTestStateCode[mApi] != TestModule.TESTSTATUS_MISMATCH_MMAP
+                        && testModule.mTestStateCode[mApi]
+                            != TestModule.TESTSTATUS_BAD_SHARINGMODE) {
                     numValid++;
                 }
             }
@@ -945,7 +1216,14 @@ public abstract class AudioDataPathsBaseActivity
             int numFailed = 0;
             for (TestModule module : mTestModules) {
                 if (module.canRun() && (module.hasError(api) || !module.hasPassed(api))) {
-                    numFailed++;
+                    // Ignore MMAP "Inconsistencies"
+                    // (we didn't get an MMAP stream so we skipped the test)
+                    if (module.mTestStateCode[api]
+                                != TestModule.TESTSTATUS_MISMATCH_MMAP
+                            && module.mTestStateCode[api]
+                                != TestModule.TESTSTATUS_BAD_SHARINGMODE) {
+                        numFailed++;
+                    }
                 }
             }
             return numFailed;
@@ -968,6 +1246,9 @@ public abstract class AudioDataPathsBaseActivity
 
             mTestStep = TESTSTEP_NONE;
             mTestCanceled = false;
+
+            mCalibrateButton.setEnabled(false);
+            mDevicesButton.setEnabled(false);
 
             (mTimer = new Timer()).scheduleAtFixedRate(new TimerTask() {
                 @Override
@@ -993,7 +1274,7 @@ public abstract class AudioDataPathsBaseActivity
         protected boolean calculatePass() {
             int numFailures = countFailures(mApi);
             int numUntested = countValidTestModules() - countTestedTestModules();
-            return mTestHasBeenRun && !mTestCanceled && numFailures == 0 && numUntested == 0;
+            return mTestHasBeenRun && !mTestCanceled && numFailures == 0 && numUntested <= 0;
         }
 
         public void completeTest() {
@@ -1014,23 +1295,27 @@ public abstract class AudioDataPathsBaseActivity
                     getPassButton().setEnabled(passEnabled);
 
                     mHtmlFormatter.openParagraph();
-                    if (!mTestCanceled) {
-                        int numFailures = countFailures(mApi);
-                        int numUntested = getNumTestModules() - countTestedTestModules();
-                        mHtmlFormatter.appendText("There were " + numFailures + " failures.");
+                    if (mTestCanceled) {
+                        mHtmlFormatter.openBold();
+                        mHtmlFormatter.appendText("Test Canceled");
+                        mHtmlFormatter.closeBold();
                         mHtmlFormatter.appendBreak();
-                        mHtmlFormatter.appendText(
-                                "There were " + numUntested + " untested paths.");
-
-                        if (numFailures == 0 && numUntested == 0) {
-                            mHtmlFormatter.appendBreak();
-                            mHtmlFormatter.appendText("All tests passed.");
-                        }
-                        mHtmlFormatter.closeParagraph();
-                        mHtmlFormatter.openParagraph();
                     }
+                    int numFailures = countFailures(mApi);
+                    int numUntested = getNumTestModules() - countTestedTestModules();
+                    mHtmlFormatter.appendText("There were " + numFailures + " failures.");
+                    mHtmlFormatter.appendBreak();
+                    mHtmlFormatter.appendText(
+                            "There were " + numUntested + " untested paths.");
 
-                    if (passEnabled) {
+                    if (numFailures == 0 && numUntested == 0) {
+                        mHtmlFormatter.appendBreak();
+                        mHtmlFormatter.appendText("All tests passed.");
+                    }
+                    mHtmlFormatter.closeParagraph();
+                    mHtmlFormatter.openParagraph();
+
+                    if (mIsLessThanV && passEnabled) {
                         mHtmlFormatter.appendText("Although not all test modules passed, "
                                 + "for this OS version you may enter a PASS.");
                         mHtmlFormatter.appendBreak();
@@ -1043,6 +1328,9 @@ public abstract class AudioDataPathsBaseActivity
                     mResultsView.loadData(mHtmlFormatter.toString(),
                             "text/html; charset=utf-8", "utf-8");
                     showResultsView();
+
+                    mCalibrateButton.setEnabled(true);
+                    mDevicesButton.setEnabled(true);
                 }
             });
         }
@@ -1148,12 +1436,16 @@ public abstract class AudioDataPathsBaseActivity
     private void stopTest() {
         mTestManager.stopTest();
         mTestManager.displayTestDevices();
-
-        enableTestButtons(true, false);
     }
 
+    protected boolean calculatePass() {
+        return mTestManager.calculatePass();
+    }
+
+    protected abstract boolean hasPeripheralSupport();
+
     boolean passBtnEnabled() {
-        return mIsLessThanV || !mIsHandheld || mTestManager.calculatePass();
+        return mIsLessThanV || !mIsHandheld || !hasPeripheralSupport() || calculatePass();
     }
 
     void displayNonHandheldMessage() {
@@ -1208,6 +1500,8 @@ public abstract class AudioDataPathsBaseActivity
         mTestManager.mApi = api;
         mTestManager.validateTestDevices();
         mResultsView.invalidate();
+        mTestHasBeenRun = false;
+        getPassButton().setEnabled(passBtnEnabled());
     }
 
     //
@@ -1220,6 +1514,7 @@ public abstract class AudioDataPathsBaseActivity
             startTest(mActiveTestAPI);
         } else if (id == R.id.audio_datapaths_cancel) {
             mTestCanceled = true;
+            mTestHasBeenRun = false;
             stopTest();
             mTestManager.completeTest();
         } else if (id == R.id.audio_datapaths_clearresults) {
@@ -1233,9 +1528,9 @@ public abstract class AudioDataPathsBaseActivity
             showDeviceView();
             mTestManager.displayTestDevices();
         } else if (id == R.id.audio_datapaths_calibrate_button) {
-            AudioLoopbackCalibrationDialog calibrationDialog =
-                    new AudioLoopbackCalibrationDialog(this);
-            calibrationDialog.show();
+            (new AudioLoopbackCalibrationDialog(this)).show();
+        } else if (id == R.id.audio_datapaths_devices_button) {
+            (new AudioDevicesDialog(this)).show();
         }
     }
 
@@ -1257,17 +1552,14 @@ public abstract class AudioDataPathsBaseActivity
     private class AudioDeviceConnectionCallback extends AudioDeviceCallback {
         void stateChangeHandler() {
             mTestManager.validateTestDevices();
-            if (!mTestManager.calculatePass()) {
-                // if we are in a pass state, leave the report on the screen
-                if (!mIsHandheld) {
-                    displayNonHandheldMessage();
-                    getPassButton().setEnabled(true);
-                } else {
-                    showDeviceView();
-                    mTestManager.displayTestDevices();
-                    if (mTestHasBeenRun) {
-                        getPassButton().setEnabled(passBtnEnabled());
-                    }
+            if (!mIsHandheld) {
+                displayNonHandheldMessage();
+                getPassButton().setEnabled(true);
+            } else {
+                showDeviceView();
+                mTestManager.displayTestDevices();
+                if (mTestHasBeenRun) {
+                    getPassButton().setEnabled(passBtnEnabled());
                 }
             }
         }

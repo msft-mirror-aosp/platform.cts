@@ -35,6 +35,7 @@ import static org.junit.Assume.assumeFalse;
 
 import static java.util.stream.Collectors.toList;
 
+import android.Manifest;
 import android.app.ActivityOptions;
 import android.app.NotificationManager;
 import android.app.UiAutomation;
@@ -67,6 +68,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
@@ -123,7 +125,13 @@ public class ToastTest {
     private NotificationManager mNotificationManager;
     private UserHelper mUserHelper;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<CtsActivity> mActivityRule =
             new ActivityTestRule<>(CtsActivity.class);
     private UiAutomation mUiAutomation;

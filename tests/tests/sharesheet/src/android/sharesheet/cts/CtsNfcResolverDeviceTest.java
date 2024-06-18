@@ -161,7 +161,7 @@ public class CtsNfcResolverDeviceTest {
     }
 
     @Test
-    public void testNfcCustomizations() {
+    public void testNfcCustomizations_withAppAndActivityTarget() {
         final CountDownLatch appStarted = new CountDownLatch(1);
         final AtomicReference<Intent> targetLaunchIntent = new AtomicReference<>();
 
@@ -177,17 +177,16 @@ public class CtsNfcResolverDeviceTest {
                 PackageManager.MATCH_DEFAULT_ONLY | PackageManager.GET_META_DATA
         );
 
-        // Filter to include only the targets that we consider in our test design. Also filter out
-        // the "exclude tester" which would otherwise be included (i.e., otherwise no conditions
-        // would've been responsible for specifying its exclusion), because we want to ensure that
-        // the relevant test targets are on screen, and so we must limit the size of the list. Note
-        // that the "customized chooser" API doesn't *require* that no other targets are displayed,
-        // but we do test (at least for now) that *at least* the specified targets are included.
+        // Filter to include only the two targets that we expect to see in the UI for this test.
+        // Note that the "customized chooser" API doesn't *require* that no other targets are
+        // displayed, but we do test (at least for now) that *at least* the specified targets are
+        // included.
         final List<ResolveInfo> newTargets = matchingTargets
                 .stream()
                 .filter(t ->
                         t.activityInfo.packageName.startsWith("android.sharesheet.cts")
-                        && !t.activityInfo.packageName.contains("excludetester"))
+                        && !t.activityInfo.packageName.contains("excludetester")
+                        && !t.activityInfo.packageName.contains("intentfilterlabeltester"))
                 .collect(Collectors.toList());
 
         runAndExecuteCleanupBeforeAnyThrow(() -> {
@@ -204,6 +203,64 @@ public class CtsNfcResolverDeviceTest {
 
             showsApplicationLabel();
             showsAppAndActivityLabel();
+
+            UiObject2 shareTarget = findTextContains(mAppLabel);
+            assertNotNull(shareTarget);
+            // Start the event sequence and wait for results
+            // Must be run last, partial completion closes the Sharesheet
+            shareTarget.click();
+
+            appStarted.await(1000, TimeUnit.MILLISECONDS);
+            assertEquals(CTS_DATA_TYPE, targetLaunchIntent.get().getType());
+            assertEquals(Intent.ACTION_SEND, targetLaunchIntent.get().getAction());
+        }, () -> {
+            // The Sharesheet may or may not be open depending on test success, close it if it is.
+            closeSharesheetIfNeeded();
+            });
+    }
+
+    @Test
+    public void testNfcCustomizations_withAppAndIntentFilterTarget() {
+        final CountDownLatch appStarted = new CountDownLatch(1);
+        final AtomicReference<Intent> targetLaunchIntent = new AtomicReference<>();
+
+        CtsSharesheetDeviceActivity.setOnIntentReceivedConsumer(intent -> {
+            targetLaunchIntent.set(intent);
+            appStarted.countDown();
+        });
+
+        final String title = "custom title";
+        Intent sendIntent = createMatchingIntent();
+        List<ResolveInfo> matchingTargets = mContext.getPackageManager().queryIntentActivities(
+                sendIntent,
+                PackageManager.MATCH_DEFAULT_ONLY | PackageManager.GET_META_DATA
+        );
+
+        // Filter to include only the two targets that we expect to see in the UI for this test.
+        // Note that the "customized chooser" API doesn't *require* that no other targets are
+        // displayed, but we do test (at least for now) that *at least* the specified targets are
+        // included.
+        final List<ResolveInfo> newTargets = matchingTargets
+                .stream()
+                .filter(t ->
+                        t.activityInfo.packageName.startsWith("android.sharesheet.cts")
+                        && !t.activityInfo.packageName.contains("excludetester")
+                        && !t.activityInfo.packageName.contains("activitylabeltester"))
+                .collect(Collectors.toList());
+
+        runAndExecuteCleanupBeforeAnyThrow(() -> {
+            Intent resolverIntent = createNfcResolverIntent(
+                    sendIntent, title, newTargets);
+            resolverIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(resolverIntent);
+
+            waitAndAssertPkgVisible(mSharesheetPkg);
+            mSharesheet = mDevice.findObject(By.pkg(mSharesheetPkg).depth(0));
+            waitForIdle();
+
+            waitAndAssertTextContains(title);
+
+            showsApplicationLabel();
             showsAppAndIntentFilterLabel();
 
             UiObject2 shareTarget = findTextContains(mAppLabel);

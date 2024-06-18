@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static android.app.admin.DeviceAdminInfo.HEADLESS_DEVICE_OWNER_MODE_SINGLE_USER;
 import static android.os.Build.VERSION_CODES.Q;
 import static android.os.Build.VERSION_CODES.R;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -36,10 +37,10 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureNotDemoMode;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.SetDeviceOwnerSecureSetting;
 import com.android.bedstead.harrier.policies.SetGlobalSetting;
 import com.android.bedstead.harrier.policies.SetSecureSetting;
@@ -151,6 +152,7 @@ public final class SettingsTest {
             forTestApp = "dpc",
             query = @Query(targetSdkVersion = @IntegerQuery(isLessThan = Build.VERSION_CODES.R))
     )
+    @Ignore("b/333377966")
     public void setSecureSetting_deviceOwnerOnly_sets() {
         int originalValue = TestApis.settings().secure()
                 .getInt(DEPRECATED_DEVICE_OWNER_ONLY_SECURE_SETTING, /* defaultValue= */ 0);

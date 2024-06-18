@@ -21,8 +21,8 @@ import android.graphics.Bitmap
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.annotations.Experimental
 import com.android.bedstead.nene.exceptions.NeneException
-import com.android.bedstead.nene.permissions.CommonPermissions.SET_WALLPAPER
-import com.android.compatibility.common.util.BitmapUtils
+import com.android.bedstead.permissions.CommonPermissions.SET_WALLPAPER
+import com.android.bedstead.nene.utils.BitmapUtils
 import java.io.InputStream
 
 /** Test APIs related to wallpaper. */

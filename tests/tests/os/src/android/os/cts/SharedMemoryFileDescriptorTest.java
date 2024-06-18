@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.SharedMemory;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.system.OsConstants;
 
 import androidx.test.runner.AndroidJUnit4;
@@ -32,6 +33,7 @@ import org.junit.runner.RunWith;
 import java.nio.ByteBuffer;
 
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class SharedMemoryFileDescriptorTest {
 
     private static final String TAG = SharedMemoryFileDescriptorTest.class.getSimpleName();

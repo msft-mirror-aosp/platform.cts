@@ -26,6 +26,7 @@ import com.android.server.appsearch.external.localstorage.stats.InitializeStats;
 import com.android.server.appsearch.external.localstorage.stats.OptimizeStats;
 import com.android.server.appsearch.external.localstorage.stats.PutDocumentStats;
 import com.android.server.appsearch.external.localstorage.stats.RemoveStats;
+import com.android.server.appsearch.external.localstorage.stats.SearchSessionStats;
 import com.android.server.appsearch.external.localstorage.stats.SearchStats;
 import com.android.server.appsearch.external.localstorage.stats.SetSchemaStats;
 
@@ -40,20 +41,30 @@ import java.util.List;
 public final class SimpleTestLogger implements AppSearchLogger {
     /** Holds {@link CallStats} after logging. */
     @Nullable public CallStats mCallStats;
+
     /** Holds {@link PutDocumentStats} after logging. */
     @Nullable public PutDocumentStats mPutDocumentStats;
+
     /** Holds {@link InitializeStats} after logging. */
     @Nullable public InitializeStats mInitializeStats;
+
     /** Holds {@link SearchStats} after logging. */
     @Nullable public SearchStats mSearchStats;
+
     /** Holds {@link RemoveStats} after logging. */
     @Nullable public RemoveStats mRemoveStats;
+
     /** Holds {@link OptimizeStats} after logging. */
     @Nullable public OptimizeStats mOptimizeStats;
+
     /** Holds {@link SetSchemaStats} after logging. */
     @NonNull public List<SetSchemaStats> mSetSchemaStats = new ArrayList<>();
+
     /** Holds {@link android.app.appsearch.stats.SchemaMigrationStats} after logging. */
     @Nullable public SchemaMigrationStats mSchemaMigrationStats;
+
+    /** Holds {@link SearchSessionStats} after logging. */
+    @NonNull public List<SearchSessionStats> mSearchSessionsStats = new ArrayList<>();
 
     @Override
     public void logStats(@NonNull CallStats stats) {
@@ -93,5 +104,10 @@ public final class SimpleTestLogger implements AppSearchLogger {
     @Override
     public void logStats(@NonNull SchemaMigrationStats stats) {
         mSchemaMigrationStats = stats;
+    }
+
+    @Override
+    public void logStats(@NonNull List<SearchSessionStats> searchSessionsStats) {
+        mSearchSessionsStats.addAll(searchSessionsStats);
     }
 }

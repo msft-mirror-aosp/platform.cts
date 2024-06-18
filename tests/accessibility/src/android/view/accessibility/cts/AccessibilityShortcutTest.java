@@ -16,7 +16,7 @@
 
 package android.view.accessibility.cts;
 
-import static android.accessibility.cts.common.AccessibilityShortcutSettingsRule.ACCESSIBILITY_BUTTON;
+import static android.accessibility.cts.common.AccessibilityShortcutSettingsRule.SOFTWARE;
 import static android.accessibility.cts.common.InstrumentedAccessibilityService.TIMEOUT_SERVICE_ENABLE;
 import static android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES;
 
@@ -190,7 +190,7 @@ public class AccessibilityShortcutTest {
     @Test
     public void getAccessibilityShortcut_withoutPermission_throwsSecurityException() {
         try {
-            mAccessibilityManager.getAccessibilityShortcutTargets(ACCESSIBILITY_BUTTON);
+            mAccessibilityManager.getAccessibilityShortcutTargets(SOFTWARE);
             fail("No security exception thrown when get shortcut without permission");
         } catch (SecurityException e) {
             // Expected

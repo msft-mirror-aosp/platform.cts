@@ -1,0 +1,81 @@
+// Copyright (C) 2024 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+// Zip all the files in this directory together for merging into cts-verifier.zip.
+// build/envsetup.sh is used as a known file to get the location of the top of the
+// directory.
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+filegroup {
+    name: "multidevice_apps_to_include",
+    srcs: [
+        ":NfcReaderTestApp",
+        ":NfcEmulatorTestApp",
+    ],
+}
+
+filegroup {
+    name: "multidevice_tests_to_include",
+    srcs: [
+        "nfc/*.py",
+    ],
+}
+
+genrule {
+    name: "multidevice-test-apps",
+    srcs: [
+        ":multidevice_apps_to_include",
+    ],
+    tools: ["soong_zip"],
+    out: ["multidevice-test-apps.zip"],
+    cmd: "echo $(locations :multidevice_apps_to_include) >$(genDir)/list && " +
+        "$(location soong_zip) -o $(out) -j -P android-cts-verifier/MultiDevice -l $(genDir)/list",
+}
+
+genrule {
+    name: "multidevice-test-list",
+    srcs: [
+        ":multidevice_tests_to_include",
+        // Placeholder file outside the glob used to find the top of the directory.
+        "build/envsetup.sh",
+    ],
+    tools: ["soong_zip"],
+    out: ["multidevice-test-list.zip"],
+    cmd: "echo $(locations :multidevice_tests_to_include) >$(genDir)/test_list && " +
+        "$(location soong_zip) -o $(out) -P android-cts-verifier/MultiDevice/tests -C $$(dirname $$(dirname $(location build/envsetup.sh))) -l $(genDir)/test_list",
+}
+
+genrule {
+    name: "multidevice-test",
+    srcs: [
+        "tools/*.py",
+        "utils/*.py",
+        "config.yml",
+        // Placeholder file outside the glob used to find the top of the directory.
+        "build/envsetup.sh",
+        ":multidevice-test-list",
+        ":multidevice-test-apps",
+    ],
+    tools: [
+        "soong_zip",
+        "merge_zips",
+    ],
+    out: ["multidevice-test.zip"],
+    cmd: "echo $(locations tools/*.py) $(locations utils/*.py) $(locations build/envsetup.sh) $(locations config.yml) >$(genDir)/list && " +
+        "$(location soong_zip) -o $(genDir)/multidevice-temp.zip -P android-cts-verifier/MultiDevice -C $$(dirname $$(dirname $(location build/envsetup.sh))) -l $(genDir)/list && " +
+        "$(location merge_zips) $(out) $(genDir)/multidevice-temp.zip $(location :multidevice-test-list) $(location :multidevice-test-apps)",
+}

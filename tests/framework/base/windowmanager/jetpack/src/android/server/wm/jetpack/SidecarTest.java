@@ -22,7 +22,9 @@ import static android.server.wm.jetpack.extensions.util.SidecarUtil.assertEqualW
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.assumeHasDisplayFeatures;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.assumeSidecarSupportedDevice;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.getSidecarInterface;
+
 import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -76,7 +78,7 @@ public class SidecarTest extends WindowManagerJetpackTestBase {
 
     @Before
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         assumeSidecarSupportedDevice(mContext);
         mActivity = startFullScreenActivityNewTask(TestActivity.class, null);

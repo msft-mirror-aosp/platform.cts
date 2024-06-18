@@ -126,16 +126,6 @@ public final class ShellCommandUtils {
     }
 
     /**
-     * Command to get the last user ID that is specified to
-     * InputMethodManagerService.Lifecycle#onUserSwitching().
-     *
-     * @return the command to be passed to shell command.
-     */
-    public static String getLastSwitchUserId() {
-        return "cmd input_method get-last-switch-user-id";
-    }
-
-    /**
      * Command to create a new profile user.
      *
      * @param parentUserId parent user to whom the new profile user should belong

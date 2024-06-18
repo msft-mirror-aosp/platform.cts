@@ -19,6 +19,8 @@ package android.telephony.ims.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -144,11 +146,8 @@ public class ImsRegistrationAttributesTest {
                 attr.getTransportType());
         assertEquals(0, (attr.getAttributeFlags()
                 & ImsRegistrationAttributes.ATTR_EPDG_OVER_CELL_INTERNET));
-        assertEquals(ImsRegistrationAttributes.ATTR_REGISTRATION_TYPE_EMERGENCY,
-                (attr.getAttributeFlags()
-                        & ImsRegistrationAttributes.ATTR_REGISTRATION_TYPE_EMERGENCY));
-        assertEquals(0, (attr.getAttributeFlags()
-                & ImsRegistrationAttributes.ATTR_VIRTUAL_FOR_ANONYMOUS_EMERGENCY_CALL));
+        assertTrue(attr.getFlagRegistrationTypeEmergency());
+        assertFalse(attr.getFlagVirtualRegistrationForEmergencyCall());
         assertNotNull(attr.getFeatureTags());
         assertEquals(0, attr.getFeatureTags().size());
         assertNull(attr.getSipDetails());
@@ -165,12 +164,8 @@ public class ImsRegistrationAttributesTest {
                 attr.getTransportType());
         assertEquals(0, (attr.getAttributeFlags()
                 & ImsRegistrationAttributes.ATTR_EPDG_OVER_CELL_INTERNET));
-        assertEquals(ImsRegistrationAttributes.ATTR_REGISTRATION_TYPE_EMERGENCY,
-                (attr.getAttributeFlags()
-                        & ImsRegistrationAttributes.ATTR_REGISTRATION_TYPE_EMERGENCY));
-        assertEquals(ImsRegistrationAttributes.ATTR_VIRTUAL_FOR_ANONYMOUS_EMERGENCY_CALL,
-                (attr.getAttributeFlags()
-                        & ImsRegistrationAttributes.ATTR_VIRTUAL_FOR_ANONYMOUS_EMERGENCY_CALL));
+        assertTrue(attr.getFlagRegistrationTypeEmergency());
+        assertTrue(attr.getFlagVirtualRegistrationForEmergencyCall());
         assertNotNull(attr.getFeatureTags());
         assertEquals(0, attr.getFeatureTags().size());
         assertNull(attr.getSipDetails());

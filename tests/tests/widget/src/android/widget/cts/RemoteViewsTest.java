@@ -17,7 +17,6 @@
 package android.widget.cts;
 
 import static android.appwidget.flags.Flags.drawDataParcel;
-import static android.graphics.Bitmap.Config.ARGB_8888;
 import static android.util.TypedValue.COMPLEX_UNIT_DIP;
 import static android.util.TypedValue.COMPLEX_UNIT_PX;
 import static android.view.View.MeasureSpec.makeMeasureSpec;
@@ -42,6 +41,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.Instrumentation.ActivityMonitor;
@@ -111,6 +111,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ThrowingRunnable;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
@@ -134,6 +135,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -148,7 +150,13 @@ public class RemoteViewsTest {
 
     private static final long TEST_TIMEOUT = 5000;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<RemoteViewsCtsActivity> mActivityRule =
             new ActivityTestRule<>(RemoteViewsCtsActivity.class);
 
@@ -495,7 +503,8 @@ public class RemoteViewsTest {
         if (!drawDataParcel()) {
             return;
         }
-        final RemoteViews.DrawInstructions drawInstructions = getDrawInstructions();
+        final RemoteViews.DrawInstructions drawInstructions =
+                getDrawInstructions(mContext, R.raw.widget);
         final String key = "mykey";
         final String action = "myaction";
         final MockBroadcastReceiver receiver = new MockBroadcastReceiver();
@@ -521,30 +530,17 @@ public class RemoteViewsTest {
         final int width = 100;
         final int height = 100;
         final int offset = 2;
-        final Bitmap bitmap1 = Bitmap.createBitmap(width, height, ARGB_8888);
-        final Bitmap bitmap2 = Bitmap.createBitmap(width, height, ARGB_8888);
         mRemoteViews = new RemoteViews(drawInstructions);
         for (int i = 0; i < 4; i++) {
             mRemoteViews.setPendingIntentTemplate(i + 1, pendingIntent);
             mRemoteViews.setOnClickFillInIntent(i + 1, intents[i]);
         }
         applyNightModeThenApplyAndTest(false /* nightMode */, () -> {});
-        mActivityRule.runOnUiThread(() -> {
-            mResult.measure(makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                    makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
-            mResult.layout(0, 0, width, height);
-            mResult.draw(new Canvas(bitmap1));
-        });
-        verifyColorsOnFourCorners(Color.WHITE, bitmap1);
-        bitmap1.recycle();
+        verifyBitmap(width, height, (bitmap) -> verifyColorsOnFourCorners(Color.WHITE, bitmap));
 
         // Switch to night mode
         applyNightModeThenReapplyAndTest(true /* nightMode */, () -> {});
-        mActivityRule.runOnUiThread(() -> {
-            mResult.draw(new Canvas(bitmap2));
-        });
-        verifyColorsOnFourCorners(Color.BLACK, bitmap2);
-        bitmap2.recycle();
+        verifyBitmap(width, height, (bitmap) -> verifyColorsOnFourCorners(Color.BLACK, bitmap));
 
         // Verify clicks
         mActivityRule.runOnUiThread(() -> {
@@ -559,14 +555,341 @@ public class RemoteViewsTest {
         verifyClick(receiver, width - offset, height - offset, 4);
     }
 
-    private RemoteViews.DrawInstructions getDrawInstructions() throws IOException {
-        try (InputStream is = mContext.getResources().openRawResource(R.raw.widget)
+    @Test
+    public void testDrawInstructionsBlend() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
+        testSingleDrawInstruction("blend_clear",
+                R.raw.blend_clear, R.drawable.blend_clear);
+        testSingleDrawInstruction("blend_color",
+                R.raw.blend_color, R.drawable.blend_color);
+        testSingleDrawInstruction("blend_color_burn",
+                R.raw.blend_color_burn, R.drawable.blend_color_burn);
+        testSingleDrawInstruction("blend_color_dodge",
+                R.raw.blend_color_dodge, R.drawable.blend_color_dodge);
+        testSingleDrawInstruction("blend_darken",
+                R.raw.blend_darken, R.drawable.blend_darken);
+        testSingleDrawInstruction("blend_difference",
+                R.raw.blend_difference, R.drawable.blend_difference);
+        testSingleDrawInstruction("blend_dst",
+                R.raw.blend_dst, R.drawable.blend_dst);
+        testSingleDrawInstruction("blend_dst_atop",
+                R.raw.blend_dst_atop, R.drawable.blend_dst_atop);
+        testSingleDrawInstruction("blend_dst_in",
+                R.raw.blend_dst_in, R.drawable.blend_dst_in);
+        testSingleDrawInstruction("blend_dst_out",
+                R.raw.blend_dst_out, R.drawable.blend_dst_out);
+        testSingleDrawInstruction("blend_dst_over",
+                R.raw.blend_dst_over, R.drawable.blend_dst_over);
+        testSingleDrawInstruction("blend_exclusion",
+                R.raw.blend_exclusion, R.drawable.blend_exclusion);
+        testSingleDrawInstruction("blend_hard_light",
+                R.raw.blend_hard_light, R.drawable.blend_hard_light);
+        testSingleDrawInstruction("blend_hue",
+                R.raw.blend_hue, R.drawable.blend_hue);
+        testSingleDrawInstruction("blend_lighten",
+                R.raw.blend_lighten, R.drawable.blend_lighten);
+        testSingleDrawInstruction("blend_luminosity",
+                R.raw.blend_luminosity, R.drawable.blend_luminosity);
+        testSingleDrawInstruction("blend_modulate",
+                R.raw.blend_modulate, R.drawable.blend_modulate);
+        testSingleDrawInstruction("blend_multiply",
+                R.raw.blend_multiply, R.drawable.blend_multiply);
+        testSingleDrawInstruction("blend_overlay",
+                R.raw.blend_overlay, R.drawable.blend_overlay);
+        testSingleDrawInstruction("blend_plus",
+                R.raw.blend_plus, R.drawable.blend_plus);
+        testSingleDrawInstruction("blend_saturation",
+                R.raw.blend_saturation, R.drawable.blend_saturation);
+        testSingleDrawInstruction("blend_screen",
+                R.raw.blend_screen, R.drawable.blend_screen);
+        testSingleDrawInstruction("blend_soft_light",
+                R.raw.blend_soft_light, R.drawable.blend_soft_light);
+        testSingleDrawInstruction("blend_src",
+                R.raw.blend_src, R.drawable.blend_src);
+        testSingleDrawInstruction("blend_src_atop",
+                R.raw.blend_src_atop, R.drawable.blend_src_atop);
+        testSingleDrawInstruction("blend_src_in",
+                R.raw.blend_src_in, R.drawable.blend_src_in);
+        testSingleDrawInstruction("blend_src_out",
+                R.raw.blend_src_out, R.drawable.blend_src_out);
+        testSingleDrawInstruction("blend_src_over",
+                R.raw.blend_src_over, R.drawable.blend_src_over);
+        testSingleDrawInstruction("blend_xor",
+                R.raw.blend_xor, R.drawable.blend_xor);
+    }
+
+    @Test
+    public void testDrawInstructionsClip() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
+        testSingleDrawInstruction("clip_path",
+                R.raw.clip_path, R.drawable.clip_path);
+        testSingleDrawInstruction("clip_rect",
+                R.raw.clip_rect, R.drawable.clip_rect);
+    }
+
+    @Test
+    public void testDrawInstructionsText() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
+        testSingleDrawInstruction("draw_text",
+                R.raw.draw_text, R.drawable.draw_text);
+        testSingleDrawInstruction("text_font",
+                R.raw.text_font, R.drawable.text_font);
+        testSingleDrawInstruction("text_font_monospace",
+                R.raw.text_font_monospace, R.drawable.text_font_monospace);
+        testSingleDrawInstruction("text_font_san_serif",
+                R.raw.text_font_san_serif, R.drawable.text_font_san_serif);
+        testSingleDrawInstruction("text_font_san_serif_800",
+                R.raw.text_font_san_serif_800, R.drawable.text_font_san_serif_800);
+        testSingleDrawInstruction("text_font_serif",
+                R.raw.text_font_serif, R.drawable.text_font_serif);
+    }
+
+    @Test
+    public void testDrawInstructionsGradient() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
+        testSingleDrawInstruction("linear_gradient_1",
+                R.raw.linear_gradient_1, R.drawable.linear_gradient_1);
+        testSingleDrawInstruction("linear_gradient_2",
+                R.raw.linear_gradient_2, R.drawable.linear_gradient_2);
+        testSingleDrawInstruction("radial_gradient_1",
+                R.raw.radial_gradient_1, R.drawable.radial_gradient_1);
+        testSingleDrawInstruction("radial_gradient_2",
+                R.raw.radial_gradient_2, R.drawable.radial_gradient_2);
+        testSingleDrawInstruction("sweep_gradient_1",
+                R.raw.sweep_gradient_1, R.drawable.sweep_gradient_1);
+        testSingleDrawInstruction("sweep_gradient_2",
+                R.raw.sweep_gradient_2, R.drawable.sweep_gradient_2);
+    }
+
+    @Test
+    public void testDrawInstructionsMatrix() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
+        testSingleDrawInstruction("matrix_rotate_1",
+                R.raw.matrix_rotate_1, R.drawable.matrix_rotate_1);
+        testSingleDrawInstruction("matrix_rotate_2",
+                R.raw.matrix_rotate_2, R.drawable.matrix_rotate_2);
+        testSingleDrawInstruction("matrix_scale_1",
+                R.raw.matrix_scale_1, R.drawable.matrix_scale_1);
+        testSingleDrawInstruction("matrix_scale_2",
+                R.raw.matrix_scale_2, R.drawable.matrix_scale_2);
+        testSingleDrawInstruction("matrix_skew",
+                R.raw.matrix_skew, R.drawable.matrix_skew);
+        testSingleDrawInstruction("matrix_translate",
+                R.raw.matrix_translate, R.drawable.matrix_translate);
+    }
+
+    @Test
+    public void testDrawInstructionsMulti() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
+        testSingleDrawInstruction("multi_path",
+                R.raw.multi_path, R.drawable.multi_path);
+        testSingleDrawInstruction("multiple_draw_commands",
+                R.raw.multiple_draw_commands, R.drawable.multiple_draw_commands);
+    }
+
+    @Test
+    public void testDrawInstructionsPaint() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
+        testSingleDrawInstruction("paint_filter_bitmap_1",
+                R.raw.paint_filter_bitmap_1, R.drawable.paint_filter_bitmap_1);
+        testSingleDrawInstruction("paint_filter_bitmap_2",
+                R.raw.paint_filter_bitmap_2, R.drawable.paint_filter_bitmap_2);
+        testSingleDrawInstruction("paint_filter_bitmap_3",
+                R.raw.paint_filter_bitmap_3, R.drawable.paint_filter_bitmap_3);
+        testSingleDrawInstruction("paint_set_color",
+                R.raw.paint_set_color, R.drawable.paint_set_color);
+        testSingleDrawInstruction("paint_set_stroke",
+                R.raw.paint_set_stroke, R.drawable.paint_set_stroke);
+        testSingleDrawInstruction("paint_stroke_miter",
+                R.raw.paint_stroke_miter, R.drawable.paint_stroke_miter);
+    }
+
+    @Test
+    public void testDrawInstructionsPath() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
+        testSingleDrawInstruction("path_cubic_to",
+                R.raw.path_cubic_to, R.drawable.path_cubic_to);
+        testSingleDrawInstruction("path_line_to",
+                R.raw.path_line_to, R.drawable.path_line_to);
+        testSingleDrawInstruction("path_quad_to",
+                R.raw.path_quad_to, R.drawable.path_quad_to);
+        testSingleDrawInstruction("path_tween_test_1",
+                R.raw.path_tween_test_1, R.drawable.path_tween_test_1);
+        testSingleDrawInstruction("path_tween_test_2",
+                R.raw.path_tween_test_2, R.drawable.path_tween_test_2);
+        testSingleDrawInstruction("paint_stroke_miter",
+                R.raw.paint_stroke_miter, R.drawable.paint_stroke_miter);
+    }
+
+    @Test
+    public void testDrawInstructionsPorter() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
+        testSingleDrawInstruction("porter_add",
+                R.raw.porter_add, R.drawable.porter_add);
+        testSingleDrawInstruction("porter_clear",
+                R.raw.porter_clear, R.drawable.porter_clear);
+        testSingleDrawInstruction("porter_darken",
+                R.raw.porter_darken, R.drawable.porter_darken);
+        testSingleDrawInstruction("porter_dst",
+                R.raw.porter_dst, R.drawable.porter_dst);
+        testSingleDrawInstruction("porter_dst_atop",
+                R.raw.porter_dst_atop, R.drawable.porter_dst_atop);
+        testSingleDrawInstruction("porter_dst_in",
+                R.raw.porter_dst_in, R.drawable.porter_dst_in);
+        testSingleDrawInstruction("porter_dst_out",
+                R.raw.porter_dst_out, R.drawable.porter_dst_out);
+        testSingleDrawInstruction("porter_dst_over",
+                R.raw.porter_dst_over, R.drawable.porter_dst_over);
+        testSingleDrawInstruction("porter_lighten",
+                R.raw.porter_lighten, R.drawable.porter_lighten);
+        testSingleDrawInstruction("porter_multiply",
+                R.raw.porter_multiply, R.drawable.porter_multiply);
+        testSingleDrawInstruction("porter_overlay",
+                R.raw.porter_overlay, R.drawable.porter_overlay);
+        testSingleDrawInstruction("porter_screen",
+                R.raw.porter_screen, R.drawable.porter_screen);
+        testSingleDrawInstruction("porter_src",
+                R.raw.porter_src, R.drawable.porter_src);
+        testSingleDrawInstruction("porter_src_atop",
+                R.raw.porter_src_atop, R.drawable.porter_src_atop);
+        testSingleDrawInstruction("porter_src_in",
+                R.raw.porter_src_in, R.drawable.porter_src_in);
+        testSingleDrawInstruction("porter_src_out",
+                R.raw.porter_src_out, R.drawable.porter_src_out);
+        testSingleDrawInstruction("porter_src_over",
+                R.raw.porter_src_over, R.drawable.porter_src_over);
+        testSingleDrawInstruction("porter_xor",
+                R.raw.porter_xor, R.drawable.porter_xor);
+    }
+
+    private void testSingleDrawInstruction(final String resourceName, final int docId,
+                final int bitmapId) throws Throwable {
+        final RemoteViews.DrawInstructions drawInstructions =
+                getDrawInstructions(mContext, docId);
+        final Bitmap expectedBitmap = getBitmapFromFile(mContext, bitmapId);
+        mRemoteViews = new RemoteViews(drawInstructions);
+        mResult = mRemoteViews.apply(mContext, null);
+        verifyBitmap(expectedBitmap.getWidth(), expectedBitmap.getHeight(), (actualBitmap) -> {
+            final float rmse = compareImages(expectedBitmap, actualBitmap, resourceName);
+            // reject if root-square-mean-error is above threshold and saves screenshots for debug
+            if (rmse > 8.0f) {
+                try {
+                    final String actualPath = saveBitmapToFile(
+                            actualBitmap, resourceName + "_actual");
+                    final String expectedPath = saveBitmapToFile(
+                            expectedBitmap, resourceName + "_expected");
+                    Assert.fail("Failed validating " + resourceName + " rmse=" + rmse
+                            + ". Bitmaps saved as " + actualPath + " and " + expectedPath);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
+    private static RemoteViews.DrawInstructions getDrawInstructions(
+            final Context context, final int resourceId) throws IOException {
+        try (InputStream is = context.getResources().openRawResource(resourceId)
         ) {
             final byte[] bytes = new byte[(int) is.available()];
             final int result = is.read(bytes);
             return new RemoteViews.DrawInstructions.Builder(
                     Collections.singletonList(bytes)).build();
         }
+    }
+
+    private static Bitmap getBitmapFromFile(final Context context, final int resourceId) {
+        final BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inScaled = false;
+        return BitmapFactory.decodeResource(context.getResources(), resourceId, opts);
+    }
+
+    private String saveBitmapToFile(final Bitmap image, final String resourceName)
+            throws IOException {
+        final int quality = 100;
+        final File dir = mContext.getFilesDir();
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        final File dest = new File(dir, resourceName + "_" + System.currentTimeMillis() + ".png");
+        dest.createNewFile();
+        try (FileOutputStream fos = new FileOutputStream(dest)) {
+            image.compress(Bitmap.CompressFormat.PNG, quality, fos);
+        }
+        return dest.getAbsolutePath();
+    }
+
+    private void verifyBitmap(final int width, final int height, final Consumer<Bitmap> cb)
+            throws Throwable {
+        final Bitmap bitmap = blank(width, height);
+        mActivityRule.runOnUiThread(() -> {
+            mResult.measure(makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                    makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+            mResult.layout(0, 0, width, height);
+            mResult.draw(new Canvas(bitmap));
+        });
+        cb.accept(bitmap);
+        bitmap.recycle();
+    }
+
+    private Bitmap blank(final int width, final int height) {
+        final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bitmap.eraseColor(0xFFAABBCC);
+        return bitmap;
+    }
+
+    private static float compareImages(Bitmap bitmap1, Bitmap bitmap2, String testLabel) {
+        if (bitmap1.getWidth() != bitmap2.getWidth()
+                || bitmap1.getHeight() != bitmap2.getHeight()) {
+            throw new IllegalArgumentException("Size mismatches when running " + testLabel
+                    + " expected:[w=" + bitmap1.getWidth() + ",h=" + bitmap1.getHeight() + "]"
+                    + " actual:[w=" + bitmap2.getWidth() + ",h=" + bitmap2.getHeight() + "]");
+        }
+        float sqr_sum = 0;
+        int count = 0;
+        for (int y = 1; y < bitmap1.getHeight() - 1; y++) {
+            for (int x = 1; x < bitmap1.getWidth() - 1; x++) {
+                int pix1 = bitmap1.getPixel(x, y);
+                if (pix1 != bitmap1.getPixel(x, y - 1)
+                        || pix1 != bitmap1.getPixel(x, y + 1)
+                        || pix1 != bitmap1.getPixel(x - 1, y - 1)
+                        || pix1 != bitmap1.getPixel(x - 1, y - 1)) {
+                    // Skips if a pixel's color doesn't match its neighboring pixel
+                    continue;
+                }
+                // Ignores least significant bit
+                float r1 = (pix1 & 0xFF0000) >> 17;
+                float g1 = (pix1 & 0xFF00) >> 9;
+                float b1 = (pix1 & 0xFF) >> 1;
+                int pix2 = bitmap2.getPixel(x, y);
+                float r2 = (pix2 & 0xFF0000) >> 17;
+                float g2 = (pix2 & 0xFF00) >> 9;
+                float b2 = (pix2 & 0xFF) >> 1;
+                sqr_sum += (r1 - r2) * (r1 - r2);
+                sqr_sum += (g1 - g2) * (g1 - g2);
+                sqr_sum += (b1 - b2) * (b1 - b2);
+                count += 3;
+            }
+        }
+        return (float) Math.sqrt(sqr_sum / count);
     }
 
     private static void verifyColorsOnFourCorners(final int expectedColor, final Bitmap bitmap) {

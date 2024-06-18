@@ -19,6 +19,7 @@ package {
 
 android_test {
     name: "CtsWindowManagerSdk29TestCases",
+    team: "trendy_team_windowing_sdk",
     defaults: ["cts_defaults"],
 
     srcs: [

@@ -14,10 +14,12 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_media_solutions",
 }
 
 android_test {
     name: "CtsMediaParserTestCases",
+    team: "trendy_team_android_media_solutions",
     defaults: [
         "CtsMediaParserTestCasesDefaults",
         "cts_defaults",

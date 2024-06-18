@@ -26,7 +26,7 @@ public final class Content {
 
     /** Access Test APIs related to Content Suggestions. */
     public Suggestions suggestions() {
-        return Suggestions.sInstance;
+        return Suggestions.INSTANCE;
     }
 
 }

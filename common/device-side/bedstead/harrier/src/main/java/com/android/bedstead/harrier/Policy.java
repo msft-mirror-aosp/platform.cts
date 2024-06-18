@@ -21,32 +21,32 @@ import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
 import static com.android.bedstead.harrier.UserType.SECONDARY_USER;
 import static com.android.bedstead.harrier.UserType.SYSTEM_USER;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate.DELEGATE_KEY;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_DPM_ROLE_HOLDER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_FINANCED_DEVICE_OWNER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_SINGLE_DEVICE_OWNER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_SYSTEM_DEVICE_OWNER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_IN_BACKGROUND;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_AFFILIATED_OTHER_USERS;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_OWN_USER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_PARENT;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_UNAFFILIATED_CHILD_PROFILES_WITHOUT_INHERITANCE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_UNAFFILIATED_OTHER_USERS;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.CAN_BE_DELEGATED;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.DO_NOT_APPLY_TO_CANNOT_SET_POLICY_TESTS;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.DO_NOT_APPLY_TO_POLICY_DOES_NOT_APPLY_TESTS;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.INHERITABLE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.NO;
+import static com.android.bedstead.enterprise.annotations.EnsureHasDelegate.DELEGATE_KEY;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_PROFILE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_AFFILIATED_PROFILE_OWNER_USER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DPM_ROLE_HOLDER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_FINANCED_DEVICE_OWNER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_NON_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER_USER_WITH_NO_DO;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_SINGLE_DEVICE_OWNER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_SYSTEM_DEVICE_OWNER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_PROFILE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_UNAFFILIATED_PROFILE_OWNER_USER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_IN_BACKGROUND;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_AFFILIATED_OTHER_USERS;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_PARENT;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_UNAFFILIATED_CHILD_PROFILES_WITHOUT_INHERITANCE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_UNAFFILIATED_OTHER_USERS;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.CAN_BE_DELEGATED;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.DO_NOT_APPLY_TO_CANNOT_SET_POLICY_TESTS;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.DO_NOT_APPLY_TO_POLICY_DOES_NOT_APPLY_TESTS;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.INHERITABLE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.NO;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_APP_RESTRICTIONS;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_BLOCK_UNINSTALL;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_CERT_INSTALL;
@@ -59,49 +59,49 @@ import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATI
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_PERMISSION_GRANT;
 import static com.android.bedstead.nene.devicepolicy.CommonDevicePolicy.DELEGATION_SECURITY_LOGGING;
 import static com.android.bedstead.testapp.TestAppQueryBuilder.queryBuilder;
+import static com.android.xts.root.annotations.RequireRootInstrumentationKt.requireRootInstrumentation;
 
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderSecondaryUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSingleDeviceOwnerUser;
 import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.FailureMode;
-import com.android.bedstead.harrier.annotations.RequireFeatureFlagEnabled;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDevicePolicyManagerRoleHolder;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDelegate;
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.AppOp;
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.Permission;
+import com.android.bedstead.enterprise.annotations.EnsureHasDelegate;
+import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy.AppOp;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy.Permission;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnAffiliatedDeviceOwnerSecondaryUser;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnAffiliatedProfileOwnerAdditionalUser;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUser;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfile;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderProfile;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderSecondaryUser;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderUser;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnOrganizationOwnedProfileOwner;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwner;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfProfileOwnerUsingParentInstance;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideManagedProfile;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfile;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnProfileOwnerPrimaryUser;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSecondaryUserInDifferentProfileGroupToOrganizationOwnedProfileOwnerProfileUsingParentInstance;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAffiliatedDeviceOwnerSecondaryUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnAffiliatedProfileOwnerAdditionalUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfile;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfile;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnDevicePolicyManagementRoleHolderProfile;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnFinancedDeviceOwnerUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnOrganizationOwnedProfileOwner;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwner;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfOrganizationOwnedProfileOwnerUsingParentInstance;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfProfileOwnerUsingParentInstance;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideManagedProfile;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideManagedProfileUsingParentInstance;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfile;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfileUsingParentInstance;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnProfileOwnerPrimaryUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUserInDifferentProfileGroupToOrganizationOwnedProfileOwnerProfileUsingParentInstance;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSecondaryUserInDifferentProfileGroupToProfileOwnerProfile;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedDeviceOwnerSecondaryUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser;
 import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;
@@ -304,7 +304,7 @@ public final class Policy {
     }
 
     @AutoAnnotation
-    private static com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSingleDeviceOwnerUser includeRunOnSingleDeviceOwnerUser() {
+    private static IncludeRunOnSingleDeviceOwnerUser includeRunOnSingleDeviceOwnerUser() {
         return new AutoAnnotation_Policy_includeRunOnSingleDeviceOwnerUser();
     }
 
@@ -449,17 +449,6 @@ public final class Policy {
     private static IncludeRunOnDevicePolicyManagementRoleHolderSecondaryUser includeRunOnDevicePolicyManagementRoleHolderSecondaryUser() {
         return new AutoAnnotation_Policy_includeRunOnDevicePolicyManagementRoleHolderSecondaryUser();
     }
-
-    @AutoAnnotation
-    private static EnsureFeatureFlagEnabled ensureFeatureFlagEnabled(String namespace, String key) {
-        return new AutoAnnotation_Policy_ensureFeatureFlagEnabled(namespace, key);
-    }
-
-    @AutoAnnotation
-    private static RequireFeatureFlagEnabled requireFeatureFlagEnabled(String namespace, String key) {
-        return new AutoAnnotation_Policy_requireFeatureFlagEnabled(namespace, key);
-    }
-
     private static Function<EnterprisePolicy, Set<Annotation>> singleAnnotation(
             Annotation annotation) {
         return (i) -> ImmutableSet.of(annotation);
@@ -645,18 +634,27 @@ public final class Policy {
 
         for (Permission permission : enterprisePolicy.permissions()) {
             // TODO(b/219750042): Currently we only test that permissions apply to the current user
-            Annotation[] withPermissionAnnotations = new Annotation[]{
-                    ensureTestAppInstalled(DELEGATE_KEY, queryBuilder()
-                                    .wherePackageName().isEqualTo(DELEGATE_PACKAGE_NAME)
-                                    .toAnnotation(),
-                            INSTRUMENTED_USER, /* isPrimary= */ true),
-                    ensureTestAppHasPermission(DELEGATE_KEY,
-                            new String[]{permission.appliedWith()}, FailureMode.SKIP)
-            };
-            // TODO(281651179): Re-enable
-//            annotations.add(
-//                    new DynamicParameterizedAnnotation(
-//                            "Permission_" + formatPermissionForTestName(permission.appliedWith()), withPermissionAnnotations));
+            Annotation[] withPermissionAnnotations =
+                    new Annotation[] {
+                        ensureTestAppInstalled(
+                                DELEGATE_KEY,
+                                queryBuilder()
+                                        .wherePackageName()
+                                        .isEqualTo(DELEGATE_PACKAGE_NAME)
+                                        .toAnnotation(),
+                                INSTRUMENTED_USER,
+                                /* isPrimary= */ true),
+                        ensureTestAppHasPermission(
+                                DELEGATE_KEY,
+                                new String[] {permission.appliedWith()},
+                                FailureMode.SKIP),
+                        requireRootInstrumentation(
+                                "Use of device policy permission", FailureMode.SKIP)
+                    };
+            annotations.add(
+                    new DynamicParameterizedAnnotation(
+                            "Permission_" + formatPermissionForTestName(permission.appliedWith()),
+                            withPermissionAnnotations));
         }
 
         removeShadowingAnnotations(annotations);
@@ -787,15 +785,19 @@ public final class Policy {
                             EnsureHasDelegate.AdminType.PRIMARY, new String[]{scope},
                             /* isPrimary= */ true);
                     annotations.add(
-                            new DynamicParameterizedAnnotation("DelegateWithScope:" + scope, newAnnotations));
+                            new DynamicParameterizedAnnotation(
+                                    "DelegateWithScope:" + scope, newAnnotations));
                 }
             } else {
                 Annotation[] newAnnotations = Arrays.copyOf(existingAnnotations,
                         existingAnnotations.length + 2);
                 newAnnotations[newAnnotations.length - 2] = ensureHasDelegate(
                         EnsureHasDelegate.AdminType.PRIMARY, scopes, /* isPrimary= */ true);
-                newAnnotations[newAnnotations.length - 1] = ensureTestAppDoesNotHavePermission(
-                        DELEGATE_KEY, validPermissions, FailureMode.SKIP);
+                // TODO: We should add @RequireRootInstrumentation if the permission is root-only
+                //  - but we need to be able to determine that from the host
+                newAnnotations[newAnnotations.length - 1] =
+                        ensureTestAppDoesNotHavePermission(
+                                DELEGATE_KEY, validPermissions, FailureMode.SKIP);
                 annotations.add(
                         new DynamicParameterizedAnnotation("DelegateWithoutValidScope",
                                 newAnnotations));
@@ -856,20 +858,29 @@ public final class Policy {
         }
 
         for (Permission permission : enterprisePolicy.permissions()) {
-            // TODO(b/219750042): Currently we only test that permissions can be set as the primary user
-            Annotation[] withPermissionAnnotations = new Annotation[]{
-                    ensureTestAppInstalled(DELEGATE_KEY,
-                            queryBuilder()
-                                    .wherePackageName().isEqualTo(DELEGATE_PACKAGE_NAME)
-                                    .toAnnotation(), INSTRUMENTED_USER,
-                            /* isPrimary= */ true),
-                    ensureTestAppHasPermission(
-                            DELEGATE_KEY, new String[]{permission.appliedWith()}, FailureMode.SKIP),
-            };
-            // TODO(281651179): Re-enable
-//            annotations.add(
-//                    new DynamicParameterizedAnnotation(
-//                            "Permission_" + formatPermissionForTestName(permission.appliedWith()), withPermissionAnnotations));
+            // TODO(b/219750042): Currently we only test that permissions can be set as the primary
+            // user
+            Annotation[] withPermissionAnnotations =
+                    new Annotation[] {
+                        ensureTestAppInstalled(
+                                DELEGATE_KEY,
+                                queryBuilder()
+                                        .wherePackageName()
+                                        .isEqualTo(DELEGATE_PACKAGE_NAME)
+                                        .toAnnotation(),
+                                INSTRUMENTED_USER,
+                                /* isPrimary= */ true),
+                        ensureTestAppHasPermission(
+                                DELEGATE_KEY,
+                                new String[] {permission.appliedWith()},
+                                FailureMode.SKIP),
+                        requireRootInstrumentation(
+                                "Use of device policy permission", FailureMode.SKIP)
+                    };
+            annotations.add(
+                    new DynamicParameterizedAnnotation(
+                            "Permission_" + formatPermissionForTestName(permission.appliedWith()),
+                            withPermissionAnnotations));
         }
 
         removeShadowingAnnotations(annotations);

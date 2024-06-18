@@ -16,12 +16,12 @@
 
 package com.android.bedstead.harrier.policies;
 
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_GLOBALLY;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_MOBILE_NETWORK;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_GLOBALLY;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_MOBILE_NETWORK;
 
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 /**
  * Policy related to setting {@code DISALLOW_SIM_GLOBALLY}
@@ -30,8 +30,10 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
         APPLIED_BY_DEVICE_OWNER
                 | APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE
                 | APPLIES_GLOBALLY
-},
-        permissions = @EnterprisePolicy.Permission(
-                appliedWith = MANAGE_DEVICE_POLICY_MOBILE_NETWORK, appliesTo = APPLIES_GLOBALLY))
+})
+        // Needs to be split into two policies because of the change in global user restriction behaviour
+// when using permissions
+//        permissions = @EnterprisePolicy.Permission(
+//                appliedWith = MANAGE_DEVICE_POLICY_MOBILE_NETWORK, appliesTo = APPLIES_GLOBALLY))
 public class DisallowUnmanagedSubscriptionsGlobally {
 }

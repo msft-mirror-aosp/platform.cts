@@ -33,7 +33,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AutomationFor {
 
-    /** Te fully qualified classname of the step.
+    /** The fully qualified classname of the step.
      *
      * <p>For example
      * "com.android.interactive.steps.enterprise.settings.AccountsRemoveWorkProfileStep"

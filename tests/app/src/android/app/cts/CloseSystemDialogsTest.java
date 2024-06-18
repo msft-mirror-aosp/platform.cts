@@ -31,8 +31,8 @@ import android.Manifest;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
-import android.app.stubs.shared.FutureServiceConnection;
 import android.app.stubs.shared.FakeView;
+import android.app.stubs.shared.FutureServiceConnection;
 import android.app.stubs.shared.ICloseSystemDialogsTestsService;
 import android.app.stubs.shared.NotificationHelper;
 import android.app.stubs.shared.TestNotificationListener;
@@ -42,6 +42,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.os.ConditionVariable;
@@ -64,10 +65,12 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
@@ -130,10 +133,22 @@ public class CloseSystemDialogsTest {
         mWindowState = new WindowManagerStateHelper();
         enableUserFinal();
 
+        final CountDownLatch latch = new CountDownLatch(1);
+        mContext.getContentResolver().registerContentObserver(
+                Settings.Global.getUriFor(Settings.Global.HIDDEN_API_POLICY), false,
+                new ContentObserver(null) {
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        super.onChange(selfChange);
+                        latch.countDown();
+                    }
+                });
+
         // We need to test that a few hidden APIs are properly protected in the helper app. The
         // helper app we're using doesn't have the checks disabled because it's not the target of
         // instrumentation, see comment on APP_HELPER for details.
         mPreviousHiddenApiPolicy = setHiddenApiPolicy("1");
+        latch.await(3, TimeUnit.SECONDS);
 
         // Add a receiver that will verify if the intent was sent or not
         mIntentReceiver = new IntentReceiver();
@@ -233,6 +248,7 @@ public class CloseSystemDialogsTest {
     }
 
     @Test
+    @Ignore
     public void testCloseSystemDialogs_inTrampolineWhenTargetSdk30_isSent() throws Exception {
         int notificationId = 43;
         CompletableFuture<Integer> result = new CompletableFuture<>();

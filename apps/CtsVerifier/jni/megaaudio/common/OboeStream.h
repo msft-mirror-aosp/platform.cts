@@ -43,6 +43,8 @@ public:
     int32_t getSharingMode();
     int32_t getChannelCount();
 
+    bool isMMap();
+
 protected:
     OboeStream(int32_t subtype) : mSubtype(subtype), mStreamStarted(false) {}
 

@@ -20,20 +20,20 @@ import android.os.Build;
 
 import com.android.server.appsearch.AppSearchRateLimitConfig;
 import com.android.server.appsearch.Denylist;
-import com.android.server.appsearch.FrameworkAppSearchConfig;
+import com.android.server.appsearch.ServiceAppSearchConfig;
 import com.android.server.appsearch.external.localstorage.IcingOptionsConfig;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * An instance of {@link FrameworkAppSearchConfig} which does not read from any flag system, but
+ * An instance of {@link ServiceAppSearchConfig} which does not read from any flag system, but
  * simply returns the defaults for each key.
  *
  * <p>This class is thread safe.
  *
  * @hide
  */
-public final class FakeAppSearchConfig implements FrameworkAppSearchConfig {
+public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     private final AtomicBoolean mIsClosed = new AtomicBoolean();
     private static final AppSearchRateLimitConfig DEFAULT_APPSEARCH_RATE_LIMIT_CONFIG =
             AppSearchRateLimitConfig.create(
@@ -220,6 +220,18 @@ public final class FakeAppSearchConfig implements FrameworkAppSearchConfig {
     }
 
     @Override
+    public long getAppFunctionCallTimeoutMillis() {
+        throwIfClosed();
+        return DEFAULT_APP_FUNCTION_CALL_TIMEOUT_MILLIS;
+    }
+
+    @Override
+    public long getCachedFullyPersistJobIntervalMillis() {
+        throwIfClosed();
+        return DEFAULT_FULLY_PERSIST_JOB_INTERVAL;
+    }
+
+    @Override
     public int getIntegerIndexBucketSplitThreshold() {
         throwIfClosed();
         return DEFAULT_INTEGER_INDEX_BUCKET_SPLIT_THRESHOLD;
@@ -264,7 +276,7 @@ public final class FakeAppSearchConfig implements FrameworkAppSearchConfig {
     private void throwIfClosed() {
         if (mIsClosed.get()) {
             throw new IllegalStateException(
-                "Trying to use a closed FrameworkAppSearchConfig instance.");
+                "Trying to use a closed ServiceAppSearchConfig instance.");
         }
     }
 }

@@ -48,6 +48,7 @@ public final class CpmsFrameworkLayerStateInfo {
     public static final String COMPONENT_CONTROLLED_HDR =
             "Components powered off by power policy:";
     public static final String COMPONENT_CHANGED_HDR = "Components changed by the last policy:";
+    public static final String SILENT_MODE_SUPPORTED = "Silent mode supported:";
     public static final String MONITORING_HW_HDR = "Monitoring HW state signal:";
     public static final String SILENT_MODE_BY_HW_HDR = "Silent mode by HW state signal:";
     public static final String FORCED_SILENT_MODE_HDR = "Forced silent mode:";
@@ -67,6 +68,7 @@ public final class CpmsFrameworkLayerStateInfo {
     private final String mPendingPolicyId;
     private final String mCurrentPolicyGroupId;
     private final int mNumberPolicyListeners;
+    private final boolean mSilentModeSupported;
     private final boolean mMonitoringHw;
     private final boolean mSilentModeByHw;
     private final boolean mForcedSilentMode;
@@ -75,9 +77,9 @@ public final class CpmsFrameworkLayerStateInfo {
     private CpmsFrameworkLayerStateInfo(String currentPolicyId, String pendingPolicyId,
             String currentPolicyGroupId, int numberPolicyListeners, String[] changedComponents,
             List<String> enables, List<String> disables, PowerPolicyGroups policyGroups,
-            List<String> controlledEnables, List<String> controlledDisables, boolean monitoringHw,
-            boolean silentModeByHw, boolean forcedSilentMode,
-            int currentState) {
+            List<String> controlledEnables, List<String> controlledDisables,
+            boolean silentModeSupported, boolean monitoringHw, boolean silentModeByHw,
+            boolean forcedSilentMode, int currentState) {
         mEnables = enables;
         mDisables = disables;
         mControlledEnables = controlledEnables;
@@ -88,6 +90,7 @@ public final class CpmsFrameworkLayerStateInfo {
         mPendingPolicyId = pendingPolicyId;
         mCurrentPolicyGroupId = currentPolicyGroupId;
         mNumberPolicyListeners = numberPolicyListeners;
+        mSilentModeSupported = silentModeSupported;
         mMonitoringHw = monitoringHw;
         mSilentModeByHw = silentModeByHw;
         mForcedSilentMode = forcedSilentMode;
@@ -104,6 +107,10 @@ public final class CpmsFrameworkLayerStateInfo {
 
     public int getCurrentState() {
         return mCurrentState;
+    }
+
+    public boolean isSilentModeSupported() {
+        return mSilentModeSupported;
     }
 
     public boolean getForcedSilentMode() {
@@ -205,6 +212,7 @@ public final class CpmsFrameworkLayerStateInfo {
         List<String> controlledDisables = null;
         String[] changedComponents = null;
         PowerPolicyGroups policyGroups = null;
+        boolean silentModeSupported = false;
         boolean monitoringHw = false;
         boolean silentModeByHw = false;
         boolean forcedSilentMode = false;
@@ -253,6 +261,9 @@ public final class CpmsFrameworkLayerStateInfo {
                     changedComponents = parser.getChangedComponents(COMPONENT_CHANGED_HDR,
                             MONITORING_HW_HDR);
                     break;
+                case SILENT_MODE_SUPPORTED:
+                    silentModeSupported = parser.getBooleanData(SILENT_MODE_SUPPORTED);
+                    break;
                 case MONITORING_HW_HDR:
                     monitoringHw = parser.getBooleanData(MONITORING_HW_HDR);
                     break;
@@ -279,8 +290,8 @@ public final class CpmsFrameworkLayerStateInfo {
 
         return new CpmsFrameworkLayerStateInfo(currentPolicyId, pendingPolicyId,
                 currentPolicyGroupId, numberPolicyListeners, changedComponents, enables,
-                disables, policyGroups, controlledEnables, controlledDisables, monitoringHw,
-                silentModeByHw, forcedSilentMode, currentState);
+                disables, policyGroups, controlledEnables, controlledDisables, silentModeSupported,
+                monitoringHw, silentModeByHw, forcedSilentMode, currentState);
     }
 
     private static final class StateInfoParser {
@@ -499,6 +510,7 @@ public final class CpmsFrameworkLayerStateInfo {
         CLog.i("policy reader proto exists: " + proto.hasPolicyReader());
         PowerPolicyGroups policyGroups = PowerPolicyGroups.parseProto(policyReaderProto);
         SilentModeHandlerProto silentModeProto = proto.getSilentModeHandler();
+        boolean silentModeSupported = silentModeProto.getIsSilentModeSupported();
         boolean monitoringHw = silentModeProto.getIsMonitoringHwStateSignal();
         boolean silentModeByHw = silentModeProto.getSilentModeByHwState();
         boolean forcedSilentMode = silentModeProto.getForcedSilentMode();
@@ -507,6 +519,7 @@ public final class CpmsFrameworkLayerStateInfo {
         return new CpmsFrameworkLayerStateInfo(currentPolicyId, pendingPolicyId,
                 currentPolicyGroupId, numberPolicyListeners, changedComponents, enables,
                 disables, policyGroups, /* controlledEnables= */ new ArrayList<>(),
-                controlledDisables, monitoringHw, silentModeByHw, forcedSilentMode, currentState);
+                controlledDisables, silentModeSupported, monitoringHw, silentModeByHw,
+                forcedSilentMode, currentState);
     }
 }

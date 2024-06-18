@@ -28,11 +28,14 @@ import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_WITH
 import static android.media.cts.MediaRouterTestConstants.PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS;
 import static android.media.cts.MediaRouterTestConstants.TARGET_USER_ID_KEY;
 
+import static com.android.media.flags.Flags.FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -181,6 +184,50 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @Test
     @AppModeFull
     @RequiresDevice
+    public void revokingMediaRoutingControl_onAppOpsManager_revokesProxyRouterAccess()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "revokingMediaRoutingControl_onAppOpsManager_revokesProxyRouterAccess");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    public void revokeMediaRoutingControl_invalidatesAllInstancesAcrossTargetPackageNames()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "revokeMediaRoutingControl_invalidatesAllInstancesAcrossTargetPackageNames");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    public void getInstance_withRevocableMediaRoutingControl_throwsWithNoCallback()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "getInstance_withRevocableMediaRoutingControl_throwsWithNoCallback");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    public void revokeMediaRoutingControl_callsAllOnInstanceInvalidatedListeners()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "revokeMediaRoutingControl_callsAllOnInstanceInvalidatedListeners");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
     public void requestScan_withMediaRoutingControl_withScreenOff_triggersScanning()
             throws DeviceNotAvailableException {
         runDeviceTests(
@@ -279,6 +326,56 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_PACKAGE,
                 PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_TEST_CLASS,
                 "getAllRoutes_returnsAtLeastOneSystemRoute");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    public void cancelScanRequest_screenOnScanning_unbindsSelfScanProvider()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_TEST_CLASS,
+                "cancelScanRequest_screenOnScanning_unbindsSelfScanProvider");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    public void cancelScanRequest_screenOffScanning_unbindsSelfScanProvider()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "cancelScanRequest_screenOffScanning_unbindsSelfScanProvider");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    public void cancelScanRequest_multipleTypes_unbindsSelfScanProvider()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "cancelScanRequest_multipleTypes_unbindsSelfScanProvider");
+    }
+
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
+    public void getTransferReason_afterAppRestart_returnsPreviouslySelectedTransferReason()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "transferToSelectedSystemRoute_updatesTransferReason");
+
+        runDeviceTests(
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE,
+                PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_TEST_CLASS,
+                "getTransferReason_afterAppRestart_returnsPreviouslySelectedTransferReason");
     }
 
     private static void installTestAppAsUser(

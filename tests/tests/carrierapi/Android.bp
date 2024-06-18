@@ -26,6 +26,8 @@ android_test {
         "ctstestrunner-axt",
         "junit",
         "truth",
+        "telephony_flags_core_java_lib",
+        "androidx.test.rules",
     ],
     srcs: ["src/**/*.java"],
     sdk_version: "test_current",

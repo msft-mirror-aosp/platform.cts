@@ -48,6 +48,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.MediaStore;
 import android.scopedstorage.cts.lib.ResolverAccessTestUtils;
 import android.system.Os;
@@ -58,6 +61,7 @@ import androidx.test.filters.SdkSuppress;
 
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -66,6 +70,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
@@ -76,12 +81,14 @@ public class StorageOwnedFilesTest {
     @ClassRule
     public static final OwnedFilesRule sFilesRule = new OwnedFilesRule(sContentResolver);
 
-    private static final String STR_DATA1 = "Random dest data";
-
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+    private static final String STR_DATA1 = "Random test data";
     private static final byte[] BYTES_DATA1 = STR_DATA1.getBytes();
-    private static final File IMAGE_FILE_1 = sFilesRule.getImageFile1();
-    private static final File IMAGE_FILE_2_METADATA = sFilesRule.getImageFile2Metadata();
-    private static final File VIDEO_FILE_1 = sFilesRule.getVideoFile1();
+    private static final File IMAGE_FILE_1 = OwnedFilesRule.getImageFile1();
+    private static final File IMAGE_FILE_2_METADATA = OwnedFilesRule.getImageFile2Metadata();
+    private static final File VIDEO_FILE_1 = OwnedFilesRule.getVideoFile1();
 
     // Cannot be static as the underlying resource isn't
     private final Uri mImageUri1 = sFilesRule.getImageUri1();
@@ -143,18 +150,23 @@ public class StorageOwnedFilesTest {
     public void owned_deleteRequest() throws Exception {
         File fileToBeDeleted1 = new File(getDcimDir(), TAG + "_delete_1.jpg");
         File fileToBeDeleted2 = new File(getDcimDir(), TAG + "_delete_2.mp4");
+        Set<File> filesToBeDeleted = new HashSet<>();
+        filesToBeDeleted.add(fileToBeDeleted1);
+        filesToBeDeleted.add(fileToBeDeleted2);
         try {
             Uri uriToBeDeleted1 = sFilesRule.createFile(fileToBeDeleted1);
             Uri uriToBeDeleted2 = sFilesRule.createFile(fileToBeDeleted2);
-            Log.e(TAG, "alea " + uriToBeDeleted1 + " " + uriToBeDeleted2);
             doEscalation(
                     MediaStore.createDeleteRequest(sContentResolver,
                             Arrays.asList(uriToBeDeleted1, uriToBeDeleted2)));
             assertResolver_uriDoesNotExist(uriToBeDeleted1, sContentResolver);
+            filesToBeDeleted.remove(fileToBeDeleted1);
             assertResolver_uriDoesNotExist(uriToBeDeleted2, sContentResolver);
+            filesToBeDeleted.remove(fileToBeDeleted2);
         } finally {
-            fileToBeDeleted1.delete();
-            fileToBeDeleted2.delete();
+            for(File f: filesToBeDeleted) {
+                f.delete();
+            }
         }
     }
 
@@ -166,6 +178,7 @@ public class StorageOwnedFilesTest {
                 ResolverAccessTestUtils::assertResolver_insertVideo);
     }
 
+    @RequiresFlagsEnabled("com.android.providers.media.flags.picker_recent_selection")
     @Test
     public void owned_grantOwnedItemBySelection() throws IOException {
         // A granted item should be returned when recent_selection is requested even though the item

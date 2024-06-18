@@ -26,6 +26,7 @@ import android.graphics.Path;
 import android.graphics.Picture;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
+import android.graphics.Region;
 import android.graphics.Shader;
 import android.graphics.drawable.NinePatchDrawable;
 import android.uirendering.cts.R;
@@ -37,6 +38,7 @@ import android.uirendering.cts.bitmapverifiers.ColorVerifier;
 import android.uirendering.cts.bitmapverifiers.GoldenImageVerifier;
 import android.uirendering.cts.bitmapverifiers.PerPixelBitmapVerifier;
 import android.uirendering.cts.bitmapverifiers.RectVerifier;
+import android.uirendering.cts.bitmapverifiers.RegionVerifier;
 import android.uirendering.cts.testinfrastructure.ActivityTestBase;
 import android.uirendering.cts.util.CompareUtils;
 
@@ -44,7 +46,9 @@ import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.graphics.hwui.flags.Flags;
 
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -511,5 +515,32 @@ public class ExactCanvasTests extends ActivityTestBase {
                     canvas.drawRect(20, 20, 70, 70, p);
                 })
                 .runWithComparer(mExactComparer);
+    }
+
+    @Test
+    public void testDrawRegion() {
+        Assume.assumeTrue(Flags.drawRegion());
+        Region red = new Region();
+        red.set(5, 5, 20, 20);
+        red.op(40, 40, 80, 80, Region.Op.UNION);
+        Region blue = new Region();
+        blue.set(0, 0, TEST_WIDTH, TEST_HEIGHT);
+        blue.op(red, Region.Op.DIFFERENCE);
+        createTest()
+                .addCanvasClient((canvas, width, height) -> {
+                    Paint p = new Paint();
+                    p.setColor(Color.RED);
+                    canvas.drawColor(Color.BLUE);
+                    canvas.drawRegion(red, p);
+                })
+                .runWithVerifier(new RegionVerifier()
+                        .addVerifier(
+                                new Rect(5, 5, 20, 20),
+                                new ColorVerifier(Color.RED))
+                        .addVerifier(
+                                new Rect(40, 40, 80, 80),
+                                new ColorVerifier(Color.RED))
+                        .addVerifier(blue, new ColorVerifier(Color.BLUE))
+                );
     }
 }

@@ -16,25 +16,35 @@
 
 package android.content.res.cts;
 
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertNull;
+import static junit.framework.TestCase.assertTrue;
+
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.LocaleList;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
 import android.view.View;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Locale;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class ConfigurationTest extends AndroidTestCase {
-
+@RunWith(AndroidJUnit4.class)
+public class ConfigurationTest {
     private Configuration mConfigDefault;
     private Configuration mConfig;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         mConfigDefault = new Configuration();
         mConfigDefault.setToDefaults();
         makeConfiguration();
@@ -53,11 +63,13 @@ public class ConfigurationTest extends AndroidTestCase {
         mConfig.fontWeightAdjustment = 300;
     }
 
+    @Test
     public void testConstructor() {
         new Configuration();
         new Configuration(mConfigDefault);
     }
 
+    @Test
     public void testCompareTo() {
         final Configuration cfg1 = new Configuration();
         final Configuration cfg2 = new Configuration();
@@ -188,6 +200,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(1, cfg1.compareTo(cfg2));
     }
 
+    @Test
     public void testGenerateDiff() {
         Configuration cfg1 = new Configuration();
         Configuration cfg2 = new Configuration();
@@ -269,6 +282,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(new Configuration(), delta);
     }
 
+    @Test
     public void testDescribeContents() {
         assertEquals(0, mConfigDefault.describeContents());
     }
@@ -280,6 +294,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(0, tmpc1.diff(c2));
     }
 
+    @Test
     public void testDiff() {
         Configuration config = new Configuration();
         config.mcc = 1;
@@ -441,15 +456,18 @@ public class ConfigurationTest extends AndroidTestCase {
                 | ActivityInfo.CONFIG_GRAMMATICAL_GENDER, mConfigDefault, config);
     }
 
+    @Test
     public void testEquals() {
         assertFalse(mConfigDefault.equals(mConfig));
         assertFalse(mConfigDefault.equals(new Object()));
     }
 
+    @Test
     public void testHashCode() {
         assertFalse(mConfigDefault.hashCode() == mConfig.hashCode());
     }
 
+    @Test
     public void testNeedNewResources() {
         assertTrue(Configuration.needNewResources(ActivityInfo.CONFIG_MCC,
                 ActivityInfo.CONFIG_MCC));
@@ -460,6 +478,7 @@ public class ConfigurationTest extends AndroidTestCase {
                 ActivityInfo.CONFIG_MCC));
     }
 
+    @Test
     public void testSetToDefaults() {
         final Configuration config = new Configuration(mConfig);
         assertFalse(config.equals(mConfigDefault));
@@ -494,6 +513,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(Configuration.GRAMMATICAL_GENDER_NOT_SPECIFIED, config.getGrammaticalGender());
     }
 
+    @Test
     public void testUnset() {
         Configuration config = new Configuration();
         assertEquals(0.0f, config.fontScale);
@@ -523,10 +543,12 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(Configuration.GRAMMATICAL_GENDER_NOT_SPECIFIED, config.getGrammaticalGender());
     }
 
+    @Test
     public void testToString() {
         assertNotNull(mConfigDefault.toString());
     }
 
+    @Test
     public void testWriteToParcel() {
         assertWriteToParcel(createConfig((Locale) null));
         assertWriteToParcel(createConfig(new Locale("")));
@@ -535,6 +557,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertWriteToParcel(createConfig(LocaleList.forLanguageTags("fr,en-US")));
     }
 
+    @Test
     public void testSetLocale() {
         Configuration config = new Configuration();
 
@@ -581,6 +604,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(View.LAYOUT_DIRECTION_RTL, config.getLayoutDirection());
     }
 
+    @Test
     public void testSetGetLayoutDirection() {
         Configuration config = new Configuration();
 
@@ -607,6 +631,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(View.LAYOUT_DIRECTION_RTL, config.getLayoutDirection());
     }
 
+    @Test
     public void testIsScreenRound() {
         Configuration config = new Configuration();
         assertFalse(config.isScreenRound());
@@ -615,6 +640,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertTrue(config.isScreenRound());
     }
 
+    @Test
     public void testIsScreenHdr() {
         Configuration config = new Configuration();
         assertFalse(config.isScreenHdr());
@@ -623,6 +649,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertTrue(config.isScreenHdr());
     }
 
+    @Test
     public void testIsScreenWideColorGamut() {
         Configuration config = new Configuration();
         assertFalse(config.isScreenWideColorGamut());
@@ -631,6 +658,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertTrue(config.isScreenWideColorGamut());
     }
 
+    @Test
     public void testGrammaticalGender() {
         var config = new Configuration();
         assertEquals(Configuration.GRAMMATICAL_GENDER_NOT_SPECIFIED, config.getGrammaticalGender());
@@ -638,6 +666,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(Configuration.GRAMMATICAL_GENDER_FEMININE, config.getGrammaticalGender());
     }
 
+    @Test
     public void testFixUpLocaleList() {
         Configuration config = new Configuration();
 
@@ -654,6 +683,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(LocaleList.forLanguageTags("fr,en"), config.getLocales());
     }
 
+    @Test
     public void testSetTo_nullLocale() {
         Configuration config1 = new Configuration();
         Configuration config2 = new Configuration();
@@ -664,6 +694,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(null, config1.locale);
     }
 
+    @Test
     public void testSetTo_localeFixUp() {
         Configuration config1 = new Configuration();
         Configuration config2 = new Configuration();
@@ -675,6 +706,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(new LocaleList(Locale.FRENCH), config2.getLocales());
     }
 
+    @Test
     public void testToString_localeFixUp() {
         Configuration config1 = new Configuration();
         Configuration config2 = new Configuration();
@@ -685,6 +717,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(config1.toString(), config2.toString());
     }
 
+    @Test
     public void testUpdateFrom_localeFixUp() {
         Configuration config1, config2;
         int changed;
@@ -719,6 +752,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(LocaleList.forLanguageTags("fr"), config2.getLocales());
     }
 
+    @Test
     public void testUpdateFrom_layoutDirection() {
         Configuration config1, config2;
         int changed;
@@ -738,6 +772,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(0, changed & ActivityInfo.CONFIG_LAYOUT_DIRECTION);
     }
 
+    @Test
     public void testDiff_localeFixUp() {
         Configuration config1 = new Configuration();
         Configuration config2 = new Configuration();
@@ -750,6 +785,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(0, diff);
     }
 
+    @Test
     public void testCompareTo_localeFixUp() {
         Configuration config1 = new Configuration();
         Configuration config2 = new Configuration();
@@ -761,6 +797,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(-1, config1.compareTo(config2));
     }
 
+    @Test
     public void testSetLocales_null() {
         Configuration config = new Configuration();
         config.setLocales(null);
@@ -770,6 +807,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(View.LAYOUT_DIRECTION_LTR, config.getLayoutDirection());
     }
 
+    @Test
     public void testSetLocales_emptyList() {
         Configuration config = new Configuration();
         config.setLocales(LocaleList.getEmptyLocaleList());
@@ -779,6 +817,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(View.LAYOUT_DIRECTION_LTR, config.getLayoutDirection());
     }
 
+    @Test
     public void testSetLocales_oneLtr() {
         Configuration config = new Configuration();
         Locale loc = Locale.forLanguageTag("en");
@@ -789,6 +828,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(View.LAYOUT_DIRECTION_LTR, config.getLayoutDirection());
     }
 
+    @Test
     public void testSetLocales_oneRtl() {
         Configuration config = new Configuration();
         Locale loc = Locale.forLanguageTag("az-Arab");
@@ -799,6 +839,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(View.LAYOUT_DIRECTION_RTL, config.getLayoutDirection());
     }
 
+    @Test
     public void testSetLocales_twoLocales() {
         Configuration config = new Configuration();
         Locale rtlLoc = Locale.forLanguageTag("az-Arab");
@@ -810,6 +851,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(View.LAYOUT_DIRECTION_RTL, config.getLayoutDirection());
     }
 
+    @Test
     public void testSetLocales_overridesLocale() {
         Configuration config = new Configuration();
         config.locale = Locale.forLanguageTag("en");
@@ -821,6 +863,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(View.LAYOUT_DIRECTION_RTL, config.getLayoutDirection());
     }
 
+    @Test
     public void testSetLocales_overridesSetLocale() {
         Configuration config = new Configuration();
         config.setLocale(Locale.forLanguageTag("en"));
@@ -832,6 +875,7 @@ public class ConfigurationTest extends AndroidTestCase {
         assertEquals(View.LAYOUT_DIRECTION_RTL, config.getLayoutDirection());
     }
 
+    @Test
     public void testSetLocale_overridesSetLocales() {
         Configuration config = new Configuration();
         config.setLocales(LocaleList.forLanguageTags("az-Arab,en"));

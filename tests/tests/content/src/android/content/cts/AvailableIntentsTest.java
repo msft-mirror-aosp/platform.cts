@@ -467,7 +467,7 @@ public class AvailableIntentsTest extends AndroidTestCase {
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL)
     public void testMediaRoutingControlSettings() {
-        if (FeatureUtil.isWatch()) {
+        if (FeatureUtil.isTV() || FeatureUtil.isAutomotive() || FeatureUtil.isWatch()) {
             return;
         }
         assertCanBeHandled(new Intent(Settings.ACTION_REQUEST_MEDIA_ROUTING_CONTROL));

@@ -30,11 +30,13 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.tv.cts.R;
+import android.view.InputEvent;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.RequiredFeatureRule;
 
 import org.junit.After;
@@ -42,6 +44,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.Executor;
 
 /**
  * Test {@link android.media.tv.ad.TvAdView}.
@@ -63,6 +67,7 @@ public class TvAdViewTest {
     private TvAdStubActivity mActivity;
     private TvAdView mTvAdView;
     private TvView mTvView;
+    private TvAdView.OnUnhandledInputEventListener mOnUnhandledInputEventListener;
 
     @Before
     public void setUp() throws Throwable {
@@ -105,12 +110,34 @@ public class TvAdViewTest {
         });
     }
 
+    @Test
+    public void testGetOnUnhandledInputEventListener() {
+        mOnUnhandledInputEventListener = new TvAdView.OnUnhandledInputEventListener() {
+            @Override
+            public boolean onUnhandledInputEvent(InputEvent event) {
+                return true;
+            }
+        };
+        mTvAdView.setOnUnhandledInputEventListener(mOnUnhandledInputEventListener);
+        new PollingCheck(TIME_OUT_MS) {
+            @Override
+            protected boolean check() {
+                return mTvAdView.getOnUnhandledInputEventListener()
+                        == mOnUnhandledInputEventListener;
+            }
+        }.run();
+    }
+
     private TvAdView findTvAdViewById(int id) {
         return (TvAdView) mActivity.findViewById(id);
     }
 
     private TvView findTvViewById(int id) {
         return (TvView) mActivity.findViewById(id);
+    }
+
+    private Executor getExecutor() {
+        return Runnable::run;
     }
 
     private void runTestOnUiThread(final Runnable r) throws Throwable {

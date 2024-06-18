@@ -54,6 +54,7 @@ import android.util.Log;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FeatureUtil;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -292,6 +293,10 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
 
     public void testEnterCarMode() throws Exception {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
+        // carMode is not supported in Wear OS
+        if (FeatureUtil.isWatch()) {
             return;
         }
         TestServiceConnection controlConn = setUpControl(CAR_MODE_CONTROL,
@@ -593,6 +598,9 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
+        if (FeatureUtil.isWatch()) {
+            return;
+        }
         TestServiceConnection controlConn1 = setUpControl(CAR_MODE_CONTROL, CAR_DIALER_1);
         TestServiceConnection controlConn2 = setUpControl(CAR_MODE_CONTROL, CAR_DIALER_2);
         mCarModeIncallServiceControlOne = ICtsCarModeInCallServiceControl.Stub
@@ -625,6 +633,10 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
 
     public void testExitCarMode() throws Exception {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
+        // carMode is not supported in Wear OS
+        if (FeatureUtil.isWatch()) {
             return;
         }
         TestServiceConnection controlConn = setUpControl(CAR_MODE_CONTROL, CAR_DIALER_1);

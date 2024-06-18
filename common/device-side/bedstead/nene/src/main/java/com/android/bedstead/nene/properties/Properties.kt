@@ -17,11 +17,13 @@ object Properties {
             .executeOrThrowNeneException("Error setting property $key to $value")
 
         return UndoableContext {
-            set(key, existingValue)
+            // We default to 0 if there wasn't an existing value as we can't clear values
+            var unused = set(key, existingValue ?: "0")
         }
     }
 
     /** Get the value of a system property. */
-    fun get(key: String): String = ShellCommand.builder("getprop").addOperand(key)
-        .executeAndParseOutput { it.stripTrailing() }
+    fun get(key: String): String? =
+        ShellCommand.builder("getprop").addOperand(key)
+        .executeAndParseOutput { it.stripTrailing() }.ifEmpty { null }
 }

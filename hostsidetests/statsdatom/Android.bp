@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsStatsdAtomHostTestCases",
+    team: "trendy_team_android_telemetry_infra",
     defaults: ["cts_defaults"],
     srcs: [
         "src/**/alarm/*.java",
@@ -40,6 +41,7 @@ java_test_host {
         "src/**/jobscheduler/*.java",
         "src/**/integrity/*.java",
         "src/**/media/*.java",
+        "src/**/media/projection/*.java",
         "src/**/memory/*.java",
         "src/**/net/*.java",
         "src/**/notification/*.java",
@@ -80,16 +82,20 @@ java_test_host {
     static_libs: [
         "android.hardware.usb.flags-aconfig-java-host",
         "android.os.flags-aconfig-java-host",
+        "power_hint_flags_lib_host",
         "cts-statsd-atom-host-test-utils",
         "flag-junit-host",
         "perfetto_config-full",
+        "cts_adpf_atom_common-host",
     ],
 
     data: [
         ":CtsStatsdAtomApp",
         ":CtsStatsdApp", //TODO(b/163546661): Remove once migration to new lib is complete.
         ":CtsAppExitTestCases",
+        ":CtsStatsdAdpfApp",
         ":CtsExternalServiceService",
+        ":CtsMediaProjectionTestCases",
         ":CtsSimpleApp",
         ":CtsStatsdAlarmHelper",
         ":CtsStatsdAlarmHelper2",

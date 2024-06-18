@@ -15,6 +15,7 @@
  */
 package android.input.cts
 
+import android.cts.input.EventVerifier
 import android.graphics.PointF
 import android.server.wm.WindowManagerStateHelper
 import android.view.Display.DEFAULT_DISPLAY

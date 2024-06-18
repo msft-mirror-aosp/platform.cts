@@ -3,19 +3,6 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_library_host {
-    name: "QueryableCommon",
-    static_libs: [
-        "NeneCommon",
-        "auto_value_annotations",
-    ],
-    srcs: [
-        "common/src/main/java/**/*.java",
-        "common/src/main/java/**/*.kt",
-    ],
-    plugins: ["auto_annotation_plugin"],
-}
-
 android_library {
     name: "QueryableCommonAndroid",
     static_libs: [

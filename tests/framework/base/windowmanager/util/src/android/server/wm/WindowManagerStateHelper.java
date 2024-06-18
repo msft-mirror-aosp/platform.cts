@@ -41,10 +41,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.graphics.Rect;
-import android.server.wm.WindowManagerTestBase.FocusableActivity;
 import android.util.SparseArray;
 import android.view.InputEvent;
 
@@ -176,6 +174,10 @@ public class WindowManagerStateHelper extends WindowManagerState {
     public void waitForDreamGone() {
         assertTrue("Dream must be gone",
                 waitForWithAmState(state -> state.getDreamTask() == null, "DreamActivity gone"));
+    }
+
+    public static boolean isKeyguardOccluded(WindowManagerState state) {
+        return state.getKeyguardControllerState().isKeyguardOccluded(DEFAULT_DISPLAY);
     }
 
     public static boolean isKeyguardShowingAndNotOccluded(WindowManagerState state) {
@@ -324,16 +326,20 @@ public class WindowManagerStateHelper extends WindowManagerState {
     }
 
     public void waitAndAssertNavBarShownOnDisplay(int displayId) {
-        waitAndAssertNavBarShownOnDisplay(displayId, 1 /* expectedNavBarCount */);
+        assertTrue(waitForWithAmState(state -> {
+            // There should be at least one nav bar exist.
+            List<WindowState> navWindows = state.getNavBarWindowsOnDisplay(displayId);
+
+            return !navWindows.isEmpty();
+        }, "navigation bar to show on display #" + displayId));
     }
 
     public void waitAndAssertNavBarShownOnDisplay(int displayId, int expectedNavBarCount) {
         assertTrue(waitForWithAmState(state -> {
-            List<WindowState> navWindows = state
-                    .getAndAssertNavBarWindowsOnDisplay(displayId, expectedNavBarCount);
+            List<WindowState> navWindows = state.getNavBarWindowsOnDisplay(displayId);
 
-            return navWindows != null;
-        }, "navigation bar #" + displayId + " show"));
+            return navWindows.size() == expectedNavBarCount;
+        }, expectedNavBarCount + " navigation bar(s) to show on display #" + displayId));
     }
 
     public void waitAndAssertKeyguardShownOnSecondaryDisplay(int displayId) {

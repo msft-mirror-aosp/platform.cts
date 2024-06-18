@@ -18,7 +18,7 @@ package com.android.cts.packagemanager.verify.domain.device.multiuser
 
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import org.junit.After

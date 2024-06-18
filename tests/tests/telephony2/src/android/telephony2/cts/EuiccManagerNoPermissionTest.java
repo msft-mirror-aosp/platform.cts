@@ -51,7 +51,7 @@ public class EuiccManagerNoPermissionTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ESIM_AVAILABLE_MEMORY)
     public void testGetAvailableMemoryInBytes_euiccManagerEnabled_noPermissions() throws Exception {
-        if (!mEuiccManager.isEnabled()) {
+        if (mEuiccManager == null || !mEuiccManager.isEnabled()) {
             return;
         }
 

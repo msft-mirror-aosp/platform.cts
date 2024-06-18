@@ -16,13 +16,15 @@
 
 package com.android.bedstead.harrier.policies;
 
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_OWN_USER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
-import static com.android.bedstead.nene.flags.CommonFlags.KEYGUARD_DISABLE_SECURE_CAMERA;
+import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_SECURE_CAMERA;
+
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.INHERITABLE;
 
 import com.android.bedstead.harrier.PolicyArguments;
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 import java.util.Collections;
 import java.util.Set;
@@ -37,7 +39,7 @@ import java.util.Set;
 @EnterprisePolicy(
         dpc = APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE
                 | CANNOT_BE_APPLIED_BY_ROLE_HOLDER
-                | APPLIES_TO_OWN_USER)
+                | APPLIES_TO_OWN_USER | INHERITABLE)
 public final class KeyguardDisableFeaturesForOrgOwnedParentProfileOwner
         extends PolicyArguments<Integer> {
 

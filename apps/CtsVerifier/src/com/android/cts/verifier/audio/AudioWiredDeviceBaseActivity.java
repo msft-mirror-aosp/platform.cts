@@ -63,13 +63,6 @@ abstract class AudioWiredDeviceBaseActivity extends PassFailButtons.Activity {
     AudioWiredDeviceBaseActivity() {
     }
 
-    void connectProcessUI() {
-        mStartBtn = (Button) findViewById(R.id.audio_routingnotification_startBtn);
-        mStartBtn.setOnClickListener(mBtnClickListener);
-        mStopBtn = (Button) findViewById(R.id.audio_routingnotification_stopBtn);
-        mStopBtn.setOnClickListener(mBtnClickListener);
-    }
-
     @Override
     public void onResume() {
         super.onResume();
@@ -131,10 +124,6 @@ abstract class AudioWiredDeviceBaseActivity extends PassFailButtons.Activity {
                 mDoesntSupportBtn.setEnabled(false);
                 enableTestButtons(mSupportsWiredPeripheral);
                 calculatePass();
-            } else if (v.getId() == R.id.audio_routingnotification_startBtn) {
-                startAudio();
-            } else if (v.getId() == R.id.audio_routingnotification_stopBtn) {
-                stopAudio();
             }
         }
     }
