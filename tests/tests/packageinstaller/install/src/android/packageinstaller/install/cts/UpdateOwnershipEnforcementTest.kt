@@ -19,10 +19,13 @@ package android.packageinstaller.install.cts
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageInstaller
+import android.content.pm.PackageManager.ApplicationInfoFlags
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Until
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
@@ -179,6 +182,9 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
             startInstallationViaSession()
+
+            assertInstallerLabelShown()
+
             // Expecting a prompt to proceed.
             clickInstallerUIButton(INSTALL_BUTTON_ID)
 
@@ -206,10 +212,13 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
                 .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
             val result = startInstallationViaIntent()
 
+            assertInstallerLabelShown()
+
             // The dialog to confirm update ownership will be shown
             clickInstallerUIButton(INSTALL_BUTTON_ID)
 
-            assertThat(result.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)
+            assertThat(result.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+                .isEqualTo(Activity.RESULT_OK)
             assertInstalled()
         } finally {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
@@ -354,5 +363,20 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
             sourceInfo = pm.getInstallSourceInfo(TEST_APK_PACKAGE_NAME)
             assertEquals(SHELL_PACKAGE_NAME, sourceInfo.updateOwnerPackageName)
         }
+    }
+
+    private fun assertInstallerLabelShown() {
+        val installerAppInfo =
+            pm.getApplicationInfo(context.packageName, ApplicationInfoFlags.of(0))
+        val installerAppLabel = pm.getApplicationLabel(installerAppInfo)
+
+        waitForUIIdle()
+        assertNotNull(
+            "Installer label \"$installerAppLabel\" not shown",
+            uiDevice.wait(
+                Until.findObject(By.textContains(installerAppLabel.toString())),
+                FIND_OBJECT_TIMEOUT
+            )
+        )
     }
 }
