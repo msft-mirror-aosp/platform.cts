@@ -100,6 +100,9 @@ public class PermissionPolicyTest {
     private static final Context sContext =
             InstrumentationRegistry.getInstrumentation().getTargetContext();
 
+    private static final Set<String> sBackportedPermissions =
+        Set.of("android.permission.THREAD_NETWORK_PRIVILEGED");
+
     @Test
     public void shellIsOnlySystemAppThatRequestsRevokePostNotificationsWithoutKill() {
         List<PackageInfo> pkgs = sContext.getPackageManager().getInstalledPackages(
@@ -290,6 +293,12 @@ public class PermissionPolicyTest {
 
         // OEMs cannot define permissions in the platform namespace
         for (String permission : declaredPermissionsMap.keySet()) {
+            // If permission is a backported permission, then it can be defined in the platform
+            // namespace.
+            if (sBackportedPermissions.contains(permission)) {
+              continue;
+            }
+
             if (permission.startsWith(PLATFORM_ROOT_NAMESPACE)) {
                 final PermissionInfo permInfo = declaredPermissionsMap.get(permission);
                 offendingList.add(
