@@ -40,6 +40,7 @@ import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 import org.junit.After;
 import org.junit.AssumptionViolatedException;
@@ -1181,6 +1182,14 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
     }
 
     protected String getDefaultLauncher() throws Exception {
+        try {
+            return getDefaultLauncherWithDumpsys();
+        } catch (InvalidProtocolBufferException e) {
+            return getDefaultLauncherWithCmd();
+        }
+    }
+
+    private String getDefaultLauncherWithDumpsys() throws Exception {
         final CollectingByteOutputReceiver receiver = new CollectingByteOutputReceiver();
         getDevice().executeShellCommand("dumpsys role --proto", receiver);
 
@@ -1206,6 +1215,11 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         }
 
         throw new Exception("Default launcher not found");
+    }
+
+    private String getDefaultLauncherWithCmd() throws Exception {
+        return getDevice().executeShellCommand("cmd role get-role-holders --user "
+                + getDevice().getCurrentUser() + " android.app.role.HOME").trim();
     }
 
     void assumeIsDeviceAb() throws DeviceNotAvailableException {
