@@ -58,7 +58,7 @@ public class PerformanceClassTest {
     public static final String[] VIDEO_CONTAINER_MEDIA_TYPES =
         {"video/mp4", "video/webm", "video/3gpp", "video/3gpp2", "video/avi", "video/x-ms-wmv",
             "video/x-ms-asf"};
-    static ArrayList<String> mMimeSecureSupport = new ArrayList<>();
+    static ArrayList<String> mMediaTypeSecureSupport = new ArrayList<>();
 
     @Rule
     public final TestName mTestName = new TestName();
@@ -69,10 +69,10 @@ public class PerformanceClassTest {
     }
 
     static {
-        mMimeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AVC);
-        mMimeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
-        mMimeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_VP9);
-        mMimeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AV1);
+        mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AVC);
+        mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
+        mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_VP9);
+        mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AV1);
     }
 
 
@@ -91,29 +91,29 @@ public class PerformanceClassTest {
     @Test
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-11"})
     public void testSecureHwDecodeSupport() {
-        ArrayList<String> noSecureHwDecoderForMimes = new ArrayList<>();
-        for (String mime : mMimeSecureSupport) {
-            boolean isSecureHwDecoderFoundForMime = false;
-            boolean isHwDecoderFoundForMime = false;
+        ArrayList<String> noSecureHwDecoderForMediaTypes = new ArrayList<>();
+        for (String mediaType : mMediaTypeSecureSupport) {
+            boolean isSecureHwDecoderFoundForMediaType = false;
+            boolean isHwDecoderFoundForMediaType = false;
             MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
             MediaCodecInfo[] codecInfos = codecList.getCodecInfos();
             for (MediaCodecInfo info : codecInfos) {
                 if (info.isEncoder() || !info.isHardwareAccelerated() || info.isAlias()) continue;
                 try {
-                    MediaCodecInfo.CodecCapabilities caps = info.getCapabilitiesForType(mime);
+                    MediaCodecInfo.CodecCapabilities caps = info.getCapabilitiesForType(mediaType);
                     if (caps != null) {
-                        isHwDecoderFoundForMime = true;
+                        isHwDecoderFoundForMediaType = true;
                         if (caps.isFeatureSupported(FEATURE_SecurePlayback))
-                            isSecureHwDecoderFoundForMime = true;
+                            isSecureHwDecoderFoundForMediaType = true;
                     }
                 } catch (Exception ignored) {
                 }
             }
-            if (isHwDecoderFoundForMime && !isSecureHwDecoderFoundForMime)
-                noSecureHwDecoderForMimes.add(mime);
+            if (isHwDecoderFoundForMediaType && !isSecureHwDecoderFoundForMediaType)
+                noSecureHwDecoderForMediaTypes.add(mediaType);
         }
 
-        boolean secureDecodeSupportIfHwDecoderPresent = noSecureHwDecoderForMimes.isEmpty();
+        boolean secureDecodeSupportIfHwDecoderPresent = noSecureHwDecoderForMediaTypes.isEmpty();
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         PerformanceClassEvaluator.SecureCodecRequirement r5_1__H_1_11 = pce.addR5_1__H_1_11();

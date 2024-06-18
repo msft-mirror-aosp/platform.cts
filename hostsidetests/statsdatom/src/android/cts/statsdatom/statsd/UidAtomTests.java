@@ -595,6 +595,8 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
 
     //Note: this test does not have uid, but must run on the device
     public void testScreenBrightness() throws Exception {
+        DeviceUtils.turnScreenOn(getDevice());
+
         int initialBrightness = getScreenBrightness();
         boolean isInitialManual = isScreenBrightnessModeManual();
         setScreenBrightnessMode(true);

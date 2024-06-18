@@ -346,6 +346,10 @@ public class Constants {
     public static final String EXTRA_ID = "id";
     public static final String EXTRA_PENDING_INTENT = "pendingIntent";
     public static final String EXTRA_INPUT_METHOD_INFO = "inputmethodinfo";
+    /** A key that indicates segmented transfer AppWidgetProviderInfo. */
+    public static final String EXTRA_SEGMENT_RESULT = "segmentResult";
+    /** A key that indicates the size of segmented transfer AppWidgetProviderInfo. */
+    public static final String EXTRA_SEGMENT_SIZE = "segmentSize";
 
     public static final int CALLBACK_EVENT_INVALID = -1;
     public static final int CALLBACK_EVENT_PACKAGE_ADDED = 0;

@@ -82,10 +82,12 @@ public class CallNotificationTestPlayerListener extends PlayerListener {
     if (player.getPlaybackState() == Player.STATE_READY) {
       // At the first media transition player is not ready. So, add duration of
       // first clip when player is ready
-      mExpectedTotalTime += player.getDuration();
-      mStartTime = System.currentTimeMillis();
-      // Add the duration of the incoming call
-      mExpectedTotalTime += CallNotificationService.DURATION_MS;
+      if (mStartTime == 0) {
+        mStartTime = System.currentTimeMillis();
+        mExpectedTotalTime += player.getDuration();
+        // Add the duration of the incoming call
+        mExpectedTotalTime += CallNotificationService.DURATION_MS;
+      }
       // Let the ExoPlayer handle audio focus internally
       mActivity.mPlayer.setAudioAttributes(mActivity.mPlayer.getAudioAttributes(), true);
       mTelecomManager = (TelecomManager) mActivity.getApplicationContext().getSystemService(

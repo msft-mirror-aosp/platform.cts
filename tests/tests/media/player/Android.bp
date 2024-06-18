@@ -18,6 +18,7 @@ package {
         "Android-Apache-2.0",
         "cts_tests_tests_media_license", // CC-BY
     ],
+    default_team: "trendy_team_android_media_solutions",
 }
 
 android_test {
@@ -96,6 +97,7 @@ android_test {
     ],
     test_config: "AndroidTest-mcts.xml",
     test_suites: [
+        "cts",
         "general-tests",
         "mcts-media",
         "mts-media",

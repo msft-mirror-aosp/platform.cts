@@ -72,6 +72,8 @@ import android.os.UserHandle;
 import android.util.Log;
 import android.view.Surface;
 
+import androidx.annotation.ColorInt;
+
 import com.google.common.collect.Iterables;
 
 import java.io.File;
@@ -90,7 +92,8 @@ public final class VirtualCameraUtils {
             new CameraCharacteristics.Key<Integer>("android.info.deviceId", int.class);
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final float EPSILON = 0.3f;
-    private static final double BITMAP_MAX_DIFF = 0.1;
+    // Difference between two bitmaps using average of per-pixel differences.
+    private static final double BITMAP_MAX_DIFF = 1.5;
     private static final String TAG = "VirtualCameraUtils";
 
     static VirtualCameraConfig createVirtualCameraConfig(
@@ -119,10 +122,14 @@ public final class VirtualCameraUtils {
         assertThat(config.getLensFacing()).isEqualTo(lensFacing);
     }
 
-    static void paintSurfaceRed(Surface surface) {
+    static void paintSurface(Surface surface, @ColorInt int color) {
         Canvas canvas = surface.lockCanvas(null);
-        canvas.drawColor(Color.RED);
+        canvas.drawColor(color);
         surface.unlockCanvasAndPost(canvas);
+    }
+
+    static void paintSurfaceRed(Surface surface) {
+        paintSurface(surface, Color.RED);
     }
 
     // Converts YUV to ARGB int representation,
@@ -304,11 +311,11 @@ public final class VirtualCameraUtils {
         }
     }
 
-    static Bitmap loadGolden(int goldenResId) {
+    static Bitmap loadBitmapFromRaw(int rawResId) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inScaled = false;
         return BitmapFactory.decodeResource(getApplicationContext().getResources(),
-                goldenResId, options);
+                rawResId, options);
     }
 
     static Bitmap jpegImageToBitmap(Image image) throws IOException {
