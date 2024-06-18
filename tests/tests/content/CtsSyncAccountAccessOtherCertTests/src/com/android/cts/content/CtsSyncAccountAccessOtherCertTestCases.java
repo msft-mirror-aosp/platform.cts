@@ -28,6 +28,7 @@ import static com.android.cts.content.Utils.requestSync;
 import static com.android.cts.content.Utils.withAccount;
 
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -113,15 +114,13 @@ public class CtsSyncAccountAccessOtherCertTestCases {
         UiDevice uiDevice = getUiDevice();
         if (uiDevice.openNotification()) {
             Thread.sleep(1000);
-            for (int i = 0; i < 5; i++) {
-                final UiObject2 clear = uiDevice
-                        .wait(Until.findObject(By.text("Clear all")), 2000);
-                if (clear != null) {
-                    clear.click();
-                    break;
-                }
-                scrollNotifications();
+            UiScrollable uiScrollable = new UiScrollable(new UiSelector().scrollable(true));
+            if (uiScrollable != null) {
+                uiScrollable.scrollTextIntoView("Clear all");
             }
+            UiObject2 clear = uiDevice.findObject(By.text("Clear all"));
+            assumeNotNull(clear);
+            clear.click();
         }
 
         try (AutoCloseable ignored = withAccount(activity.getActivity())) {

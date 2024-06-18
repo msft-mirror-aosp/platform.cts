@@ -36,6 +36,7 @@ import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.AbiUtils;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 
@@ -1069,6 +1070,14 @@ public class ExternalStorageHostTest extends BaseHostJUnit4Test {
         bypassTestForFeatures(FEATURE_AUTOMOTIVE, FEATURE_EMBEDDED, FEATURE_LEANBACK_ONLY,
                 FEATURE_WATCH);
 
+        try {
+            checkSystemGalleryExistsWithDumpsys();
+        } catch (InvalidProtocolBufferException e) {
+            checkSystemGalleryExistsWithCmd();
+        }
+    }
+
+    private void checkSystemGalleryExistsWithDumpsys() throws Exception {
         final List<RoleUserStateProto> usersRoleStates = getAllUsersRoleStates();
 
         assertEquals("Unexpected number of users returned by dumpsys role",
@@ -1088,6 +1097,15 @@ public class ExternalStorageHostTest extends BaseHostJUnit4Test {
             }
             assertTrue("SYSTEM_GALLERY not defined for user " + userState.getUserId(),
                     systemGalleryRoleFound);
+        }
+    }
+
+    private void checkSystemGalleryExistsWithCmd() throws Exception {
+        for (int user : mUsers) {
+            final String[] roleHolders = getDevice().executeShellCommand(
+                    "cmd role get-role-holders --user " + user
+                            + " android.app.role.SYSTEM_GALLERY").trim().split(";");
+            assertEquals("Expected 1 SYSTEM_GALLERY for user " + user, 1, roleHolders.length);
         }
     }
 
