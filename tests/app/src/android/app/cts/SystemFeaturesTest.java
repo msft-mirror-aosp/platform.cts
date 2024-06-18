@@ -109,6 +109,11 @@ public class SystemFeaturesTest {
         Set<String> officialFeatures = getFeatureConstantsNames("FEATURE_");
         assertFalse(officialFeatures.isEmpty());
 
+        // This API is part of Android 15 release. It has been backported to Android14.
+        // Any device that declares thread enabled feature will be run against
+        // CtsThreadNetworkTestCases.
+        officialFeatures.add("android.hardware.thread_network");
+
         Set<String> notOfficialFeatures = new HashSet<String>(mAvailableFeatures);
         notOfficialFeatures.removeAll(officialFeatures);
 
