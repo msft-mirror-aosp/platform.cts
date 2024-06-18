@@ -15,7 +15,6 @@
 
 import fnmatch
 import logging
-import math
 import os
 import threading
 import time
@@ -131,12 +130,12 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
-      vendor_api_level = its_session_utils.get_vendor_api_level(self.dut.serial)
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       supported_stabilization_modes = props[
           'android.control.availableVideoStabilizationModes']
 
       camera_properties_utils.skip_unless(
-          vendor_api_level >= its_session_utils.ANDROID13_API_LEVEL and
+          first_api_level >= its_session_utils.ANDROID13_API_LEVEL and
           _VIDEO_STABILIZATION_MODE in supported_stabilization_modes)
 
       # Log ffmpeg version being used
@@ -144,9 +143,7 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
 
       # Raise error if not FRONT or REAR facing camera
       facing = props['android.lens.facing']
-      if (facing != camera_properties_utils.LENS_FACING_FRONT and
-          facing != camera_properties_utils.LENS_FACING_BACK):
-        raise AssertionError(f'Unknown lens facing: {facing}.')
+      camera_properties_utils.check_front_or_rear_camera(props)
 
       # Initialize rotation rig
       rot_rig['cntl'] = self.rotator_cntl
@@ -209,7 +206,7 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
         img_h = frames[0].shape[0]
         file_name_stem = f'{os.path.join(log_path, _NAME)}_{video_quality}'
         cam_rots = sensor_fusion_utils.get_cam_rotations(
-            frames[_START_FRAME:len(frames)], facing, img_h,
+            frames[_START_FRAME:], facing, img_h,
             file_name_stem, _START_FRAME, stabilized_video=True)
         sensor_fusion_utils.plot_camera_rotations(
             cam_rots, _START_FRAME, video_quality, file_name_stem)

@@ -21,8 +21,8 @@ import android.graphics.Rect;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraMetadata;
-import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.BlackLevelPattern;
 import android.hardware.camera2.params.ColorSpaceTransform;
@@ -33,12 +33,11 @@ import android.hardware.camera2.params.RggbChannelVector;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.hardware.camera2.params.TonemapCurve;
 import android.location.Location;
-import android.util.Log;
 import android.util.Pair;
+import android.util.Range;
 import android.util.Rational;
 import android.util.Size;
 import android.util.SizeF;
-import android.util.Range;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -364,6 +363,8 @@ public class ItsSerializer {
             } else if (keyType == LensShadingMap.class) {
                 return new MetadataEntry(keyName,
                         serializeLensShadingMap((LensShadingMap)keyValue));
+            } else if (keyValue instanceof float[]) {
+                return new MetadataEntry(keyName, new JSONArray(keyValue));
             } else {
                 Logt.w(TAG, String.format("Serializing unsupported key type: " + keyType));
                 return null;
@@ -483,6 +484,10 @@ public class ItsSerializer {
         JSONObject jsonObj = new JSONObject();
         for (CaptureResult.Key<?> key : recordingResult.getKeys()) {
             Object value = recordingResult.getResult(key);
+            if (value == null) {
+                Logt.w(TAG, "Key value is null for: " + key.toString());
+                continue;
+            }
             Type keyType = value.getClass();
             MetadataEntry entry;
             if (keyType instanceof GenericArrayType) {
@@ -491,7 +496,11 @@ public class ItsSerializer {
                 entry = serializeEntry(keyType, key, value);
             }
             try {
-                jsonObj.put(entry.key, entry.value);
+                if (entry != null) {
+                    jsonObj.put(entry.key, entry.value);
+                } else {
+                    Logt.w(TAG, "Key entry is null for: " + key.toString());
+                }
             } catch (org.json.JSONException e) {
                 throw new ItsException("JSON error for key: " + key.getName() + ": ", e);
             }

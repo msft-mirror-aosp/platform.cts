@@ -17,7 +17,10 @@
 package android.server.wm.display;
 
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.content.pm.ActivityInfo.FORCE_RESIZE_APP;
 import static android.content.pm.ActivityInfo.OVERRIDE_ENABLE_COMPAT_FAKE_FOCUS;
+import static android.content.pm.ActivityInfo.OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED;
+import static android.content.pm.ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO;
 import static android.content.pm.ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO_LARGE_VALUE;
 import static android.content.pm.ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO_MEDIUM_VALUE;
 import static android.content.pm.ActivityInfo.OVERRIDE_SANDBOX_VIEW_BOUNDS_APIS;
@@ -30,12 +33,23 @@ import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.provider.DeviceConfig.NAMESPACE_CONSTRAIN_DISPLAY_APIS;
 import static android.server.wm.allowdisplayorientationoverride.Components.ALLOW_DISPLAY_ORIENTATION_OVERRIDE_ACTIVITY;
+import static android.server.wm.allowignoringorientationrequestwhenloopdetectedoptin.Components.ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_IN_ACTIVITY;
+import static android.server.wm.allowignoringorientationrequestwhenloopdetectedoptout.Components.ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_OUT_ACTIVITY;
+import static android.server.wm.allowignoringorientationrequestwhenloopdetectedunset.Components.ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_UNSET_ACTIVITY;
+import static android.server.wm.allowminaspectratiooverrideoptin.Components.ALLOW_MIN_ASPECT_RATIO_OVERRIDE_OPT_IN_ACTIVITY;
+import static android.server.wm.allowminaspectratiooverrideoptout.Components.ALLOW_MIN_ASPECT_RATIO_OVERRIDE_OPT_OUT_ACTIVITY;
 import static android.server.wm.alloworientationoverride.Components.ALLOW_ORIENTATION_OVERRIDE_LANDSCAPE_ACTIVITY;
 import static android.server.wm.alloworientationoverride.Components.ALLOW_ORIENTATION_OVERRIDE_RESPONSIVE_ACTIVITY;
+import static android.server.wm.allowresizeableactivityoverridesoptin.Components.ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES_OPT_IN_ACTIVITY;
+import static android.server.wm.allowresizeableactivityoverridesoptout.Components.ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES_OPT_OUT_ACTIVITY;
 import static android.server.wm.allowsandboxingviewboundsapis.Components.ACTION_TEST_VIEW_SANDBOX_ALLOWED_PASSED;
 import static android.server.wm.allowsandboxingviewboundsapis.Components.ACTION_TEST_VIEW_SANDBOX_NOT_ALLOWED_PASSED;
 import static android.server.wm.allowsandboxingviewboundsapis.Components.TEST_VIEW_SANDBOX_ALLOWED_ACTIVITY;
 import static android.server.wm.allowsandboxingviewboundsapis.Components.TEST_VIEW_SANDBOX_ALLOWED_TIMEOUT_MS;
+import static android.server.wm.allowuseraspectratiofullscreenoverrideoptin.Components.ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE_OPT_IN_ACTIVITY;
+import static android.server.wm.allowuseraspectratiofullscreenoverrideoptout.Components.ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE_OPT_OUT_ACTIVITY;
+import static android.server.wm.allowuseraspectratiooverrideoptin.Components.ALLOW_USER_ASPECT_RATIO_OVERRIDE_OPT_IN_ACTIVITY;
+import static android.server.wm.allowuseraspectratiooverrideoptout.Components.ALLOW_USER_ASPECT_RATIO_OVERRIDE_OPT_OUT_ACTIVITY;
 import static android.server.wm.enablefakefocusoptin.Components.ENABLE_FAKE_FOCUS_OPT_IN_LEFT_ACTIVITY;
 import static android.server.wm.enablefakefocusoptin.Components.ENABLE_FAKE_FOCUS_OPT_IN_RIGHT_ACTIVITY;
 import static android.server.wm.enablefakefocusoptout.Components.ENABLE_FAKE_FOCUS_OPT_OUT_LEFT_ACTIVITY;
@@ -60,6 +74,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -77,6 +92,9 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.server.wm.HelperActivities;
 import android.server.wm.MultiDisplayTestBase;
@@ -86,6 +104,9 @@ import android.util.Size;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.android.compatibility.common.util.ApiTest;
+import com.android.window.flags.Flags;
 
 import libcore.junit.util.compat.CoreCompatChangeRule.DisableCompatChanges;
 import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
@@ -152,6 +173,8 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
 
     @Rule
     public TestRule compatChangeRule = new PlatformCompatChangeRule();
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     @Override
@@ -387,6 +410,165 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
         }
     }
 
+    /**
+     * Test that if an orientation loop is detected, the orientation request is ignored when
+     * {@link ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED} is
+     * enabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED}
+     * is set to true.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyTrue_overrideEnabled_overrideApplied() {
+        assumeTrue("Skipping test: "
+                        + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
+                isPolicyForIgnoringRequestedOrientationEnabled());
+
+        try (var compatChange = new CompatChangeCloseable(
+                OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED,
+                ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_IN_ACTIVITY
+                        .getPackageName());
+                var session = new ActivitySessionCloseable(
+                        ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_IN_ACTIVITY)) {
+            // Activity with property set to true and override enabled. Orientation request should
+            // be ignored if a loop is detected.
+            assertTrue(session.getActivityState().getShouldIgnoreOrientationRequestLoop());
+        }
+    }
+
+    /**
+     * Test that if an orientation loop is detected, the orientation request is respected when
+     * {@link ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED} is
+     * enabled but {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED}
+     * is set to false.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyFalse_overrideEnabled_overrideNotApplied() {
+        assumeTrue("Skipping test: "
+                        + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
+                isPolicyForIgnoringRequestedOrientationEnabled());
+
+        try (var compatChange = new CompatChangeCloseable(
+                OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED,
+                ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_OUT_ACTIVITY
+                        .getPackageName());
+                var session = new ActivitySessionCloseable(
+                        ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_OUT_ACTIVITY)) {
+            // Activity with property set to false and override enabled. Orientation request should
+            // be respected even if a loop is detected.
+            assertFalse(session.getActivityState().getShouldIgnoreOrientationRequestLoop());
+
+
+        }
+    }
+
+    /**
+     * Test that if an orientation loop is detected, the orientation request is respected when
+     * {@link ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED} is
+     * disabled but {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED}
+     * is set to true.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyTrue_overrideDisabled_overrideNotApplied() {
+        assumeTrue("Skipping test: "
+                        + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
+                isPolicyForIgnoringRequestedOrientationEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                     ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_IN_ACTIVITY)) {
+            // Activity with property set to true but with override disabled. Orientation request
+            // should be respected even if a loop is detected.
+            assertFalse(session.getActivityState().getShouldIgnoreOrientationRequestLoop());
+        }
+    }
+
+    /**
+     * Test that if an orientation loop is detected, the orientation request is respected when
+     * {@link ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED} is
+     * disabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED}
+     * is set to false.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyFalse_overrideDisabled_overrideNotApplied() {
+        assumeTrue("Skipping test: "
+                        + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
+                isPolicyForIgnoringRequestedOrientationEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                     ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_OPT_OUT_ACTIVITY)) {
+            // Activity with property set to false and with override disabled. Orientation request
+            // should be respected even if a loop is detected.
+            assertFalse(session.getActivityState().getShouldIgnoreOrientationRequestLoop());
+        }
+    }
+
+    /**
+     * Test that if an orientation loop is detected, the orientation request is ignored when
+     * {@link ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED} is
+     * enabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED}
+     * is unset.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyNotSet_overrideEnabled_overrideApplied() {
+        assumeTrue("Skipping test: "
+                        + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
+                isPolicyForIgnoringRequestedOrientationEnabled());
+
+        try (var compatChange = new CompatChangeCloseable(
+                OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED,
+                ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_UNSET_ACTIVITY
+                        .getPackageName());
+                var session = new ActivitySessionCloseable(
+                        ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_UNSET_ACTIVITY)) {
+            // Activity without property set and override enabled. Property will default to true.
+            // Orientation request should be ignored if a loop is detected.
+            assertTrue(session.getActivityState().getShouldIgnoreOrientationRequestLoop());
+        }
+    }
+
+    /**
+     * Test that if an orientation loop is detected, the orientation request is respected when
+     * {@link ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED} is
+     * disabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED}
+     * is unset.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_ENABLE_COMPAT_IGNORE_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideIgnoreOrientationRequestWhenLoopDetected_propertyNotSet_overrideDisabled_overrideNotApplied() {
+        assumeTrue("Skipping test: "
+                        + "config_letterboxIsPolicyForIgnoringRequestedOrientationEnabled disabled",
+                isPolicyForIgnoringRequestedOrientationEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                ALLOW_IGNORING_ORIENTATION_REQUEST_WHEN_LOOP_DETECTED_UNSET_ACTIVITY)) {
+            // Activity without property set and with override disabled. Orientation request should
+            // be respected even if a loop is detected.
+            assertFalse(session.getActivityState().getShouldIgnoreOrientationRequestLoop());
+        }
+    }
+
+
     @Test
     public void testOptOutPropertyCameraCompatForceRotation_rotationDisabled() {
         assumeTrue("Skipping test: config_isWindowManagerCameraCompatTreatmentEnabled not enabled",
@@ -503,6 +685,126 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
                     /* expected */ false,
                     () -> session.getActivityState()
                             .getShouldRefreshActivityViaPauseForCameraCompat());
+        }
+    }
+
+    /**
+     * Test that an activity is forced to be resizeable when {@link
+     * ActivityInfo#FORCE_RESIZE_APP} is enabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES} is set to
+     * true.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#FORCE_RESIZE_APP",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideForceResizeApp_propertyTrue_overrideEnabled_overrideApplied() {
+        try (var compatChange = new CompatChangeCloseable(
+                FORCE_RESIZE_APP,
+                ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES_OPT_IN_ACTIVITY.getPackageName());
+                var session = new ActivitySessionCloseable(
+                        ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES_OPT_IN_ACTIVITY)) {
+            // Activity with property set to true and override enabled. Activity should be forced to
+            // be resizeable.
+            assertTrue(session.getActivityState().getShouldOverrideForceResizeApp());
+        }
+    }
+
+    /**
+     * Test that an activity is not forced to be resizeable when {@link
+     * ActivityInfo#FORCE_RESIZE_APP} is enabled but {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES} is set to
+     * false.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#FORCE_RESIZE_APP",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideForceResizeApp_propertyFalse_overrideEnabled_overrideNotApplied() {
+        try (var compatChange = new CompatChangeCloseable(
+                FORCE_RESIZE_APP,
+                ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES_OPT_OUT_ACTIVITY.getPackageName());
+                var session = new ActivitySessionCloseable(
+                        ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES_OPT_OUT_ACTIVITY)) {
+            // Activity with property set to false and override enabled. Activity should not be
+            // forced to be resizeable.
+            assertFalse(session.getActivityState().getShouldOverrideForceResizeApp());
+        }
+    }
+
+    /**
+     * Test that an activity is not forced to be resizeable when {@link
+     * ActivityInfo#FORCE_RESIZE_APP} is disabled but {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES} is set to
+     * true.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#FORCE_RESIZE_APP",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideForceResizeApp_propertyTrue_overrideDisabled_overrideNotApplied() {
+        try (var session = new ActivitySessionCloseable(
+                     ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES_OPT_IN_ACTIVITY)) {
+            // Activity with property set to true and override disabled. Activity should not be
+            // forced to be resizeable.
+            assertFalse(session.getActivityState().getShouldOverrideForceResizeApp());
+        }
+    }
+
+    /**
+     * Test that an activity is not forced to be resizeable when {@link
+     * ActivityInfo#FORCE_RESIZE_APP} is disabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES} is set to
+     * false.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#FORCE_RESIZE_APP",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideForceResizeApp_propertyFalse_overrideDisabled_overrideApplied() {
+        try (var session = new ActivitySessionCloseable(
+                     ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES_OPT_OUT_ACTIVITY)) {
+            // Activity with property set to false and override disabled. Activity should not be
+            // forced to be resizeable.
+            assertFalse(session.getActivityState().getShouldOverrideForceResizeApp());
+        }
+    }
+
+    /**
+     * Test that an activity is forced to be resizeable when {@link
+     * ActivityInfo#FORCE_RESIZE_APP} is enabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES} is unset.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#FORCE_RESIZE_APP",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    @EnableCompatChanges({ActivityInfo.FORCE_RESIZE_APP})
+    public void testOverrideForceResizeApp_propertyUnset_overrideEnabled_overrideApplied() {
+        try (var session = new ActivitySessionCloseable(
+                     NON_RESIZEABLE_NON_FIXED_ORIENTATION_ACTIVITY)) {
+            // Activity with property unset and override enabled. Property will default to true.
+            // Activity should be forced to be resizeable.
+            assertTrue(session.getActivityState().getShouldOverrideForceResizeApp());
+        }
+    }
+
+    /**
+     * Test that an activity is not forced to be resizeable when {@link
+     * ActivityInfo#FORCE_RESIZE_APP} is disabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES} is unset.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#FORCE_RESIZE_APP",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    @DisableCompatChanges({ActivityInfo.FORCE_RESIZE_APP})
+    public void testOverrideForceResizeApp_propertyUnset_overrideDisabled_overrideNotApplied() {
+        try (var session = new ActivitySessionCloseable(
+                NON_RESIZEABLE_NON_FIXED_ORIENTATION_ACTIVITY)) {
+            // Activity with property unset and override disabled. Activity should not be forced to
+            // be resizeable.
+            assertFalse(session.getActivityState().getShouldOverrideForceResizeApp());
         }
     }
 
@@ -946,6 +1248,372 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     public void testOverrideMinAspectRatioActivityMinAspectRatioLargerThanOverride() {
         runMinAspectRatioTest(NON_RESIZEABLE_ASPECT_RATIO_ACTIVITY,
                 /* expected */ ACTIVITY_MIN_ASPECT_RATIO);
+    }
+
+    /**
+     * Test that an activities min aspect ratio is overridden when {@link
+     * ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO} is enabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE} is true.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideMinAspectRatio_propertyTrue_overrideEnabled_overrideApplied() {
+        try (var compatChange = new CompatChangeCloseable(OVERRIDE_MIN_ASPECT_RATIO,
+                ALLOW_MIN_ASPECT_RATIO_OVERRIDE_OPT_IN_ACTIVITY.getPackageName());
+                var session = new ActivitySessionCloseable(
+                        ALLOW_MIN_ASPECT_RATIO_OVERRIDE_OPT_IN_ACTIVITY)) {
+            assertTrue(session.getActivityState().getShouldOverrideMinAspectRatio());
+        }
+    }
+
+    /**
+     * Test that an activities min aspect ratio is not overridden when {@link
+     * ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO} is enabled but {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE} is false.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideMinAspectRatio_propertyFalse_overrideEnabled_overrideNotApplied() {
+        try (var compatChange = new CompatChangeCloseable(OVERRIDE_MIN_ASPECT_RATIO,
+                ALLOW_MIN_ASPECT_RATIO_OVERRIDE_OPT_IN_ACTIVITY.getPackageName());
+                var session = new ActivitySessionCloseable(
+                        ALLOW_MIN_ASPECT_RATIO_OVERRIDE_OPT_OUT_ACTIVITY)) {
+            assertFalse(session.getActivityState().getShouldOverrideMinAspectRatio());
+        }
+    }
+
+    /**
+     * Test that an activities min aspect ratio is overridden when {@link
+     * ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO} is enabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE} is unset.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    @EnableCompatChanges({ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO})
+    public void testOverrideMinAspectRatio_propertyNotSet_overrideEnabled_overrideApplied() {
+        try (var session = new ActivitySessionCloseable(
+                NON_RESIZEABLE_NON_FIXED_ORIENTATION_ACTIVITY)) {
+            assertTrue(session.getActivityState().getShouldOverrideMinAspectRatio());
+        }
+    }
+
+    /**
+     * Test that an activities min aspect ratio is not overridden when {@link
+     * ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO} is disabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE} is unset.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    @DisableCompatChanges({ActivityInfo.OVERRIDE_MIN_ASPECT_RATIO})
+    public void testOverrideMinAspectRatio_propertyNotSet_overrideDisabled_overrideNotApplied() {
+        try (var session = new ActivitySessionCloseable(
+                NON_RESIZEABLE_NON_FIXED_ORIENTATION_ACTIVITY)) {
+            assertFalse(session.getActivityState().getShouldOverrideMinAspectRatio());
+        }
+    }
+
+    /**
+     * Test that an activities min aspect ratio is not overridden when {@link
+     * ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO} is disabled but {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE} is true.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideMinAspectRatio_propertyTrue_overrideUnset_overrideNotApplied() {
+        try (var session = new ActivitySessionCloseable(
+                ALLOW_MIN_ASPECT_RATIO_OVERRIDE_OPT_IN_ACTIVITY)) {
+            assertFalse(session.getActivityState().getShouldOverrideMinAspectRatio());
+        }
+    }
+
+    /**
+     * Test that an activities min aspect ratio is not overridden when {@link
+     * ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO} is disabled and {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE} is false.
+     */
+    @Test
+    @ApiTest(apis = {"android.content.pm.ActivityInfo#OVERRIDE_MIN_ASPECT_RATIO",
+            "android.view.WindowManager#PROPERTY_COMPAT_ALLOW_MIN_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testOverrideMinAspectRatio_propertyFalse_overrideUnset_overrideNotApplied() {
+        try (var session = new ActivitySessionCloseable(
+                ALLOW_MIN_ASPECT_RATIO_OVERRIDE_OPT_OUT_ACTIVITY)) {
+            assertFalse(session.getActivityState().getShouldOverrideMinAspectRatio());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio settings are enabled when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE} is set to true
+     * and {@link com.android.internal.R.bool.config_appCompatUserAppAspectRatioSettingsIsEnabled}
+     * is true.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testAllowUserAspectRatioSettings_propertyTrue_configEnabled_overrideAllowed() {
+        assumeTrue("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled not enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                ALLOW_USER_ASPECT_RATIO_OVERRIDE_OPT_IN_ACTIVITY)) {
+            assertTrue(session.getActivityState().getShouldEnableUserAspectRatioSettings());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio settings are disabled when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE} is set to true
+     * but {@link com.android.internal.R.bool.config_appCompatUserAppAspectRatioSettingsIsEnabled}
+     * is false.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testAllowUserAspectRatioSettings_propertyTrue_configDisabled_overrideNotAllowed() {
+        assumeFalse("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled is enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                ALLOW_USER_ASPECT_RATIO_OVERRIDE_OPT_IN_ACTIVITY)) {
+            assertFalse(session.getActivityState().getShouldEnableUserAspectRatioSettings());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio settings are disabled when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE} is set to false
+     * but {@link com.android.internal.R.bool.config_appCompatUserAppAspectRatioSettingsIsEnabled}
+     * is true.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testAllowUserAspectRatioSettings_propertyFalse_configEnabled_overrideNotAllowed() {
+        assumeTrue("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled not enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                ALLOW_USER_ASPECT_RATIO_OVERRIDE_OPT_OUT_ACTIVITY)) {
+            assertFalse(session.getActivityState().getShouldEnableUserAspectRatioSettings());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio settings are disabled when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE} is set to false
+     * and {@link com.android.internal.R.bool.config_appCompatUserAppAspectRatioSettingsIsEnabled}
+     * is false.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testAllowUserAspectRatioSettings_propertyFalse_configDisabled_overrideNotAllowed() {
+        assumeFalse("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled is enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                ALLOW_USER_ASPECT_RATIO_OVERRIDE_OPT_OUT_ACTIVITY)) {
+            assertFalse(session.getActivityState().getShouldEnableUserAspectRatioSettings());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio settings are enabled when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE} is unset and
+     * {@link com.android.internal.R.bool.config_appCompatUserAppAspectRatioSettingsIsEnabled}
+     * is true.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testAllowUserAspectRatioSettings_propertyUnset_configEnabled_overrideAllowed() {
+        assumeTrue("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled not enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                NON_RESIZEABLE_NON_FIXED_ORIENTATION_ACTIVITY)) {
+            assertTrue(session.getActivityState().getShouldEnableUserAspectRatioSettings());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio settings are disabled when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE} is unset but
+     * {@link com.android.internal.R.bool.config_appCompatUserAppAspectRatioSettingsIsEnabled}
+     * is false.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testAllowUserAspectRatioSettings_propertyUnset_configDisabled_overrideNotAllowed() {
+        assumeFalse("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled is enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                NON_RESIZEABLE_NON_FIXED_ORIENTATION_ACTIVITY)) {
+            assertFalse(session.getActivityState().getShouldEnableUserAspectRatioSettings());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio fullscreen override is applicable through the user aspect
+     * ratio settings when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE} is
+     * set to true and {@link
+     * com.android.internal.R.bool.config_appCompatUserAppAspectRatioFullscreenIsEnabled} is true.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testAllowUserAspectRatioFullscreen_propertyTrue_configEnabled_overrideAllowed() {
+        assumeTrue("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled not enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+        assumeTrue(
+                "Skipping test: config_appCompatUserAppAspectRatioFullscreenIsEnabled not enabled",
+                isUserAppAspectRatioFullscreenIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE_OPT_IN_ACTIVITY)) {
+            assertTrue(session.getActivityState().getIsUserFullscreenOverrideEnabled());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio fullscreen override is not applicable through the user aspect
+     * ratio settings when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE} is
+     * set to true but {@link
+     * com.android.internal.R.bool.config_appCompatUserAppAspectRatioFullscreenIsEnabled} is false.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void
+            testAllowUserAspectRatioFullscreen_propertyTrue_configDisabled_overrideNotAllowed() {
+        assumeTrue("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled not enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+        assumeFalse(
+                "Skipping test: config_appCompatUserAppAspectRatioFullscreenIsEnabled is enabled",
+                isUserAppAspectRatioFullscreenIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE_OPT_IN_ACTIVITY)) {
+            assertFalse(session.getActivityState().getIsUserFullscreenOverrideEnabled());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio fullscreen override is not applicable through the user aspect
+     * ratio settings when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE} is
+     * set to false but {@link
+     * com.android.internal.R.bool.config_appCompatUserAppAspectRatioFullscreenIsEnabled} is true.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void
+            testAllowUserAspectRatioFullscreen_propertyFalse_configEnabled_overrideNotAllowed() {
+        assumeTrue("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled not enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+        assumeTrue(
+                "Skipping test: config_appCompatUserAppAspectRatioFullscreenIsEnabled not enabled",
+                isUserAppAspectRatioFullscreenIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE_OPT_OUT_ACTIVITY)) {
+            assertFalse(session.getActivityState().getIsUserFullscreenOverrideEnabled());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio fullscreen override is not applicable through the user aspect
+     * ratio settings when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE} is
+     * set to false and {@link
+     * com.android.internal.R.bool.config_appCompatUserAppAspectRatioFullscreenIsEnabled} is false.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void
+            testAllowUserAspectRatioFullscreen_propertyFalse_configDisabled_overrideNotAllowed() {
+        assumeTrue("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled not enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+        assumeFalse(
+                "Skipping test: config_appCompatUserAppAspectRatioFullscreenIsEnabled is enabled",
+                isUserAppAspectRatioFullscreenIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE_OPT_OUT_ACTIVITY)) {
+            assertFalse(session.getActivityState().getIsUserFullscreenOverrideEnabled());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio fullscreen override is applicable through the user aspect
+     * ratio settings when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE} is
+     * unset but {@link
+     * com.android.internal.R.bool.config_appCompatUserAppAspectRatioFullscreenIsEnabled} is true.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void testAllowUserAspectRatioFullscreen_propertyUnset_configEnabled_overrideAllowed() {
+        assumeTrue("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled not enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+        assumeTrue(
+                "Skipping test: config_appCompatUserAppAspectRatioFullscreenIsEnabled not enabled",
+                isUserAppAspectRatioFullscreenIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                NON_RESIZEABLE_NON_FIXED_ORIENTATION_ACTIVITY)) {
+            assertTrue(session.getActivityState().getIsUserFullscreenOverrideEnabled());
+        }
+    }
+
+    /**
+     * Test that the user aspect ratio fullscreen override is not applicable through the user aspect
+     * ratio settings when {@link
+     * android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_FULLSCREEN_OVERRIDE} is
+     * set to unset but {@link
+     * com.android.internal.R.bool.config_appCompatUserAppAspectRatioFullscreenIsEnabled} is false.
+     */
+    @Test
+    @ApiTest(apis = {"android.view.WindowManager#PROPERTY_COMPAT_ALLOW_USER_ASPECT_RATIO_OVERRIDE"})
+    @RequiresFlagsEnabled(Flags.FLAG_APP_COMPAT_PROPERTIES_API)
+    public void
+            testAllowUserAspectRatioFullscreen_propertyUnset_configDisabled_overrideNotAllowed() {
+        assumeTrue("Skipping test: config_appCompatUserAppAspectRatioSettingsIsEnabled not enabled",
+                isUserAppAspectRatioSettingsIsEnabled());
+        assumeFalse(
+                "Skipping test: config_appCompatUserAppAspectRatioFullscreenIsEnabled is enabled",
+                isUserAppAspectRatioFullscreenIsEnabled());
+
+        try (var session = new ActivitySessionCloseable(
+                NON_RESIZEABLE_NON_FIXED_ORIENTATION_ACTIVITY)) {
+            assertFalse(session.getActivityState().getIsUserFullscreenOverrideEnabled());
+        }
+    }
+
+    private boolean isUserAppAspectRatioFullscreenIsEnabled() {
+        return getBooleanConfig("config_appCompatUserAppAspectRatioFullscreenIsEnabled");
+    }
+
+    private boolean isUserAppAspectRatioSettingsIsEnabled() {
+        return getBooleanConfig("config_appCompatUserAppAspectRatioSettingsIsEnabled");
     }
 
     private boolean isCameraCompatForceRotationTreatmentConfigEnabled() {

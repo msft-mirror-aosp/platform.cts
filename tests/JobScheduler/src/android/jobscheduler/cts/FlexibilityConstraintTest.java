@@ -16,8 +16,11 @@
 
 package android.jobscheduler.cts;
 
+import static com.android.compatibility.common.util.TestUtils.waitUntil;
+
 import android.app.job.JobInfo;
 import android.content.pm.PackageManager;
+import android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresDevice;
 import android.provider.DeviceConfig;
@@ -26,13 +29,18 @@ import android.util.Log;
 
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
+import com.android.compatibility.common.util.SystemUtil;
+
+import java.util.Collections;
+import java.util.Map;
 
 public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
     private static final String TAG = "FlexibilityConstraintTest";
     public static final int FLEXIBLE_JOB_ID = FlexibilityConstraintTest.class.hashCode();
-    private static final long FLEXIBILITY_TIMEOUT_MILLIS = 5_000;
+    private static final long FLEXIBILITY_TIMEOUT_MILLIS = 5_000L * HW_TIMEOUT_MULTIPLIER;
 
     // Same values as in JobStatus.java
     private static final int CONSTRAINT_BATTERY_NOT_LOW = 1 << 1;
@@ -51,6 +59,7 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
 
     // Store previous values.
     private String mInitialDisplayTimeout;
+    private String mInitialDeviceConfigSyncMode;
     private String mPreviousLowPowerTriggerLevel;
 
     private DeviceConfigStateHelper mAlarmManagerDeviceConfigStateHelper;
@@ -69,22 +78,42 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
         mAlarmManagerDeviceConfigStateHelper
                 .set("delay_nonwakeup_alarms_while_screen_off", "false");
 
+        mInitialDeviceConfigSyncMode = mUiDevice.executeShellCommand(
+                "device_config get_sync_disabled_for_tests");
+        // TODO(271128261): disable sync during all JobScheduler tests
+        mUiDevice.executeShellCommand(
+                "device_config set_sync_disabled_for_tests until_reboot");
+        // Apply
+        //  * CONSTRAINT_BATTERY_NOT_LOW
+        //  * CONSTRAINT_CHARGING
+        //  * CONSTRAINT_CONNECTIVITY
+        //  * CONSTRAINT_IDLE
+        setDeviceConfigFlag("fc_applied_constraints", "268435463", false);
+        setDeviceConfigFlag("fc_flexibility_deadline_proximity_limit_ms", "0", false);
         // Using jobs with no deadline, but having a short fallback deadline, lets us test jobs
         // whose lifecycle is smaller than the minimum allowed by JobStatus.
-        mDeviceConfigStateHelper.set(
-                new DeviceConfig.Properties.Builder(DeviceConfig.NAMESPACE_JOB_SCHEDULER)
-                        // Apply
-                        //  * CONSTRAINT_BATTERY_NOT_LOW
-                        //  * CONSTRAINT_CHARGING
-                        //  * CONSTRAINT_CONNECTIVITY
-                        //  * CONSTRAINT_IDLE
-                        .setInt("fc_applied_constraints", 268435463)
-                        .setLong("fc_flexibility_deadline_proximity_limit_ms", 0L)
-                        .setLong("fc_fallback_flexibility_deadline_ms", 100_000)
-                        .setLong("fc_min_time_between_flexibility_alarms_ms", 0L)
-                        .setString("fc_percents_to_drop_num_flexible_constraints", "3,6,12,25")
-                        .setBoolean("fc_enable_flexibility", true)
-                        .build());
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=100000,400=100000,300=100000,200=100000,100=100000", false);
+        setDeviceConfigFlag("fc_fallback_flexibility_deadline_scores",
+                "500=0,400=0,300=0,200=0,100=0", false);
+        setDeviceConfigFlag("fc_min_time_between_flexibility_alarms_ms", "0", false);
+        setDeviceConfigFlag("fc_percents_to_drop_flexible_constraints",
+                "500=3|6|12|25"
+                        + ",400=3|6|12|25"
+                        + ",300=3|6|12|25"
+                        + ",200=3|6|12|25"
+                        + ",100=3|6|12|25",
+                false);
+        waitUntil("Config didn't update appropriately", 10 /* seconds */,
+                () -> "268435463".equals(getConfigValue("fc_applied_constraints"))
+                && "0".equals(getConfigValue("fc_flexibility_deadline_proximity_limit_ms"))
+                && "500=100000,400=100000,300=100000,200=100000,100=100000"
+                        .equals(getConfigValue("fc_fallback_flexibility_deadlines"))
+                && "500=0,400=0,300=0,200=0,100=0"
+                        .equals(getConfigValue("fc_fallback_flexibility_deadline_scores"))
+                && "0".equals(getConfigValue("fc_min_time_between_flexibility_alarms_ms"))
+                && "500=3|6|12|25,400=3|6|12|25,300=3|6|12|25,200=3|6|12|25,100=3|6|12|25"
+                        .equals(getConfigValue("fc_percents_to_drop_flexible_constraints")));
 
         // Disable power save mode.
         mPreviousLowPowerTriggerLevel = Settings.Global.getString(getContext().getContentResolver(),
@@ -113,6 +142,8 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
                 Settings.Global.LOW_POWER_MODE_TRIGGER_LEVEL, mPreviousLowPowerTriggerLevel);
 
         mNetworkingHelper.tearDown();
+        mUiDevice.executeShellCommand(
+                "device_config set_sync_disabled_for_tests " + mInitialDeviceConfigSyncMode);
 
         super.tearDown();
     }
@@ -127,7 +158,13 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
         // Make it so that constraints won't drop in time.
-        mDeviceConfigStateHelper.set("fc_percents_to_drop_num_flexible_constraints", "25,30,35,50");
+        setDeviceConfigFlag("fc_percents_to_drop_flexible_constraints",
+                "500=25|30|35|50"
+                        + ",400=25|30|35|50"
+                        + ",300=25|30|35|50"
+                        + ",200=25|30|35|50"
+                        + ",100=25|30|35|50",
+                true);
         scheduleJobToExecute();
 
         // Job should fire even though constraints haven't dropped.
@@ -146,8 +183,9 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
         // Increase timeouts to make sure the test doesn't start passing because of transpired time.
-        mDeviceConfigStateHelper.set("fc_percents_to_drop_num_flexible_constraints",
-                "900000,1800000,3600000,7200000");
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=360000000,400=360000000,300=360000000,200=360000000,100=360000000",
+                true);
         scheduleJobToExecute();
 
         assertJobNotReady();
@@ -169,8 +207,13 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
         // Increase timeouts to make sure the test doesn't start passing because of transpired time.
-        mDeviceConfigStateHelper.set("fc_percents_to_drop_num_flexible_constraints",
-                "900000,1800000,3600000,7200000");
+        setDeviceConfigFlag("fc_percents_to_drop_flexible_constraints",
+                "500=900000|1800000|3600000|7200000"
+                        + ",400=900000|1800000|3600000|7200000"
+                        + ",300=900000|1800000|3600000|7200000"
+                        + ",200=900000|1800000|3600000|7200000"
+                        + ",100=900000|1800000|3600000|7200000",
+                true);
         scheduleJobToExecute();
 
         assertJobNotReady();
@@ -192,8 +235,9 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
         // Increase timeouts to make sure the test doesn't start passing because of transpired time.
-        mDeviceConfigStateHelper.set("fc_percents_to_drop_num_flexible_constraints",
-                "900000,1800000,3600000,7200000");
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=360000000,400=360000000,300=360000000,200=360000000,100=360000000",
+                true);
         scheduleJobToExecute();
 
         assertJobNotReady();
@@ -215,20 +259,30 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
             Log.d(TAG, "Skipping test since device doesn't support any constraints");
             return;
         }
-        mDeviceConfigStateHelper.set("fc_percents_to_drop_num_flexible_constraints", "5,6,7,25");
-        Thread.sleep(1_000);
-        scheduleJobToExecute();
+        setDeviceConfigFlag("fc_percents_to_drop_flexible_constraints",
+                "500=3|5|7|50"
+                        + ",400=3|5|7|50"
+                        + ",300=3|5|7|50"
+                        + ",200=3|5|7|50"
+                        + ",100=3|5|7|50",
+                true);
+        try (TestAppInterface testAppInterface =
+                     new TestAppInterface(getContext(), FLEXIBLE_JOB_ID)) {
+            testAppInterface.scheduleJob(Collections.emptyMap(), Collections.emptyMap());
+            testAppInterface.assertJobNotReady(FLEXIBLE_JOB_ID);
 
-        // Wait for all constraints to drop.
-        assertFalse("Job fired before flexible constraints dropped",
-                kTestEnvironment.awaitExecution(3000));
+            // Wait for the first constraint to drop.
+            assertFalse("Job fired before flexible constraints dropped",
+                    testAppInterface.awaitJobStart(3000));
 
-        // Remaining time before all constraints should have dropped.
-        Thread.sleep(4000);
-        runJob();
+            // Remaining time before all constraints should have dropped.
+            Thread.sleep(5000);
+            testAppInterface.runSatisfiedJob();
 
-        assertTrue("Job with flexible constraint did not fire when no constraints were required",
-                kTestEnvironment.awaitExecution(FLEXIBILITY_TIMEOUT_MILLIS));
+            assertTrue(
+                    "Job with flexible constraint did not fire when no constraints were required",
+                    testAppInterface.awaitJobStart(FLEXIBILITY_TIMEOUT_MILLIS));
+        }
     }
 
     /**
@@ -266,8 +320,9 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
         // Increase timeouts to make sure the test doesn't start passing because of transpired time.
-        mDeviceConfigStateHelper.set("fc_percents_to_drop_num_flexible_constraints",
-                "900000,1800000,3600000,7200000");
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=360000000,400=360000000,300=360000000,200=360000000,100=360000000",
+                true);
 
         scheduleJobToExecute();
 
@@ -276,7 +331,7 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
         assertJobNotReady();
 
         // CONSTRAINT_BATTERY_NOT_LOW
-        mDeviceConfigStateHelper.set("fc_applied_constraints", "2");
+        setDeviceConfigFlag("fc_applied_constraints", "2", true);
 
         runJob();
         assertTrue("Job did not fire when applied constraints were satisfied",
@@ -306,43 +361,82 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
         // Increase timeouts to make sure the test doesn't start passing because of transpired time.
-        mDeviceConfigStateHelper.set("fc_percents_to_drop_num_flexible_constraints",
-                "900000,1800000,3600000,7200000");
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=360000000,400=360000000,300=360000000,200=360000000,100=360000000",
+                true);
+        final boolean hasNonWifiNetwork =
+                mNetworkingHelper.hasCellularNetwork() || mNetworkingHelper.hasEthernetConnection();
+        if (hasNonWifiNetwork) {
+            mNetworkingHelper.setAllNetworksEnabled(true);
+        }
         mNetworkingHelper.setWifiState(false);
 
         final int connectivityJobId = FLEXIBLE_JOB_ID;
         final int nonConnectivityJobId = FLEXIBLE_JOB_ID + 1;
-        mJobScheduler.schedule(new JobInfo.Builder(connectivityJobId, kJobServiceComponent)
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .build());
-        mJobScheduler.schedule(new JobInfo.Builder(nonConnectivityJobId, kJobServiceComponent)
-                .build());
+        try (TestAppInterface testAppInterface =
+                     new TestAppInterface(getContext(), FLEXIBLE_JOB_ID)) {
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, connectivityJobId,
+                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                            JobInfo.NETWORK_TYPE_ANY
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, nonConnectivityJobId
+                    )
+            );
 
-        assertJobNotReady(nonConnectivityJobId);
-        assertJobNotReady(connectivityJobId);
+            testAppInterface.assertJobNotReady(nonConnectivityJobId);
+            testAppInterface.assertJobNotReady(connectivityJobId);
 
-        // CONSTRAINT_BATTERY_NOT_LOW
-        mDeviceConfigStateHelper.set("fc_applied_constraints", "2");
+            // CONSTRAINT_BATTERY_NOT_LOW
+            setDeviceConfigFlag("fc_applied_constraints", "2", true);
 
-        kTestEnvironment.setExpectedExecutions(1);
-        satisfySystemWideConstraints(false, true, false);
+            satisfySystemWideConstraints(false, true, false);
+            testAppInterface.runSatisfiedJob(nonConnectivityJobId);
+            assertTrue("Job did not fire when applied constraints were satisfied",
+                    testAppInterface.awaitJobStart(nonConnectivityJobId,
+                            FLEXIBILITY_TIMEOUT_MILLIS));
+            if (hasNonWifiNetwork) {
+                // Connectivity isn't in the set of applied constraints, so the job should be able
+                // to run.
+                testAppInterface.runSatisfiedJob(connectivityJobId);
+                assertTrue("Job did not fire when applied constraints were satisfied",
+                        testAppInterface.awaitJobStart(connectivityJobId,
+                                FLEXIBILITY_TIMEOUT_MILLIS));
+            }
 
-        // Only the connectivity job should be held back by the lack of connectivity.
-        assertJobNotReady(connectivityJobId);
+            if (mNetworkingHelper.hasEthernetConnection()) {
+                // We currently can't control the ethernet connection, so skip the remainder
+                // of the test.
+                Log.d(TAG, "Skipping remainder of test because of an active ethernet connection");
+                return;
+            }
 
-        runJob(nonConnectivityJobId);
-        assertTrue("Job did not fire when applied constraints were satisfied",
-                kTestEnvironment.awaitExecution(FLEXIBILITY_TIMEOUT_MILLIS));
+            // CONSTRAINT_BATTERY_NOT_LOW | CONSTRAINT_CONNECTIVITY
+            // Connectivity job needs both to run
+            setDeviceConfigFlag("fc_applied_constraints", "268435458", true);
 
-        kTestEnvironment.setExpectedExecutions(1);
-        // CONSTRAINT_BATTERY_NOT_LOW | CONSTRAINT_CONNECTIVITY
-        // Connectivity job needs both to run
-        mDeviceConfigStateHelper.set("fc_applied_constraints", "268435458");
-        mNetworkingHelper.setWifiState(true);
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, connectivityJobId,
+                            TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE,
+                            JobInfo.NETWORK_TYPE_ANY
+                    )
+            );
 
-        runJob(connectivityJobId);
-        assertTrue("Job did not fire when applied constraints were satisfied",
-                kTestEnvironment.awaitExecution(FLEXIBILITY_TIMEOUT_MILLIS));
+            // Connectivity is now in the set of applied constraints, so the job should be held
+            // back by the lack of Wi-Fi.
+            testAppInterface.assertJobNotReady(connectivityJobId);
+
+            mNetworkingHelper.setWifiState(true);
+
+            testAppInterface.runSatisfiedJob(connectivityJobId);
+            assertTrue("Job did not fire when applied constraints were satisfied",
+                    testAppInterface.awaitJobStart(connectivityJobId, FLEXIBILITY_TIMEOUT_MILLIS));
+        }
     }
 
     /**
@@ -361,8 +455,9 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
         // Increase timeouts to make sure the test doesn't start passing because of transpired time.
-        mDeviceConfigStateHelper.set("fc_percents_to_drop_num_flexible_constraints",
-                "900000,1800000,3600000,7200000");
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=360000000,400=360000000,300=360000000,200=360000000,100=360000000",
+                true);
 
         scheduleJobToExecute();
 
@@ -371,7 +466,7 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
         assertJobNotReady();
 
         // CONSTRAINT_CHARGING
-        mDeviceConfigStateHelper.set("fc_applied_constraints", "1");
+        setDeviceConfigFlag("fc_applied_constraints", "1", true);
 
         runJob();
         assertTrue("Job did not fire when applied constraints were satisfied",
@@ -400,11 +495,11 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
         // Increase timeouts to make sure the test doesn't start passing because of transpired time.
-        mDeviceConfigStateHelper.set("fc_percents_to_drop_num_flexible_constraints",
-                "900000,1800000,3600000,7200000");
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=360000000,400=360000000,300=360000000,200=360000000,100=360000000",
+                true);
+        mNetworkingHelper.setWifiState(false);
 
-        kTestEnvironment.setExpectedExecutions(1);
-        mJobScheduler.schedule(mBuilder.build());
         mBuilder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
         scheduleJobToExecute();
 
@@ -413,7 +508,7 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
         assertJobNotReady();
 
         // CONSTRAINT_CONNECTIVITY
-        mDeviceConfigStateHelper.set("fc_applied_constraints", "268435456");
+        setDeviceConfigFlag("fc_applied_constraints", "268435456", true);
 
         runJob();
         assertTrue("Job did not fire when applied constraints were satisfied",
@@ -436,8 +531,9 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
             return;
         }
         // Increase timeouts to make sure the test doesn't start passing because of transpired time.
-        mDeviceConfigStateHelper.set("fc_percents_to_drop_num_flexible_constraints",
-                "900000,1800000,3600000,7200000");
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=360000000,400=360000000,300=360000000,200=360000000,100=360000000",
+                true);
 
         scheduleJobToExecute();
 
@@ -446,7 +542,7 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
         assertJobNotReady();
 
         // CONSTRAINT_IDLE
-        mDeviceConfigStateHelper.set("fc_applied_constraints", "4");
+        setDeviceConfigFlag("fc_applied_constraints", "4", true);
 
         runJob();
         assertTrue("Job did not fire when applied constraints were satisfied",
@@ -456,12 +552,217 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
     /**
      * Schedule an expedited job, verify it runs immediately.
      */
-    public void testExpeditedJobByPassFlexibility() throws Exception {
+    public void testExpeditedJobBypassesFlexibility() throws Exception {
         mBuilder.setExpedited(true);
         scheduleJobToExecute();
         runJob();
         assertTrue("Expedited job did not start.",
                 kTestEnvironment.awaitExecution(FLEXIBILITY_TIMEOUT_MILLIS));
+    }
+
+    /**
+     * Verify default jobs of allowlisted apps are excluded
+     */
+    public void testAllowlistBypassesFlexibility() throws Exception {
+        if (!AppStandbyUtils.isAppStandbyEnabled()) {
+            return;
+        }
+        if (!deviceSupportsAnyFlexConstraints(
+                CONSTRAINT_BATTERY_NOT_LOW | CONSTRAINT_CHARGING | CONSTRAINT_IDLE)) {
+            Log.d(TAG, "Skipping test since device doesn't support any constraints");
+            return;
+        }
+
+        // Increase timeouts to make sure the test doesn't start passing because of transpired time.
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=360000000,400=360000000,300=360000000,200=360000000,100=360000000",
+                true);
+        satisfySystemWideConstraints(false, false, false);
+
+        final int jobIdHigh = FLEXIBLE_JOB_ID;
+        final int jobIdDefault = FLEXIBLE_JOB_ID + 1;
+        final int jobIdLow = FLEXIBLE_JOB_ID + 2;
+        final int jobIdMin = FLEXIBLE_JOB_ID + 3;
+        try (TestAppInterface testAppInterface =
+                     new TestAppInterface(getContext(), FLEXIBLE_JOB_ID)) {
+            SystemUtil.runShellCommand(
+                    "cmd deviceidle whitelist +" + TestAppInterface.TEST_APP_PACKAGE);
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdHigh,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_HIGH
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdDefault,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_DEFAULT
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdLow,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_LOW
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdMin,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_MIN
+                    )
+            );
+            assertTrue("High priority job did not start.",
+                    testAppInterface.awaitJobStart(jobIdHigh, FLEXIBILITY_TIMEOUT_MILLIS));
+            assertTrue("Default priority job did not start.",
+                    testAppInterface.awaitJobStart(jobIdDefault, FLEXIBILITY_TIMEOUT_MILLIS));
+            assertFalse("Low priority job started.",
+                    testAppInterface.awaitJobStart(jobIdLow, FLEXIBILITY_TIMEOUT_MILLIS));
+            assertFalse("Min priority job started.",
+                    testAppInterface.awaitJobStart(jobIdMin, FLEXIBILITY_TIMEOUT_MILLIS));
+        }
+    }
+
+    /**
+     * Verify default jobs of FGS apps are excluded
+     */
+    public void testFgsBypassesFlexibility() throws Exception {
+        if (!deviceSupportsAnyFlexConstraints(
+                CONSTRAINT_BATTERY_NOT_LOW | CONSTRAINT_CHARGING | CONSTRAINT_IDLE)) {
+            Log.d(TAG, "Skipping test since device doesn't support any constraints");
+            return;
+        }
+
+        // Increase timeouts to make sure the test doesn't start passing because of transpired time.
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=360000000,400=360000000,300=360000000,200=360000000,100=360000000",
+                true);
+        satisfySystemWideConstraints(false, false, false);
+
+        final int jobIdHigh = FLEXIBLE_JOB_ID;
+        final int jobIdDefault = FLEXIBLE_JOB_ID + 1;
+        final int jobIdLow = FLEXIBLE_JOB_ID + 2;
+        final int jobIdMin = FLEXIBLE_JOB_ID + 3;
+        try (TestAppInterface testAppInterface =
+                     new TestAppInterface(getContext(), FLEXIBLE_JOB_ID)) {
+            toggleScreenOn(true);
+            testAppInterface.startAndKeepTestActivity(true);
+            testAppInterface.startFgs();
+            testAppInterface.closeActivity(true);
+            toggleScreenOn(false);
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdHigh,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_HIGH
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdDefault,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_DEFAULT
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdLow,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_LOW
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdMin,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_MIN
+                    )
+            );
+            assertTrue("High priority job did not start.",
+                    testAppInterface.awaitJobStart(jobIdHigh, FLEXIBILITY_TIMEOUT_MILLIS));
+            assertTrue("Default priority job did not start.",
+                    testAppInterface.awaitJobStart(jobIdDefault, FLEXIBILITY_TIMEOUT_MILLIS));
+            assertFalse("Low priority job started.",
+                    testAppInterface.awaitJobStart(jobIdLow, FLEXIBILITY_TIMEOUT_MILLIS));
+            assertFalse("Min priority job started.",
+                    testAppInterface.awaitJobStart(jobIdMin, FLEXIBILITY_TIMEOUT_MILLIS));
+        }
+    }
+
+    /**
+     * Verify that an already running job doesn't get stopped because of flex policy.
+     */
+    public void testRunningJobBypassesFlexibility() throws Exception {
+        if (!deviceSupportsAnyFlexConstraints(
+                CONSTRAINT_BATTERY_NOT_LOW | CONSTRAINT_CHARGING | CONSTRAINT_IDLE)) {
+            Log.d(TAG, "Skipping test since device doesn't support any constraints");
+            return;
+        }
+        try (TestAppInterface testAppInterface =
+                     new TestAppInterface(getContext(), FLEXIBLE_JOB_ID)) {
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, FLEXIBLE_JOB_ID));
+
+            satisfyAllSystemWideConstraints();
+
+            testAppInterface.runSatisfiedJob();
+            assertTrue(
+                    "Job with flexible constraint did not fire when all constraints were satisfied",
+                    testAppInterface.awaitJobStart(FLEXIBILITY_TIMEOUT_MILLIS));
+
+            satisfySystemWideConstraints(false, false, false);
+            assertFalse(
+                    "Job stopped when flex constraints became unsatisfied",
+                    testAppInterface.awaitJobStop(FLEXIBILITY_TIMEOUT_MILLIS));
+        }
+    }
+
+    /**
+     * Verify default jobs of TOP apps are excluded
+     */
+    public void testTopBypassesFlexibility() throws Exception {
+        // Increase timeouts to make sure the test doesn't start passing because of transpired time.
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=360000000,400=360000000,300=360000000,200=360000000,100=360000000",
+                true);
+        satisfySystemWideConstraints(false, false, false);
+        toggleScreenOn(true);
+
+        final int jobIdHigh = FLEXIBLE_JOB_ID;
+        final int jobIdDefault = FLEXIBLE_JOB_ID + 1;
+        final int jobIdLow = FLEXIBLE_JOB_ID + 2;
+        final int jobIdMin = FLEXIBLE_JOB_ID + 3;
+        try (TestAppInterface testAppInterface =
+                     new TestAppInterface(getContext(), FLEXIBLE_JOB_ID)) {
+            testAppInterface.startAndKeepTestActivity(true);
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdHigh,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_HIGH
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdDefault,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_DEFAULT
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdLow,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_LOW
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdMin,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_MIN
+                    )
+            );
+            assertTrue("High priority job did not start.",
+                    testAppInterface.awaitJobStart(jobIdHigh, FLEXIBILITY_TIMEOUT_MILLIS));
+            assertTrue("Default priority job did not start.",
+                    testAppInterface.awaitJobStart(jobIdDefault, FLEXIBILITY_TIMEOUT_MILLIS));
+            assertTrue("Low priority job did not start.",
+                    testAppInterface.awaitJobStart(jobIdLow, FLEXIBILITY_TIMEOUT_MILLIS));
+            assertTrue("Min priority job did not start.",
+                    testAppInterface.awaitJobStart(jobIdMin, FLEXIBILITY_TIMEOUT_MILLIS));
+        }
     }
 
     /**
@@ -474,7 +775,7 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
             Log.d(TAG, "Skipping test that requires device support required constraints");
             return;
         }
-        mDeviceConfigStateHelper.set("fc_flexibility_deadline_proximity_limit_ms", "95000");
+        setDeviceConfigFlag("fc_flexibility_deadline_proximity_limit_ms", "95000", true);
         // Let Flexibility Controller update.
         Thread.sleep(1_000L);
 
@@ -504,6 +805,7 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
 
         // Wait for all but one constraint to drop.
         Thread.sleep(6_000);
+        assertJobNotReady();
         toggleIdle(true);
 
         runJob();
@@ -704,6 +1006,117 @@ public class FlexibilityConstraintTest extends BaseJobSchedulerTest {
         assertTrue(
                 "Job with flexible constraint did not fire when transport affinity not applicable",
                 kTestEnvironment.awaitExecution(FLEXIBILITY_TIMEOUT_MILLIS));
+    }
+
+    /**
+     * Schedule jobs with different priorities, don't satisfy any constraints, then verify only
+     * the job with the shorter fallback deadline runs when no constraints are required.
+     */
+    public void testSeparateFallbackDeadlines() throws Exception {
+        if (!deviceSupportsAllFlexConstraints(
+                CONSTRAINT_BATTERY_NOT_LOW | CONSTRAINT_CHARGING | CONSTRAINT_IDLE)) {
+            Log.d(TAG, "Skipping test since device doesn't support any constraints");
+            return;
+        }
+        setDeviceConfigFlag("fc_percents_to_drop_flexible_constraints",
+                "500=3|5|7|50"
+                        + ",400=3|5|7|50"
+                        + ",300=3|5|7|50"
+                        + ",200=3|5|7|50"
+                        + ",100=3|5|7|50", true);
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=100000,400=100000,300=360000000,200=360000000,100=360000000", true);
+        final int jobIdHigh = FLEXIBLE_JOB_ID;
+        final int jobIdDefault = FLEXIBLE_JOB_ID + 1;
+        try (TestAppInterface testAppInterface =
+                     new TestAppInterface(getContext(), FLEXIBLE_JOB_ID)) {
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdHigh,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_HIGH
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdDefault,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_DEFAULT
+                    )
+            );
+            testAppInterface.assertJobNotReady(jobIdHigh);
+            testAppInterface.assertJobNotReady(jobIdDefault);
+
+            // Wait for the first constraint to drop.
+            assertFalse("Job fired before flexible constraints dropped",
+                    testAppInterface.awaitJobStart(jobIdHigh, 3000));
+
+            // Remaining time before all constraints should have dropped.
+            Thread.sleep(5000);
+            testAppInterface.runSatisfiedJob(jobIdHigh);
+            testAppInterface.runSatisfiedJob(jobIdDefault);
+
+            assertTrue(
+                    "Job with flexible constraint did not fire when no constraints were required",
+                    testAppInterface.awaitJobStart(jobIdHigh, FLEXIBILITY_TIMEOUT_MILLIS));
+            assertFalse(
+                    "Job with flexible constraint fired even though constraints were required",
+                    testAppInterface.awaitJobStart(jobIdDefault, 2000));
+        }
+    }
+
+    /**
+     * Schedule jobs with different priorities, don't satisfy any constraints, then verify only
+     * the job with the lower percents-to-drop runs when no constraints are required.
+     */
+    public void testSeparatePercentsToDrop() throws Exception {
+        if (!deviceSupportsAllFlexConstraints(
+                CONSTRAINT_BATTERY_NOT_LOW | CONSTRAINT_CHARGING | CONSTRAINT_IDLE)) {
+            Log.d(TAG, "Skipping test since device doesn't support any constraints");
+            return;
+        }
+        setDeviceConfigFlag("fc_percents_to_drop_flexible_constraints",
+                "500=3|5|7|50"
+                        + ",400=3|5|7|50"
+                        + ",300=90|92|95|99"
+                        + ",200=90|92|95|99"
+                        + ",100=90|92|95|99",
+                true);
+        setDeviceConfigFlag("fc_fallback_flexibility_deadlines",
+                "500=100000,400=100000,300=100000,200=100000,100=100000", true);
+        final int jobIdHigh = FLEXIBLE_JOB_ID;
+        final int jobIdDefault = FLEXIBLE_JOB_ID + 1;
+        try (TestAppInterface testAppInterface =
+                     new TestAppInterface(getContext(), FLEXIBLE_JOB_ID)) {
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdHigh,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_HIGH
+                    )
+            );
+            testAppInterface.scheduleJob(Collections.emptyMap(),
+                    Map.of(
+                            TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY, jobIdDefault,
+                            TestJobSchedulerReceiver.EXTRA_PRIORITY, JobInfo.PRIORITY_DEFAULT
+                    )
+            );
+            testAppInterface.assertJobNotReady(jobIdHigh);
+            testAppInterface.assertJobNotReady(jobIdDefault);
+
+            // Wait for the first constraint to drop.
+            assertFalse("Job fired before flexible constraints dropped",
+                    testAppInterface.awaitJobStart(jobIdHigh, 3000));
+
+            // Remaining time before all constraints should have dropped.
+            Thread.sleep(5000);
+            testAppInterface.runSatisfiedJob(jobIdHigh);
+            testAppInterface.runSatisfiedJob(jobIdDefault);
+
+            assertTrue(
+                    "Job with flexible constraint did not fire when no constraints were required",
+                    testAppInterface.awaitJobStart(jobIdHigh, FLEXIBILITY_TIMEOUT_MILLIS));
+            assertFalse(
+                    "Job with flexible constraint fired even though constraints were required",
+                    testAppInterface.awaitJobStart(jobIdDefault, 2000));
+        }
     }
 
     private boolean deviceSupportsAllFlexConstraints(int constraints) {

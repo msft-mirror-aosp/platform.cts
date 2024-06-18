@@ -29,7 +29,9 @@ android_test {
         "androidx.annotation_annotation",
         "junit",
     ],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/PdfDocumentTest.java",
+    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

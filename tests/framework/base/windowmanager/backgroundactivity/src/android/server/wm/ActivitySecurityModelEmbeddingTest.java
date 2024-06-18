@@ -18,6 +18,7 @@ package android.server.wm;
 
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
+
 import static org.junit.Assume.assumeNotNull;
 
 import android.content.ComponentName;
@@ -78,6 +79,7 @@ public class ActivitySecurityModelEmbeddingTest extends BackgroundActivityTestBa
     @Test
     @FlakyTest(bugId = 291212072)
     public void testEmbeddedLaunchesActivity_launchAllowedOnlyOnTop() {
+        BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
         // Base State:
         // | A.FGE (A1) | B.FG (B1) |   --> left | right
         new ActivityStartVerifier()

@@ -79,6 +79,9 @@ android_test {
         "platform-test-annotations",
         "truth",
         "androidx.test.uiautomator_uiautomator",
+        "flag-junit",
+        "android.permission.flags-aconfig-java",
+        "CtsVirtualDeviceCommonLib",
     ],
 
     jni_libs: [
@@ -119,7 +122,6 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts",
     ],
     data: [
         ":AppWithLongAttributionTag",
@@ -136,6 +138,7 @@ android_test {
         ":AppInBackground",
         ":AppWithAttributionInheritingFromSelf",
         ":AppWithAttributionInheritingFromExisting",
+        ":AppInstalledOnMultipleUsers",
     ],
     per_testcase_directory: true,
 }

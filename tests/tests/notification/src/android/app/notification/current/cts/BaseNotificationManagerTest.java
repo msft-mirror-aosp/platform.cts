@@ -25,9 +25,11 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.Notification;
+import android.app.Notification.CallStyle;
 import android.app.NotificationChannel;
 import android.app.NotificationChannelGroup;
 import android.app.NotificationManager;
@@ -51,17 +53,22 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
-import android.test.AndroidTestCase;
 import android.util.ArraySet;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AmUtils;
+import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.ThrowingRunnable;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -69,6 +76,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 /* Base class for NotificationManager tests. Handles some of the common set up logic for tests. */
 public abstract class BaseNotificationManagerTest {
@@ -85,6 +93,9 @@ public abstract class BaseNotificationManagerTest {
 
     private static final String TAG = BaseNotificationManagerTest.class.getSimpleName();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     protected Context mContext;
     protected PackageManager mPackageManager;
     protected AudioManager mAudioManager;
@@ -93,7 +104,6 @@ public abstract class BaseNotificationManagerTest {
     protected ActivityManager mActivityManager;
     protected TestNotificationAssistant mAssistant;
     protected TestNotificationListener mListener;
-    protected List<String> mRuleIds;
     protected Instrumentation mInstrumentation;
     protected NotificationHelper mNotificationHelper;
 
@@ -114,7 +124,6 @@ public abstract class BaseNotificationManagerTest {
         mPackageManager = mContext.getPackageManager();
         mAudioManager = mContext.getSystemService(AudioManager.class);
         mRoleManager = mContext.getSystemService(RoleManager.class);
-        mRuleIds = new ArrayList<>();
 
         // ensure listener access isn't allowed before test runs (other tests could put
         // TestListener in an unexpected state)
@@ -134,13 +143,6 @@ public abstract class BaseNotificationManagerTest {
         setEnableServiceNotificationRateLimit(true);
 
         mNotificationManager.cancelAll();
-        if (mRuleIds != null && !mRuleIds.isEmpty()
-                && !mNotificationManager.isNotificationPolicyAccessGranted()) {
-            toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, true);
-        }
-        for (String id : mRuleIds) {
-            mNotificationManager.removeAutomaticZenRule(id);
-        }
 
         assertExpectedDndState(INTERRUPTION_FILTER_ALL);
 
@@ -164,6 +166,27 @@ public abstract class BaseNotificationManagerTest {
         // Delete all groups.
         for (NotificationChannelGroup ncg : groups) {
             mNotificationManager.deleteNotificationChannelGroup(ncg.getId());
+        }
+    }
+
+    /**
+     * Runs a {@link ThrowingRunnable} as the Shell, while adopting SystemUI's permission (as
+     * checked by {@code NotificationManagerService#isCallerSystemOrSystemUi}).
+     */
+    protected static void runAsSystemUi(@NonNull ThrowingRunnable runnable) {
+        SystemUtil.runWithShellPermissionIdentity(runnable, Manifest.permission.STATUS_BAR_SERVICE);
+    }
+
+    /**
+     * Calls a {@link Callable} as the Shell, while adopting SystemUI's permission (as checked by
+     * {@code NotificationManagerService#isCallerSystemOrSystemUi}).
+     */
+    protected static <T> T callAsSystemUi(@NonNull Callable<T> callable) {
+        try {
+            return SystemUtil.callWithShellPermissionIdentity(callable,
+                    Manifest.permission.STATUS_BAR_SERVICE);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -250,6 +273,19 @@ public abstract class BaseNotificationManagerTest {
                                 SystemClock.currentThreadTimeMillis(), person)
                 )
                 .setSmallIcon(android.R.drawable.sym_def_app_icon);
+    }
+
+    protected Notification.Builder getCallStyleNotification(final int id) {
+        Person person = new Person.Builder().setName("Test name").build();
+        PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0,
+            new Intent().setPackage(mContext.getPackageName()), PendingIntent.FLAG_MUTABLE);
+        CallStyle cs = CallStyle.forIncomingCall(person, pendingIntent, pendingIntent);
+
+        return new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(R.drawable.black)
+                .setContentTitle("notify#" + id)
+                .setContentText("This is #" + id + "notification  ")
+                .setStyle(cs);
     }
 
     protected void cancelAndPoll(int id) {

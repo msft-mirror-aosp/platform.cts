@@ -20,9 +20,13 @@ import static android.content.res.Configuration.GRAMMATICAL_GENDER_NOT_SPECIFIED
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.Flags;
 import android.app.GrammaticalInflectionManager;
 import android.content.ComponentName;
 import android.content.res.Configuration;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TestJournalProvider;
 
@@ -33,6 +37,7 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -55,6 +60,10 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
 
     private String mOriginalGrammaticalGender;
     private GrammaticalInflectionManager mGrammaticalInflectionManager;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -127,14 +136,33 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     }
 
     @Test
-    public void testGetSystemGrammaticalGender_setMasculine_returnMasculine() {
+    @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_TERMS_OF_ADDRESS_ENABLED)
+    public void testGetSystemGrammaticalGender_setMasculineForSysApp_returnMasculineToSysApp() {
         mOriginalGrammaticalGender = SystemUtil.runShellCommand(String.format(
                 CMD_GET_GRAMMATICAL_GENDER + " --user %d ", mContext.getUserId()));
 
         setGrammaticalGender(String.valueOf(Configuration.GRAMMATICAL_GENDER_MASCULINE));
 
-        assertThat(mGrammaticalInflectionManager.getSystemGrammaticalGender())
-                .isEqualTo(Configuration.GRAMMATICAL_GENDER_MASCULINE);
+        String value = SystemUtil.runShellCommand(String.format(
+                CMD_GET_GRAMMATICAL_GENDER + " --user %d ", mContext.getUserId()));
+        Pattern pattern = Pattern.compile("\\((\\d+)\\)");
+        Matcher matcher = pattern.matcher(value);
+        if (matcher.find()) {
+            value = matcher.group(1);
+        }
+        assertThat(Integer.parseInt(value)).isEqualTo(Configuration.GRAMMATICAL_GENDER_MASCULINE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_TERMS_OF_ADDRESS_ENABLED)
+    public void testGetSystemGrammaticalGender_setNeutralForSysApp_returnNotSpecifiedTo3rdApp() {
+        mOriginalGrammaticalGender = SystemUtil.runShellCommand(String.format(
+                CMD_GET_GRAMMATICAL_GENDER + " --user %d ", mContext.getUserId()));
+
+        setGrammaticalGender(String.valueOf(Configuration.GRAMMATICAL_GENDER_NEUTRAL));
+
+        assertThat(mGrammaticalInflectionManager.getSystemGrammaticalGender()).isEqualTo(
+                Configuration.GRAMMATICAL_GENDER_NOT_SPECIFIED);
     }
 
     private void setGrammaticalGender(String grammaticalGender) {

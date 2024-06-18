@@ -25,6 +25,9 @@ import static com.android.cts.storageapp.Utils.DATA_ALL;
 import static com.android.cts.storageapp.Utils.MB_IN_BYTES;
 import static com.android.cts.storageapp.Utils.PKG_A;
 import static com.android.cts.storageapp.Utils.PKG_B;
+import static com.android.cts.storageapp.Utils.REF_PROFILES_BASE_DIR;
+import static com.android.cts.storageapp.Utils.CUR_PROFILES_BASE_DIR;
+import static com.android.cts.storageapp.Utils.PROFILE_FILE_NAME;
 import static com.android.cts.storageapp.Utils.TAG;
 import static com.android.cts.storageapp.Utils.assertAtLeast;
 import static com.android.cts.storageapp.Utils.assertMostlyEquals;
@@ -35,8 +38,15 @@ import static com.android.cts.storageapp.Utils.useFallocate;
 import static com.android.cts.storageapp.Utils.useSpace;
 import static com.android.cts.storageapp.Utils.useWrite;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
+
+import org.junit.Before;
+import org.junit.Rule;
+
 import android.app.Activity;
 import android.app.usage.ExternalStorageStats;
+import android.app.usage.Flags;
 import android.app.usage.StorageStats;
 import android.app.usage.StorageStatsManager;
 import android.content.BroadcastReceiver;
@@ -49,8 +59,12 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.storage.StorageManager;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.MediaStore;
 import android.test.InstrumentationTestCase;
@@ -73,7 +87,21 @@ import java.util.concurrent.TimeUnit;
  * Tests to verify {@link StorageStatsManager} behavior.
  */
 public class StorageStatsTest extends InstrumentationTestCase {
+    private PackageManager pm;
+    private StorageStatsManager stats;
+    private UserHandle user;
 
+    @SuppressWarnings("JUnit4ClassUsedInJUnit3")
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Before
+    public void setUp() {
+        pm = getContext().getPackageManager();
+        stats = getContext().getSystemService(StorageStatsManager.class);
+        user = android.os.Process.myUserHandle();
+    }
     private Context getContext() {
         return getInstrumentation().getContext();
     }
@@ -142,10 +170,45 @@ public class StorageStatsTest extends InstrumentationTestCase {
                 afterUser.getExternalCacheBytes() - beforeUser.getExternalCacheBytes());
     }
 
-    public void testVerifyStatsMultiple() throws Exception {
-        final PackageManager pm = getContext().getPackageManager();
-        final StorageStatsManager stats = getContext().getSystemService(StorageStatsManager.class);
+    @RequiresFlagsEnabled(Flags.FLAG_GET_APP_BYTES_BY_DATA_TYPE_API)
+    public void testVerifyStatsByDataType() throws Exception {
+        final ApplicationInfo appInfo = pm.getApplicationInfo(PKG_A, 0);
+        useSpace(getContext());
 
+        String appSrcPath = appInfo.sourceDir;
+        File appSrcDir = new File(appInfo.sourceDir);
+        // sourceDir could return the base.apk with path, in that case, use the parent directory.
+        if (appSrcDir.isFile()) {
+            appSrcDir = appSrcDir.getParentFile();
+        }
+
+        final StorageStats as = stats.queryStatsForPackage(UUID_DEFAULT, PKG_A, user);
+
+        long apkSize = getSizeOfFilesEndWith(appSrcDir, ".apk");
+        assertEquals(apkSize, as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_APK));
+
+        long dmSize = getSizeOfFilesEndWith(appSrcDir, ".dm");
+        assertEquals(dmSize, as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_DM));
+
+        long libSize = getSizeOfDir(new File(appSrcPath + "/lib/"));
+        assertEquals(libSize, as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_LIB));
+
+        // Check the profile sizes if they are fetched by ArtManagedFileStats.
+        if (SystemProperties.getBoolean("dalvik.vm.features.art_managed_file_stats", false)) {
+            long curProfileBytes =
+                as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_CURRENT_PROFILE);
+            File curProfile = new File(new File(CUR_PROFILES_BASE_DIR + appInfo.uid + "/", PKG_A),
+                PROFILE_FILE_NAME);
+            assertEquals(curProfile.length(), curProfileBytes);
+
+            long refProfileBytes =
+                as.getAppBytesByDataType(StorageStats.APP_DATA_TYPE_FILE_TYPE_REFERENCE_PROFILE);
+            File refProfile = new File(new File(REF_PROFILES_BASE_DIR, PKG_A), PROFILE_FILE_NAME);
+            assertEquals(refProfile.length(), refProfileBytes);
+        }
+    }
+
+    public void testVerifyStatsMultiple() throws Exception {
         final ApplicationInfo a = pm.getApplicationInfo(PKG_A, 0);
         final ApplicationInfo b = pm.getApplicationInfo(PKG_B, 0);
 
@@ -272,7 +335,6 @@ public class StorageStatsTest extends InstrumentationTestCase {
     }
 
     public void testVerifyCategory() throws Exception {
-        final PackageManager pm = getContext().getPackageManager();
         final ApplicationInfo a = pm.getApplicationInfo(PKG_A, 0);
         final ApplicationInfo b = pm.getApplicationInfo(PKG_B, 0);
 
@@ -515,5 +577,45 @@ public class StorageStatsTest extends InstrumentationTestCase {
             final Bundle res = client.call(pkg, pkg, args);
             return res.getLong(UtilsReceiver.EXTRA_BYTES);
         }
+    }
+
+    private long getSizeOfFilesEndWith(File dir, String suffix) {
+        if (!dir.isDirectory()) {
+            return 0;
+        }
+
+        long size = 0;
+        try {
+            for (File file : dir.listFiles()) {
+                if (file.isFile() && file.getName().endsWith(suffix)) {
+                    size += file.length();
+                }
+            }
+        } catch (NullPointerException e) {
+            size += 0;
+        }
+
+        return size;
+    }
+
+    private long getSizeOfDir(File dir) {
+        if (!dir.isDirectory()) {
+            return 0;
+        }
+
+        long size = 0;
+        try {
+            for (File file : dir.listFiles()) {
+                if (file.isFile()) {
+                    size += file.length();
+                } else if (file.isDirectory()) {
+                    size += getSizeOfDir(file);
+                }
+            }
+        } catch (NullPointerException e) {
+            size += 0;
+        }
+
+        return size;
     }
 }

@@ -29,6 +29,7 @@ import static android.provider.DeviceConfig.NAMESPACE_APP_STANDBY;
 import static android.text.format.DateUtils.HOUR_IN_MILLIS;
 import static android.text.format.DateUtils.MINUTE_IN_MILLIS;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -271,7 +272,9 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         }
 
         // delete any usagestats data that was created for the test packages
-        clearTestPackagesData(mContext.getUserId());
+        if (mContext != null) {
+            clearTestPackagesData(mContext.getUserId());
+        }
 
         // Destroy the other user if created
         if (mOtherUser != 0) {
@@ -292,7 +295,9 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
                     REVOKE_RUNTIME_PERMISSIONS);
         }
 
-        mUiAutomation.dropShellPermissionIdentity();
+        if (mUiAutomation != null) {
+            mUiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     private static void assertLessThan(long left, long right) {
@@ -312,8 +317,10 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     }
 
     private void clearTestPackagesData(int userId) throws Exception {
-        executeShellCmd(MessageFormat.format(PRUNE_PACKAGE_DATA_SHELL_COMMAND, mTargetPackage,
-                userId));
+        if (mTargetPackage != null) {
+            executeShellCmd(MessageFormat.format(PRUNE_PACKAGE_DATA_SHELL_COMMAND, mTargetPackage,
+                    userId));
+        }
         executeShellCmd(MessageFormat.format(PRUNE_PACKAGE_DATA_SHELL_COMMAND, TEST_APP_PKG,
                 userId));
         executeShellCmd(MessageFormat.format(PRUNE_PACKAGE_DATA_SHELL_COMMAND, TEST_APP2_PKG,
@@ -1871,8 +1878,8 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         UsageEvents events = null;
         if (filteredEvents) {
             UsageEventsQuery query = new UsageEventsQuery.Builder(startTime, endTime)
-                    .addEventTypes(Event.FOREGROUND_SERVICE_START)
-                    .addEventTypes(Event.FOREGROUND_SERVICE_STOP)
+                    .setEventTypes(Event.FOREGROUND_SERVICE_START,
+                            Event.FOREGROUND_SERVICE_STOP)
                     .build();
             events = mUsageStatsManager.queryEvents(query);
         } else {
@@ -2475,13 +2482,15 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     @RequiresFlagsEnabled(Flags.FLAG_FILTER_BASED_EVENT_QUERY_API)
     @Test
     public void testUsageEventsQueryParceling() throws Exception {
+        final String fakePackageName = "android.fake.package.name";
         final long endTime = System.currentTimeMillis();
         final long startTime = endTime - MINUTE_IN_MILLIS;
         Random rnd = new Random();
         UsageEventsQuery.Builder queryBuilder = new UsageEventsQuery.Builder(startTime, endTime);
-        for (int i = 0; i < Event.MAX_EVENT_TYPE + 1; i++) {
-            queryBuilder.addEventTypes(rnd.nextInt(Event.MAX_EVENT_TYPE + 1));
-        }
+        queryBuilder.setEventTypes(rnd.nextInt(Event.MAX_EVENT_TYPE + 1),
+                rnd.nextInt(Event.MAX_EVENT_TYPE + 1), rnd.nextInt(Event.MAX_EVENT_TYPE + 1));
+        queryBuilder.setPackageNames(fakePackageName + "2",
+                fakePackageName + "7", fakePackageName + "11");
         UsageEventsQuery query = queryBuilder.build();
         Parcel p = Parcel.obtain();
         p.setDataPosition(0);
@@ -2489,21 +2498,22 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         p.setDataPosition(0);
 
         UsageEventsQuery queryFromParcel = UsageEventsQuery.CREATOR.createFromParcel(p);
-        assertEquals(query.getBeginTimeMillis(), queryFromParcel.getBeginTimeMillis());
-        assertEquals(query.getEndTimeMillis(), queryFromParcel.getEndTimeMillis());
-        assertTrue(query.getEventTypes().equals(queryFromParcel.getEventTypes()));
+        assertEquals(queryFromParcel.getBeginTimeMillis(), query.getBeginTimeMillis());
+        assertEquals(queryFromParcel.getEndTimeMillis(), query.getEndTimeMillis());
+        assertArrayEquals(query.getEventTypes(), queryFromParcel.getEventTypes());
+        assertEquals(queryFromParcel.getPackageNames(), query.getPackageNames());
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
     @RequiresFlagsEnabled(Flags.FLAG_FILTER_BASED_EVENT_QUERY_API)
     @Test
-    public void testQueryEventsWithFilter() throws Exception {
+    public void testQueryEventsWithEventTypeFilter() throws Exception {
         final long endTime = System.currentTimeMillis() - MINUTE_IN_MILLIS;
         final long startTime = Math.max(0, endTime - HOUR_IN_MILLIS); // 1 hour
 
         UsageEvents unfilteredEvents = mUsageStatsManager.queryEvents(startTime, endTime);
         UsageEventsQuery query = new UsageEventsQuery.Builder(startTime, endTime)
-                .addEventTypes(Event.ACTIVITY_RESUMED, Event.ACTIVITY_PAUSED)
+                .setEventTypes(Event.ACTIVITY_RESUMED, Event.ACTIVITY_PAUSED)
                 .build();
         UsageEvents filteredEvents = mUsageStatsManager.queryEvents(query);
         ArrayList<Event> filteredEventList = new ArrayList<>();
@@ -2546,6 +2556,57 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         }
 
         // Two query results should be the same.
+        compareUsageEventList(unfilteredEventList, filteredEventList);
+    }
+
+    @AppModeFull(reason = "No usage events access in instant apps")
+    @RequiresFlagsEnabled(Flags.FLAG_FILTER_BASED_EVENT_QUERY_API)
+    @Test
+    public void testQueryEventsWithPackageFilter() throws Exception {
+        final String fakePackageName = "android.fake.package.name";
+        final long endTime = System.currentTimeMillis() - MINUTE_IN_MILLIS;
+        final long startTime = Math.max(0, endTime - HOUR_IN_MILLIS); // 1 hour
+
+        UsageEventsQuery query = new UsageEventsQuery.Builder(startTime, endTime)
+                .setPackageNames(fakePackageName)
+                .build();
+        UsageEvents filteredEvents = mUsageStatsManager.queryEvents(query);
+        // Query for a fake package should get no usage event.
+        assertFalse(filteredEvents.hasNextEvent());
+
+        UsageEvents unfilteredEvents = mUsageStatsManager.queryEvents(startTime, endTime);
+        query = new UsageEventsQuery.Builder(startTime, endTime)
+                .setEventTypes(Event.ACTIVITY_RESUMED, Event.ACTIVITY_PAUSED)
+                .setPackageNames(TEST_APP_PKG, TEST_APP2_PKG)
+                .build();
+        filteredEvents = mUsageStatsManager.queryEvents(query);
+        ArrayList<Event> filteredEventList = new ArrayList<>();
+        ArrayList<Event> unfilteredEventList = new ArrayList<>();
+        while (unfilteredEvents.hasNextEvent()) {
+            final Event event = new Event();
+            unfilteredEvents.getNextEvent(event);
+            if (event.getEventType() != Event.ACTIVITY_RESUMED
+                    && event.getEventType() != Event.ACTIVITY_PAUSED) {
+                continue;
+            }
+            final String pkgName = event.getPackageName();
+            if (!TEST_APP_PKG.equals(pkgName)
+                    && !TEST_APP2_PKG.equals(pkgName)) {
+                continue;
+            }
+            unfilteredEventList.add(event);
+        }
+
+        while (filteredEvents.hasNextEvent()) {
+            final Event event = new Event();
+            filteredEvents.getNextEvent(event);
+            assertTrue(event.getEventType() == Event.ACTIVITY_RESUMED
+                    || event.getEventType() == Event.ACTIVITY_PAUSED);
+            final String pkgName = event.getPackageName();
+            assertTrue(TEST_APP_PKG.equals(pkgName) || TEST_APP2_PKG.equals(pkgName));
+            filteredEventList.add(event);
+        }
+
         compareUsageEventList(unfilteredEventList, filteredEventList);
     }
 
