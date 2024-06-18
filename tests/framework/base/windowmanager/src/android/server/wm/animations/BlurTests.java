@@ -622,15 +622,13 @@ public class BlurTests extends WindowManagerTestBase {
         final int height = screenshot.getHeight();
         final int width = screenshot.getWidth();
 
-        final int blueWidth = width / 2;
-
         final int[] row = new int[width];
 
         for (int y = 0; y < height; y++) {
             screenshot.getPixels(row, 0, width, 0, y, row.length, 1);
             for (int x = 0; x < width; x++) {
                 final int actual = row[x];
-                final int expected = (x < blueWidth ? Color.BLUE : Color.RED);
+                final int expected = (x * 2 < width ? Color.BLUE : Color.RED);
 
                 if (actual != expected) {
                     ColorUtils.verifyColor("failed for pixel (x, y) = (" + x + ", " + y + ")",
@@ -676,7 +674,7 @@ public class BlurTests extends WindowManagerTestBase {
             for (int x = 0; x < screenshot.getWidth(); x++) {
                 if (!windowFrame.contains(x, y)) {
                     final int actual = row[x];
-                    final int expected = (x < screenshot.getWidth() / 2 ? Color.BLUE : Color.RED);
+                    final int expected = (x * 2 < screenshot.getWidth() ? Color.BLUE : Color.RED);
 
                     if (actual != expected) {
                         ColorUtils.verifyColor(
