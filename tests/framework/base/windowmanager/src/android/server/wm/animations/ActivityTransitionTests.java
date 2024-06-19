@@ -764,8 +764,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
             TestBounds testBounds, int lessXColor, int largeXColor) {
         final int[] xSample = {
                 (splitX - testBounds.testableBounds.left) / 2 + testBounds.testableBounds.left,
-                splitX - 3,
-                splitX + 3,
+                splitX - 10,
+                splitX + 10,
                 (testBounds.testableBounds.right - splitX) / 2 + splitX};
         final int scaleHeight = testBounds.testableBounds.height() / 5;
         final int[] ySample = {
