@@ -22,7 +22,7 @@ package {
 
 android_test {
     name: "CtsMediaRecorderTestCases",
-    team: "trendy_team_android_media_audio_framework",
+    team: "trendy_team_android_media_solutions_editing",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -46,7 +46,7 @@ android_test {
 
 android_test {
     name: "MctsMediaRecorderTestCases",
-    team: "trendy_team_android_media_audio_framework",
+    team: "trendy_team_android_media_solutions_editing",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
