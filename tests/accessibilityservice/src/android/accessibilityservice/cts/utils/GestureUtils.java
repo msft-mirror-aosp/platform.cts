@@ -30,7 +30,7 @@ import android.view.Display;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
 
-import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.InstrumentationRegistry;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;

@@ -131,7 +131,6 @@ public class VirtualSensorTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         mSensorManager = mContext.getSystemService(SensorManager.class);
-        assumeTrue(mSensorManager.getSensorList(Sensor.TYPE_ALL).size() > 0);
     }
 
     private VirtualSensor setUpVirtualSensor(VirtualSensorConfig sensorConfig) {

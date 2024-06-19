@@ -21,14 +21,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
 import android.hardware.cts.helpers.SensorTestStateNotSupportedException;
 import android.os.Bundle;
 import android.os.PowerManager;
-import android.text.Html;
 import android.text.method.LinkMovementMethod;
+import android.text.Html;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -39,6 +36,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
+import com.android.compatibility.common.util.ReportLog;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.R;
@@ -46,7 +44,6 @@ import com.android.cts.verifier.sensors.base.SensorCtsVerifierTestActivity;
 import com.android.cts.verifier.sensors.helpers.OpenCVLibrary;
 
 import junit.framework.Assert;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -98,10 +95,6 @@ public class RVCVXCheckTestActivity
      */
     @Override
     protected void activitySetUp() throws InterruptedException {
-        if (!checkCameraTimestampSource()) {
-            throw new SensorTestStateNotSupportedException("Sensor time base source "
-                    + "is not realtime.");
-        }
 
         mRecPath = "";
 
@@ -448,40 +441,6 @@ public class RVCVXCheckTestActivity
         });
 
         getTestLogger().logCustomView(checkBox);
-    }
-
-    private boolean checkCameraTimestampSource() {
-        final CameraManager cameraManager = getSystemService(CameraManager.class);
-        CameraCharacteristics cameraCharacteristics;
-        int sensorInfoTimestampSource = CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN;
-        String firstFacingExternalCameraId = "";
-
-        try {
-            for (final String cameraId : cameraManager.getCameraIdList()) {
-                cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
-                int facing = cameraCharacteristics.get(CameraCharacteristics.LENS_FACING);
-
-                if (facing == CameraCharacteristics.LENS_FACING_BACK) {
-                    sensorInfoTimestampSource = cameraCharacteristics.get(
-                            CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE);
-                    break;
-                } else if (facing == CameraCharacteristics.LENS_FACING_EXTERNAL
-                        && firstFacingExternalCameraId.equals("")) {
-                    firstFacingExternalCameraId = cameraId;
-                }
-            }
-            if (sensorInfoTimestampSource == CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_UNKNOWN
-                        && !firstFacingExternalCameraId.equals("")) {
-                cameraCharacteristics = cameraManager
-                        .getCameraCharacteristics(firstFacingExternalCameraId);
-                sensorInfoTimestampSource = cameraCharacteristics.get(
-                        CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE);
-            }
-        } catch (Exception e) {
-            Log.e("RVCVXCheckTestActivity", e.toString());
-        }
-
-        return sensorInfoTimestampSource == CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME;
     }
 
     @Override

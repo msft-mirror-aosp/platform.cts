@@ -70,7 +70,6 @@ TABLET_ALLOWLIST = (
     'agta',  # Nokia T21
     'gta4lwifi',  # Samsung Galaxy Tab A7
     'gta8wifi',  # Samsung Galaxy Tab A8
-    'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5

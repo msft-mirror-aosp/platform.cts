@@ -91,7 +91,7 @@ android_test {
 
     srcs: [
         "src/android/net/wifi/nl80211/cts/*.java",
-        "src/android/net/wifi/sharedconnectivity/**/*.java",
+        "src/android/net/wifi/shareconnectivity/*.java",
     ],
     static_libs: [
         "androidx.test.rules",

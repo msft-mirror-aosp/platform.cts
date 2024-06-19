@@ -1036,6 +1036,42 @@ def get_patch_from_aruco_markers(
                    red_corner[0]:gray_corner[0]].copy()
 
 
+def get_slanted_edge_from_patch(input_img):
+  """Returns the slanted edge patch from the input img.
+
+  Args:
+    input_img: input img in numpy array with ArUco markers
+      to be detected
+  Returns: Numpy float image array of the slanted edge patch
+  """
+  slanted_edge_coordinates = {}
+  parameters = cv2.aruco.DetectorParameters_create()
+  # ArUco markers used are 4x4
+  aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
+  _, _, rejected_params = cv2.aruco.detectMarkers(
+      input_img, aruco_dict, parameters=parameters)
+  logging.debug('rejected_params: %s', rejected_params)
+  final_corner = {}
+  for corner in rejected_params:
+    final_corner = corner.reshape(4, 2)
+
+  slanted_edge_coordinates[0] = tuple(map(int, final_corner[0]))
+  slanted_edge_coordinates[3] = tuple(map(int, final_corner[3]))
+  square_w = abs(final_corner[0][1] - final_corner[3][1])
+  slanted_edge_coordinates[1] = (final_corner[0][0] +
+                                 square_w, final_corner[0][1])
+  slanted_edge_coordinates[2] = (final_corner[3][0] +
+                                 square_w, final_corner[3][1])
+  logging.debug('slanted_edge_coordinates: %s', slanted_edge_coordinates)
+  top_left = tuple(map(int, slanted_edge_coordinates[0]))
+  bottom_right = tuple(map(int, slanted_edge_coordinates[2]))
+  cv2.rectangle(input_img, top_left, bottom_right,
+                CV2_RED_NORM, CV2_LINE_THICKNESS)
+  slanted_edge = input_img[top_left[1]:bottom_right[1],
+                           top_left[0]:bottom_right[0]]
+  return slanted_edge
+
+
 def get_chart_boundary_from_aruco_markers(
     aruco_marker_corners, aruco_marker_ids, input_img, output_img_path):
   """Returns top left and bottom right coordinates from the aruco markers.

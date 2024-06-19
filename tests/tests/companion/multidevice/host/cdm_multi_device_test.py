@@ -16,9 +16,6 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
     def test_associate_createsAssociation_classicBluetooth(self):
         """Test that CDM can create association with another BT device"""
 
-        # Skip if device is a watch
-        asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
-
         secondary_address = self.secondary.cdm.btGetAddress()
 
         # Create association
@@ -32,10 +29,6 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
 
     def test_permissions_sync(self):
         """Test that CDM can perform permissions sync from one device to another via BT"""
-
-        # Skip if device is a watch
-        asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
-        asserts.skip_if(self.secondary.cdm.isWatch(), 'Cannot create association as a watch.')
 
         primary_address = self.primary.cdm.btGetAddress()
         secondary_address = self.secondary.cdm.btGetAddress()
@@ -62,9 +55,6 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
 
     def test_removeBond_associatedDevice_succeeds(self):
         """This tests that CDM can remove bluetooth bond from an associated device."""
-
-        # Skip if device is a watch
-        asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
 
         # Skip if removeBond API flag is disabled
         api_flags_utils.assume_enabled(self.primary, 'unpair_associated_device')

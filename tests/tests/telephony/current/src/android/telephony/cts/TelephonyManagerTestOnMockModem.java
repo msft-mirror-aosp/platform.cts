@@ -48,6 +48,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemProperties;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -139,7 +140,7 @@ public class TelephonyManagerTestOnMockModem {
             return;
         }
 
-        MockModemManager.enforceMockModemDeveloperSetting();
+        enforceMockModemDeveloperSetting();
         sTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
 
@@ -306,6 +307,18 @@ public class TelephonyManagerTestOnMockModem {
         Log.d(TAG, "isSimHotSwapCapable = " + (isSimHotSwapCapable ? "true" : "false"));
 
         return isSimHotSwapCapable;
+    }
+
+    private static void enforceMockModemDeveloperSetting() throws Exception {
+        boolean isAllowed = SystemProperties.getBoolean(ALLOW_MOCK_MODEM_PROPERTY, false);
+        boolean isAllowedForBoot =
+                SystemProperties.getBoolean(BOOT_ALLOW_MOCK_MODEM_PROPERTY, false);
+        // Check for developer settings for user build. Always allow for debug builds
+        if (!(isAllowed || isAllowedForBoot) && !DEBUG) {
+            throw new IllegalStateException(
+                    "!! Enable Mock Modem before running this test !! "
+                            + "Developer options => Allow Mock Modem");
+        }
     }
 
     private int getActiveSubId(int phoneId) {

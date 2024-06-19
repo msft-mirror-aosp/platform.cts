@@ -52,8 +52,6 @@ import static android.appenumeration.cts.Constants.EXTRA_INPUT_METHOD_INFO;
 import static android.appenumeration.cts.Constants.EXTRA_PENDING_INTENT;
 import static android.appenumeration.cts.Constants.EXTRA_REMOTE_CALLBACK;
 import static android.appenumeration.cts.Constants.EXTRA_REMOTE_READY_CALLBACK;
-import static android.appenumeration.cts.Constants.EXTRA_SEGMENT_RESULT;
-import static android.appenumeration.cts.Constants.EXTRA_SEGMENT_SIZE;
 import static android.appenumeration.cts.Constants.SERVICE_CLASS_DUMMY_SERVICE;
 import static android.content.Intent.EXTRA_COMPONENT_NAME;
 import static android.content.Intent.EXTRA_PACKAGES;
@@ -816,36 +814,13 @@ public class TestActivity extends Activity {
         final AppWidgetManager appWidgetManager = getSystemService(AppWidgetManager.class);
         final List<AppWidgetProviderInfo> providers = appWidgetManager.getInstalledProviders();
         final ArrayList<Parcelable> parcelables = new ArrayList<>();
-        final int segmentSize = 10;
-
-        // In order to avoid RemoteCallback receiving a large amount of data at one time,
-        // we transmit 10 items at a time.
         for (AppWidgetProviderInfo info : providers) {
             parcelables.add(info);
-            if (parcelables.size() == segmentSize) {
-                sendSegmentAppWidgetProviders(remoteCallback, parcelables,
-                        (short) providers.size());
-                parcelables.clear();
-            }
         }
-        // When the size of providers is less than segmentSize (E.g. 8 < 10) or
-        // the size % segmentSize is not zero (E.g. 56 % 10 = 6), send the result
-        // to complete it.
-        if (parcelables.size() > 0) {
-            sendSegmentAppWidgetProviders(remoteCallback, parcelables, (short) providers.size());
-        }
-        finish();
-    }
-
-    private void sendSegmentAppWidgetProviders(RemoteCallback remoteCallback,
-            List<Parcelable> parcelables, short providerSize) {
         final Bundle result = new Bundle();
-        final ArrayList<Parcelable> segment = new ArrayList<>(parcelables);
-        result.putParcelableArrayList(EXTRA_SEGMENT_RESULT, segment);
-        // Transmit total size of the AppWidgetProviderInfo list,
-        // so RemoteCallback knows when to stop receiving.
-        result.putShort(EXTRA_SEGMENT_SIZE, providerSize);
+        result.putParcelableArrayList(EXTRA_RETURN_RESULT, parcelables);
         remoteCallback.sendResult(result);
+        finish();
     }
 
     private void sendSyncAdapterPackagesForAuthorityAsUser(RemoteCallback remoteCallback,

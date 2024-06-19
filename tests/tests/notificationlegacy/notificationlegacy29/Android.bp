@@ -28,7 +28,6 @@ android_test {
         "permission-test-util-lib",
         "compatibility-device-util-axt",
         "CtsAppTestStubsShared",
-        "android.service.notification.flags-aconfig-java",
     ],
     libs: [
         "android.test.runner",

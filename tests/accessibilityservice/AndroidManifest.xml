@@ -32,7 +32,7 @@
 
     <uses-feature android:name="android.software.companion_device_setup" />
 
-    <application android:theme="@style/AppTheme"
+    <application android:theme="@android:style/Theme.Holo.NoActionBar"
          android:requestLegacyExternalStorage="true">
 
         <uses-library android:name="android.test.runner"/>
@@ -43,6 +43,7 @@
 
         <activity android:label="@string/accessibility_query_window_test_activity"
              android:name=".activities.AccessibilityWindowQueryActivity"
+             android:theme="@style/AppTheme"
              android:supportsPictureInPicture="true"
              android:screenOrientation="locked"/>
 
