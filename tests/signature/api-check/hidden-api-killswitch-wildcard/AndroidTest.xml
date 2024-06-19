@@ -20,12 +20,6 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
-    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
-        <!-- Enable the killswitch before running the test, then disable it afterwards. The test
-             is intended to verify the behaviour when the killswitch is enabled. -->
-        <option name="run-command" value="settings put global hidden_api_blacklist_exemptions \*" />
-        <option name="teardown-command" value="settings delete global hidden_api_blacklist_exemptions" />
-    </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsHiddenApiKillswitchWildcardTestCases.apk" />

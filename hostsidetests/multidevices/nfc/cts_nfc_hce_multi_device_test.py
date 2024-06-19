@@ -81,16 +81,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         self.emulator.nfc_emulator.logInfo("*** TEST START: " + self.current_test_info.name + " ***")
         self.reader.nfc_reader.logInfo("*** TEST START: " + self.current_test_info.name + " ***")
-        asserts.skip_if(
-            not self.emulator.nfc_emulator.isNfcSupported() or
-            not self.emulator.nfc_emulator.isNfcHceSupported(),
-            f"NFC is not supported on {self.emulator}",
-        )
-        asserts.skip_if(
-            not self.reader.nfc_reader.isNfcSupported(),
-            f"NFC is not supported on {self.reader}"
-        )
-
         self.emulator.nfc_emulator.turnScreenOn()
         self.emulator.nfc_emulator.pressMenu()
         self.reader.nfc_reader.turnScreenOn()

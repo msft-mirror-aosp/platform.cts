@@ -27,9 +27,13 @@ import android.signature.cts.JDiffClassDescription;
 import android.signature.cts.ResultObserver;
 import android.signature.cts.VirtualPath;
 import android.util.Log;
+
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+
 import com.android.compatibility.common.util.DynamicConfigDeviceSide;
+import com.android.compatibility.common.util.ShellUtils;
+
 import com.google.common.base.Suppliers;
 
 import java.util.ArrayList;
@@ -75,7 +79,8 @@ public abstract class AbstractApiTest {
     private Collection<String> expectedFailures = Collections.emptyList();
 
     @AfterClass
-    public static void closeResourceStore() {
+    public static void tearDown() {
+        ShellUtils.runShellCommand("settings delete global hidden_api_blacklist_exemptions");
         ResourceStore.close();
     }
 
@@ -95,12 +100,26 @@ public abstract class AbstractApiTest {
                 Settings.Global.HIDDEN_API_POLICY);
     }
 
+    private void setExpectedDeviceState() {
+        String expectedBlocklistExemptions = getExpectedBlocklistExemptions();
+        if (expectedBlocklistExemptions == null) {
+            ShellUtils.runShellCommand("settings delete global hidden_api_blacklist_exemptions");
+        } else {
+            ShellUtils.runShellCommand("settings put global hidden_api_blacklist_exemptions "
+                + expectedBlocklistExemptions);
+        }
+
+        ShellUtils.runShellCommand("settings delete global hidden_api_policy");
+    }
+
     @Before
     public void setUp() throws Exception {
         mResultObserver = new TestResultObserver();
 
         // Get the arguments passed to the instrumentation.
         Bundle instrumentationArgs = InstrumentationRegistry.getArguments();
+
+        setExpectedDeviceState();
 
         // Check that the device is in the correct state for running this test.
         assertEquals(
