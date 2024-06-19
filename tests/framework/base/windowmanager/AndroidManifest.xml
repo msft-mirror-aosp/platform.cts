@@ -440,7 +440,10 @@
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <activity android:name="android.server.wm.insets.ForceRelayoutTestBase$TestActivity"
-             android:exported="true"/>
+                  android:exported="true"
+                  android:showWhenLocked="true"
+                  android:turnScreenOn="true"
+                  android:keepScreenOn="true"/>
 
         <activity android:name="android.server.wm.animations.ActivityTransitionTests$LauncherActivity"
             android:theme="@style/Theme.TranslucentBars"
