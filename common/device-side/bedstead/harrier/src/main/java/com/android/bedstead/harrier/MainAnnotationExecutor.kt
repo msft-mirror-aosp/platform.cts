@@ -20,7 +20,9 @@ import com.android.bedstead.harrier.annotations.EnsureUnlocked
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
 import com.android.bedstead.harrier.annotations.RequireFactoryResetProtectionPolicySupported
 import com.android.bedstead.harrier.annotations.RequireFeature
+import com.android.bedstead.harrier.annotations.RequireInstantApp
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice
+import com.android.bedstead.harrier.annotations.RequireNotInstantApp
 import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported
@@ -42,6 +44,8 @@ class MainAnnotationExecutor : AnnotationExecutor {
             is RequireFactoryResetProtectionPolicySupported -> logic()
             is RequireResourcesBooleanValue -> logic()
             is RequireUsbDataSignalingCanBeDisabled -> logic()
+            is RequireInstantApp -> logic()
+            is RequireNotInstantApp -> logic()
         }
         // TODO b/345391598 move handling annotations from DeviceState here
     }

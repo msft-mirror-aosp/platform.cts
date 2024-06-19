@@ -19,16 +19,15 @@ package com.android.bedstead.harrier;
 import static android.app.AppOpsManager.OPSTR_START_FOREGROUND;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
-import static com.android.bedstead.multiuser.UsersComponentKt.user;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.harrier.UserType.SECONDARY_USER;
 import static com.android.bedstead.harrier.annotations.RequireAospBuild.GMS_CORE_PACKAGE;
 import static com.android.bedstead.harrier.annotations.RequireCnGmsBuild.CHINA_GOOGLE_SERVICES_FEATURE;
+import static com.android.bedstead.multiuser.UsersComponentKt.user;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
-import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SYSTEM_USER_TYPE_NAME;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_BLUETOOTH;
@@ -116,7 +115,6 @@ import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnTvProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
 import com.android.bedstead.harrier.annotations.RequireUserSupported;
@@ -130,7 +128,6 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.policies.DisallowBluetooth;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.display.Display;
 import com.android.bedstead.nene.display.DisplayProperties;
 import com.android.bedstead.nene.exceptions.NeneException;
@@ -175,12 +172,6 @@ public class DeviceStateTest {
 
     private static final String USER_RESTRICTION = UserManager.DISALLOW_AUTOFILL;
     private static final String SECOND_USER_RESTRICTION = UserManager.DISALLOW_AIRPLANE_MODE;
-
-    @Test
-    @RequireRunOnWorkProfile
-    public void workProfile_runningOnWorkProfile_returnsCurrentProfile() {
-        assertThat(sDeviceState.workProfile()).isEqualTo(TestApis.users().instrumented());
-    }
 
     @Test
     @EnsureHasTvProfile
@@ -364,20 +355,6 @@ public class DeviceStateTest {
         assertThat(TestApis.users().findUserOfType(
                 TestApis.users().supportedType(SECONDARY_USER_TYPE_NAME))
         ).isNull();
-    }
-
-    @RequireRunOnWorkProfile
-    public void requireRunOnWorkProfileAnnotation_isRunningOnWorkProfile() {
-        assertThat(
-                TestApis.users().instrumented().type().name()).isEqualTo(MANAGED_PROFILE_TYPE_NAME);
-    }
-
-    @Test
-    @RequireRunOnWorkProfile
-    public void requireRunOnWorkProfileAnnotation_workProfileHasProfileOwner() {
-        assertThat(
-                TestApis.devicePolicy().getProfileOwner(TestApis.users().instrumented())
-        ).isNotNull();
     }
 
     @Test
@@ -581,18 +558,6 @@ public class DeviceStateTest {
     }
 
     @Test
-    @RequireRunOnWorkProfile
-    public void requireRunOnProfile_parentIsCurrentUser() {
-        assertThat(TestApis.users().current()).isEqualTo(sDeviceState.workProfile().parent());
-    }
-
-    @Test
-    @RequireRunOnWorkProfile(switchedToParentUser = FALSE)
-    public void requireRunOnProfile_specifyNotSwitchedToParentUser_parentIsNotCurrentUser() {
-        assertThat(TestApis.users().current()).isNotEqualTo(sDeviceState.workProfile().parent());
-    }
-
-    @Test
     @RequireNotHeadlessSystemUserMode(reason = "Test")
     public void requireNotHeadlessSystemUserModeAnnotation_notHeadlessSystemUserMode() {
         assertThat(TestApis.users().isHeadlessSystemUserMode()).isFalse();
@@ -787,22 +752,6 @@ public class DeviceStateTest {
                 .testApp().pkg().appOps().get(OPSTR_START_FOREGROUND)).isEqualTo(ALLOWED);
     }
 
-    @Test
-    @RequireRunOnWorkProfile(isOrganizationOwned = true)
-    public void requireRunOnWorkProfile_isOrganizationOwned_organizationOwnedisTrue() {
-        assertThat(((ProfileOwner) sDeviceState.profileOwner(
-                sDeviceState.workProfile()).devicePolicyController()).isOrganizationOwned())
-                .isTrue();
-    }
-
-    @Test
-    @RequireRunOnWorkProfile(isOrganizationOwned = false)
-    public void requireRunOnWorkProfile_isNotOrganizationOwned_organizationOwnedIsFalse() {
-        assertThat(((ProfileOwner) sDeviceState.profileOwner(
-                sDeviceState.workProfile()).devicePolicyController()).isOrganizationOwned())
-                .isFalse();
-    }
-
     //TODO(b/300218365): Test that settings are returned to their original values in teardown.
 
     @EnsureSecureSettingSet(key = "testSecureSetting", value = "testValue")
@@ -967,16 +916,6 @@ public class DeviceStateTest {
     public void requireSystemServiceAvailable_systemServiceIsAvailable() {
         assertThat(TestApis.context().instrumentedContext()
                 .getSystemService(ContentCaptureManager.class)).isNotNull();
-    }
-
-    @RequireRunOnWorkProfile(dpcKey = RequireRunOnWorkProfile.DEFAULT_KEY, dpcIsPrimary = true)
-    @AdditionalQueryParameters(
-            forTestApp = RequireRunOnWorkProfile.DEFAULT_KEY,
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
-    )
-    @Test
-    public void additionalQueryParameters_requireRunOnWorkProfile_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
     }
 
     @EnsureTestAppInstalled(key = EnsureTestAppInstalled.DEFAULT_KEY, isPrimary = true)

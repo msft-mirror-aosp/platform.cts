@@ -17,7 +17,6 @@
 package com.android.bedstead.harrier;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
-import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
 import static android.os.Build.VERSION.SDK_INT;
 
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
@@ -39,7 +38,6 @@ import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
@@ -89,9 +87,7 @@ import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
-import com.android.bedstead.harrier.annotations.RequireInstantApp;
 import com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntent;
-import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
 import com.android.bedstead.harrier.annotations.RequirePackageInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled;
 import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent;
@@ -103,16 +99,12 @@ import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
 import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
-import com.android.bedstead.harrier.annotations.meta.EnsureHasNoProfileAnnotation;
-import com.android.bedstead.harrier.annotations.meta.EnsureHasProfileAnnotation;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnProfileAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
 import com.android.bedstead.multiuser.UsersComponent;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountReference;
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy;
-import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.display.Display;
@@ -137,7 +129,6 @@ import com.android.bedstead.testapp.NotFoundException;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.bedstead.testapp.TestAppProvider;
-import com.android.bedstead.testapp.TestAppQueryBuilder;
 import com.android.eventlib.EventLogs;
 import com.android.queryable.annotations.Query;
 
@@ -188,14 +179,6 @@ import java.util.stream.Collectors;
  * {@code assumeTrue} will be used, so tests which do not meet preconditions will be skipped.
  */
 public final class DeviceState extends HarrierRule {
-    private static final String SWITCHED_TO_PARENT_USER = "switchedToParentUser";
-    public static final String INSTALL_INSTRUMENTED_APP = "installInstrumentedApp";
-    private static final String IS_QUIET_MODE_ENABLED = "isQuietModeEnabled";
-    public static final String FOR_USER = "forUser";
-    public static final String DPC_IS_PRIMARY = "dpcIsPrimary";
-    public static final String AFFILIATION_IDS = "affiliationIds";
-    private static final String USE_PARENT_INSTANCE_OF_DPC = "useParentInstanceOfDpc";
-
     private final Context mContext = TestApis.context().instrumentedContext();
     private static final String SKIP_TEST_TEARDOWN_KEY = "skip-test-teardown";
     private static final String SKIP_CLASS_TEARDOWN_KEY = "skip-class-teardown";
@@ -432,81 +415,6 @@ public final class DeviceState extends HarrierRule {
 
             Class<? extends Annotation> annotationType = annotation.annotationType();
 
-            EnsureHasNoProfileAnnotation ensureHasNoProfileAnnotation =
-                    annotationType.getAnnotation(EnsureHasNoProfileAnnotation.class);
-            if (ensureHasNoProfileAnnotation != null) {
-                UserType userType = (UserType) annotation.annotationType()
-                        .getMethod(FOR_USER).invoke(annotation);
-                ensureHasNoProfile(ensureHasNoProfileAnnotation.value(), userType);
-                continue;
-            }
-
-            EnsureHasProfileAnnotation ensureHasProfileAnnotation =
-                    annotationType.getAnnotation(EnsureHasProfileAnnotation.class);
-            if (ensureHasProfileAnnotation != null) {
-                UserType forUser = (UserType) annotation.annotationType()
-                        .getMethod(FOR_USER).invoke(annotation);
-                OptionalBoolean installInstrumentedApp = (OptionalBoolean)
-                        annotation.annotationType()
-                                .getMethod(INSTALL_INSTRUMENTED_APP).invoke(annotation);
-
-                OptionalBoolean isQuietModeEnabled = OptionalBoolean.ANY;
-
-                try {
-                    isQuietModeEnabled = (OptionalBoolean)
-                            annotation.annotationType().getMethod(
-                                    IS_QUIET_MODE_ENABLED).invoke(annotation);
-                } catch (NoSuchMethodException e) {
-                    // Expected, we default to ANY
-                }
-
-                boolean dpcIsPrimary = false;
-                boolean useParentInstance = false;
-                TestAppQueryBuilder dpcQuery = null;
-                if (ensureHasProfileAnnotation.hasProfileOwner()) {
-                    // TODO(b/206441366): Add instant app support
-                    requireNotInstantApp(
-                            "Instant Apps cannot run Enterprise Tests", FailureMode.SKIP);
-
-                    dpcIsPrimary = (boolean)
-                            annotation.annotationType()
-                                    .getMethod(DPC_IS_PRIMARY).invoke(annotation);
-
-                    if (dpcIsPrimary) {
-                        useParentInstance = (boolean)
-                                annotation.annotationType()
-                                        .getMethod(USE_PARENT_INSTANCE_OF_DPC).invoke(
-                                                annotation);
-
-                    }
-
-                    dpcQuery = getDpcQueryFromAnnotation(annotation);
-                }
-
-                OptionalBoolean switchedToParentUser = (OptionalBoolean)
-                        annotation.annotationType()
-                                .getMethod(SWITCHED_TO_PARENT_USER).invoke(annotation);
-
-                ensureHasProfile(
-                        ensureHasProfileAnnotation.value(), installInstrumentedApp,
-                        forUser, ensureHasProfileAnnotation.hasProfileOwner(),
-                        dpcIsPrimary, useParentInstance, switchedToParentUser, isQuietModeEnabled,
-                        getDpcKeyFromAnnotation(annotation, "dpcKey"), dpcQuery);
-
-                if (ensureHasProfileAnnotation.hasProfileOwner()) {
-                    if (isOrganizationOwned(annotation)) {
-                        // It doesn't make sense to have COPE + DO
-                        mDeviceOwnerComponent.ensureHasNoDeviceOwner();
-                    }
-
-                    ((ProfileOwner) profileOwner(
-                            workProfile(forUser)).devicePolicyController()).setIsOrganizationOwned(
-                            isOrganizationOwned(annotation));
-                }
-
-                continue;
-            }
-
             if (annotation instanceof EnsureDefaultContentSuggestionsServiceEnabled ensureDefaultContentSuggestionsServiceEnabledAnnotation) {
 
                 ensureDefaultContentSuggestionsServiceEnabled(
@@ -533,53 +441,6 @@ public final class DeviceState extends HarrierRule {
 
             if (annotation instanceof TestTag testTagAnnotation) {
                 Tags.addTag(testTagAnnotation.value());
-            }
-
-            RequireRunOnProfileAnnotation requireRunOnProfileAnnotation =
-                    annotationType.getAnnotation(RequireRunOnProfileAnnotation.class);
-            if (requireRunOnProfileAnnotation != null) {
-                OptionalBoolean installInstrumentedAppInParent = (OptionalBoolean)
-                        annotation.annotationType()
-                                .getMethod("installInstrumentedAppInParent")
-                                .invoke(annotation);
-
-                OptionalBoolean switchedToParentUser = (OptionalBoolean)
-                        annotation.annotationType()
-                                .getMethod(SWITCHED_TO_PARENT_USER).invoke(annotation);
-
-
-                boolean dpcIsPrimary = false;
-                Set<String> affiliationIds = null;
-                TestAppQueryBuilder dpcQuery = null;
-                if (requireRunOnProfileAnnotation.hasProfileOwner()) {
-                    dpcIsPrimary = (boolean)
-                            annotation.annotationType()
-                                    .getMethod(DPC_IS_PRIMARY).invoke(annotation);
-                    affiliationIds = new HashSet<>(Arrays.asList((String[])
-                            annotation.annotationType()
-                                    .getMethod(AFFILIATION_IDS).invoke(annotation)));
-                    dpcQuery = getDpcQueryFromAnnotation(annotation);
-                }
-
-                requireRunOnProfile(requireRunOnProfileAnnotation.value(),
-                        installInstrumentedAppInParent,
-                        requireRunOnProfileAnnotation.hasProfileOwner(),
-                        dpcIsPrimary, /* useParentInstance= */ false,
-                        switchedToParentUser, affiliationIds,
-                        getDpcKeyFromAnnotation(annotation, "dpcKey"), dpcQuery);
-
-                if (requireRunOnProfileAnnotation.hasProfileOwner()) {
-                    if (isOrganizationOwned(annotation)) {
-                        // It doesn't make sense to have COPE + DO
-                        mDeviceOwnerComponent.ensureHasNoDeviceOwner();
-                    }
-
-                    ((ProfileOwner) profileOwner(
-                            workProfile()).devicePolicyController()).setIsOrganizationOwned(
-                            isOrganizationOwned(annotation));
-                }
-
-                continue;
             }
 
             if (annotation instanceof AdditionalQueryParameters additionalQueryParametersAnnotation) {
@@ -755,18 +616,6 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof RequireInstantApp requireInstantAppAnnotation) {
-                requireInstantApp(requireInstantAppAnnotation.reason(),
-                        requireInstantAppAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireNotInstantApp requireNotInstantAppAnnotation) {
-                requireNotInstantApp(requireNotInstantAppAnnotation.reason(),
-                        requireNotInstantAppAnnotation.failureMode());
-                continue;
-            }
-
             UsesAnnotationExecutor usesAnnotationExecutorAnnotation =
                     annotationType.getAnnotation(UsesAnnotationExecutor.class);
             if (usesAnnotationExecutorAnnotation != null) {
@@ -880,31 +729,6 @@ public final class DeviceState extends HarrierRule {
 
         requireSdkVersion(/* min= */ mMinSdkVersionCurrentTest,
                 /* max= */ Integer.MAX_VALUE, FailureMode.SKIP);
-    }
-
-    private static TestAppQueryBuilder getDpcQueryFromAnnotation(Annotation annotation) {
-        try {
-            Method queryMethod = annotation.annotationType().getMethod("dpc");
-            Query query = (Query) queryMethod.invoke(annotation);
-            TestAppQueryBuilder queryBuilder = new TestAppProvider().query(query);
-
-            return queryBuilder;
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            Log.i(LOG_TAG, "Unable to get dpc query value for "
-                    + annotation.annotationType().getName(), e);
-        }
-        return new TestAppProvider().query(); // No dpc specified - use any
-    }
-
-    private static String getDpcKeyFromAnnotation(Annotation annotation, String keyName) {
-        try {
-            Method keyMethod = annotation.annotationType().getMethod(keyName);
-            return (String) keyMethod.invoke(annotation);
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            Log.i(LOG_TAG, "Unable to get dpc key (" + keyName + ") value for "
-                    + annotation.annotationType().getName(), e);
-            return null;
-        }
     }
 
     private List<Annotation> getAnnotations(Description description) {
@@ -1099,47 +923,6 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void requireRunOnProfile(String userType,
-                                     OptionalBoolean installInstrumentedAppInParent,
-                                     boolean hasProfileOwner, boolean dpcIsPrimary, boolean useParentInstance,
-                                     OptionalBoolean switchedToParentUser, Set<String> affiliationIds,
-                                     String dpcKey, TestAppQueryBuilder dpcQuery) {
-        UserReference instrumentedUser = TestApis.users().instrumented();
-
-        assumeTrue("This test only runs on users of type " + userType,
-                instrumentedUser.type().name().equals(userType));
-
-        if (!mProfiles.containsKey(instrumentedUser.type())) {
-            mProfiles.put(instrumentedUser.type(), new HashMap<>());
-        }
-
-        mProfiles.get(instrumentedUser.type()).put(instrumentedUser.parent(),
-                instrumentedUser);
-
-        if (installInstrumentedAppInParent.equals(OptionalBoolean.TRUE)) {
-            TestApis.packages().find(sContext.getPackageName()).installExisting(
-                    instrumentedUser.parent());
-        } else if (installInstrumentedAppInParent.equals(OptionalBoolean.FALSE)) {
-            TestApis.packages().find(sContext.getPackageName()).uninstall(
-                    instrumentedUser.parent());
-        }
-
-        if (hasProfileOwner) {
-            mProfileOwnersComponent.ensureHasProfileOwner(
-                    instrumentedUser, dpcIsPrimary, useParentInstance, affiliationIds, dpcKey,
-                    dpcQuery);
-        } else {
-            mProfileOwnersComponent.ensureHasNoProfileOwner(instrumentedUser);
-        }
-
-        mUsersComponent.ensureSwitchedToUser(switchedToParentUser, instrumentedUser.parent());
-    }
-
-    private void requireFeature(String feature, FailureMode failureMode) {
-        checkFailOrSkip("Device must have feature " + feature,
-                TestApis.packages().features().contains(feature), failureMode);
-    }
-
     private void requireTargetSdkVersion(
             int min, int max, FailureMode failureMode) {
         int targetSdkVersion = TestApis.packages().instrumented().targetSdkVersion();
@@ -1170,8 +953,6 @@ public final class DeviceState extends HarrierRule {
     private static final String LOG_TAG = "DeviceState";
 
     private static final Context sContext = TestApis.context().instrumentedContext();
-    private final Map<com.android.bedstead.nene.users.UserType, Map<UserReference, UserReference>>
-            mProfiles = new HashMap<>();
 
     private final Map<UserReference, Set<String>> mAddedUserRestrictions = new ConcurrentHashMap<>();
     private final Map<UserReference, Set<String>> mRemovedUserRestrictions = new ConcurrentHashMap<>();
@@ -1281,40 +1062,7 @@ public final class DeviceState extends HarrierRule {
                     + " as they are not supported on this device");
         }
 
-        return profile(resolvedUserType, forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the profile of the given type for the given user.
-     *
-     * <p>This should only be used to get profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed profile for the given user
-     */
-    public UserReference profile(
-            com.android.bedstead.nene.users.UserType userType, UserReference forUser) {
-        if (userType == null || forUser == null) {
-            throw new NullPointerException();
-        }
-
-        if (!mProfiles.containsKey(userType) || !mProfiles.get(userType).containsKey(forUser)) {
-            UserReference parentUser = TestApis.users().instrumented().parent();
-
-            if (parentUser != null) {
-                if (mProfiles.containsKey(userType)
-                        && mProfiles.get(userType).containsKey(parentUser)) {
-                    return mProfiles.get(userType).get(parentUser);
-                }
-            }
-
-            throw new IllegalStateException(
-                    "No harrier-managed profile of type " + userType
-                            + ". This method should only"
-                            + " be used when Harrier has been used to create the profile.");
-        }
-
-        return mProfiles.get(userType).get(forUser);
+        return mUsersComponent.profile(resolvedUserType, forUser);
     }
 
     /**
@@ -1465,105 +1213,6 @@ public final class DeviceState extends HarrierRule {
      */
     public UserReference otherUser() {
         return mUsersComponent.otherUser();
-    }
-
-    private UserReference ensureHasProfile(
-            String profileType,
-            OptionalBoolean installInstrumentedApp,
-            UserType forUser,
-            boolean hasProfileOwner,
-            boolean profileOwnerIsPrimary,
-            boolean useParentInstance,
-            OptionalBoolean switchedToParentUser,
-            OptionalBoolean isQuietModeEnabled,
-            String dpcKey,
-            TestAppQueryBuilder dpcQuery) {
-        com.android.bedstead.nene.users.UserType resolvedUserType =
-                mUsersComponent.requireUserSupported(profileType, FailureMode.SKIP);
-
-        UserReference forUserReference = resolveUserTypeToUser(forUser);
-
-        UserReference profile =
-                TestApis.users().findProfileOfType(resolvedUserType, forUserReference);
-        if (profile == null) {
-            if (profileType.equals(MANAGED_PROFILE_TYPE_NAME)) {
-                // TODO(b/239961027): either remove this check (once tests on UserManagerTest /
-                // MultipleUsersOnMultipleDisplaysTest uses non-work profiles) or add a unit test
-                // for it on DeviceStateTest
-                requireFeature(FEATURE_MANAGED_USERS, FailureMode.SKIP);
-
-                // DO + work profile isn't a valid state
-                mDeviceOwnerComponent.ensureHasNoDeviceOwner();
-                ensureDoesNotHaveUserRestriction(DISALLOW_ADD_MANAGED_PROFILE, forUserReference);
-            }
-
-            profile = createProfile(resolvedUserType, forUserReference);
-        }
-
-        profile.start();
-
-        if (isQuietModeEnabled == OptionalBoolean.TRUE) {
-            profile.setQuietMode(true);
-        } else if (isQuietModeEnabled == OptionalBoolean.FALSE) {
-            profile.setQuietMode(false);
-        }
-
-        if (installInstrumentedApp.equals(OptionalBoolean.TRUE)) {
-            TestApis.packages().find(sContext.getPackageName()).installExisting(
-                    profile);
-        } else if (installInstrumentedApp.equals(OptionalBoolean.FALSE)) {
-            TestApis.packages().find(sContext.getPackageName()).uninstall(profile);
-        }
-
-        if (!mProfiles.containsKey(resolvedUserType)) {
-            mProfiles.put(resolvedUserType, new HashMap<>());
-        }
-
-        mProfiles.get(resolvedUserType).put(forUserReference, profile);
-
-        if (hasProfileOwner) {
-            mProfileOwnersComponent.ensureHasProfileOwner(
-                    profile, profileOwnerIsPrimary,
-                    useParentInstance,
-                    /* affiliationIds= */ null,
-                    dpcKey,
-                    dpcQuery);
-        }
-
-        mUsersComponent.ensureSwitchedToUser(switchedToParentUser, forUserReference);
-
-        return profile;
-    }
-
-    private void ensureHasNoProfile(String profileType, UserType forUser) {
-        UserReference forUserReference = resolveUserTypeToUser(forUser);
-        com.android.bedstead.nene.users.UserType resolvedProfileType =
-                TestApis.users().supportedType(profileType);
-
-        if (resolvedProfileType == null) {
-            // These profile types don't exist so there can't be any
-            return;
-        }
-
-        UserReference profile =
-                TestApis.users().findProfileOfType(
-                        resolvedProfileType,
-                        forUserReference);
-        if (profile != null) {
-            // We can't remove an organization owned profile
-            ProfileOwner profileOwner = TestApis.devicePolicy().getProfileOwner(profile);
-            if (profileOwner != null && profileOwner.isOrganizationOwned()) {
-                profileOwner.setIsOrganizationOwned(false);
-            }
-            mUsersComponent.removeAndRecordUser(profile);
-        }
-    }
-
-    private void ensureCanAddProfile(
-            UserReference parent, com.android.bedstead.nene.users.UserType userType, FailureMode failureMode) {
-        checkFailOrSkip("the device cannot add more profiles of type " + userType,
-                parent.canCreateProfile(userType),
-                failureMode);
     }
 
     /**
@@ -1768,7 +1417,6 @@ public final class DeviceState extends HarrierRule {
 
     void teardownNonShareableState() {
         mAdditionalQueryParameters.clear();
-        mProfiles.clear();
 
         // TODO(b/329570492): Support sharing of theme in bedstead across tests
         if (mOriginalDisplayTheme != null) {
@@ -1869,28 +1517,6 @@ public final class DeviceState extends HarrierRule {
 
         TestApis.activities().clearAllActivities();
         mLocator.teardownShareableState();
-    }
-
-    private UserReference createProfile(
-            com.android.bedstead.nene.users.UserType profileType,
-            UserReference parent
-    ) {
-        mUsersComponent.ensureCanAddUser();
-        ensureCanAddProfile(parent, profileType, FailureMode.SKIP);
-
-        if (profileType.name().equals("android.os.usertype.profile.CLONE")) {
-            // Special case - we can't create a clone profile if this is set
-            ensureDoesNotHaveUserRestriction(DISALLOW_ADD_CLONE_PROFILE, parent);
-        } else if (profileType.name().equals("android.os.usertype.profile.PRIVATE")) {
-            // Special case - we can't create a private profile if this is set
-            ensureDoesNotHaveUserRestriction(DISALLOW_ADD_PRIVATE_PROFILE, parent);
-        }
-
-        try {
-            return mUsersComponent.createUser(profileType, parent);
-        } catch (NeneException e) {
-            throw new IllegalStateException("Error creating profile of type " + profileType, e);
-        }
     }
 
     /**
@@ -2159,16 +1785,6 @@ public final class DeviceState extends HarrierRule {
         mTemporaryContentSuggestionsServiceSet.add(user);
 
         TestApis.content().suggestions().setTemporaryService(user, mContentSuggestionsService);
-    }
-
-    private void requireInstantApp(String reason, FailureMode failureMode) {
-        checkFailOrSkip("Test only runs as an instant-app: " + reason,
-                TestApis.packages().instrumented().isInstantApp(), failureMode);
-    }
-
-    private void requireNotInstantApp(String reason, FailureMode failureMode) {
-        checkFailOrSkip("Test does not run as an instant-app: " + reason,
-                !TestApis.packages().instrumented().isInstantApp(), failureMode);
     }
 
     /**
