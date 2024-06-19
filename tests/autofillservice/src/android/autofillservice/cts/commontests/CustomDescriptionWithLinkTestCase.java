@@ -104,8 +104,10 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
                     PostSaveLinkTappedAction.ROTATE_THEN_TAP_BACK_BUTTON);
         } finally {
             try {
-                mUiBot.setScreenOrientation(UiBot.PORTRAIT);
-                cleanUpAfterScreenOrientationIsBackToPortrait();
+                if (!Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.OPENED)) {
+                    mUiBot.setScreenOrientation(UiBot.PORTRAIT);
+                    cleanUpAfterScreenOrientationIsBackToPortrait();
+                }
             } catch (Exception e) {
                 mSafeCleanerRule.add(e);
             } finally {

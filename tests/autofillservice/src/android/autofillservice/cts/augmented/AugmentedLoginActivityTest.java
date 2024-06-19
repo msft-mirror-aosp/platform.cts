@@ -746,6 +746,8 @@ public class AugmentedLoginActivityTest
         assumeTrue("Rotation is supported", Helper.isRotationSupported(mContext));
         assumeTrue("Device state is not REAR_DISPLAY",
                 !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.REAR_DISPLAY));
+        assumeTrue("Device state is not OPENED",
+                !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.OPENED));
 
         // Set services
         enableService();
