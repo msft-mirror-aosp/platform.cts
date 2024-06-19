@@ -64,7 +64,7 @@ import java.util.concurrent.TimeUnit;
 public class SharedConnectivityTest {
     private static final String TAG = "SharedConnectivityTest";
 
-    private static final String SERVICE_PACKAGE_NAME = "android.net.wifi.cts";
+    private static final String SERVICE_PACKAGE_NAME = "android.net.wifi.nonupdatable.cts";
     private static final String SERVICE_INTENT_ACTION =
             "android.net.wifi.sharedconnectivity.service.cts.TestSharedConnectivityService.BIND";
 

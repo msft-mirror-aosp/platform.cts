@@ -166,6 +166,9 @@ public class ItsTestActivity extends DialogTestListActivity {
 
     private static final Pattern PERF_METRICS_AEAWB_PATTERN =
             Pattern.compile("test_ae_awb_regions_.*");
+
+    private static final Pattern PERF_METRICS_PREVIEW_ZOOM_PATTERN =
+            Pattern.compile("test_preview_zoom_.*");
     private static final String REPORT_LOG_NAME = "CtsCameraItsTestCases";
 
     private static final String ZOOM = "zoom";
@@ -675,6 +678,10 @@ public class ItsTestActivity extends DialogTestListActivity {
                     perfMetricsResult);
             boolean aeAwbMetricsMatches = aeAwbMetricsMatcher.matches();
 
+            Matcher previewZoomMetricsMatcher = PERF_METRICS_PREVIEW_ZOOM_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean previewZoomMetricsMatches = previewZoomMetricsMatcher.matches();
+
             Matcher multiCamMetricsMatcher = PERF_METRICS_MULTICAM_PATTERN.matcher(
                     perfMetricsResult);
             boolean multiCamMetricsMatches = multiCamMetricsMatcher.matches();
@@ -689,7 +696,8 @@ public class ItsTestActivity extends DialogTestListActivity {
                         && !burstCaptureMetricsMatches && !distortionMetricsMatches
                         && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
                         && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches
-                        && !multiCamMetricsMatches && !previewFrameDropMetricsMatches) {
+                        && !multiCamMetricsMatches && !previewFrameDropMetricsMatches
+                        && !previewZoomMetricsMatches) {
                 return false;
             }
 
@@ -747,6 +755,11 @@ public class ItsTestActivity extends DialogTestListActivity {
                 }
                 if (aeAwbMetricsMatches) {
                     List<String> floatKeys = Arrays.asList("_change");
+                    parsePerfMetrics(perfMetricsResult, obj, floatKeys, Collections.emptyList(),
+                            Collections.emptyList());
+                }
+                if (previewZoomMetricsMatches) {
+                    List<String> floatKeys = Arrays.asList("_variations");
                     parsePerfMetrics(perfMetricsResult, obj, floatKeys, Collections.emptyList(),
                             Collections.emptyList());
                 }

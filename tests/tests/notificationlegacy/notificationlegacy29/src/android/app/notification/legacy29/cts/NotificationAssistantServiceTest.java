@@ -49,6 +49,10 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.provider.Telephony;
 import android.service.notification.Adjustment;
 import android.service.notification.NotificationAssistantService;
@@ -64,12 +68,15 @@ import com.android.compatibility.common.util.SystemUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public class NotificationAssistantServiceTest {
@@ -88,6 +95,9 @@ public class NotificationAssistantServiceTest {
     private UiAutomation mUi;
     private NotificationHelper mHelper;
     private String mPreviousAssistant;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private boolean isWatch() {
       return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
@@ -400,6 +410,50 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_CLASSIFICATION)
+    public void testAdjustNotification_typeKey() throws Exception {
+        setUpListeners();
+
+        sendNotification(1, null, ICON_ID);
+        StatusBarNotification sbn = mHelper.findPostedNotification(
+                null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+        NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+        Bundle signals = new Bundle();
+        signals.putInt(Adjustment.KEY_TYPE, Adjustment.TYPE_NEWS);
+        Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser());
+
+        CountDownLatch rankingUpdateLatch =
+                mNotificationListenerService.setRankingUpdateCountDown(1);
+
+        mNotificationAssistantService.adjustNotification(adjustment);
+
+        rankingUpdateLatch.await(1000, TimeUnit.MILLISECONDS);
+
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+        assertEquals(NotificationChannel.NEWS_ID, out.getChannel().getId());
+
+        // and can move it later
+        signals.putInt(Adjustment.KEY_TYPE, Adjustment.TYPE_PROMOTION);
+        adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser());
+
+        rankingUpdateLatch =
+                mNotificationListenerService.setRankingUpdateCountDown(1);
+
+        mNotificationAssistantService.adjustNotification(adjustment);
+
+        rankingUpdateLatch.await(1000, TimeUnit.MILLISECONDS);
+
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+        assertEquals(NotificationChannel.PROMOTIONS_ID, out.getChannel().getId());
+    }
+
+    @Test
     public void testGetAllowedAssistantAdjustments_permission() throws Exception {
         mHelper.disableAssistant(PKG);
 
@@ -448,6 +502,11 @@ public class NotificationAssistantServiceTest {
         assertTrue(
                 mNotificationAssistantService.mCurrentCapabilities.contains(
                         Adjustment.KEY_NOT_CONVERSATION));
+        if (android.service.notification.Flags.notificationClassification()) {
+            assertTrue(
+                    mNotificationAssistantService.mCurrentCapabilities.contains(
+                            Adjustment.KEY_TYPE));
+        }
 
         mUi.dropShellPermissionIdentity();
     }

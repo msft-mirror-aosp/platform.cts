@@ -49,8 +49,15 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
+
+      # Check SKIP conditions
       camera_properties_utils.skip_unless(
           camera_properties_utils.backward_compatible(props))
+
+      # Load chart for scene
+      its_session_utils.load_scene(
+          cam, props, self.scene, self.tablet, self.chart_distance)
+
       req = capture_request_utils.auto_capture_request()
       cam.do_3a()
       caps = cam.do_capture([req] * _NUM_TEST_FRAMES)

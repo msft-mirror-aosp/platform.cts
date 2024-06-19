@@ -3930,8 +3930,10 @@ public class ItsService extends Service implements SensorEventListener {
                 if (mOutputImageReaders == null) {
                     Logt.i(TAG, "Preparing image readers with output specs in doCapture");
                     is10bitOutputPresent = prepareImageReadersWithOutputSpecs(jsonOutputSpecs,
-                        /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
-                        backgroundRequest, reuseSession);
+                            /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
+                            backgroundRequest, reuseSession);
+                } else {
+                    is10bitOutputPresent = mImageReaderArgs.getHas10bitOutput();
                 }
                 numSurfaces = mOutputImageReaders.length;
                 numCaptureSurfaces = numSurfaces - (backgroundRequest ? 1 : 0)
@@ -3945,8 +3947,8 @@ public class ItsService extends Service implements SensorEventListener {
 
                 List<OutputConfiguration> outputConfigs = getCaptureOutputConfigurations(
                         jsonOutputSpecs, is10bitOutputPresent);
-                if (mSession != null && reuseSession && mOutputImageReaders != null &&
-                        mCaptureOutputConfigs.equals(outputConfigs)) {
+                if (mSession != null && reuseSession
+                        && mCaptureOutputConfigs.equals(outputConfigs)) {
                     Logt.i(TAG, "Reusing camera capture session in doCapture()");
                 } else {
                     Logt.i(TAG, "Need to create new capture session in doCapture()");
