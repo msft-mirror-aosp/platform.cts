@@ -25,6 +25,7 @@ import android.os.OutcomeReceiver;
 import android.os.PowerMonitor;
 import android.os.PowerMonitorReadings;
 import android.os.health.SystemHealthManager;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class PowerMonitorsTest {
 
     @Rule

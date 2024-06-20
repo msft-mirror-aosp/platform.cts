@@ -31,6 +31,8 @@ import androidx.window.extensions.layout.DisplayFeature;
 import androidx.window.extensions.layout.FoldingFeature;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
+import org.junit.Assert;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -149,6 +151,12 @@ public final class ImeEventStreamTestUtils {
         }
     }
 
+    /** Checks if {@code eventName} has occurred. */
+    public static DescribedPredicate<ImeEvent> eventMatcher(@NonNull String eventName) {
+        return withDescription(eventName + "()",
+                event -> event.getEventName().equals(eventName));
+    }
+
     /**
      * Checks if {@code eventName} has occurred on the EditText(or TextView) of the current
      * activity.
@@ -156,7 +164,7 @@ public final class ImeEventStreamTestUtils {
      * @param marker Test marker set to {@link android.widget.EditText#setPrivateImeOptions(String)}
      * @return true if event occurred.
      */
-    public static Predicate<ImeEvent> editorMatcher(
+    public static DescribedPredicate<ImeEvent> editorMatcher(
             @NonNull String eventName, @NonNull String marker) {
         return withDescription(eventName + "(marker=" + marker + ")", event -> {
             if (!TextUtils.equals(eventName, event.getEventName())) {
@@ -171,7 +179,7 @@ public final class ImeEventStreamTestUtils {
      * Returns a matcher to check if the {@code name} is from
      * {@code MockIme.Tracer#onVerify(String, BooleanSupplier)}
      */
-    public static Predicate<ImeEvent> verificationMatcher(@NonNull String name) {
+    public static DescribedPredicate<ImeEvent> verificationMatcher(@NonNull String name) {
         return withDescription("onVerify(name=" + name + ")",
                 event -> "onVerify".equals(event.getEventName())
                         && name.equals(event.getArguments().getString("name")));
@@ -184,15 +192,29 @@ public final class ImeEventStreamTestUtils {
      * @param marker Test marker set to {@link android.widget.EditText#setPrivateImeOptions(String)}
      * @return true if event occurred and restarting is false.
      */
-    public static Predicate<ImeEvent> editorMatcherRestartingFalse(
+    public static DescribedPredicate<ImeEvent> editorMatcherRestartingFalse(
             @NonNull String eventName, @NonNull String marker) {
-        return withDescription(eventName + "(marker=" + marker + ", restarting=false)", event -> {
+        return editorMatcherRestarting(eventName, marker, false);
+    }
+
+
+    /**
+     * Checks if {@code eventName} has occurred on the EditText(or TextView) of the current
+     * activity mainly for onStartInput restarting check.
+     * @param eventName event name to check
+     * @param marker Test marker set to {@link android.widget.EditText#setPrivateImeOptions(String)}
+     * @param restarting the expected value of {@code restarting} to match
+     */
+    public static DescribedPredicate<ImeEvent> editorMatcherRestarting(
+            @NonNull String eventName, @NonNull String marker, boolean restarting) {
+        return withDescription(eventName + "(marker=" + marker + ", restarting=" + restarting +")", event -> {
             if (!TextUtils.equals(eventName, event.getEventName())) {
                 return false;
             }
             final EditorInfo editorInfo = event.getArguments().getParcelable("editorInfo");
-            final boolean restarting = event.getArguments().getBoolean("restarting");
-            return (TextUtils.equals(marker, editorInfo.privateImeOptions) && !restarting);
+            final boolean actualRestarting = event.getArguments().getBoolean("restarting");
+            return (TextUtils.equals(marker, editorInfo.privateImeOptions)
+                    && restarting == actualRestarting);
         });
     }
 
@@ -203,7 +225,7 @@ public final class ImeEventStreamTestUtils {
     * @param fieldId typically same as {@link android.view.View#getId()}.
     * @return true if event occurred.
     */
-    public static Predicate<ImeEvent> editorMatcher(@NonNull String eventName, int fieldId) {
+    public static DescribedPredicate<ImeEvent> editorMatcher(@NonNull String eventName, int fieldId) {
         return withDescription(eventName + "(fieldId=" + fieldId + ")", event -> {
             if (!TextUtils.equals(eventName, event.getEventName())) {
                 return false;
@@ -213,7 +235,7 @@ public final class ImeEventStreamTestUtils {
         });
     }
 
-    public static Predicate<ImeEvent> showSoftInputMatcher(int requiredFlags) {
+    public static DescribedPredicate<ImeEvent> showSoftInputMatcher(int requiredFlags) {
         return withDescription("showSoftInput(requiredFlags=" + requiredFlags + ")", event -> {
             if (!TextUtils.equals("showSoftInput", event.getEventName())) {
                 return false;
@@ -223,7 +245,7 @@ public final class ImeEventStreamTestUtils {
         });
     }
 
-    public static Predicate<ImeEvent> hideSoftInputMatcher() {
+    public static DescribedPredicate<ImeEvent> hideSoftInputMatcher() {
         return withDescription("hideSoftInput",
                 event -> TextUtils.equals("hideSoftInput", event.getEventName()));
     }
@@ -323,13 +345,14 @@ public final class ImeEventStreamTestUtils {
      */
     public static void expectBindInput(@NonNull ImeEventStream stream, int targetProcessPid,
             long timeout) throws TimeoutException {
-        expectEvent(stream, event -> {
-            if (!TextUtils.equals("bindInput", event.getEventName())) {
-                return false;
-            }
-            final InputBinding binding = event.getArguments().getParcelable("binding");
-            return binding.getPid() == targetProcessPid;
-        }, EventFilterMode.CHECK_EXIT_EVENT_ONLY,  timeout);
+        expectEvent(stream, withDescription("bindInput(pid=" + targetProcessPid + ")",
+                event -> {
+                    if (!TextUtils.equals("bindInput", event.getEventName())) {
+                        return false;
+                    }
+                    final InputBinding binding = event.getArguments().getParcelable("binding");
+                    return binding.getPid() == targetProcessPid;
+                }), EventFilterMode.CHECK_EXIT_EVENT_ONLY, timeout);
     }
 
     /**
@@ -459,18 +482,26 @@ public final class ImeEventStreamTestUtils {
         return stream.copy();
     }
 
-    public static Predicate<ImeEvent> withDescription(String description, Predicate<ImeEvent> p) {
-        return new Predicate<>() {
+    public static DescribedPredicate<ImeEvent> withDescription(String description, Predicate<ImeEvent> p) {
+        return new DescribedPredicate<>() {
             @Override
             public boolean test(ImeEvent ev) {
                 return p.test(ev);
             }
 
-            @Override
-            public String toString() {
+            public String describe() {
                 return description;
             }
+
+            @Override
+            public String toString() {
+                return describe();
+            }
         };
+    }
+
+    public interface DescribedPredicate<T> extends Predicate<ImeEvent> {
+        String describe();
     }
 
     /**

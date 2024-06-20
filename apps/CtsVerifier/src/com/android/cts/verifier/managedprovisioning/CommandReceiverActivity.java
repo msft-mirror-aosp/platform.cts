@@ -212,7 +212,8 @@ public class CommandReceiverActivity extends Activity {
             // restrictions - must be set in the current user.
             boolean forDeviceOwner = !intent.getBooleanExtra(EXTRA_USE_CURRENT_USER_DPM, false);
             mDpm = TestAppSystemServiceFactory.getDevicePolicyManager(this,
-                            DeviceAdminTestReceiver.class, forDeviceOwner);
+                            DeviceAdminTestReceiver.class, forDeviceOwner,
+                    /* isSingleUser = */ false);
 
             mUm = getSystemService(UserManager.class);
             mAm = getSystemService(ActivityManager.class);
@@ -644,7 +645,8 @@ public class CommandReceiverActivity extends Activity {
         // Cannot use mDpm as it would be the DPM of the current user on headless system user mode,
         // which would return false
         DevicePolicyManager dpm = TestAppSystemServiceFactory.getDevicePolicyManager(this,
-                DeviceAdminTestReceiver.class, /* forDeviceOwner= */ true);
+                DeviceAdminTestReceiver.class, /* forDeviceOwner= */ true,
+                /* isSingleUser = */ false);
         boolean isIt = dpm.isDeviceOwnerApp(getPackageName());
         Log.v(TAG, "is " + getPackageName() + " DO, using " + dpm + "? " + isIt);
         return isIt;

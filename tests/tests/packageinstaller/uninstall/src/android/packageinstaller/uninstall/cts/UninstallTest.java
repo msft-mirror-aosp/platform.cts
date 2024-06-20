@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.Instrumentation;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -85,6 +86,7 @@ public class UninstallTest {
     private static final String RECEIVER_ACTION =
             "android.packageinstaller.emptytestapp.cts.action";
 
+    private static final long FIND_OBJECT_TIMEOUT = 1000;
     private static final long TIMEOUT_MS = 30000;
     private static final String APP_OP_STR = "REQUEST_DELETE_PACKAGES";
 
@@ -93,12 +95,18 @@ public class UninstallTest {
     private CountDownLatch mLatch;
     private UninstallStatusReceiver mReceiver;
 
+    private Instrumentation mInstrumentation;
+
+    private PackageManager mPackageManager;
+
     @Before
     public void setup() throws Exception {
         mContext = InstrumentationRegistry.getTargetContext();
+        mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mPackageManager = mContext.getPackageManager();
 
         // Unblock UI
-        mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        mUiDevice = UiDevice.getInstance(mInstrumentation);
         if (!mUiDevice.isScreenOn()) {
             mUiDevice.wakeUp();
         }
@@ -248,7 +256,7 @@ public class UninstallTest {
     public void testUninstallApi(boolean needUserConfirmation) throws Exception {
         assertTrue("Package is not installed", isInstalled());
 
-        PackageInstaller pi = mContext.getPackageManager().getPackageInstaller();
+        PackageInstaller pi = mPackageManager.getPackageInstaller();
         VersionedPackage pkg = new VersionedPackage(TEST_APK_PACKAGE_NAME,
                 PackageManager.VERSION_CODE_HIGHEST);
 
@@ -273,7 +281,7 @@ public class UninstallTest {
         Log.d(LOG_TAG, "Testing if package " + TEST_APK_PACKAGE_NAME + " is installed for user "
                 + mContext.getUser());
         try {
-            mContext.getPackageManager().getPackageInfo(TEST_APK_PACKAGE_NAME, /* flags= */ 0);
+            mPackageManager.getPackageInfo(TEST_APK_PACKAGE_NAME, /* flags= */ 0);
             return true;
         } catch (PackageManager.NameNotFoundException e) {
             Log.v(LOG_TAG, "Package " + TEST_APK_PACKAGE_NAME + " not installed for user "
@@ -283,12 +291,15 @@ public class UninstallTest {
     }
 
     private void clickInstallerButton() throws Exception {
+        // Wait for a minimum 2000ms and maximum 10000ms for the UI to become idle.
+        mInstrumentation.getUiAutomation().waitForIdle(
+                (2 * FIND_OBJECT_TIMEOUT), (10 * FIND_OBJECT_TIMEOUT));
         assertNotNull("Uninstall prompt not shown",
             waitFor(Until.findObject(By.textContains("Do you want to uninstall this app?"))));
         // The app's name should be shown to the user.
         assertNotNull(mUiDevice.findObject(By.text("Empty Test App")));
 
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
+        if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
             UiObject2 clickableView = mUiDevice.findObject(By.focusable(true)
                                                     .hasDescendant(By.text("OK")));
             if (!clickableView.isFocused()) {

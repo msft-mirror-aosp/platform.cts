@@ -26,6 +26,7 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.MEDIA_ROUTING_CONTROL" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
@@ -91,14 +92,6 @@
         <service android:name=".MediaSessionTestService"
              android:process=":mediaSessionTestService"/>
         <receiver android:name="android.media.bettertogether.cts.MediaButtonBroadcastReceiver"/>
-        <service android:name="android.media.bettertogether.cts.PlaceholderService"
-                 android:exported="false">
-            <intent-filter>
-                <action android:name="android.media.MediaRoute2ProviderService" />
-                <action android:name="android.media.action.TRANSFER_MEDIA"/>
-                <category android:name="android.media.MediaRoute2ProviderService.SELF_SCAN_ONLY" />
-            </intent-filter>
-        </service>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

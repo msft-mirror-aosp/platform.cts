@@ -23,6 +23,8 @@ import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -55,11 +57,11 @@ public final class ShellCommand {
     @CheckResult
     public static Builder builderForUser(@Nullable UserReference userReference, String command) {
         Builder builder = builder(command);
-        if (userReference != null) {
-            builder.addOption("--user", userReference.id());
+        if (userReference == null) {
+            return builder;
         }
 
-        return builder;
+        return builder.addOption("--user", userReference.id());
     }
 
     public static final class Builder {
@@ -68,21 +70,26 @@ public final class ShellCommand {
         private byte[] mStdInBytes = null;
         @Nullable
         private Duration mTimeout = null;
-        @Nullable
         private boolean mAllowEmptyOutput = false;
         @Nullable
         private Function<String, Boolean> mOutputSuccessChecker = null;
-        private boolean mShouldRunAsRoot = false;
+        private boolean mShouldRunAsRootWithSuperUser = false;
 
         private Builder(String command) {
             commandBuilder = new StringBuilder(command);
         }
 
         /**
-         * Run command as root by adding {@code su root} as prefix.
+         * Run command as root by adding {@code su root} as prefix if needed.
+         * <br><br>
+         * Note: If shell has access to root but {@code su} is not available the {@code su root}
+         * prefix will not be added as shell is probably running as root. This can be checked
+         * using {@code ShellCommandUtils.isRunningAsRoot}.
          */
         public Builder asRoot(boolean shouldRunAsRoot) {
-            mShouldRunAsRoot = shouldRunAsRoot;
+            mShouldRunAsRootWithSuperUser = shouldRunAsRoot &&
+                    !ShellCommandUtils.isRunningAsRoot() &&
+                    ShellCommandUtils.isSuperUserAvailable();
             return this;
         }
 
@@ -91,6 +98,7 @@ public final class ShellCommand {
          *
          * <p>e.g. --user 10
          */
+        @CanIgnoreReturnValue
         @CheckResult
         public Builder addOption(String key, Object value) {
             // TODO: Deal with spaces/etc.
@@ -101,6 +109,7 @@ public final class ShellCommand {
         /**
          * Add an operand to the command.
          */
+        @CanIgnoreReturnValue
         @CheckResult
         public Builder addOperand(Object value) {
             // TODO: Deal with spaces/etc.
@@ -111,6 +120,7 @@ public final class ShellCommand {
         /**
          * Add a timeout to the execution of the command.
          */
+        @CanIgnoreReturnValue
         public Builder withTimeout(Duration timeout) {
             mTimeout = timeout;
             return this;
@@ -151,7 +161,7 @@ public final class ShellCommand {
          * Build the full command including all options and operands.
          */
         public String build() {
-            if (mShouldRunAsRoot) {
+            if (mShouldRunAsRootWithSuperUser) {
                 return commandBuilder.insert(0, "su root ").toString();
             }
 
@@ -162,6 +172,7 @@ public final class ShellCommand {
          * See {@link #execute()} except that any {@link AdbException} is wrapped in a
          * {@link NeneException} with the message {@code errorMessage}.
          */
+        @CanIgnoreReturnValue
         public String executeOrThrowNeneException(String errorMessage) throws NeneException {
             try {
                 return execute();
@@ -171,6 +182,7 @@ public final class ShellCommand {
         }
 
         /** See {@link ShellCommandUtils#executeCommand(java.lang.String)}. */
+        @CanIgnoreReturnValue
         public String execute() throws AdbException {
             if (mTimeout == null) {
                 return executeSync();

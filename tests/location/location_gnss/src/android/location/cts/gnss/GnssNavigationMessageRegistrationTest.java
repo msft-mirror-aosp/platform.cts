@@ -23,6 +23,7 @@ import android.location.cts.common.TestGnssStatusCallback;
 import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import java.util.List;
@@ -87,6 +88,7 @@ public class GnssNavigationMessageRegistrationTest extends GnssTestCase {
      * Tests that one can listen for {@link GnssNavigationMessage}s for collection purposes.
      * It only performs initial checks for the Navigation messages received.
      */
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGnssNavigationMessageRegistration() throws Exception {
         // Checks if GPS hardware feature is present, skips test (pass) if not
         if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {

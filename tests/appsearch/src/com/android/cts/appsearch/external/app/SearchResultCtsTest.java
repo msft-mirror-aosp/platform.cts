@@ -23,10 +23,18 @@ import static org.junit.Assert.assertThrows;
 import android.app.appsearch.PropertyPath;
 import android.app.appsearch.SearchResult;
 import android.app.appsearch.testutil.AppSearchEmail;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import com.android.appsearch.flags.Flags;
+
+import org.junit.Rule;
 import org.junit.Test;
 
 public class SearchResultCtsTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testBuildSearchResult() {
@@ -173,5 +181,50 @@ public class SearchResultCtsTest {
         assertThat(rebuildJoinedResult1.getGenericDocument().getId()).isEqualTo("id2");
         SearchResult rebuildJoinedResult2 = rebuild.getJoinedResults().get(1);
         assertThat(rebuildJoinedResult2.getGenericDocument().getId()).isEqualTo("id3");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_INFORMATIONAL_RANKING_EXPRESSIONS)
+    public void testBuildSearchResult_informationalRankingSignals() {
+        AppSearchEmail email =
+                new AppSearchEmail.Builder("namespace1", "id1").setBody("Hello World.").build();
+        SearchResult searchResult =
+                new SearchResult.Builder("packageName", "databaseName")
+                        .setGenericDocument(email)
+                        .setRankingSignal(2.9)
+                        .addInformationalRankingSignal(3.0)
+                        .addInformationalRankingSignal(4.0)
+                        .build();
+
+        assertThat(searchResult.getRankingSignal()).isEqualTo(2.9);
+        assertThat(searchResult.getInformationalRankingSignals())
+                .containsExactly(3.0, 4.0)
+                .inOrder();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_INFORMATIONAL_RANKING_EXPRESSIONS)
+    public void testRebuild_informationalRankingSignals() {
+        AppSearchEmail email =
+                new AppSearchEmail.Builder("namespace1", "id1").setBody("Hello World.").build();
+
+        SearchResult.Builder searchResultBuilder =
+                new SearchResult.Builder("packageName", "databaseName")
+                        .setGenericDocument(email)
+                        .setRankingSignal(2.9)
+                        .addInformationalRankingSignal(3.0)
+                        .addInformationalRankingSignal(4.0);
+
+        SearchResult original = searchResultBuilder.build();
+        SearchResult rebuild = searchResultBuilder.addInformationalRankingSignal(5).build();
+
+        // Rebuild won't effect the original object
+        assertThat(original.getRankingSignal()).isEqualTo(2.9);
+        assertThat(original.getInformationalRankingSignals()).containsExactly(3.0, 4.0).inOrder();
+
+        assertThat(rebuild.getRankingSignal()).isEqualTo(2.9);
+        assertThat(rebuild.getInformationalRankingSignals())
+                .containsExactly(3.0, 4.0, 5.0)
+                .inOrder();
     }
 }

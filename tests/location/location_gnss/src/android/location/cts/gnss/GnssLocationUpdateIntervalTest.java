@@ -29,6 +29,7 @@ import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
 import android.location.cts.common.TestUtils;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import junit.framework.Assert;
@@ -119,6 +120,7 @@ public class GnssLocationUpdateIntervalTest extends GnssTestCase {
     /**
      * Tests the time differences between GPS time and elapsedRealtime are bounded.
      */
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testTimeDriftBetweenUtcTimeAndElapsedRealtime() throws Exception {
         if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
             return;

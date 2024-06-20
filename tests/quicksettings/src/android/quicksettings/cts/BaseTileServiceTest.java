@@ -126,6 +126,10 @@ public abstract class BaseTileServiceTest {
         Thread.sleep(600); // wait for animation
     }
 
+    protected void clickTile(String componentName) throws Exception {
+        executeShellCommand(" cmd statusbar click-tile " + componentName);
+    }
+
     protected void initializeAndListen() throws Exception {
         startTileService();
         expandSettings(true);

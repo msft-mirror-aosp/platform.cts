@@ -26,11 +26,14 @@ import static android.view.inputmethod.Flags.initiationWithoutInputConnection;
 import static android.view.inputmethod.InputMethodInfo.ACTION_STYLUS_HANDWRITING_SETTINGS;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
+import static com.android.text.flags.Flags.FLAG_HANDWRITING_END_OF_LINE_TAP;
+import static com.android.text.flags.Flags.FLAG_HANDWRITING_UNSUPPORTED_MESSAGE;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -53,16 +56,17 @@ import android.graphics.Color;
 import android.hardware.input.InputManager;
 import android.inputmethodservice.InputMethodService;
 import android.os.Process;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Pair;
+import android.view.Display;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -94,8 +98,12 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.UinputStylus;
+import com.android.cts.input.UinputTouchDevice;
+import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
+import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
@@ -127,8 +135,6 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TimeUnit.SECONDS.toMillis(NOT_EXPECT_TIMEOUT_IN_SECONDS);
     private static final int SETTING_VALUE_ON = 1;
     private static final int SETTING_VALUE_OFF = 0;
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.StylusHandwritingTest";
     private static final int HANDWRITING_BOUNDS_OFFSET_PX = 20;
     // A timeout greater than HandwritingModeController#HANDWRITING_DELEGATION_IDLE_TIMEOUT_MS.
     private static final long DELEGATION_AFTER_IDLE_TIMEOUT_MS = 3100;
@@ -299,7 +305,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
             imm.startStylusHandwriting(editText);
             // Handwriting should not start since there are no stylus devices registered.
@@ -320,7 +326,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -351,7 +357,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -366,27 +372,29 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             final int startY = editText.getHeight() / 2;
             TestUtils.injectStylusDownEvent(editText, startX, startY);
 
-            imm.startStylusHandwriting(editText);
-            // keyboard shouldn't show up.
-            notExpectEvent(
-                    stream,
-                    editorMatcher("onStartInputView", marker),
-                    NOT_EXPECT_TIMEOUT);
+            try {
+                imm.startStylusHandwriting(editText);
+                // keyboard shouldn't show up.
+                notExpectEvent(
+                        stream,
+                        editorMatcher("onStartInputView", marker),
+                        NOT_EXPECT_TIMEOUT);
 
-            // Handwriting should start
-            expectEvent(
-                    stream,
-                    editorMatcher("onPrepareStylusHandwriting", marker),
-                    TIMEOUT);
-            expectEvent(
-                    stream,
-                    editorMatcher("onStartStylusHandwriting", marker),
-                    TIMEOUT);
+                // Handwriting should start
+                expectEvent(
+                        stream,
+                        editorMatcher("onPrepareStylusHandwriting", marker),
+                        TIMEOUT);
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", marker),
+                        TIMEOUT);
 
-            verifyStylusHandwritingWindowIsShown(stream, imeSession);
-
-            // Release the stylus pointer
-            TestUtils.injectStylusUpEvent(editText, startX, startY);
+                verifyStylusHandwritingWindowIsShown(stream, imeSession);
+            } finally {
+                // Release the stylus pointer
+                TestUtils.injectStylusUpEvent(editText, startX, startY);
+            }
 
             // Verify calling finishStylusHandwriting() calls onFinishStylusHandwriting().
             imeSession.callFinishStylusHandwriting();
@@ -409,7 +417,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -498,7 +506,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -510,39 +518,41 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             addVirtualStylusIdForTestSession();
             final List<MotionEvent> injectedEvents = new ArrayList<>();
             // Touch down with a stylus
+            final int touchSlop = getTouchSlop();
             final int startX = editText.getWidth() / 2;
             final int startY = editText.getHeight() / 2;
-            injectedEvents.add(TestUtils.injectStylusDownEvent(editText, startX, startY));
-            imm.startStylusHandwriting(editText);
-
-            // Handwriting should start
-            expectEvent(
-                    stream,
-                    editorMatcher("onStartStylusHandwriting", marker),
-                    TIMEOUT);
-
-            verifyStylusHandwritingWindowIsShown(stream, imeSession);
-
-            if (verifyOnInkView) {
-                // Set IME stylus Ink view
-                assertTrue(expectCommand(
-                        stream,
-                        imeSession.callSetStylusHandwritingInkView(),
-                        TIMEOUT).getReturnBooleanValue());
-            }
-
-            final int touchSlop = getTouchSlop();
-
             final int endX = startX + 2 * touchSlop;
             final int endY = startY;
             final int number = 5;
+            injectedEvents.add(TestUtils.injectStylusDownEvent(editText, startX, startY));
 
-            injectedEvents.addAll(
-                    TestUtils.injectStylusMoveEvents(editText, startX, startY, endX, endY, number));
-            injectedEvents.add(TestUtils.injectStylusUpEvent(editText, endX, endY));
+            try {
+                imm.startStylusHandwriting(editText);
 
-            expectEvent(
-                    stream, event -> "onStylusMotionEvent".equals(event.getEventName()), TIMEOUT);
+                // Handwriting should start
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", marker),
+                        TIMEOUT);
+
+                verifyStylusHandwritingWindowIsShown(stream, imeSession);
+
+                if (verifyOnInkView) {
+                    // Set IME stylus Ink view
+                    assertTrue(expectCommand(
+                            stream,
+                            imeSession.callSetStylusHandwritingInkView(),
+                            TIMEOUT).getReturnBooleanValue());
+                }
+
+                injectedEvents.addAll(
+                        TestUtils.injectStylusMoveEvents(editText, startX, startY, endX, endY,
+                                number));
+            } finally {
+                injectedEvents.add(TestUtils.injectStylusUpEvent(editText, endX, endY));
+            }
+
+            expectEvent(stream, eventMatcher("onStylusMotionEvent"), TIMEOUT);
 
             // get Stylus events from Ink view, splitting any batched events.
             final ArrayList<MotionEvent> capturedBatchedEvents = expectCommand(
@@ -587,7 +597,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -604,6 +614,40 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         }
     }
 
+    /**
+     * Inject stylus tap on a focused non-empty EditText and verify that handwriting is started.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_HANDWRITING_END_OF_LINE_TAP)
+    public void testHandwriting_endOfLineTap() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final EditText editText = launchTestActivity(marker);
+            editText.setText("a");
+            editText.setSelection(1);
+
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
+
+            addVirtualStylusIdForTestSession();
+
+            // Stylus tap must be after the end of the line.
+            final int x = editText.getWidth() / 2;
+            final int y = editText.getHeight() / 2;
+            TestUtils.injectStylusDownEvent(editText, x, y);
+            TestUtils.injectStylusUpEvent(editText, x, y);
+
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartStylusHandwriting", marker), TIMEOUT);
+            verifyStylusHandwritingWindowIsShown(stream, imeSession);
+        }
+    }
+
     @FlakyTest(bugId = 222840964)
     @Test
     /**
@@ -617,7 +661,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -662,7 +706,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -693,7 +737,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -736,7 +780,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -778,7 +822,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
             editText.setAutoHandwritingEnabled(false);
 
@@ -814,7 +858,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
             editText.setAutoHandwritingEnabled(false);
 
@@ -855,8 +899,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String unfocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, EditText> editTextPair =
                     launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText unfocusedEditText = editTextPair.second;
@@ -880,31 +924,147 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusDownEvent(unfocusedEditText, startX, startY);
             TestUtils.injectStylusMoveEvents(unfocusedEditText, startX, startY,
                     endX, endY, number);
-            // Handwriting should already be initiated before ACTION_UP.
-            // unfocusedEditor is focused and triggers onStartInput.
-            expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
-            // keyboard shouldn't show up.
+            try {
+                // Handwriting should already be initiated before ACTION_UP.
+                // unfocusedEditor is focused and triggers onStartInput.
+                expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
+                // keyboard shouldn't show up.
+                notExpectEvent(
+                        stream,
+                        editorMatcher("onStartInputView", unfocusedMarker),
+                        NOT_EXPECT_TIMEOUT);
+                // Handwriting should start on the unfocused EditText.
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", unfocusedMarker),
+                        TIMEOUT);
+                verifyStylusHandwritingWindowIsShown(stream, imeSession);
+            } finally {
+                TestUtils.injectStylusUpEvent(unfocusedEditText, endX, endY);
+            }
+        }
+    }
+
+    /**
+     * Inject stylus events on top of an unfocused password EditText and verify keyboard is shown
+     * and handwriting is not started
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_HANDWRITING_UNSUPPORTED_MESSAGE)
+    public void testHandwriting_unfocusedEditText_password() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
+            final Pair<EditText, EditText> editTextPair =
+                    launchTestActivity(focusedMarker, unfocusedMarker);
+            final EditText unfocusedEditText = editTextPair.second;
+            unfocusedEditText.post(() -> unfocusedEditText.setInputType(
+                    InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD));
+
+            expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
             notExpectEvent(
                     stream,
-                    editorMatcher("onStartInputView", unfocusedMarker),
+                    editorMatcher("onStartInputView", focusedMarker),
                     NOT_EXPECT_TIMEOUT);
-            // Handwriting should start on the unfocused EditText.
-            expectEvent(
+
+            addVirtualStylusIdForTestSession();
+            final int touchSlop = getTouchSlop();
+            final int startX = unfocusedEditText.getWidth() / 2;
+            final int startY = 2 * touchSlop;
+            // (endX, endY) is out of bound to avoid that unfocusedEditText is focused due to the
+            // stylus touch.
+            final int endX = startX;
+            final int endY = unfocusedEditText.getHeight() + 2 * touchSlop;
+            final int number = 5;
+
+            TestUtils.injectStylusDownEvent(unfocusedEditText, startX, startY);
+            TestUtils.injectStylusMoveEvents(unfocusedEditText, startX, startY,
+                    endX, endY, number);
+
+            // Handwriting is not started since it is not supported for password fields, but it is
+            // focused and the soft keyboard is shown.
+            expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", unfocusedMarker), TIMEOUT);
+            notExpectEvent(
                     stream,
                     editorMatcher("onStartStylusHandwriting", unfocusedMarker),
-                    TIMEOUT);
-            verifyStylusHandwritingWindowIsShown(stream, imeSession);
+                    NOT_EXPECT_TIMEOUT);
+            verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
 
             TestUtils.injectStylusUpEvent(unfocusedEditText, endX, endY);
         }
     }
 
-
-    @Test
     /**
-     * Inject Stylus events on top of an unfocused editor which disabled the autoHandwriting and
-     * verify Handwriting is not started and InkWindow is not displayed.
+     * With handwriting setting disabled, inject stylus events on top of an unfocused EditText and
+     * verify handwriting is not started and keyboard is not shown.
      */
+    @Test
+    @RequiresFlagsEnabled(FLAG_HANDWRITING_UNSUPPORTED_MESSAGE)
+    public void testHandwriting_unfocusedEditText_prefDisabled() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            // Disable preference
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                Settings.Secure.putInt(mContext.getContentResolver(),
+                        STYLUS_HANDWRITING_ENABLED, SETTING_VALUE_OFF);
+            }, Manifest.permission.WRITE_SECURE_SETTINGS);
+            mShouldRestoreInitialHwState = true;
+
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
+            final Pair<EditText, EditText> editTextPair =
+                    launchTestActivity(focusedMarker, unfocusedMarker);
+            final EditText unfocusedEditText = editTextPair.second;
+
+            expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
+            notExpectEvent(
+                    stream,
+                    editorMatcher("onStartInputView", focusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+
+            addVirtualStylusIdForTestSession();
+            final int touchSlop = getTouchSlop();
+            final int x = unfocusedEditText.getWidth() / 2;
+            final int startY = 2 * touchSlop;
+            // (endX, endY) is out of bound to avoid that unfocusedEditText is focused due to the
+            // stylus touch.
+            final int endY = unfocusedEditText.getHeight() + 2 * touchSlop;
+            final int number = 5;
+
+            TestUtils.injectStylusDownEvent(unfocusedEditText, x, startY);
+            TestUtils.injectStylusMoveEvents(unfocusedEditText, x, startY, x, endY, number);
+
+            // Handwriting is not started,
+            notExpectEvent(stream, editorMatcher("onStartInput", unfocusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", unfocusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+            notExpectEvent(
+                    stream,
+                    editorMatcher("onStartStylusHandwriting", unfocusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+            verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+
+            TestUtils.injectStylusUpEvent(unfocusedEditText, x, endY);
+        }
+    }
+
+    /**
+     * Inject stylus events on top of an unfocused editor which disabled the autoHandwriting and
+     * verify keyboard is shown and handwriting is not started.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_HANDWRITING_UNSUPPORTED_MESSAGE)
     public void testHandwriting_unfocusedEditText_autoHandwritingDisabled() throws Exception {
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
@@ -912,8 +1072,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String unfocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, EditText> editTextPair =
                     launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText unfocusedEditText = editTextPair.second;
@@ -939,14 +1099,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     endX, endY, number);
             TestUtils.injectStylusUpEvent(unfocusedEditText, endX, endY);
 
-            // unfocusedEditor opts out autoHandwriting, so it won't trigger onStartInput.
-            notExpectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
-            // keyboard shouldn't show up.
-            notExpectEvent(
-                    stream,
-                    editorMatcher("onStartInputView", unfocusedMarker),
-                    NOT_EXPECT_TIMEOUT);
-            // Handwriting should not start
+            // Handwriting is not started since it is disabled for the EditText, but it is focused
+            // and the soft keyboard is shown.
+            expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInputView", unfocusedMarker), TIMEOUT);
             notExpectEvent(
                     stream,
                     editorMatcher("onStartStylusHandwriting", unfocusedMarker),
@@ -957,71 +1113,250 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     }
 
     /**
+     * Inject finger taps during ongoing stylus handwriting and make sure those taps are ignored
+     * until stylus ACTION_UP.
+     */
+    @Test
+    public void testHandwriting_fingerTouchIsIgnored() throws Exception {
+        int displayId = 0;
+        String initialUserRotation = null;
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        try (MockImeSession imeSession = MockImeSession.create(
+                instrumentation.getContext(),
+                instrumentation.getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String focusedMarker = getTestMarker();
+            final String unfocusedMarker = getTestMarker();
+            final Pair<EditText, EditText> editTextPair =
+                    launchTestActivity(focusedMarker, unfocusedMarker);
+            final EditText focusedEditText = editTextPair.first;
+            final EditText unfocusedEditText = editTextPair.second;
+            Context context = focusedEditText.getContext();
+            displayId = context.getDisplayId();
+
+
+            final Display display = context.getDisplay();
+            try (UinputTouchDevice touch = new UinputTouchScreen(instrumentation, display);
+                    UinputTouchDevice stylus = new UinputStylus(instrumentation, display)) {
+                initialUserRotation =
+                        getInitialRotationAndAwaitExpectedRotation(displayId, context);
+
+                expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
+                notExpectEvent(
+                        stream,
+                        editorMatcher("onStartInputView", focusedMarker),
+                        NOT_EXPECT_TIMEOUT);
+
+                addVirtualStylusIdForTestSession();
+                final int touchSlop = getTouchSlop();
+                int startX = focusedEditText.getWidth() / 2;
+                final int startY = 2 * touchSlop;
+                int endX = startX;
+                int endY = focusedEditText.getHeight() + 2 * touchSlop;
+                final int number = 5;
+
+                // set a longer idle-timeout for handwriting session.
+                assertTrue(expectCommand(
+                        stream, imeSession.callSetStylusHandwritingTimeout(TIMEOUT * 2),
+                        TIMEOUT).getReturnBooleanValue());
+                TestUtils.injectStylusDownEvent(stylus, focusedEditText, startX, startY);
+                TestUtils.injectStylusMoveEvents(stylus, focusedEditText, startX, startY,
+                        endX, endY, number);
+
+                // Handwriting should start on the focused EditText.
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", focusedMarker),
+                        TIMEOUT);
+
+                // Set IME stylus Ink view to listen for ACTION_UP MotionEvent
+                assertTrue(expectCommand(
+                        stream,
+                        imeSession.callSetStylusHandwritingInkView(),
+                        TIMEOUT).getReturnBooleanValue());
+
+                TestUtils.injectStylusUpEvent(stylus);
+                waitForStylusAction(MotionEvent.ACTION_UP, stream, imeSession, endX, endY);
+
+                // Finger tap on unfocused editor.
+                TestUtils.injectFingerEventOnViewCenter(
+                        touch, unfocusedEditText, MotionEvent.ACTION_DOWN);
+                TestUtils.injectFingerEventOnViewCenter(
+                        touch, unfocusedEditText, MotionEvent.ACTION_UP);
+
+                // Finger tap should passthrough and unfocused editor should steal focus.
+                TestUtils.waitOnMainUntil(unfocusedEditText::hasFocus,
+                        TIMEOUT, "unfocusedEditText should gain focus on finger tap");
+
+                // reset focus back to focusedEditText.
+                focusedEditText.post(focusedEditText::requestFocus);
+
+                // Inject a lot of stylus events async.
+                TestUtils.injectStylusDownEvent(stylus, focusedEditText, startX, startY);
+                TestUtils.injectStylusMoveEvents(stylus, focusedEditText, startX, startY,
+                        endX, endY, number);
+                // Set IME stylus Ink view to listen for ACTION_MOVE MotionEvents.
+                // (This can only be set on Handwriting window, which exists for the duration of
+                // session).
+                assertTrue(expectCommand(
+                        stream,
+                        imeSession.callSetStylusHandwritingInkView(),
+                        TIMEOUT).getReturnBooleanValue());
+                // After handwriting has started, inject another ACTION_MOVE so we receive that on
+                // InkView.
+                TestUtils.injectStylusMoveEvents(stylus, focusedEditText, endX, endY,
+                        endX, endY, number);
+                waitForStylusAction(MotionEvent.ACTION_MOVE, stream, imeSession, endX, endY);
+
+                // Finger tap on unfocused editor while stylus is still injecting events.
+                TestUtils.injectFingerEventOnViewCenter(
+                        touch, unfocusedEditText, MotionEvent.ACTION_DOWN);
+                TestUtils.injectFingerEventOnViewCenter(
+                        touch, unfocusedEditText, MotionEvent.ACTION_UP);
+                // Finger tap should be ignored and unfocused editor shouldn't steal focus.
+                TestUtils.waitOnMainUntil(() -> !unfocusedEditText.hasFocus(),
+                        TIMEOUT_1_S, "Finger tap on unfocusedEditText should be ignored");
+                TestUtils.injectStylusUpEvent(stylus);
+
+                notExpectEvent(
+                        stream,
+                        editorMatcher("finishStylusHandwriting", unfocusedMarker),
+                        NOT_EXPECT_TIMEOUT);
+            } finally {
+                imeSession.callFinishStylusHandwriting();
+            }
+        } finally {
+            TestUtils.setRotation(displayId, initialUserRotation);
+        }
+    }
+
+    // wait for stylus action to be delivered to IME.
+    private void waitForStylusAction(
+            int action, ImeEventStream stream, MockImeSession imeSession, int x, int y)
+            throws TimeoutException {
+        long elapsedMs = 0;
+        int sleepDurationMs = 50;
+        while (elapsedMs < TIMEOUT_1_S) {
+            final ArrayList<MotionEvent> capturedBatchedEvents =
+                    expectCommand(stream, imeSession.callGetStylusHandwritingEvents(), TIMEOUT)
+                            .getReturnParcelableArrayListValue();
+            assertNotNull(capturedBatchedEvents);
+            assertFalse("captured events shouldn't be empty", capturedBatchedEvents.isEmpty());
+
+            MotionEvent lastEvent = capturedBatchedEvents.get(capturedBatchedEvents.size() - 1);
+            for (MotionEvent event : capturedBatchedEvents) {
+                if (lastEvent.getAction() == action && event.getX() == x && event.getY() == y) {
+                    break;
+                }
+            }
+
+            elapsedMs += sleepDurationMs;
+            try {
+                Thread.sleep(sleepDurationMs);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+
+    private String getInitialRotationAndAwaitExpectedRotation(int displayId, Context context) {
+        String expectedRotation = "0";
+        String initialUserRotation = TestUtils.getRotation(displayId);
+        if (!expectedRotation.equals(initialUserRotation)) {
+            // Set device-default rotation for UinputTouchDevice to work as expected.
+            TestUtils.setLockedRotation(displayId, expectedRotation);
+            waitUntilActivityReadyForInput((Activity) context);
+        }
+        return initialUserRotation;
+    }
+
+    private void waitUntilActivityReadyForInput(Activity activity) {
+        // If we requested an orientation change, just waiting for the window to be visible is not
+        // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
+        // to process them before making sure the window is visible.
+        try {
+            TestUtils.waitUntilActivityReadyForInputInjection(
+                    activity, StylusHandwritingTest.this.getClass().getName(),
+                    "test: " + StylusHandwritingTest.this.mTestName.getMethodName()
+                            + ", virtualDisplayId=" + activity.getDisplayId()
+            );
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Inject stylus top on an editor and verify stylus source is detected with
      * {@link InputMethodService#onUpdateEditorToolType(int)} lifecycle method.
      */
     @Test
     @FlakyTest
     public void testOnViewClicked_withStylusTap() throws Exception {
+        UinputTouchDevice stylus = null;
+        int displayId = 0;
+        String initialUserRotation = null;
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
-            final String marker2 = getTestMarker();
-            final Pair<EditText, EditText> pair = launchTestActivity(marker, marker2);
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
+            final Pair<EditText, EditText> pair =
+                    launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText focusedEditText = pair.first;
             final EditText unfocusedEditText = pair.second;
+            Context context = focusedEditText.getContext();
+            displayId = context.getDisplayId();
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
-            notExpectEvent(
-                    stream,
-                    editorMatcher("onStartInputView", marker),
-                    NOT_EXPECT_TIMEOUT);
-
-            final int startX = focusedEditText.getWidth() / 2;
-            final int startY = focusedEditText.getHeight() / 2;
+            int x = focusedEditText.getWidth() / 2;
+            int y = focusedEditText.getHeight() / 2;
 
             // Tap with stylus on focused editor
-            TestUtils.injectStylusDownEvent(focusedEditText, startX, startY);
-            MotionEvent event = TestUtils.injectStylusUpEvent(focusedEditText, startX, startY);
-            int toolType = event.getToolType(event.getActionIndex());
+            stylus = new UinputStylus(InstrumentationRegistry.getInstrumentation(),
+                            focusedEditText.getDisplay());
+            initialUserRotation = getInitialRotationAndAwaitExpectedRotation(displayId, context);
+            expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
+            notExpectEvent(
+                    stream,
+                    editorMatcher("onStartInputView", focusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+            addVirtualStylusIdForTestSession();
 
+            TestUtils.injectStylusDownEvent(stylus, focusedEditText, x,  y);
+            TestUtils.injectStylusUpEvent(stylus);
+
+            int toolType = MotionEvent.TOOL_TYPE_STYLUS;
             expectEvent(
                     stream,
                     onUpdateEditorToolTypeMatcher(toolType),
                     TIMEOUT);
 
             // Tap with stylus on unfocused editor
-            TestUtils.injectStylusDownEvent(unfocusedEditText, startX, startY);
-            event = TestUtils.injectStylusUpEvent(unfocusedEditText, startX, startY);
+            x = unfocusedEditText.getWidth() / 2;
+            y = unfocusedEditText.getHeight() / 2;
+            TestUtils.injectStylusDownEvent(stylus, unfocusedEditText, x,  y);
+            TestUtils.injectStylusUpEvent(stylus);
             if (Flags.useHandwritingListenerForTooltype()) {
-                expectEvent(stream, startInputInitialEditorToolMatcher(toolType, marker2),
+                expectEvent(stream, startInputInitialEditorToolMatcher(toolType, unfocusedMarker),
                         TIMEOUT);
             } else {
-                expectEvent(stream, onStartInputMatcher(toolType, marker2), TIMEOUT);
+                expectEvent(stream, onStartInputMatcher(toolType, unfocusedMarker), TIMEOUT);
             }
             expectEvent(
                     stream,
-                    onUpdateEditorToolTypeMatcher(event.getToolType(event.getActionIndex())),
+                    onUpdateEditorToolTypeMatcher(toolType),
                     TIMEOUT);
-
-            if (Flags.useHandwritingListenerForTooltype()) {
-                // try handwriting on unfocused editor and onUpdateEditorToolType should be called.
-                // Note: focusedEditText is unfocused at this point.
-                final int touchSlop = getTouchSlop();
-                int endX = startX + 2 * touchSlop;
-                int endY = startY + 2 * touchSlop;
-                final int number = 5;
-                TestUtils.injectStylusDownEvent(focusedEditText, startX, startY);
-                TestUtils.injectStylusMoveEvents(focusedEditText, startX, startY,
-                        endX, endY, number);
-                expectEvent(
-                        stream,
-                        onUpdateEditorToolTypeMatcher(event.getToolType(event.getActionIndex())),
-                        TIMEOUT);
+        } finally {
+            if (stylus != null) {
+                stylus.close();
+            }
+            if (initialUserRotation != null) {
+                TestUtils.setRotation(displayId, initialUserRotation);
             }
         }
     }
@@ -1033,47 +1368,60 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     @Test
     @FlakyTest
     public void testOnViewClicked_withFingerTap() throws Exception {
+        UinputTouchDevice touch = null;
+        int displayId = 0;
+        String initialUserRotation = null;
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
-            final String marker2 = getTestMarker();
-            final Pair<EditText, EditText> pair = launchTestActivity(marker, marker2);
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
+            final Pair<EditText, EditText> pair =
+                    launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText focusedEditText = pair.first;
             final EditText unfocusedEditText = pair.second;
+            Context context = focusedEditText.getContext();
+            displayId = context.getDisplayId();
 
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            touch = new UinputTouchScreen(
+                    InstrumentationRegistry.getInstrumentation(), unfocusedEditText.getDisplay());
+            initialUserRotation = getInitialRotationAndAwaitExpectedRotation(displayId, context);
+            int toolTypeFinger = MotionEvent.TOOL_TYPE_FINGER;
+            expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
             notExpectEvent(
                     stream,
-                    editorMatcher("onStartInputView", marker),
+                    editorMatcher("onStartInputView", focusedMarker),
                     NOT_EXPECT_TIMEOUT);
+            TestUtils.injectFingerEventOnViewCenter(
+                    touch, focusedEditText, MotionEvent.ACTION_DOWN);
+            TestUtils.injectFingerEventOnViewCenter(
+                    touch, focusedEditText, MotionEvent.ACTION_UP);
 
-            TestUtils.injectFingerEventOnViewCenter(focusedEditText, MotionEvent.ACTION_DOWN);
-            MotionEvent upEvent =
-                    TestUtils.injectFingerEventOnViewCenter(focusedEditText, MotionEvent.ACTION_UP);
-            int toolTypeFinger = upEvent.getToolType(upEvent.getActionIndex());
-            assertEquals(
-                    "tool type finger must match", MotionEvent.TOOL_TYPE_FINGER, toolTypeFinger);
-            expectEvent(
-                    stream,
-                    onUpdateEditorToolTypeMatcher(toolTypeFinger),
-                    TIMEOUT);
-
-            // tap on unfocused editor
-            TestUtils.injectFingerEventOnViewCenter(unfocusedEditText, MotionEvent.ACTION_DOWN);
-            upEvent = TestUtils.injectFingerEventOnViewCenter(
-                    unfocusedEditText, MotionEvent.ACTION_UP);
-            toolTypeFinger = upEvent.getToolType(upEvent.getActionIndex());
-            assertEquals(
-                    "tool type finger must match", MotionEvent.TOOL_TYPE_FINGER, toolTypeFinger);
-            expectEvent(stream, onStartInputMatcher(toolTypeFinger, marker2), TIMEOUT);
             expectEvent(
                     stream,
                     onUpdateEditorToolTypeMatcher(MotionEvent.TOOL_TYPE_FINGER),
                     TIMEOUT);
+
+            // tap on unfocused editor
+            TestUtils.injectFingerEventOnViewCenter(
+                    touch, unfocusedEditText, MotionEvent.ACTION_DOWN);
+            TestUtils.injectFingerEventOnViewCenter(
+                    touch, unfocusedEditText, MotionEvent.ACTION_UP);
+            expectEvent(stream, onStartInputMatcher(toolTypeFinger, unfocusedMarker), TIMEOUT);
+            expectEvent(
+                    stream,
+                    onUpdateEditorToolTypeMatcher(MotionEvent.TOOL_TYPE_FINGER),
+                    TIMEOUT);
+        } finally {
+            if (touch != null) {
+                touch.close();
+            }
+            if (initialUserRotation != null) {
+                TestUtils.setRotation(displayId, initialUserRotation);
+            }
         }
     }
 
@@ -1092,10 +1440,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             addVirtualStylusIdForTestSession();
 
-            final String focusedMarker = getTestMarker();
-            final String unFocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<EditText, EditText> pair =
-                    launchTestActivity(focusedMarker, unFocusedMarker);
+                    launchTestActivity(focusedMarker, unfocusedMarker);
             final EditText focusedEditText = pair.first;
             final EditText unfocusedEditText = pair.second;
 
@@ -1127,12 +1475,15 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusDownEvent(focusedEditText, startX, startY);
             TestUtils.injectStylusMoveEvents(focusedEditText, startX, startY,
                     endX, endY, number);
-            // Handwriting should start.
-            expectEvent(
-                    stream,
-                    editorMatcher("onStartStylusHandwriting", focusedMarker),
-                    TIMEOUT);
-            TestUtils.injectStylusUpEvent(focusedEditText, endX, endY);
+            try {
+                // Handwriting should start.
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", focusedMarker),
+                        TIMEOUT);
+            } finally {
+                TestUtils.injectStylusUpEvent(focusedEditText, endX, endY);
+            }
             imeSession.callFinishStylusHandwriting();
             expectEvent(
                     stream,
@@ -1150,13 +1501,15 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusDownEvent(unfocusedEditText, startX, startY);
             TestUtils.injectStylusMoveEvents(unfocusedEditText, startX, startY,
                     endX, endY, number);
-            expectEvent(stream, editorMatcher("onStartInput", unFocusedMarker), TIMEOUT);
+            try {
+                expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
 
-            // toolType should be updated on next stylus handwriting start
-            expectEvent(stream, onStartStylusHandwritingMatcher(
-                    MotionEvent.TOOL_TYPE_STYLUS, unFocusedMarker), TIMEOUT);
-
-            TestUtils.injectStylusUpEvent(unfocusedEditText, endX, endY);
+                // toolType should be updated on next stylus handwriting start
+                expectEvent(stream, onStartStylusHandwritingMatcher(
+                        MotionEvent.TOOL_TYPE_STYLUS, unfocusedMarker), TIMEOUT);
+            } finally {
+                TestUtils.injectStylusUpEvent(unfocusedEditText, endX, endY);
+            }
         }
     }
 
@@ -1174,9 +1527,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
-            final String marker2 = getTestMarker();
-            final Pair<EditText, EditText> pair = launchTestActivityNoEditorFocus(marker, marker2);
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
+            final Pair<EditText, EditText> pair =
+                    launchTestActivityNoEditorFocus(focusedMarker, unfocusedMarker);
             final EditText firstEditText = pair.first;
 
             // Send any KeyEvent when editor isn't focused.
@@ -1191,7 +1545,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         }
     }
 
-    private static Predicate<ImeEvent> onStartInputMatcher(int toolType, String marker) {
+    private static DescribedPredicate<ImeEvent> onStartInputMatcher(int toolType, String marker) {
         Predicate<ImeEvent> matcher = event -> {
             if (!TextUtils.equals("onStartInput", event.getEventName())) {
                 return false;
@@ -1205,7 +1559,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     }
 
 
-    private static Predicate<ImeEvent> startInputInitialEditorToolMatcher(
+    private static DescribedPredicate<ImeEvent> startInputInitialEditorToolMatcher(
             int expectedToolType, @NonNull String marker) {
         return withDescription("onStartInput()" + "(marker=" + marker + ")", event -> {
             if (!TextUtils.equals("onStartInput", event.getEventName())) {
@@ -1216,7 +1570,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         });
     }
 
-    private static Predicate<ImeEvent> onStartStylusHandwritingMatcher(
+    private static DescribedPredicate<ImeEvent> onStartStylusHandwritingMatcher(
             int toolType, String marker) {
         Predicate<ImeEvent> matcher = event -> {
             if (!TextUtils.equals("onStartStylusHandwriting", event.getEventName())) {
@@ -1231,7 +1585,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         + ", marker=" + marker + ")", matcher);
     }
 
-    private static Predicate<ImeEvent> onUpdateEditorToolTypeMatcher(int expectedToolType) {
+    private static DescribedPredicate<ImeEvent> onUpdateEditorToolTypeMatcher(int expectedToolType) {
         Predicate<ImeEvent> matcher = event -> {
             if (!TextUtils.equals("onUpdateEditorToolType", event.getEventName())) {
                 return false;
@@ -1255,8 +1609,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String unfocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<CustomEditorView, CustomEditorView> customEditorPair =
                     launchTestActivityWithCustomEditors(focusedMarker, unfocusedMarker);
             final CustomEditorView focusedCustomEditor = customEditorPair.first;
@@ -1330,6 +1684,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             "android.view.inputmethod.InputMethodManager#acceptStylusHandwritingDelegation",
             "android.view.inputmethod.InputMethodService#onStartConnectionlessStylusHandwriting",
             "android.view.inputmethod.InputMethodService#finishConnectionlessStylusHandwriting"})
+    @FlakyTest(bugId = 329267066)
     public void testHandwriting_delegate_connectionless() throws Exception {
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
@@ -1352,33 +1707,100 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusDownEvent(delegatorView, startX, startY);
             TestUtils.injectStylusMoveEvents(delegatorView, startX, startY, endX, endY, 5);
 
-            expectEvent(
-                    stream,
-                    event -> "onPrepareStylusHandwriting".equals(event.getEventName()),
-                    TIMEOUT);
-            expectEvent(
-                    stream,
-                    event -> "onStartConnectionlessStylusHandwriting".equals(event.getEventName()),
-                    TIMEOUT);
-            verifyStylusHandwritingWindowIsShown(stream, imeSession);
-            // The transition to show the real edit text shouldn't occur yet.
-            notExpectEvent(
-                    stream, editorMatcher("onStartInput", delegateMarker), NOT_EXPECT_TIMEOUT);
-
-            TestUtils.injectStylusUpEvent(delegatorView, startX, startY);
+            try {
+                expectEvent(
+                        stream,
+                        eventMatcher("onPrepareStylusHandwriting"),
+                        TIMEOUT);
+                expectEvent(
+                        stream,
+                        eventMatcher("onStartConnectionlessStylusHandwriting"),
+                        TIMEOUT);
+                verifyStylusHandwritingWindowIsShown(stream, imeSession);
+                // The transition to show the real edit text shouldn't occur yet.
+                notExpectEvent(
+                        stream, editorMatcher("onStartInput", delegateMarker), NOT_EXPECT_TIMEOUT);
+            } finally {
+                TestUtils.injectStylusUpEvent(delegatorView, endX, endY);
+            }
             imeSession.callFinishConnectionlessStylusHandwriting("abc");
 
             // Finishing the handwriting session triggers the transition to show the real edit text.
             expectEvent(
                     stream,
-                    event -> "onFinishStylusHandwriting".equals(event.getEventName()),
+                    eventMatcher("onFinishStylusHandwriting"),
                     TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInput", delegateMarker), TIMEOUT);
             // When the real edit text start its input connection, the recognised text from the
             // connectionless handwriting session is committed.
             EditText delegate =
                     ((View) delegatorView.getParent()).findViewById(R.id.handwriting_delegate);
-            assertThat(delegate.getText().toString()).isEqualTo("abc");
+            TestUtils.waitOnMainUntil(() -> delegate.getText().toString().equals("abc"),
+                    TIMEOUT_IN_SECONDS, "Delegate should receive text");
+        }
+    }
+
+    /**
+     * When the IME supports connectionless handwriting sessions, start a connectionless handwriting
+     * session for delegation. When the session is finished and a delegate editor view is focused,
+     * verify that the recognised text is committed to the delegate.
+     */
+    @Test
+    @ApiTest(apis = {
+            "android.view.inputmethod.InputMethodManager"
+                    + "#startConnectionlessStylusHandwritingForDelegation",
+            "android.view.inputmethod.InputMethodManager#acceptStylusHandwritingDelegation",
+            "android.view.inputmethod.InputMethodService#onStartConnectionlessStylusHandwriting",
+            "android.view.inputmethod.InputMethodService#finishConnectionlessStylusHandwriting"})
+    @FlakyTest(bugId = 328765068)
+    public void testHandwriting_delegate_connectionless_direct() throws Exception {
+        final InputMethodManager imm = mContext.getSystemService(InputMethodManager.class);
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder().setConnectionlessHandwritingEnabled(true))) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String delegateMarker = getTestMarker();
+            final View view =
+                    launchTestActivityWithDelegate(
+                            delegateMarker, null /* delegateLatch */, 0 /* delegateDelayMs */);
+            expectBindInput(stream, Process.myPid(), TIMEOUT);
+            addVirtualStylusIdForTestSession();
+
+            TestUtils.injectStylusDownEvent(view, 0, 0);
+            CursorAnchorInfo cursorAnchorInfo = new CursorAnchorInfo.Builder().build();
+            TestCallback callback = new TestCallback();
+            imm.startConnectionlessStylusHandwritingForDelegation(
+                    view, cursorAnchorInfo, view::post, callback);
+
+            expectEvent(
+                    stream,
+                    eventMatcher("onPrepareStylusHandwriting"),
+                    TIMEOUT);
+            expectEvent(
+                    stream,
+                    eventMatcher("onStartConnectionlessStylusHandwriting"),
+                    TIMEOUT);
+            verifyStylusHandwritingWindowIsShown(stream, imeSession);
+
+            TestUtils.injectStylusUpEvent(view, 0, 0);
+            imeSession.callFinishConnectionlessStylusHandwriting("abc");
+
+            expectEvent(
+                    stream,
+                    eventMatcher("onFinishStylusHandwriting"),
+                    TIMEOUT);
+
+            view.post(() -> view.getHandwritingDelegatorCallback().run());
+
+            expectEvent(stream, editorMatcher("onStartInput", delegateMarker), TIMEOUT);
+            // When the real edit text start its input connection, the recognised text from the
+            // connectionless handwriting session is committed.
+            EditText delegate =
+                    ((View) view.getParent()).findViewById(R.id.handwriting_delegate);
+            TestUtils.waitOnMainUntil(() -> delegate.getText().toString().equals("abc"),
+                    TIMEOUT_IN_SECONDS, "Delegate should receive text");
         }
     }
 
@@ -1417,17 +1839,20 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             final int number = 5;
             TestUtils.injectStylusDownEvent(delegatorView, startX, startY);
             TestUtils.injectStylusMoveEvents(delegatorView, startX, startY, endX, endY, number);
-            // Wait until delegate makes request.
-            latch.await(DELEGATION_AFTER_IDLE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            // Keyboard shouldn't show up.
-            notExpectEvent(
-                    stream, editorMatcher("onStartInputView", editTextMarker), NOT_EXPECT_TIMEOUT);
-            // Handwriting should start since delegation was delayed (but still before timeout).
-            expectEvent(
-                    stream, editorMatcher("onStartStylusHandwriting", editTextMarker), TIMEOUT);
-            verifyStylusHandwritingWindowIsShown(stream, imeSession);
-
-            TestUtils.injectStylusUpEvent(delegatorView, endX, endY);
+            try {
+                // Wait until delegate makes request.
+                latch.await(DELEGATION_AFTER_IDLE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                // Keyboard shouldn't show up.
+                notExpectEvent(
+                        stream, editorMatcher("onStartInputView", editTextMarker),
+                        NOT_EXPECT_TIMEOUT);
+                // Handwriting should start since delegation was delayed (but still before timeout).
+                expectEvent(
+                        stream, editorMatcher("onStartStylusHandwriting", editTextMarker), TIMEOUT);
+                verifyStylusHandwritingWindowIsShown(stream, imeSession);
+            } finally {
+                TestUtils.injectStylusUpEvent(delegatorView, endX, endY);
+            }
         }
     }
 
@@ -1466,30 +1891,35 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             final int number = 5;
             TestUtils.injectStylusDownEvent(delegatorView, startX, startY);
             TestUtils.injectStylusMoveEvents(delegatorView, startX, startY, endX, endY, number);
-            // Wait until delegate makes request.
-            latch.await(DELEGATION_AFTER_IDLE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            // Keyboard shouldn't show up.
-            notExpectEvent(
-                    stream, editorMatcher("onStartInputView", editTextMarker), NOT_EXPECT_TIMEOUT);
-            // Handwriting should *not* start since delegation was idle timed-out.
-            notExpectEvent(
-                    stream, editorMatcher("onStartStylusHandwriting", editTextMarker), TIMEOUT);
-            verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
-
-            TestUtils.injectStylusUpEvent(delegatorView, endX, endY);
+            try {
+                // Wait until delegate makes request.
+                latch.await(DELEGATION_AFTER_IDLE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                // Keyboard shouldn't show up.
+                notExpectEvent(
+                        stream, editorMatcher("onStartInputView", editTextMarker),
+                        NOT_EXPECT_TIMEOUT);
+                // Handwriting should *not* start since delegation was idle timed-out.
+                notExpectEvent(
+                        stream, editorMatcher("onStartStylusHandwriting", editTextMarker), TIMEOUT);
+                verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+            } finally {
+                TestUtils.injectStylusUpEvent(delegatorView, endX, endY);
+            }
         }
     }
 
     /**
      * Tap on a view with stylus to launch a new activity with Editor. The editor's
-     * initialToolType should match stylus.
+     * editor ToolType should match stylus.
      */
     @Test
-    public void testHandwriting_initialToolTypeOnNewWindow() throws Exception {
+    public void testHandwriting_editorToolTypeOnNewWindow() throws Exception {
         assumeTrue(Flags.useHandwritingListenerForTooltype());
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        UinputTouchDevice stylus = null;
         try (MockImeSession imeSession = MockImeSession.create(
-                InstrumentationRegistry.getInstrumentation().getContext(),
-                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                instrumentation.getContext(),
+                instrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
@@ -1498,6 +1928,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             // Use a clickable view that launches activity and focuses an editor.
             final AtomicReference<View> clickableViewRef = new AtomicReference<>();
+            final AtomicReference<View> editorViewRef = new AtomicReference<>();
             TestActivity.startSync(activity -> {
                 final LinearLayout layout = new LinearLayout(activity);
                 final View clickableView = new View(activity);
@@ -1505,10 +1936,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 clickableView.setBackgroundColor(Color.GREEN);
                 clickableView.setOnClickListener(v -> {
                     final EditText editText = new EditText(activity);
-                    editText.setIsHandwritingDelegate(true);
                     editText.setPrivateImeOptions(editTextMarker);
                     editText.setHint("editText");
                     layout.addView(editText);
+                    editorViewRef.set(editText);
                     editText.requestFocus();
                     latch.countDown();
                 });
@@ -1520,19 +1951,31 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 layout.addView(clickableView, layoutParams);
                 return layout;
             });
+            addVirtualStylusIdForTestSession();
             View clickableView = clickableViewRef.get();
             expectBindInput(stream, Process.myPid(), TIMEOUT);
             // click on view with stylus to launch new activity
-            TestUtils.injectStylusDownEvent(clickableView, 0, 0);
-            TestUtils.injectStylusUpEvent(clickableView, 0, 0);
+            stylus = new UinputStylus(instrumentation, clickableView.getDisplay());
+            final int x = clickableView.getWidth() / 2;
+            final int y = clickableView.getHeight() / 2;
+            TestUtils.injectStylusDownEvent(stylus, clickableView, x,  y);
+            TestUtils.injectStylusUpEvent(stylus);
             // Wait until editor on next activity has focus.
             latch.await(TIMEOUT_1_S, TimeUnit.MILLISECONDS);
 
-            // verify editor on new activity has initialToolType as stylus.
-            expectEvent(stream,
-                    startInputInitialEditorToolMatcher(
-                            MotionEvent.TOOL_TYPE_STYLUS, editTextMarker),
+            // call showSoftInput and make sure onUpdateToolType is stylus.
+            final InputMethodManager imm =
+                    mContext.getSystemService(InputMethodManager.class);
+            imm.showSoftInput(editorViewRef.get(), 0);
+            // verify editor on new activity has editorToolType as stylus.
+            expectEvent(
+                    stream,
+                    onUpdateEditorToolTypeMatcher(MotionEvent.TOOL_TYPE_STYLUS),
                     TIMEOUT);
+        } finally {
+            if (stylus != null) {
+                stylus.close();
+            }
         }
     }
 
@@ -1600,36 +2043,40 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusDownEvent(delegateView, startX, startY);
             TestUtils.injectStylusMoveEvents(delegateView, startX, startY, endX, endY, number);
 
-            // Keyboard shouldn't show up.
-            notExpectEvent(
-                    stream, editorMatcher("onStartInputView", editTextMarker),
-                    NOT_EXPECT_TIMEOUT);
+            try {
+                // Keyboard shouldn't show up.
+                notExpectEvent(
+                        stream, editorMatcher("onStartInputView", editTextMarker),
+                        NOT_EXPECT_TIMEOUT);
 
-            if (setAllowedDelegatorPackage) {
-                if (initiationWithoutInputConnection()) {
-                    // There will be no active InputConnection when handwriting starts
-                    expectEvent(
-                            stream,
-                            event -> "onStartStylusHandwriting".equals(event.getEventName()),
-                            TIMEOUT);
+                if (setAllowedDelegatorPackage) {
+                    if (initiationWithoutInputConnection()) {
+                        // There will be no active InputConnection when handwriting starts
+                        expectEvent(
+                                stream,
+                                eventMatcher("onStartStylusHandwriting"),
+                                TIMEOUT);
+                    } else {
+                        expectEvent(
+                                stream, editorMatcher("onStartStylusHandwriting", editTextMarker),
+                                TIMEOUT);
+                    }
+                    verifyStylusHandwritingWindowIsShown(stream, imeSession);
                 } else {
-                    expectEvent(
-                            stream, editorMatcher("onStartStylusHandwriting", editTextMarker),
-                            TIMEOUT);
+                    if (initiationWithoutInputConnection()) {
+                        // There will be no active InputConnection if handwriting starts
+                        notExpectEvent(
+                                stream,
+                                eventMatcher("onStartStylusHandwriting"),
+                                NOT_EXPECT_TIMEOUT);
+                    } else {
+                        notExpectEvent(
+                                stream, editorMatcher("onStartStylusHandwriting", editTextMarker),
+                                NOT_EXPECT_TIMEOUT);
+                    }
                 }
-                verifyStylusHandwritingWindowIsShown(stream, imeSession);
-            } else {
-                if (initiationWithoutInputConnection()) {
-                    // There will be no active InputConnection if handwriting starts
-                    notExpectEvent(
-                            stream,
-                            event -> "onStartStylusHandwriting".equals(event.getEventName()),
-                            NOT_EXPECT_TIMEOUT);
-                } else {
-                    notExpectEvent(
-                            stream, editorMatcher("onStartStylusHandwriting", editTextMarker),
-                            NOT_EXPECT_TIMEOUT);
-                }
+            } finally {
+                TestUtils.injectStylusUpEvent(delegateView, endX, endY);
             }
         }
     }
@@ -1720,34 +2167,39 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusDownEvent(mockView, startX, startY);
             TestUtils.injectStylusMoveEvents(mockView, startX, startY, endX, endY, 5);
 
-            // Keyboard shouldn't show up.
-            notExpectEvent(
-                    stream, editorMatcher("onStartInputView", editTextMarker), NOT_EXPECT_TIMEOUT);
-            if (setHomeDelegatorAllowed) {
-                if (initiationWithoutInputConnection()) {
-                    // There will be no active InputConnection when handwriting starts.
-                    expectEvent(
-                            stream,
-                            event -> "onStartStylusHandwriting".equals(event.getEventName()),
-                            TIMEOUT);
+            try {
+                // Keyboard shouldn't show up.
+                notExpectEvent(
+                        stream, editorMatcher("onStartInputView", editTextMarker),
+                        NOT_EXPECT_TIMEOUT);
+                if (setHomeDelegatorAllowed) {
+                    if (initiationWithoutInputConnection()) {
+                        // There will be no active InputConnection when handwriting starts.
+                        expectEvent(
+                                stream,
+                                eventMatcher("onStartStylusHandwriting"),
+                                TIMEOUT);
+                    } else {
+                        expectEvent(
+                                stream, editorMatcher("onStartStylusHandwriting", editTextMarker),
+                                TIMEOUT);
+                    }
+                    verifyStylusHandwritingWindowIsShown(stream, imeSession);
                 } else {
-                    expectEvent(
-                            stream, editorMatcher("onStartStylusHandwriting", editTextMarker),
-                            TIMEOUT);
+                    if (initiationWithoutInputConnection()) {
+                        // There will be no active InputConnection if handwriting starts.
+                        notExpectEvent(
+                                stream,
+                                eventMatcher("onStartStylusHandwriting"),
+                                NOT_EXPECT_TIMEOUT);
+                    } else {
+                        notExpectEvent(
+                                stream, editorMatcher("onStartStylusHandwriting", editTextMarker),
+                                NOT_EXPECT_TIMEOUT);
+                    }
                 }
-                verifyStylusHandwritingWindowIsShown(stream, imeSession);
-            } else {
-                if (initiationWithoutInputConnection()) {
-                    // There will be no active InputConnection if handwriting starts.
-                    notExpectEvent(
-                            stream,
-                            event -> "onStartStylusHandwriting".equals(event.getEventName()),
-                            NOT_EXPECT_TIMEOUT);
-                } else {
-                    notExpectEvent(
-                            stream, editorMatcher("onStartStylusHandwriting", editTextMarker),
-                            NOT_EXPECT_TIMEOUT);
-                }
+            } finally {
+                TestUtils.injectStylusUpEvent(mockView, endX, endY);
             }
         }
     }
@@ -1773,28 +2225,33 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             addVirtualStylusIdForTestSession();
 
             TestUtils.injectStylusDownEvent(view, 0, 0);
-            CursorAnchorInfo cursorAnchorInfo = new CursorAnchorInfo.Builder().build();
-            TestCallback callback = new TestCallback();
-            imm.startConnectionlessStylusHandwriting(view, cursorAnchorInfo, view::post, callback);
+            try {
+                CursorAnchorInfo cursorAnchorInfo = new CursorAnchorInfo.Builder().build();
+                TestCallback callback = new TestCallback();
+                imm.startConnectionlessStylusHandwriting(view, cursorAnchorInfo, view::post,
+                        callback);
 
-            expectEvent(
-                    stream,
-                    event -> "onPrepareStylusHandwriting".equals(event.getEventName()),
-                    TIMEOUT);
-            expectEvent(
-                    stream,
-                    event -> "onStartConnectionlessStylusHandwriting".equals(event.getEventName()),
-                    TIMEOUT);
-            verifyStylusHandwritingWindowIsShown(stream, imeSession);
+                expectEvent(
+                        stream,
+                        eventMatcher("onPrepareStylusHandwriting"),
+                        TIMEOUT);
+                expectEvent(
+                        stream,
+                        eventMatcher("onStartConnectionlessStylusHandwriting"),
+                        TIMEOUT);
+                verifyStylusHandwritingWindowIsShown(stream, imeSession);
 
-            imeSession.callFinishConnectionlessStylusHandwriting("abc");
+                imeSession.callFinishConnectionlessStylusHandwriting("abc");
 
-            expectEvent(
-                    stream,
-                    event -> "onFinishStylusHandwriting".equals(event.getEventName()),
-                    TIMEOUT);
-            assertThat(callback.mResultText).isEqualTo("abc");
-            assertThat(callback.mErrorCode).isEqualTo(-1);
+                expectEvent(
+                        stream,
+                        eventMatcher("onFinishStylusHandwriting"),
+                        TIMEOUT);
+                assertThat(callback.mResultText).isEqualTo("abc");
+                assertThat(callback.mErrorCode).isEqualTo(-1);
+            } finally {
+                TestUtils.injectStylusUpEvent(view, 0, 0);
+            }
         }
     }
 
@@ -1819,30 +2276,35 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             addVirtualStylusIdForTestSession();
 
             TestUtils.injectStylusDownEvent(view, 0, 0);
-            CursorAnchorInfo cursorAnchorInfo = new CursorAnchorInfo.Builder().build();
-            TestCallback callback = new TestCallback();
-            imm.startConnectionlessStylusHandwriting(view, cursorAnchorInfo, view::post, callback);
+            try {
+                CursorAnchorInfo cursorAnchorInfo = new CursorAnchorInfo.Builder().build();
+                TestCallback callback = new TestCallback();
+                imm.startConnectionlessStylusHandwriting(view, cursorAnchorInfo, view::post,
+                        callback);
 
-            expectEvent(
-                    stream,
-                    event -> "onPrepareStylusHandwriting".equals(event.getEventName()),
-                    TIMEOUT);
-            expectEvent(
-                    stream,
-                    event -> "onStartConnectionlessStylusHandwriting".equals(event.getEventName()),
-                    TIMEOUT);
-            verifyStylusHandwritingWindowIsShown(stream, imeSession);
+                expectEvent(
+                        stream,
+                        eventMatcher("onPrepareStylusHandwriting"),
+                        TIMEOUT);
+                expectEvent(
+                        stream,
+                        eventMatcher("onStartConnectionlessStylusHandwriting"),
+                        TIMEOUT);
+                verifyStylusHandwritingWindowIsShown(stream, imeSession);
 
-            // Finish the session with no text recognized.
-            imeSession.callFinishConnectionlessStylusHandwriting("");
+                // Finish the session with no text recognized.
+                imeSession.callFinishConnectionlessStylusHandwriting("");
 
-            expectEvent(
-                    stream,
-                    event -> "onFinishStylusHandwriting".equals(event.getEventName()),
-                    TIMEOUT);
-            assertThat(callback.mResultText).isNull();
-            assertThat(callback.mErrorCode)
-                    .isEqualTo(CONNECTIONLESS_HANDWRITING_ERROR_NO_TEXT_RECOGNIZED);
+                expectEvent(
+                        stream,
+                        eventMatcher("onFinishStylusHandwriting"),
+                        TIMEOUT);
+                assertThat(callback.mResultText).isNull();
+                assertThat(callback.mErrorCode)
+                        .isEqualTo(CONNECTIONLESS_HANDWRITING_ERROR_NO_TEXT_RECOGNIZED);
+            } finally {
+                TestUtils.injectStylusUpEvent(view, 0, 0);
+            }
         }
     }
 
@@ -1867,24 +2329,30 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             addVirtualStylusIdForTestSession();
 
             TestUtils.injectStylusDownEvent(view, 0, 0);
-            CursorAnchorInfo cursorAnchorInfo = new CursorAnchorInfo.Builder().build();
-            TestCallback callback = new TestCallback();
-            imm.startConnectionlessStylusHandwriting(view, cursorAnchorInfo, view::post, callback);
+            try {
+                CursorAnchorInfo cursorAnchorInfo = new CursorAnchorInfo.Builder().build();
+                TestCallback callback = new TestCallback();
+                imm.startConnectionlessStylusHandwriting(view, cursorAnchorInfo, view::post,
+                        callback);
 
-            // onPrepareStylusHandwriting and onStartConnectionlessStylusHandwriting are called, but
-            // onStartConnectionlessStylusHandwriting returns false so handwriting does not start.
-            expectEvent(
-                    stream,
-                    event -> "onPrepareStylusHandwriting".equals(event.getEventName()),
-                    TIMEOUT);
-            expectEvent(
-                    stream,
-                    event -> "onStartConnectionlessStylusHandwriting".equals(event.getEventName()),
-                    TIMEOUT);
-            verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
-            assertThat(callback.mResultText).isNull();
-            assertThat(callback.mErrorCode)
-                    .isEqualTo(CONNECTIONLESS_HANDWRITING_ERROR_UNSUPPORTED);
+                // onPrepareStylusHandwriting and onStartConnectionlessStylusHandwriting are called,
+                // but onStartConnectionlessStylusHandwriting returns false so handwriting
+                // does not start.
+                expectEvent(
+                        stream,
+                        eventMatcher("onPrepareStylusHandwriting"),
+                        TIMEOUT);
+                expectEvent(
+                        stream,
+                        eventMatcher("onStartConnectionlessStylusHandwriting"),
+                        TIMEOUT);
+                verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+                assertThat(callback.mResultText).isNull();
+                assertThat(callback.mErrorCode)
+                        .isEqualTo(CONNECTIONLESS_HANDWRITING_ERROR_UNSUPPORTED);
+            } finally {
+                TestUtils.injectStylusUpEvent(view, 0, 0);
+            }
         }
     }
 
@@ -1899,7 +2367,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -1949,7 +2417,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -1970,19 +2438,23 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusMoveEvents(editText, startX, startY,
                     endX, endY, number);
 
-            expectEvent(
-                    stream,
-                    editorMatcher("onStartStylusHandwriting", marker),
-                    TIMEOUT);
-            // Unbind IME and verify finish is called
-            ((Activity) editText.getContext()).finish();
+            try {
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", marker),
+                        TIMEOUT);
+                // Unbind IME and verify finish is called
+                ((Activity) editText.getContext()).finish();
 
-            // Handwriting should finish soon.
-            expectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", marker),
-                    TIMEOUT_1_S);
-            verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+                // Handwriting should finish soon.
+                expectEvent(
+                        stream,
+                        editorMatcher("onFinishStylusHandwriting", marker),
+                        TIMEOUT_1_S);
+                verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+            } finally {
+                TestUtils.injectStylusUpEvent(editText, endX, endY);
+            }
         }
     }
 
@@ -1998,7 +2470,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2021,18 +2493,21 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusDownEvent(editText, startX, startY);
             TestUtils.injectStylusMoveEvents(editText, startX, startY,
                     endX, endY, number);
-            // Handwriting should already be initiated before ACTION_UP.
-            // keyboard shouldn't show up.
-            notExpectEvent(
-                    stream,
-                    editorMatcher("onStartInputView", marker),
-                    NOT_EXPECT_TIMEOUT);
-            // Handwriting should start
-            expectEvent(
-                    stream,
-                    editorMatcher("onStartStylusHandwriting", marker),
-                    TIMEOUT);
-            TestUtils.injectStylusUpEvent(editText, startX, startY);
+            try {
+                // Handwriting should already be initiated before ACTION_UP.
+                // keyboard shouldn't show up.
+                notExpectEvent(
+                        stream,
+                        editorMatcher("onStartInputView", marker),
+                        NOT_EXPECT_TIMEOUT);
+                // Handwriting should start
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", marker),
+                        TIMEOUT);
+            } finally {
+                TestUtils.injectStylusUpEvent(editText, endX, endY);
+            }
 
             // Handwriting should finish soon.
             expectEvent(
@@ -2065,7 +2540,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     hasSupportedStylus());
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2088,13 +2563,16 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusDownEvent(editText, startX, startY);
             TestUtils.injectStylusMoveEvents(editText, startX, startY,
                     endX, endY, number);
-            // Handwriting should already be initiated before ACTION_UP.
-            // Handwriting should start
-            expectEvent(
-                    stream,
-                    editorMatcher("onStartStylusHandwriting", marker),
-                    TIMEOUT);
-            TestUtils.injectStylusUpEvent(editText, startX, startY);
+            try {
+                // Handwriting should already be initiated before ACTION_UP.
+                // Handwriting should start
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", marker),
+                        TIMEOUT);
+            } finally {
+                TestUtils.injectStylusUpEvent(editText, endX, endY);
+            }
 
             // Handwriting should finish soon.
             notExpectEvent(
@@ -2142,7 +2620,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2193,8 +2671,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String primaryMarker = getTestMarker();
-            final String secondaryMarker = getTestMarker();
+            final String primaryMarker = getTestMarker(FIRST_EDIT_TEXT_TAG);
+            final String secondaryMarker = getTestMarker(SECOND_EDIT_TEXT_TAG);
 
             // Launch an editor activity to be on the split primary task.
             final TestActivity splitPrimaryActivity = TestActivity.startSync(activity -> {
@@ -2229,7 +2707,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         editText.setPrivateImeOptions(secondaryMarker);
                         return layout;
                     }, TestActivity2.class);
-            notExpectEvent(stream, event -> "onStartInputView".equals(event.getEventName()),
+            notExpectEvent(stream, eventMatcher("onStartInputView"),
                     NOT_EXPECT_TIMEOUT);
             TestUtils.waitOnMainUntil(() -> splitSecondaryActivity.hasWindowFocus(), TIMEOUT);
             TestUtils.waitOnMainUntil(() -> !splitPrimaryActivity.hasWindowFocus(), TIMEOUT_1_S);
@@ -2268,8 +2746,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String primaryMarker = getTestMarker();
-            final String secondaryMarker = getTestMarker();
+            final String primaryMarker = getTestMarker(FIRST_EDIT_TEXT_TAG);
+            final String secondaryMarker = getTestMarker(SECOND_EDIT_TEXT_TAG);
 
             // Launch an editor activity to be on the split primary task.
             final AtomicReference<EditText> editTextPrimaryRef = new AtomicReference<>();
@@ -2306,8 +2784,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                         editText.setPrivateImeOptions(secondaryMarker);
                         return layout;
                     }, TestActivity2.class);
-            notExpectEvent(stream, event -> "onStartInputView".equals(event.getEventName()),
-                    NOT_EXPECT_TIMEOUT);
+            notExpectEvent(stream, eventMatcher("onStartInputView"), NOT_EXPECT_TIMEOUT);
 
             addVirtualStylusIdForTestSession();
 
@@ -2361,7 +2838,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2423,7 +2900,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String marker = getTestMarker();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
@@ -2474,8 +2951,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String unfocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<CustomEditorView, CustomEditorView> customEditorPair =
                     launchTestActivityWithCustomEditors(focusedMarker, unfocusedMarker);
             final CustomEditorView unfocusedCustomEditor = customEditorPair.second;
@@ -2496,27 +2973,29 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             TestUtils.injectStylusDownEvent(unfocusedCustomEditor, startX, startY);
             TestUtils.injectStylusMoveEvents(unfocusedCustomEditor, startX, startY,
                     endX, endY, number);
-            // Handwriting should already be initiated before ACTION_UP.
-            // unfocusedCustomEditor is focused and triggers onStartInput.
-            expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
-            // Keyboard shouldn't show up.
-            notExpectEvent(
-                    stream,
-                    editorMatcher("onStartInputView", unfocusedMarker),
-                    NOT_EXPECT_TIMEOUT);
-            // Handwriting should start.
-            expectEvent(
-                    stream,
-                    editorMatcher("onStartStylusHandwriting", unfocusedMarker),
-                    TIMEOUT);
+            try {
+                // Handwriting should already be initiated before ACTION_UP.
+                // unfocusedCustomEditor is focused and triggers onStartInput.
+                expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
+                // Keyboard shouldn't show up.
+                notExpectEvent(
+                        stream,
+                        editorMatcher("onStartInputView", unfocusedMarker),
+                        NOT_EXPECT_TIMEOUT);
+                // Handwriting should start.
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", unfocusedMarker),
+                        TIMEOUT);
 
-            verifyStylusHandwritingWindowIsShown(stream, imeSession);
+                verifyStylusHandwritingWindowIsShown(stream, imeSession);
 
-            // Verify that stylus move events are swallowed by the handwriting initiator once
-            // handwriting has been initiated and not dispatched to the view tree.
-            assertThat(unfocusedCustomEditor.mStylusMoveEventCount).isLessThan(number);
-
-            TestUtils.injectStylusUpEvent(unfocusedCustomEditor, endX, endY);
+                // Verify that stylus move events are swallowed by the handwriting initiator once
+                // handwriting has been initiated and not dispatched to the view tree.
+                assertThat(unfocusedCustomEditor.mStylusMoveEventCount).isLessThan(number);
+            } finally {
+                TestUtils.injectStylusUpEvent(unfocusedCustomEditor, endX, endY);
+            }
         }
     }
 
@@ -2533,8 +3012,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
 
-            final String focusedMarker = getTestMarker();
-            final String unfocusedMarker = getTestMarker();
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
             final Pair<CustomEditorView, CustomEditorView> customEditorPair =
                     launchTestActivityWithCustomEditors(focusedMarker, unfocusedMarker);
             final CustomEditorView focusedCustomEditor = customEditorPair.first;
@@ -2571,40 +3050,38 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         TestUtils.injectStylusDownEvent(editor, startX, startY);
         TestUtils.injectStylusMoveEvents(
                 editor, startX, startY, endX, endY, NUMBER_OF_INJECTED_EVENTS);
-
-        // Handwriting should already be initiated before ACTION_UP.
-        // keyboard shouldn't show up.
-        notExpectEvent(
-                stream,
-                editorMatcher("onStartInputView", marker),
-                NOT_EXPECT_TIMEOUT);
-        if (verifyHandwritingStart) {
-            // Handwriting should start
-            expectEvent(
-                    stream,
-                    editorMatcher("onStartStylusHandwriting", marker),
-                    TIMEOUT);
-        } else {
-            // Handwriting should not start
+        try {
+            // Handwriting should already be initiated before ACTION_UP.
+            // keyboard shouldn't show up.
             notExpectEvent(
                     stream,
-                    editorMatcher("onStartStylusHandwriting", marker),
+                    editorMatcher("onStartInputView", marker),
                     NOT_EXPECT_TIMEOUT);
+            if (verifyHandwritingStart) {
+                // Handwriting should start
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", marker),
+                        TIMEOUT);
+            } else {
+                // Handwriting should not start
+                notExpectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", marker),
+                        NOT_EXPECT_TIMEOUT);
+            }
+            if (verifyHandwritingWindowIsShown) {
+                verifyStylusHandwritingWindowIsShown(stream, imeSession);
+            } else if (verifyHandwritingWindowNotShown) {
+                verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+            }
+        } finally {
+            TestUtils.injectStylusUpEvent(editor, endX, endY);
         }
-        if (verifyHandwritingWindowIsShown) {
-            verifyStylusHandwritingWindowIsShown(stream, imeSession);
-        } else if (verifyHandwritingWindowNotShown) {
-            verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
-        }
-        TestUtils.injectStylusUpEvent(editor, endX, endY);
     }
 
     private EditText launchTestActivity(@NonNull String marker) {
-        return launchTestActivity(marker, getTestMarker()).first;
-    }
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/" + SystemClock.elapsedRealtimeNanos();
+        return launchTestActivity(marker, getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG)).first;
     }
 
     private static int getTouchSlop() {

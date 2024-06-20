@@ -18,9 +18,11 @@ package android.os.cts;
 
 
 import android.os.Debug;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import junit.framework.TestCase;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class Debug_InstructionCountTest extends TestCase {
 
     public void testDebugInstructionCount() {

@@ -45,7 +45,7 @@ import org.junit.runner.RunWith;
 
 /**
  * Reading and writing NFC tags. Asks user to write data to tag. Asks user to scan tag to verify
- * data was properly written and read back.
+ * data was properly written and read back. Manual steps = scan tag. Scan tag again
  */
 @RunWith(BedsteadJUnit4.class)
 public class TagVerifierTest {

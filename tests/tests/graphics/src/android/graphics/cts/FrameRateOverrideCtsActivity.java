@@ -153,6 +153,10 @@ public class FrameRateOverrideCtsActivity extends Activity {
                     new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT));
             mSurfaceView.getHolder().addCallback(mSurfaceHolderCallback);
+            if (android.view.flags.Flags.toolkitSetFrameRateReadOnly()) {
+                Window window = getWindow();
+                window.setFrameRatePowerSavingsBalanced(false);
+            }
         }
     }
 

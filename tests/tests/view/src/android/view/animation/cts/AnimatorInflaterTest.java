@@ -15,11 +15,15 @@
 */
 package android.view.animation.cts;
 
+import static android.content.pm.PackageManager.FEATURE_SCREEN_LANDSCAPE;
+import static android.content.pm.PackageManager.FEATURE_SCREEN_PORTRAIT;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -166,6 +170,7 @@ public class AnimatorInflaterTest {
     }
 
     private boolean rotate() throws Throwable {
+        assumeTrue(supportsRotation());
         WindowManager mWindowManager = (WindowManager) mActivity
                 .getSystemService(Context.WINDOW_SERVICE);
         Display display = mWindowManager.getDefaultDisplay();
@@ -307,6 +312,22 @@ public class AnimatorInflaterTest {
         assertTrue("animator should start", mStarted.await(10, TimeUnit.SECONDS));
         assertFalse(anim2.isRunning());
 
+    }
+
+    /**
+     * Rotation support is indicated by explicitly having both landscape and portrait
+     * features or not listing either at all.
+     */
+    private boolean supportsRotation() {
+        final boolean supportsLandscape = hasDeviceFeature(FEATURE_SCREEN_LANDSCAPE);
+        final boolean supportsPortrait = hasDeviceFeature(FEATURE_SCREEN_PORTRAIT);
+        return (supportsLandscape && supportsPortrait)
+                || (!supportsLandscape && !supportsPortrait);
+    }
+
+    private boolean hasDeviceFeature(final String requiredFeature) {
+        return mActivity.getPackageManager()
+                .hasSystemFeature(requiredFeature);
     }
 
     class DummyObject {

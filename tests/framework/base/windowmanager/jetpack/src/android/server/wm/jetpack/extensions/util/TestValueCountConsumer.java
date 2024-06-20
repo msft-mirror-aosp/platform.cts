@@ -30,8 +30,7 @@ import java.util.concurrent.TimeUnit;
  * Consumer that provides a simple way to wait for a specific count of values to be received within
  * a timeout and then return the last value.
  *
- * It requires the vendor API version at least {@link ExtensionsUtil#EXTENSION_VERSION_2} because
- * it uses extensions core version of {@link Consumer} instead of
+ * It uses extensions core version of {@link Consumer} instead of
  * {@link java.util.function.Consumer Java 8 version Consumer}.
  */
 public class TestValueCountConsumer<T> implements Consumer<T> {

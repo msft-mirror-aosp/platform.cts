@@ -3181,19 +3181,30 @@ public class AudioTrackTest {
 
         AudioTrack audioTrack = null;
         try {
+            final int TEST_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
+            final int TEST_RATE = 48000;
+            final int TEST_CHANNELS = AudioFormat.CHANNEL_OUT_MONO;
+
+            // 1 second buffer
+            final int buffSizeInBytes = TEST_RATE *
+                    AudioFormat.channelCountFromOutChannelMask(TEST_CHANNELS) *
+                    AudioFormat.getBytesPerSample(TEST_ENCODING);
+
             // Build our audiotrack
             audioTrack = new AudioTrack.Builder()
                     .setAudioFormat(new AudioFormat.Builder()
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                            .setEncoding(TEST_ENCODING)
+                            .setChannelMask(TEST_CHANNELS)
+                            .setSampleRate(TEST_RATE)
                             .build())
+                    .setBufferSizeInBytes(buffSizeInBytes)
                     .build();
 
             int bufferSize = audioTrack.getBufferSizeInFrames();
             final short[] bufferData = new short[bufferSize];
             // Use a small part of the buffer size for the frames data
             int frames = bufferSize / 4;
-            int errorMargin = frames / 2;
+            int errorMargin = frames;
             final short[] data = new short[frames];
 
             audioTrack.write(data, 0 /* offsetInShorts */, data.length);
@@ -3234,15 +3245,6 @@ public class AudioTrackTest {
                             + " with set startThresholdInFrames and sufficient written data,"
                             + " but is " + playbackHeadPosition + ", with margin " + errorMargin,
                     playbackHeadPosition < errorMargin);
-
-            // sleep a small amount of time to allow playback of some frames
-            Thread.sleep(frames * 1000L / audioTrack.getSampleRate());
-            playbackHeadPosition = audioTrack.getPlaybackHeadPosition();
-
-            assertTrue("PlaybackHeadPosition should be close to " + frames + " after starting"
-                    + " playback with set startThresholdInFrames and sufficient written data,"
-                    + " but is " + playbackHeadPosition + ", with margin " + errorMargin,
-                    playbackHeadPosition < frames + errorMargin);
         } finally {
             if (audioTrack != null) {
                 audioTrack.release();

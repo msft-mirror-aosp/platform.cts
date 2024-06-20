@@ -39,7 +39,7 @@ import org.junit.Test;
 
 /**
  * Build/Install/Run:
- * atest CtsWindowManagerDeviceOther:DockConfigChangeTests
+ * atest CtsWindowManagerDeviceActivity:DockConfigChangeTests
  */
 @Presubmit
 public class DockConfigChangeTests extends ActivityManagerTestBase {

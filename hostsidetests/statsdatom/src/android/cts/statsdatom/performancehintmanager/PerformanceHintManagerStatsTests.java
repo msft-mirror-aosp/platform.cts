@@ -16,25 +16,55 @@
 
 package android.cts.statsdatom.performancehintmanager;
 
+import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_RESULT_TIDS;
+import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_KEY_UID;
+
+import static com.android.server.power.hint.Flags.FLAG_ADPF_SESSION_TAG;
+import static com.android.server.power.hint.Flags.FLAG_POWERHINT_THREAD_CLEANUP;
+
 import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
 import com.android.os.adpf.ADPFSystemComponentInfo;
+import com.android.os.adpf.AdpfExtensionAtoms;
+import com.android.os.adpf.AdpfHintSessionTidCleanup;
+import com.android.os.adpf.AdpfSessionTag;
 import com.android.os.adpf.PerformanceHintSessionReported;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.result.TestDescription;
+import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
+import com.google.protobuf.ExtensionRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -44,25 +74,34 @@ import java.util.List;
  *  <p>Build/Install/Run:
  *  atest CtsStatsdAtomHostTestCases:PerformanceHintManagerStatsTests
  */
-public class PerformanceHintManagerStatsTests extends DeviceTestCase implements IBuildReceiver {
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
+    private static final String DEVICE_TEST_PKG = "com.android.server.cts.device.statsdatom";
+    private static final String DEVICE_TEST_CLASS = ".PerformanceHintManagerTests";
+    private static final String ADPF_ATOM_APP_PKG = "com.android.server.cts.device.statsdatom";
+    private static final String ADPF_ATOM_APP_APK = "CtsStatsdAdpfApp.apk";
+
     private IBuildInfo mCtsBuild;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+
+    @Before
+    public void setUp() throws Exception {
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
+        DeviceUtils.installTestApp(getDevice(), ADPF_ATOM_APP_APK, ADPF_ATOM_APP_PKG, mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
-        super.tearDown();
     }
 
     @Override
@@ -70,27 +109,29 @@ public class PerformanceHintManagerStatsTests extends DeviceTestCase implements 
         mCtsBuild = buildInfo;
     }
 
-    public void testCreateHintSessionStatsd() throws Exception {
+    @Test
+    @RequiresFlagsDisabled(FLAG_ADPF_SESSION_TAG)
+    public void testCreateHintSessionStatsdApp() throws Exception {
         final int androidSApiLevel = 31; // android.os.Build.VERSION_CODES.S
         final int firstApiLevel = Integer.parseInt(
                 DeviceUtils.getProperty(getDevice(), "ro.product.first_api_level"));
-        final TestDescription testCreateHintSessionDescription = TestDescription.fromString(
-                "com.android.server.cts.device.statsdatom.AtomTests#testCreateHintSession");
+        final int sessionTagApp = AdpfSessionTag.APP_VALUE;
+        final long testTargetDuration = 12345678L;
+        final String testMethod = "testCreateHintSession";
+        final TestDescription desc = TestDescription.fromString(
+                DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.PERFORMANCE_HINT_SESSION_REPORTED_FIELD_NUMBER);
         TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
-                ".AtomTests", "testCreateHintSession");
+                DEVICE_TEST_CLASS, testMethod);
 
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
-        TestStatus testCreateHintSessionStatus =
-                testRunResult.getTestResults().get(testCreateHintSessionDescription).getStatus();
-        assertThat(testCreateHintSessionStatus).isNotEqualTo(TestStatus.FAILURE);
-        if (testCreateHintSessionStatus == TestStatus.ASSUMPTION_FAILURE) {
-            // test requirement does not meet, the device does not support
-            // ADPF hint session, skipping the test
-            return;
-        }
+        TestResult result = testRunResult.getTestResults().get(desc);
+        assertNotNull(result);
+        TestStatus status = result.getStatus();
+        assumeFalse(status == TestStatus.ASSUMPTION_FAILURE);
+        assertThat(status).isEqualTo(TestStatus.PASSED);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
 
@@ -101,14 +142,74 @@ public class PerformanceHintManagerStatsTests extends DeviceTestCase implements 
         }
 
         assertThat(data.size()).isAtLeast(1);
-        PerformanceHintSessionReported a0 =
-                data.get(0).getAtom().getPerformanceHintSessionReported();
-        assertThat(a0.getPackageUid()).isGreaterThan(10000);  // Not a system service UID.
-        assertThat(a0.getSessionId()).isNotEqualTo(0);
-        assertThat(a0.getTargetDurationNs()).isEqualTo(16666666L);
-        assertThat(a0.getTidCount()).isEqualTo(1);
+        boolean found = false;
+        for (StatsLog.EventMetricData event : data) {
+            PerformanceHintSessionReported a0 =
+                    event.getAtom().getPerformanceHintSessionReported();
+            if (a0.getTargetDurationNs() == testTargetDuration) {
+                found = true;
+                assertThat(a0.getPackageUid()).isGreaterThan(10000);  // Not a system service UID.
+                assertThat(a0.getSessionId()).isNotNull();
+                assertThat(a0.getTidCount()).isEqualTo(1);
+                assertThat(a0.getSessionTag().getNumber()).isEqualTo(sessionTagApp);
+            }
+        }
+        if (!found) {
+            fail("Failed to find an event data belonging to the test process in data: " + data);
+        }
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_ADPF_SESSION_TAG)
+    public void testCreateHintSessionStatsdGame() throws Exception {
+        final int androidSApiLevel = 31; // android.os.Build.VERSION_CODES.S
+        final int firstApiLevel = Integer.parseInt(
+                DeviceUtils.getProperty(getDevice(), "ro.product.first_api_level"));
+        final long testTargetDuration = 12345678L;
+        final int sessionTagGame = AdpfSessionTag.GAME_VALUE;
+        final String testMethod = "testCreateHintSession";
+        final TestDescription desc = TestDescription.fromString(
+                DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);
+        ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                AtomsProto.Atom.PERFORMANCE_HINT_SESSION_REPORTED_FIELD_NUMBER);
+        TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
+                DEVICE_TEST_CLASS, testMethod);
+
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        TestResult result = testRunResult.getTestResults().get(desc);
+        assertNotNull(result);
+        TestStatus status = result.getStatus();
+        assumeFalse(status == TestStatus.ASSUMPTION_FAILURE);
+        assertThat(status).isEqualTo(TestStatus.PASSED);
+
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
+
+        if (firstApiLevel < androidSApiLevel && data.size() == 0) {
+            // test requirement does not meet, the device does not support
+            // ADPF hint session, skipping the test
+            return;
+        }
+
+        assertThat(data.size()).isAtLeast(1);
+        boolean found = false;
+        for (StatsLog.EventMetricData event : data) {
+            PerformanceHintSessionReported a0 =
+                    event.getAtom().getPerformanceHintSessionReported();
+            if (a0.getTargetDurationNs() == testTargetDuration) {
+                found = true;
+                assertThat(a0.getPackageUid()).isGreaterThan(10000);  // Not a system service UID.
+                assertThat(a0.getSessionId()).isNotNull();
+                assertThat(a0.getTidCount()).isEqualTo(1);
+                assertThat(a0.getSessionTag().getNumber()).isEqualTo(sessionTagGame);
+            }
+        }
+        if (!found) {
+            fail("Failed to find an event data belonging to the test process in data: " + data);
+        }
+    }
+
+    @Test
     public void testAdpfSystemComponentStatsd() throws Exception {
         final boolean isSurfaceFlingerCpuHintEnabled = Boolean.parseBoolean(
                 DeviceUtils.getProperty(getDevice(), "debug.sf.enable_adpf_cpu_hint"));
@@ -124,5 +225,57 @@ public class PerformanceHintManagerStatsTests extends DeviceTestCase implements 
         ADPFSystemComponentInfo a0 = data.get(0).getAdpfSystemComponentInfo();
         assertThat(a0.getSurfaceflingerCpuHintEnabled()).isEqualTo(isSurfaceFlingerCpuHintEnabled);
         assertThat(a0.getHwuiHintEnabled()).isEqualTo(isHwuiHintEnabled);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_POWERHINT_THREAD_CLEANUP)
+    public void testAdpfHintSessionTidCleanupIsPushed() throws Exception {
+        final int apiLevel = Integer.parseInt(
+                DeviceUtils.getProperty(getDevice(), ("ro.vendor.api_level")));
+        final int minLevel = 202404;
+        assumeTrue("Test is only enforced on vendor API level >= " + minLevel
+                        + " while test device at = " + apiLevel, apiLevel >= minLevel);
+
+        final String testMethod = "testAdpfTidCleanup";
+        final TestDescription desc = TestDescription.fromString(
+                DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);
+        ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                AdpfExtensionAtoms.ADPF_HINT_SESSION_TID_CLEANUP_FIELD_NUMBER);
+        TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
+                DEVICE_TEST_CLASS, testMethod);
+        RunUtil.getDefault().sleep(5 * AtomTestUtils.WAIT_TIME_LONG);
+        TestResult result = testRunResult.getTestResults().get(desc);
+        assertNotNull(result);
+        TestStatus status = result.getStatus();
+        assumeFalse(status == TestStatus.ASSUMPTION_FAILURE);
+        assertThat(status).isEqualTo(TestStatus.PASSED);
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        AdpfExtensionAtoms.registerAllExtensions(registry);
+        List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(),
+                registry);
+        assertFalse(data.isEmpty());
+        String tidsStr = result.getMetrics().get(CONTENT_KEY_RESULT_TIDS);
+        int uid = Integer.parseInt(result.getMetrics().get(CONTENT_KEY_UID));
+        List<Integer> tids = Arrays.stream(tidsStr.split(",")).map(Integer::parseInt).toList();
+        boolean found = false;
+        for (StatsLog.EventMetricData event : data) {
+            if (event.getAtom().hasExtension(AdpfExtensionAtoms.adpfHintSessionTidCleanup)) {
+                AdpfHintSessionTidCleanup a0 = event.getAtom().getExtension(
+                        AdpfExtensionAtoms.adpfHintSessionTidCleanup);
+                assertNotNull(tidsStr);
+                if (a0.getUid() == uid) {
+                    assertThat(a0.getMaxInvalidTidCount()).isAtLeast(tids.size());
+                    assertThat(a0.getTotalTidCount()).isAtLeast(tids.size());
+                    assertThat(a0.getTotalInvalidTidCount()).isAtLeast(tids.size());
+                    assertThat(a0.getMaxDurationUs()).isGreaterThan(0);
+                    assertThat(a0.getTotalDurationUs()).isGreaterThan(0);
+                    assertThat(a0.getSessionCount()).isAtLeast(1);
+                    found = true;
+                }
+            }
+        }
+        if (!found) {
+            fail("Failed to find an event data belonging to the test process in data: " + data);
+        }
     }
 }

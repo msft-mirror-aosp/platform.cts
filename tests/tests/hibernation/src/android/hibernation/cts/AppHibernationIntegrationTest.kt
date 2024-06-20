@@ -136,7 +136,6 @@ class AppHibernationIntegrationTest {
         runShellCommandOrThrow("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS")
 
         resetJob(context)
-        bypassBatterySavingRestrictions(context)
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.READ_DEVICE_CONFIG)
     }
@@ -148,7 +147,6 @@ class AppHibernationIntegrationTest {
             DeviceConfig.setProperty(NAMESPACE_APP_HIBERNATION, HIBERNATION_ENABLED_KEY,
                 oldHibernationValue, false /* makeDefault */)
         }
-        resetBatterySavingRestrictions(context)
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity()
     }
@@ -385,12 +383,7 @@ class AppHibernationIntegrationTest {
 
     private fun isArchivingEnabled(): Boolean {
         if (!SdkLevel.isAtLeastV()) return false
-        if (Flags.archiving()) return true
-        var systemProperty: String? = null
-        runWithShellPermissionIdentity {
-            systemProperty = System.getProperty("pm.archiving.enabled")
-        }
-        return "true" == systemProperty
+        return Flags.archiving() && !hasFeatureAutomotive()
     }
 
     private fun leaveApp(packageName: String) {

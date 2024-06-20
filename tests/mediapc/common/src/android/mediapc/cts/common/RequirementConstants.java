@@ -23,7 +23,8 @@ import java.util.function.BiPredicate;
  * stored in order as they appear in the Android CDD.  Constants relating to measurements are stored
  * alphabetically.
  */
-public final class RequirementConstants {
+public class RequirementConstants {
+    private static final String TAG = RequirementConstants.class.getSimpleName();
 
     public static final String REPORT_LOG_NAME = "CtsMediaPerformanceClassTestCases";
     public static final String TN_FIELD_NAME = "test_name";
@@ -72,9 +73,9 @@ public final class RequirementConstants {
     public static final String R7_5__H_1_2 = "r7_5__h_1_2"; // 7.5/H-1-2
     public static final String R7_5__H_1_3 = "r7_5__h_1_3"; // 7.5/H-1-3
     public static final String R7_5__H_1_4 = "r7_5__h_1_4"; // 7.5/H-1-4
-    //  "its" because the proto in google3 was originally implemented incorrectly
+    // includes "its" because the proto in google3 was originally implemented incorrectly
     public static final String R7_5__H_1_5 = "r7_5__h_1_5__its"; // 7.5/H-1-5
-    //  "its" because the proto in google3 was originally implemented incorrectly
+    // includes "its" because the proto in google3 was originally implemented incorrectly
     public static final String R7_5__H_1_6 = "r7_5__h_1_6__its"; // 7.5/H-1-6
     public static final String R7_5__H_1_8 = "r7_5__h_1_8"; // 7.5/H-1-8
     public static final String R7_5__H_1_9 = "r7_5__h_1_9"; // 7.5/H-1-9
@@ -86,6 +87,9 @@ public final class RequirementConstants {
     public static final String R7_5__H_1_15 = "r7_5__h_1_15"; // 7.5/H-1-15
     public static final String R7_5__H_1_16 = "r7_5__h_1_16"; // 7.5/H-1-16
     public static final String R7_5__H_1_17 = "r7_5__h_1_17"; // 7.5/H-1-17
+    public static final String R7_5__H_1_18 = "r7_5__h_1_18"; // 7.5/H-1-18
+    public static final String R7_5__H_1_19 = "r7_5__h_1_19"; // 7.5/H-1-19
+    public static final String R7_5__H_1_20 = "r7_5__h_1_20"; // 7.5/H-1-20
     public static final String R7_6_1__H_1_1 = "r7_6_1__h_1_1"; // 7.6.1/H-1-1
     public static final String R7_6_1__H_2_1 = "r7_6_1__h_2_1"; // 7.6.1/H-2-1
     public static final String R7_6_1__H_3_1 = "r7_6_1__h_3_1"; // 7.6.1/H-3-1, currently unused
@@ -143,6 +147,8 @@ public final class RequirementConstants {
             "front_primary_camera_timestamp_source";
     public static final String FRONT_CAMERA_ULTRAWIDE_ZOOMRATIO_REQ_MET =
             "front_camera_ultrawide_zoom_req_met";
+    public static final String FRONT_CAMERA_ULTRA_HDR_SUPPORTED =
+            "front_camera_ultra_hdr_supported";
     public static final String HLG_EDITING = "hlg_editing";
     public static final String IS_HDR = "is_hdr";
     public static final String LONG_RESOLUTION = "long_resolution_pixels";
@@ -152,12 +158,25 @@ public final class RequirementConstants {
             "number_crypto_hw_secure_all_support";
     public static final String PHYSICAL_MEMORY = "physical_memory_mb";
     public static final String PORTRAIT_RESOLUTION = "portrait_resolution";
+    public static final String PRIMARY_CAMERA_1080p_VIDEO_FPS =
+            "primary_camera_1080p_video_fps";
+    public static final String PRIMARY_CAMERA_1080p_VIDEO_SIZE_REQ_SATISFIED =
+            "primary_camera_1080p_video_size_req_satisfied";
+    public static final String PRIMARY_CAMERA_720p_VIDEO_FPS =
+            "primary_camera_720p_video_fps";
+    public static final String PRIMARY_CAMERA_720p_VIDEO_SIZE_REQ_SATISFIED =
+            "primary_camera_720p_video_size_req_satisfied";
     public static final String PRIMARY_CAMERA_AVAILABLE = "primary_camera_available";
+    public static final String PRIMARY_CAMERA_HLG_COMBINATION_SUPPORTED =
+            "primary_camera_hlg_combination_supported";
     public static final String PRIMARY_CAMERA_RESOLUTION = "primary_camera_resolution";
-    public static final String PRIMARY_CAMERA_VIDEO_FPS =
-            "primary_camera_video_fps";
+    public static final String PRIMARY_CAMERA_VIDEO_FPS = "primary_camera_video_fps";
     public static final String PRIMARY_CAMERA_VIDEO_SIZE_REQ_SATISFIED =
             "primary_camera_video_size_req_satisfied";
+    public static final String PRIMARY_FRONT_CAMERA_JPEG_R_SUPPORTED =
+            "primary_front_camera_jpeg_r_supported";
+    public static final String PRIMARY_REAR_CAMERA_JPEG_R_SUPPORTED =
+            "primary_rear_camera_jpeg_r_supported";
     public static final String REAR_CAMERA2_EXTENSION_NIGHT_SUPPORTED =
             "rear_camera2_extension_night_supported";
     public static final String REAR_CAMERAX_EXTENSION_NIGHT_SUPPORTED =
@@ -180,13 +199,14 @@ public final class RequirementConstants {
             "rear_primary_camera_timestamp_source";
     public static final String REAR_CAMERA_ULTRAWIDE_ZOOMRATIO_REQ_MET =
             "rear_camera_ultrawide_zoom_req_met";
+    public static final String REAR_CAMERA_ULTRA_HDR_SUPPORTED =
+            "rear_camera_ultra_hdr_supported";
     public static final String RGBA_1010102_COLOR_FORMAT_REQ = "rgba_1010102_color_format";
     public static final String SECURE_REQ_SATISFIED = "secure_requirement_satisfied_boolean";
     public static final String SHORT_RESOLUTION = "short_resolution_pixels";
     public static final String SUPPORTED_PERFORMANCE_POINTS = "supported_performance_points";
     public static final String TEST_RESOLUTION = "resolution";
     // keep-sorted end
-
 
     public enum Result {
         NA, MET, UNMET

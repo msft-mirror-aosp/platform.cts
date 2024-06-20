@@ -33,7 +33,7 @@ import video_processing_utils
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PREVIEW_RECORDING_DURATION_SECONDS = 10
 _MAX_VAR_FRAME_DELTA = 0.001  # variance of frame deltas, units: seconds^2
-_FPS_ATOL = 0.8
+_FPS_ATOL = 2  # TODO: b/330158924 - explicitly handle anti-banding
 _DARKNESS_ATOL = 0.1 * 255  # openCV uses [0:255] images
 
 
@@ -71,13 +71,18 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       lighting_control_utils.set_lighting_state(
           arduino_serial_port, self.lighting_ch, 'OFF')
 
+      # turn OFF DUT to reduce reflections
+      lighting_control_utils.turn_off_device_screen(self.dut)
+
       # Validate lighting
       cam.do_3a(do_af=False)
       cap = cam.do_capture(
           capture_request_utils.auto_capture_request(), cam.CAP_YUV)
       y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
+      # In the sensor fusion rig, there is no tablet, so tablet_state is OFF.
       its_session_utils.validate_lighting(
-          y_plane, self.scene, state='OFF', log_path=self.log_path)
+          y_plane, self.scene, state='OFF', tablet_state='OFF',
+          log_path=self.log_path)
 
       logging.debug('Taking preview recording in darkened scene.')
       # determine camera capabilities for preview
@@ -86,7 +91,6 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       supported_video_sizes = cam.get_supported_video_sizes_capped(
           self.camera_id)
       max_video_size = supported_video_sizes[-1]  # largest available size
-      logging.debug('Camera supported preview sizes: %s', preview_sizes)
       logging.debug('Camera supported video sizes: %s', supported_video_sizes)
 
       preview_size = preview_sizes[-1]  # choose largest available size
@@ -147,8 +151,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
                     last_key_frame)
       last_image = image_processing_utils.convert_image_to_numpy_array(
           os.path.join(self.log_path, last_key_frame))
-      last_image_bgr = last_image[:, :, ::-1]
-      y_avg = np.average(opencv_processing_utils.convert_to_y(last_image_bgr))
+      y_avg = np.average(
+          opencv_processing_utils.convert_to_y(last_image, 'RGB')
+      )
       logging.debug('Last frame y avg: %.4f', y_avg)
       if not math.isclose(y_avg, 0, abs_tol=_DARKNESS_ATOL):
         raise AssertionError(f'Last frame y average: {y_avg}, expected: 0, '

@@ -22,8 +22,8 @@ import android.content.Intent;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.harrier.policies.StartActivityFromBackground;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;

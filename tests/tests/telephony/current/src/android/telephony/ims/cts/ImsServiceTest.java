@@ -3964,6 +3964,11 @@ public class ImsServiceTest {
                     TelephonyUtils.CTS_APP_PACKAGE,
                     SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
 
+            // Clear Q before testing
+            // When Callback registered the initial provisioning value can be notified.
+            mIntQueue.clear();
+            mOnFeatureChangedQueue.clear();
+
             // test get/setProvisioningStatusForCapability for VoLTE
             assertTrue(provisioningManager.isProvisioningRequiredForCapability(
                     MMTEL_CAP_VOICE, IMS_REGI_TECH_LTE));
@@ -4092,6 +4097,8 @@ public class ImsServiceTest {
                     SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
             automan.dropShellPermissionIdentity();
         }
+
+        overrideCarrierConfig(null);
     }
 
     @Test
@@ -4195,6 +4202,206 @@ public class ImsServiceTest {
         } finally {
             automan.dropShellPermissionIdentity();
         }
+
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
+    public void testInitialNotificationForMmTelWhenCallbackRegistered() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        // Change carrier config as MmTel provisioning required
+        PersistableBundle bundle = new PersistableBundle();
+        PersistableBundle innerBundle = new PersistableBundle();
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_VOICE_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE, IMS_REGI_TECH_IWLAN, IMS_REGI_TECH_NR}
+        );
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_VIDEO_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE}
+        );
+        bundle.putPersistableBundle(
+                CarrierConfigManager.Ims.KEY_MMTEL_REQUIRES_PROVISIONING_BUNDLE,
+                innerBundle);
+        overrideCarrierConfig(bundle);
+
+        ProvisioningManager provisioningManager =
+                ProvisioningManager.createForSubscriptionId(sTestSub);
+
+        // Create Q to check whether callback is called or not
+        LinkedBlockingQueue<Pair<Integer, Pair<Integer, Boolean>>> mOnFeatureChangedQueue =
+                new LinkedBlockingQueue<>();
+        ProvisioningManager.FeatureProvisioningCallback featureProvisioningCallback =
+                new ProvisioningManager.FeatureProvisioningCallback() {
+                    @Override
+                    public void onFeatureProvisioningChanged(
+                            @MmTelFeature.MmTelCapabilities.MmTelCapability int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                        mOnFeatureChangedQueue.offer(new Pair<>(capability,
+                                new Pair<>(tech, isProvisioned)));
+                    }
+
+                    @Override
+                    public void onRcsFeatureProvisioningChanged(
+                            @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned){
+                    }
+                };
+
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+
+            // Set provisioning before registering callback
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_LTE, true);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_IWLAN, true);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_NR, false);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VIDEO,
+                    IMS_REGI_TECH_LTE, true);
+
+            TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            // Register callback
+            provisioningManager.registerFeatureProvisioningChangedCallback(
+                    getContext().getMainExecutor(), featureProvisioningCallback);
+
+            // Verify notification initial provisioning status when the callback registered
+            // Voice(3) - LTE, IWLAN, NR
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_NR, false))));
+            // Video(1) - LTE
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, true))));
+
+            mOnFeatureChangedQueue.clear();
+            provisioningManager.unregisterFeatureProvisioningChangedCallback(
+                    featureProvisioningCallback);
+        } finally {
+            TelephonyUtils.resetCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+            automan.dropShellPermissionIdentity();
+        }
+
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
+    public void testInitialNotificationForMmTelWhenImsServiceConnected() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        // Change carrier config as MmTel provisioning required
+        PersistableBundle bundle = new PersistableBundle();
+        PersistableBundle innerBundle = new PersistableBundle();
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_VOICE_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE, IMS_REGI_TECH_IWLAN, IMS_REGI_TECH_NR}
+        );
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_VIDEO_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE}
+        );
+        bundle.putPersistableBundle(
+                CarrierConfigManager.Ims.KEY_MMTEL_REQUIRES_PROVISIONING_BUNDLE,
+                innerBundle);
+        overrideCarrierConfig(bundle);
+
+        ProvisioningManager provisioningManager =
+                ProvisioningManager.createForSubscriptionId(sTestSub);
+
+        // Create Q to check whether callback is called or not
+        LinkedBlockingQueue<Pair<Integer, Pair<Integer, Boolean>>> mOnFeatureChangedQueue =
+                new LinkedBlockingQueue<>();
+        ProvisioningManager.FeatureProvisioningCallback featureProvisioningCallback =
+                new ProvisioningManager.FeatureProvisioningCallback() {
+                    @Override
+                    public void onFeatureProvisioningChanged(
+                            @MmTelFeature.MmTelCapabilities.MmTelCapability int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                        mOnFeatureChangedQueue.offer(new Pair<>(capability,
+                                new Pair<>(tech, isProvisioned)));
+                    }
+
+                    @Override
+                    public void onRcsFeatureProvisioningChanged(
+                            @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned){
+                    }
+                };
+
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+
+            // Set provisioning before registering callback
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_LTE, true);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_IWLAN, true);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VOICE,
+                    IMS_REGI_TECH_NR, false);
+            provisioningManager.setProvisioningStatusForCapability(MMTEL_CAP_VIDEO,
+                    IMS_REGI_TECH_LTE, true);
+
+            TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            // Register callback
+            provisioningManager.registerFeatureProvisioningChangedCallback(
+                    getContext().getMainExecutor(), featureProvisioningCallback);
+            // Wait until callback is received
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            // Clear Q : delete provisioning value received when registering callback
+            mOnFeatureChangedQueue.clear();
+
+            // Connect ImsService
+            triggerFrameworkConnectToCarrierImsService();
+
+            // Verify notification initial provisioning status when ImsService connected
+            // Voice(3) - LTE, IWLAN, NR
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VOICE, new Pair<>(IMS_REGI_TECH_NR, false))));
+            // Video(1) - LTE
+            assertTrue(waitForParam(mOnFeatureChangedQueue,
+                    new Pair<>(MMTEL_CAP_VIDEO, new Pair<>(IMS_REGI_TECH_LTE, true))));
+
+            mOnFeatureChangedQueue.clear();
+            provisioningManager.unregisterFeatureProvisioningChangedCallback(
+                    featureProvisioningCallback);
+        } finally {
+            TelephonyUtils.resetCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+            automan.dropShellPermissionIdentity();
+        }
+
+        overrideCarrierConfig(null);
     }
 
     @Test
@@ -4250,8 +4457,8 @@ public class ImsServiceTest {
                     @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
                     @ImsRegistrationImplBase.ImsRegistrationTech int tech,
                     boolean isProvisioned) {
-                mOnRcsFeatureChangedQueue.offer(new Pair<>(capability,
-                        new Pair<>(tech, isProvisioned)));
+                mOnRcsFeatureChangedQueue.offer(
+                        new Pair<>(capability, new Pair<>(tech, isProvisioned)));
             }
         };
 
@@ -4276,6 +4483,11 @@ public class ImsServiceTest {
             assertTrue(provisioningManager.isRcsProvisioningRequiredForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_NR));
 
+            // Clear Q before testing
+            // When Callback registered the initial provisioning value can be notified.
+            mIntQueue.clear();
+            mOnRcsFeatureChangedQueue.clear();
+
             // test get/setRcsProvisioningStatusForCapability for PRESENCE over LTE
             boolean isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
                     RCS_CAP_PRESENCE, IMS_REGI_TECH_LTE);
@@ -4286,63 +4498,16 @@ public class ImsServiceTest {
             assertTrue(waitForParam(mIntQueue,
                     new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
 
+            // Wait until framework finishes running
+            Thread.sleep(TEST_OPERATION_TIME_MS);
+            // Clear Q before running other test
+            mIntQueue.clear();
+            mOnRcsFeatureChangedQueue.clear();
+
             provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
                     IMS_REGI_TECH_LTE, isProvisioned);
             assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
                     new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
-
-            // test get/setRcsProvisioningStatusForCapability for PRESENCE over IWLAN
-            isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_IWLAN);
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_IWLAN, !isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
-
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_IWLAN, isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
-
-            // test get/setRcsProvisioningStatusForCapability for PRESENCE over CROSS SIM
-            isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_CROSS_SIM);
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_CROSS_SIM, !isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE,
-                            new Pair<>(IMS_REGI_TECH_CROSS_SIM, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
-
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_CROSS_SIM, isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE,
-                            new Pair<>(IMS_REGI_TECH_CROSS_SIM, isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
-
-            // test get/setRcsProvisioningStatusForCapability for PRESENCE over NR
-            isProvisioned = provisioningManager.getRcsProvisioningStatusForCapability(
-                    RCS_CAP_PRESENCE, IMS_REGI_TECH_NR);
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_NR, !isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, !isProvisioned))));
-            assertTrue(waitForParam(mIntQueue,
-                    new Pair<>(KEY_EAB_PROVISIONING_STATUS, !isProvisioned ? 1 : 0)));
-
-            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
-                    IMS_REGI_TECH_NR, isProvisioned);
-            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
-                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, isProvisioned))));
             assertTrue(waitForParam(mIntQueue,
                     new Pair<>(KEY_EAB_PROVISIONING_STATUS, isProvisioned ? 1 : 0)));
 
@@ -4359,6 +4524,9 @@ public class ImsServiceTest {
 
             automan.dropShellPermissionIdentity();
         }
+
+        overrideCarrierConfig(null);
+
     }
 
     @Test
@@ -4469,6 +4637,204 @@ public class ImsServiceTest {
 
             automan.dropShellPermissionIdentity();
         }
+
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
+    public void testInitialNotificationForRcsWhenCallbackRegistered() throws Exception {
+        if (!ImsUtils.shouldTestImsSingleRegistration()) {
+            return;
+        }
+
+        // Change carrier config as Rcs provisioning required
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.Ims.KEY_IMS_SINGLE_REGISTRATION_REQUIRED_BOOL,
+                true);
+        PersistableBundle innerBundle = new PersistableBundle();
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_PRESENCE_UCE_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE, IMS_REGI_TECH_IWLAN, IMS_REGI_TECH_CROSS_SIM,
+                        IMS_REGI_TECH_NR}
+        );
+        bundle.putPersistableBundle(
+                CarrierConfigManager.Ims.KEY_RCS_REQUIRES_PROVISIONING_BUNDLE,
+                innerBundle);
+        overrideCarrierConfig(bundle);
+
+        ProvisioningManager provisioningManager =
+                ProvisioningManager.createForSubscriptionId(sTestSub);
+
+        // Create Q to check whether callback is called or not
+        LinkedBlockingQueue<Pair<Integer, Pair<Integer, Boolean>>> mOnRcsFeatureChangedQueue =
+                new LinkedBlockingQueue<>();
+        ProvisioningManager.FeatureProvisioningCallback featureProvisioningCallback =
+                new ProvisioningManager.FeatureProvisioningCallback() {
+                    @Override
+                    public void onFeatureProvisioningChanged(
+                            @MmTelFeature.MmTelCapabilities.MmTelCapability int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                    }
+
+                    @Override
+                    public void onRcsFeatureProvisioningChanged(
+                            @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                        mOnRcsFeatureChangedQueue.offer(new Pair<>(capability,
+                                new Pair<>(tech, isProvisioned)));
+                    }
+                };
+
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+
+            // Set provisioning before registering callback
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_LTE, true);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_IWLAN, true);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_CROSS_SIM, false);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_NR, true);
+
+            TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            provisioningManager.registerFeatureProvisioningChangedCallback(
+                    getContext().getMainExecutor(), featureProvisioningCallback);
+
+            // Verify notification initial provisioning status when the callback registered
+            // PRESENCE (4) - LTE, IWLAN, CROSS_SIM, NR
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_CROSS_SIM, false))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
+
+            mOnRcsFeatureChangedQueue.clear();
+            provisioningManager.unregisterFeatureProvisioningChangedCallback(
+                    featureProvisioningCallback);
+        } finally {
+            TelephonyUtils.resetCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            automan.dropShellPermissionIdentity();
+        }
+
+        overrideCarrierConfig(null);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFY_INITIAL_IMS_PROVISIONING_STATUS)
+    public void testInitialNotificationForRcsWhenImsServiceConnected() throws Exception {
+        if (!ImsUtils.shouldTestImsSingleRegistration()) {
+            return;
+        }
+
+        // Change carrier config as Rcs provisioning required
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.Ims.KEY_IMS_SINGLE_REGISTRATION_REQUIRED_BOOL,
+                true);
+        PersistableBundle innerBundle = new PersistableBundle();
+        innerBundle.putIntArray(
+                CarrierConfigManager.Ims.KEY_CAPABILITY_TYPE_PRESENCE_UCE_INT_ARRAY,
+                new int[]{IMS_REGI_TECH_LTE, IMS_REGI_TECH_IWLAN, IMS_REGI_TECH_CROSS_SIM,
+                        IMS_REGI_TECH_NR}
+        );
+        bundle.putPersistableBundle(
+                CarrierConfigManager.Ims.KEY_RCS_REQUIRES_PROVISIONING_BUNDLE,
+                innerBundle);
+        overrideCarrierConfig(bundle);
+
+        ProvisioningManager provisioningManager =
+                ProvisioningManager.createForSubscriptionId(sTestSub);
+
+        // Create Q to check whether callback is called or not
+        LinkedBlockingQueue<Pair<Integer, Pair<Integer, Boolean>>> mOnRcsFeatureChangedQueue =
+                new LinkedBlockingQueue<>();
+        ProvisioningManager.FeatureProvisioningCallback featureProvisioningCallback =
+                new ProvisioningManager.FeatureProvisioningCallback() {
+                    @Override
+                    public void onFeatureProvisioningChanged(
+                            @MmTelFeature.MmTelCapabilities.MmTelCapability int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                    }
+
+                    @Override
+                    public void onRcsFeatureProvisioningChanged(
+                            @RcsFeature.RcsImsCapabilities.RcsImsCapabilityFlag int capability,
+                            @ImsRegistrationImplBase.ImsRegistrationTech int tech,
+                            boolean isProvisioned) {
+                        mOnRcsFeatureChangedQueue.offer(new Pair<>(capability,
+                                new Pair<>(tech, isProvisioned)));
+                    }
+                };
+
+        final UiAutomation automan = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            automan.adoptShellPermissionIdentity();
+
+            // Set provisioning before registering callback
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_LTE, true);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_IWLAN, true);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_CROSS_SIM, false);
+            provisioningManager.setRcsProvisioningStatusForCapability(RCS_CAP_PRESENCE,
+                    IMS_REGI_TECH_NR, true);
+
+            TelephonyUtils.enableCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            // Register callback
+            provisioningManager.registerFeatureProvisioningChangedCallback(
+                    getContext().getMainExecutor(), featureProvisioningCallback);
+
+            // Wait until callback is received
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
+            // Clear Q : delete provisioning value received when registering callback
+            mOnRcsFeatureChangedQueue.clear();
+
+            // Connect ImsService
+            triggerFrameworkConnectToImsServiceBindMmTelAndRcsFeature();
+
+            // Verify notification initial provisioning status when ImsService connected
+            // PRESENCE (4) - LTE, IWLAN, CROSS_SIM, NR
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_LTE, true))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_IWLAN, true))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_CROSS_SIM, false))));
+            assertTrue(waitForParam(mOnRcsFeatureChangedQueue,
+                    new Pair<>(RCS_CAP_PRESENCE, new Pair<>(IMS_REGI_TECH_NR, true))));
+
+            mOnRcsFeatureChangedQueue.clear();
+            provisioningManager.unregisterFeatureProvisioningChangedCallback(
+                    featureProvisioningCallback);
+        } finally {
+            TelephonyUtils.resetCompatCommand(InstrumentationRegistry.getInstrumentation(),
+                    TelephonyUtils.CTS_APP_PACKAGE,
+                    SUPPORT_PROVISION_STATUS_FOR_CAPABILITY_STRING);
+
+            automan.dropShellPermissionIdentity();
+        }
+
+        overrideCarrierConfig(null);
     }
 
     @Ignore("The ProvisioningManager constants were moved back to @hide for now, don't want to "

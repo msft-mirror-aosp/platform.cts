@@ -18,12 +18,14 @@ package {
 
 android_test {
     name: "CtsBroadcastTestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "guava",
+        "platformprotosnano",
         "truth",
         "testng",
     ],

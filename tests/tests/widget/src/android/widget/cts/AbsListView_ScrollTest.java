@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
@@ -41,6 +42,7 @@ import androidx.test.filters.Suppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.CtsTouchUtils.EventInjectionListener;
 import com.android.compatibility.common.util.WidgetTestUtils;
@@ -68,7 +70,12 @@ public class AbsListView_ScrollTest {
             "Uganda", "Ukraine", "United States", "Vanuatu", "Venezuela", "Zimbabwe"
     };
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<ListViewFixedCtsActivity> mActivityRule =
             new ActivityTestRule<>(ListViewFixedCtsActivity.class);
 
@@ -519,8 +526,7 @@ public class AbsListView_ScrollTest {
         // Note that due to asynchronous nature of the moving pieces, we might still get one
         // more scroll frame as the injected motion events that constitute an emulated tap
         // are being processed by our list view.
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mListView, false,
-                /* useGlobalInjection= */ false);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mListView);
 
         // Sleep for a second
         SystemClock.sleep(1000);

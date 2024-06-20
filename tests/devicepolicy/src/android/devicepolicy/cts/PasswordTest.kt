@@ -15,7 +15,6 @@
  */
 package android.devicepolicy.cts
 
-
 import android.app.admin.DevicePolicyManager
 import android.content.pm.PackageManager
 import android.os.Build
@@ -31,10 +30,10 @@ import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest
 import com.android.bedstead.harrier.policies.DeprecatedResetPassword
 import com.android.bedstead.harrier.policies.FailedPasswordAttempts
 import com.android.bedstead.harrier.policies.PasswordExpirationTimeout
@@ -45,6 +44,8 @@ import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.utils.Assert.assertThrows
+import com.android.bedstead.nene.utils.ShellCommand
+import com.android.bedstead.nene.utils.Versions.R
 import com.android.compatibility.common.util.ApiTest
 import com.android.queryable.annotations.IntegerQuery
 import com.android.queryable.annotations.Query
@@ -55,7 +56,6 @@ import org.junit.Ignore
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.testng.Assert
-import com.android.bedstead.nene.utils.Versions.R
 
 @RunWith(BedsteadJUnit4::class)
 class PasswordTest {
@@ -176,7 +176,7 @@ class PasswordTest {
         try {
             deviceState.dpc().devicePolicyManager()
                 .setRequiredStrongAuthTimeout(deviceState.dpc().componentName(), TIMEOUT)
-            Truth.assertThat(TestApis.devicePolicy().getRequiredStrongAuthTimeout()
+            assertThat(TestApis.devicePolicy().getRequiredStrongAuthTimeout()
             ).isNotEqualTo(TIMEOUT)
         } finally {
             deviceState.dpc().devicePolicyManager()
@@ -191,7 +191,7 @@ class PasswordTest {
     @PolicyAppliesTest(policy = [DeprecatedResetPassword::class])
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#resetPassword"])
     fun resetPassword_targetBeforeN_returnsFalse() {
-        Truth.assertThat(
+        assertThat(
             deviceState.dpc()
                 .devicePolicyManager().resetPassword(Defaults.DEFAULT_PASSWORD,  /* flags= */0)
         ).isFalse()
@@ -1528,10 +1528,57 @@ class PasswordTest {
         )
     }
 
+    @RequireFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN)
+    @PolicyAppliesTest(
+            policy = [PasswordQuality::class]
+    )
+    @EnsurePasswordSet(password = TEST_PASSWORD)
+    fun currentFailedPasswordAttempts_resets_whenPasswordIsCorrect() {
+        val wrongPassword = TEST_PASSWORD + "5"
+        assertThat(
+                deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+        ).isEqualTo(0)
+        // Try an incorrect password.
+        assertThat(TestApis.users().instrumented().lockCredentialEquals(wrongPassword)).isFalse()
+        // Test that now there is one failed attempt.
+        assertThat(
+                deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+        ).isEqualTo(1)
+        // Try the correct password and check the failed attempts number has been reset to 0.
+        assertThat(TestApis.users().instrumented().lockCredentialEquals(TEST_PASSWORD)).isTrue()
+        assertThat(
+                deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+        ).isEqualTo(0)
+    }
+
+    @RequireFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN)
+    @PolicyAppliesTest(
+            policy = [PasswordQuality::class]
+    )
+    @EnsurePasswordSet(password = TEST_PASSWORD)
+    fun currentFailedPasswordAttempts_increasesBy1_onFailedPasswordAttempt() {
+        val wrongPassword = TEST_PASSWORD + "5"
+        assertThat(
+                deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+        ).isEqualTo(0)
+        // Try an incorrect password.
+        assertThat(TestApis.users().instrumented().lockCredentialEquals(wrongPassword)).isFalse()
+        // Test that now there is one failed attempt.
+        assertThat(
+                deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+        ).isEqualTo(1)
+        // Try an incorrect password.
+        assertThat(TestApis.users().instrumented().lockCredentialEquals(wrongPassword)).isFalse()
+        // Test that now there are two failed attempts.
+        assertThat(
+                deviceState.dpc().devicePolicyManager().currentFailedPasswordAttempts
+        ).isEqualTo(2)
+    }
+
     companion object {
         private const val TIMEOUT: Long = 51234
         private const val PASSWORD_MEDIUM_COMPLEXITY = "abc12"
-
+        private const val TEST_PASSWORD = "1234"
         private const val TEST_VALUE: Int = 5
         private const val DEFAULT_LENGTH = 0
         private const val DEFAULT_NUMERIC = 1

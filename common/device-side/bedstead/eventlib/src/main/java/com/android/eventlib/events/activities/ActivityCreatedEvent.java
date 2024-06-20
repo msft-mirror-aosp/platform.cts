@@ -35,6 +35,8 @@ import com.android.queryable.queries.PersistableBundleQuery;
 import com.android.queryable.queries.PersistableBundleQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link Activity#onCreate(Bundle)} or
  * {@link Activity#onCreate(Bundle, PersistableBundle)} is called.
@@ -138,6 +140,7 @@ public final class ActivityCreatedEvent extends Event {
             setActivity(activityInfo);
         }
 
+        @CanIgnoreReturnValue
         public ActivityCreatedEventLogger setActivity(android.content.pm.ActivityInfo activityInfo) {
             mEvent.mActivity = ActivityInfo.builder()
                     .activityClass(activityInfo.name)
@@ -146,6 +149,7 @@ public final class ActivityCreatedEvent extends Event {
             return this;
         }
 
+        @CanIgnoreReturnValue
         public ActivityCreatedEventLogger setSavedInstanceState(Bundle savedInstanceState) {
             mEvent.mSavedInstanceState = new SerializableParcelWrapper<>(savedInstanceState);
             return this;
@@ -157,6 +161,7 @@ public final class ActivityCreatedEvent extends Event {
         }
 
         /** Sets the task ID for the activity. */
+        @CanIgnoreReturnValue
         public ActivityCreatedEventLogger setTaskId(int taskId) {
             mEvent.mTaskId = taskId;
             return this;

@@ -98,12 +98,12 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.lang.ref.Reference;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 @LargeTest
@@ -2098,7 +2098,7 @@ public class ASurfaceControlTest {
         } catch (InterruptedException e) {
             Assert.fail("interrupted");
         }
-        if (!verifySetFrameTimeline(true, mActivity.getSurfaceView().getHolder())) return;
+        if (!verifySetFrameTimeline(false, mActivity.getSurfaceView().getHolder())) return;
         mActivity.verifyScreenshot(
                 new PixelChecker(Color.RED) { //10000
                     @Override
@@ -2413,7 +2413,7 @@ public class ASurfaceControlTest {
         try {
             do {
                 ratio = incomingRatio;
-                TimeUnit.MILLISECONDS.sleep(100);
+                TimeUnit.MILLISECONDS.sleep(500);
                 incomingRatio = display.getHdrSdrRatio();
                 // Bail if the ratio settled or if it's been way too long.
             } while (Math.abs(ratio - incomingRatio) > 0.01
@@ -2432,82 +2432,59 @@ public class ASurfaceControlTest {
 
         final int dataspace = DataSpace.DATASPACE_BT2020_HLG;
 
-        verifyTest(
-                new BasicSurfaceHolderCallback() {
-                    @Override
-                    public void surfaceCreated(SurfaceHolder holder) {
-                        long surfaceTransaction = nSurfaceTransaction_create();
-                        long surfaceControl = createFromWindow(holder.getSurface());
-                        setSolidBuffer(surfaceControl, surfaceTransaction, DEFAULT_LAYOUT_WIDTH,
-                                DEFAULT_LAYOUT_HEIGHT, Color.WHITE);
-                        nSurfaceTransaction_setDataSpace(surfaceControl, surfaceTransaction,
-                                dataspace);
-                        nSurfaceTransaction_apply(surfaceTransaction);
-                        nSurfaceTransaction_delete(surfaceTransaction);
-                    }
-                },
-                // Don't check pixels
-                new PixelChecker(Color.WHITE) { //10000
-                    @Override
-                    public boolean checkPixels(int pixelCount, int width, int height) {
-                        return true;
-                    }
-                });
+        AtomicLong surfaceControlContainer = new AtomicLong();
+
+        final CountDownLatch readyFence = new CountDownLatch(1);
+        ASurfaceControlTestActivity.SurfaceHolderCallback surfaceHolderCallback =
+                new ASurfaceControlTestActivity.SurfaceHolderCallback(
+                        new SurfaceHolderCallback(new BasicSurfaceHolderCallback() {
+                            @Override
+                            public void surfaceCreated(SurfaceHolder holder) {
+                                long surfaceTransaction = nSurfaceTransaction_create();
+                                long surfaceControl = createFromWindow(holder.getSurface());
+                                surfaceControlContainer.set(surfaceControl);
+                                setSolidBuffer(surfaceControl, surfaceTransaction,
+                                        DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT, Color.WHITE);
+                                nSurfaceTransaction_setDataSpace(surfaceControl, surfaceTransaction,
+                                        dataspace);
+                                nSurfaceTransaction_apply(surfaceTransaction);
+                                nSurfaceTransaction_delete(surfaceTransaction);
+                            }
+                        }),
+                        readyFence,
+                        mActivity.getParentFrameLayout().getRootSurfaceControl());
+        mActivity.createSurface(surfaceHolderCallback);
+        try {
+            assertTrue("timeout", readyFence.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Assert.fail("interrupted");
+        }
 
         float headroom = getStableHdrSdrRatio(display);
         // Require some small threshold for allowable headroom
         assumeTrue(headroom > 1.02f);
         float targetHeadroom = 1.f + (headroom - 1.f) / 2;
 
-        verifyTest(
-                new BasicSurfaceHolderCallback() {
-                    @Override
-                    public void surfaceCreated(SurfaceHolder holder) {
-                        long surfaceTransaction = nSurfaceTransaction_create();
-                        long surfaceControl = createFromWindow(holder.getSurface());
-                        setSolidBuffer(surfaceControl, surfaceTransaction, DEFAULT_LAYOUT_WIDTH,
-                                DEFAULT_LAYOUT_HEIGHT, Color.WHITE);
-                        nSurfaceTransaction_setDataSpace(surfaceControl, surfaceTransaction,
-                                dataspace);
-                        nSurfaceTransaction_setDesiredHdrHeadroom(surfaceControl,
-                                surfaceTransaction, targetHeadroom);
-                        nSurfaceTransaction_apply(surfaceTransaction);
-                        nSurfaceTransaction_delete(surfaceTransaction);
-                    }
-                },
-                new PixelChecker(Color.WHITE) { //10000
-                    @Override
-                    public boolean checkPixels(int pixelCount, int width, int height) {
-                        boolean achievedHeadroom =
-                                getStableHdrSdrRatio(display) <= (targetHeadroom + 1.01);
-                        assertTrue("Headroom restriction is not respected", achievedHeadroom);
-                        return achievedHeadroom;
-                    }
-                });
-        verifyTest(
-                new BasicSurfaceHolderCallback() {
-                    @Override
-                    public void surfaceCreated(SurfaceHolder holder) {
-                        long surfaceTransaction = nSurfaceTransaction_create();
-                        long surfaceControl = createFromWindow(holder.getSurface());
-                        setSolidBuffer(surfaceControl, surfaceTransaction, DEFAULT_LAYOUT_WIDTH,
-                                DEFAULT_LAYOUT_HEIGHT, Color.WHITE);
-                        nSurfaceTransaction_setDataSpace(surfaceControl, surfaceTransaction,
-                                dataspace);
-                        nSurfaceTransaction_setDesiredHdrHeadroom(surfaceControl,
-                                surfaceTransaction, 0.f);
-                        nSurfaceTransaction_apply(surfaceTransaction);
-                        nSurfaceTransaction_delete(surfaceTransaction);
-                    }
-                },
-                new PixelChecker(Color.WHITE) { //10000
-                    @Override
-                    public boolean checkPixels(int pixelCount, int width, int height) {
-                        boolean achievedHeadroom = getStableHdrSdrRatio(display) > targetHeadroom;
-                        assertTrue("Removed headroom restriction is not respected",
-                                achievedHeadroom);
-                        return achievedHeadroom;
-                    }
-                });
+        mActivity.runOnUiThread(() -> {
+            long surfaceTransaction = nSurfaceTransaction_create();
+            nSurfaceTransaction_setDesiredHdrHeadroom(
+                    surfaceControlContainer.get(), surfaceTransaction, targetHeadroom);
+            nSurfaceTransaction_apply(surfaceTransaction);
+            nSurfaceTransaction_delete(surfaceTransaction);
+        });
+
+        assertTrue("Headroom restriction is not respected",
+                getStableHdrSdrRatio(display) <= (targetHeadroom + 0.01));
+
+        mActivity.runOnUiThread(() -> {
+            long surfaceTransaction = nSurfaceTransaction_create();
+            nSurfaceTransaction_setDesiredHdrHeadroom(
+                    surfaceControlContainer.get(), surfaceTransaction, 0.f);
+            nSurfaceTransaction_apply(surfaceTransaction);
+            nSurfaceTransaction_delete(surfaceTransaction);
+        });
+
+        assertTrue("Removed headroom restriction is not respected",
+                getStableHdrSdrRatio(display) > targetHeadroom);
     }
 }

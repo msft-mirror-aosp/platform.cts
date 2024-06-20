@@ -20,11 +20,14 @@
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <application>
         <activity android:name="android.animation.cts.AnimationActivity"
-                  android:label="AnimationActivity"/>
+                  android:label="AnimationActivity"
+                  android:exported="true"/>
         <activity android:name="android.animation.cts.ButtonViewActivity"
-                  android:label="ButtonViewActivity"/>
+                  android:label="ButtonViewActivity"
+                  android:exported="true"/>
         <activity
-           android:name="android.animation.cts.LayoutAnimationActivity" />
+           android:name="android.animation.cts.LayoutAnimationActivity"
+           android:exported="true"/>
         <uses-library android:name="android.test.runner" />
     </application>
 

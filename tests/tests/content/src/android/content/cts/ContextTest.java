@@ -16,16 +16,16 @@
 
 package android.content.cts;
 
-import static android.Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD;
 import static android.Manifest.permission.READ_WALLPAPER_INTERNAL;
 import static android.content.cts.contenturitestapp.IContentUriTestService.PKG_ACCESS_TYPE_GENERAL;
 import static android.content.cts.contenturitestapp.IContentUriTestService.PKG_ACCESS_TYPE_GRANT;
 import static android.content.cts.contenturitestapp.IContentUriTestService.PKG_ACCESS_TYPE_NONE;
 import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
-import static android.security.Flags.FLAG_ENFORCE_INTENT_FILTER_MATCH;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
+import static com.android.server.am.Flags.FLAG_USE_PERMISSION_MANAGER_FOR_BROADCAST_DELIVERY_CHECK;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -42,8 +42,6 @@ import android.app.BroadcastOptions;
 import android.app.Instrumentation;
 import android.app.Service;
 import android.app.WallpaperManager;
-import android.app.compat.CompatChanges;
-import android.app.compat.PackageOverride;
 import android.content.ActivityNotFoundException;
 import android.content.AttributionSource;
 import android.content.BroadcastReceiver;
@@ -71,6 +69,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -87,6 +86,7 @@ import android.util.Log;
 import android.util.Xml;
 import android.view.WindowManager;
 
+import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -111,9 +111,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 @AppModeFull // TODO(Instant) Figure out which APIs should work.
 @RunWith(JUnit4.class)
@@ -150,7 +147,6 @@ public class ContextTest {
     private static final int BROADCAST_TIMEOUT = 10000;
     private static final int SERVICE_TIMEOUT = 15000;
     private static final int ROOT_UID = 0;
-    private static final long ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID = 161252188;
 
     /**
      * Shell command to broadcast {@link ResultReceiver#MOCK_ACTION} as an external app.
@@ -164,20 +160,6 @@ public class ContextTest {
     private static final String CLS_TEST_SERVICE = PKG_TEST_SERVICE + ".TestService";
     private static final ComponentName COMPONENT_CONTENT_URI_TEST_SERVICE =
             new ComponentName(PKG_TEST_SERVICE, CLS_TEST_SERVICE);
-
-    /* Constants for IntentResolutionTestApp */
-    private static final String ACTION_RECEIVING_INTENT =
-            "android.content.cts.ContextTest.RECEIVING_INTENT";
-    private static final String RESOLUTION_TEST_PKG_NAME =
-            "android.content.cts.IntentResolutionTest";
-    private static final String RESOLUTION_TEST_ACTION_NAME =
-            "android.intent.action.RESOLUTION_TEST";
-    private static final String RESOLUTION_TEST_ACTIVITY_NAME =
-            "android.content.pm.cts.TestPmActivity";
-    private static final String RESOLUTION_TEST_SERVICE_NAME =
-            "android.content.pm.cts.TestPmService";
-    private static final String RESOLUTION_TEST_RECEIVER_NAME =
-            "android.content.pm.cts.PmTestReceiver";
 
     private IContentUriTestService mContentUriTestService;
     private ServiceConnection mContentUriServiceConnection;
@@ -269,6 +251,7 @@ public class ContextTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testCreateAttributionContext() throws Exception {
         final String tag = "testCreateAttributionContext";
         final Context attrib = mContext.createAttributionContext(tag);
@@ -277,6 +260,7 @@ public class ContextTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testCreateAttributionContextFromParams() throws Exception {
         final ContextParams params = new ContextParams.Builder()
                 .setAttributionTag("foo")
@@ -295,6 +279,7 @@ public class ContextTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testContextParams() throws Exception {
         final ContextParams params = new ContextParams.Builder()
                 .setAttributionTag("foo")
@@ -310,14 +295,25 @@ public class ContextTest {
         assertEquals("baz", params.getNextAttributionSource().getAttributionTag());
     }
 
-    private AttributionSource buildFakeAttributionSource() {
-        return new AttributionSource.Builder(2)
+    // TODO: Add `buildFakeAttributionSource()` and `validateContextParams()` methods back, later
+    //  when Android R (sdk version 30) is no longer supported
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @ApiTest(apis = {"android.content.AttributionSource.Builder#setNext"})
+    public void testAttributionSourceSetNext() throws Exception {
+        final AttributionSource next = new AttributionSource.Builder(2)
                 .setPackageName("nextBar")
                 .setAttributionTag("nextBaz")
                 .build();
-    }
-
-    private void validateContextParams(ContextParams params) throws Exception {
+        final ContextParams params = new ContextParams.Builder()
+                .setAttributionTag("foo")
+                .setNextAttributionSource(new AttributionSource.Builder(1)
+                        .setPackageName("bar")
+                        .setAttributionTag("baz")
+                        .setNext(next)
+                        .build())
+                .build();
         // Setting a 'next' should not affect prev.
         assertEquals("foo", params.getAttributionTag());
         assertEquals(1, params.getNextAttributionSource().getUid());
@@ -332,24 +328,13 @@ public class ContextTest {
     }
 
     @Test
-    @ApiTest(apis = {"android.content.AttributionSource.Builder#setNext"})
-    public void testAttributionSourceSetNext() throws Exception {
-        final AttributionSource next = buildFakeAttributionSource();
-        final ContextParams params = new ContextParams.Builder()
-                .setAttributionTag("foo")
-                .setNextAttributionSource(new AttributionSource.Builder(1)
-                        .setPackageName("bar")
-                        .setAttributionTag("baz")
-                        .setNext(next)
-                        .build())
-                .build();
-        validateContextParams(params);
-    }
-
-    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     @ApiTest(apis = {"android.content.AttributionSource.Builder#setNextAttributionSource"})
     public void testAttributionSourceSetNextAttributionSource() throws Exception {
-        final AttributionSource next = buildFakeAttributionSource();
+        final AttributionSource next = new AttributionSource.Builder(2)
+                .setPackageName("nextBar")
+                .setAttributionTag("nextBaz")
+                .build();
         final ContextParams params = new ContextParams.Builder()
                 .setAttributionTag("foo")
                 .setNextAttributionSource(new AttributionSource.Builder(1)
@@ -358,7 +343,17 @@ public class ContextTest {
                         .setNextAttributionSource(next)
                         .build())
                 .build();
-        validateContextParams(params);
+        // Setting a 'next' should not affect prev.
+        assertEquals("foo", params.getAttributionTag());
+        assertEquals(1, params.getNextAttributionSource().getUid());
+        assertEquals("bar", params.getNextAttributionSource().getPackageName());
+        assertEquals("baz", params.getNextAttributionSource().getAttributionTag());
+
+        final AttributionSource check =
+                params.getNextAttributionSource().getNext();
+        assertEquals(2, check.getUid());
+        assertEquals("nextBar", check.getPackageName());
+        assertEquals("nextBaz", check.getAttributionTag());
     }
 
     @Test
@@ -493,9 +488,9 @@ public class ContextTest {
         assertNotNull(testTheme);
 
         int[] attrs = {
-            android.R.attr.windowNoTitle,
-            android.R.attr.panelColorForeground,
-            android.R.attr.panelColorBackground
+                android.R.attr.windowNoTitle,
+                android.R.attr.panelColorForeground,
+                android.R.attr.panelColorBackground
         };
         TypedArray attrArray = null;
         try {
@@ -540,7 +535,7 @@ public class ContextTest {
         }
 
         // Test obtainStyledAttributes(AttributeSet, int[]) with unavailable resource id.
-        int testInt[] = { 0, 0 };
+        int[] testInt = {0, 0};
         testTypedArray = mContext.obtainStyledAttributes(-1, testInt);
         // fail("Wrong resource id should not be accepted.");
         assertNotNull(testTypedArray);
@@ -672,10 +667,9 @@ public class ContextTest {
     }
 
     static void beginDocument(XmlPullParser parser, String firstElementName)
-            throws XmlPullParserException, IOException
-    {
+            throws XmlPullParserException, IOException {
         int type;
-        while ((type=parser.next()) != parser.START_TAG
+        while ((type = parser.next()) != parser.START_TAG
                 && type != parser.END_DOCUMENT) {
             ;
         }
@@ -795,11 +789,7 @@ public class ContextTest {
         final ResultReceiver receiver = new HighPriorityBroadcastReceiver();
         final ResultReceiver finalReceiver = new ResultReceiver();
 
-        AppOpsManager aom =
-                (AppOpsManager) getContextUnderTest().getSystemService(Context.APP_OPS_SERVICE);
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(aom,
-                (appOpsMan) -> appOpsMan.setUidMode(AppOpsManager.OPSTR_READ_CELL_BROADCASTS,
-                Process.myUid(), AppOpsManager.MODE_ALLOWED));
+        setAppOpMode(AppOpsManager.OPSTR_READ_CELL_BROADCASTS, AppOpsManager.MODE_ALLOWED);
 
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
 
@@ -813,7 +803,7 @@ public class ContextTest {
                 null, //initial data
                 null); // initial extras
 
-        new PollingCheck(BROADCAST_TIMEOUT){
+        new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
             protected boolean check() {
                 return receiver.hasReceivedBroadCast()
@@ -825,7 +815,7 @@ public class ContextTest {
             receiver.notify();
         }
 
-        new PollingCheck(BROADCAST_TIMEOUT){
+        new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
             protected boolean check() {
                 // ensure that first receiver has received broadcast before final receiver
@@ -838,12 +828,8 @@ public class ContextTest {
     @Test
     public void testSendOrderedBroadcastWithAppOp_NotGranted() {
         final ResultReceiver receiver = new ResultReceiver();
+        setAppOpMode(AppOpsManager.OPSTR_READ_CELL_BROADCASTS, AppOpsManager.MODE_ERRORED);
 
-        AppOpsManager aom =
-                (AppOpsManager) getContextUnderTest().getSystemService(Context.APP_OPS_SERVICE);
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(aom,
-                (appOpsMan) -> appOpsMan.setUidMode(AppOpsManager.OPSTR_READ_CELL_BROADCASTS,
-                        Process.myUid(), AppOpsManager.MODE_ERRORED));
 
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
 
@@ -1002,160 +988,6 @@ public class ContextTest {
         mContext.unregisterReceiver(broadcastReceiver);
     }
 
-    private static class IntentRetriever extends BroadcastReceiver {
-        private CountDownLatch mLatch;
-        private Intent mIntent;
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            mIntent = intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
-            mLatch.countDown();
-        }
-    }
-
-    private IntentRetriever setupMismatchFlagTest() {
-        // Explicitly disable the enforcement to test non-matching intents
-        final var disable = Map.of(ENFORCE_INTENTS_TO_MATCH_INTENT_FILTERS_CHANGEID,
-                new PackageOverride.Builder().setEnabled(false).build());
-        SystemUtil.runWithShellPermissionIdentity(() ->
-                        CompatChanges.putPackageOverrides(mContext.getPackageName(), disable),
-                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
-
-        final var receiver = new IntentRetriever();
-        final var filter = new IntentFilter(ACTION_RECEIVING_INTENT);
-        mContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
-        mRegisteredReceiverList.add(receiver);
-        return receiver;
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
-    public void testActivityIntentMismatchFlag() throws InterruptedException {
-        final var receiver = setupMismatchFlagTest();
-
-        // Set up base intent with non matching action
-        var intent = new Intent("bad.action")
-                .setClassName(RESOLUTION_TEST_PKG_NAME, RESOLUTION_TEST_ACTIVITY_NAME)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startActivity(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(receiver.mIntent.isMismatchingFilter());
-        Thread.sleep(500);
-
-        // Set up base intent with matching action
-        intent.setAction(RESOLUTION_TEST_ACTION_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startActivity(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-        Thread.sleep(500);
-
-        // Package intents should always match
-        intent = new Intent(RESOLUTION_TEST_ACTION_NAME)
-                .setPackage(RESOLUTION_TEST_PKG_NAME)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startActivity(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-        Thread.sleep(500);
-
-        // Test whether the flag is cleared when matching
-        intent.addExtendedFlags(Intent.EXTENDED_FLAG_FILTER_MISMATCH);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startActivity(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
-    public void testServiceIntentMismatchFlag() throws InterruptedException {
-        final var receiver = setupMismatchFlagTest();
-
-        // Exempt target app so we can start its services
-        SystemUtil.runShellCommand("cmd deviceidle whitelist +" + RESOLUTION_TEST_PKG_NAME);
-
-        // Set up base intent with non matching action
-        var intent = new Intent("bad.action")
-                .setClassName(RESOLUTION_TEST_PKG_NAME, RESOLUTION_TEST_SERVICE_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startService(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(receiver.mIntent.isMismatchingFilter());
-
-        // Set up base intent with matching action
-        intent.setAction(RESOLUTION_TEST_ACTION_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startService(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-
-        // Package intents should always match
-        intent = new Intent(RESOLUTION_TEST_ACTION_NAME)
-                .setPackage(RESOLUTION_TEST_PKG_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startService(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-
-        // Test whether the flag is cleared when matching
-        intent.addExtendedFlags(Intent.EXTENDED_FLAG_FILTER_MISMATCH);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.startService(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_ENFORCE_INTENT_FILTER_MATCH)
-    public void testBroadcastIntentMismatchFlag() throws InterruptedException {
-        final var receiver = setupMismatchFlagTest();
-
-        // Set up base intent with non matching action
-        var intent = new Intent("bad.action")
-                .setClassName(RESOLUTION_TEST_PKG_NAME, RESOLUTION_TEST_RECEIVER_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.sendBroadcast(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(receiver.mIntent.isMismatchingFilter());
-
-        // Set up base intent with matching action
-        intent.setAction(RESOLUTION_TEST_ACTION_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.sendBroadcast(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-
-        // Package intents should always match
-        intent = new Intent(RESOLUTION_TEST_ACTION_NAME)
-                .setPackage(RESOLUTION_TEST_PKG_NAME);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.sendBroadcast(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-
-        // Test whether the flag is cleared when matching
-        intent.addExtendedFlags(Intent.EXTENDED_FLAG_FILTER_MISMATCH);
-
-        receiver.mLatch = new CountDownLatch(1);
-        mContext.sendBroadcast(intent);
-        assertTrue(receiver.mLatch.await(5, TimeUnit.SECONDS));
-        assertFalse(receiver.mIntent.isMismatchingFilter());
-    }
-
     @Test
     public void testAccessWallpaper() throws IOException, InterruptedException {
         if (!isWallpaperSupported()) return;
@@ -1210,11 +1042,11 @@ public class ContextTest {
 
         SQLiteDatabase.CursorFactory factory = new SQLiteDatabase.CursorFactory() {
             public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery,
-                                    String editTable, SQLiteQuery query) {
+                    String editTable, SQLiteQuery query) {
                 return new android.database.sqlite.SQLiteCursor(db, masterQuery, editTable, query) {
                     @Override
                     public boolean requery() {
-                        setSelectionArguments(new String[] { "2" });
+                        setSelectionArguments(new String[]{"2"});
                         return super.requery();
                     }
                 };
@@ -1306,31 +1138,6 @@ public class ContextTest {
     }
 
     @Test
-    public void testStartActivityWithNonExportedActivity() {
-        Intent intent = new Intent("android.cts.action.TEST_NON_EXPORTED");
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try {
-            mContext.startActivity(intent);
-            fail("Test startActivity should throw a ActivityNotFoundException here.");
-        } catch (ActivityNotFoundException e) {
-            // Because ContextWrapper is a wrapper class, so no need to test
-            // the details of the function's performance. Getting a result
-            // from the wrapped class is enough for testing.
-        }
-    }
-
-    @Test
-    public void testStartActivityWithExportedActivity() {
-        Intent intent = new Intent("android.cts.action.TEST_EXPORTED");
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try {
-            mContext.startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            fail("Test startActivity should not throw a ActivityNotFoundException here.");
-        }
-    }
-
-    @Test
     public void testStartActivities() throws Exception {
         final Intent[] intents = {
                 new Intent().setComponent(new ComponentName(mContext,
@@ -1368,7 +1175,7 @@ public class ContextTest {
     }
 
     @Test
-    public void testStartActivity()  {
+    public void testStartActivity() {
         try (ActivitySession activitySession = new ActivitySession()) {
             Intent intent = new Intent(mContext, AvailableIntentsActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -1414,7 +1221,7 @@ public class ContextTest {
 
     @Test
     public void testCreatePackageContextAsUser() throws Exception {
-        for (UserHandle user : new UserHandle[] {
+        for (UserHandle user : new UserHandle[]{
                 android.os.Process.myUserHandle(),
                 UserHandle.ALL, UserHandle.CURRENT, UserHandle.SYSTEM
         }) {
@@ -1425,7 +1232,7 @@ public class ContextTest {
 
     @Test
     public void testCreateContextAsUser() throws Exception {
-        for (UserHandle user : new UserHandle[] {
+        for (UserHandle user : new UserHandle[]{
                 android.os.Process.myUserHandle(),
                 UserHandle.ALL, UserHandle.CURRENT, UserHandle.SYSTEM
         }) {
@@ -1879,7 +1686,7 @@ public class ContextTest {
      * This test does the following:
      * 1. Binds to TestService in {@link android.content.cts.contenturitestapp}.
      * 2. Sends a message to TestService requesting a content URI that this package has (or doesn't
-     *    have) access to via grants or general permissions.
+     * have) access to via grants or general permissions.
      * 3. Checks the result from checkContentUriPermissionFull().
      */
     @RequiresFlagsEnabled(android.security.Flags.FLAG_CONTENT_URI_PERMISSION_APIS)
@@ -1891,18 +1698,18 @@ public class ContextTest {
             internalTestCheckContentUriPermissionFull(PKG_ACCESS_TYPE_NONE,
                     /* modeFlagsTestHasAccessTo */ 0);
 
-            int[] packageAccessTypeValues = new int[] {
+            int[] packageAccessTypeValues = new int[]{
                     PKG_ACCESS_TYPE_GRANT,
                     PKG_ACCESS_TYPE_GENERAL
             };
-            int[] modeFlagsTestHasAccessToValues = new int[] {
+            int[] modeFlagsTestHasAccessToValues = new int[]{
                     Intent.FLAG_GRANT_READ_URI_PERMISSION,
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             };
 
-            for (int packageAccessType: packageAccessTypeValues) {
-                for (int modeFlagsTestHasAccessTo: modeFlagsTestHasAccessToValues) {
+            for (int packageAccessType : packageAccessTypeValues) {
+                for (int modeFlagsTestHasAccessTo : modeFlagsTestHasAccessToValues) {
                     internalTestCheckContentUriPermissionFull(packageAccessType,
                             modeFlagsTestHasAccessTo);
                 }
@@ -1993,6 +1800,7 @@ public class ContextTest {
     }
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testCheckCallingUriPermissions() {
         List<Uri> uris = new ArrayList<>();
         Uri uri1 = Uri.parse("content://ctstest1");
@@ -2051,7 +1859,7 @@ public class ContextTest {
         mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION)
                 .setPackage(mContext.getPackageName()));
 
-        new PollingCheck(BROADCAST_TIMEOUT){
+        new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
             protected boolean check() {
                 return receiver.hasReceivedBroadCast();
@@ -2068,57 +1876,12 @@ public class ContextTest {
         mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION)
                 .setPackage(mContext.getPackageName()), null);
 
-        new PollingCheck(BROADCAST_TIMEOUT){
+        new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
             protected boolean check() {
                 return receiver.hasReceivedBroadCast();
             }
         }.run();
-    }
-
-    @Test
-    public void testSendBroadcast_WithExportedRuntimeReceiver() throws InterruptedException {
-        final ResultReceiver receiver = new ResultReceiver();
-
-        registerBroadcastReceiver(receiver, new IntentFilter(
-                ResultReceiver.MOCK_ACTION), Context.RECEIVER_EXPORTED);
-
-        mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION), null);
-
-        try {
-            new PollingCheck(BROADCAST_TIMEOUT) {
-                @Override
-                protected boolean check() {
-                    return receiver.hasReceivedBroadCast();
-                }
-            }.run();
-        } catch (AssertionError e) {
-            fail();
-        }
-    }
-
-    @Test
-    public void testSendBroadcast_WithNonExportedRuntimeReceiver() throws InterruptedException {
-        final ResultReceiver receiver = new ResultReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                fail();
-            }
-        };
-        registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
-        mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION), null);
-
-        try {
-            new PollingCheck(BROADCAST_TIMEOUT) {
-                @Override
-                protected boolean check() {
-                    return receiver.hasReceivedBroadCast();
-                }
-            }.run();
-        } catch (AssertionError e) {
-            // If the check still fails after the given timeout we can assume the receiver has
-            // never received the broadcast, so we can swallow the exception and pass the test.
-        }
     }
 
     /**
@@ -2132,12 +1895,12 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setRequireAllOfPermissions(
-                new String[] { // this test APK has both these permissions
+                new String[]{ // this test APK has both these permissions
                         android.Manifest.permission.ACCESS_WIFI_STATE,
                         android.Manifest.permission.ACCESS_NETWORK_STATE
                 });
         mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION)
-                        .setPackage(mContext.getPackageName()), null, options.toBundle());
+                .setPackage(mContext.getPackageName()), null, options.toBundle());
 
         new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
@@ -2145,6 +1908,73 @@ public class ContextTest {
                 return receiver.hasReceivedBroadCast();
             }
         }.run();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_USE_PERMISSION_MANAGER_FOR_BROADCAST_DELIVERY_CHECK)
+    public void testSendBroadcast_requireAppOpPermission_receiverHasPermissionAndDefaultAppOp()
+            throws Exception {
+        setAppOpMode(AppOpsManager.OP_GET_USAGE_STATS, AppOpsManager.MODE_DEFAULT);
+        final ResultReceiver receiver = new ResultReceiver();
+        registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
+        BroadcastOptions options = BroadcastOptions.makeBasic();
+        // The test APK has this AppOp permission.
+        options.setRequireAllOfPermissions(
+                new String[]{android.Manifest.permission.PACKAGE_USAGE_STATS});
+
+        mContext.sendBroadcast(
+                new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
+                null /* receiverPermission */,
+                options.toBundle());
+
+        new PollingCheck(BROADCAST_TIMEOUT) {
+            @Override
+            protected boolean check() {
+                return receiver.hasReceivedBroadCast();
+            }
+        }.run();
+    }
+
+    @Test
+    public void testSendBroadcast_requireAppOpPermission_receiverHasPermissionAndAllowedAppOp()
+            throws Exception {
+        setAppOpMode(AppOpsManager.OP_GET_USAGE_STATS, AppOpsManager.MODE_ALLOWED);
+        final ResultReceiver receiver = new ResultReceiver();
+        registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
+        BroadcastOptions options = BroadcastOptions.makeBasic();
+        options.setRequireAllOfPermissions(
+                new String[]{android.Manifest.permission.PACKAGE_USAGE_STATS});
+
+        mContext.sendBroadcast(
+                new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
+                null /* receiverPermission */,
+                options.toBundle());
+
+        new PollingCheck(BROADCAST_TIMEOUT) {
+            @Override
+            protected boolean check() {
+                return receiver.hasReceivedBroadCast();
+            }
+        }.run();
+    }
+
+    @Test
+    public void testSendBroadcast_requireAppOpPermission_receiverHasPermissionAndErroredAppOp()
+            throws Exception {
+        setAppOpMode(AppOpsManager.OP_GET_USAGE_STATS, AppOpsManager.MODE_ERRORED);
+        final ResultReceiver receiver = new ResultReceiver();
+        registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
+        BroadcastOptions options = BroadcastOptions.makeBasic();
+        options.setRequireAllOfPermissions(
+                new String[]{android.Manifest.permission.PACKAGE_USAGE_STATS});
+
+        mContext.sendBroadcast(
+                new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
+                null /* receiverPermission */,
+                options.toBundle());
+
+        Thread.sleep(BROADCAST_TIMEOUT);
+        assertFalse(receiver.hasReceivedBroadCast());
     }
 
     /** The receiver should not get the broadcast if it does not have all the permissions. */
@@ -2156,7 +1986,7 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setRequireAllOfPermissions(
-                new String[] { // this test APK only has ACCESS_WIFI_STATE
+                new String[]{ // this test APK only has ACCESS_WIFI_STATE
                         android.Manifest.permission.ACCESS_WIFI_STATE,
                         android.Manifest.permission.NETWORK_STACK,
                 });
@@ -2180,16 +2010,16 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setRequireAllOfPermissions(
-                new String[] { // this test APK has both these permissions
+                new String[]{ // this test APK has both these permissions
                         android.Manifest.permission.ACCESS_WIFI_STATE,
                         android.Manifest.permission.ACCESS_NETWORK_STATE
                 });
         options.setRequireNoneOfPermissions(
-                new String[] { // test package does not have NETWORK_STACK
+                new String[]{ // test package does not have NETWORK_STACK
                         android.Manifest.permission.NETWORK_STACK
                 });
         mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION)
-                        .setPackage(mContext.getPackageName()), null, options.toBundle());
+                .setPackage(mContext.getPackageName()), null, options.toBundle());
 
         new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
@@ -2210,11 +2040,11 @@ public class ContextTest {
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
         options.setRequireAllOfPermissions(
-                new String[] { // this test APK has ACCESS_WIFI_STATE
+                new String[]{ // this test APK has ACCESS_WIFI_STATE
                         android.Manifest.permission.ACCESS_WIFI_STATE
                 });
         options.setRequireNoneOfPermissions(
-                new String[] { // test package has ACCESS_NETWORK_STATE
+                new String[]{ // test package has ACCESS_NETWORK_STATE
                         android.Manifest.permission.ACCESS_NETWORK_STATE
                 });
         mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION)
@@ -2235,7 +2065,7 @@ public class ContextTest {
 
         mContext.sendBroadcastWithMultiplePermissions(
                 new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
-                new String[] { // this test APK has both these permissions
+                new String[]{ // this test APK has both these permissions
                         android.Manifest.permission.ACCESS_WIFI_STATE,
                         android.Manifest.permission.ACCESS_NETWORK_STATE,
                 });
@@ -2258,7 +2088,7 @@ public class ContextTest {
 
         mContext.sendBroadcastWithMultiplePermissions(
                 new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
-                new String[] { // this test APK only has ACCESS_WIFI_STATE
+                new String[]{ // this test APK only has ACCESS_WIFI_STATE
                         android.Manifest.permission.ACCESS_WIFI_STATE,
                         android.Manifest.permission.NETWORK_STACK,
                 });
@@ -2277,7 +2107,7 @@ public class ContextTest {
 
         mContext.sendBroadcastWithMultiplePermissions(
                 new Intent(ResultReceiver.MOCK_ACTION).setPackage(mContext.getPackageName()),
-                new String[] { // this test APK has neither of these permissions
+                new String[]{ // this test APK has neither of these permissions
                         android.Manifest.permission.NETWORK_SETTINGS,
                         android.Manifest.permission.NETWORK_STACK,
                 });
@@ -2581,7 +2411,7 @@ public class ContextTest {
             return mHadReceivedBroadCast;
         }
 
-        void reset(){
+        void reset() {
             mHadReceivedBroadCast = false;
         }
     }
@@ -2611,7 +2441,7 @@ public class ContextTest {
             return mHadReceivedBroadCast2;
         }
 
-        public void reset(){
+        public void reset() {
             mHadReceivedBroadCast1 = false;
             mHadReceivedBroadCast2 = false;
         }
@@ -2671,5 +2501,17 @@ public class ContextTest {
 
     private boolean isWallpaperSupported() {
         return WallpaperManager.getInstance(mContext).isWallpaperSupported();
+    }
+
+    private void setAppOpMode(int appOpCode, @AppOpsManager.Mode int appOpMode) {
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                (AppOpsManager) getContextUnderTest().getSystemService(Context.APP_OPS_SERVICE),
+                (appOpsMan) -> appOpsMan.setUidMode(appOpCode, Process.myUid(), appOpMode));
+    }
+
+    private void setAppOpMode(String appOp, @AppOpsManager.Mode int appOpMode) {
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                (AppOpsManager) getContextUnderTest().getSystemService(Context.APP_OPS_SERVICE),
+                (appOpsMan) -> appOpsMan.setUidMode(appOp, Process.myUid(), appOpMode));
     }
 }

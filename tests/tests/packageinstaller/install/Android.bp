@@ -36,10 +36,14 @@ android_test {
         "platform-test-annotations",
         "truth",
         "cts-install-lib",
+        "flag-junit",
         "kotlin-test",
         "Nene",
         "Harrier",
+        "bedstead-root",
         "android.content.pm.flags-aconfig-java",
+        "android.security.flags-aconfig-java",
+        "platform-test-rules",
     ],
 
     test_suites: [
@@ -51,7 +55,10 @@ android_test {
         ":CtsEmptyTestAppV2",
         ":CtsEmptyInstallerApp",
         ":CtsEmptyTestApp_FullScreenIntent",
+        ":CtsDisabledLauncherActivityApp",
         ":CtsEmptyTestApp_AppMetadataInApk",
+        ":CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit",
+        ":CtsEmptyTestApp_LowTargetSdk",
     ],
     java_resources: [
         ":HelloWorldSdk1",

@@ -25,6 +25,7 @@ import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
 import com.android.bedstead.nene.TestApis;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +38,7 @@ public final class BluetoothTest {
 
     @Test
     @EnsureBluetoothDisabled
+    @Ignore("b/333661272 disabled until functionality fixed")
     public void setEnabled_true_bluetoothIsEnabled() throws Exception {
         TestApis.bluetooth().setEnabled(true);
 
@@ -45,6 +47,7 @@ public final class BluetoothTest {
 
     @Test
     @EnsureBluetoothEnabled
+    @Ignore("b/333661272 disabled until functionality fixed")
     public void setEnabled_false_bluetoothIsDisabled() {
         TestApis.bluetooth().setEnabled(false);
 

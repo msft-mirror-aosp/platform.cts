@@ -55,7 +55,7 @@ public class AppSearchResultCtsTest {
     public void testResultEquals_failure() {
         AppSearchResult<String> result1 = AppSearchResult.newSuccessfulResult("String");
         AppSearchResult<String> result2 = AppSearchResult.newSuccessfulResult("Wrong");
-        AppSearchResult<String> resultNull = AppSearchResult.newSuccessfulResult(/*value=*/ null);
+        AppSearchResult<String> resultNull = AppSearchResult.newSuccessfulResult(/* value= */ null);
 
         assertThat(result1).isNotEqualTo(result2);
         assertThat(result1.hashCode()).isNotEqualTo(result2.hashCode());
@@ -79,7 +79,7 @@ public class AppSearchResultCtsTest {
 
         AppSearchResult<String> result6 =
                 AppSearchResult.newFailedResult(
-                        AppSearchResult.RESULT_INTERNAL_ERROR, /*errorMessage=*/ null);
+                        AppSearchResult.RESULT_INTERNAL_ERROR, /* errorMessage= */ null);
 
         assertThat(result3).isNotEqualTo(result6);
         assertThat(result3.hashCode()).isNotEqualTo(result6.hashCode());

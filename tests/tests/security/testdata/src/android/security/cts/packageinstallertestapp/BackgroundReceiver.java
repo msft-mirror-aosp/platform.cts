@@ -66,14 +66,14 @@ public class BackgroundReceiver extends BroadcastReceiver {
                 final IntentSender intentSender = PendingIntent.getActivity(context,
                                 0 /* requestCode */,
                                 new Intent().setComponent(statusReceiver),
-                                PendingIntent.FLAG_IMMUTABLE)
+                                PendingIntent.FLAG_MUTABLE)
                         .getIntentSender();
                 sendInstallCommit(context, remoteCallback, intentSender);
             } else if (action.equals(ACTION_COMMIT_WITH_FG_SERVICE_INTENT_SENDER)) {
                 final IntentSender intentSender = PendingIntent.getForegroundService(context,
                                 0 /* requestCode */,
                                 new Intent().setComponent(statusReceiver),
-                                PendingIntent.FLAG_IMMUTABLE)
+                                PendingIntent.FLAG_MUTABLE)
                         .getIntentSender();
                 sendInstallCommit(context, remoteCallback, intentSender);
             } else {

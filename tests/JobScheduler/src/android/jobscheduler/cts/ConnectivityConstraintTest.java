@@ -41,7 +41,9 @@ import android.util.Log;
 
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.server.net.Flags;
 
 import java.util.Collections;
 import java.util.Map;
@@ -502,6 +504,41 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         assertTrue("Expedited job requiring connectivity did not fire with multiple firewalls.",
                 kTestEnvironment.awaitExecution());
+    }
+
+    /**
+     * Schedule a job that requires a network connection, and verify that it runs even after the
+     * scheduling app is killed.
+     *
+     * Note: This is a basic test similar to testConnectivityConstraintExecutes_withWifi, except
+     * that it uses a helper app so the scheduling app's lifecycle and any resulting restrictions
+     * can be managed freely by the system.
+     */
+    public void testJobExecutes_afterAppIsKilled() throws Exception {
+        if (hasEthernetConnection()) {
+            Log.d(TAG, "Skipping test since ethernet is connected.");
+            return;
+        }
+        // To ensure the job doesn't start immediately after scheduling.
+        mNetworkingHelper.setAllNetworksEnabled(false);
+
+        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface.scheduleJob(false, JobInfo.NETWORK_TYPE_ANY, false);
+
+        mTestAppInterface.kill();
+        if (Flags.networkBlockedForTopSleepingAndAbove()) {
+            PollingCheck.waitFor(DEFAULT_TIMEOUT_MILLIS,
+                    mTestAppInterface::isNetworkBlockedByPolicy,
+                    "Test app did not lose network access after being stopped");
+        }
+        // The job should run after network is connected, even though the app does not have access
+        // due to policy right now.
+        mNetworkingHelper.setAllNetworksEnabled(true);
+
+        mTestAppInterface.runSatisfiedJob();
+        assertTrue(
+                "Job requiring network did not start after the app was killed",
+                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
     }
 
     /**

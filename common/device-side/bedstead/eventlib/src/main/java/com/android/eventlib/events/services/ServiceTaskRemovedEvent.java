@@ -31,6 +31,8 @@ import com.android.queryable.queries.ServiceQuery;
 import com.android.queryable.queries.ServiceQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link Service#onTaskRemoved(Intent)}
  */
@@ -115,6 +117,7 @@ public class ServiceTaskRemovedEvent extends Event {
         }
 
         /** Sets the {@link Service} which received this event. */
+        @CanIgnoreReturnValue
         public ServiceTaskRemovedEvent.ServiceTaskRemovedEventLogger setService(
                 String serviceName) {
             mEvent.mService = ServiceInfo.builder()
@@ -124,6 +127,7 @@ public class ServiceTaskRemovedEvent extends Event {
         }
 
         /** Sets the {@link Intent} that was used to bind to the service. */
+        @CanIgnoreReturnValue
         public ServiceTaskRemovedEvent.ServiceTaskRemovedEventLogger setIntent(Intent intent) {
             mEvent.mIntent = new SerializableParcelWrapper<>(intent);
             return this;

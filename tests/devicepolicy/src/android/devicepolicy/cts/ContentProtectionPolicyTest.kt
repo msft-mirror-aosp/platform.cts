@@ -23,9 +23,9 @@ import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
 import com.android.bedstead.harrier.policies.ContentProtectionPolicy
 import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat

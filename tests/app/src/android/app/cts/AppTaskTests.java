@@ -47,6 +47,8 @@ import androidx.test.runner.lifecycle.ActivityLifecycleMonitor;
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry;
 import androidx.test.runner.lifecycle.Stage;
 
+import com.android.compatibility.common.util.ApiTest;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -67,6 +69,9 @@ public class AppTaskTests {
     private static final long TIME_SLICE_MS = 100;
     private static final long MAX_WAIT_MS = 1500;
 
+    private static final String EXTRA_KEY = "key";
+    private static final String EXTRA_VALUE = "some_value";
+
     private Instrumentation mInstrumentation;
     private ActivityLifecycleMonitor mLifecycleMonitor;
     private Context mTargetContext;
@@ -79,6 +84,7 @@ public class AppTaskTests {
             Intent intent = new Intent();
             intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_NEW_DOCUMENT
                     | FLAG_ACTIVITY_MULTIPLE_TASK);
+            intent.putExtra(EXTRA_KEY, EXTRA_VALUE);
             return intent;
         }
     };
@@ -212,6 +218,18 @@ public class AppTaskTests {
         t1.setExcludeFromRecents(false);
         assertTrue((t1.getTaskInfo().baseIntent.getFlags() & FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                 == 0);
+    }
+
+    /**
+     * Ensure that the activity has the extras from the base intent.
+     */
+    @Test
+    @ApiTest(apis = {"android.app.ActivityManager.AppTask#getTaskInfo"})
+    public void testBaseIntentHasExtras() throws Exception {
+        final Activity a1 = mActivityRule.launchActivity(null);
+        final List<ActivityManager.AppTask> appTasks = getAppTasks();
+        final ActivityManager.AppTask t1 = appTasks.get(0);
+        assertTrue(t1.getTaskInfo().baseIntent.getStringExtra(EXTRA_KEY).equals(EXTRA_VALUE));
     }
 
     /**

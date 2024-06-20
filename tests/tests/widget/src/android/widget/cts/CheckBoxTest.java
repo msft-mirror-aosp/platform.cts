@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.text.TextUtils;
@@ -35,6 +36,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsTouchUtils;
 
 import org.junit.Before;
@@ -50,7 +52,13 @@ public class CheckBoxTest {
     private Activity mActivity;
     private CheckBox mCheckBox;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<CheckBoxCtsActivity> mActivityRule =
             new ActivityTestRule<>(CheckBoxCtsActivity.class);
 
@@ -171,14 +179,12 @@ public class CheckBoxTest {
         assertFalse(mCheckBox.isChecked());
 
         // tap to checked
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mCheckBox, false,
-                /* useGlobalInjection= */ false);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mCheckBox);
         verify(mockCheckedChangeListener, times(1)).onCheckedChanged(mCheckBox, true);
         assertTrue(mCheckBox.isChecked());
 
         // tap to not checked
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mCheckBox, false,
-                /* useGlobalInjection= */ false);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mCheckBox);
         verify(mockCheckedChangeListener, times(1)).onCheckedChanged(mCheckBox, false);
         assertFalse(mCheckBox.isChecked());
 

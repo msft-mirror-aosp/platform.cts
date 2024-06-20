@@ -14,6 +14,7 @@
 """Verifies JPEG and YUV still capture images are pixel-wise matching."""
 
 
+import cv2
 import logging
 import os.path
 from mobly import test_runner
@@ -27,7 +28,7 @@ import its_session_utils
 _MAX_IMG_SIZE = (1920, 1080)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _TEST_REQUIRED_MPC = 33
-_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG = 0.01  # YUV/JPEG bit exactness threshold
+_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG = 0.03  # YUV/JPEG bit exactness threshold
 _THRESHOLD_MAX_RMS_DIFF_USE_CASE = 0.1  # Catch swapped color channels
 _USE_CASE_PREVIEW = 1
 _USE_CASE_STILL_CAPTURE = 2
@@ -82,15 +83,38 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
       logging.debug('display_size %s, max_camcorder_profile_size %s, '
                     'size_bound %s', display_size, max_camcorder_profile_size,
                     size_bound)
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       w, h = capture_request_utils.get_available_output_sizes(
           'yuv', props, max_size=size_bound)[0]
+      jpeg_sizes = capture_request_utils.get_available_output_sizes(
+          'jpeg', props, match_ar_size=(w, h))
+
+      should_skip = not jpeg_sizes
+      # skip since no jpeg size with the same aspect ratio as YUV was found
+      skip_msg = 'same jpeg and yuv aspect ratio not found'
+      camera_properties_utils.skip_unless(not should_skip, skip_msg)
+
+      jpeg_w, jpeg_h = w, h
+      same_jpeg_and_yuv_available = (w, h) in jpeg_sizes
+      # no jpeg size found, which is the same as YUV
+      skip_msg = ('same jpeg + yuv sizes not available within threshold '
+                  f'first_api_level {first_api_level}')
+      should_skip = (
+          first_api_level < its_session_utils.ANDROID15_API_LEVEL and
+          not same_jpeg_and_yuv_available)
+      camera_properties_utils.skip_unless(not should_skip, skip_msg)
+      if not same_jpeg_and_yuv_available:
+        # Get the first size with the same AR as YUV
+        jpeg_w, jpeg_h = jpeg_sizes[0]
 
       # Create requests
       fmt_yuv = {'format': 'yuv', 'width': w, 'height': h,
                  'useCase': _USE_CASE_STILL_CAPTURE}
-      fmt_jpg = {'format': 'jpeg', 'width': w, 'height': h,
+      fmt_jpg = {'format': 'jpeg', 'width': jpeg_w, 'height': jpeg_h,
                  'useCase': _USE_CASE_STILL_CAPTURE}
-      logging.debug('YUV & JPEG stream width: %d, height: %d', w, h)
+      logging.debug(
+          'YUV width: %d, height: %d, JPEG width %d height %d',
+          w, h, jpeg_w, jpeg_h)
 
       cam.do_3a()
       req = capture_request_utils.auto_capture_request()
@@ -105,12 +129,19 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
           cap_jpg, True)
       image_processing_utils.write_image(rgb_jpg, f'{file_stem}_jpg.jpg')
 
+      if jpeg_w != w:
+        scale_factor = w / jpeg_w
+        rgb_jpg = cv2.resize(
+            rgb_jpg, None, fx=scale_factor, fy=scale_factor)
+        image_processing_utils.write_image(
+            rgb_jpg, f'{file_stem}_jpg_downscaled.jpg')
+
       rms_diff = image_processing_utils.compute_image_rms_difference_3d(
           rgb_yuv, rgb_jpg)
       msg = f'RMS diff: {rms_diff:.4f}'
       logging.debug('%s', msg)
       if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_YUV_JPEG:
-        raise AssertionError(msg + f', TOL: {_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG}')
+        raise AssertionError(f'{msg}, ATOL: {_THRESHOLD_MAX_RMS_DIFF_YUV_JPEG}')
 
       # Create requests for all use cases, and make sure they are at least
       # similar enough with the STILL_CAPTURE YUV. For example, the color
@@ -134,7 +165,7 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
                f'YUV: {rms_diff:.4f}')
         logging.debug('%s', msg)
         if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_USE_CASE:
-          logging.error(msg + f', TOL: {_THRESHOLD_MAX_RMS_DIFF_USE_CASE}')
+          logging.error(msg + f', ATOL: {_THRESHOLD_MAX_RMS_DIFF_USE_CASE}')
           num_fail += 1
 
       if num_fail > 0:

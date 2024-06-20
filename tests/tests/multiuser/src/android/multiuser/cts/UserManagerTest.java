@@ -19,6 +19,7 @@ package android.multiuser.cts;
 import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
+import static android.Manifest.permission.MANAGE_USERS;
 import static android.Manifest.permission.MODIFY_QUIET_MODE;
 import static android.Manifest.permission.QUERY_USERS;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
@@ -39,8 +40,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
@@ -67,27 +68,29 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnPrivateProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -167,6 +170,7 @@ public final class UserManagerTest {
     @Test
     @ApiTest(apis = {"android.os.UserManager#isAdminUser"})
     @EnsureHasAdditionalUser(installInstrumentedApp = TRUE)
+    @EnsureDoesNotHavePermission({CREATE_USERS, QUERY_USERS, MANAGE_USERS})
     public void testIsAdminUserForOtherUserContextFailsWithoutPermission() {
         UserReference additionalUser = sDeviceState.additionalUser();
         additionalUser.switchTo();
@@ -177,7 +181,13 @@ public final class UserManagerTest {
         }
 
         UserManager um = userContext.getSystemService(UserManager.class);
-        assertThrows(SecurityException.class, () -> um.isAdminUser());
+        try {
+            um.isAdminUser();
+            fail("Expecting Exception to be thrown when permission is not granted.");
+        } catch (Exception e) {
+            assertTrue("Expected SecurityException, but got " + e.getClass().getSimpleName(),
+                    e instanceof SecurityException);
+        }
     }
 
     /**
@@ -233,17 +243,30 @@ public final class UserManagerTest {
     @Test
     @ApiTest(apis = {"android.os.UserManager#isUserForeground"})
     @RequireRunOnInitialUser
+    @EnsureDoesNotHavePermission({MANAGE_USERS, INTERACT_ACROSS_USERS})
     public void testIsUserForeground_differentContext_noPermission() throws Exception {
+        // Skip test for devices that support only a single user, since we cannot get a different
+        // user's context for such devices.
+        assumeTrue(mUserManager.supportsMultipleUsers());
         Context context = getContextForOtherUser();
         UserManager um = context.getSystemService(UserManager.class);
 
-        assertThrows(SecurityException.class, () -> um.isUserForeground());
+        try {
+            um.isUserForeground();
+            fail("Expecting Exception to be thrown when permission is not granted.");
+        } catch (Exception e) {
+            assertTrue("Expected SecurityException, but got " + e.getClass().getSimpleName(),
+                    e instanceof SecurityException);
+        }
     }
 
     @Test
     @ApiTest(apis = {"android.os.UserManager#isUserForeground"})
     @EnsureHasPermission(INTERACT_ACROSS_USERS)
     public void testIsUserForeground_differentContext_withPermission() throws Exception {
+        // Skip test for devices that support only a single user, since we cannot get a different
+        // user's context for such devices.
+        assumeTrue(mUserManager.supportsMultipleUsers());
         Context userContext = getContextForOtherUser();
         UserManager um = userContext.getSystemService(UserManager.class);
 
@@ -480,20 +503,24 @@ public final class UserManagerTest {
     public void testRemoveCloneProfile_shouldSendProfileRemovedBroadcast() {
         assumeTrue(mUserManager.supportsMultipleUsers());
         BlockingBroadcastReceiver broadcastReceiver = null;
-        UserHandle userHandle = null;
-            try {
-                userHandle = mUserManager.createProfile("Clone profile",
-                        USER_TYPE_PROFILE_CLONE, new HashSet<>());
-                broadcastReceiver = sDeviceState
-                        .registerBroadcastReceiver(
-                                Intent.ACTION_PROFILE_REMOVED, userIsEqual(userHandle)
-                );
-                assumeNotNull(userHandle);
-                removeUser(userHandle);
-                broadcastReceiver.awaitForBroadcastOrFail();
-            } catch (UserManager.UserOperationException e) {
-                assumeNoException("Couldn't create clone profile", e);
-            }
+        final ArrayDeque<UserHandle> usersCreated = new ArrayDeque<>();
+        UserHandle userHandle;
+        try {
+            userHandle = mUserManager.createProfile("Clone profile",
+                    USER_TYPE_PROFILE_CLONE, new HashSet<>());
+            usersCreated.push(userHandle);
+            broadcastReceiver = sDeviceState
+                    .registerBroadcastReceiver(
+                            Intent.ACTION_PROFILE_REMOVED, userIsEqual(userHandle)
+                    );
+            assumeNotNull(userHandle);
+            removeUser(usersCreated.pop());
+            broadcastReceiver.awaitForBroadcastOrFail();
+        } catch (UserManager.UserOperationException e) {
+            assumeNoException("Couldn't create clone profile", e);
+        } finally {
+            usersCreated.forEach(this::removeUser);
+        }
     }
 
     @Test
@@ -504,20 +531,24 @@ public final class UserManagerTest {
     @EnsureHasPermission(CREATE_USERS)
     public void testRemoveManagedProfile_shouldSendProfileRemovedBroadcast() {
         BlockingBroadcastReceiver broadcastReceiver = null;
-        UserHandle userHandle = null;
-            try {
-                userHandle = mUserManager.createProfile("Managed profile",
-                        USER_TYPE_PROFILE_MANAGED, new HashSet<>());
-                broadcastReceiver = sDeviceState
-                        .registerBroadcastReceiver(
-                                Intent.ACTION_PROFILE_REMOVED, userIsEqual(userHandle)
-                        );
-                assumeNotNull(userHandle);
-                removeUser(userHandle);
-                broadcastReceiver.awaitForBroadcastOrFail();
-            } catch (UserManager.UserOperationException e) {
-                assumeNoException("Couldn't create managed profile", e);
-            }
+        UserHandle userHandle;
+        final ArrayDeque<UserHandle> usersCreated = new ArrayDeque<>();
+        try {
+            userHandle = mUserManager.createProfile("Managed profile",
+                    USER_TYPE_PROFILE_MANAGED, new HashSet<>());
+            usersCreated.push(userHandle);
+            broadcastReceiver = sDeviceState
+                    .registerBroadcastReceiver(
+                            Intent.ACTION_PROFILE_REMOVED, userIsEqual(userHandle)
+                    );
+            assumeNotNull(userHandle);
+            removeUser(usersCreated.pop());
+            broadcastReceiver.awaitForBroadcastOrFail();
+        } catch (UserManager.UserOperationException e) {
+            assumeNoException("Couldn't create managed profile", e);
+        } finally {
+            usersCreated.forEach(this::removeUser);
+        }
     }
 
     @Test
@@ -537,7 +568,7 @@ public final class UserManagerTest {
         try {
             try {
                 userHandle = mUserManager.createProfile(
-                    "Managed profile", UserManager.USER_TYPE_PROFILE_MANAGED, new HashSet<>());
+                        "Managed profile", UserManager.USER_TYPE_PROFILE_MANAGED, new HashSet<>());
             } catch (UserManager.UserOperationException e) {
                 // Not all devices and user types support these profiles; skip if this one doesn't.
                 assumeNoException("Couldn't create managed profile", e);
@@ -560,6 +591,7 @@ public final class UserManagerTest {
     }
 
     @Test
+    @RequirePrivateSpaceSupported
     @EnsureHasPermission({CREATE_USERS, QUERY_USERS, INTERACT_ACROSS_USERS})
     @RequireRunOnInitialUser
     @ApiTest(apis = {
@@ -568,9 +600,10 @@ public final class UserManagerTest {
             "android.os.UserManager#isProfile",
             "android.os.UserManager#isUserOfType",
             "android.os.UserManager#getUserBadge"})
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testPrivateProfile() throws Exception {
         UserHandle userHandle = null;
-        assumeTrue(android.os.Flags.allowPrivateProfile());
 
         try {
             try {
@@ -694,7 +727,8 @@ public final class UserManagerTest {
         if (android.multiuser.Flags.supportCommunalProfile()) {
             assertThat(umOfSys.isCommunalProfile()).isFalse();
         }
-        if (android.os.Flags.allowPrivateProfile()) {
+        if (android.os.Flags.allowPrivateProfile()
+                && android.multiuser.Flags.enablePrivateSpaceFeatures()) {
             assertThat(umOfSys.isPrivateProfile()).isFalse();
         }
     }
@@ -768,10 +802,16 @@ public final class UserManagerTest {
     public void testSomeUserHasAccount_shouldIgnoreToBeRemovedUsers() {
         // TODO: (b/233197356): Replace with bedstead annotation.
         assumeTrue(mUserManager.supportsMultipleUsers());
+        final ArrayDeque<UserHandle> usersCreated = new ArrayDeque<>();
+        try {
             final NewUserResponse response = mUserManager.createUser(newUserRequest());
+            usersCreated.push(response.getUser());
             assertThat(response.getOperationResult()).isEqualTo(USER_OPERATION_SUCCESS);
-            mUserManager.removeUser(response.getUser());
+            mUserManager.removeUser(usersCreated.pop());
             assertThat(mUserManager.someUserHasAccount(mAccountName, mAccountType)).isFalse();
+        } finally {
+            usersCreated.forEach(this::removeUser);
+        }
     }
 
     @Test
@@ -963,20 +1003,19 @@ public final class UserManagerTest {
     @EnsureHasAdditionalUser(installInstrumentedApp = TRUE)
     @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
     public void testIsMainUser_trueForAtMostOneUser() {
-        //Install instrumented test app on the SYSTEM user which is not covered in annotations.
-        TestApis.packages().instrumented().installExisting(UserReference.of(UserHandle.SYSTEM));
-
         final List<UserHandle> userHandles = mUserManager.getUserHandles(false);
         final List<UserHandle> mainUsers = new ArrayList<>();
 
         for (UserHandle user : userHandles) {
+            //Install instrumented test app on the user
+            TestApis.packages().instrumented().installExisting(UserReference.of(user));
             final Context userContext = getContextForUser(user.getIdentifier());
             final UserManager userManager = userContext.getSystemService(UserManager.class);
             if (userManager.isMainUser()) {
                 mainUsers.add(user);
             }
         }
-        assertWithMessage("main users (%s)", mainUsers).that(mainUsers.size()).isLessThan(2);
+        assertWithMessage("main users (%s)", mainUsers).that(mainUsers.size()).isEqualTo(1);
     }
 
     @Test
@@ -1087,9 +1126,9 @@ public final class UserManagerTest {
     @EnsureHasPrivateProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     @AppModeFull
-    // TODO(b/301574823) : Limit this test to only when private space is supported.
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnPrivateProfile_shouldSendProfileUnavailableBroadcast() {
-        assumeTrue(android.os.Flags.allowPrivateProfile());
         final UserHandle profileHandle = sDeviceState.privateProfile().userHandle();
         presetQuietModeStatus(false, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
@@ -1102,10 +1141,12 @@ public final class UserManagerTest {
     @EnsureHasPrivateProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
     @AppModeFull
-    // TODO(b/301574823) : Limit this test to only when private space is supported.
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnPrivateProfile_disableQuietMode_needUserCredentials() {
-        assumeTrue(android.os.Flags.allowPrivateProfile());
-        final UserHandle profileHandle = sDeviceState.privateProfile().userHandle();
+        UserReference privateProfile = sDeviceState.privateProfile();
+        final UserHandle profileHandle = privateProfile.userHandle();
+        privateProfile.setSetupComplete(true);
         presetQuietModeStatus(true, profileHandle);
         assertThat(mUserManager.requestQuietModeEnabled(false, profileHandle))
                 .isFalse();
@@ -1114,8 +1155,9 @@ public final class UserManagerTest {
     @Test
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileUnavailableBroadcast() {
-        assumeTrue(android.os.Flags.allowPrivateProfile());
         final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
         presetQuietModeStatus(false, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
@@ -1128,8 +1170,9 @@ public final class UserManagerTest {
     @Test
     @EnsureHasWorkProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testRequestQuietModeOnManaged_shouldSendProfileAvailableBroadcast() {
-        assumeTrue(android.os.Flags.allowPrivateProfile());
         final UserHandle profileHandle = sDeviceState.workProfile().userHandle();
         presetQuietModeStatus(true, profileHandle);
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState
@@ -1170,7 +1213,8 @@ public final class UserManagerTest {
     @RequireRunOnPrivateProfile
     @ApiTest(apis = {"android.os.UserManager#getProfileLabel"})
     @EnsureHasPermission({CREATE_USERS, INTERACT_ACROSS_USERS})
-    @RequiresFlagsEnabled(android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE)
+    @RequiresFlagsEnabled({android.os.Flags.FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testPrivateProfileLabel_shouldNotBeNull() {
         final UserManager umOfProfile = sContext.getSystemService(UserManager.class);
         assert umOfProfile != null;

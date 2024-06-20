@@ -41,7 +41,6 @@ _THRESH_CONVERGE_FOR_EV = 8  # AE must converge within this num
 _VGA_W, _VGA_H = 640, 480
 _YUV_FULL_SCALE = 255.0
 _YUV_SAT_MIN = 250.0
-_YUV_SAT_TOL = 3.0
 
 
 def create_request_with_ev(ev):

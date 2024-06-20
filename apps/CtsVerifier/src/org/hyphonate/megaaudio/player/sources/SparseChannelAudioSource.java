@@ -39,6 +39,10 @@ public class SparseChannelAudioSource extends WaveTableSource {
         mChannelsMask = mask;
     }
 
+    public void setMask(int mask) {
+        mChannelsMask = mask;
+    }
+
     private int channelNumToMask(int chanNum) {
         if (chanNum <= 0) {
             return 0;

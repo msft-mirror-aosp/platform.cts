@@ -16,13 +16,13 @@
 
 package com.android.bedstead.harrier.policies;
 
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_GLOBALLY;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_WIFI;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_GLOBALLY;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_WIFI;
 
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 /**
  * Policy related to setting {@code DISALLOW_WIFI_TETHERING}
@@ -30,8 +30,9 @@ import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
 @EnterprisePolicy(dpc = {
         APPLIED_BY_DEVICE_OWNER | APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE
                 | APPLIES_GLOBALLY | CANNOT_BE_APPLIED_BY_ROLE_HOLDER
-        },
-        permissions = @EnterprisePolicy.Permission(appliedWith = MANAGE_DEVICE_POLICY_WIFI,
-                appliesTo = APPLIES_GLOBALLY))
+        })
+// Need to split due to different behaviour regarding global policies when using permissions
+//        permissions = @EnterprisePolicy.Permission(appliedWith = MANAGE_DEVICE_POLICY_WIFI,
+//                appliesTo = APPLIES_GLOBALLY))
 public final class DisallowWifiTethering {
 }

@@ -151,7 +151,6 @@ class AutoRevokeTest {
         }
         runShellCommandOrThrow("am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS")
         resetJob(context)
-        bypassBatterySavingRestrictions(context)
 
         if (isAutomotiveDevice()) {
             supportedApkPath = APK_PATH_S_APP
@@ -169,7 +168,6 @@ class AutoRevokeTest {
     @After
     fun cleanUp() {
         goHome()
-        resetBatterySavingRestrictions(context)
     }
 
     @AppModeFull(reason = "Uses separate apps for testing")
@@ -636,18 +634,13 @@ class AutoRevokeTest {
             rowItem.findObject(uninstallSelector).click()
         } else {
             rowItem.click()
-            try {
-                waitFindObject(By.text("Uninstall")).click()
-            } catch (e: Exception) {
-                // Some watch implementations do not have the "Uninstall" text and directly go
-                // to the uninstall confirmation screen, so it's ok to let this exception go.
-            }
+            waitFindObject(By.text("Uninstall")).click()
         }
     }
 
     private fun clickUninstallOk() {
         val uninstallSelector = if (hasFeatureWatch()) {
-                By.res(Pattern.compile(".*(button1|positive_button)"))
+                By.desc("OK")
             } else {
                 By.text("OK")
             }

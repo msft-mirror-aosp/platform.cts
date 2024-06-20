@@ -148,3 +148,8 @@ int32_t OboeStream::getChannelCount() {
                                ? (int32_t) mAudioStream->getChannelCount()
                                : -1);
 }
+
+bool OboeStream::isMMap() {
+    return OboeExtensions::isMMapUsed(mAudioStream.get());
+}
+

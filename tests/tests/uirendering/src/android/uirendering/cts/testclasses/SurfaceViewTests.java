@@ -65,7 +65,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -883,7 +882,7 @@ public class SurfaceViewTests extends ActivityTestBase {
         try {
             do {
                 ratio = incomingRatio;
-                TimeUnit.MILLISECONDS.sleep(100);
+                TimeUnit.MILLISECONDS.sleep(500);
                 incomingRatio = display.getHdrSdrRatio();
                 // Bail if the ratio settled or if it's been way too long.
             } while (Math.abs(ratio - incomingRatio) > 0.01
@@ -915,7 +914,7 @@ public class SurfaceViewTests extends ActivityTestBase {
 
             SurfaceView surfaceView = initializer.getSurfaceView();
 
-	    getInstrumentation().runOnMainSync(() -> {
+            getInstrumentation().runOnMainSync(() -> {
                 // Boundary conditions should throw
                 assertThrows(IllegalArgumentException.class,
                         () -> surfaceView.setDesiredHdrHeadroom(0.5f));
@@ -925,7 +924,7 @@ public class SurfaceViewTests extends ActivityTestBase {
                         () -> surfaceView.setDesiredHdrHeadroom(Float.NaN));
                 assertThrows(IllegalArgumentException.class,
                         () -> surfaceView.setDesiredHdrHeadroom(1000000f));
-	    });
+            });
 
             Display display = activity.getDisplay();
 
@@ -933,18 +932,67 @@ public class SurfaceViewTests extends ActivityTestBase {
                 float ratio = getStableHdrSdrRatio(display);
                 // cut the headroom in half, wait for it to settle, then check that we're
                 // upper-bounded. Only do that if we have some headroom to slice in half,
-		// since otherwise we're not testing much
-		Assume.assumeTrue(ratio < 1.02f);
+                // since otherwise we're not testing much
+                Assume.assumeTrue(ratio > 1.02f);
                 float newRatio = 1.f + (ratio - 1.f) / 2;
-	        getInstrumentation().runOnMainSync(() -> {
+                getInstrumentation().runOnMainSync(() -> {
                     surfaceView.setDesiredHdrHeadroom(newRatio);
-                    assertTrue("Headroom restriction is not respected",
-                            getStableHdrSdrRatio(display) <= (newRatio + 1.01));
-
+                });
+                assertTrue("Headroom restriction is not respected",
+                        getStableHdrSdrRatio(display) <= (newRatio + 0.01));
+                getInstrumentation().runOnMainSync(() -> {
                     surfaceView.setDesiredHdrHeadroom(0.f);
-                    assertTrue("Removed headroom restriction is not respected",
-                            getStableHdrSdrRatio(display) > newRatio);
-	        });
+                });
+                assertTrue("Removed headroom restriction is not respected",
+                        getStableHdrSdrRatio(display) > newRatio);
+            }
+
+        } finally {
+            activity.reset();
+        }
+    }
+
+    @Test
+    public void surfaceViewDesiredHdrHeadroomPreservesWithReconfiguration() throws InterruptedException {
+        Assume.assumeTrue(Flags.limitedHdr());
+
+        CountDownLatch latch = new CountDownLatch(1);
+        DrawCallback callback = makeHardwareBufferRendererCallback(
+                Color.GREEN, DataSpace.DATASPACE_BT2020_HLG);
+        callback.setFence(latch);
+
+        SurfaceViewHolder initializer = new SurfaceViewHolder(callback);
+
+        DrawActivity activity = getActivity();
+
+        try {
+            TestPositionInfo testInfo = activity.enqueueRenderSpecAndWait(
+                    R.layout.frame_layout, null, initializer, true, false);
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            waitForScreenshottable();
+
+            SurfaceView surfaceView = initializer.getSurfaceView();
+            surfaceView.setSurfaceLifecycle(SurfaceView.SURFACE_LIFECYCLE_FOLLOWS_VISIBILITY);
+            Display display = activity.getDisplay();
+
+            if (display.isHdrSdrRatioAvailable()) {
+                float ratio = getStableHdrSdrRatio(display);
+                // cut the headroom in half, wait for it to settle, then check that we're
+                // upper-bounded. Only do that if we have some headroom to slice in half,
+                // since otherwise we're not testing much
+                Assume.assumeTrue(ratio > 1.02f);
+                float newRatio = 1.f + (ratio - 1.f) / 2;
+                getInstrumentation().runOnMainSync(() -> {
+                    surfaceView.setDesiredHdrHeadroom(newRatio);
+                });
+                assertTrue("Headroom restriction is not respected",
+                        getStableHdrSdrRatio(display) <= (newRatio + 0.01));
+                getInstrumentation().runOnMainSync(() -> {
+                    surfaceView.setVisibility(View.INVISIBLE);
+                    surfaceView.setVisibility(View.VISIBLE);
+                });
+                assertTrue("Headroom restriction got removed",
+                        getStableHdrSdrRatio(display) <= (newRatio + 0.01));
             }
 
         } finally {

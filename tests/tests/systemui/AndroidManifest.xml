@@ -39,6 +39,8 @@
              android:screenOrientation="portrait"/>
         <activity android:name=".WindowInsetsActivity"
              android:theme="@android:style/Theme.Material"
+             android:turnScreenOn="true"
+             android:showWhenLocked="true"
              android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

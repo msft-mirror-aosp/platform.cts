@@ -19,8 +19,11 @@ package android.photopicker.cts;
 import static android.photopicker.cts.PhotoPickerCloudUtils.addImage;
 import static android.photopicker.cts.PhotoPickerCloudUtils.containsExcept;
 import static android.photopicker.cts.PhotoPickerCloudUtils.disableDeviceConfigSync;
+import static android.photopicker.cts.PhotoPickerCloudUtils.disablePickImagesPreload;
 import static android.photopicker.cts.PhotoPickerCloudUtils.enableCloudMediaAndSetAllowedCloudProviders;
+import static android.photopicker.cts.PhotoPickerCloudUtils.enablePickImagesPreload;
 import static android.photopicker.cts.PhotoPickerCloudUtils.extractMediaIds;
+import static android.photopicker.cts.PhotoPickerCloudUtils.isPickImagesPreloadEnabled;
 import static android.photopicker.cts.PickerProviderMediaGenerator.MediaGenerator;
 import static android.photopicker.cts.PickerProviderMediaGenerator.syncCloudProvider;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUris;
@@ -189,6 +192,10 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
 
     @Test
     public void testVersionChange() throws Exception {
+        // Save current device config
+        final boolean isPickImagesPreloadEnabled = isPickImagesPreloadEnabled();
+        disablePickImagesPreload();
+
         initPrimaryCloudProviderWithImage(Pair.create(null, CLOUD_ID1),
                 Pair.create(null, CLOUD_ID2));
 
@@ -213,6 +220,11 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
         mediaIds = extractMediaIds(clipData, 1);
 
         containsExcept(mediaIds, CLOUD_ID2, CLOUD_ID1);
+
+        // Restore device config
+        if (isPickImagesPreloadEnabled) {
+            enablePickImagesPreload();
+        }
     }
 
     @Test

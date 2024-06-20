@@ -368,6 +368,8 @@ public class MediaMetricsAtomHostSideTests {
                             .setExporterName("some.unknown.library:1.0-alpha01")
                             .setMuxerName("androidx.media3:media3-muxer:1.2.1")
                             .setErrorCode(PlaybackErrorEvent.ERROR_RUNTIME)
+                            .addOperationType(EditingEndedEvent.OPERATION_TYPE_AUDIO_TRANSMUX)
+                            .addOperationType(EditingEndedEvent.OPERATION_TYPE_VIDEO_EDIT)
                             .setMetricsBundle(new Bundle())
                             .build();
             s.reportEditingEndedEvent(e);

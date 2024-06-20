@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_framework_cdm",
 }
 
 android_library {
@@ -198,4 +199,35 @@ android_test {
     ],
 
     target_sdk_version: "current",
+}
+
+android_test {
+    name: "cdm_snippet",
+    srcs: [
+        "multidevice/client/src/**/*.kt",
+    ],
+    manifest: "multidevice/client/AndroidManifest.xml",
+
+    platform_apis: true,
+    target_sdk_version: "current",
+
+    static_libs: [
+        "androidx.test.ext.junit",
+        "androidx.test.uiautomator_uiautomator",
+        "compatibility-device-util-axt",
+        "cts-companion-common",
+        "cts-companion-uicommon",
+        "kotlin-stdlib",
+        "mobly-bundled-snippets-lib",
+        "mobly-snippet-lib",
+    ],
+    libs: [
+        "android.test.base",
+        "android.test.runner",
+    ],
+
+    optimize: {
+        proguard_compatibility: true,
+        proguard_flags_files: ["multidevice/client/proguard.flags"],
+    },
 }

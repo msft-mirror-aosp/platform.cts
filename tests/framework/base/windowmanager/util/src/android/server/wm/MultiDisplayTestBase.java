@@ -43,6 +43,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static com.android.cts.mockime.ImeEventStreamTestUtils.clearAllEvents;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -681,7 +682,7 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
     protected final void waitOrderedImeEventsThenAssertImeShown(ImeEventStream stream,
             int displayId,
             Predicate<ImeEvent>... conditions) throws Exception {
-        for (Predicate<ImeEvent> condition : conditions) {
+        for (var condition : conditions) {
             expectEvent(stream, condition, TimeUnit.SECONDS.toMillis(5) /* eventTimeout */);
         }
         // Assert the IME is shown on the expected display.
@@ -689,9 +690,10 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
     }
 
     protected void waitAndAssertImeNoScreenSizeChanged(ImeEventStream stream) {
-        notExpectEvent(stream, event -> "onConfigurationChanged".equals(event.getEventName())
-                && (event.getArguments().getInt("ConfigUpdates") & CONFIG_SCREEN_SIZE) != 0,
-                TimeUnit.SECONDS.toMillis(1) /* eventTimeout */);
+        notExpectEvent(stream, withDescription("onConfigurationChanged(SCREEN_SIZE | ..)",
+                event -> "onConfigurationChanged".equals(event.getEventName())
+                        && (event.getArguments().getInt("ConfigUpdates") & CONFIG_SCREEN_SIZE)
+                        != 0), TimeUnit.SECONDS.toMillis(1) /* eventTimeout */);
     }
 
     /**

@@ -83,6 +83,8 @@ public abstract class StreamBase {
      */
     protected int mChannelCount;
 
+    protected int mChannelMask;
+
     /**
      * The sample rate for this stream
      */
@@ -257,6 +259,12 @@ public abstract class StreamBase {
      * -1 if there is no valid stream.
      */
     public abstract int getChannelCount();
+
+    /**
+     * Note: The stream must be created before calling this method.
+     * @return true if the underlying stream is an MMAP stream, false otherwise.
+     */
+    public abstract boolean isMMap();
 
     /**
      * @return The last error callback result (these must match Oboe). See Oboe constants

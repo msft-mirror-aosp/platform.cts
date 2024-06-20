@@ -19,6 +19,8 @@ package android.hardware.camera2.cts.testcases;
 import static android.hardware.camera2.cts.CameraTestUtils.*;
 import static com.android.ex.camera2.blocking.BlockingStateCallback.*;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
@@ -95,6 +97,12 @@ public class Camera2ConcurrentAndroidTestCase extends Camera2ParameterizedTestCa
     @Override
     public void setUp() throws Exception {
         super.setUp();
+
+        assumeTrue(
+                "Camera2ConcurrentAndroidTestCase tests can't be run with cameraId "
+                        + "override set, restricting the test to single camera",
+                mOverrideCameraId == null);
+
         mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         mHandlerThread = new HandlerThread(TAG);
         mHandlerThread.start();

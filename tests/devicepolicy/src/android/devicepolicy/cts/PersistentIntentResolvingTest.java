@@ -27,7 +27,7 @@ import android.stats.devicepolicy.EventId;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.policies.PersistentPreferredActivities;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject;
@@ -148,7 +148,7 @@ public final class PersistentIntentResolvingTest {
                                 .whereType().isEqualTo(
                                         EventId.ADD_PERSISTENT_PREFERRED_ACTIVITY_VALUE)
                                 .whereAdminPackageName().isEqualTo(
-                                        sDeviceState.dpc().componentName().getPackageName())
+                                        sDeviceState.dpc().packageName())
                                 .whereStrings().contains(testAppInstance.packageName()))
                         .wasLogged();
             } finally {

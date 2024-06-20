@@ -46,8 +46,14 @@
             class="com.android.tradefed.testtype.suite.module.TestFailureModuleController">
         <option name="bugreportz-on-failure" value="true" />
     </object>
+
+    <!-- TODO:: remove FeatureFlagTargetPreparer once flags are released-->
     <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer">
         <option name="flag-value"
                 value="telecom/com.android.server.telecom.flags.get_registered_phone_accounts=true"/>
+        <option name="flag-value"
+                value="telecom/com.android.server.telecom.flags.cache_call_audio_callbacks=true"/>
+        <option name="flag-value"
+                value="telecom/com.android.server.telecom.flags.unregister_unresolvable_accounts=true"/>
     </target_preparer>
 </configuration>

@@ -37,6 +37,9 @@ android_library {
         "android.hardware.radio.ims-V2-java",
         "telephony-cts-utils",
         "compatibility-device-util-axt",
+        "telephony_flags_core_java_lib",
+        "flag-junit",
+        "telecom_flags_core_java_lib",
     ],
 
     min_sdk_version: "30",

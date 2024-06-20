@@ -21,11 +21,13 @@ import static android.system.OsConstants.PR_GET_DUMPABLE;
 import android.os.Build;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RestrictedBuildTest;
 import android.system.Os;
 
 import junit.framework.TestCase;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class SecurityFeaturesTest extends TestCase {
 
     /**

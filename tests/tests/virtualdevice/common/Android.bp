@@ -34,6 +34,9 @@ android_library {
         "flag-junit",
         "android.companion.virtual.flags-aconfig-java",
         "android.companion.virtualdevice.flags-aconfig-java",
+        "android.media.audiopolicy-aconfig-java",
+        // TODO(b/326414126): aconfig: support multi-container library
+        "android.permission.flags-aconfig-java",
     ],
     manifest: "AndroidManifest.xml",
     lint: {

@@ -29,6 +29,22 @@
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service"
                 android:resource="@xml/non_payment_aid_list"/>
         </service>
+
+        <service
+            android:name=".NonPaymentQuickAccessWalletService"
+            android:label="Non Payment QAW"
+            android:exported="true"
+            android:permission="android.permission.BIND_QUICK_ACCESS_WALLET_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.quickaccesswallet.QuickAccessWalletService" />
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <meta-data android:name="android.quickaccesswallet"
+                android:resource="@xml/quickaccesswallet_configuration" />;
+        </service>
+
+        <activity android:name="QuickAccessWalletActivity">
+        </activity>
     </application>
 
 </manifest>

@@ -49,6 +49,7 @@ cc_test_library {
 
 android_test {
     name: "CtsMediaMiscTestCases",
+    team: "trendy_team_android_media_audio_framework",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -179,4 +180,3 @@ android_test {
     min_sdk_version: "29",
     target_sdk_version: "31",
 }
-

@@ -19,8 +19,10 @@ package android.os.cts;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ClearTop extends Activity {
     public static final String WAIT_CLEAR_TASK = "waitClearTask";
     private static final String TAG = "ClearTop";

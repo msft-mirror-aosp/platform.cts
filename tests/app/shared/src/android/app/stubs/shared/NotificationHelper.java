@@ -33,6 +33,8 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.SystemUtil;
+
 import com.google.common.base.Objects;
 
 import java.io.FileInputStream;
@@ -226,6 +228,18 @@ public class NotificationHelper {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation().dropShellPermissionIdentity();
         return mAssistant;
+    }
+
+    // For a NAS not owned by the test package, we need to check/enable the NAS with the shell
+    public void enableOtherPkgAssistantIfNeeded(String componentName) {
+        if (componentName == null || componentName.equals(getEnabledAssistant())) {
+            return;
+        }
+        SystemUtil.runShellCommand("cmd notification allow_assistant " + componentName);
+    }
+
+    public String getEnabledAssistant() {
+        return SystemUtil.runShellCommand("cmd notification get_approved_assistant");
     }
 
     public void disableAssistant(String pkg) throws IOException {

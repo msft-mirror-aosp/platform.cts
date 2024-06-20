@@ -16,6 +16,8 @@
 
 package com.android.server.cts.device.statsdatom;
 
+import static org.junit.Assert.assertNotNull;
+
 import android.content.Context;
 import android.os.PowerManager;
 
@@ -24,12 +26,11 @@ import androidx.test.InstrumentationRegistry;
 import org.junit.Test;
 
 public class PowerManagerTests {
-    private static final String TAG = PowerManagerTests.class.getSimpleName();
-
     @Test
     public void testGetCurrentThermalStatus() {
         Context context = InstrumentationRegistry.getContext();
         PowerManager powerManager = context.getSystemService(PowerManager.class);
+        assertNotNull(powerManager);
         powerManager.getCurrentThermalStatus();
     }
 
@@ -37,6 +38,7 @@ public class PowerManagerTests {
     public void testGetThermalHeadroom() {
         Context context = InstrumentationRegistry.getContext();
         PowerManager powerManager = context.getSystemService(PowerManager.class);
+        assertNotNull(powerManager);
         powerManager.getThermalHeadroom(10);
     }
 
@@ -44,6 +46,7 @@ public class PowerManagerTests {
     public void testGetThermalHeadroomThresholds() {
         Context context = InstrumentationRegistry.getContext();
         PowerManager powerManager = context.getSystemService(PowerManager.class);
+        assertNotNull(powerManager);
         powerManager.getThermalHeadroomThresholds();
     }
 }

@@ -16,6 +16,7 @@
 
 package android.input.cts
 
+import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.graphics.PointF
 import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
@@ -29,6 +30,7 @@ import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.UinputDrawingTablet
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withMotionAction
@@ -56,14 +58,8 @@ class DrawingTabletTest {
 
     @Before
     fun setUp() {
-        drawingTablet =
-            UinputTouchDevice(
-                InstrumentationRegistry.getInstrumentation(),
-                virtualDisplayRule.virtualDisplay.display,
-                R.raw.test_drawing_tablet_register,
-                InputDevice.SOURCE_MOUSE or InputDevice.SOURCE_STYLUS,
-                useDisplaySize = true,
-            )
+        drawingTablet = UinputDrawingTablet(
+            InstrumentationRegistry.getInstrumentation(), virtualDisplayRule.virtualDisplay.display)
         verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
     }
 
@@ -100,6 +96,60 @@ class DrawingTabletTest {
         virtualDisplayRule.runInDisplayOrientation(ORIENTATION_270) {
             verifyTaps(EXPECTED_POINTS_ROTATED, ::transformForRotatedDrawingTablet)
         }
+    }
+
+    @Test
+    fun testHover() {
+        val pointerId = 0
+        val commonMatcher =
+            allOf(
+                withSource(InputDevice.SOURCE_STYLUS or InputDevice.SOURCE_MOUSE),
+                withToolType(MotionEvent.TOOL_TYPE_STYLUS),
+            )
+
+        // Inject and verify HOVER_ENTER
+        drawingTablet.sendBtnTouch(false)
+        drawingTablet.sendDown(pointerId, INJECTION_POINTS[0], UinputTouchDevice.MT_TOOL_PEN)
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_ENTER),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
+                commonMatcher
+            )
+        )
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
+                commonMatcher
+            )
+        )
+
+        // Inject and verify HOVER_MOVE
+        drawingTablet.sendMove(pointerId, INJECTION_POINTS[1])
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[1])!!),
+                commonMatcher
+            )
+        )
+
+        // Inject and verify HOVER_EXIT
+        drawingTablet.sendUp(pointerId)
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_EXIT),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[1])!!),
+                commonMatcher
+            )
+        )
     }
 
     /**

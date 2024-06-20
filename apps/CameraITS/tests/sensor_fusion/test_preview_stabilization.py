@@ -21,12 +21,34 @@ from mobly import test_runner
 import its_base_test
 import camera_properties_utils
 import its_session_utils
-import preview_stabilization_utils
-import sensor_fusion_utils
+import preview_processing_utils
 import video_processing_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_TEST_REQUIRED_MPC = 33
+# 1080P with 16:9 aspect ratio, 720P and VGA resolutions
+_TARGET_PREVIEW_SIZES = ('1920x1080', '1280x720', '640x480')
+_TEST_REQUIRED_MPC_FRONT = 34
+_TEST_REQUIRED_MPC_REAR = 33
+_ZOOM_RATIO_UW = 0.9
+_ZOOM_RATIO_W = 1.0
+
+
+def _get_preview_sizes(cam, camera_id):
+  """Determine preview sizes to test based on DUT's supported sizes.
+
+  Targeting 1080P (16:9 ratio), 720P and VGA.
+
+  Args:
+    cam: ItsSession camera object.
+    camera_id: str; unique identifier assigned to each camera.
+  Returns:
+    preview sizes to test.
+  """
+  preview_sizes_to_test = cam.get_supported_preview_sizes(camera_id)
+  preview_sizes_to_test = [size for size in preview_sizes_to_test
+                           if size in _TARGET_PREVIEW_SIZES]
+  logging.debug('Preview sizes to test: %s', preview_sizes_to_test)
+  return preview_sizes_to_test
 
 
 class PreviewStabilizationTest(its_base_test.ItsBaseTest):
@@ -70,9 +92,17 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
                     supported_stabilization_modes)
       media_performance_class = its_session_utils.get_media_performance_class(
           self.dut.serial)
-      if media_performance_class >= _TEST_REQUIRED_MPC and not should_run:
-        its_session_utils.raise_mpc_assertion_error(
-            _TEST_REQUIRED_MPC, _NAME, media_performance_class)
+      if (props['android.lens.facing'] ==
+          camera_properties_utils.LENS_FACING['FRONT']):
+        if (media_performance_class >= _TEST_REQUIRED_MPC_FRONT
+            and not should_run):
+          its_session_utils.raise_mpc_assertion_error(
+              _TEST_REQUIRED_MPC_FRONT, _NAME, media_performance_class)
+      else:
+        if (media_performance_class >= _TEST_REQUIRED_MPC_REAR
+            and not should_run):
+          its_session_utils.raise_mpc_assertion_error(
+              _TEST_REQUIRED_MPC_REAR, _NAME, media_performance_class)
 
       camera_properties_utils.skip_unless(should_run)
 
@@ -83,6 +113,17 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
       facing = props['android.lens.facing']
       camera_properties_utils.check_front_or_rear_camera(props)
 
+      # Check zoom range
+      zoom_range = props['android.control.zoomRatioRange']
+      logging.debug('zoomRatioRange: %s', str(zoom_range))
+
+      # If device doesn't support UW, only test W
+      # If device's UW's zoom ratio is bigger than 0.9x, use that value
+      test_zoom_ratios = [_ZOOM_RATIO_W]
+      if (zoom_range[0] < _ZOOM_RATIO_W and
+          first_api_level >= its_session_utils.ANDROID15_API_LEVEL):
+        test_zoom_ratios.append(max(_ZOOM_RATIO_UW, zoom_range[0]))
+
       # Initialize rotation rig
       rot_rig['cntl'] = self.rotator_cntl
       rot_rig['ch'] = self.rotator_ch
@@ -90,35 +131,31 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
         raise AssertionError(
             f'You must use the arduino controller for {_NAME}.')
 
-      # List of video resolutions to test
-      lowest_res_tested = video_processing_utils.LOWEST_RES_TESTED_AREA
-      resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
-      supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      supported_preview_sizes = [size for size in supported_preview_sizes
-                                 if resolution_to_area(size)
-                                 >= lowest_res_tested]
-      logging.debug('Supported preview resolutions: %s',
-                    supported_preview_sizes)
+      # Determine preview sizes to test
+      preview_sizes_to_test = _get_preview_sizes(cam, self.camera_id)
 
+      # Preview recording with camera movement
       stabilization_result = {}
+      for preview_size in preview_sizes_to_test:
+        for zoom_ratio in test_zoom_ratios:
+          recording_obj = preview_processing_utils.collect_data(
+              cam, self.tablet_device, preview_size,
+              stabilize=True, rot_rig=rot_rig, zoom_ratio=zoom_ratio)
 
-      for preview_size in supported_preview_sizes:
-        recording_obj = preview_stabilization_utils.collect_data(
-            cam, self.tablet_device, preview_size, stabilize=True,
-            rot_rig=rot_rig)
+          # Get gyro events
+          logging.debug('Reading out inertial sensor events')
+          gyro_events = cam.get_sensor_events()['gyro']
+          logging.debug('Number of gyro samples %d', len(gyro_events))
 
-        # Get gyro events
-        logging.debug('Reading out inertial sensor events')
-        gyro_events = cam.get_sensor_events()['gyro']
-        logging.debug('Number of gyro samples %d', len(gyro_events))
+          # Grab the video from the save location on DUT
+          self.dut.adb.pull([recording_obj['recordedOutputPath'], log_path])
 
-        # Grab the video from the save location on DUT
-        self.dut.adb.pull([recording_obj['recordedOutputPath'], log_path])
-
-        stabilization_result[preview_size] = (
-            preview_stabilization_utils.verify_preview_stabilization(
-                recording_obj, gyro_events, _NAME, log_path, facing)
-        )
+          # Verify stabilization was applied to preview stream
+          stabilization_result[preview_size] = (
+              preview_processing_utils.verify_preview_stabilization(
+                  recording_obj, gyro_events, _NAME, log_path, facing,
+                  zoom_ratio)
+          )
 
       # Assert PASS/FAIL criteria
       test_failures = []
@@ -132,4 +169,3 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
 
 if __name__ == '__main__':
   test_runner.main()
-

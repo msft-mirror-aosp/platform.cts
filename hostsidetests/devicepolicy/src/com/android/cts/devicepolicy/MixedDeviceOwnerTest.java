@@ -20,8 +20,12 @@ import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.
 
 import static org.junit.Assert.fail;
 
+import android.app.admin.flags.Flags;
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 import android.stats.devicepolicy.EventId;
 
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.IgnoreOnHeadlessSystemUserMode;
@@ -30,9 +34,8 @@ import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
 
-import com.google.common.collect.ImmutableMap;
-
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
@@ -50,6 +53,10 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     private static final int SECURITY_EVENTS_BATCH_SIZE = 100;
 
     private boolean mDeviceOwnerSet;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @Override
     public void setUp() throws Exception {
@@ -69,9 +76,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
             removeDeviceOwnerAdmin(DEVICE_ADMIN_COMPONENT_FLATTENED);
             getDevice().uninstallPackage(DEVICE_ADMIN_PKG);
             fail("Failed to set device owner on user " + mDeviceOwnerUserId);
-        }
-        if (isHeadlessSystemUserMode()) {
-            affiliateUsers(DEVICE_ADMIN_PKG, mDeviceOwnerUserId, mPrimaryUserId);
         }
     }
 
@@ -95,6 +99,8 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testLockTask_unaffiliatedUser() throws Exception {
         assumeCanCreateAdditionalUsers(1);
 
@@ -274,6 +280,7 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HEADLESS_DEVICE_OWNER_DELEGATE_SECURITY_LOGGING_BUG_FIX)
     public void testSecurityLoggingDelegate() throws Exception {
         installAppAsUser(DELEGATE_APP_APK, mDeviceOwnerUserId);
         try {
@@ -398,6 +405,24 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
         super.testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted();
     }
 
+    @Ignore("b/330134976")
+    @LargeTest
+    @Test
+    public void testLockTaskCantBeInterrupted() throws Exception {
+        try {
+            // Just start kiosk mode
+            executeDeviceTestMethod(
+                    ".LockTaskHostDrivenTest", "testStartLockTask_noAsserts");
+
+            // Check that kiosk mode is working and can't be interrupted
+            executeDeviceTestMethod(".LockTaskHostDrivenTest",
+                    "testLockTaskIsActiveAndCantBeInterrupted");
+        } finally {
+            executeDeviceTestMethod(".LockTaskHostDrivenTest", "testCleanupLockTask_noAsserts");
+        }
+    }
+
+
     @Override
     protected void installDelegateApp() throws Exception {
         // TODO(b/176993670): must call installDeviceOwnerApp() - even though it's not one - so
@@ -452,10 +477,7 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
         final int userId = createUserAndWaitStart();
         installAppAsUser(INTENT_RECEIVER_APK, userId);
         installAppAsUser(DEVICE_ADMIN_APK, userId);
-        // For headless system user mode, PO is set on any secondary user created
-        if (!isHeadlessSystemUserMode()) {
-            setProfileOwnerOrFail(DEVICE_ADMIN_COMPONENT_FLATTENED, userId);
-        }
+        setProfileOwnerOrFail(DEVICE_ADMIN_COMPONENT_FLATTENED, userId);
         return userId;
     }
 

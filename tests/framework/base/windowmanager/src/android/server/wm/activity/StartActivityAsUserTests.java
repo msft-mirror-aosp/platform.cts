@@ -28,7 +28,6 @@ import android.app.ActivityOptions;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteCallback;
 import android.os.UserHandle;
@@ -57,7 +56,6 @@ public class StartActivityAsUserTests {
 
     private static final String PACKAGE = "android.server.wm.cts";
     private static final String CLASS = "android.server.wm.activity.StartActivityAsUserActivity";
-    private static final String USER_CREATION_OVERRIDE = "debug.user.creation_override";
     private static final int INVALID_STACK = -1;
     private static final boolean SUPPORTS_MULTIPLE_USERS = UserManager.supportsMultipleUsers();
 
@@ -65,7 +63,6 @@ public class StartActivityAsUserTests {
     private final ActivityManager mAm = mContext.getSystemService(ActivityManager.class);
 
     private static int sSecondUserId;
-    private static boolean sCloneProfileSupported = true;
 
     private WindowManagerStateHelper mAmWmState = new WindowManagerStateHelper();
     private static final String TAG = StartActivityAsUserTests.class.getSimpleName();
@@ -76,21 +73,15 @@ public class StartActivityAsUserTests {
             return;
         }
 
-        if (FeatureUtil.isAutomotive()) {
-            if (!Build.isDebuggable()) {
-                // "debug.user.creation_override" only works for debuggable builds. Skip the tests
-                // for non-debuggable builds in Automotive.
-                sCloneProfileSupported = false;
-                return;
-            }
-            // In Automotive, temporarily remove restrictions on user-creation.
-            runShellCommand("setprop " + USER_CREATION_OVERRIDE + " true");
-        }
-
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        final String output = runShellCommand(
-                "pm create-user --user-type android.os.usertype.profile.CLONE --profileOf "
-                        + context.getUserId() + " user2");
+        // Create a CLONE profile to start a new activity as. On Automotive devices, CLONE profiles
+        // are not supported, thus create a FULL secondary user instead.
+        String createUserOptions = FeatureUtil.isAutomotive()
+                ? "--user-type android.os.usertype.full.SECONDARY"
+                : "--user-type android.os.usertype.profile.CLONE --profileOf "
+                        + context.getUserId();
+
+        final String output = runShellCommand("pm create-user " + createUserOptions + " user2");
 
         try {
             sSecondUserId = Integer.parseInt(output.substring(output.lastIndexOf(" ")).trim());
@@ -115,15 +106,11 @@ public class StartActivityAsUserTests {
         runShellCommand("am stop-user -w -f " + sSecondUserId);
         runShellCommand("pm remove-user " + sSecondUserId);
         sSecondUserId = 0;
-        if (FeatureUtil.isAutomotive() && Build.isDebuggable()) {
-            runShellCommand("setprop " + USER_CREATION_OVERRIDE + " false");
-        }
     }
 
     @Before
     public void checkMultipleUsersNotSupportedOrSecondUserCreated() {
         assumeTrue(SUPPORTS_MULTIPLE_USERS);
-        assumeTrue(sCloneProfileSupported);
         assertThat(sSecondUserId).isNotEqualTo(0);
     }
 

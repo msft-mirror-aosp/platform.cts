@@ -62,6 +62,7 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.CommandSession;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.ActivitySessionClient;
+import android.server.wm.KeyguardTestBase;
 import android.server.wm.LockScreenSession;
 import android.server.wm.RotationSession;
 import android.server.wm.UiDeviceUtils;
@@ -720,7 +721,7 @@ public class KeyguardTests extends KeyguardTestBase {
         mWmState.waitForDisplayUnfrozen();
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
         mWmState.assertValidity();
-        mWmState.assertHomeActivityVisible(false);
+        mWmState.waitAndAssertVisibilityGone(mWmState.getHomeActivityName());
         mWmState.assertKeyguardShowingAndNotOccluded();
         // The {@link SHOW_WHEN_LOCKED_ACTIVITY} has gone because of the 'finish' broadcast.
         mWmState.waitAndAssertActivityRemoved(SHOW_WHEN_LOCKED_ACTIVITY);

@@ -63,6 +63,7 @@ import java.util.concurrent.TimeUnit;
 public class CarrierRoamingSatelliteTestBase {
     private static final String TAG = "CarrierRoamingSatelliteTestBase";
     protected static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    protected static final int HYSTERESIS_TIMEOUT_SEC = 8;
     protected static final int SLOT_ID_0 = 0;
     protected static final int SLOT_ID_1 = 1;
 
@@ -71,8 +72,6 @@ public class CarrierRoamingSatelliteTestBase {
     protected static SubscriptionManager sSubscriptionManager;
     protected static ImsServiceConnector sServiceConnector;
     private static CarrierConfigReceiver sCarrierConfigReceiver;
-
-    private static boolean sSupportsImsHal = false;
 
     protected static void beforeAllTestsBase() throws Exception {
         logd(TAG, "beforeAllTestsBase");
@@ -236,10 +235,12 @@ public class CarrierRoamingSatelliteTestBase {
         }
     }
 
-    private static class ServiceStateListenerTest extends TelephonyCallback
+    protected static class ServiceStateListenerTest extends TelephonyCallback
             implements TelephonyCallback.ServiceStateListener {
 
-        private final Semaphore mNonTerrestrialNetworkSemaphore = new Semaphore(0);
+        private final Semaphore mNtnConnectedSemaphore = new Semaphore(0);
+        private final Semaphore mNtnDisconnetedSemaphore = new Semaphore(0);
+
 
         @Override
         public void onServiceStateChanged(ServiceState serviceState) {
@@ -247,21 +248,37 @@ public class CarrierRoamingSatelliteTestBase {
 
             try {
                 if (serviceState.isUsingNonTerrestrialNetwork()) {
-                    mNonTerrestrialNetworkSemaphore.release();
+                    mNtnConnectedSemaphore.release();
+                } else {
+                    mNtnDisconnetedSemaphore.release();
                 }
             } catch (Exception e) {
                 loge(TAG, "onServiceStateChanged: Got exception=" + e);
             }
         }
 
-        public boolean waitForNonTerrestrialNetworkConnection() {
+        public boolean waitUntilNonTerrestrialNetworkConnected() {
             try {
-                if (!mNonTerrestrialNetworkSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                if (!mNtnConnectedSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
                     loge(TAG, "Timeout to connect to non-terrestrial network");
                     return false;
                 }
             } catch (Exception e) {
-                loge(TAG, "ServiceStateListenerTest waitForNonTerrestrialNetworkConnection: "
+                loge(TAG, "ServiceStateListenerTest waitUntilNonTerrestrialNetworkConnected: "
+                        + "Got exception=" + e);
+                return false;
+            }
+            return true;
+        }
+
+        public boolean waitUntilNonTerrestrialNetworkDisconnected() {
+            try {
+                if (!mNtnDisconnetedSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge(TAG, "Timeout to disconnect to non-terrestrial network");
+                    return false;
+                }
+            } catch (Exception e) {
+                loge(TAG, "ServiceStateListenerTest waitUntilNonTerrestrialNetworkDisconnected: "
                         + "Got exception=" + e);
                 return false;
             }
@@ -270,7 +287,8 @@ public class CarrierRoamingSatelliteTestBase {
 
         public void clearServiceStateChanges() {
             logd(TAG, "clearServiceStateChanges()");
-            mNonTerrestrialNetworkSemaphore.drainPermits();
+            mNtnConnectedSemaphore.drainPermits();
+            mNtnDisconnetedSemaphore.drainPermits();
         }
     }
 
@@ -320,6 +338,57 @@ public class CarrierRoamingSatelliteTestBase {
         }
     }
 
+    protected static class CarrierRoamingNtnModeListenerTest extends TelephonyCallback
+            implements TelephonyCallback.CarrierRoamingNtnModeListener {
+        private final Semaphore mSemaphore = new Semaphore(0);
+        private final Object mLock = new Object();
+
+        @GuardedBy("mLock")
+        public boolean mActive;
+
+        @Override
+        public void onCarrierRoamingNtnModeChanged(boolean active) {
+            logd(TAG, "onCarrierRoamingNtnModeChanged active:" + active);
+            synchronized (mLock) {
+                mActive = active;
+            }
+
+            try {
+                mSemaphore.release();
+            } catch (Exception e) {
+                loge(TAG, "onCarrierRoamingNtnModeChanged: Got exception, ex=" + e);
+            }
+        }
+
+        public boolean waitForModeChanged(int expectedNumOfEvents) {
+            for (int i = 0; i < expectedNumOfEvents; i++) {
+                try {
+                    if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge(TAG, "Timeout to receive onCarrierRoamingNtnModeChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge(TAG, "onCarrierRoamingNtnModeChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public boolean getNtnMode() {
+            synchronized (mLock) {
+                return mActive;
+            }
+        }
+
+        public void clearModeChanges() {
+            synchronized (mLock) {
+                mActive = false;
+            }
+            mSemaphore.drainPermits();
+        }
+    }
+
     private static void overrideCarrierConfig(int subId, PersistableBundle bundle)
             throws Exception {
         logd(TAG, "overrideCarrierConfig() subId:" + subId);
@@ -359,6 +428,8 @@ public class CarrierRoamingSatelliteTestBase {
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(
                 CarrierConfigManager.KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
+        bundle.putInt(CarrierConfigManager.KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT,
+                HYSTERESIS_TIMEOUT_SEC);
         PersistableBundle plmnBundle = new PersistableBundle();
         int[] intArray1 = {3, 5};
         plmnBundle.putIntArray(mccmnc, intArray1);
@@ -370,7 +441,7 @@ public class CarrierRoamingSatelliteTestBase {
         // Enter service
         sMockModemManager.changeNetworkService(slotId, profile, true);
 
-        assertTrue(serviceStateListener.waitForNonTerrestrialNetworkConnection());
+        assertTrue(serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
     }
 
     protected static void removeSatelliteEnabledSim(int slotId, int profile) throws Exception {

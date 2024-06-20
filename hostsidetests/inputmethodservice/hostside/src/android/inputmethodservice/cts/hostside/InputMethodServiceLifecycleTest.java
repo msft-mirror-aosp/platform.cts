@@ -35,7 +35,6 @@ import android.inputmethodservice.cts.common.test.ShellCommandUtils;
 import android.inputmethodservice.cts.common.test.TestInfo;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
-import android.platform.test.annotations.FlakyTest;
 
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -168,108 +167,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
     @Test
     public void testSwitchToHandwritingImeInstant() throws Exception {
         testSwitchToHandwritingIme(true);
-    }
-
-    private void testUninstallCurrentIme(boolean instant) throws Exception {
-        sendTestStartEvent(DeviceTestConstants.TEST_CREATE_IME1);
-        installPossibleInstantPackage(
-                EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
-        installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        waitUntilImesAreEnabled(Ime1Constants.IME_ID);
-
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
-        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_CREATE_IME1));
-
-        uninstallPackageSyncIfExists(Ime1Constants.PACKAGE);
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        assertImeNotSelectedInSecureSettings(Ime1Constants.IME_ID, WAIT_TIMEOUT);
-    }
-
-    /**
-     * Test uninstalling the currently selected IME for full (non-instant) apps.
-     */
-    @AppModeFull
-    @Test
-    public void testUninstallCurrentImeFull() throws Exception {
-        testUninstallCurrentIme(false);
-    }
-
-    /**
-     * Test uninstalling the currently selected IME for instant apps.
-     */
-    @AppModeInstant
-    @Test
-    public void testUninstallCurrentImeInstant() throws Exception {
-        testUninstallCurrentIme(true);
-    }
-
-    private void testDisableCurrentIme(boolean instant) throws Exception {
-        sendTestStartEvent(DeviceTestConstants.TEST_CREATE_IME1);
-        installPossibleInstantPackage(
-                EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
-        installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        waitUntilImesAreEnabled(Ime1Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
-        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_CREATE_IME1));
-
-        shell(ShellCommandUtils.disableIme(Ime1Constants.IME_ID));
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        assertImeNotSelectedInSecureSettings(Ime1Constants.IME_ID, WAIT_TIMEOUT);
-    }
-
-    /**
-     * Test disabling the currently selected IME for full (non-instant) apps.
-     */
-    @AppModeFull
-    @Test
-    public void testDisableCurrentImeFull() throws Exception {
-        testDisableCurrentIme(false);
-    }
-
-    /**
-     * Test disabling the currently selected IME for instant apps.
-     */
-    @AppModeInstant
-    @Test
-    public void testDisableCurrentImeInstant() throws Exception {
-        testDisableCurrentIme(true);
-    }
-
-    private void testSwitchInputMethod(boolean instant) throws Exception {
-        sendTestStartEvent(DeviceTestConstants.TEST_SWITCH_INPUTMETHOD);
-        installPossibleInstantPackage(
-                EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
-        installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
-        installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID));
-        waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
-
-        assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_SWITCH_INPUTMETHOD));
-    }
-
-    /**
-     * Test "InputMethodService#switchInputMethod" API for full (non-instant) apps.
-     */
-    @AppModeFull
-    @Test
-    public void testSwitchInputMethodFull() throws Exception {
-        testSwitchInputMethod(false);
-    }
-
-    /**
-     * Test "InputMethodService#switchInputMethod" API for instant apps.
-     */
-    @AppModeInstant
-    @Test
-    public void testSwitchInputMethodInstant() throws Exception {
-        testSwitchInputMethod(true);
     }
 
     private void testSwitchToNextInput(boolean instant, boolean imeForceQueryable)
@@ -444,48 +341,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
     @Test
     public void testInputUnbindsOnAppStopInstant() throws Exception {
         testInputUnbindsOnAppStop(true);
-    }
-
-    private void testImeVisibilityAfterImeSwitching(boolean instant) throws Exception {
-        runWithRetries(3, () -> {
-            sendTestStartEvent(DeviceTestConstants.TEST_SWITCH_IME1_TO_IME2);
-            installPossibleInstantPackage(
-                    EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
-            installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
-            installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID);
-            shell(ShellCommandUtils.waitForBroadcastBarrier());
-            shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-            shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID));
-            waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
-            shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
-
-            assertTrue(runDeviceTestMethod(
-                    DeviceTestConstants.TEST_IME_VISIBILITY_AFTER_IME_SWITCHING));
-        });
-    }
-
-    /**
-     * Test if IMEs remain to be visible after switching to other IMEs for full (non-instant) apps.
-     *
-     * <p>Regression test for Bug 152876819.</p>
-     */
-    @AppModeFull
-    @FlakyTest
-    @Test
-    public void testImeVisibilityAfterImeSwitchingFull() throws Exception {
-        testImeVisibilityAfterImeSwitching(false);
-    }
-
-    /**
-     * Test if IMEs remain to be visible after switching to other IMEs for instant apps.
-     *
-     * <p>Regression test for Bug 152876819.</p>
-     */
-    @AppModeInstant
-    @FlakyTest
-    @Test
-    public void testImeVisibilityAfterImeSwitchingInstant() throws Exception {
-        testImeVisibilityAfterImeSwitching(true);
     }
 
     private void testImeSwitchingWithoutWindowFocusAfterDisplayOffOn(boolean instant)

@@ -5,7 +5,7 @@ package {
 
 android_library {
     name: "EventLib",
-    sdk_version: "test_current",
+    sdk_version: "system_current",
     srcs: [
         "src/main/java/**/*.java",
         "src/main/java/**/*.kt",

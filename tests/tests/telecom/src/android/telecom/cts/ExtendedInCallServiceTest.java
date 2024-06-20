@@ -41,7 +41,7 @@ import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 import android.telephony.TelephonyManager;
 
-import androidx.test.filters.FlakyTest;
+import com.android.server.telecom.flags.Flags;
 
 import java.util.List;
 import java.util.UUID;
@@ -395,12 +395,17 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
             cleanupCalls();
             // Set device back to normal
             manager.disableCarMode(0);
-            if (!TestUtils.hasAutomotiveFeature()) {
-                // Make sure the UI mode has been set back
-                assertUiMode(Configuration.UI_MODE_TYPE_NORMAL);
+
+            final int expectedUiMode;
+            // Make sure the UI mode has been set back
+            if (TestUtils.hasAutomotiveFeature()) {
+                expectedUiMode = Configuration.UI_MODE_TYPE_CAR;
+            } else if (TestUtils.hasWatchFeature()) {
+                expectedUiMode = Configuration.UI_MODE_TYPE_WATCH;
             } else {
-                assertUiMode(Configuration.UI_MODE_TYPE_CAR);
+                expectedUiMode = Configuration.UI_MODE_TYPE_NORMAL;
             }
+            assertUiMode(expectedUiMode);
         }
     }
 
@@ -483,14 +488,15 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         }
     }
 
-    @FlakyTest
     public void testSwitchCallEndpoint() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !Flags.earlyUpdateInternalCallAudioState()) {
             return;
         }
 
         placeAndVerifyCall();
         final MockConnection connection = verifyConnectionForOutgoingCall();
+        TestUtils.InvokeCounter connectionOnCallEndpointChangedCounter =
+                connection.getConnectionOnCallEndpointChangedCounter();
 
         final MockInCallService inCallService = mInCallCallbacks.getService();
 
@@ -523,6 +529,10 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
                         @Override
                         public void onError(CallEndpointException exception) {}
                     });
+            // Wait for connection onCallEndpointChanged.
+            connectionOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 1,
+                    WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+            // Wait for ICS connection onCallEndpointChanged.
             mOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 1,
                     WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
             assertEndpointType(connection, anotherEndpointType);
@@ -535,7 +545,11 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
                         @Override
                         public void onError(CallEndpointException exception) {}
                     });
-            mOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 1,
+            // Wait for connection onCallEndpointChanged.
+            connectionOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 2,
+                    WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+            // Wait for ICS connection onCallEndpointChanged.
+            mOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 2,
                     WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
             assertEndpointType(connection, currentEndpointType);
             assertEndpointType(inCallService, currentEndpointType);

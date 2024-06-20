@@ -24,7 +24,27 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Queue;
 
-/** {@link TestRule} for releasing resources once a test ends. */
+/**
+ * {@link TestRule} for releasing resources once a test ends.
+ *
+ * <p><b>Minimal Example:</b>
+ *
+ * <pre>{@code
+ * public class FooTest {
+ *     @Rule public final ResourceReleaser mResourceReleaser = new ResourceReleaser();
+ *
+ *     @Test
+ *     public void registerFoo_doesSomething() {
+ *         Foo foo = new Foo();
+ *         foo.register();
+ *         mResourceReleaser.add(foo::unregister);
+ *
+ *         // Do assertions here.
+ *     }
+ * }
+ *
+ * }</pre>
+ */
 public final class ResourceReleaser extends ExternalResource {
 
     private final Queue<Runnable> mPendingRunnables = new ArrayDeque<>();

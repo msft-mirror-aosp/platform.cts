@@ -17,37 +17,29 @@ package android.devicepolicy.cts
 
 import android.Manifest
 import android.accounts.Account
-import android.app.admin.DeviceAdminReceiver
-import android.app.admin.DevicePolicyManager
-import android.app.admin.FullyManagedDeviceProvisioningParams
-import android.app.admin.ManagedProfileProvisioningParams
-import android.app.admin.ProvisioningException
+import android.app.admin.*
+import android.app.admin.flags.Flags
 import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
 import android.nfc.NdefMessage
 import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
-import android.os.BaseBundle
-import android.os.Bundle
-import android.os.Parcelable
-import android.os.PersistableBundle
-import android.os.UserHandle
+import android.os.*
 import android.provider.Settings
 import com.android.bedstead.deviceadminapp.DeviceAdminApp
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.harrier.annotations.EnsureHasAccount
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.harrier.annotations.EnsureHasNoWorkProfile
-import com.android.bedstead.harrier.annotations.EnsureHasPermission
+import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.annotations.EnsureIsNotDemoDevice
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
-import com.android.bedstead.harrier.annotations.NotTestable
 import com.android.bedstead.harrier.annotations.PermissionTest
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
@@ -58,42 +50,34 @@ import com.android.bedstead.harrier.annotations.RequireNotWatch
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser
+import com.android.bedstead.harrier.annotations.RequireRunOnSingleUser
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDevicePolicyManagerRoleHolder
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDeviceOwner
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDpc
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoProfileOwner
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
+import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.appops.AppOpsMode
 import com.android.bedstead.nene.packages.CommonPackages
-import com.android.bedstead.nene.permissions.CommonPermissions
-import com.android.bedstead.nene.types.OptionalBoolean.TRUE
+import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType
 import com.android.bedstead.remotedpc.RemoteDpc
-import com.android.bedstead.testapp.BaseTestAppDeviceAdminReceiver
 import com.android.compatibility.common.util.ApiTest
-import com.android.eventlib.premade.EventLibDeviceAdminReceiver
 import com.android.eventlib.truth.EventLogsSubject.assertThat
-import com.android.queryable.annotations.BooleanQuery
-import com.android.queryable.annotations.Query
 import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertThat
-import org.junit.Assert
+import org.junit.*
 import org.junit.Assert.assertThrows
-import org.junit.Before
-import org.junit.ClassRule
-import org.junit.Ignore
-import org.junit.Rule
-import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.ByteArrayOutputStream
 import java.io.IOException
-import java.util.Properties
+import java.util.*
 import java.util.stream.Collectors
+
 
 @RunWith(BedsteadJUnit4::class)
 class ProvisioningTest {
@@ -424,6 +408,71 @@ class ProvisioningTest {
             assertThat(exception.provisioningError).isEqualTo(
                 ProvisioningException.ERROR_PRE_CONDITION_FAILED
             )
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @EnsureHasNoDpc
+    @RequireFeature(CommonPackages.FEATURE_DEVICE_ADMIN)
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @Test
+    @RequireHeadlessSystemUserMode(reason = "Testing headless-specific functionality")
+    @RequireRunOnSingleUser
+    @RequireFlagsEnabled(Flags.FLAG_HEADLESS_DEVICE_OWNER_SINGLE_USER_ENABLED)
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
+    fun provisionFullyManagedDevice_headlessSingleUser_setsDeviceOwner() {
+        val mainUserSetupComplete = TestApis.users().main()?.setupComplete ?: false
+        TestApis.users().main()?.setupComplete = false
+        SINGLE_USER_DO_DEVICE_ADMIN.install().use {
+            try {
+                val params = FullyManagedDeviceProvisioningParams.Builder(
+                        SINGLE_USER_DO_DEVICE_ADMIN_COMPONENT_NAME,
+                        DEVICE_OWNER_NAME
+                ).setLeaveAllSystemAppsEnabled(true).build()
+
+                localDevicePolicyManager.provisionFullyManagedDevice(params)
+
+                assertThat(TestApis.devicePolicy().getDeviceOwner()).isNotNull()
+                assertThat(TestApis.devicePolicy().getDeviceOwner()!!.componentName())
+                        .isEqualTo(SINGLE_USER_DO_DEVICE_ADMIN_COMPONENT_NAME)
+
+            } finally {
+                val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
+                deviceOwner?.remove()
+                TestApis.users().main()?.setupComplete = mainUserSetupComplete
+            }
+        }
+    }
+
+    @Postsubmit(reason = "New test")
+    @EnsureHasNoDpc
+    @RequireFeature(CommonPackages.FEATURE_DEVICE_ADMIN)
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @Test
+    @RequireHeadlessSystemUserMode(reason = "Testing headless-specific functionality")
+    @RequireRunOnSingleUser
+    @RequireFlagsEnabled(Flags.FLAG_HEADLESS_DEVICE_OWNER_SINGLE_USER_ENABLED)
+    @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
+    fun provisionFullyManagedDevice_headlessSingleUser_setsDoInMainUser() {
+        val mainUserSetupComplete = TestApis.users().main()?.setupComplete ?: false
+        TestApis.users().main()?.setupComplete = false
+        SINGLE_USER_DO_DEVICE_ADMIN.install().use {
+            try {
+                val params = FullyManagedDeviceProvisioningParams.Builder(
+                        SINGLE_USER_DO_DEVICE_ADMIN_COMPONENT_NAME,
+                        DEVICE_OWNER_NAME
+                ).setLeaveAllSystemAppsEnabled(true).build()
+
+                localDevicePolicyManager.provisionFullyManagedDevice(params)
+
+                assertThat(TestApis.devicePolicy().getDeviceOwner()).isNotNull()
+                assertThat(TestApis.devicePolicy().getDeviceOwner()!!.user())
+                        .isEqualTo(TestApis.users().main())
+            } finally {
+                val deviceOwner = TestApis.devicePolicy().getDeviceOwner()
+                deviceOwner?.remove()
+                TestApis.users().main()?.setupComplete = mainUserSetupComplete
+            }
         }
     }
 
@@ -1502,6 +1551,14 @@ class ProvisioningTest {
         private val DEVICE_ADMIN_COMPONENT_NAME = DeviceAdminApp.deviceAdminComponentName(context)
         private val DEVICE_ADMIN_COMPONENT = TestApis.packages().component(
             DEVICE_ADMIN_COMPONENT_NAME
+        )
+
+        private val SINGLE_USER_DO_DEVICE_ADMIN = deviceState.testApps().query()
+                .allowInternalBedsteadTestApps().whereIsHeadlessDOSingleUser().isTrue()
+                .get()
+        private val SINGLE_USER_DO_DEVICE_ADMIN_COMPONENT_NAME = ComponentName(
+                SINGLE_USER_DO_DEVICE_ADMIN.packageName(),
+                "com.android.bedstead.testapp.BaseTestAppDeviceAdminReceiver"
         )
 
         private val MANAGED_PROFILE_PARAMS = createManagedProfileProvisioningParamsBuilder().build()

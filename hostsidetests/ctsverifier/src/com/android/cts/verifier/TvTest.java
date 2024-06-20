@@ -72,7 +72,7 @@ public final class TvTest extends CtsVerifierTest {
     @Test
     @SupportMultiDisplayMode
     // MultiDisplayMode
-    @CddTest(requirements = "3.12/C-1-2")
+    @CddTest(requirements = {"2.3.3/3/T-0-3"})
     public void AppLinkTest() throws Exception {
         requireFeatures("android.software.live_tv");
 

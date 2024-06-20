@@ -23,6 +23,10 @@ import static org.junit.Assume.assumeTrue;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.SensorProperties;
 import android.platform.test.annotations.Presubmit;
+import android.server.biometrics.util.BiometricServiceState;
+import android.server.biometrics.util.SensorStates;
+import android.server.biometrics.util.TestSessionList;
+import android.server.biometrics.util.Utils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -345,6 +349,25 @@ public class BiometricServiceTests extends BiometricTestBase {
 
             // All biometrics should now be removed, since CredentialSession removes device
             // credential after losing scope.
+            waitForAllUnenrolled();
+        }
+    }
+
+    @CddTest(requirements = {"7.3.10/C-1-15"})
+    @Test
+    public void testRemoveBiometricEnrollments() throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+        try (TestSessionList biometricSessions = new TestSessionList(this)) {
+            for (SensorProperties prop : mSensorProperties) {
+                BiometricTestSession session = mBiometricManager.createTestSession(
+                        prop.getSensorId());
+                enrollForSensor(session, prop.getSensorId());
+
+                final int userId = Utils.getUserId();
+                session.cleanupInternalState(userId);
+                biometricSessions.put(prop.getSensorId(), session);
+            }
+
             waitForAllUnenrolled();
         }
     }

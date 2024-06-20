@@ -34,6 +34,7 @@ import android.os.IInterface;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.Parcelable;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
@@ -55,6 +56,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ParcelTest {
     @Rule public RavenwoodRule mRavenwood = new RavenwoodRule();
 
@@ -241,6 +243,21 @@ public class ParcelTest {
         p.setDataCapacity(3);
         assertEquals(3, p.dataCapacity());
         p.recycle();
+    }
+
+    @Test
+    public void testSetDataCapacityNegative() {
+        Parcel p;
+
+        p = Parcel.obtain();
+        try {
+            p.setDataCapacity(-1);
+            fail();
+        } catch (IllegalArgumentException e) {
+            // ignore
+        } finally {
+            p.recycle();
+        }
     }
 
     @Test

@@ -357,26 +357,32 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled(FLAG_ALLOW_PRIVATE_PROFILE)
+    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testLauncherUserInfo() {
-        LauncherUserInfo info = mLauncherApps.getLauncherUserInfo(UserHandle.of(0));
+        LauncherUserInfo info =
+                mLauncherApps.getLauncherUserInfo(UserHandle.of(UserHandle.myUserId()));
         assertThat(info).isNotNull();
     }
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled(FLAG_ALLOW_PRIVATE_PROFILE)
+    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testGetMarketIntent() {
         IntentSender intentSender =
-                mLauncherApps.getAppMarketActivityIntent(PACKAGE_NAME, UserHandle.of(0));
+                mLauncherApps.getAppMarketActivityIntent(
+                        PACKAGE_NAME, UserHandle.of(UserHandle.myUserId()));
         assertThat(intentSender).isNotNull();
     }
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled(FLAG_ALLOW_PRIVATE_PROFILE)
+    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testGetPreInstalledSystemPackages() {
-        List<String> packages = mLauncherApps.getPreInstalledSystemPackages(UserHandle.of(0));
+        List<String> packages =
+                mLauncherApps.getPreInstalledSystemPackages(UserHandle.of(UserHandle.myUserId()));
         assertThat(packages).isNotNull();
     }
 

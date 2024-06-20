@@ -16,6 +16,7 @@
 package android.telecom.cts;
 
 import android.app.Instrumentation;
+import android.app.role.RoleManager;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.ContentProviderOperation;
@@ -435,13 +436,30 @@ public class TestUtils {
             return false;
         }
         final PackageManager pm = context.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_TELECOM);
+        // Check whether to test Telecom based on the possible past combination of feature flag
+        // requirements.  These feature flags are frozen on a device based on the vendor API level.
+        // This means a device upgrading from SDK 32 to SDK 34+ would still just use the old
+        // deprecated FEATURE_CONNECTION_SERVICE.
+        return pm.hasSystemFeature(PackageManager.FEATURE_TELECOM) // SDK 34+
+                || (pm.hasSystemFeature(PackageManager.FEATURE_TELECOM)
+                && pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) // SDK 33
+                || (pm.hasSystemFeature(PackageManager.FEATURE_CONNECTION_SERVICE)
+                && pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)); // SDK 26..32
     }
 
     public static boolean hasTelephonyFeature(Context context) {
         final PackageManager pm = context.getPackageManager();
         return (pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) && pm.hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_CALLING));
+    }
+
+    /**
+     * @param context the context
+     * @return {@code true} if the device supports a dialer on it, {@code false} otherwise.
+     */
+    public static boolean hasDialerRole(Context context) {
+        final RoleManager rm = context.getSystemService(RoleManager.class);
+        return (rm.isRoleAvailable(RoleManager.ROLE_DIALER));
     }
 
     public static String setCallDiagnosticService(Instrumentation instrumentation,
@@ -713,6 +731,16 @@ public class TestUtils {
             return false;
         }
     }
+
+    public static boolean hasWatchFeature() {
+        try {
+            return InstrumentationRegistry.getContext().getPackageManager()
+                    .hasSystemFeature(PackageManager.FEATURE_WATCH);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static BluetoothDevice makeBluetoothDevice(String address) {
         if (!HAS_BLUETOOTH) return null;
         Parcel p1 = Parcel.obtain();

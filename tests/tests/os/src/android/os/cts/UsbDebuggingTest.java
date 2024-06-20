@@ -18,10 +18,13 @@ package android.os.cts;
 
 import android.os.Build;
 import android.os.SystemProperties;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RestrictedBuildTest;
 import android.test.AndroidTestCase;
+
 import java.io.File;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class UsbDebuggingTest extends AndroidTestCase {
 
     @RestrictedBuildTest

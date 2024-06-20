@@ -18,6 +18,7 @@ package android.os.cts;
 
 import android.os.AsyncTask;
 import android.os.FileUtils;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.system.Os;
 import android.system.OsConstants;
 import android.test.AndroidTestCase;
@@ -35,6 +36,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class FileUtilsTest extends AndroidTestCase {
     private File mExpected;
     private File mActual;

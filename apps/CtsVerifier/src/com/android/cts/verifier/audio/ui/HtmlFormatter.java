@@ -52,6 +52,26 @@ public class HtmlFormatter {
     }
 
     /**
+     * Starts the HTML Heading block
+     * @param level The desired heading level. Should be between 1 and 6 inclusive.
+     * @return this HtmlFormatter to allow for cascading calls.
+     */
+    public HtmlFormatter openHeading(int level) {
+        mSB.append("<h" + level + ">");
+        return this;
+    }
+
+    /**
+     * Ends the HTML Heading block
+     * @param level The heading level associated with the corresponding openHeading() call.
+     * @return this HtmlFormatter to allow for cascading calls.
+     */
+    public HtmlFormatter closeHeading(int level) {
+        mSB.append("</h" + level + ">");
+        return this;
+    }
+
+    /**
      * Opens an HTML paragraph block.
      * @return this HtmlFormatter to allow for cascading calls.
      */
@@ -130,6 +150,61 @@ public class HtmlFormatter {
      */
     public HtmlFormatter closeTextColor() {
         mSB.append("</font>");
+        return this;
+    }
+
+    /**
+     * Starts a bullets list.
+     * @return This HtmlFormatter to allow for cascading calls.
+     */
+    public HtmlFormatter openBulletList() {
+        mSB.append("<ul>");
+        return this;
+    }
+
+    /**
+     * Ends a bullets list.
+     * @return This HtmlFormatter to allow for cascading calls.
+     */
+    public HtmlFormatter closeBulletList() {
+        mSB.append("</ul>");
+        return this;
+    }
+
+    /**
+     * Opens a list item in an enclosing bulleted list.
+     * @return This HtmlFormatter to allow for cascading calls.
+     */
+    public HtmlFormatter openListItem() {
+        mSB.append("<li>");
+        return this;
+    }
+
+    /**
+     * Closes a list item in an enclosing bulleted list.
+     * @return This HtmlFormatter to allow for cascading calls.
+     */
+    public HtmlFormatter closeListItem() {
+        mSB.append("</li>");
+        return this;
+    }
+
+    /**
+     * Appends a link tag with the specified link target URL
+     * @param url The url for the link.
+     * @return This HtmlFormatter to allow for cascading calls.
+     */
+    public HtmlFormatter openLink(String url) {
+        mSB.append("<a href=\"" + url + "\">");
+        return this;
+    }
+
+    /**
+     * Closes a link tag.
+     * @return This HtmlFormatter to allow for cascading calls.
+     */
+    public HtmlFormatter closeLink() {
+        mSB.append("</a>");
         return this;
     }
 

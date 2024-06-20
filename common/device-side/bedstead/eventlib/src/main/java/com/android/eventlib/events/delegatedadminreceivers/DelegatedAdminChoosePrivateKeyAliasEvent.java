@@ -38,6 +38,8 @@ import com.android.queryable.queries.UriQuery;
 import com.android.queryable.queries.UriQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when
  * {@link DelegatedAdminReceiver#onChoosePrivateKeyAlias(Context, Intent, int, Uri, String)} is
@@ -162,6 +164,7 @@ public final class DelegatedAdminChoosePrivateKeyAliasEvent extends Event {
         }
 
         /** Sets the {@link DelegatedAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DelegatedAdminChoosePrivateKeyAliasEventLogger setDelegatedAdminReceiver(
                 DelegatedAdminReceiver delegatedAdminReceiver) {
             mEvent.mDelegatedAdminReceiver = new DelegatedAdminReceiverInfo(delegatedAdminReceiver);
@@ -176,6 +179,7 @@ public final class DelegatedAdminChoosePrivateKeyAliasEvent extends Event {
         }
 
         /** Sets the {@link DelegatedAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DelegatedAdminChoosePrivateKeyAliasEventLogger setDelegatedAdminReceiver(
                 String delegatedAdminReceiverClassName) {
             mEvent.mDelegatedAdminReceiver = new DelegatedAdminReceiverInfo(delegatedAdminReceiverClassName);

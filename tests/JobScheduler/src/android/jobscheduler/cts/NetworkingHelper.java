@@ -26,6 +26,7 @@ import static junit.framework.Assert.fail;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 
 import android.Manifest;
 import android.annotation.NonNull;
@@ -55,7 +56,6 @@ import com.android.compatibility.common.util.SystemUtil;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -150,11 +150,11 @@ public class NetworkingHelper implements AutoCloseable {
     private String getWifiSSID() throws Exception {
         // Location needs to be enabled to get the WiFi information.
         setLocationMode(String.valueOf(Settings.Secure.LOCATION_MODE_ON));
-        final AtomicReference<String> ssid = new AtomicReference<>();
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> ssid.set(mWifiManager.getConnectionInfo().getSSID()),
-                Manifest.permission.ACCESS_FINE_LOCATION);
-        return unquoteSSID(ssid.get());
+        final String ssid = SystemUtil.callWithShellPermissionIdentity(
+                () -> mWifiManager.getConnectionInfo().getSSID(),
+                Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_WIFI_STATE);
+        assertNotEquals(WifiManager.UNKNOWN_SSID, ssid);
+        return unquoteSSID(ssid);
     }
 
     boolean hasCellularNetwork() throws Exception {

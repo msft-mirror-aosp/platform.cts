@@ -36,7 +36,6 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.ActivityTaskManager;
@@ -674,6 +673,16 @@ public class WindowManagerState {
         return null;
     }
 
+    /** Gets the top root task with the {@code windowingMode}. **/
+    public Task getTopRootTaskByWindowingMode(int windowingMode) {
+        for (Task rootTask : mRootTasks) {
+            if (windowingMode == rootTask.getWindowingMode()) {
+                return rootTask;
+            }
+        }
+        return null;
+    }
+
     public int getStandardTaskCountByWindowingMode(int windowingMode) {
         int count = 0;
         for (Task rootTask : mRootTasks) {
@@ -1040,8 +1049,8 @@ public class WindowManagerState {
                 .collect(Collectors.toList());
     }
 
-    @Nullable
-    List<WindowState> getAndAssertNavBarWindowsOnDisplay(int displayId, int expectedNavBarCount) {
+    @NonNull
+    List<WindowState> getNavBarWindowsOnDisplay(int displayId) {
         List<WindowState> navWindows = mDisplays.stream()
                 .filter(dc -> dc.mId == displayId)
                 .filter(dc -> dc.mProviders != null)
@@ -1050,12 +1059,8 @@ public class WindowManagerState {
                 .map(InsetsSourceProvider::getWindowState)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        // We may need some time to wait for nav bar showing.
-        // It's Ok to get less that expected nav bars here.
-        assertTrue("There should be at most expectedNavBarCount navigation bar on a display",
-                navWindows.size() <= expectedNavBarCount);
 
-        return navWindows.size() == expectedNavBarCount ? navWindows : null;
+        return navWindows;
     }
 
     WindowState getWindowStateForAppToken(String appToken) {

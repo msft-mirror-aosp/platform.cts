@@ -87,9 +87,6 @@
     <!-- b/63916274 -->
     <option name="compatibility:exclude-filter" value="CtsTelecomTestCases android.telecom.cts.WiredHeadsetTest" />
 
-    <!-- b/340793169 -->
-    <option name="compatibility:exclude-filter" value="CtsTelecomTestCases android.telecom.cts.ExtendedInCallServiceTest#testSwitchCallEndpoint" />
-
     <!-- b/62302163 -->
     <option name="compatibility:exclude-filter" value="CtsSecurityBulletinHostTestCases android.security.cts.Poc17_04#testPocCVE_2017_0564" />
 
@@ -278,9 +275,6 @@
     <!-- b/216546060 -->
     <option name="compatibility:exclude-filter" value="CtsFragmentTestCases android.fragment.cts.FragmentAnimatorTest#saveWhileAnimatingAway" />
 
-    <!-- b/208909067 -->
-    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases android.display.cts.DisplayTest#testActivityContextGetMetrics" />
-
     <!-- b/266101051-->
     <option name="compatibility:exclude-filter" value="CtsGameServiceTestCases" />
 
@@ -299,4 +293,18 @@
     <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_small_medium_sizes" />
     <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_large_sizes" />
     <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_realloc" />
+
+    <!-- b/333710905 -->
+    <option name="compatibility:exclude-filter" value="CtsNfcHceMultiDeviceTestCases" />
+
+    <!-- b/322965201 -->
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionAvailability" />
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.CameraManagerTest#testCameraManagerGetDeviceIdList[1]" />
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ConcurrentCameraTest#testMandatoryConcurrentStreamCombination[1]" />
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraPerfClassCharacteristics[1]" />
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]" />
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]" />
+
+    <!-- b/337925894 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordLocalMono16BitShort" />
 </configuration>

@@ -24,9 +24,11 @@ android_test {
 
     static_libs: [
         "androidx.test.rules",
+        "android.security.flags-aconfig-java",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "cts-install-lib",
+        "flag-junit",
     ],
 
     sdk_version: "test_current",

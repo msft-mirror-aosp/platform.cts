@@ -16,7 +16,7 @@
 
 package android.devicepolicy.cts;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.CREATE_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.CREATE_USERS;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
@@ -29,11 +29,11 @@ import android.os.UserManager;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.UserTest;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDpc;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.remotedpc.RemoteDpc;

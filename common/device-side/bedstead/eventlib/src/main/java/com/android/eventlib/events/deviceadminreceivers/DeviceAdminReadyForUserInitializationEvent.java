@@ -31,6 +31,8 @@ import com.android.queryable.queries.DeviceAdminReceiverQueryHelper;
 import com.android.queryable.queries.IntentQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link DeviceAdminReceiver#onReadyForUserInitialization(Context, Intent)}
  * is called.
@@ -113,6 +115,7 @@ public final class DeviceAdminReadyForUserInitializationEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminReadyForUserInitializationEventLogger setDeviceAdminReceiver(
                 DeviceAdminReceiver deviceAdminReceiver) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiver);
@@ -127,6 +130,7 @@ public final class DeviceAdminReadyForUserInitializationEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminReadyForUserInitializationEventLogger setDeviceAdminReceiver(
                 String deviceAdminReceiverClassName) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiverClassName);

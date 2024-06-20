@@ -25,6 +25,10 @@ import androidx.annotation.NonNull;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
+@RunWith(JUnit4.class)
 public class GlobalSearchSessionCtsTest extends GlobalSearchSessionCtsTestBase {
     protected ListenableFuture<AppSearchSessionShim> createSearchSessionAsync(
             @NonNull String dbName) {

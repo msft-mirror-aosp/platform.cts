@@ -158,7 +158,7 @@ public final class CarPackageManagerTest extends AbstractCarTestCase {
     @ApiTest(apis = {"android.car.content.pm.CarPackageManager#requiresDisplayCompat"})
     @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_COMPATIBILITY)
     @Ignore("b/303074481") // Can't read flags when using `sdk_version: "test_current",`
-    @EnsureHasPermission({Car.PERMISSION_QUERY_DISPLAY_COMPATIBILITY, QUERY_ALL_PACKAGES})
+    @EnsureHasPermission({Car.PERMISSION_MANAGE_DISPLAY_COMPATIBILITY, QUERY_ALL_PACKAGES})
     public void testApplicationRequiresDisplayCompat() throws NameNotFoundException {
         assertThat(mCarPm.requiresDisplayCompat("android.car.cts.apps.displaycompat"))
                 .isTrue();

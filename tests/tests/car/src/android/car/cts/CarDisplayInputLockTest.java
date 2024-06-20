@@ -50,6 +50,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ActivityScenario;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -65,6 +66,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.List;
 
+@FlakyTest(bugId = 336489418)
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class CarDisplayInputLockTest extends AbstractCarTestCase {
