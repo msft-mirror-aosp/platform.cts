@@ -34,9 +34,8 @@ android_test_helper_app {
 android_test_helper_app {
     name: "CtsInstallerCujTestAppV2",
     defaults: ["cts_defaults"],
-    manifest: "AndroidManifest.xml",
+    manifest: "AndroidManifestV2.xml",
     srcs: ["src/**/*.java"],
-    resource_dirs: ["res_v2"],
 
     sdk_version: "current",
     // tag this module as a cts test artifact
