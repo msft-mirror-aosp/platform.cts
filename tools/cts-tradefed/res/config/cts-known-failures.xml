@@ -317,4 +317,7 @@
     <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication400" />
     <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication600" />
 
+    <!-- b/347619657 -->
+    <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases[run-on-private-profile] android.devicepolicy.cts.BluetoothTest#addUserRestriction_preU_disallowBluetoothSharing_isNotSet[IncludeRunOnPrivateProfileAlongsideOrganizationOwnedProfile]" />
+
 </configuration>
