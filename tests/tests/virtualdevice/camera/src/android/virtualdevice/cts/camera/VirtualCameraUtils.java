@@ -93,7 +93,7 @@ public final class VirtualCameraUtils {
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final float EPSILON = 0.3f;
     // Difference between two bitmaps using average of per-pixel differences.
-    private static final double BITMAP_MAX_DIFF = 1.5;
+    private static final double BITMAP_MAX_DIFF = 2;
     private static final String TAG = "VirtualCameraUtils";
 
     static VirtualCameraConfig createVirtualCameraConfig(

@@ -43,7 +43,7 @@
     <!-- use the same set of test assets as the cts side -->
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.MediaPreparer">
         <option name="push-all" value="true" />
-        <option name="media-folder-name" value="CtsMediaDecoderTestCases-2.0" />
+        <option name="media-folder-name" value="CtsMediaDecoderTestCases-2.1" />
         <option name="dynamic-config-module" value="MctsMediaDecoderTestCases" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

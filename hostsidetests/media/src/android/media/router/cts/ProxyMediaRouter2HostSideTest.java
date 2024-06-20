@@ -66,13 +66,15 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
     public static void installApps(TestInformation testInformation)
             throws DeviceNotAvailableException, FileNotFoundException {
         ITestDevice device = testInformation.getDevice();
-        secondaryUser = device.createUser("TEST_USER", false, false, true);
+        if (device.isMultiUserSupported()) {
+            secondaryUser = device.createUser("TEST_USER", false, false, true);
 
-        installTestAppAsUser(testInformation, MEDIA_ROUTER_PROVIDER_1_APK, secondaryUser);
-        installTestAppAsUser(
-                testInformation, MEDIA_ROUTER_SECONDARY_USER_HELPER_APK, secondaryUser);
-        assertThat(secondaryUser).isNotEqualTo(-1);
-        assertThat(secondaryUser).isNotEqualTo(device.getCurrentUser());
+            installTestAppAsUser(testInformation, MEDIA_ROUTER_PROVIDER_1_APK, secondaryUser);
+            installTestAppAsUser(
+                    testInformation, MEDIA_ROUTER_SECONDARY_USER_HELPER_APK, secondaryUser);
+            assertThat(secondaryUser).isNotEqualTo(-1);
+            assertThat(secondaryUser).isNotEqualTo(device.getCurrentUser());
+        }
 
         installTestAppAsUser(testInformation, MEDIA_ROUTER_PROVIDER_1_APK, device.getCurrentUser());
 
@@ -97,15 +99,16 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
         expect.that(device.uninstallPackage(
                 PROXY_MEDIA_ROUTER_WITH_MEDIA_ROUTING_CONTROL_APP_PACKAGE)).isNull();
 
-        expect.that(
-                        device.uninstallPackageForUser(
-                                MEDIA_ROUTER_SECONDARY_USER_HELPER_PACKAGE, secondaryUser))
-                .isNull();
+        if (device.isMultiUserSupported()) {
+            expect.that(
+                    device.uninstallPackageForUser(
+                            MEDIA_ROUTER_SECONDARY_USER_HELPER_PACKAGE, secondaryUser))
+            .isNull();
+            assertThat(device.removeUser(secondaryUser)).isTrue();
+        }
 
         // This uninstalls package across all users.
         expect.that(device.uninstallPackage(MEDIA_ROUTER_PROVIDER_1_PACKAGE)).isNull();
-
-        assertThat(device.removeUser(secondaryUser)).isTrue();
     }
 
     @Test
