@@ -15,12 +15,16 @@
  */
 package com.android.cts.webkit;
 
+import static com.android.tradefed.targetprep.UserHelper.getRunTestsAsUser;
+
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.device.DeviceNotAvailableException;
+import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.result.CollectingTestListener;
+import com.android.tradefed.result.ITestInvocationListener;
 import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
 import com.android.tradefed.testtype.DeviceTestCase;
@@ -32,6 +36,20 @@ public class WebViewHostSideStartupTest extends DeviceTestCase {
 
     private static final String DEVICE_WEBVIEW_STARTUP_PKG = "com.android.cts.webkit";
     private static final String DEVICE_WEBVIEW_STARTUP_TEST_CLASS = "WebViewDeviceSideStartupTest";
+    private int mTestRunningUserId;
+
+    @Override
+    public void run(TestInformation testInfo, ITestInvocationListener listener)
+            throws DeviceNotAvailableException {
+        // The test runs as the current user in most cases. For secondary_user_on_secondary_display
+        // case, we set mTestRunningUserId from RUN_TEST_AS_USER.
+        mTestRunningUserId = getDevice().getCurrentUser();
+        if (getDevice().isVisibleBackgroundUsersSupported()) {
+            mTestRunningUserId = getRunTestsAsUser(testInfo);
+        }
+        super.run(testInfo, listener);
+    }
+
     @Override
     protected void setUp() throws Exception {
         super.setUp();
@@ -68,7 +86,8 @@ public class WebViewHostSideStartupTest extends DeviceTestCase {
         testRunner.setMethodName(testClassName, testMethodName);
 
         CollectingTestListener listener = new CollectingTestListener();
-        assertTrue(getDevice().runInstrumentationTests(testRunner, listener));
+        assertTrue(getDevice().runInstrumentationTestsAsUser(
+                testRunner, mTestRunningUserId, listener));
 
         return listener.getCurrentRunResults();
     }
