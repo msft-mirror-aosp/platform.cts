@@ -396,6 +396,7 @@ public class WebViewActivityTest extends AbstractWebViewTestCase<WebViewActivity
             mActivity.clearFocus();
             mActivity.getUsernameInput().click();
             mActivity.dispatchKeyPress(KeyEvent.KEYCODE_U);
+            mActivity.clearFocus();
             mActivity.getPasswordInput().click();
             mActivity.dispatchKeyPress(KeyEvent.KEYCODE_P);
         } else {
