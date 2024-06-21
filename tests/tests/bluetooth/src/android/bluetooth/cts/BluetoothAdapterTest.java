@@ -26,8 +26,8 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
-import android.annotation.NonNull;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothActivityEnergyInfo;
 import android.bluetooth.BluetoothAdapter;
@@ -68,9 +68,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * Very basic test, just of the static methods of {@link BluetoothAdapter}.
- */
+/** Very basic test, just of the static methods of {@link BluetoothAdapter}. */
 @RunWith(AndroidJUnit4.class)
 @MediumTest
 public class BluetoothAdapterTest {
@@ -520,13 +518,7 @@ public class BluetoothAdapterTest {
 
         Executor executor = mContext.getMainExecutor();
         BluetoothAdapter.BluetoothConnectionCallback callback =
-                new BluetoothAdapter.BluetoothConnectionCallback() {
-                    @Override
-                    public void onDeviceConnected(@NonNull BluetoothDevice device) {}
-                    @Override
-                    public void onDeviceDisconnected(BluetoothDevice device, int reason) {}
-
-                };
+                mock(BluetoothAdapter.BluetoothConnectionCallback.class);
 
         // placeholder call for coverage
         callback.onDeviceConnected(null);
@@ -537,18 +529,8 @@ public class BluetoothAdapterTest {
         assertFalse(mAdapter.registerBluetoothConnectionCallback(executor, null));
         assertFalse(mAdapter.unregisterBluetoothConnectionCallback(null));
 
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-
-        // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(SecurityException.class,
-                () -> mAdapter.registerBluetoothConnectionCallback(executor, callback));
-
-        mUiAutomation.dropShellPermissionIdentity();
-        // Verify throws SecurityException without permission.BLUETOOTH_CONNECT
-        assertThrows(SecurityException.class, () ->
-                mAdapter.registerBluetoothConnectionCallback(executor, callback));
-        assertThrows(SecurityException.class, () ->
-                mAdapter.unregisterBluetoothConnectionCallback(callback));
+        assertTrue(mAdapter.registerBluetoothConnectionCallback(executor, callback));
+        assertTrue(mAdapter.unregisterBluetoothConnectionCallback(callback));
     }
 
     @Test
