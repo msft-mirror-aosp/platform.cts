@@ -337,8 +337,9 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                         DEVICE_NAME, mVirtualDisplay.getDisplay(), touchPadWidth, touchPadHeight)
                         .getDevice();
         final float inputSize = 1f;
+        // Virtual navigation touchpad coordinates will not be transformed/scaled.
         final float x = 30f;
-        final float y = 30f;
+        final float y = 40f;
         navigationTouchpad.sendTouchEvent(new VirtualTouchEvent.Builder()
                 .setAction(VirtualTouchEvent.ACTION_DOWN)
                 .setPointerId(1)
@@ -358,20 +359,13 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
         // Convert the input axis size to its equivalent fraction of the total touchpad size.
         final float computedSize = inputSize / (touchPadWidth - 1f);
 
-        // Get the absolute location of the test activity, so we can ensure that x and  y
-        // positions from the events below are valid on any surface, including the portrait ones
-        // (like car portrait).
-        // TODO(b/343963635): Update this test to not send events based on the screen location.
-        final int[] locationOnScreen = new int[2];  // position 0 corresponds to X, and 1 to y
-        mDecorView.getLocationOnScreen(locationOnScreen);
-
         verifyEvents(Arrays.asList(
                 VirtualInputEventCreator.createNavigationTouchpadMotionEvent(
-                        MotionEvent.ACTION_DOWN, x + locationOnScreen[0], y + locationOnScreen[1],
+                        MotionEvent.ACTION_DOWN, x, y,
                         computedSize /* size */,
                         inputSize /* axisSize */),
                 VirtualInputEventCreator.createNavigationTouchpadMotionEvent(
-                        MotionEvent.ACTION_UP, x + locationOnScreen[0], y + locationOnScreen[1],
+                        MotionEvent.ACTION_UP, x, y,
                         computedSize /* size */,
                         inputSize /* axisSize */)));
     }
