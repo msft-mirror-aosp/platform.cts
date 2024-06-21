@@ -69,7 +69,7 @@ public abstract class InputTestCase {
     protected final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
 
     private final InputListener mInputListener;
-    View mDecorView;
+    private View mDecorView;
 
     // Stores the name of the currently running test
     protected String mCurrentTestCase;
