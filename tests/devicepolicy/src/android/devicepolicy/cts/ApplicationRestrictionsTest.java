@@ -39,8 +39,8 @@ import android.stats.devicepolicy.EventId;
 
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
@@ -500,16 +500,15 @@ public final class ApplicationRestrictionsTest {
     }
 
     /**
-     * Verifies that DMRH and DO can both set application restrictions without overwriting each
+     * Verifies that DMRH and DPC can both set application restrictions without overwriting each
      * other.
      *
-     * To ensure this works correctly on HSUM, make sure DMRH, DO and the TestApp all run on the
+     * To ensure this works correctly on HSUM, make sure DMRH, DPC and the TestApp all run on the
      * instrumented user, using test annotations.
      */
     @Postsubmit(reason = "New test")
     @EnsureHasDevicePolicyManagerRoleHolder
-    @EnsureHasDeviceOwner(isPrimary = true,
-            headlessDeviceOwnerType = EnsureHasDeviceOwner.HeadlessDeviceOwnerType.SINGLE_USER)
+    @EnsureHasProfileOwner(isPrimary = true)
     @RequireFlagsEnabled(Flags.FLAG_DMRH_SET_APP_RESTRICTIONS)
     @RequireRunOnInitialUser
     @Test
