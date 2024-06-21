@@ -15,6 +15,7 @@
  */
 package com.android.bedstead.harrier
 
+import android.util.Log
 import com.android.bedstead.nene.utils.FailureDumper
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
@@ -116,7 +117,7 @@ class BedsteadServiceLocator : DeviceStateComponent {
     /**
      * Get all loaded dependencies of type T
      */
-    inline fun <reified T : Any> getAllDependenciesOfType(): List<T> {
+    private inline fun <reified T : Any> getAllDependenciesOfType(): List<T> {
         return getAllDependencies().filterIsInstance<T>()
     }
 
@@ -129,12 +130,14 @@ class BedsteadServiceLocator : DeviceStateComponent {
 
     override fun teardownShareableState() {
         getAllDependenciesOfType<DeviceStateComponent>().forEach {
+            Log.d(LOG_TAG, "teardownShareableState: " + it.javaClass)
             it.teardownShareableState()
         }
     }
 
     override fun teardownNonShareableState() {
         getAllDependenciesOfType<DeviceStateComponent>().forEach {
+            Log.d(LOG_TAG, "teardownNonShareableState: " + it.javaClass)
             it.teardownNonShareableState()
         }
     }
@@ -160,5 +163,9 @@ class BedsteadServiceLocator : DeviceStateComponent {
          * if this class is not provided by this module
          */
         fun <T : Any> getDependency(clazz: KClass<T>): T?
+    }
+
+    companion object {
+        private const val LOG_TAG = "BedsteadServiceLocator"
     }
 }

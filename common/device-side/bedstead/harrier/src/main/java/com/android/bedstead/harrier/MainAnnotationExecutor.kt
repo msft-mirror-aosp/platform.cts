@@ -15,6 +15,8 @@
  */
 package com.android.bedstead.harrier
 
+import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet
+import com.android.bedstead.harrier.annotations.EnsurePasswordSet
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn
 import com.android.bedstead.harrier.annotations.EnsureUnlocked
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
@@ -28,9 +30,14 @@ import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsupported
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled
+import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
 
 @Suppress("unused")
-class MainAnnotationExecutor : AnnotationExecutor {
+class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecutor {
+
+    private val testAppsComponent: TestAppsComponent by locator
+    private val userPasswordComponent: UserPasswordComponent by locator
+
     override fun applyAnnotation(annotation: Annotation): Unit = annotation.run {
         when (this) {
             is RequireLowRamDevice -> logic()
@@ -46,6 +53,9 @@ class MainAnnotationExecutor : AnnotationExecutor {
             is RequireUsbDataSignalingCanBeDisabled -> logic()
             is RequireInstantApp -> logic()
             is RequireNotInstantApp -> logic()
+            is AdditionalQueryParameters -> testAppsComponent.addQueryParameters(this)
+            is EnsurePasswordSet -> userPasswordComponent.ensurePasswordSet(forUser, password)
+            is EnsurePasswordNotSet -> userPasswordComponent.ensurePasswordNotSet(forUser)
         }
         // TODO b/345391598 move handling annotations from DeviceState here
     }

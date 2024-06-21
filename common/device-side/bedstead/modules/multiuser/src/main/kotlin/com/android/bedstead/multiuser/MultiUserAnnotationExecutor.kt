@@ -18,8 +18,10 @@ package com.android.bedstead.multiuser
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
+import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
 import com.android.bedstead.harrier.annotations.OtherUser
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode
 import com.android.bedstead.harrier.annotations.RequireMultiUserSupport
@@ -48,6 +50,7 @@ import com.android.bedstead.nene.types.OptionalBoolean
 class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecutor {
 
     private val usersComponent: UsersComponent by locator
+    private val userRestrictions: UserRestrictionsComponent by locator
 
     override fun applyAnnotation(annotation: Annotation): Unit = annotation.run {
         when (this) {
@@ -78,6 +81,9 @@ class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationE
             is RequireNotVisibleBackgroundUsersOnDefaultDisplay -> logic()
             is RequireRunOnVisibleBackgroundNonProfileUser -> logic()
             is RequireRunNotOnVisibleBackgroundNonProfileUser -> logic()
+            is EnsureHasUserRestriction -> userRestrictions.ensureHasUserRestriction(value, onUser)
+            is EnsureDoesNotHaveUserRestriction ->
+                userRestrictions.ensureDoesNotHaveUserRestriction(value, onUser)
             else -> applyAnnotationUsingReflection(annotation)
         }
     }

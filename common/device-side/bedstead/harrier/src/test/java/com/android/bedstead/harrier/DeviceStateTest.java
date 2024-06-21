@@ -170,9 +170,6 @@ public class DeviceStateTest {
     private static final String CLONE_PROFILE_TYPE_NAME = "android.os.usertype.profile.CLONE";
     private static final String PRIVATE_PROFILE_TYPE_NAME = "android.os.usertype.profile.PRIVATE";
 
-    private static final String USER_RESTRICTION = UserManager.DISALLOW_AUTOFILL;
-    private static final String SECOND_USER_RESTRICTION = UserManager.DISALLOW_AIRPLANE_MODE;
-
     @Test
     @EnsureHasTvProfile
     public void tvProfile_tvProfileProvided_returnsTvProfile() {
@@ -851,52 +848,6 @@ public class DeviceStateTest {
     @Test
     public void ensureHasNoAccountsAnnotation_hasNoAccounts() {
         assertThat(TestApis.accounts().all()).isEmpty();
-    }
-
-    @EnsureHasUserRestriction(USER_RESTRICTION)
-    @Test
-    public void ensureHasUserRestrictionAnnotation_userRestrictionIsSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isTrue();
-    }
-
-    @EnsureDoesNotHaveUserRestriction(USER_RESTRICTION)
-    @Test
-    public void ensureDoesNotHaveUserRestrictionAnnotation_userRestrictionIsNotSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isFalse();
-    }
-
-    @EnsureHasUserRestriction(USER_RESTRICTION)
-    @EnsureHasUserRestriction(SECOND_USER_RESTRICTION)
-    @Test
-    public void ensureHasUserRestrictionAnnotation_multipleRestrictions_userRestrictionsAreSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isTrue();
-        assertThat(TestApis.devicePolicy().userRestrictions()
-                .isSet(SECOND_USER_RESTRICTION)).isTrue();
-    }
-
-    @EnsureDoesNotHaveUserRestriction(USER_RESTRICTION)
-    @EnsureDoesNotHaveUserRestriction(SECOND_USER_RESTRICTION)
-    @Test
-    public void ensureDoesNotHaveUserRestrictionAnnotation_multipleRestrictions_userRestrictionsAreNotSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isFalse();
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(SECOND_USER_RESTRICTION))
-                .isFalse();
-    }
-
-    @EnsureHasAdditionalUser
-    @EnsureHasUserRestriction(value = USER_RESTRICTION, onUser = ADDITIONAL_USER)
-    @Test
-    public void ensureHasUserRestrictionAnnotation_differentUser_userRestrictionIsSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions(sDeviceState.additionalUser())
-                .isSet(USER_RESTRICTION)).isTrue();
-    }
-
-    @EnsureHasAdditionalUser
-    @EnsureDoesNotHaveUserRestriction(value = USER_RESTRICTION, onUser = ADDITIONAL_USER)
-    @Test
-    public void ensureDoesNotHaveUserRestrictionAnnotation_differentUser_userRestrictionIsNotSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions(sDeviceState.additionalUser())
-                .isSet(USER_RESTRICTION)).isFalse();
     }
 
     @EnsureWifiEnabled

@@ -22,7 +22,6 @@ import com.android.bedstead.enterprise.DeviceOwnerComponent
 import com.android.bedstead.enterprise.ProfileOwnersComponent
 import com.android.bedstead.harrier.AnnotationExecutorUtil
 import com.android.bedstead.harrier.BedsteadServiceLocator
-import com.android.bedstead.harrier.Defaults
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.annotations.FailureMode
@@ -54,6 +53,7 @@ import org.junit.AssumptionViolatedException
  */
 class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
+    private val userRestrictionsComponent: UserRestrictionsComponent by locator
     private val profileOwnersComponent: ProfileOwnersComponent by locator
     private val deviceOwnerComponent: DeviceOwnerComponent by locator
     private val deviceState: DeviceState by locator
@@ -64,7 +64,6 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
     private var mAdditionalUser: UserReference? = null
     private var mAnnotationHasSwitchedUser = false
     private val mUsers: MutableMap<UserType, UserReference> = HashMap()
-    private val mUsersSetPasswords: MutableList<UserReference> = mutableListOf()
     private var otherUserType: com.android.bedstead.harrier.UserType? = null
     private val profiles: MutableMap<UserType, MutableMap<UserReference, UserReference>> =
         mutableMapOf()
@@ -271,7 +270,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
      * Create a user with a specified userType and parent
      */
     fun createUser(userType: UserType, parent: UserReference? = null): UserReference {
-        deviceState.ensureDoesNotHaveUserRestriction(
+        userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
             UserManager.DISALLOW_ADD_USER,
             com.android.bedstead.harrier.UserType.ANY
         )
@@ -330,58 +329,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         ensureSwitchedToUser(mutableSwitchedToUser, instrumentedUser)
     }
 
-    fun ensurePasswordSet(forUser: com.android.bedstead.harrier.UserType, password: String) {
-        val user: UserReference = deviceState.resolveUserTypeToUser(forUser)
-        if (user.hasLockCredential() && user.lockCredentialEquals(password)) {
-            return
-        }
-        try {
-            user.setPassword(password)
-        } catch (e: NeneException) {
-            throw AssertionError("Require password set but error when setting " +
-                    "password on user " + user, e)
-        }
-        mUsersSetPasswords.add(user)
-    }
-
-    fun ensurePasswordNotSet(forUser: com.android.bedstead.harrier.UserType) {
-        val user = deviceState.resolveUserTypeToUser(forUser)
-        if (!user.hasLockCredential()) {
-            return
-        }
-        if (mUsersSetPasswords.contains(user)) {
-            try {
-                user.clearPassword()
-            } catch (e: NeneException) {
-                Log.e(LOG_TAG, "Error clearing password", e)
-            }
-        }
-        if (!user.hasLockCredential()) {
-            return
-        }
-        try {
-            user.clearPassword(Defaults.DEFAULT_PASSWORD)
-        } catch (exception: NeneException) {
-            throw AssertionError(
-                "Test requires user " + user + " does not have a password. " +
-                        "Password is set and is not DEFAULT_PASSWORD.",
-                exception
-            )
-        }
-        mUsersSetPasswords.remove(user)
-    }
-
-    private fun clearPasswords() {
-        mUsersSetPasswords.forEach {
-            if (!createdUsers.contains(it)) { // Will be removed anyway
-                it.clearPassword()
-            }
-        }
-        mUsersSetPasswords.clear()
-    }
-
     override fun teardownShareableState() {
-        clearPasswords()
         var ephemeralUser: UserReference? = null
         val currentUser = users().current()
         for (user in createdUsers) {
@@ -592,7 +540,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
                 // DO + work profile isn't a valid state
                 deviceOwnerComponent.ensureHasNoDeviceOwner()
-                deviceState.ensureDoesNotHaveUserRestriction(
+                userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
                     CommonUserRestrictions.DISALLOW_ADD_MANAGED_PROFILE,
                     forUserReference
                 )
@@ -630,13 +578,13 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         ensureCanAddProfile(parent, profileType)
         if (profileType.name() == "android.os.usertype.profile.CLONE") {
             // Special case - we can't create a clone profile if this is set
-            deviceState.ensureDoesNotHaveUserRestriction(
+            userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
                 CommonUserRestrictions.DISALLOW_ADD_CLONE_PROFILE,
                 parent
             )
         } else if (profileType.name() == "android.os.usertype.profile.PRIVATE") {
             // Special case - we can't create a private profile if this is set
-            deviceState.ensureDoesNotHaveUserRestriction(
+            userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
                 CommonUserRestrictions.DISALLOW_ADD_PRIVATE_PROFILE,
                 parent
             )
