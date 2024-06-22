@@ -47,11 +47,18 @@ public class ClassProfile {
     // A map of test methods defined in this class with the method signature as the key.
     private Map<String, MethodProfile> mTestMethods = null;
 
-    // TODO(slotus): Add known patterns.
-    private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(List.of());
+    private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(
+            List.of(
+                    "org.junit.*",
+                    "com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4"
+            ));
 
-    // TODO(slotus): Add known patterns.
-    private static final Set<String> JUNIT3_CLASS_PATTERNS = new HashSet<>(List.of());
+    private static final Set<String> JUNIT3_CLASS_PATTERNS = new HashSet<>(
+            List.of(
+                    "junit.framework.TestCase",
+                    "android.test.AndroidTestCase",
+                    "android.test.InstrumentationTestCase"
+            ));
 
     public ClassProfile(String moduleName, String packageName, String className, boolean apiClass) {
         mModule = moduleName;
