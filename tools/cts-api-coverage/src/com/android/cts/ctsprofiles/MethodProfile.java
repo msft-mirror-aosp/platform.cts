@@ -44,8 +44,9 @@ public class MethodProfile {
     // A map of api constructors called by this method with the method signature as the key.
     private final HashMap<String, MethodProfile> mApiConstructorCalls = new HashMap<>();
 
-    // TODO(slotus): Add known patterns.
-    private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(List.of());
+    private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(
+            List.of("org.junit.*")
+    );
 
     public enum MethodType {
         JUNIT3(1),

@@ -91,7 +91,7 @@ public final class TarJan {
             mComponentNodes.put(mNewNodeIndex, new ArrayList<>());
             do {
                 w = mStack.pop();
-                mComponentIDs.put(methodSignature, mNewNodeIndex);
+                mComponentIDs.put(w.mMethod.getMethodSignatureWithClass(), mNewNodeIndex);
                 mComponentNodes.get(mNewNodeIndex).add(w.mMethod);
                 w.mInStack = false;
             } while (!w.equals(v));

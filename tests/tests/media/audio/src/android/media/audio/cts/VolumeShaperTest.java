@@ -76,7 +76,7 @@ public class VolumeShaperTest {
     private static final float JOIN_VOLUME_TOLERANCE = 0.1f;
 
     // time to wait for player state change
-    private static final long WARMUP_TIME_MS = 300;
+    private static final long WARMUP_TIME_MS = isWatch() ? 450 : 300;
 
     private static final VolumeShaper.Configuration SILENCE =
             new VolumeShaper.Configuration.Builder()
@@ -1614,6 +1614,11 @@ public class VolumeShaperTest {
     } // runStartSyncTest
 
     private static Context getContext() {
-        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+        return androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+               .getTargetContext();
+    }
+
+    private static boolean isWatch() {
+        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 }

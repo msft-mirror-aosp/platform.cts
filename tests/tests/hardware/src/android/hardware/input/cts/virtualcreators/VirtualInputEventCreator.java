@@ -116,7 +116,7 @@ public class VirtualInputEventCreator {
                 1f /* yPrecision */,
                 0 /* deviceId */,
                 0 /* edgeFlags */,
-                InputDevice.SOURCE_TOUCH_NAVIGATION,
+                InputDevice.SOURCE_TOUCH_NAVIGATION | InputDevice.SOURCE_TOUCHPAD,
                 0 /* flags */);
     }
 

@@ -70,12 +70,12 @@ public final class AnnotationManagement {
      * annotated by @ApiTest.
      */
     private void resolveNestedTestMetadata() {
+        mTestMetadataMerged = true;
         for (ClassProfile annotation : mAnnotations) {
             annotation.annotationManagement.getTestMetadata().forEach((key, value) -> {
                 mTestMetadata.putIfAbsent(key, new HashSet<>());
                 mTestMetadata.get(key).addAll(value);
             });
         }
-        mTestMetadataMerged = true;
     }
 }
