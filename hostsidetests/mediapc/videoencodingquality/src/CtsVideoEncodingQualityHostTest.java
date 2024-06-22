@@ -96,6 +96,7 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
             // install apk, push necessary resources to device to run the test. lock/condition
             // pair is to keep setupTestEnv() thread safe
     private static File sHostWorkDir;
+    private static int sMpc;
 
     // Variables related to device-side of the test. These need to kept in sync with definitions of
     // VideoEncodingApp.apk
@@ -284,14 +285,15 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
                 + " test device has sdk = " + sdk, sdk >= MINIMUM_VALID_SDK);
 
         String pcAsString = getDevice().getProperty("ro.odm.build.media_performance_class");
-        int mpc = 0;
         try {
-            mpc = Integer.parseInt("0" + pcAsString);
+            sMpc = Integer.parseInt("0" + pcAsString);
         } catch (Exception e) {
             LogUtil.CLog.i("Invalid pcAsString: " + pcAsString + ", exception: " + e);
         }
-        Assume.assumeTrue("Test device does not advertise performance class",
-                mForceToRun || (mpc >= MEDIA_PERFORMANCE_CLASS_14));
+
+        Assume.assumeTrue("Performance class advertised by the test device is less than "
+                + MEDIA_PERFORMANCE_CLASS_14, mForceToRun || sMpc >= MEDIA_PERFORMANCE_CLASS_14
+                || (sMpc == 0 && sdk >= 34 /* Build.VERSION_CODES.UPSIDE_DOWN_CAKE */));
 
         Assert.assertTrue("Failed to install package on device : " + DEVICE_SIDE_TEST_PACKAGE,
                 getDevice().isPackageInstalled(DEVICE_SIDE_TEST_PACKAGE));
@@ -434,8 +436,12 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
                 cmd += " > " + outputVmafPath + " 2>&1";
                 LogUtil.CLog.i("ffmpeg command : " + cmd);
                 int result = runCommand(cmd, sHostWorkDir);
-                Assert.assertEquals("Encountered error during vmaf computation.", 0, result);
-
+                if (sMpc >= MEDIA_PERFORMANCE_CLASS_14) {
+                    Assert.assertEquals("Encountered error during vmaf computation.", 0, result);
+                } else {
+                    Assume.assumeTrue("Encountered error during vmaf computation but the "
+                            + "test device does not advertise performance class", result == 0);
+                }
                 String vmafLine = "";
                 try (BufferedReader reader = new BufferedReader(
                         new FileReader(sHostWorkDir.getPath() + "/" + outputVmafPath))) {
@@ -480,8 +486,12 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
                 + "> " + outDir + "/result.txt";
         LogUtil.CLog.i("bdrate command : " + jarCmd);
         int result = runCommand(jarCmd, sHostWorkDir);
-        Assert.assertEquals("bd rate validation failed.", 0, result);
-
+        if (sMpc >= MEDIA_PERFORMANCE_CLASS_14) {
+            Assert.assertEquals("bd rate validation failed.", 0, result);
+        } else {
+            Assume.assumeTrue("bd rate validation failed but the test device does not "
+                    + "advertise performance class", result == 0);
+        }
         LogUtil.CLog.i("Finished executing the process.");
     }
 
