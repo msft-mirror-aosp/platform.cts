@@ -41,6 +41,7 @@ public class AdapterViewCtsActivity extends Activity {
         mView = new ListView(this);
         mView.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT,
                 LayoutParams.WRAP_CONTENT));
+        mView.setFitsSystemWindows(true);
         setContentView(mView);
     }
 

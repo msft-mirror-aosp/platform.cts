@@ -1,5 +1,6 @@
 package android.nfc.cts;
 
+import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
@@ -25,6 +26,7 @@ import android.content.pm.PackageManager;
 import android.nfc.*;
 import android.nfc.cardemulation.CardEmulation;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -518,6 +520,7 @@ public class NfcAdapterTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_NFC_VENDOR_CMD)
     public void testSendVendorCmd() throws InterruptedException, RemoteException {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         CountDownLatch rspCountDownLatch = new CountDownLatch(1);
         CountDownLatch ntfCountDownLatch = new CountDownLatch(1);
         NfcAdapter nfcAdapter = getDefaultAdapter();
