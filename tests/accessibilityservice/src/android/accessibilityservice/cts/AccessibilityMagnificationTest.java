@@ -1129,6 +1129,10 @@ public class AccessibilityMagnificationTest {
                         tmpRegion.set(magnificationRegion);
                         tmpRegion.union(touchableRect1);
                         tmpRegion.union(touchableRect2);
+                        // In case the screen is round (e.g. Wear OS), the magnification region will
+                        // also be round. We need to intersect the united region with the
+                        // original round shape to fit the screen.
+                        tmpRegion.op(expectedMagnificationRegion, Region.Op.INTERSECT);
                         return expectedMagnificationRegion.equals(tmpRegion);
                     });
         } finally {
