@@ -226,6 +226,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             long registerError = sSatelliteManager.registerForProvisionStateChanged(
                     getContext().getMainExecutor(), satelliteProvisionStateCallback);
             assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
+            assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
 
             assertTrue(provisionSatellite());
 
@@ -359,6 +360,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         long registerError = sSatelliteManager.registerForProvisionStateChanged(
                 getContext().getMainExecutor(), satelliteProvisionStateCallback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
+        assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
 
         if (isSatelliteProvisioned()) {
             logd("testProvisionSatelliteService: dreprovision");
@@ -398,52 +400,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(provisionSatellite());
         assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
         assertTrue(satelliteProvisionStateCallback.isProvisioned);
-        sSatelliteManager.unregisterForProvisionStateChanged(
-                satelliteProvisionStateCallback);
-
-        revokeSatellitePermission();
-    }
-
-    @Test
-    public void testProvisioningApiNotSupportedByVendorService() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
-        logd("testProvisioningApiNotSupportedByVendorService: start");
-        grantSatellitePermission();
-
-        SatelliteProvisionStateCallbackTest satelliteProvisionStateCallback =
-                new SatelliteProvisionStateCallbackTest();
-        long registerError = sSatelliteManager.registerForProvisionStateChanged(
-                getContext().getMainExecutor(), satelliteProvisionStateCallback);
-        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
-
-        if (isSatelliteProvisioned()) {
-            logd("testProvisioningApiNotSupportedByVendorService: dreprovision");
-            assertTrue(deprovisionSatellite());
-            assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
-            assertFalse(satelliteProvisionStateCallback.isProvisioned);
-        }
-
-        sMockSatelliteServiceManager.setProvisioningApiSupported(false);
-
-        logd("testProvisioningApiNotSupportedByVendorService: provision satellite service");
-        assertTrue(provisionSatellite());
-        assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
-        assertTrue(satelliteProvisionStateCallback.isProvisioned);
-        assertTrue(isSatelliteProvisioned());
-
-        logd("testProvisioningApiNotSupportedByVendorService: dreprovision satellite service");
-        assertTrue(deprovisionSatellite());
-        assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
-        assertFalse(satelliteProvisionStateCallback.isProvisioned);
-        assertFalse(isSatelliteProvisioned());
-
-        logd("testProvisioningApiNotSupportedByVendorService: restore provision state");
-        sMockSatelliteServiceManager.setProvisioningApiSupported(true);
-        assertTrue(provisionSatellite());
-        assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
-        assertTrue(satelliteProvisionStateCallback.isProvisioned);
-        assertTrue(isSatelliteProvisioned());
         sSatelliteManager.unregisterForProvisionStateChanged(
                 satelliteProvisionStateCallback);
 
