@@ -28,8 +28,10 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,8 +41,10 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsMouseUtil.ActionMatcher;
 import com.android.compatibility.common.util.CtsMouseUtil.PositionMatcher;
+import com.android.cts.input.DebugInputRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -53,6 +57,7 @@ import org.mockito.InOrder;
  */
 @LargeTest
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class HoverTest {
     private static final String LOG_TAG = "HoverTest";
 
@@ -75,6 +80,15 @@ public class HoverTest {
     private View mLayer4Right;
 
     @Rule
+    public DebugInputRule mDebugInputRule = new DebugInputRule();
+
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<HoverCtsActivity> mActivityRule =
             new ActivityTestRule<>(HoverCtsActivity.class);
 
@@ -121,6 +135,7 @@ public class HoverTest {
         mActivityRule.runOnUiThread(() -> ((ViewGroup)view.getParent()).removeView(view));
     }
 
+    @DebugInputRule.DebugInput(bug = 326750886)
     @Test
     public void testHoverMove() throws Throwable {
         View.OnHoverListener listener = installHoverListener(mInner11);
@@ -133,6 +148,7 @@ public class HoverTest {
         verifyEnterMove(listener, mInner11, 1);
     }
 
+    @DebugInputRule.DebugInput(bug = 326750886)
     @Test
     public void testHoverMoveMultiple() throws Throwable {
         View.OnHoverListener listener = installHoverListener(mInner11);
@@ -158,6 +174,7 @@ public class HoverTest {
         verifyNoMoreInteractions(listener);
     }
 
+    @DebugInputRule.DebugInput(bug = 326750886)
     @Test
     public void testHoverMoveAndExit() throws Throwable {
         View.OnHoverListener inner11Listener = installHoverListener(mInner11);
@@ -174,6 +191,7 @@ public class HoverTest {
         verifyEnterMove(inner12Listener, mInner12, 1);
     }
 
+    @DebugInputRule.DebugInput(bug = 326750886)
     @Test
     public void testRemoveBeforeExit() throws Throwable {
         View.OnHoverListener middle1Listener = installHoverListener(mMiddle1);
@@ -190,6 +208,7 @@ public class HoverTest {
         verifyEnterMoveExit(inner11Listener, mInner11, 1);
     }
 
+    @DebugInputRule.DebugInput(bug = 326750886)
     @Test
     public void testRemoveParentBeforeExit() throws Throwable {
         View.OnHoverListener outerListener = installHoverListener(mOuter);
@@ -209,6 +228,7 @@ public class HoverTest {
         verifyEnterMoveExit(inner11Listener, mInner11, 1);
     }
 
+    @DebugInputRule.DebugInput(bug = 326750886)
     @Test
     public void testRemoveAfterExit() throws Throwable {
         View.OnHoverListener listener = installHoverListener(mInner11);
@@ -223,6 +243,7 @@ public class HoverTest {
         verifyEnterMoveExit(listener, mInner11, 2);
     }
 
+    @DebugInputRule.DebugInput(bug = 326750886)
     @Test
     public void testNoParentInteraction() throws Throwable {
         View.OnHoverListener outerListener = installHoverListener(mOuter);
@@ -254,6 +275,7 @@ public class HoverTest {
         verifyEnterMove(inner22Listener, mInner22, 1);
     }
 
+    @DebugInputRule.DebugInput(bug = 326750886)
     @Test
     public void testParentInteraction() throws Throwable {
         View.OnHoverListener outerListener = installHoverListener(mOuter);
@@ -286,6 +308,7 @@ public class HoverTest {
         verifyEnterMove(inner22Listener, mInner22, 1);
     }
 
+    @DebugInputRule.DebugInput(bug = 326750886)
     @Test
     public void testOverlappingHoverTargets() throws Throwable {
         View.OnHoverListener overlapping = installHoverListener(mOverlapping);

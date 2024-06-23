@@ -39,6 +39,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.CtsWindowInfoUtils;
+import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.WindowManagerTestBase;
 import android.server.wm.cts.R;
 import android.util.Size;

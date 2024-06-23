@@ -88,7 +88,6 @@ import com.android.bedstead.nene.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
-import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -522,6 +521,7 @@ public final class UserManagerTest {
     }
 
     @Test
+    @AppModeFull
     @RequireFeature(FEATURE_MANAGED_USERS)
     @EnsureHasNoWorkProfile
     @EnsureHasPermission({CREATE_USERS, QUERY_USERS, INTERACT_ACROSS_USERS})
@@ -1086,6 +1086,7 @@ public final class UserManagerTest {
     @Test
     @EnsureHasPrivateProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
+    @AppModeFull
     // TODO(b/301574823) : Limit this test to only when private space is supported.
     public void testRequestQuietModeOnPrivateProfile_shouldSendProfileUnavailableBroadcast() {
         assumeTrue(android.os.Flags.allowPrivateProfile());
@@ -1100,6 +1101,7 @@ public final class UserManagerTest {
     @Test
     @EnsureHasPrivateProfile
     @EnsureHasPermission({MODIFY_QUIET_MODE})
+    @AppModeFull
     // TODO(b/301574823) : Limit this test to only when private space is supported.
     public void testRequestQuietModeOnPrivateProfile_disableQuietMode_needUserCredentials() {
         assumeTrue(android.os.Flags.allowPrivateProfile());

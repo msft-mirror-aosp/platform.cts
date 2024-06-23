@@ -41,6 +41,9 @@ import android.media.tv.PesRequest;
 import android.media.tv.PesResponse;
 import android.media.tv.SectionRequest;
 import android.media.tv.SectionResponse;
+import android.media.tv.SignalingDataInfo;
+import android.media.tv.SignalingDataRequest;
+import android.media.tv.SignalingDataResponse;
 import android.media.tv.StreamEventRequest;
 import android.media.tv.StreamEventResponse;
 import android.media.tv.TableRequest;
@@ -62,6 +65,7 @@ import android.media.tv.interactive.TvInteractiveAppService;
 import android.media.tv.interactive.TvInteractiveAppServiceInfo;
 import android.media.tv.interactive.TvInteractiveAppView;
 import android.net.Uri;
+import android.net.http.SslCertificate;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.Handler;
@@ -172,6 +176,9 @@ public class TvInteractiveAppServiceTest {
         private int mRequestAvailableSpeedsCount = 0;
         private int mRequestTimeShiftModeCount = 0;
         private int mSendTimeShiftCommandCount = 0;
+        private int mRequestSelectedTrackInfoCount = 0;
+        private int mRequestSigningSSLCount = 0;
+        private int mRequestCertificateCount = 0;
 
         private String mIAppServiceId = null;
         private Integer mState = null;
@@ -190,6 +197,12 @@ public class TvInteractiveAppServiceTest {
         private Integer mRepeatedDays = null;
         private Bundle mParams = null;
         private String mTimeShiftCommandType = null;
+        private String mSigningId = null;
+        private String mAlgorithm = null;
+        private String mHost = null;
+        private String mAlias = null;
+        private Integer mPort = null;
+        private byte[] mData = null;
 
         private void resetValues() {
             mRequestCurrentChannelUriCount = 0;
@@ -205,6 +218,8 @@ public class TvInteractiveAppServiceTest {
             mRequestTvRecordingInfoListCount = 0;
             mRequestAvailableSpeedsCount = 0;
             mRequestTimeShiftModeCount = 0;
+            mRequestSigningSSLCount = 0;
+            mRequestCertificateCount = 0;
 
             mIAppServiceId = null;
             mState = null;
@@ -223,6 +238,12 @@ public class TvInteractiveAppServiceTest {
             mRepeatedDays = null;
             mParams = null;
             mTimeShiftCommandType = null;
+            mSigningId = null;
+            mAlgorithm = null;
+            mHost = null;
+            mPort = null;
+            mData = null;
+            mAlias = null;
         }
 
         @Override
@@ -242,6 +263,28 @@ public class TvInteractiveAppServiceTest {
                 String algorithm, String alias, byte[] data) {
             super.onRequestSigning(iAppServiceId, signingId, algorithm, alias, data);
             mRequestSigningCount++;
+            mSigningId = signingId;
+            mAlgorithm = algorithm;
+            mAlias = alias;
+            mData = data;
+        }
+
+        @Override
+        public void onRequestSigning(String iAppServiceId, String signingId, String algorithm,
+                String host, int port, byte[] data) {
+            mRequestSigningSSLCount++;
+            mSigningId = signingId;
+            mAlgorithm = algorithm;
+            mHost = host;
+            mPort = port;
+            mData = data;
+        }
+
+        @Override
+        public void onRequestCertificate(String iAppServiceId, String host, int port) {
+            mRequestCertificateCount++;
+            mHost = host;
+            mPort = port;
         }
 
         @Override
@@ -374,6 +417,12 @@ public class TvInteractiveAppServiceTest {
         }
 
         @Override
+        public void onRequestSelectedTrackInfo(String id) {
+            super.onRequestSelectedTrackInfo(id);
+            mRequestSelectedTrackInfoCount++;
+        }
+
+        @Override
         public void onRequestAvailableSpeeds(String id) {
             super.onRequestAvailableSpeeds(id);
             mRequestAvailableSpeedsCount++;
@@ -494,6 +543,14 @@ public class TvInteractiveAppServiceTest {
         return new TvRecordingInfo(recordingId, 0, 0, 0, "testName", "testDescription", 0, 0,
                 createTestUri(), createTestUri(), new ArrayList<TvContentRating>(), createTestUri(),
                 0, 0);
+    }
+
+    /**
+     * Creates a mock {@link TvTrackInfo} for testing.
+     * @return a mock {@link TvTrackInfo}
+     */
+    public static TvTrackInfo createMockTvTrackInfo() {
+        return new TvTrackInfo.Builder(TvTrackInfo.TYPE_SUBTITLE, "testId").build();
     }
 
     public static void compareTvRecordingInfo(TvRecordingInfo expected, TvRecordingInfo actual) {
@@ -798,11 +855,72 @@ public class TvInteractiveAppServiceTest {
     public void testRequestSigning() throws Throwable {
         assertNotNull(mSession);
         mCallback.resetValues();
-        mSession.requestSigning("id", "algo", "alias", new byte[1]);
+        String testId = "id";
+        String testAlgo = "algo";
+        String testAlias = "alias";
+        byte[] testData = new byte[1];
+        mSession.requestSigning(testId, testAlgo, testAlias, testData);
         PollingCheck.waitFor(TIME_OUT_MS, () -> mCallback.mRequestSigningCount > 0);
 
         assertThat(mCallback.mRequestSigningCount).isEqualTo(1);
-        // TODO: check values
+        assertThat(mCallback.mSigningId).isEqualTo(testId);
+        assertThat(mCallback.mAlgorithm).isEqualTo(testAlgo);
+        assertThat(mCallback.mAlias).isEqualTo(testAlias);
+        assertArrayEquals(mCallback.mData, testData);
+    }
+
+    @Test
+    public void testRequestSSLSigning() throws Throwable {
+        assertNotNull(mSession);
+        mCallback.resetValues();
+        String testId = "id";
+        String testAlgo = "algo";
+        String testHost = "gooooogle.com";
+        int testPort = 1337;
+        byte[] testData = new byte[1];
+        mSession.requestSigning(testId, testAlgo, testHost, testPort, testData);
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mCallback.mRequestSigningSSLCount > 0);
+
+        assertThat(mCallback.mRequestSigningSSLCount).isEqualTo(1);
+        assertThat(mCallback.mSigningId).isEqualTo(testId);
+        assertThat(mCallback.mAlgorithm).isEqualTo(testAlgo);
+        assertThat(mCallback.mHost).isEqualTo(testHost);
+        assertThat(mCallback.mPort).isEqualTo(testPort);
+        assertArrayEquals(mCallback.mData, testData);
+    }
+
+    @Test
+    public void testRequestCertificate() throws Throwable {
+        assertNotNull(mSession);
+        String testHost = "gooooooogle.com";
+        int testPort = 1337;
+        mCallback.resetValues();
+        mSession.requestCertificate(testHost, testPort);
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mCallback.mRequestCertificateCount > 0);
+
+        assertThat(mCallback.mRequestCertificateCount).isEqualTo(1);
+        assertThat(mCallback.mHost).isEqualTo(testHost);
+        assertThat(mCallback.mPort).isEqualTo(testPort);
+    }
+
+    @Test
+    public void testSendCertificate() throws Throwable {
+        assertNotNull(mSession);
+        mSession.resetValues();
+
+        String testRequester = "gooogle.com";
+        String testHost = "gooooooogle.com";
+        int testPort = 1337;
+        SslCertificate testCert = new SslCertificate(testRequester, testHost, "past", "future");
+        mTvIAppView.sendCertificate(testHost, testPort, testCert);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mSendCertificateCount > 0);
+
+        assertThat(mSession.mSendCertificateCount).isEqualTo(1);
+        assertThat(mSession.mHost).isEqualTo(testHost);
+        assertThat(mSession.mPort).isEqualTo(testPort);
+        assertThat(mSession.mCertificate.getIssuedBy().getDName()).isEqualTo(testHost);
+        assertThat(mSession.mCertificate.getIssuedTo().getDName()).isEqualTo(testRequester);
     }
 
     @Test
@@ -816,6 +934,17 @@ public class TvInteractiveAppServiceTest {
 
         assertThat(mSession.mSigningResultCount).isEqualTo(1);
         // TODO: check values
+    }
+
+    @Test
+    public void testNotifyVideoFreezeUpdated() throws Throwable {
+        assertNotNull(mSession);
+        mSession.resetValues();
+        mTvIAppView.notifyVideoFreezeUpdated(true);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mVideoFreezeUpdatedCount > 0);
+        assertThat(mSession.mVideoFreezeUpdatedCount).isEqualTo(1);
+        assertThat(mSession.mVideoFrozen).isEqualTo(true);
     }
 
     @Test
@@ -994,6 +1123,19 @@ public class TvInteractiveAppServiceTest {
 
         assertThat(mSession.mTunedCount).isEqualTo(1);
         assertThat(mSession.mTunedUri).isEqualTo(CHANNEL_0);
+    }
+
+    @Test
+    public void testNotifyTrackSelectedFromInput() {
+        linkTvView();
+        String testTrackId = "testTrackId";
+        mInputSession.notifyTrackSelected(0, testTrackId);
+        mInstrumentation.waitForIdleSync();
+
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mTrackSelectedCount > 0);
+
+        assertThat(mSession.mTrackSelectedCount).isEqualTo(1);
+        assertThat(mSession.mSelectedTrackId).isEqualTo(testTrackId);
     }
 
     @Test
@@ -1299,6 +1441,15 @@ public class TvInteractiveAppServiceTest {
     }
 
     @Test
+    public void testRequestSelectedTrackInfo() throws Throwable {
+        mSession.requestSelectedTrackInfo();
+        mCallback.resetValues();
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mCallback.mRequestSelectedTrackInfoCount > 0);
+        assertThat(mCallback.mRequestSelectedTrackInfoCount).isEqualTo(1);
+    }
+
+    @Test
     public void testSetTvRecordingInfo() throws Throwable {
         String mockRecordingId = "testRecordingId";
         TvRecordingInfo mockRecordingInfo = createMockRecordingInfo(mockRecordingId);
@@ -1339,6 +1490,23 @@ public class TvInteractiveAppServiceTest {
         assertThat(mSession.mSendTvRecordingInfoListCount).isEqualTo(1);
         assertThat(mSession.mTvRecordingInfoList.size()).isEqualTo(1);
         compareTvRecordingInfo(mockRecordingInfo, mSession.mTvRecordingInfoList.get(0));
+    }
+
+    @Test
+    public void testSendSelectedTrackInfo() throws Throwable {
+        TvTrackInfo tvTrackInfo = createMockTvTrackInfo();
+        ArrayList<TvTrackInfo> trackInfos = new ArrayList<>();
+        trackInfos.add(tvTrackInfo);
+        mSession.resetValues();
+        mTvIAppView.sendSelectedTrackInfo(trackInfos);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mSendSelectedTrackInfoCount > 0);
+
+        assertThat(mSession.mSendSelectedTrackInfoCount).isEqualTo(1);
+        assertThat(mSession.mSelectedTrackInfoList.size()).isEqualTo(1);
+        TvTrackInfo receivedTrackInfo = mSession.mSelectedTrackInfoList.get(0);
+        assertThat(receivedTrackInfo.getId()).isEqualTo(tvTrackInfo.getId());
+        assertThat(receivedTrackInfo.getType()).isEqualTo(tvTrackInfo.getType());
     }
 
     @Test
@@ -1442,6 +1610,28 @@ public class TvInteractiveAppServiceTest {
         assertThat(request.getRequestId()).isEqualTo(1);
         assertThat(request.getOption()).isEqualTo(BroadcastInfoRequest.REQUEST_OPTION_REPEAT);
         assertThat(request.getTsPid()).isEqualTo(11);
+    }
+
+    @Test
+    public void testSignalingDataRequest() throws Throwable {
+        linkTvView();
+
+        ArrayList<String> signalingInfoList = new ArrayList<>();
+        signalingInfoList.add(SignalingDataRequest.SIGNALING_METADATA_AEAT);
+        SignalingDataRequest request = new SignalingDataRequest(0, 0,
+                SignalingDataRequest.SIGNALING_DATA_NO_GROUP_ID, signalingInfoList);
+        mSession.requestBroadcastInfo(request);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mInputSession.mBroadcastInfoRequestCount > 0);
+
+        request = (SignalingDataRequest) mInputSession.mBroadcastInfoRequest;
+        assertThat(mInputSession.mBroadcastInfoRequestCount).isEqualTo(1);
+        assertThat(request.getType()).isEqualTo(TvInputManager.BROADCAST_INFO_TYPE_SIGNALING_DATA);
+        assertThat(request.getRequestId()).isEqualTo(0);
+        assertThat(request.getOption()).isEqualTo(0);
+        assertThat(request.getGroup()).isEqualTo(SignalingDataRequest.SIGNALING_DATA_NO_GROUP_ID);
+        assertThat(request.getSignalingDataTypes().get(0))
+                .isEqualTo(SignalingDataRequest.SIGNALING_METADATA_AEAT);
     }
 
     @Test
@@ -1619,6 +1809,82 @@ public class TvInteractiveAppServiceTest {
                 BroadcastInfoResponse.RESPONSE_RESULT_OK);
         assertThat(response.getSharedFilterToken()).isEqualTo("TestToken");
     }
+
+    @Test
+    public void testSignalingResponse() throws Throwable {
+        linkTvView();
+
+        String testTable = "data";
+        SignalingDataInfo testSignalingDataInfo =
+                new SignalingDataInfo(testTable, SignalingDataRequest.SIGNALING_METADATA_AEAT, 1,
+                        SignalingDataInfo.LLS_NO_GROUP_ID);
+        ArrayList<String> signalingDataTypes = new ArrayList<>();
+        ArrayList<SignalingDataInfo> signalingDataInfoArrayList = new ArrayList<>();
+        signalingDataInfoArrayList.add(testSignalingDataInfo);
+        signalingDataTypes.add(SignalingDataRequest.SIGNALING_METADATA_AEAT);
+        SignalingDataResponse response = new SignalingDataResponse(1, 11,
+                BroadcastInfoResponse.RESPONSE_RESULT_OK, signalingDataTypes,
+                signalingDataInfoArrayList);
+        mInputSession.notifyBroadcastInfoResponse(response);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mBroadcastInfoResponseCount > 0);
+
+        response = (SignalingDataResponse) mSession.mBroadcastInfoResponse;
+        assertThat(mSession.mBroadcastInfoResponseCount).isEqualTo(1);
+        assertThat(response.getType()).isEqualTo(TvInputManager.BROADCAST_INFO_TYPE_SIGNALING_DATA);
+        assertThat(response.getRequestId()).isEqualTo(1);
+        assertThat(response.getSequence()).isEqualTo(11);
+        assertThat(response.getResponseResult())
+                .isEqualTo(BroadcastInfoResponse.RESPONSE_RESULT_OK);
+        assertThat(response.getSignalingDataTypes().get(0))
+                .isEqualTo(SignalingDataRequest.SIGNALING_METADATA_AEAT);
+        SignalingDataInfo receivedInfo = response.getSignalingDataInfoList().get(0);
+        assertThat(receivedInfo.getEncoding()).isEqualTo(SignalingDataInfo.CONTENT_ENCODING_UTF_8);
+        assertThat(receivedInfo.getGroup()).isEqualTo(SignalingDataInfo.LLS_NO_GROUP_ID);
+        assertThat(receivedInfo.getTable()).isEqualTo(testTable);
+        assertThat(receivedInfo.getSignalingDataType())
+                .isEqualTo(SignalingDataRequest.SIGNALING_METADATA_AEAT);
+        assertThat(receivedInfo.getVersion()).isEqualTo(1);
+    }
+
+    @Test
+    public void testSignalingResponseWithEncoding() throws Throwable {
+        linkTvView();
+
+        String testTable = "data";
+        SignalingDataInfo testSignalingDataInfo =
+                new SignalingDataInfo(testTable, SignalingDataRequest.SIGNALING_METADATA_AEAT, 1,
+                        SignalingDataInfo.LLS_NO_GROUP_ID,
+                        SignalingDataInfo.CONTENT_ENCODING_BASE64);
+        ArrayList<String> signalingDataTypes = new ArrayList<>();
+        ArrayList<SignalingDataInfo> signalingDataInfoArrayList = new ArrayList<>();
+        signalingDataInfoArrayList.add(testSignalingDataInfo);
+        signalingDataTypes.add(SignalingDataRequest.SIGNALING_METADATA_AEAT);
+        SignalingDataResponse response = new SignalingDataResponse(1, 11,
+                BroadcastInfoResponse.RESPONSE_RESULT_OK, signalingDataTypes,
+                signalingDataInfoArrayList);
+        mInputSession.notifyBroadcastInfoResponse(response);
+        mInstrumentation.waitForIdleSync();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> mSession.mBroadcastInfoResponseCount > 0);
+
+        response = (SignalingDataResponse) mSession.mBroadcastInfoResponse;
+        assertThat(mSession.mBroadcastInfoResponseCount).isEqualTo(1);
+        assertThat(response.getType()).isEqualTo(TvInputManager.BROADCAST_INFO_TYPE_SIGNALING_DATA);
+        assertThat(response.getRequestId()).isEqualTo(1);
+        assertThat(response.getSequence()).isEqualTo(11);
+        assertThat(response.getResponseResult())
+                .isEqualTo(BroadcastInfoResponse.RESPONSE_RESULT_OK);
+        assertThat(response.getSignalingDataTypes().get(0))
+                .isEqualTo(SignalingDataRequest.SIGNALING_METADATA_AEAT);
+        SignalingDataInfo receivedInfo = response.getSignalingDataInfoList().get(0);
+        assertThat(receivedInfo.getEncoding()).isEqualTo(SignalingDataInfo.CONTENT_ENCODING_BASE64);
+        assertThat(receivedInfo.getGroup()).isEqualTo(SignalingDataInfo.LLS_NO_GROUP_ID);
+        assertThat(receivedInfo.getTable()).isEqualTo(testTable);
+        assertThat(receivedInfo.getSignalingDataType())
+                .isEqualTo(SignalingDataRequest.SIGNALING_METADATA_AEAT);
+        assertThat(receivedInfo.getVersion()).isEqualTo(1);
+    }
+
 
     @Test
     public void testCommandResponse() throws Throwable {

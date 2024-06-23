@@ -65,9 +65,6 @@ public abstract class ActivityTestBase {
     @Rule
     public Tracer name = new Tracer();
 
-    private BitmapAsserter mBitmapAsserter = new BitmapAsserter(this.getClass().getSimpleName(),
-            name.getMethodName());
-
     protected String getName() {
         return name.getMethodName();
     }
@@ -246,9 +243,8 @@ public abstract class ActivityTestBase {
             try {
                 for (TestCase testCase : mTestCases) {
                     Bitmap testCaseBitmap = captureRenderSpec(testCase);
-                    mBitmapAsserter.assertBitmapsAreSimilar(idealBitmap, testCaseBitmap,
-                            bitmapComparer,
-                            getName(), testCase.getDebugString());
+                    BitmapAsserter.assertBitmapsAreSimilar(idealBitmap, testCaseBitmap,
+                            bitmapComparer, testCase.getDebugString());
                 }
             } finally {
                 getActivity().reset();
@@ -267,8 +263,8 @@ public abstract class ActivityTestBase {
             try {
                 for (TestCase testCase : mTestCases) {
                     Bitmap testCaseBitmap = captureRenderSpec(testCase);
-                    mBitmapAsserter.assertBitmapIsVerified(testCaseBitmap, bitmapVerifier,
-                            getName(), testCase.getDebugString());
+                    BitmapAsserter.assertBitmapIsVerified(testCaseBitmap, bitmapVerifier,
+                            testCase.getDebugString());
                 }
             } finally {
                 getActivity().reset();
@@ -301,8 +297,8 @@ public abstract class ActivityTestBase {
                             e.printStackTrace();
                         }
                         Bitmap testCaseBitmap = takeScreenshot(testPositionInfo);
-                        mBitmapAsserter.assertBitmapIsVerified(testCaseBitmap, bitmapVerifier,
-                                getName(), testCase.getDebugString());
+                        BitmapAsserter.assertBitmapIsVerified(testCaseBitmap, bitmapVerifier,
+                                testCase.getDebugString());
                     }
                 }
             } finally {

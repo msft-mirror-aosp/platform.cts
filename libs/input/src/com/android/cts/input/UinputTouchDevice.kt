@@ -40,7 +40,7 @@ class UinputTouchDevice(
     display: Display,
     private val rawResource: Int,
     private val source: Int,
-    sizeOverride: Size? = null,
+    useDisplaySize: Boolean = false,
 ) :
     AutoCloseable {
 
@@ -51,7 +51,8 @@ class UinputTouchDevice(
     private val inputManager: InputManager
 
     init {
-        uinputDevice = createDevice(instrumentation, sizeOverride)
+        val size = Size(display.getMode().getPhysicalWidth(), display.getMode().getPhysicalHeight())
+        uinputDevice = createDevice(instrumentation, if (useDisplaySize) size else null)
         inputManager = instrumentation.targetContext.getSystemService(InputManager::class.java)!!
         associateWith(display)
         WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(display.displayId)
@@ -59,8 +60,11 @@ class UinputTouchDevice(
     }
 
     private fun injectEvent(events: IntArray) {
-        uinputDevice.injectEvents(events.joinToString(prefix = "[", postfix = "]",
-                separator = ","))
+        uinputDevice.injectEvents(events.joinToString(
+            prefix = "[",
+            postfix = "]",
+            separator = ",",
+        ))
     }
 
     fun sendBtnTouch(isDown: Boolean) {
@@ -94,12 +98,20 @@ class UinputTouchDevice(
         injectEvent(intArrayOf(EV_ABS, ABS_MT_TOOL_TYPE, toolType))
     }
 
+    fun sendPressure(pressure: Int) {
+        injectEvent(intArrayOf(EV_ABS, ABS_MT_PRESSURE, pressure))
+    }
+
     fun sync() {
         injectEvent(intArrayOf(EV_SYN, SYN_REPORT, 0))
     }
 
     fun delay(delayMs: Int) {
         uinputDevice.injectDelay(delayMs)
+    }
+
+    fun getDeviceId(): Int {
+        return uinputDevice.getDeviceId()
     }
 
     private fun readRawResource(context: Context): String {
@@ -134,14 +146,21 @@ class UinputTouchDevice(
 
         // Create the uinput device.
         val registerCommand = json.toString()
-        return UinputDevice(instrumentation, resourceDeviceId,
-                vendorId, productId, source, registerCommand)
+        return UinputDevice(
+            instrumentation,
+            resourceDeviceId,
+            vendorId,
+            productId,
+            source,
+            registerCommand
+        )
     }
 
     private fun associateWith(display: Display) {
         runWithShellPermissionIdentity(
                 { inputManager.addUniqueIdAssociation(port, display.uniqueId!!) },
-                "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY")
+                "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
+        )
         waitForDeviceUpdatesUntil {
             val inputDevice = inputManager.getInputDevice(uinputDevice.deviceId)
             display.displayId == inputDevice!!.associatedDisplayId
@@ -189,7 +208,8 @@ class UinputTouchDevice(
     override fun close() {
         runWithShellPermissionIdentity(
                 { inputManager.removeUniqueIdAssociation(port) },
-                "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY")
+                "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
+        )
         uinputDevice.close()
     }
 
@@ -202,6 +222,7 @@ class UinputTouchDevice(
         const val ABS_MT_POSITION_Y = 0x36
         const val ABS_MT_TOOL_TYPE = 0x37
         const val ABS_MT_TRACKING_ID = 0x39
+        const val ABS_MT_PRESSURE = 0x3a
         const val BTN_TOUCH = 0x14a
         const val BTN_TOOL_FINGER = 0x145
         const val BTN_TOOL_DOUBLETAP = 0x14d

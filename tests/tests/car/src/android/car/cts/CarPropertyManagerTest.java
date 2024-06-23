@@ -26,8 +26,8 @@ import static android.car.hardware.property.CarPropertyManager.SetPropertyResult
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.car.Car;
@@ -42,6 +42,7 @@ import android.car.VehicleGear;
 import android.car.VehicleIgnitionState;
 import android.car.VehiclePropertyIds;
 import android.car.VehicleUnit;
+import android.car.cts.property.CarSvcPropsParser;
 import android.car.cts.utils.VehiclePropertyVerifier;
 import android.car.cts.utils.VehiclePropertyVerifiers;
 import android.car.feature.Flags;
@@ -75,6 +76,7 @@ import android.car.hardware.property.LaneCenteringAssistCommand;
 import android.car.hardware.property.LaneCenteringAssistState;
 import android.car.hardware.property.LaneDepartureWarningState;
 import android.car.hardware.property.LaneKeepAssistState;
+import android.car.hardware.property.LowSpeedAutomaticEmergencyBrakingState;
 import android.car.hardware.property.LowSpeedCollisionWarningState;
 import android.car.hardware.property.PropertyNotAvailableException;
 import android.car.hardware.property.Subscription;
@@ -95,9 +97,6 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.test.suitebuilder.annotation.SmallTest;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.SparseArray;
@@ -105,6 +104,7 @@ import android.util.SparseArray;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -117,10 +117,10 @@ import com.google.common.collect.Sets;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -142,8 +142,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     private static final String TAG = CarPropertyManagerTest.class.getSimpleName();
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    private static final int VEHICLE_PROPERTY_GROUP_MASK = 0xf0000000;
+    private static final int VEHICLE_PROPERTY_GROUP_SYSTEM = 0x10000000;
+    private static final int VEHICLE_PROPERTY_GROUP_VENDOR = 0x20000000;
 
     private static final long WAIT_CALLBACK = 1500L;
     private static final int NO_EVENTS = 0;
@@ -152,6 +153,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     private static final int FAST_OR_FASTEST_EVENT_COUNTER = 10;
     private static final int SECONDS_TO_MILLIS = 1_000;
     private static final long ASYNC_WAIT_TIMEOUT_IN_SEC = 15;
+    private static final int REASONABLE_FUTURE_MODEL_YEAR_OFFSET = 5;
+    private static final int REASONABLE_PAST_MODEL_YEAR_OFFSET = -10;
     private static final ImmutableSet<Integer> PORT_LOCATION_TYPES =
             ImmutableSet.<Integer>builder()
                     .add(
@@ -480,6 +483,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             CrossTrafficMonitoringWarningState.WARNING_REAR_RIGHT,
                             CrossTrafficMonitoringWarningState.WARNING_REAR_BOTH)
                     .build();
+    private static final ImmutableSet<Integer> LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATES =
+            ImmutableSet.<Integer>builder()
+                    .add(
+                            LowSpeedAutomaticEmergencyBrakingState.OTHER,
+                            LowSpeedAutomaticEmergencyBrakingState.ENABLED,
+                            LowSpeedAutomaticEmergencyBrakingState.ACTIVATED,
+                            LowSpeedAutomaticEmergencyBrakingState.USER_OVERRIDE)
+                    .build();
     private static final ImmutableSet<Integer> ALL_POSSIBLE_HVAC_FAN_DIRECTIONS =
             generateAllPossibleHvacFanDirections();
     private static final ImmutableSet<Integer> VEHICLE_SEAT_OCCUPANCY_STATES = ImmutableSet.of(
@@ -698,6 +709,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     .add(
                             VehiclePropertyIds.VALET_MODE_ENABLED)
                     .build();
+    private static final ImmutableList<Integer> PERMISSION_READ_HEAD_UP_DISPLAY_STATUS_PROPERTIES =
+            ImmutableList.<Integer>builder()
+                    .add(
+                            VehiclePropertyIds.HEAD_UP_DISPLAY_ENABLED)
+                    .build();
+    private static final ImmutableList<Integer> PERMISSION_CONTROL_HEAD_UP_DISPLAY_PROPERTIES =
+            ImmutableList.<Integer>builder()
+                    .add(
+                            VehiclePropertyIds.HEAD_UP_DISPLAY_ENABLED)
+                    .build();
     private static final ImmutableList<Integer> PERMISSION_IDENTIFICATION_PROPERTIES =
             ImmutableList.<Integer>builder()
                     .add(
@@ -896,7 +917,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.EMERGENCY_LANE_KEEP_ASSIST_ENABLED,
                             VehiclePropertyIds.CRUISE_CONTROL_ENABLED,
                             VehiclePropertyIds.LOW_SPEED_COLLISION_WARNING_ENABLED,
-                            VehiclePropertyIds.CROSS_TRAFFIC_MONITORING_ENABLED)
+                            VehiclePropertyIds.CROSS_TRAFFIC_MONITORING_ENABLED,
+                            VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_ADAS_SETTINGS_PROPERTIES =
             ImmutableList.<Integer>builder()
@@ -910,7 +932,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.EMERGENCY_LANE_KEEP_ASSIST_ENABLED,
                             VehiclePropertyIds.CRUISE_CONTROL_ENABLED,
                             VehiclePropertyIds.LOW_SPEED_COLLISION_WARNING_ENABLED,
-                            VehiclePropertyIds.CROSS_TRAFFIC_MONITORING_ENABLED)
+                            VehiclePropertyIds.CROSS_TRAFFIC_MONITORING_ENABLED,
+                            VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_READ_ADAS_STATES_PROPERTIES =
             ImmutableList.<Integer>builder()
@@ -929,7 +952,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds
                                     .ADAPTIVE_CRUISE_CONTROL_LEAD_VEHICLE_MEASURED_DISTANCE,
                             VehiclePropertyIds.LOW_SPEED_COLLISION_WARNING_STATE,
-                            VehiclePropertyIds.CROSS_TRAFFIC_MONITORING_WARNING_STATE)
+                            VehiclePropertyIds.CROSS_TRAFFIC_MONITORING_WARNING_STATE,
+                            VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE)
                     .build();
     private static final ImmutableList<Integer> PERMISSION_CONTROL_ADAS_STATES_PROPERTIES =
             ImmutableList.<Integer>builder()
@@ -966,7 +990,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehiclePropertyIds.ULTRASONICS_SENSOR_ORIENTATION,
                             VehiclePropertyIds.ULTRASONICS_SENSOR_FIELD_OF_VIEW,
                             VehiclePropertyIds.ULTRASONICS_SENSOR_DETECTION_RANGE,
-                            VehiclePropertyIds.ULTRASONICS_SENSOR_SUPPORTED_RANGES)
+                            VehiclePropertyIds.ULTRASONICS_SENSOR_SUPPORTED_RANGES,
+                            VehiclePropertyIds.ULTRASONICS_SENSOR_MEASURED_DISTANCE)
                     .build();
     private static final ImmutableList<String> VENDOR_PROPERTY_PERMISSIONS =
             ImmutableList.<String>builder()
@@ -1009,9 +1034,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             VehicleVendorPermission.PERMISSION_GET_CAR_VENDOR_CATEGORY_10,
                             VehicleVendorPermission.PERMISSION_SET_CAR_VENDOR_CATEGORY_10)
                     .build();
-
-    private static final int VEHICLE_PROPERTY_GROUP_MASK = 0xf0000000;
-    private static final int VEHICLE_PROPERTY_GROUP_VENDOR = 0x20000000;
 
     /** contains property Ids for the properties required by CDD */
     private final ArraySet<Integer> mPropertyIds = new ArraySet<>();
@@ -1245,6 +1267,80 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 });
     }
 
+    /**
+     * If the feature flag: FLAG_ANDROID_VIC_VEHICLE_PROPERTIES is disabled, the VIC properties must
+     * not be supported.
+     */
+    @RequiresFlagsDisabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    @Test
+    @ApiTest(
+            apis = {
+                "android.car.hardware.property.CarPropertyManager#getPropertyList",
+                "android.car.hardware.property.CarPropertyManager#getCarPropertyConfig",
+            })
+    public void testVicPropertiesMustNotBeSupportedIfFlagDisabled() {
+        CarSvcPropsParser parser = new CarSvcPropsParser();
+        List<Integer> vicSystemPropertyIds = parser.getSystemPropertyIdsForFlag(
+                "FLAG_ANDROID_VIC_VEHICLE_PROPERTIES");
+
+        List<CarPropertyConfig> configs = new ArrayList<>();
+        // Use shell permission identity to get as many property configs as possible.
+        runWithShellPermissionIdentity(() -> {
+            configs.addAll(mCarPropertyManager.getPropertyList());
+        });
+
+        for (int i = 0; i < configs.size(); i++) {
+            int propertyId = configs.get(i).getPropertyId();
+            if (!isSystemProperty(propertyId)) {
+                continue;
+            }
+
+            String propertyName = VehiclePropertyIds.toString(propertyId);
+            expectWithMessage("Property: " + propertyName + " must not be supported if "
+                    + "FLAG_ANDROID_VIC_VEHICLE_PROPERTIES is disabled").that(propertyId)
+                    .isNotIn(vicSystemPropertyIds);
+        }
+
+        runWithShellPermissionIdentity(() -> {
+            for (int propertyId : vicSystemPropertyIds) {
+                String propertyName = VehiclePropertyIds.toString(propertyId);
+                expectWithMessage("getCarPropertyConfig for: " + propertyName
+                        + " when FLAG_ANDROID_VIC_VEHICLE_PROPERTIES is disabled must return null")
+                        .that(mCarPropertyManager.getCarPropertyConfig(propertyId)).isNull();
+            }
+        });
+    }
+
+    /**
+     * Test that all supported system property IDs are defined.
+     */
+    @Test
+    @ApiTest(
+            apis = {
+                "android.car.hardware.property.CarPropertyManager#getPropertyList",
+            })
+    public void testAllSupportedSystemPropertyIdsAreDefined() {
+        CarSvcPropsParser parser = new CarSvcPropsParser();
+        List<Integer> allSystemPropertyIds = parser.getAllSystemPropertyIds();
+
+        List<CarPropertyConfig> configs = new ArrayList<>();
+        // Use shell permission identity to get as many property configs as possible.
+        runWithShellPermissionIdentity(() -> {
+            configs.addAll(mCarPropertyManager.getPropertyList());
+        });
+
+        for (int i = 0; i < configs.size(); i++) {
+            int propertyId = configs.get(i).getPropertyId();
+            if (!isSystemProperty(propertyId)) {
+                continue;
+            }
+
+            String propertyName = VehiclePropertyIds.toString(propertyId);
+            expectWithMessage("Property: " + propertyName + " is not a defined system property")
+                    .that(propertyId).isIn(allSystemPropertyIds);
+        }
+    }
+
     private VehiclePropertyVerifier<?>[] getAllVerifiers() {
         return new VehiclePropertyVerifier[] {
              getGearSelectionVerifier(),
@@ -1293,6 +1389,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
              getUltrasonicsSensorFieldOfViewVerifier(),
              getUltrasonicsSensorDetectionRangeVerifier(),
              getUltrasonicsSensorSupportedRangesVerifier(),
+             getUltrasonicsSensorMeasuredDistanceVerifier(),
              getElectronicTollCollectionCardTypeVerifier(),
              getElectronicTollCollectionCardStatusVerifier(),
              getGeneralSafetyRegulationComplianceVerifier(),
@@ -1320,6 +1417,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
              getElectronicStabilityControlStateVerifier(),
              getCrossTrafficMonitoringEnabledVerifier(),
              getCrossTrafficMonitoringWarningStateVerifier(),
+             getHeadUpDisplayEnabledVerifier(),
+             getLowSpeedAutomaticEmergencyBrakingEnabledVerifier(),
+             getLowSpeedAutomaticEmergencyBrakingStateVerifier(),
              // TODO(b/273988725): Put all verifiers here.
         };
     }
@@ -1880,7 +1980,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDrowsinessAttentionSystemEnabledIfSupported() {
         getDriverDrowsinessAttentionSystemEnabledVerifier().verify();
     }
@@ -1908,13 +2008,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDrowsinessAttentionStateVerifierIfSupported() {
         getDriverDrowsinessAttentionStateVerifier().verify();
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDrowsinessAttentionStateAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(HANDS_ON_DETECTION_DRIVER_STATES, ERROR_STATES);
     }
@@ -1933,7 +2033,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDrowsinessAttentionWarningEnabledIfSupported() {
         getDriverDrowsinessAttentionWarningEnabledVerifier().verify();
     }
@@ -1961,13 +2061,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDrowsinessAttentionWarningIfSupported() {
         getDriverDrowsinessAttentionWarningVerifier().verify();
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDrowsinessAttentionWarningAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(DRIVER_DROWSINESS_ATTENTION_WARNINGS, ERROR_STATES);
     }
@@ -1986,7 +2086,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDistractionSystemEnabledIfSupported() {
         getDriverDistractionSystemEnabledVerifier().verify();
     }
@@ -2014,13 +2114,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDistractionStateVerifierIfSupported() {
         getDriverDistractionStateVerifier().verify();
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDistractionStateAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(DRIVER_DISTRACTION_STATES, ERROR_STATES);
     }
@@ -2039,7 +2139,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDistractionWarningEnabledIfSupported() {
         getDriverDistractionWarningEnabledVerifier().verify();
     }
@@ -2067,13 +2167,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDistractionWarningIfSupported() {
         getDriverDistractionWarningVerifier().verify();
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDistractionWarningAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(DRIVER_DISTRACTION_WARNINGS, ERROR_STATES);
     }
@@ -2259,6 +2359,22 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         Integer.class, mCarPropertyManager)
+                .setCarPropertyValueVerifier(
+                        (carPropertyConfig, propertyId, areaId, timestampNanos, modelYear) -> {
+                            int currentYear = Year.now().getValue();
+                            assertWithMessage(
+                                    "INFO_MODEL_YEAR Integer value must be greater"
+                                            + " than or equal "
+                                            + (currentYear + REASONABLE_PAST_MODEL_YEAR_OFFSET))
+                                    .that(modelYear)
+                                    .isAtLeast(currentYear + REASONABLE_PAST_MODEL_YEAR_OFFSET);
+                            assertWithMessage(
+                                    "INFO_MODEL_YEAR Integer value must be less"
+                                            + " than or equal "
+                                            + (currentYear + REASONABLE_FUTURE_MODEL_YEAR_OFFSET))
+                                    .that(modelYear)
+                                    .isAtMost(currentYear + REASONABLE_FUTURE_MODEL_YEAR_OFFSET);
+                        })
                 .addReadPermission(Car.PERMISSION_CAR_INFO)
                 .build();
     }
@@ -2577,7 +2693,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         Integer[].class, mCarPropertyManager)
                 .setCarPropertyValueVerifier(
                         (carPropertyConfig, propertyId, areaId, timestampNanos, positions) -> {
-                            assertWithMessage("ULTRASONICS_SENSOR_POSITION must specify 3 values")
+                            assertWithMessage("ULTRASONICS_SENSOR_POSITION must specify 3 values, "
+                                    + "areaId: " + areaId)
                                     .that(positions.length)
                                     .isEqualTo(3);
                         })
@@ -2586,22 +2703,22 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testUltrasonicsSensorPositionIfSupported() {
         getUltrasonicsSensorPositionVerifier().verify();
     }
 
-    private VehiclePropertyVerifier<Integer[]> getUltrasonicsSensorOrientationVerifier() {
+    private VehiclePropertyVerifier<Float[]> getUltrasonicsSensorOrientationVerifier() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.ULTRASONICS_SENSOR_ORIENTATION,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
                         VehicleAreaType.VEHICLE_AREA_TYPE_VENDOR,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer[].class, mCarPropertyManager)
+                        Float[].class, mCarPropertyManager)
                 .setCarPropertyValueVerifier(
                         (carPropertyConfig, propertyId, areaId, timestampNanos, orientations) -> {
                             assertWithMessage("ULTRASONICS_SENSOR_ORIENTATION must specify 4 "
-                                    + "values")
+                                    + "values, areaId: " + areaId)
                                     .that(orientations.length)
                                     .isEqualTo(4);
                         })
@@ -2610,7 +2727,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testUltrasonicsSensorOrientationIfSupported() {
         getUltrasonicsSensorOrientationVerifier().verify();
     }
@@ -2625,15 +2742,15 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setCarPropertyValueVerifier(
                         (carPropertyConfig, propertyId, areaId, timestampNanos, fieldOfViews) -> {
                             assertWithMessage("ULTRASONICS_SENSOR_FIELD_OF_VIEW must specify 2 "
-                                    + "values")
+                                    + "values, areaId: " + areaId)
                                     .that(fieldOfViews.length)
                                     .isEqualTo(2);
                             assertWithMessage("ULTRASONICS_SENSOR_FIELD_OF_VIEW horizontal fov "
-                                    + "must be greater than zero")
+                                    + "must be greater than zero, areaId: " + areaId)
                                     .that(fieldOfViews[0])
                                     .isGreaterThan(0);
                             assertWithMessage("ULTRASONICS_SENSOR_FIELD_OF_VIEW vertical fov "
-                                    + "must be greater than zero")
+                                    + "must be greater than zero, areaId: " + areaId)
                                     .that(fieldOfViews[1])
                                     .isGreaterThan(0);
                         })
@@ -2642,7 +2759,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testUltrasonicsSensorFieldOfViewIfSupported() {
         getUltrasonicsSensorFieldOfViewVerifier().verify();
     }
@@ -2658,15 +2775,15 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         (carPropertyConfig, propertyId, areaId, timestampNanos, detectionRanges)
                                 -> {
                             assertWithMessage("ULTRASONICS_SENSOR_DETECTION_RANGE must "
-                                    + "specify 2 values")
+                                    + "specify 2 values, areaId: " + areaId)
                                     .that(detectionRanges.length)
                                     .isEqualTo(2);
                             assertWithMessage("ULTRASONICS_SENSOR_DETECTION_RANGE min value must "
-                                    + "be at least zero")
+                                    + "be at least zero, areaId: " + areaId)
                                     .that(detectionRanges[0])
                                     .isAtLeast(0);
                             assertWithMessage("ULTRASONICS_SENSOR_DETECTION_RANGE max value must "
-                                    + "be greater than min")
+                                    + "be greater than min, areaId: " + areaId)
                                     .that(detectionRanges[1])
                                     .isGreaterThan(detectionRanges[0]);
                         })
@@ -2675,7 +2792,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testUltrasonicsSensorDetectionRangeIfSupported() {
         getUltrasonicsSensorDetectionRangeVerifier().verify();
     }
@@ -2691,20 +2808,20 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         (carPropertyConfig, propertyId, areaId, timestampNanos, supportedRanges)
                                 -> {
                             assertWithMessage("ULTRASONICS_SENSOR_SUPPORTED_RANGES must "
-                                    + "must have at least 1 range")
+                                    + "must have at least 1 range, areaId: " + areaId)
                                     .that(supportedRanges.length)
                                     .isAtLeast(2);
                             assertWithMessage("ULTRASONICS_SENSOR_SUPPORTED_RANGES must "
-                                    + "specify an even number of values")
+                                    + "specify an even number of values, areaId: " + areaId)
                                     .that(supportedRanges.length % 2)
                                     .isEqualTo(0);
                             assertWithMessage("ULTRASONICS_SENSOR_SUPPORTED_RANGES values "
-                                    + "must be greater than zero")
+                                    + "must be greater than zero, areaId: " + areaId)
                                     .that(supportedRanges[0])
                                     .isAtLeast(0);
                             for (int i = 1; i < supportedRanges.length; i++) {
                                 assertWithMessage("ULTRASONICS_SENSOR_SUPPORTED_RANGES values "
-                                        + "must be in ascending order")
+                                        + "must be in ascending order, areaId: " + areaId)
                                         .that(supportedRanges[i])
                                         .isGreaterThan(supportedRanges[i - 1]);
                             }
@@ -2717,25 +2834,109 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     private void verifyUltrasonicsSupportedRangesWithinDetectionRange(
             int areaId, Integer[] supportedRanges) {
+        if (mCarPropertyManager.getCarPropertyConfig(
+                VehiclePropertyIds.ULTRASONICS_SENSOR_DETECTION_RANGE) == null) {
+            return;
+        }
+
         Integer[] detectionRange = (Integer[]) mCarPropertyManager.getProperty(
                 VehiclePropertyIds.ULTRASONICS_SENSOR_DETECTION_RANGE, areaId).getValue();
-        if (mCarPropertyManager.getCarPropertyConfig(
-                VehiclePropertyIds.ULTRASONICS_SENSOR_DETECTION_RANGE) != null) {
-            for (int i = 0; i < supportedRanges.length; i++) {
-                assertWithMessage("ULTRASONICS_SENSOR_SUPPORTED_RANGES values must "
-                        + "be within the ULTRASONICS_SENSOR_DETECTION_RANGE")
-                        .that(supportedRanges[i])
-                        .isIn(Range.closed(
-                                detectionRange[0],
-                                detectionRange[1]));
-            }
+
+        for (int i = 0; i < supportedRanges.length; i++) {
+            assertWithMessage("ULTRASONICS_SENSOR_SUPPORTED_RANGES values must "
+                    + "be within the ULTRASONICS_SENSOR_DETECTION_RANGE, areaId: " + areaId)
+                    .that(supportedRanges[i])
+                    .isIn(Range.closed(
+                            detectionRange[0],
+                            detectionRange[1]));
         }
     }
 
     @Test
-    @RequiresFlagsEnabled("android.car.feature.android_vic_vehicle_properties")
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testUltrasonicsSensorSupportedRangesIfSupported() {
         getUltrasonicsSensorSupportedRangesVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer[]> getUltrasonicsSensorMeasuredDistanceVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.ULTRASONICS_SENSOR_MEASURED_DISTANCE,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_VENDOR,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                        Integer[].class, mCarPropertyManager)
+                .setCarPropertyValueVerifier(
+                        (carPropertyConfig, propertyId, areaId, timestampNanos, distance)
+                                -> {
+                            assertWithMessage("ULTRASONICS_SENSOR_MEASURED_DISTANCE must "
+                                    + "have at most 2 values, areaId: " + areaId)
+                                    .that(distance.length)
+                                    .isAtMost(2);
+                            if (distance.length == 2) {
+                                assertWithMessage("ULTRASONICS_SENSOR_MEASURED_DISTANCE distance "
+                                    + "error must be greater than zero, areaId: " + areaId)
+                                    .that(distance[1])
+                                    .isAtLeast(0);
+                            }
+                            verifyUltrasonicsMeasuredDistanceInSupportedRanges(areaId, distance);
+                            verifyUltrasonicsMeasuredDistanceWithinDetectionRange(areaId, distance);
+                        })
+                .addReadPermission(Car.PERMISSION_READ_ULTRASONICS_SENSOR_DATA)
+                .build();
+    }
+
+    private void verifyUltrasonicsMeasuredDistanceInSupportedRanges(
+            int areaId, Integer[] distance) {
+        // Distance with length of 0 is valid. return because there are no values to verify.
+        if (distance.length == 0) {
+            return;
+        }
+
+        if (mCarPropertyManager.getCarPropertyConfig(
+                VehiclePropertyIds.ULTRASONICS_SENSOR_SUPPORTED_RANGES) == null) {
+            return;
+        }
+
+        Integer[] supportedRanges = (Integer[]) mCarPropertyManager.getProperty(
+                VehiclePropertyIds.ULTRASONICS_SENSOR_SUPPORTED_RANGES, areaId).getValue();
+        ImmutableSet.Builder<Integer> minimumSupportedRangeValues = ImmutableSet.builder();
+        for (int i = 0; i < supportedRanges.length; i += 2) {
+            minimumSupportedRangeValues.add(supportedRanges[i]);
+        }
+
+        assertWithMessage("ULTRASONICS_SENSOR_MEASURED_DISTANCE distance must be one of the "
+                + "minimum values in ULTRASONICS_SENSOR_SUPPORTED_RANGES, areaId: "
+                + areaId)
+                .that(distance[0])
+                .isIn(minimumSupportedRangeValues.build());
+    }
+
+    private void verifyUltrasonicsMeasuredDistanceWithinDetectionRange(
+            int areaId, Integer[] distance) {
+        // Distance with length of 0 is valid. return because there are no values to verify.
+        if (distance.length == 0) {
+            return;
+        }
+
+        if (mCarPropertyManager.getCarPropertyConfig(
+                VehiclePropertyIds.ULTRASONICS_SENSOR_DETECTION_RANGE) == null) {
+            return;
+        }
+
+        Integer[] detectionRange = (Integer[]) mCarPropertyManager.getProperty(
+                VehiclePropertyIds.ULTRASONICS_SENSOR_DETECTION_RANGE, areaId).getValue();
+        assertWithMessage("ULTRASONICS_SENSOR_MEASURED_DISTANCE distance must "
+                + "be within the ULTRASONICS_SENSOR_DETECTION_RANGE, areaId: " + areaId)
+                .that(distance[0])
+                .isIn(Range.closed(
+                        detectionRange[0],
+                        detectionRange[1]));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testUltrasonicsSensorMeasuredDistanceIfSupported() {
+        getUltrasonicsSensorMeasuredDistanceVerifier().verify();
     }
 
     private VehiclePropertyVerifier<Integer> getElectronicTollCollectionCardTypeVerifier() {
@@ -3038,6 +3239,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testVehicleDrivingAutomationCurrentLevelIfSupported() {
         getVehicleDrivingAutomationCurrentLevelVerifier().verify();
     }
@@ -3874,6 +4076,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testEvBatteryAverageTemperatureIfSupported() {
         getEvBatteryAverageTemperatureVerifier().verify();
     }
@@ -4233,6 +4436,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testImpactDetectedIfSupported() {
         getImpactDetectedVerifier().verify();
     }
@@ -5593,6 +5797,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testSeatAirbagsDeployedIfSupported() {
         getSeatAirbagsDeployedVerifier().verify();
     }
@@ -5609,6 +5814,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testSeatBeltPretensionerDeployedIfSupported() {
         getSeatBeltPretensionerDeployedVerifier().verify();
     }
@@ -5627,8 +5833,28 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testValetModeEnabledIfSupported() {
         getValetModeEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getHeadUpDisplayEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.HEAD_UP_DISPLAY_ENABLED,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Boolean.class, mCarPropertyManager)
+                .addReadPermission(Car.PERMISSION_READ_HEAD_UP_DISPLAY_STATUS)
+                .addReadPermission(Car.PERMISSION_CONTROL_HEAD_UP_DISPLAY)
+                .addWritePermission(Car.PERMISSION_CONTROL_HEAD_UP_DISPLAY)
+                .build();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testHeadUpDisplayEnabledIfSupported() {
+        getHeadUpDisplayEnabledVerifier().verify();
     }
 
     @Test
@@ -5758,7 +5984,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setCarPropertyConfigVerifier(
                         carPropertyConfig -> {
                             // HVAC_TEMPERATURE_VALUE_SUGGESTION's access must be read+write.
-                            assertThat(carPropertyConfig.getAccess()).isEqualTo(
+                            assertThat((Flags.areaIdConfigAccess()
+                                    ? carPropertyConfig.getAreaIdConfig(0).getAccess()
+                                    : carPropertyConfig.getAccess())).isEqualTo(
                                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE);
                         })
                 .setCarPropertyValueVerifier(
@@ -6810,6 +7038,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testLowSpeedCollisionWarningEnabledIfSupported() {
         getLowSpeedCollisionWarningEnabledVerifier().verify();
     }
@@ -6841,11 +7070,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testLowSpeedCollisionWarningStateIfSupported() {
         getLowSpeedCollisionWarningStateVerifier().verify();
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testLowSpeedCollisionWarningStateWithErrorState() {
         verifyEnumValuesAreDistinct(LOW_SPEED_COLLISION_WARNING_STATES, ERROR_STATES);
     }
@@ -6872,11 +7103,13 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testElectronicStabilityControlStateIfSupported() {
         getElectronicStabilityControlStateVerifier().verify();
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testElectronicStabilityControlStateWithErrorState() {
         verifyEnumValuesAreDistinct(ELECTRONIC_STABILITY_CONTROL_STATES, ERROR_STATES);
     }
@@ -6895,6 +7128,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testElectronicStabilityControlEnabledIfSupported() {
         getElectronicStabilityControlEnabledVerifier().verify();
     }
@@ -6913,6 +7147,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testCrossTrafficMonitoringEnabledIfSupported() {
         getCrossTrafficMonitoringEnabledVerifier().verify();
     }
@@ -6939,8 +7174,62 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testCrossTrafficMonitoringWarningStateIfSupported() {
         getCrossTrafficMonitoringWarningStateVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Boolean> getLowSpeedAutomaticEmergencyBrakingEnabledVerifier() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Boolean.class, mCarPropertyManager)
+                .addReadPermission(Car.PERMISSION_READ_ADAS_SETTINGS)
+                .addReadPermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
+                .addWritePermission(Car.PERMISSION_CONTROL_ADAS_SETTINGS)
+                .build();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testLowSpeedAutomaticEmergencyBrakingEnabledIfSupported() {
+        getLowSpeedAutomaticEmergencyBrakingEnabledVerifier().verify();
+    }
+
+    private VehiclePropertyVerifier<Integer> getLowSpeedAutomaticEmergencyBrakingStateVerifier() {
+        ImmutableSet<Integer> combinedCarPropertyValues = ImmutableSet.<Integer>builder()
+                .addAll(LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATES)
+                .addAll(ERROR_STATES)
+                .build();
+
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Integer.class, mCarPropertyManager)
+                .setAllPossibleEnumValues(combinedCarPropertyValues)
+                .setDependentOnProperty(
+                        VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED,
+                        ImmutableSet.of(Car.PERMISSION_READ_ADAS_SETTINGS,
+                                Car.PERMISSION_CONTROL_ADAS_SETTINGS))
+                .verifyErrorStates()
+                .addReadPermission(Car.PERMISSION_READ_ADAS_STATES)
+                .build();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testLowSpeedAutomaticEmergencyBrakingStateIfSupported() {
+        getLowSpeedAutomaticEmergencyBrakingStateVerifier().verify();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testLowSpeedAutomaticEmergencyBrakingStateWithErrorState() {
+        verifyEnumValuesAreDistinct(LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATES, ERROR_STATES);
     }
 
     @SuppressWarnings("unchecked")
@@ -6957,33 +7246,26 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     List<CarPropertyConfig> configs =
                             mCarPropertyManager.getPropertyList(mPropertyIds);
                     for (CarPropertyConfig cfg : configs) {
-                        if (cfg.getAccess() == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
-                            int[] areaIds = getAreaIdsHelper(cfg);
-                            int propId = cfg.getPropertyId();
-                            // no guarantee if we can get values, just call and check if it throws
-                            // exception.
-                            if (cfg.getPropertyType() == Boolean.class) {
-                                for (int areaId : areaIds) {
-                                    mCarPropertyManager.getBooleanProperty(propId, areaId);
-                                }
-                            } else if (cfg.getPropertyType() == Integer.class) {
-                                for (int areaId : areaIds) {
-                                    mCarPropertyManager.getIntProperty(propId, areaId);
-                                }
-                            } else if (cfg.getPropertyType() == Float.class) {
-                                for (int areaId : areaIds) {
-                                    mCarPropertyManager.getFloatProperty(propId, areaId);
-                                }
-                            } else if (cfg.getPropertyType() == Integer[].class) {
-                                for (int areId : areaIds) {
-                                    mCarPropertyManager.getIntArrayProperty(propId, areId);
-                                }
-                            } else {
-                                for (int areaId : areaIds) {
-                                    mCarPropertyManager.getProperty(
-                                            cfg.getPropertyType(), propId, areaId);
+                        int propId = cfg.getPropertyId();
+                        List<AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
+                        List<AreaIdConfig<?>> filteredAreaIdConfigs = new ArrayList<>();
+                        if (Flags.areaIdConfigAccess()) {
+                            for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                                if (areaIdConfig.getAccess()
+                                        == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
+                                        || areaIdConfig.getAccess()
+                                        == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                                    filteredAreaIdConfigs.add(areaIdConfig);
                                 }
                             }
+                        } else {
+                            filteredAreaIdConfigs = areaIdConfigs;
+                        }
+                        // no guarantee if we can get values, just call and check if it throws
+                        // exception.
+                        for (AreaIdConfig<?> areaIdConfig : filteredAreaIdConfigs) {
+                            mCarPropertyManager.getProperty(cfg.getPropertyType(), propId,
+                                    areaIdConfig.getAreaId());
                         }
                     }
                 });
@@ -7012,15 +7294,23 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     continue;
                 }
                 CarPropertyConfig cfg = verifier.getCarPropertyConfig();
-                if (cfg.getAccess() != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
-                        && cfg.getAccess()
-                                != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                if (!Flags.areaIdConfigAccess() && cfg.getAccess()
+                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ && cfg.getAccess()
+                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
                     continue;
                 }
 
-                int[] areaIds = cfg.getAreaIds();
+                List<? extends AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
                 int propId = cfg.getPropertyId();
-                for (int areaId : areaIds) {
+                for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                    if (Flags.areaIdConfigAccess() && areaIdConfig.getAccess()
+                            != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
+                            && areaIdConfig.getAccess()
+                            != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                        continue;
+                    }
+
+                    int areaId = areaIdConfig.getAreaId();
                     CarPropertyManager.GetPropertyRequest gpr =
                             mCarPropertyManager.generateGetPropertyRequest(propId, areaId);
                     getPropertyRequests.add(gpr);
@@ -7223,10 +7513,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 () -> {
                     List<CarPropertyConfig> allConfigs = mCarPropertyManager.getPropertyList();
                     for (CarPropertyConfig cfg : allConfigs) {
-                        if (cfg.getAccess() == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE
-                                || cfg.getAccess()
-                                        == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE
-                                || cfg.getPropertyType() != Integer[].class) {
+                        if (cfg.getPropertyType() != Integer[].class
+                                || (!Flags.areaIdConfigAccess() && (cfg.getAccess()
+                                == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE || cfg.getAccess()
+                                == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE))) {
                             // skip the test if the property is not readable or not an int array
                             // type property.
                             continue;
@@ -7247,10 +7537,18 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 verifyEnumsRange(EXPECTED_PORT_LOCATIONS, evPortLocations);
                                 break;
                             default:
-                                int[] areaIds = getAreaIdsHelper(cfg);
-                                for (int areaId : areaIds) {
+                                List<? extends AreaIdConfig<?>> areaIdConfigs =
+                                        cfg.getAreaIdConfigs();
+                                for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                                    if (Flags.areaIdConfigAccess() && (areaIdConfig.getAccess()
+                                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE
+                                            || areaIdConfig.getAccess()
+                                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)) {
+                                        // skip the test if the property is not readable
+                                        continue;
+                                    }
                                     mCarPropertyManager.getIntArrayProperty(
-                                            cfg.getPropertyId(), areaId);
+                                            cfg.getPropertyId(), areaIdConfig.getAreaId());
                                 }
                         }
                     }
@@ -7354,6 +7652,21 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         new Subscription.Builder(VehiclePropertyIds.HVAC_FAN_SPEED)
                                 .addAreaId(SEAT_ROW_1_LEFT).build()),
                 null, new CarPropertyEventCounter())));
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                    "android.car.hardware.property.CarPropertyManager#subscribePropertyEvents"
+            }
+    )
+    @RequiresFlagsEnabled(Flags.FLAG_BATCHED_SUBSCRIPTIONS)
+    public void testSubscribePropertyEventsWithNoReadPermission_throwSecurityException()
+            throws Exception {
+        assertThrows(SecurityException.class, () ->
+                mCarPropertyManager.subscribePropertyEvents(
+                List.of(new Subscription.Builder(VehiclePropertyIds.PERF_VEHICLE_SPEED).build()),
+                null, new CarPropertyEventCounter()));
     }
 
     @Test
@@ -7652,6 +7965,67 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                             ).isAtMost(noVurEventCounter.receivedEvent(vehicleSpeed));
                     assertWithMessage("Must not receive duplicate property update events when "
                             + "VUR is enabled").that(vurEventCounter.getDuplicateValue()).isNull();
+                });
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                    "android.car.hardware.property.CarPropertyManager#subscribePropertyEvents",
+                    "android.car.hardware.property.CarPropertyManager#unsubscribePropertyEvents",
+                    "android.car.hardware.property.Subscription.Builder#Builder",
+                    "android.car.hardware.property.Subscription.Builder#setUpdateRateFastest",
+                    "android.car.hardware.property.Subscription.Builder#addAreaId",
+                    "android.car.hardware.property.Subscription.Builder#build",
+                    "android.car.hardware.property.Subscription.Builder#"
+                            + "setVariableUpdateRateEnabled",
+                    "android.car.hardware.property.Subscription.Builder#"
+                            + "setResolution",
+                    "android.car.hardware.property.CarPropertyConfig#getAreaIdConfig",
+                    "android.car.hardware.property.AreaIdConfig#isVariableUpdateRateSupported"
+            })
+    @RequiresFlagsEnabled({Flags.FLAG_BATCHED_SUBSCRIPTIONS, Flags.FLAG_VARIABLE_UPDATE_RATE,
+            Flags.FLAG_SUBSCRIPTION_WITH_RESOLUTION})
+    public void testSubscribePropertyEventsForContinuousProperty_withResolution() throws Exception {
+        runWithShellPermissionIdentity(
+                () -> {
+                    int propId = VehiclePropertyIds.ENV_OUTSIDE_TEMPERATURE;
+                    CarPropertyConfig<?> carPropertyConfig =
+                            mCarPropertyManager.getCarPropertyConfig(propId);
+                    assumeTrue("The CarPropertyConfig of outside temperature does not exist",
+                            carPropertyConfig != null);
+
+                    long bufferMillis = 1_000; // 1 second
+                    long timeoutMillis = generateTimeoutMillis(carPropertyConfig.getMinSampleRate(),
+                            bufferMillis);
+                    CarPropertyEventCounter eventCounter = new CarPropertyEventCounter(
+                            timeoutMillis);
+
+                    Subscription speedSubscription = new Subscription
+                            .Builder(propId)
+                            .setUpdateRateUi()
+                            .addAreaId(VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL)
+                            .setVariableUpdateRateEnabled(false)
+                            .setResolution(10.0f)
+                            .build();
+
+                    mCarPropertyManager.subscribePropertyEvents(
+                            List.of(speedSubscription), /* callbackExecutor= */ null,
+                            eventCounter);
+
+                    eventCounter.resetCountDownLatch(UI_RATE_EVENT_COUNTER);
+                    // Wait for subscription to receive some events.
+                    eventCounter.assertOnChangeEventCalled();
+
+                    mCarPropertyManager.unregisterCallback(eventCounter);
+
+                    for (CarPropertyValue<?> carPropertyValue :
+                            eventCounter.getReceivedCarPropertyValues()) {
+                        assertWithMessage("Incoming CarPropertyValue objects should have a value "
+                                + "rounded to 10")
+                                .that(((Float) carPropertyValue.getValue()).intValue() % 10 == 0)
+                                .isTrue();
+                    }
                 });
     }
 
@@ -7964,8 +8338,8 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
                     speedListenerUI.resetCountDownLatch(UI_RATE_EVENT_COUNTER);
                     speedListenerUI.assertOnChangeEventCalled();
-                    mCarPropertyManager.unsubscribePropertyEvents(speedListenerNormal,
-                            vehicleSpeed);
+                    mCarPropertyManager.unsubscribePropertyEvents(vehicleSpeed,
+                            speedListenerNormal);
 
                     int currentEventUI = speedListenerUI.receivedEvent(vehicleSpeed);
                     // Because we copy the callback outside the lock, so even after
@@ -8239,6 +8613,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionReadCarSeatBeltsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_CAR_SEAT_BELTS_PROPERTIES,
@@ -8246,6 +8621,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionReadImpactSensorsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_IMPACT_SENSORS_PROPERTIES,
@@ -8253,6 +8629,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionReadCarAirbagsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_CAR_AIRBAGS_PROPERTIES,
@@ -8337,6 +8714,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionControlCarDynamicsStateGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_CONTROL_CAR_DYNAMICS_STATE_PROPERTIES,
@@ -8428,6 +8806,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionCarDrivingStateGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_CAR_DRIVING_STATE_PROPERTIES,
@@ -8435,6 +8814,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionReadValetModeGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_VALET_MODE_PROPERTIES,
@@ -8442,10 +8822,27 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionControlValetModeGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_CONTROL_VALET_MODE_PROPERTIES,
                 Car.PERMISSION_CONTROL_VALET_MODE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testPermissionReadHeadUpDisplayStatusGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_READ_HEAD_UP_DISPLAY_STATUS_PROPERTIES,
+                Car.PERMISSION_READ_HEAD_UP_DISPLAY_STATUS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
+    public void testPermissionControlHeadUpDisplayGranted() {
+        verifyExpectedPropertiesWhenPermissionsGranted(
+                PERMISSION_CONTROL_HEAD_UP_DISPLAY_PROPERTIES,
+                Car.PERMISSION_CONTROL_HEAD_UP_DISPLAY);
     }
 
     @Test
@@ -8604,14 +9001,19 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     continue;
                 }
                 CarPropertyConfig cfg = verifier.getCarPropertyConfig();
-                if (cfg.getAccess()
-                                != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                if (!Flags.areaIdConfigAccess() && cfg.getAccess()
+                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
                     continue;
                 }
 
-                int[] areaIds = cfg.getAreaIds();
+                List<? extends AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
                 int propId = cfg.getPropertyId();
-                for (int areaId : areaIds) {
+                for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                    if (Flags.areaIdConfigAccess() && areaIdConfig.getAccess()
+                            != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                        continue;
+                    }
+                    int areaId = areaIdConfig.getAreaId();
                     CarPropertyManager.SetPropertyRequest<?> spr;
                     spr = this.addSetPropertyRequest(setPropertyRequests, propId, areaId, verifier,
                             cfg.getPropertyType());
@@ -8799,6 +9201,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     private static class CarPropertyEventCounter implements CarPropertyEventCallback {
         private final Object mLock = new Object();
+        private final Set<CarPropertyValue<?>> mReceivedCarPropertyValues = new ArraySet<>();
         @GuardedBy("mLock")
         private final SparseArray<Integer> mEventCounter = new SparseArray<>();
         @GuardedBy("mLock")
@@ -8817,6 +9220,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
         CarPropertyEventCounter() {
             this(WAIT_CALLBACK);
+        }
+
+        public Set<CarPropertyValue<?>> getReceivedCarPropertyValues() {
+            return mReceivedCarPropertyValues;
         }
 
         public int receivedEvent(int propId) {
@@ -8846,6 +9253,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         @Override
         public void onChangeEvent(CarPropertyValue value) {
             synchronized (mLock) {
+                mReceivedCarPropertyValues.add(value);
                 int val = mEventCounter.get(value.getPropertyId(), 0) + 1;
                 mEventCounter.put(value.getPropertyId(), val);
                 mCountDownLatch.countDown();
@@ -8926,5 +9334,9 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 }
             }
         }
+    }
+
+    private static boolean isSystemProperty(int propertyId) {
+        return (propertyId & VEHICLE_PROPERTY_GROUP_MASK) == VEHICLE_PROPERTY_GROUP_SYSTEM;
     }
 }

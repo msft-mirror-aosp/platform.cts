@@ -16,9 +16,9 @@
 
 package android.app.stubs.shared;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.content.ComponentName;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.service.notification.Adjustment;
@@ -48,6 +48,10 @@ public class TestNotificationAssistant extends NotificationAssistantService {
     public int mNotificationClickCount = 0;
     public int mNotificationRank = -1;
     public int mNotificationFeedback = 0;
+
+    public boolean mMarkSensitiveContent = false;
+    public ArrayList<Notification.Action> mSmartActions = null;
+    public ArrayList<CharSequence> mSmartReplies = null;
     private NotificationManager mNotificationManager;
 
     public Map<String, Integer> mRemoved = new HashMap<>();
@@ -127,6 +131,15 @@ public class TestNotificationAssistant extends NotificationAssistantService {
         rankingMap.getRanking(sbn.getKey(), ranking);
         mNotificationRank = ranking.getRank();
         signals.putInt(Adjustment.KEY_USER_SENTIMENT, Ranking.USER_SENTIMENT_POSITIVE);
+        if (mMarkSensitiveContent) {
+            signals.putBoolean(Adjustment.KEY_SENSITIVE_CONTENT, true);
+        }
+        if (mSmartActions != null) {
+            signals.putParcelableArrayList(Adjustment.KEY_CONTEXTUAL_ACTIONS, mSmartActions);
+        }
+        if (mSmartReplies != null) {
+            signals.putCharSequenceArrayList(Adjustment.KEY_TEXT_REPLIES, mSmartReplies);
+        }
         return new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
                 sbn.getUser());
     }

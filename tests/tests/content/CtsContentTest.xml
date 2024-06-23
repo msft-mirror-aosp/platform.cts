@@ -54,10 +54,14 @@
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
+        <!-- CtsContentUriTestApp needs to be installed first since it defines custom install time
+             permissions that CtsContentTestCases should be granted. -->
+        <option name="test-file-name" value="CtsContentUriTestApp.apk" />
         <option name="test-file-name" value="CtsContentTestCases.apk" />
         <option name="test-file-name" value="CtsSyncAccountAccessStubs.apk" />
         <option name="test-file-name" value="CtsBinderPermissionTestService.apk" />
         <option name="test-file-name" value="CtsContentMockRestrictedApp.apk" />
+        <option name="test-file-name" value="CtsIntentResolutionTestApp.apk" />
 
     </target_preparer>
 

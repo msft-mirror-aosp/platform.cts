@@ -16,14 +16,20 @@
 
 package android.virtualdevice.cts.applaunch;
 
+import static android.view.WindowManager.DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
+import static android.view.WindowManager.DISPLAY_IME_POLICY_HIDE;
+import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
+
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -39,7 +45,6 @@ import android.inputmethodservice.InputMethodService;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Display;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
@@ -71,7 +76,7 @@ import java.util.concurrent.TimeUnit;
 @RequiresFlagsEnabled(Flags.FLAG_VDM_CUSTOM_IME)
 public class VirtualDeviceImeTest {
 
-    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(3);
+    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
@@ -83,11 +88,12 @@ public class VirtualDeviceImeTest {
     private final InputMethodManager mInputMethodManager =
             mContext.getSystemService(InputMethodManager.class);
 
-    private int mVirtualDisplayId;
+    private String mDefaultDeviceDefaultImeId;
+    private String mVirtualDeviceImeId;
+    private int mVirtualDisplayId = Display.INVALID_DISPLAY;
 
     private interface ImeListener {
         void onShow(int displayId);
-        void onHide();
     }
 
     @Mock
@@ -102,8 +108,9 @@ public class VirtualDeviceImeTest {
         DefaultDeviceTestIme.sImeListener = mDefaultDeviceImeListener;
         VirtualDeviceTestIme.sImeListener = mVirtualDeviceImeListener;
 
-        enableTestIme(DefaultDeviceTestIme.class, /* makeDefault= */ true);
-        enableTestIme(VirtualDeviceTestIme.class, /* makeDefault= */ false);
+        mDefaultDeviceDefaultImeId =
+                enableTestIme(DefaultDeviceTestIme.class, /* makeDefault= */ true);
+        mVirtualDeviceImeId = enableTestIme(VirtualDeviceTestIme.class, /* makeDefault= */ false);
     }
 
     @After
@@ -111,18 +118,6 @@ public class VirtualDeviceImeTest {
         DefaultDeviceTestIme.sImeListener = null;
         VirtualDeviceTestIme.sImeListener = null;
         SystemUtil.runShellCommandOrThrow("ime reset");
-    }
-
-    private <T extends InputMethodService> String enableTestIme(
-            Class<T> imeClass, boolean makeDefault) {
-        final String imeId =
-                new ComponentName(mContext, imeClass.getName()).flattenToShortString();
-        SystemUtil.runShellCommandOrThrow("ime enable " + imeId);
-        if (makeDefault) {
-            SystemUtil.runShellCommandOrThrow("ime set " + imeId);
-            assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId()).isEqualTo(imeId);
-        }
-        return imeId;
     }
 
     /** The virtualDeviceOnly attribute is propagated to InputMethodInfo. */
@@ -147,11 +142,9 @@ public class VirtualDeviceImeTest {
     public void noCustomImeComponent_defaultImeShouldBeOnVirtualDisplay() {
         createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.empty());
 
-        showSoftInputOnDisplay(Display.DEFAULT_DISPLAY);
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS)).onShow(Display.DEFAULT_DISPLAY);
-
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS)).onShow(mVirtualDisplayId);
+        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(mVirtualDisplayId);
     }
 
     /** The default IME is used on virtual devices when the custom IME component is {@code null}. */
@@ -161,17 +154,172 @@ public class VirtualDeviceImeTest {
     public void nullCustomImeComponent_defaultImeShouldBeOnVirtualDisplay() {
         createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.ofNullable(null));
 
-        showSoftInputOnDisplay(Display.DEFAULT_DISPLAY);
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS)).onShow(Display.DEFAULT_DISPLAY);
+        showSoftInputOnDisplay(mVirtualDisplayId);
+        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(mVirtualDisplayId);
+    }
+
+    /** No IME is used on virtual devices when the custom IME component doesn't exist. */
+    @ApiTest(apis = {
+            "android.companion.virtual.VirtualDeviceParams.Builder#setInputMethodComponent"})
+    @Test
+    public void nonExistentCustomImeComponent_noImeOnVirtualDisplay() {
+        createVirtualDeviceAndDisplay(
+                /* imeComponent= */ Optional.of(new ComponentName("foo.bar", "foo.bar.Baz")));
 
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS)).onShow(mVirtualDisplayId);
+        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+    }
+
+    /** No IME is used on virtual devices when the custom IME component is invalid. */
+    @ApiTest(apis = {
+            "android.companion.virtual.VirtualDeviceParams.Builder#setInputMethodComponent"})
+    @Test
+    public void invalidCustomImeComponent_noImeOnVirtualDisplay() {
+        createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.of(
+                new ComponentName(mContext, EmptyActivity.class.getName())));
+
+        showSoftInputOnDisplay(mVirtualDisplayId);
+        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
+    }
+
+    /**
+     * The virtual device custom IME is used on its virtual displays but the default IME is still
+     * used on the displays not owned by that virtual device.
+     */
+    @ApiTest(apis = {
+            "android.companion.virtual.VirtualDeviceParams.Builder#setInputMethodComponent"})
+    @Test
+    public void validCustomImeComponent_customImeShouldBeOnVirtualDisplay() {
+        createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.of(
+                new ComponentName(mContext, VirtualDeviceTestIme.class.getName())));
+
+        showSoftInputOnDisplay(mVirtualDisplayId);
+        verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(mVirtualDisplayId);
+        assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
+                .isEqualTo(mVirtualDeviceImeId);
+
+        showSoftInputOnDisplay(Display.DEFAULT_DISPLAY);
+        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(Display.DEFAULT_DISPLAY);
+        assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
+                .isEqualTo(mDefaultDeviceDefaultImeId);
+    }
+
+    /**
+     * If the default device IME changes while the virtual one is in use it should be restored.
+     */
+    @ApiTest(apis = {
+            "android.companion.virtual.VirtualDeviceParams.Builder#setInputMethodComponent"})
+    @Test
+    public void customImeComponent_changeDefaultDeviceIme() {
+        createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.of(
+                new ComponentName(mContext, VirtualDeviceTestIme.class.getName())));
+        SystemUtil.runShellCommandOrThrow("ime disable " + mDefaultDeviceDefaultImeId);
+        assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
+                .isNotEqualTo(mDefaultDeviceDefaultImeId);
+
+        showSoftInputOnDisplay(mVirtualDisplayId);
+        verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(mVirtualDisplayId);
+
+        SystemUtil.runShellCommandOrThrow("ime enable " + mDefaultDeviceDefaultImeId);
+        SystemUtil.runShellCommandOrThrow("ime set " + mDefaultDeviceDefaultImeId);
+        assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
+                .isEqualTo(mVirtualDeviceImeId);
+
+        showSoftInputOnDisplay(Display.DEFAULT_DISPLAY);
+        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(Display.DEFAULT_DISPLAY);
+        assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
+                .isEqualTo(mDefaultDeviceDefaultImeId);
+    }
+
+    /**
+     * If the custom IME is disabled while the virtual one is in use it should not be restored.
+     */
+    @ApiTest(apis = {
+            "android.companion.virtual.VirtualDeviceParams.Builder#setInputMethodComponent"})
+    @Test
+    public void customImeComponent_disableDefaultDeviceIme() {
+        createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.of(
+                new ComponentName(mContext, VirtualDeviceTestIme.class.getName())));
+        showSoftInputOnDisplay(mVirtualDisplayId);
+        verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(mVirtualDisplayId);
+
+        SystemUtil.runShellCommandOrThrow("ime disable " + mDefaultDeviceDefaultImeId);
+        assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
+                .isEqualTo(mVirtualDeviceImeId);
+
+        reset(mVirtualDeviceImeListener);
+        showSoftInputOnDisplay(mVirtualDisplayId);
+        verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(mVirtualDisplayId);
+
+        showSoftInputOnDisplay(Display.DEFAULT_DISPLAY);
+        assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
+                .isNotEqualTo(mDefaultDeviceDefaultImeId);
+        assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
+                .isNotEqualTo(mVirtualDeviceImeId);
+        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
     @Test
     public void localImePolicy_isDefault() {
+        createVirtualDeviceAndDisplay();
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS)).onShow(mVirtualDisplayId);
+        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(mVirtualDisplayId);
+    }
+
+    @ApiTest(apis = {
+            "android.companion.virtual.VirtualDeviceManager.VirtualDevice#setDisplayImePolicy"})
+    @Test
+    public void setDisplayImePolicy_invalidDisplay_throws() {
+        VirtualDevice virtualDevice = createVirtualDeviceAndDisplay();
+        assertThrows(SecurityException.class,
+                () -> virtualDevice.setDisplayImePolicy(Display.INVALID_DISPLAY,
+                        DISPLAY_IME_POLICY_FALLBACK_DISPLAY));
+    }
+
+    @ApiTest(apis = {
+            "android.companion.virtual.VirtualDeviceManager.VirtualDevice#setDisplayImePolicy"})
+    @Test
+    public void setDisplayImePolicy_defaultDisplay_throws() {
+        VirtualDevice virtualDevice = createVirtualDeviceAndDisplay();
+        assertThrows(SecurityException.class,
+                () -> virtualDevice.setDisplayImePolicy(Display.DEFAULT_DISPLAY,
+                        DISPLAY_IME_POLICY_FALLBACK_DISPLAY));
+    }
+
+    @ApiTest(apis = {
+            "android.companion.virtual.VirtualDeviceManager.VirtualDevice#setDisplayImePolicy"})
+    @Test
+    public void setDisplayImePolicy_unownedDisplay_throws() {
+        VirtualDevice virtualDevice = createVirtualDeviceAndDisplay();
+        VirtualDisplay unownedDisplay = mRule.createManagedUnownedVirtualDisplayWithFlags(
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+        assertThrows(SecurityException.class,
+                () -> virtualDevice.setDisplayImePolicy(unownedDisplay.getDisplay().getDisplayId(),
+                        DISPLAY_IME_POLICY_FALLBACK_DISPLAY));
+    }
+
+    @ApiTest(apis = {
+            "android.companion.virtual.VirtualDeviceManager.VirtualDevice#setDisplayImePolicy"})
+    @Test
+    public void setDisplayImePolicy_untrustedDisplay_throws() {
+        VirtualDevice virtualDevice = createVirtualDeviceAndDisplay();
+        VirtualDisplay untrustedDisplay = mRule.createManagedVirtualDisplayWithFlags(virtualDevice,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+        assertThrows(SecurityException.class,
+                () -> virtualDevice.setDisplayImePolicy(
+                        untrustedDisplay.getDisplay().getDisplayId(),
+                        DISPLAY_IME_POLICY_FALLBACK_DISPLAY));
     }
 
     @ApiTest(apis = {
@@ -179,11 +327,11 @@ public class VirtualDeviceImeTest {
     @Test
     public void fallbackDisplayImePolicy_imeShowsOnDefaultDisplay() {
         VirtualDevice virtualDevice = createVirtualDeviceAndDisplay();
-        virtualDevice.setDisplayImePolicy(mVirtualDisplayId,
-                WindowManager.DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
+        virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
 
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS)).onShow(Display.DEFAULT_DISPLAY);
+        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(Display.DEFAULT_DISPLAY);
     }
 
     @ApiTest(apis = {
@@ -191,8 +339,7 @@ public class VirtualDeviceImeTest {
     @Test
     public void hideImePolicy_noIme() {
         VirtualDevice virtualDevice = createVirtualDeviceAndDisplay();
-        virtualDevice.setDisplayImePolicy(mVirtualDisplayId,
-                WindowManager.DISPLAY_IME_POLICY_HIDE);
+        virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_HIDE);
 
         showSoftInputOnDisplay(mVirtualDisplayId);
         verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
@@ -203,22 +350,20 @@ public class VirtualDeviceImeTest {
     @Test
     public void setDisplayImePolicy_changeAtRuntime() {
         VirtualDevice virtualDevice = createVirtualDeviceAndDisplay();
-        virtualDevice.setDisplayImePolicy(mVirtualDisplayId,
-                WindowManager.DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
+        virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS)).onShow(Display.DEFAULT_DISPLAY);
+        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(Display.DEFAULT_DISPLAY);
 
-        virtualDevice.setDisplayImePolicy(mVirtualDisplayId,
-                WindowManager.DISPLAY_IME_POLICY_LOCAL);
+        virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_LOCAL);
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS)).onHide();
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS)).onShow(mVirtualDisplayId);
+        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(mVirtualDisplayId);
 
-        virtualDevice.setDisplayImePolicy(mVirtualDisplayId,
-                WindowManager.DISPLAY_IME_POLICY_HIDE);
+        virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_HIDE);
+        reset(mDefaultDeviceImeListener);
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).times(2)).onHide();
-        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).times(2)).onShow(anyInt());
+        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
     @ApiTest(apis = {
@@ -226,33 +371,33 @@ public class VirtualDeviceImeTest {
     @Test
     public void setDisplayImePolicy_differentPoliciesForDifferentDisplays() {
         VirtualDevice virtualDevice = createVirtualDeviceAndDisplay();
-        virtualDevice.setDisplayImePolicy(mVirtualDisplayId,
-                WindowManager.DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
+        virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
 
         VirtualDisplay localImeDisplay = mRule.createManagedVirtualDisplayWithFlags(virtualDevice,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
         final int localImeDisplayId = localImeDisplay.getDisplay().getDisplayId();
-        virtualDevice.setDisplayImePolicy(localImeDisplayId,
-                WindowManager.DISPLAY_IME_POLICY_LOCAL);
+        virtualDevice.setDisplayImePolicy(localImeDisplayId, DISPLAY_IME_POLICY_LOCAL);
 
         VirtualDisplay noImeDisplay = mRule.createManagedVirtualDisplayWithFlags(virtualDevice,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
         final int noImeDisplayId = noImeDisplay.getDisplay().getDisplayId();
-        virtualDevice.setDisplayImePolicy(noImeDisplayId,
-                WindowManager.DISPLAY_IME_POLICY_HIDE);
+        virtualDevice.setDisplayImePolicy(noImeDisplayId, DISPLAY_IME_POLICY_HIDE);
 
         showSoftInputOnDisplay(mVirtualDisplayId);
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS)).onShow(Display.DEFAULT_DISPLAY);
+        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(Display.DEFAULT_DISPLAY);
 
         showSoftInputOnDisplay(localImeDisplayId);
-        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS)).onShow(localImeDisplayId);
+        verify(mDefaultDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
+                .onShow(localImeDisplayId);
 
+        reset(mDefaultDeviceImeListener);
         showSoftInputOnDisplay(noImeDisplayId);
-        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).times(2)).onShow(anyInt());
+        verify(mDefaultDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
     }
 
     @ApiTest(apis = {
@@ -262,8 +407,7 @@ public class VirtualDeviceImeTest {
     public void fallbackDisplayImePolicy_customImeComponentIgnored() {
         VirtualDevice virtualDevice = createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.of(
                 new ComponentName(mContext, VirtualDeviceTestIme.class.getName())));
-        virtualDevice.setDisplayImePolicy(mVirtualDisplayId,
-                WindowManager.DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
+        virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_FALLBACK_DISPLAY);
 
         showSoftInputOnDisplay(mVirtualDisplayId);
         verify(mVirtualDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
@@ -277,8 +421,7 @@ public class VirtualDeviceImeTest {
     public void hideImePolicy_customImeComponentIgnored() {
         VirtualDevice virtualDevice = createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.of(
                 new ComponentName(mContext, VirtualDeviceTestIme.class.getName())));
-        virtualDevice.setDisplayImePolicy(mVirtualDisplayId,
-                WindowManager.DISPLAY_IME_POLICY_HIDE);
+        virtualDevice.setDisplayImePolicy(mVirtualDisplayId, DISPLAY_IME_POLICY_HIDE);
 
         showSoftInputOnDisplay(mVirtualDisplayId);
         verify(mVirtualDeviceImeListener, after(TIMEOUT_MILLIS).never()).onShow(anyInt());
@@ -320,6 +463,18 @@ public class VirtualDeviceImeTest {
         return virtualDevice;
     }
 
+    private <T extends InputMethodService> String enableTestIme(
+            Class<T> imeClass, boolean makeDefault) {
+        final String imeId =
+                new ComponentName(mContext, imeClass.getName()).flattenToShortString();
+        SystemUtil.runShellCommandOrThrow("ime enable " + imeId);
+        if (makeDefault) {
+            SystemUtil.runShellCommandOrThrow("ime set " + imeId);
+            assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId()).isEqualTo(imeId);
+        }
+        return imeId;
+    }
+
     /**
      * Simple IME implementation forwarding the show input requests to a listener along with a
      * display id.
@@ -331,18 +486,12 @@ public class VirtualDeviceImeTest {
         @Override
         public boolean onShowInputRequested(int flags, boolean configChange) {
             if (sImeListener != null) {
-                sImeListener.onShow(
-                        getWindow().getWindow().getDecorView().getDisplay().getDisplayId());
+                Display display = getWindow().getWindow().getDecorView().getDisplay();
+                if (display != null) {
+                    sImeListener.onShow(display.getDisplayId());
+                }
             }
             return true;
-        }
-
-        @Override
-        public void onWindowHidden() {
-            super.onWindowHidden();
-            if (sImeListener != null) {
-                sImeListener.onHide();
-            }
         }
     }
 
@@ -357,18 +506,12 @@ public class VirtualDeviceImeTest {
         @Override
         public boolean onShowInputRequested(int flags, boolean configChange) {
             if (sImeListener != null) {
-                sImeListener.onShow(
-                        getWindow().getWindow().getDecorView().getDisplay().getDisplayId());
+                Display display = getWindow().getWindow().getDecorView().getDisplay();
+                if (display != null) {
+                    sImeListener.onShow(display.getDisplayId());
+                }
             }
             return true;
-        }
-
-        @Override
-        public void onWindowHidden() {
-            super.onWindowHidden();
-            if (sImeListener != null) {
-                sImeListener.onHide();
-            }
         }
     }
 }

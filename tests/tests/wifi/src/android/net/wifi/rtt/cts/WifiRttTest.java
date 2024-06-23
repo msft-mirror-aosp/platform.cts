@@ -26,9 +26,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 
 import android.net.MacAddress;
+import android.net.wifi.OuiKeyedData;
 import android.net.wifi.ScanResult;
 import android.net.wifi.aware.PeerHandle;
 import android.net.wifi.cts.WifiBuildCompat;
@@ -38,14 +40,19 @@ import android.net.wifi.rtt.RangingResult;
 import android.net.wifi.rtt.ResponderConfig;
 import android.net.wifi.rtt.ResponderLocation;
 import android.net.wifi.rtt.WifiRttManager;
+import android.os.Build;
+import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
+import com.android.wifi.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -119,7 +126,7 @@ public class WifiRttTest extends TestBase {
         if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
             assertEquals(1, request.getRttResponders().size());
         }
-        range11mcApRequest(request, testAp);
+        rangeApRequest(request, testAp);
     }
 
     /**
@@ -179,7 +186,7 @@ public class WifiRttTest extends TestBase {
         if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
             assertEquals(1, request.getRttResponders().size());
         }
-        range11mcApRequest(request, testAp);
+        rangeApRequest(request, testAp);
     }
 
     /**
@@ -217,7 +224,7 @@ public class WifiRttTest extends TestBase {
         if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
             assertEquals(1, request.getRttResponders().size());
         }
-        range11mcApRequest(request, testAp);
+        rangeApRequest(request, testAp);
     }
 
     /**
@@ -226,7 +233,7 @@ public class WifiRttTest extends TestBase {
      * @param request the ranging request that is being tested
      * @param testAp the original test scan result to provide feedback on failure conditions
      */
-    private void range11mcApRequest(RangingRequest request, ScanResult testAp)
+    private void rangeApRequest(RangingRequest request, ScanResult testAp)
             throws InterruptedException {
         Thread.sleep(5000);
         List<RangingResult> allResults = new ArrayList<>();
@@ -267,14 +274,14 @@ public class WifiRttTest extends TestBase {
             statuses[i] = status;
             if (status == RangingResult.STATUS_SUCCESS) {
                 if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
-                    assertEquals(
-                            "Wi-Fi RTT results: invalid result (wrong rttBurstSize) entry on "
-                                    + "iteration "
-                                    + i,
-                            result.getNumAttemptedMeasurements(),
-                            RangingRequest.getMaxRttBurstSize());
-                    assertTrue("Wi-Fi RTT results: should be a 802.11MC measurement",
-                            result.is80211mcMeasurement());
+                    if (result.is80211mcMeasurement()) {
+                        assertEquals(
+                                "Wi-Fi RTT results: invalid result (wrong rttBurstSize) entry on "
+                                        + "iteration " + i, result.getNumAttemptedMeasurements(),
+                                RangingRequest.getMaxRttBurstSize());
+                    }
+                    assertTrue("Wi-Fi RTT results: should be a 802.11mc or 802.11az measurement",
+                            result.is80211mcMeasurement() || result.is80211azNtbMeasurement());
                 }
                 distanceSum += result.getDistanceMm();
                 if (i == 0) {
@@ -357,8 +364,6 @@ public class WifiRttTest extends TestBase {
         }
     }
 
-
-
     /**
      * Validate that when a request contains more range operations than allowed (by API) that we
      * get an exception.
@@ -379,7 +384,7 @@ public class WifiRttTest extends TestBase {
 
         ScanResult testApNon80211mc = null;
         if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
-            testApNon80211mc = getNone11McScanResult();
+            testApNon80211mc = getLegacyScanResult();
         }
         if (testApNon80211mc == null) {
             builder.addAccessPoints(List.of(testAp, testAp, testAp));
@@ -607,7 +612,7 @@ public class WifiRttTest extends TestBase {
         }
 
         // Scan for Non-IEEE 802.11mc supporting APs
-        ScanResult testAp = getNone11McScanResult();
+        ScanResult testAp = getLegacyScanResult();
         assertNotNull(
                 "Cannot find any test APs which are Non-IEEE 802.11mc - please verify that"
                         + " your test setup includes them!", testAp);
@@ -639,7 +644,7 @@ public class WifiRttTest extends TestBase {
         }
 
         // Scan for Non-IEEE 802.11mc supporting APs
-        ScanResult testAp = getNone11McScanResult();
+        ScanResult testAp = getLegacyScanResult();
         assertNotNull(
                 "Cannot find any test APs which are Non-IEEE 802.11mc - please verify that"
                         + " your test setup includes them!", testAp);
@@ -814,5 +819,108 @@ public class WifiRttTest extends TestBase {
             }
         }
 
+    }
+
+    /**
+     * Test RangingResult.Builder
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testRangingResultBuilder() {
+
+        byte[] lci = {1, 2, 3, 4};
+        byte[] lcr = {10, 20, 30, 40};
+
+        RangingResult rangingResult = new RangingResult.Builder()
+                .setMacAddress(MacAddress.fromString("00:11:22:33:44:55"))
+                .setStatus(RangingResult.STATUS_SUCCESS)
+                .setDistanceMm(100)
+                .setDistanceStdDevMm(33)
+                .setLci(lci)
+                .setLcr(lcr)
+                .setNumAttemptedMeasurements(10)
+                .setNumSuccessfulMeasurements(5)
+                .setRangingTimestampMillis(12345)
+                .setRssi(-77)
+                .build();
+
+        assertEquals(MacAddress.fromString("00:11:22:33:44:55"), rangingResult.getMacAddress());
+        assertEquals(RangingResult.STATUS_SUCCESS, rangingResult.getStatus());
+        assertEquals(100, rangingResult.getDistanceMm());
+        assertEquals(33, rangingResult.getDistanceStdDevMm());
+        assertArrayEquals(lci, rangingResult.getLci());
+        assertArrayEquals(lcr, rangingResult.getLcr());
+        assertEquals(10, rangingResult.getNumAttemptedMeasurements());
+        assertEquals(5, rangingResult.getNumSuccessfulMeasurements());
+        assertEquals(12345, rangingResult.getRangingTimestampMillis());
+        assertEquals(-77, rangingResult.getRssi());
+
+        try {
+            rangingResult = new RangingResult.Builder()
+                    .setStatus(RangingResult.STATUS_SUCCESS)
+                    .setDistanceMm(100)
+                    .setDistanceStdDevMm(33)
+                    .build();
+            assertEquals(RangingResult.STATUS_SUCCESS, rangingResult.getStatus());
+            fail("RangeResult need MAC address or Peer handle");
+        } catch (IllegalArgumentException e) {
+
+        }
+    }
+
+    /**
+     * Test Wi-Fi RTT ranging operation using ScanResults in request:
+     * - Scan for visible APs for the test AP (which is validated to support IEEE 802.11az)
+     * - Perform N (constant) RTT operations
+     * - Validate:
+     *   - Failure ratio < threshold (constant)
+     *   - Result margin < threshold (constant)
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    public void testRangingToTest11azApUsingScanResult() throws InterruptedException {
+        assumeTrue(mCharacteristics != null && mCharacteristics.getBoolean(
+                WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_NTB_INITIATOR));
+        ScanResult testAp = getS11AzScanResult();
+        assertNotNull("Cannot find any test APs which support RTT / IEEE 802.11az"
+                + " - please verify that your test setup includes them!", testAp);
+        RangingRequest.Builder builder = new RangingRequest.Builder();
+        builder.addAccessPoint(testAp);
+        RangingRequest request = builder.build();
+        rangeApRequest(request, testAp);
+    }
+
+    /*
+     * Test that vendor data can be set and retrieved properly in RangingRequest and RangingResult.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testRangingRequestVendorData() {
+        // Default value should be an empty list
+        RangingRequest emptyRequest = new RangingRequest.Builder().build();
+        assertNotNull(emptyRequest.getVendorData());
+        assertTrue(emptyRequest.getVendorData().isEmpty());
+
+        RangingResult emptyResult = new RangingResult.Builder().setMacAddress(MAC).build();
+        assertNotNull(emptyResult.getVendorData());
+        assertTrue(emptyResult.getVendorData().isEmpty());
+
+        // Set and get vendor data
+        OuiKeyedData vendorDataElement =
+                new OuiKeyedData.Builder(0x00aabbcc, new PersistableBundle()).build();
+        List<OuiKeyedData> vendorData = Arrays.asList(vendorDataElement);
+
+        RangingRequest requestWithData = new RangingRequest.Builder()
+                .setVendorData(vendorData)
+                .build();
+        assertTrue(vendorData.equals(requestWithData.getVendorData()));
+
+        RangingResult resultWithData = new RangingResult.Builder()
+                .setMacAddress(MAC)
+                .setVendorData(vendorData)
+                .build();
+        assertTrue(vendorData.equals(resultWithData.getVendorData()));
     }
 }
